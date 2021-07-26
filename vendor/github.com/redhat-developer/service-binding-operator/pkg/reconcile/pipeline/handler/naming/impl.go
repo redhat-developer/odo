@@ -1,7 +1,7 @@
 package naming
 
 import (
-	"github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	"github.com/redhat-developer/service-binding-operator/apis"
 	"github.com/redhat-developer/service-binding-operator/pkg/naming"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 )
@@ -36,5 +36,5 @@ func templateData(service pipeline.Service) map[string]interface{} {
 func stop(ctx pipeline.Context, err error) {
 	ctx.Error(err)
 	ctx.StopProcessing()
-	ctx.SetCondition(v1alpha1.Conditions().NotCollectionReady().Reason(StrategyError).Msg(err.Error()).Build())
+	ctx.SetCondition(apis.Conditions().NotCollectionReady().Reason(StrategyError).Msg(err.Error()).Build())
 }

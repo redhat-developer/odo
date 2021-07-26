@@ -188,22 +188,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
 
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels)
-	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
-	}
-
-	if componentExists && needRestart {
-		s := log.Spinner("Restarting the component")
-		defer s.End(false)
-		err = a.Client.GetKubeClient().WaitForPodDeletion(podName)
-		if err != nil {
-			return err
-		}
-		s.End(true)
-	}
-
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
@@ -214,13 +198,30 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
 
-	err = a.deployLinksWithoutOperator(k8sComponents, labels)
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err := a.getPod(true)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	needRestart, err := service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+
+	if needRestart {
+		s := log.Spinner("Restarting the component")
+		defer s.End(false)
+		err = a.Client.GetKubeClient().WaitForPodDeletion(pod.Name)
+		if err != nil {
+			return err
+		}
+		s.End(true)
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.getPod(true)
+	pod, err = a.getPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
@@ -241,11 +242,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
-	}
-
-	err = service.UpdateKubernetesInlineComponentsOwnerReferences(a.Client.GetKubeClient(), k8sComponents, ownerReference)
-	if err != nil {
-		return err
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
@@ -325,6 +321,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// TODO remove if not required
 // deployLinksWithoutOperator deploys services without the service binding operator
 // if service binding operator is installed, it does nothing and returns
 func (a Adapter) deployLinksWithoutOperator(k8sComponents []devfilev1.Component, labels map[string]string) error {

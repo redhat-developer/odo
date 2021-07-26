@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/collect"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/mapping"
@@ -16,7 +15,7 @@ type impl struct {
 	handlers    []pipeline.Handler
 }
 
-func (i *impl) Process(binding *v1alpha1.ServiceBinding) (bool, error) {
+func (i *impl) Process(binding interface{}) (bool, error) {
 	ctx, err := i.ctxProvider.Get(binding)
 	if err != nil {
 		return false, err
@@ -66,16 +65,34 @@ var defaultFlow = []pipeline.Handler{
 	pipeline.HandlerFunc(project.Unbind),
 	pipeline.HandlerFunc(collect.PreFlight),
 	pipeline.HandlerFunc(collect.ProvisionedService),
+	pipeline.HandlerFunc(collect.DirectSecretReference),
 	pipeline.HandlerFunc(collect.BindingDefinitions),
 	pipeline.HandlerFunc(collect.BindingItems),
 	pipeline.HandlerFunc(collect.OwnedResources),
 	pipeline.HandlerFunc(mapping.Handle),
 	pipeline.HandlerFunc(naming.Handle),
-	pipeline.HandlerFunc(project.PreFlightCheck),
+	pipeline.HandlerFunc(project.PreFlightCheck()),
 	pipeline.HandlerFunc(project.InjectSecretRef),
 	pipeline.HandlerFunc(project.BindingsAsEnv),
 	pipeline.HandlerFunc(project.BindingsAsFiles),
 	pipeline.HandlerFunc(project.PostFlightCheck),
 }
 
-var DefaultBuilder = Builder().WithHandlers(defaultFlow...)
+var specFlow = []pipeline.Handler{
+	pipeline.HandlerFunc(project.Unbind),
+	pipeline.HandlerFunc(collect.PreFlight),
+	pipeline.HandlerFunc(collect.ProvisionedService),
+	pipeline.HandlerFunc(collect.DirectSecretReference),
+	pipeline.HandlerFunc(collect.BindingDefinitions),
+	pipeline.HandlerFunc(collect.BindingItems),
+	pipeline.HandlerFunc(project.PreFlightCheck("type")),
+	pipeline.HandlerFunc(project.BindingsAsEnv),
+	pipeline.HandlerFunc(project.BindingsAsFiles),
+	pipeline.HandlerFunc(project.PostFlightCheck),
+}
+
+var (
+	DefaultBuilder = Builder().WithHandlers(defaultFlow...)
+
+	SpecBuilder = Builder().WithHandlers(specFlow...)
+)

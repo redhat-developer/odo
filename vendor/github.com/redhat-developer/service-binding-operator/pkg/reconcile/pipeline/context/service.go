@@ -4,7 +4,6 @@ import (
 	"context"
 	e "errors"
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-developer/service-binding-operator/api/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -40,13 +39,14 @@ var bindableResourceGVRs = []schema.GroupVersionResource{
 
 type service struct {
 	client                dynamic.Interface
-	serviceRef            *v1alpha1.Service
+	namespace             string
 	resource              *unstructured.Unstructured
 	groupVersionResource  *schema.GroupVersionResource
 	crd                   *customResourceDefinition
 	crdLookup             bool
 	lookForOwnedResources bool
 	bindingDefinitions    []binding.Definition
+	id                    *string
 }
 
 func (s *service) OwnedResources() ([]*unstructured.Unstructured, error) {
@@ -56,7 +56,7 @@ func (s *service) OwnedResources() ([]*unstructured.Unstructured, error) {
 		return result, nil
 	}
 	for _, gvr := range bindableResourceGVRs {
-		list, err := s.client.Resource(gvr).Namespace(*s.serviceRef.Namespace).List(context.Background(), metav1.ListOptions{})
+		list, err := s.client.Resource(gvr).Namespace(s.namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue
@@ -76,7 +76,7 @@ func (s *service) OwnedResources() ([]*unstructured.Unstructured, error) {
 }
 
 func (s *service) Id() *string {
-	return s.serviceRef.Id
+	return s.id
 }
 
 func (s *service) Resource() *unstructured.Unstructured {
@@ -93,7 +93,7 @@ func (s *service) CustomResourceDefinition() (pipeline.CRD, error) {
 		for _, crd := range crdGVRs {
 			u, err = s.client.Resource(crd).Get(context.Background(), s.groupVersionResource.GroupResource().String(), metav1.GetOptions{})
 			if err == nil {
-				s.crd = &customResourceDefinition{resource: u, client: s.client, ns: *s.serviceRef.Namespace, serviceGVR: s.groupVersionResource}
+				s.crd = &customResourceDefinition{resource: u, client: s.client, ns: s.namespace, serviceGVR: s.groupVersionResource}
 				return s.crd, nil
 			}
 		}

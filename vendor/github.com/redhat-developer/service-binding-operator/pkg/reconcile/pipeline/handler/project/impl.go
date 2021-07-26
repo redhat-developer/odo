@@ -3,7 +3,8 @@ package project
 import (
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	"github.com/redhat-developer/service-binding-operator/apis"
+	"github.com/redhat-developer/service-binding-operator/pkg/converter"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -13,22 +14,38 @@ import (
 	"strings"
 )
 
-func PreFlightCheck(ctx pipeline.Context) {
-	ctx.SetCondition(v1alpha1.Conditions().CollectionReady().DataCollected().Build())
-	applications, err := ctx.Applications()
-	if err != nil {
-		ctx.RetryProcessing(err)
-		ctx.SetCondition(v1alpha1.Conditions().NotInjectionReady().ApplicationNotFound().Msg(err.Error()).Build())
-		return
-	}
-	if len(applications) == 0 {
-		ctx.SetCondition(v1alpha1.Conditions().NotInjectionReady().Reason(v1alpha1.EmptyApplicationReason).Build())
-		ctx.StopProcessing()
+func PreFlightCheck(mandatoryBindingKeys ...string) func(pipeline.Context) {
+	return func(ctx pipeline.Context) {
+		ctx.SetCondition(apis.Conditions().CollectionReady().DataCollected().Build())
+		applications, err := ctx.Applications()
+		if err != nil {
+			ctx.RetryProcessing(err)
+			ctx.SetCondition(apis.Conditions().NotInjectionReady().ApplicationNotFound().Msg(err.Error()).Build())
+			return
+		}
+		if len(applications) == 0 {
+			ctx.SetCondition(apis.Conditions().NotInjectionReady().Reason(apis.EmptyApplicationReason).Build())
+			ctx.StopProcessing()
+			return
+		}
+		if len(mandatoryBindingKeys) > 0 {
+			items := ctx.BindingItems()
+			itemMap := items.AsMap()
+			for _, bk := range mandatoryBindingKeys {
+				if _, found := itemMap[bk]; !found {
+					err := fmt.Errorf("Mandatory binding '%v' not found", bk)
+					ctx.SetCondition(apis.Conditions().NotInjectionReady().Reason(apis.RequiredBindingNotFound).Msg(err.Error()).Build())
+					ctx.Error(err)
+					ctx.StopProcessing()
+					return
+				}
+			}
+		}
 	}
 }
 
 func PostFlightCheck(ctx pipeline.Context) {
-	ctx.SetCondition(v1alpha1.Conditions().InjectionReady().Reason("ApplicationUpdated").Build())
+	ctx.SetCondition(apis.Conditions().InjectionReady().Reason("ApplicationUpdated").Build())
 }
 
 func InjectSecretRef(ctx pipeline.Context) {
@@ -48,14 +65,39 @@ func InjectSecretRef(ctx pipeline.Context) {
 }
 
 func BindingsAsEnv(ctx pipeline.Context) {
-	if ctx.BindAsFiles() {
+	envBindings := ctx.EnvBindings()
+	if ctx.BindAsFiles() && len(envBindings) == 0 {
 		return
+	}
+
+	secretName := ctx.BindingSecretName()
+	var envVars []interface{}
+	if len(envBindings) > 0 {
+		envVars = make([]interface{}, 0, len(envBindings))
+		for _, e := range envBindings {
+			u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&corev1.EnvVar{
+				Name: e.Var,
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: secretName,
+						},
+						Key: e.Name,
+					},
+				},
+			})
+			if err != nil {
+				stop(ctx, err)
+				return
+			}
+			envVars = append(envVars, u)
+		}
 	}
 	applications, _ := ctx.Applications()
 	envFromSecret := corev1.EnvFromSource{
 		SecretRef: &corev1.SecretEnvSource{
 			LocalObjectReference: corev1.LocalObjectReference{
-				Name: ctx.BindingSecretName(),
+				Name: secretName,
 			},
 		},
 	}
@@ -63,9 +105,8 @@ func BindingsAsEnv(ctx pipeline.Context) {
 		if app.SecretPath() != "" {
 			continue
 		}
-		appResource := app.Resource()
-		containerResources, found, err := resources(&corev1.Container{}, appResource.Object, strings.Split(app.ContainersPath(), ".")...)
-		if !found {
+		containerResources, err := app.BindableContainers()
+		if containerResources == nil && err == nil {
 			err = errors.New("Containers not found in app resource")
 		}
 		if err != nil {
@@ -73,28 +114,42 @@ func BindingsAsEnv(ctx pipeline.Context) {
 			return
 		}
 		for _, container := range containerResources {
-			envFrom, found := container["envFrom"]
-			if !found {
+			if !ctx.BindAsFiles() {
+				envFrom, found := container["envFrom"]
+				if !found {
 
+					u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&envFromSecret)
+					if err != nil {
+						stop(ctx, err)
+						return
+					}
+					container["envFrom"] = []interface{}{u}
+					continue
+				}
+				envFromSlice, ok := envFrom.([]interface{})
+				if !ok {
+					stop(ctx, errors.New("envFrom not a slice"))
+					return
+				}
 				u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&envFromSecret)
 				if err != nil {
 					stop(ctx, err)
 					return
 				}
-				container["envFrom"] = []interface{}{u}
+				container["envFrom"] = append(envFromSlice, u)
 				continue
 			}
-			envFromSlice, ok := envFrom.([]interface{})
+			env, found := container["env"]
+			if !found {
+				container["env"] = envVars
+				continue
+			}
+			envSlice, ok := env.([]interface{})
 			if !ok {
-				stop(ctx, errors.New("envFrom not a slice"))
+				stop(ctx, errors.New("env not a slice"))
 				return
 			}
-			u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&envFromSecret)
-			if err != nil {
-				stop(ctx, err)
-				return
-			}
-			container["envFrom"] = append(envFromSlice, u)
+			container["env"] = append(envSlice, envVars...)
 		}
 	}
 }
@@ -113,7 +168,7 @@ func BindingsAsFiles(ctx pipeline.Context) {
 			continue
 		}
 		appResource := app.Resource()
-		volumerResources, found, err := resources(&corev1.Volume{}, appResource.Object, volumesPath...)
+		volumerResources, found, err := converter.NestedResources(&corev1.Volume{}, appResource.Object, volumesPath...)
 		if err != nil {
 			stop(ctx, err)
 			return
@@ -161,8 +216,8 @@ func BindingsAsFiles(ctx pipeline.Context) {
 			}
 		}
 
-		containerResources, found, err := resources(&corev1.Container{}, appResource.Object, strings.Split(app.ContainersPath(), ".")...)
-		if !found {
+		containerResources, err := app.BindableContainers()
+		if containerResources == nil && err == nil {
 			err = errors.New("Containers not found in app resource")
 		}
 		if err != nil {
@@ -175,7 +230,7 @@ func BindingsAsFiles(ctx pipeline.Context) {
 				stop(ctx, err)
 				return
 			}
-			volumeMounts, found, err := resources(&corev1.VolumeMount{}, container, "volumeMounts")
+			volumeMounts, found, err := converter.NestedResources(&corev1.VolumeMount{}, container, "volumeMounts")
 			if err != nil {
 				stop(ctx, err)
 				return
@@ -243,7 +298,7 @@ func Unbind(ctx pipeline.Context) {
 		if !ok {
 			continue
 		}
-		volumeResources, found, _ := resources(&corev1.Volume{}, podSpecMap, "volumes")
+		volumeResources, found, _ := converter.NestedResources(&corev1.Volume{}, podSpecMap, "volumes")
 		if found {
 			for i, vol := range volumeResources {
 				if val, found, err := unstructured.NestedString(vol, "name"); found && err == nil && val == bindingName {
@@ -257,13 +312,13 @@ func Unbind(ctx pipeline.Context) {
 				}
 			}
 		}
-		containerResources, found, _ := resources(&corev1.Container{}, appResource.Object, strings.Split(app.ContainersPath(), ".")...)
-		if !found {
+		containerResources, err := app.BindableContainers()
+		if containerResources == nil && err == nil {
 			ctx.StopProcessing()
 			return
 		}
 		for _, container := range containerResources {
-			envFrom, found, _ := resources(&corev1.EnvFromSource{}, container, "envFrom")
+			envFrom, found, _ := converter.NestedResources(&corev1.EnvFromSource{}, container, "envFrom")
 			if found {
 				for i, envSource := range envFrom {
 					if val, found, err := unstructured.NestedString(envSource, "secretRef", "name"); found && err == nil && val == secretName {
@@ -277,7 +332,7 @@ func Unbind(ctx pipeline.Context) {
 					}
 				}
 			}
-			volumeMounts, found, _ := resources(&corev1.VolumeMount{}, container, "volumeMounts")
+			volumeMounts, found, _ := converter.NestedResources(&corev1.VolumeMount{}, container, "volumeMounts")
 			if found {
 				for i, vm := range volumeMounts {
 					if val, found, err := unstructured.NestedString(vm, "name"); found && err == nil && val == bindingName {
@@ -299,7 +354,7 @@ func Unbind(ctx pipeline.Context) {
 const bindingRootEnvVar = "SERVICE_BINDING_ROOT"
 
 func mountPath(container map[string]interface{}, ctx pipeline.Context) (string, error) {
-	envs, found, err := resources(&corev1.EnvVar{}, container, "env")
+	envs, found, err := converter.NestedResources(&corev1.EnvVar{}, container, "env")
 	if err != nil {
 		return "", err
 	}
@@ -343,32 +398,5 @@ func mountPath(container map[string]interface{}, ctx pipeline.Context) (string, 
 func stop(ctx pipeline.Context, err error) {
 	ctx.StopProcessing()
 	ctx.Error(err)
-	ctx.SetCondition(v1alpha1.Conditions().NotInjectionReady().Reason("Error").Msg(err.Error()).Build())
-}
-
-func resources(obj interface{}, resource map[string]interface{}, path ...string) ([]map[string]interface{}, bool, error) {
-	val, found, err := unstructured.NestedFieldNoCopy(resource, path...)
-	if err != nil {
-		return nil, false, err
-	}
-	if !found {
-		return nil, found, nil
-	}
-	valSlice, ok := val.([]interface{})
-	if !ok {
-		return nil, true, errors.New("not a slice")
-	}
-	var containers []map[string]interface{}
-	for _, item := range valSlice {
-		u, ok := item.(map[string]interface{})
-		if !ok {
-			return nil, true, errors.New("not a map")
-		}
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(u, obj)
-		if err != nil {
-			return nil, true, err
-		}
-		containers = append(containers, u)
-	}
-	return containers, true, nil
+	ctx.SetCondition(apis.Conditions().NotInjectionReady().Reason("Error").Msg(err.Error()).Build())
 }

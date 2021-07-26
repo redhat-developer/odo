@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	"github.com/ghodss/yaml"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
@@ -122,7 +122,7 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
 func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
-	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
+	err := client.CreateDynamicResource(CustomResourceDefinition, nil, group, version, resource)
 	if err != nil {
 		return errors.Wrap(err, "unable to create operator backed service")
 	}
@@ -951,7 +951,7 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 
 // PushServiceFromKubernetesInlineComponents updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 // returns true if the component needs to be restarted (when a service binding has been created or deleted)
-func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) (bool, error) {
+func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
@@ -972,6 +972,8 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 	}
 
 	deployed := map[string]DeployedInfo{}
+
+	ownerReference := generator.GetOwnerReference(deployment)
 
 	deployedServices, _, err := ListOperatorServices(client)
 	if err != nil && err != kclient.ErrNoSuchOperator {
@@ -1048,7 +1050,7 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		delete(deployed, cr+"/"+crdName)
 
 		// create the service on cluster
-		err = client.CreateDynamicResource(d.OriginalCRD, group, version, resource)
+		err = client.CreateDynamicResource(d.OriginalCRD, []metav1.OwnerReference{ownerReference}, group, version, resource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
@@ -1096,6 +1098,10 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		} else {
 			log.Success("Services and Links are in sync with the cluster, no changes are required")
 		}
+	}
+
+	if !serviceBindingSupported {
+		return PushWithoutOperator(client, k8sComponents, labels, deployment)
 	}
 
 	return needRestart, nil
@@ -1163,7 +1169,7 @@ func PushWithoutOperator(client *kclient.Client, k8sComponents []devfile.Compone
 			var newServiceBinding servicebinding.ServiceBinding
 			newServiceBinding.Name = linkName
 			newServiceBinding.Namespace = client.Namespace
-			newServiceBinding.Spec.Application = &servicebinding.Application{
+			newServiceBinding.Spec.Application = servicebinding.Application{
 				Ref: servicebinding.Ref{
 					Name:     deployment.Name,
 					Group:    deploymentGVR.Group,

@@ -38,42 +38,44 @@ const (
 //go:generate mockgen -destination=mocks/mocks.go -package=mocks . Definition,Value
 
 type Definition interface {
-	GetPath() []string
 	Apply(u *unstructured.Unstructured) (Value, error)
+	GetPath() string
 }
 
 type DefinitionBuilder interface {
 	Build() (Definition, error)
 }
 
+type definition struct {
+	path string
+}
+
+func (d *definition) GetPath() string {
+	return d.path
+}
+
 type stringDefinition struct {
 	outputName string
-	path       []string
+	definition
 }
 
 var _ Definition = (*stringDefinition)(nil)
 
-func (d *stringDefinition) getOutputName() string {
-	outputName := d.outputName
-	if len(outputName) == 0 {
-		outputName = d.path[len(d.path)-1]
-	}
-	return outputName
-}
-
-func (d *stringDefinition) GetPath() []string { return d.path[0 : len(d.path)-1] }
-
 func (d *stringDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
-	val, ok, err := unstructured.NestedFieldCopy(u.Object, d.path...)
+	if d.outputName == "" {
+		return nil, fmt.Errorf("cannot use generic service.binding annotation for string elements, need to specify binding key like service.binding/foo")
+	}
+	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return nil, errors.New("not found")
+
+	if len(val) != 1 {
+		return nil, fmt.Errorf("only one value should be returned for %v but we got %v", d.path, val)
 	}
 
 	m := map[string]interface{}{
-		d.getOutputName(): fmt.Sprintf("%v", val),
+		d.outputName: val[0].Interface(),
 	}
 
 	return &value{v: m}, nil
@@ -83,26 +85,26 @@ type stringFromDataFieldDefinition struct {
 	secretConfigMapReader *secretConfigMapReader
 	objectType            objectType
 	outputName            string
-	path                  []string
-	sourceKey             string
+	definition
+	sourceKey string
 }
 
 var _ Definition = (*stringFromDataFieldDefinition)(nil)
-
-func (d *stringFromDataFieldDefinition) GetPath() []string { return d.path }
 
 func (d *stringFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	if d.secretConfigMapReader == nil {
 		return nil, errors.New("kubeClient required for this functionality")
 	}
 
-	resourceName, ok, err := unstructured.NestedString(u.Object, d.path...)
+	res, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return nil, errors.New("not found")
+
+	if len(res) != 1 {
+		return nil, fmt.Errorf("only one value should be returned for %v but we got %v", d.path, res)
 	}
+	resourceName := res[0].String()
 
 	var otherObj *unstructured.Unstructured
 	if d.objectType == secretObjectType {
@@ -140,25 +142,24 @@ type mapFromDataFieldDefinition struct {
 	objectType            objectType
 	outputName            string
 	sourceValue           string
-	path                  []string
+	definition
 }
 
 var _ Definition = (*mapFromDataFieldDefinition)(nil)
-
-func (d *mapFromDataFieldDefinition) GetPath() []string { return d.path }
 
 func (d *mapFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	if d.secretConfigMapReader == nil {
 		return nil, errors.New("kubeClient required for this functionality")
 	}
 
-	resourceName, ok, err := unstructured.NestedString(u.Object, d.path...)
+	res, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return nil, errors.New("not found")
+	if len(res) != 1 {
+		return nil, fmt.Errorf("only one value should be returned for %v but we got %v", d.path, res)
 	}
+	resourceName := res[0].Elem().String()
 
 	var otherObj *unstructured.Unstructured
 	if d.objectType == secretObjectType {
@@ -207,99 +208,115 @@ func (d *mapFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value,
 
 type stringOfMapDefinition struct {
 	outputName string
-	path       []string
+	definition
 }
 
 var _ Definition = (*stringOfMapDefinition)(nil)
 
-func (d *stringOfMapDefinition) GetPath() []string { return d.path }
-
 func (d *stringOfMapDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
-	val, ok, err := unstructured.NestedFieldNoCopy(u.Object, d.path...)
+	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
 		return nil, err
 	}
+	if len(val) != 1 {
+		return nil, fmt.Errorf("only one value should be returned for %v but we got %v", d.path, val)
+	}
+
+	valMap, ok := val[0].Interface().(map[string]interface{})
 	if !ok {
-		return nil, errors.New("not found")
+		return nil, fmt.Errorf("returned value for %v should be map, but we got %v", d.path, val[0].Interface())
 	}
 
 	outputName := d.outputName
-	if len(outputName) == 0 {
-		outputName = d.path[len(d.path)-1]
-	}
-	v := map[string]interface{}{
-		outputName: val,
-	}
-	return &value{v: v}, nil
 
+	if outputName != "" {
+		return &value{v: map[string]interface{}{
+			outputName: valMap,
+		}}, nil
+	}
+	return &value{v: valMap}, nil
 }
 
 type sliceOfMapsFromPathDefinition struct {
-	outputName  string
-	path        []string
+	outputName string
+	definition
 	sourceKey   string
 	sourceValue string
 }
 
 var _ Definition = (*sliceOfMapsFromPathDefinition)(nil)
 
-func (d *sliceOfMapsFromPathDefinition) GetPath() []string { return d.path[0 : len(d.path)-1] }
-
 func (d *sliceOfMapsFromPathDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
-	val, ok, err := unstructured.NestedSlice(u.Object, d.path...)
+	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return nil, errors.New("not found")
-	}
 
-	v := make(map[string]interface{})
-	for _, e := range val {
-		if mm, ok := e.(map[string]interface{}); ok {
-			key := mm[d.sourceKey]
-			ks := key.(string)
-			value := mm[d.sourceValue]
-			v[ks] = value
+	res := make(map[string]interface{})
+	for _, vv := range val {
+		for k, v := range collectSourceValuesWithKey(vv.Interface(), d.sourceValue, d.sourceKey) {
+			res[k] = v
 		}
 	}
 
-	return &value{v: map[string]interface{}{d.outputName: v}}, nil
+	if d.outputName == "" {
+		return &value{v: res}, nil
+	}
+	return &value{v: map[string]interface{}{d.outputName: res}}, nil
+}
+
+func collectSourceValuesWithKey(i interface{}, sourceValue string, sourceKey string) map[string]interface{} {
+	res := make(map[string]interface{})
+	switch v := i.(type) {
+	case map[string]interface{}:
+		key := v[sourceKey]
+		res[fmt.Sprintf("%v", key)] = v[sourceValue]
+	case []interface{}:
+		for _, item := range v {
+			for k, v := range collectSourceValuesWithKey(item, sourceValue, sourceKey) {
+				res[k] = v
+			}
+		}
+	}
+	return res
 }
 
 type sliceOfStringsFromPathDefinition struct {
-	outputName  string
-	path        []string
+	outputName string
+	definition
 	sourceValue string
 }
 
 var _ Definition = (*sliceOfStringsFromPathDefinition)(nil)
 
-func (d *sliceOfStringsFromPathDefinition) GetPath() []string { return d.path[0 : len(d.path)-1] }
-
 func (d *sliceOfStringsFromPathDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
-	val, ok, err := unstructured.NestedSlice(u.Object, d.path...)
+	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return nil, errors.New("not found")
-	}
-
-	v := make([]interface{}, 0, len(val))
+	var res []interface{}
 	for _, e := range val {
-		if d.sourceValue != "" {
-			if mm, ok := e.(map[string]interface{}); ok {
-				sourceValue := mm[d.sourceValue].(string)
-				v = append(v, sourceValue)
-			}
-		} else {
-			if x, ok := e.(string); ok {
-				v = append(v, x)
-			}
-		}
-
+		res = append(res, collectSourceValues(e.Interface(), d.sourceValue)...)
 	}
 
-	return &value{v: map[string]interface{}{d.outputName: v}}, nil
+	return &value{v: map[string]interface{}{d.outputName: res}}, nil
+}
+
+func collectSourceValues(i interface{}, sourceValue string) []interface{} {
+	var res []interface{}
+	switch v := i.(type) {
+	case map[string]interface{}:
+		if sourceValue != "" {
+			res = append(res, v[sourceValue])
+		}
+	case []interface{}:
+		for _, item := range v {
+			res = append(res, collectSourceValues(item, sourceValue)...)
+		}
+	case string:
+		if sourceValue == "" {
+			res = append(res, v)
+		}
+	}
+	return res
 }

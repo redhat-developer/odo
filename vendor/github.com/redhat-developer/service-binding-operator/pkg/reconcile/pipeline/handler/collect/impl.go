@@ -4,16 +4,17 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
+
 	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	"github.com/redhat-developer/service-binding-operator/apis"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	"github.com/redhat-developer/service-binding-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"reflect"
-	"strings"
 )
 
 var DataNotMap = errors.New("Returned data are not a map, skip collecting")
@@ -131,6 +132,31 @@ func ProvisionedService(ctx pipeline.Context) {
 	}
 }
 
+func DirectSecretReference(ctx pipeline.Context) {
+	// Error is ignored as this check is there in the PreFlight stage.
+	// That stage was created to perform common checks for all followup stages.
+	services, _ := ctx.Services()
+
+	for _, service := range services {
+		res := service.Resource()
+		if res.GetKind() == "Secret" && res.GetAPIVersion() == "v1" && res.GroupVersionKind().Group == "" {
+			annotations := res.GetAnnotations()
+			for k := range annotations {
+				if strings.HasPrefix(k, binding.AnnotationPrefix) {
+					return
+				}
+			}
+			name := res.GetName()
+			secret, err := ctx.ReadSecret(res.GetNamespace(), name)
+			if err != nil {
+				requestRetry(ctx, ErrorReadingSecret, err)
+				return
+			}
+			ctx.AddBindings(&pipeline.SecretBackedBindings{Service: service, Secret: secret})
+		}
+	}
+}
+
 type pathMapping struct {
 	input     string
 	transform func(interface{}) (interface{}, error)
@@ -240,7 +266,7 @@ func requestRetry(ctx pipeline.Context, reason string, err error) {
 }
 
 func notCollectionReadyCond(reason string, err error) *metav1.Condition {
-	return v1alpha1.Conditions().NotCollectionReady().Reason(reason).Msg(err.Error()).Build()
+	return apis.Conditions().NotCollectionReady().Reason(reason).Msg(err.Error()).Build()
 }
 
 func makeBindingDefinition(key string, value string, ctx pipeline.Context) (binding.Definition, error) {

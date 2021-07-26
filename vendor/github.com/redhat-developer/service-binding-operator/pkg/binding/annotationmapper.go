@@ -70,15 +70,13 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 		return nil, errors.Wrapf(err, "could not create binding model for annotation key %s and value %s", m.name, m.value)
 	}
 
-	if len(outputName) == 0 {
-		outputName = mod.path[len(mod.path)-1]
-	}
-
 	switch {
 	case mod.isStringElementType() && mod.isStringObjectType():
 		return &stringDefinition{
 			outputName: outputName,
-			path:       mod.path,
+			definition: definition{
+				path: mod.path,
+			},
 		}, nil
 
 	case mod.isStringElementType() && mod.hasDataField():
@@ -86,8 +84,10 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 			secretConfigMapReader: m.secretConfigMapReader,
 			objectType:            mod.objectType,
 			outputName:            outputName,
-			path:                  mod.path,
-			sourceKey:             mod.sourceKey,
+			definition: definition{
+				path: mod.path,
+			},
+			sourceKey: mod.sourceKey,
 		}, nil
 
 	case mod.isMapElementType() && mod.hasDataField():
@@ -95,28 +95,36 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 			secretConfigMapReader: m.secretConfigMapReader,
 			objectType:            mod.objectType,
 			outputName:            outputName,
-			path:                  mod.path,
-			sourceValue:           mod.sourceValue,
+			definition: definition{
+				path: mod.path,
+			},
+			sourceValue: mod.sourceValue,
 		}, nil
 
 	case mod.isMapElementType() && mod.isStringObjectType():
 		return &stringOfMapDefinition{
 			outputName: outputName,
-			path:       mod.path,
+			definition: definition{
+				path: mod.path,
+			},
 		}, nil
 
 	case mod.isSliceOfMapsElementType():
 		return &sliceOfMapsFromPathDefinition{
-			outputName:  outputName,
-			path:        mod.path,
+			outputName: outputName,
+			definition: definition{
+				path: mod.path,
+			},
 			sourceKey:   mod.sourceKey,
 			sourceValue: mod.sourceValue,
 		}, nil
 
 	case mod.isSliceOfStringsElementType():
 		return &sliceOfStringsFromPathDefinition{
-			outputName:  outputName,
-			path:        mod.path,
+			outputName: outputName,
+			definition: definition{
+				path: mod.path,
+			},
 			sourceValue: mod.sourceValue,
 		}, nil
 	}

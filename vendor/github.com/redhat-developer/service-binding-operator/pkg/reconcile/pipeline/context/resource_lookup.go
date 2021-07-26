@@ -6,6 +6,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+//go:generate mockgen -destination=mocks/mocks.go -package=mocks . K8STypeLookup
+
+type K8STypeLookup interface {
+	ResourceForReferable(obj kubernetes.Referable) (*schema.GroupVersionResource, error)
+	ResourceForKind(gvk schema.GroupVersionKind) (*schema.GroupVersionResource, error)
+	KindForResource(gvr schema.GroupVersionResource) (*schema.GroupVersionKind, error)
+}
+
 type resourceLookup struct {
 	restMapper meta.RESTMapper
 }

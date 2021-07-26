@@ -40,7 +40,7 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

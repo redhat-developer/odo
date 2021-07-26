@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -317,7 +317,7 @@ func (o *commonLinkOptions) completeForOperator() (err error) {
 		Spec: servicebinding.ServiceBindingSpec{
 			DetectBindingResources: true,
 			BindAsFiles:            o.bindAsFiles,
-			Application: &servicebinding.Application{
+			Application: servicebinding.Application{
 				Ref: servicebinding.Ref{
 					Name:     deployment.Name,
 					Group:    deploymentGVR.Group,

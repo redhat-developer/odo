@@ -324,12 +324,14 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 }
 
 // CreateDynamicResource creates a dynamic custom resource
-func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, group, version, resource string) error {
+func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, ownerReferences []metav1.OwnerReference, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
 	deployment := &unstructured.Unstructured{
 		Object: exampleCustomResource,
 	}
+
+	deployment.SetOwnerReferences(ownerReferences)
 
 	debugOut, _ := json.MarshalIndent(deployment, " ", " ")
 	klog.V(5).Infoln("Creating resource:")

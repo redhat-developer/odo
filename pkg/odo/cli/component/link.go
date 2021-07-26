@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"

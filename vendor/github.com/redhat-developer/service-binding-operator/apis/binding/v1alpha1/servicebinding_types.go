@@ -18,38 +18,8 @@ package v1alpha1
 
 import (
 	"errors"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-const (
-	// BindingReady indicates that the overall sbr succeeded
-	BindingReady string = "Ready"
-	// CollectionReady indicates readiness for collection and persistance of intermediate manifests
-	CollectionReady string = "CollectionReady"
-	// InjectionReady indicates readiness to change application manifests to use those intermediate manifests
-	// If status is true, it indicates that the binding succeeded
-	InjectionReady string = "InjectionReady"
-	// EmptyServiceSelectorsReason is used when the ServiceBinding has empty
-	// services.
-	EmptyServiceSelectorsReason = "EmptyServiceSelectors"
-	// EmptyApplicationReason is used when the ServiceBinding has empty
-	// application.
-	EmptyApplicationReason = "EmptyApplication"
-	// ApplicationNotFoundReason is used when the application is not found.
-	ApplicationNotFoundReason = "ApplicationNotFound"
-	// ServiceNotFoundReason is used when the service is not found.
-	ServiceNotFoundReason = "ServiceNotFound"
-
-	BindingInjectedReason = "BindingInjected"
-
-	DataCollectedReason = "DataCollected"
-
-	// NamingStrategyError is used when naming strategy/template used is incorrect
-	NamingStrategyError = "NamingStrategyError"
-
-	finalizerName = "finalizer.servicebinding.openshift.io"
 )
 
 var templates = map[string]string{
@@ -85,8 +55,7 @@ type ServiceBindingSpec struct {
 
 	// Application is used to identify the application connecting to the
 	// backing service operator.
-	// +optional
-	Application *Application `json:"application,omitempty"`
+	Application Application `json:"application"`
 
 	// DetectBindingResources is flag used to bind all non-bindable variables from
 	// different subresources owned by backing operator CR.
@@ -250,6 +219,10 @@ func (spec *ServiceBindingSpec) NamingTemplate() string {
 	}
 }
 
+func (sb *ServiceBinding) HasDeletionTimestamp() bool {
+	return !sb.DeletionTimestamp.IsZero()
+}
+
 // Returns GVR of reference if available, otherwise error
 func (ref *Ref) GroupVersionResource() (*schema.GroupVersionResource, error) {
 	if ref.Resource == "" {
@@ -274,24 +247,6 @@ func (ref *Ref) GroupVersionKind() (*schema.GroupVersionKind, error) {
 	}, nil
 }
 
-func (sb *ServiceBinding) MaybeAddFinalizer() bool {
-	finalizers := sb.GetFinalizers()
-	for _, f := range finalizers {
-		if f == finalizerName {
-			return false
-		}
-	}
-	sb.SetFinalizers(append(finalizers, finalizerName))
-	return true
-}
-
-func (sb *ServiceBinding) MaybeRemoveFinalizer() bool {
-	finalizers := sb.GetFinalizers()
-	for i, f := range finalizers {
-		if f == finalizerName {
-			sb.SetFinalizers(append(finalizers[:i], finalizers[i+1:]...))
-			return true
-		}
-	}
-	return false
+func (r *ServiceBinding) StatusConditions() []metav1.Condition {
+	return r.Status.Conditions
 }
