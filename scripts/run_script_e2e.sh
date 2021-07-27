@@ -19,7 +19,7 @@ shout "Testing against 4x cluster"
 shout "Logging into 4x cluster for some setup (logs hidden)"
 shout $CLUSTER_TYPE
 set +x
-if $CLUSTER_TYPE == "PSI"
+if [[ $CLUSTER_TYPE == "PSI" ]]
 then
     #PSI cluster login
     oc login -u kubeadmin -p ${OCP4X_KUBEADMIN_PASSWORD} --insecure-skip-tls-verify  ${OCP4X_API_URL}
@@ -61,7 +61,7 @@ done
 
 shout "Logging into 4x cluster as developer (logs hidden)"
 set +x
-if $CLUSTER_TYPE == "PSI"
+if [[ $CLUSTER_TYPE == "PSI" ]]
 then
     #PSI cluster login
     oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
@@ -96,7 +96,7 @@ fi
 shout "cleaning up post tests"
 shout "Logging into 4x cluster for cleanup (logs hidden)"
 set +x
-if $CLUSTER_TYPE == "PSI"
+if [[ $CLUSTER_TYPE == "PSI" ]]
 then
     #PSI cluster login
     oc login -u kubeadmin -p ${OCP4X_KUBEADMIN_PASSWORD} --insecure-skip-tls-verify  ${OCP4X_API_URL}
