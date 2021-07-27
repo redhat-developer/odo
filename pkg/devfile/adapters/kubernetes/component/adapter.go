@@ -321,46 +321,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
-// TODO remove if not required
-// deployLinksWithoutOperator deploys services without the service binding operator
-// if service binding operator is installed, it does nothing and returns
-func (a Adapter) deployLinksWithoutOperator(k8sComponents []devfilev1.Component, labels map[string]string) error {
-	// check service binding support before proceeding
-	serviceBindingSupported, err := a.Client.GetKubeClient().IsServiceBindingSupported()
-	if err != nil {
-		return err
-	}
-
-	if !serviceBindingSupported {
-		// wait and get the pod for detecting restarts in case of a re-deployment
-		pod, err := a.getPod(true)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-		}
-
-		needRestart, err := service.PushWithoutOperator(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
-		if err != nil {
-			return err
-		}
-
-		if needRestart {
-			// restart is needed, wait for the previous pod to be deleted
-			s := log.Spinner("Restarting the component")
-			defer s.End(false)
-			err = a.Client.GetKubeClient().WaitForPodDeletion(pod.Name)
-			if err != nil {
-				return err
-			}
-			s.End(true)
-			a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
-			if err != nil {
-				return errors.Wrap(err, "error while waiting for deployment rollout")
-			}
-		}
-	}
-	return nil
-}
-
 // CheckSupervisordCtlStatus checks the supervisord status according to the given command
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
 func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {

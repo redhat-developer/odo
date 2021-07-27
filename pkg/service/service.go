@@ -951,6 +951,7 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 
 // PushServiceFromKubernetesInlineComponents updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 // returns true if the component needs to be restarted (when a service binding has been created or deleted)
+// if service binding operator is not present, it will call PushWithoutOperator to create the links without it.
 func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
 
 	// check csv support before proceeding
