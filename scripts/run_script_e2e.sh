@@ -71,7 +71,7 @@ else
 
     # Login to cluster in IBM Cloud using cluster API key
     ##oc login --token=$IBMC_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
-    #bash /Users/jbossqa/odo/envset.sh
+    bash /Users/jbossqa/odo/envset.sh
 fi
 
 set -x
