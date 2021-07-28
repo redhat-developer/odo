@@ -88,10 +88,6 @@ make test-cmd-project || error=true
 # E2e tests
 shout "Running e2e tests"
 make test-e2e-all || error=true
-# Fail the build if there is any error while test execution
-if [ $error ]; then 
-    exit -1
-fi
 
 shout "cleaning up post tests"
 shout "Logging into 4x cluster for cleanup (logs hidden)"
@@ -119,3 +115,8 @@ for i in $(oc projects -q); do
     fi
 done
 set -x
+
+# Fail the build if there is any error while test execution
+if [ $error ]; then 
+    exit -1
+fi
