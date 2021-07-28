@@ -161,8 +161,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
 
-	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
-
 	previousMode := parameters.EnvSpecificInfo.GetRunMode()
 	currentMode := envinfo.Run
 
@@ -188,6 +186,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
 
+	log.Infof("\nCreating Services for component %s", a.ComponentName)
+
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	err = service.PushServices(a.Client.GetKubeClient(), k8sComponents, labels)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+
+	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
+
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
@@ -205,7 +213,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushServiceFromKubernetesInlineComponents(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
+	needRestart, err := service.PushLinks(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}
@@ -242,6 +250,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
+	}
+
+	err = service.UpdateServicesWithOwnerReferences(a.Client.GetKubeClient(), k8sComponents, ownerReference)
+	if err != nil {
+		return err
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)

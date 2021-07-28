@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
-	"github.com/devfile/library/pkg/devfile/generator"
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -30,12 +29,6 @@ import (
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	"github.com/ghodss/yaml"
-	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
-	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/builder"
-	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context"
-	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"
@@ -949,56 +942,26 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 	metaMap["labels"] = labels
 }
 
-// PushServiceFromKubernetesInlineComponents updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-// returns true if the component needs to be restarted (when a service binding has been created or deleted)
-// if service binding operator is not present, it will call PushWithoutOperator to create the links without it.
-func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
+// PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
+func PushServices(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) error {
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	// check service binding support before proceeding
-	serviceBindingSupported, err := client.IsServiceBindingSupported()
+	deployed, err := ListDeployedServices(client, labels)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	type DeployedInfo struct {
-		DoesDeleteRestartsComponent bool
-		Kind                        string
-		Name                        string
-	}
-
-	deployed := map[string]DeployedInfo{}
-
-	ownerReference := generator.GetOwnerReference(deployment)
-
-	deployedServices, _, err := ListOperatorServices(client)
-	if err != nil && err != kclient.ErrNoSuchOperator {
-		// We ignore ErrNoSuchOperator error as we can deduce Operator Services are not installed
-		return false, err
-	}
-	for _, svc := range deployedServices {
-		name := svc.GetName()
-		kind := svc.GetKind()
-		deployedLabels := svc.GetLabels()
-		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
-			if !csvSupported || (isLinkResource(kind) && !serviceBindingSupported) {
-				// operator hub is not installed on the cluster
-				// or it's a service binding related resource and service binding operator is not installed on the cluster
-				continue
-			}
-			deployed[kind+"/"+name] = DeployedInfo{
-				DoesDeleteRestartsComponent: isLinkResource(kind),
-				Kind:                        kind,
-				Name:                        name,
-			}
+	for key, deployedResource := range deployed {
+		if deployedResource.isLinkResource {
+			delete(deployed, key)
 		}
 	}
-	needRestart := false
+
 	madeChange := false
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
@@ -1010,303 +973,92 @@ func PushServiceFromKubernetesInlineComponents(client *kclient.Client, k8sCompon
 		d := NewDynamicCRD()
 		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
 		if err != nil {
-			return false, err
+			return err
 		}
 
-		if !csvSupported || (isLinkResource(d.OriginalCRD["kind"].(string)) && !serviceBindingSupported) {
+		if !csvSupported || (isLinkResource(d.OriginalCRD["kind"].(string))) {
 			// operator hub is not installed on the cluster
-			// or it's a service binding related resource and service binding operator is not installed on the cluster
+			// or it's a service binding related resource
 			continue
 		}
-
-		cr, csv, err := GetCSV(client, d.OriginalCRD)
-		if err != nil {
-			return false, err
-		}
-
-		var group, version, kind, resource string
-		for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-			if crd.Kind == cr {
-				group, version, kind, resource, err = getGVKRFromCR(crd)
-				if err != nil {
-					return false, err
-				}
-				break
-			}
-		}
-
-		// add labels to the CRD before creation
-		d.AddComponentLabelsToCRD(labels)
 
 		crdName, ok := getCRDName(d.OriginalCRD)
 		if !ok {
 			continue
 		}
 
-		if _, found := deployed[cr+"/"+crdName]; !found && isLinkResource(cr) {
-			// If creating the ServiceBinding, the component will restart
-			needRestart = true
-		}
-
+		cr, kind, err := createOperatorService(client, d, labels, []metav1.OwnerReference{})
 		delete(deployed, cr+"/"+crdName)
-
-		// create the service on cluster
-		err = client.CreateDynamicResource(d.OriginalCRD, []metav1.OwnerReference{ownerReference}, group, version, resource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
 				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
-				return false, err
+				return err
 			}
 		}
 
 		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
-		if isLinkResource(cr) {
-			log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
-		} else {
-			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{kind, name}, "/"), "odo link -h")
-		}
+		log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{kind, name}, "/"), "odo link -h")
 		madeChange = true
 	}
 
 	for key, val := range deployed {
-		if !csvSupported || (!serviceBindingSupported && isLinkResource(val.Kind)) {
+		if !csvSupported || (isLinkResource(val.Kind)) {
 			continue
 		}
 		err = DeleteOperatorService(client, key)
 		if err != nil {
-			return false, err
+			return err
 
 		}
 
-		if isLinkResource(val.Kind) {
-			log.Successf("Deleted link %q on the cluster; component will be restarted", val.Name)
-		} else {
-			log.Successf("Deleted service %q from the cluster", key)
-		}
+		log.Successf("Deleted service %q from the cluster", key)
 		madeChange = true
-
-		if val.DoesDeleteRestartsComponent {
-			needRestart = true
-		}
 	}
 
 	if !madeChange {
-		if !serviceBindingSupported {
-			log.Success("Services are in sync with the cluster, no changes are required")
-		} else {
-			log.Success("Services and Links are in sync with the cluster, no changes are required")
-		}
+		log.Success("Services are in sync with the cluster, no changes are required")
 	}
 
-	if !serviceBindingSupported {
-		return PushWithoutOperator(client, k8sComponents, labels, deployment)
-	}
-
-	return needRestart, nil
+	return nil
 }
 
-// PushWithoutOperator creates links or deletes links (if service binding operator is not installed) between components and services
-// returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func PushWithoutOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
-
-	// check csv support before proceeding
-	csvSupport, err := IsCSVSupported()
-	if err != nil {
-		return false, err
-	}
-
-	secrets, err := client.ListSecrets(componentlabels.GetSelector(labels[componentlabels.ComponentLabel], labels[applabels.ApplicationLabel]))
-
-	ownerReferences := generator.GetOwnerReference(deployment)
-
-	if err != nil {
-		return false, err
-	}
-
-	clusterLinksMap := make(map[string]string)
-	for _, secret := range secrets {
-		if value, ok := secret.GetLabels()[LinkLabel]; ok {
-			clusterLinksMap[value] = secret.Name
-		}
-	}
-
-	localLinksMap := make(map[string]string)
-	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
-	for _, c := range k8sComponents {
-		// get the string representation of the YAML definition of a CRD
-		strCRD := c.Kubernetes.Inlined
-
-		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
-		if err != nil {
-			return false, err
-		}
-
-		if !isLinkResource(d.OriginalCRD["kind"].(string)) {
-			// not a service binding object, thus continue
-			continue
-		}
-		localLinksMap[c.Name] = strCRD
-	}
-
-	var processingPipeline pipeline.Pipeline
-
-	deploymentGVR, err := client.GetDeploymentAPIVersion()
-	if err != nil {
-		return false, err
-	}
-
-	var restartRequired bool
-
-	// delete the links not present on the devfile
-	for linkName, secretName := range clusterLinksMap {
-		if _, ok := localLinksMap[linkName]; !ok {
-
-			// recreate parts of the service binding request for deletion
-			var newServiceBinding servicebinding.ServiceBinding
-			newServiceBinding.Name = linkName
-			newServiceBinding.Namespace = client.Namespace
-			newServiceBinding.Spec.Application = servicebinding.Application{
-				Ref: servicebinding.Ref{
-					Name:     deployment.Name,
-					Group:    deploymentGVR.Group,
-					Version:  deploymentGVR.Version,
-					Resource: deploymentGVR.Resource,
-				},
-			}
-			newServiceBinding.Status.Secret = secretName
-
-			// set the deletion time stamp to trigger deletion
-			timeNow := metav1.Now()
-			newServiceBinding.DeletionTimestamp = &timeNow
-
-			// if the pipeline was created before
-			// skip deletion
-			if processingPipeline == nil {
-				processingPipeline, err = getPipeline(client)
-				if err != nil {
-					return false, err
-				}
-			}
-			_, err = processingPipeline.Process(&newServiceBinding)
-			if err != nil {
-				return false, err
-			}
-
-			// since the library currently doesn't delete the secret after unbinding
-			// delete the secret manually
-			err = client.DeleteSecret(secretName, client.Namespace)
-			if err != nil {
-				return false, err
-			}
-			restartRequired = true
-			log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
-		}
-	}
-
-	var serviceCompMap map[string]string
-
-	// create the links
-	for linkName, strCRD := range localLinksMap {
-		if _, ok := clusterLinksMap[linkName]; !ok {
-			if serviceCompMap == nil {
-				// prevent listing of services unless required
-				services, err := client.ListServices("")
-				if err != nil {
-					return false, err
-				}
-
-				// get the services and get match them against the component
-				serviceCompMap = make(map[string]string)
-				for _, service := range services {
-					serviceCompMap[service.Name] = service.Labels[componentlabels.ComponentLabel]
-				}
-			}
-
-			// get the string representation of the YAML definition of a CRD
-			var serviceBinding servicebinding.ServiceBinding
-			err = yaml.Unmarshal([]byte(strCRD), &serviceBinding)
-			if err != nil {
-				return false, err
-			}
-
-			if len(serviceBinding.Spec.Services) != 1 {
-				continue
-			}
-
-			if !csvSupport && !isLinkResource(serviceBinding.Spec.Services[0].Kind) {
-				continue
-			}
-
-			// set the labels and namespace
-			serviceBinding.SetLabels(labels)
-			serviceBinding.Namespace = client.Namespace
-			serviceBinding.Spec.Services[0].Namespace = &client.Namespace
-
-			_, err = json.MarshalIndent(serviceBinding, " ", " ")
-			if err != nil {
-				return false, err
-			}
-
-			if processingPipeline == nil {
-				processingPipeline, err = getPipeline(client)
-				if err != nil {
-					return false, err
-				}
-			}
-
-			_, err = processingPipeline.Process(&serviceBinding)
-			if err != nil {
-				return false, err
-			}
-
-			if len(serviceBinding.Status.Secret) == 0 {
-				return false, fmt.Errorf("no secret was provided by service binding's pipleine")
-			}
-
-			// get the generated secret and update it with the labels and owner reference
-			secret, err := client.GetSecret(serviceBinding.Status.Secret, client.Namespace)
-			if err != nil {
-				return false, err
-			}
-			secret.Labels = labels
-			secret.Labels[LinkLabel] = linkName
-			if _, ok := serviceCompMap[serviceBinding.Spec.Services[0].Name]; ok {
-				secret.Labels[ServiceLabel] = serviceCompMap[serviceBinding.Spec.Services[0].Name]
-			} else {
-				secret.Labels[ServiceLabel] = serviceBinding.Spec.Services[0].Name
-			}
-			secret.Labels[ServiceKind] = serviceBinding.Spec.Services[0].Kind
-			if serviceBinding.Spec.Services[0].Kind != "Service" {
-				// the service name is stored as kind-name as `/` is not a valid char for labels of kubernetes secrets
-				secret.Labels[ServiceLabel] = fmt.Sprintf("%v-%v", serviceBinding.Spec.Services[0].Kind, serviceBinding.Spec.Services[0].Name)
-			}
-			secret.SetOwnerReferences([]metav1.OwnerReference{ownerReferences})
-			_, err = client.UpdateSecret(secret, client.Namespace)
-			if err != nil {
-				return false, err
-			}
-			restartRequired = true
-			log.Successf("Created link %q on the cluster; component will be restarted", linkName)
-		}
-	}
-
-	if restartRequired {
-		return true, nil
-	} else {
-		log.Success("Links are in sync with the cluster, no changes are required")
-	}
-
-	return false, nil
+// DeployedInfo holds information about the services present on the cluster
+type DeployedInfo struct {
+	Kind           string
+	Name           string
+	isLinkResource bool
 }
 
-// UpdateKubernetesInlineComponentsOwnerReferences adds an owner reference to an inlined Kubernetes resource
+func ListDeployedServices(client *kclient.Client, labels map[string]string) (map[string]DeployedInfo, error) {
+	deployed := map[string]DeployedInfo{}
+
+	deployedServices, _, err := ListOperatorServices(client)
+	if err != nil && err != kclient.ErrNoSuchOperator {
+		// We ignore ErrNoSuchOperator error as we can deduce Operator Services are not installed
+		return nil, err
+	}
+	for _, svc := range deployedServices {
+		name := svc.GetName()
+		kind := svc.GetKind()
+		deployedLabels := svc.GetLabels()
+		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
+			deployed[kind+"/"+name] = DeployedInfo{
+				Kind:           kind,
+				Name:           name,
+				isLinkResource: isLinkResource(kind),
+			}
+		}
+	}
+
+	return deployed, nil
+}
+
+// UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
-func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference) error {
+func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference) error {
 	csvSupport, err := client.IsCSVSupported()
 	if err != nil {
 		return err
@@ -1314,12 +1066,6 @@ func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8s
 
 	if !csvSupport {
 		return nil
-	}
-
-	// check service binding support before proceeding
-	serviceBindingSupported, err := client.IsServiceBindingSupported()
-	if err != nil {
-		return err
 	}
 
 	for _, c := range k8sComponents {
@@ -1333,7 +1079,8 @@ func UpdateKubernetesInlineComponentsOwnerReferences(client *kclient.Client, k8s
 			return err
 		}
 
-		if isLinkResource(d.OriginalCRD["kind"].(string)) && !serviceBindingSupported {
+		if isLinkResource(d.OriginalCRD["kind"].(string)) {
+			// ignore service binding resources
 			continue
 		}
 
@@ -1399,18 +1146,33 @@ func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
 }
 
-// getPipeline gets the pipeline to process service binding requests
-func getPipeline(client *kclient.Client) (pipeline.Pipeline, error) {
-	mgr, err := ctrl.NewManager(client.KubeClientConfig, ctrl.Options{
-		Scheme: runtime.NewScheme(),
-		// disable the health probes to prevent binding to them
-		HealthProbeBindAddress: "0",
-		// disable the prometheus metrics
-		MetricsBindAddress: "0",
-	})
+// createOperatorService creates the given operator on the cluster
+// it returns the CR,Kind and errors
+func createOperatorService(client *kclient.Client, d *DynamicCRD, labels map[string]string, ownerReferences []metav1.OwnerReference) (string, string, error) {
+	cr, csv, err := GetCSV(client, d.OriginalCRD)
 	if err != nil {
-		return nil, err
+		return "", "", err
 	}
 
-	return builder.DefaultBuilder.WithContextProvider(context.Provider(client.DynamicClient, context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
+	var group, version, kind, resource string
+	for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
+		if crd.Kind == cr {
+			group, version, kind, resource, err = getGVKRFromCR(crd)
+			if err != nil {
+				return cr, "", err
+			}
+			break
+		}
+	}
+
+	// add labels to the CRD before creation
+	d.AddComponentLabelsToCRD(labels)
+
+	// create the service on cluster
+	err = client.CreateDynamicResource(d.OriginalCRD, ownerReferences, group, version, resource)
+	if err != nil {
+		// return the cr name for deletion from the push map in the push code
+		return cr, "", err
+	}
+	return cr, kind, err
 }
