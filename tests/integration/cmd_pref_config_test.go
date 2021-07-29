@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -234,25 +235,23 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
-		It("should list config successfully", func() {
+		var kubeConfigOld string
+		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--s2i", "nodejs", "--git", "https://github.com/openshift/nodejs-ex", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-			helper.Cmd("odo", "config", "set", "--env", "hello=world", "--context", commonVar.Context).ShouldPass()
-			kubeconfigOld := os.Getenv("KUBECONFIG")
+			kubeConfigOld = os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
+		})
+		AfterEach(func() {
+			os.Setenv("KUBECONFIG", kubeConfigOld)
+		})
+		It("should set, list and delete config", func() {
+			fmt.Fprintln(GinkgoWriter, "AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
+			fmt.Fprintf(GinkgoWriter, "[AHHHHH] KUBECONFIG used for this test %s\n", os.Getenv("KUBECONFIG"))
+			fmt.Fprintln(GinkgoWriter, "AHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH")
+			helper.Cmd("odo", "config", "set", "--env", "hello=world", "--context", commonVar.Context).ShouldPass()
 			configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
 			helper.MatchAllInOutput(configValue, []string{"hello", "world"})
-			os.Setenv("KUBECONFIG", kubeconfigOld)
-		})
-
-		It("should set config variable without logging in", func() {
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-			kubeconfigOld := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", "/no/such/path")
-			helper.Cmd("odo", "config", "set", "--force", "--context", commonVar.Context, "Name", "foobar").ShouldPass()
-			configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-			Expect(configValue).To(ContainSubstring("foobar"))
 			helper.Cmd("odo", "config", "unset", "--force", "--context", commonVar.Context, "Name").ShouldPass()
-			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
 

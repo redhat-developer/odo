@@ -48,9 +48,9 @@ func (c *Client) ListProjectNames() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var projectNames []string
 	for _, p := range projects.Items {
+
 		projectNames = append(projectNames, p.Name)
 	}
 	return projectNames, nil
