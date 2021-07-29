@@ -18,12 +18,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/service"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -1587,38 +1585,35 @@ func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount, 
 	}
 
 	serviceBindings := map[string]string{}
-	var list unstructured.UnstructuredList
 	if ok {
-		listDynamicResources, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
-		if err != nil || listDynamicResources == nil {
+		// service binding operator is installed on the cluster
+		list, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		if err != nil || list == nil {
 			return err
 		}
-		list = *listDynamicResources
-	}
 
-	for _, u := range list.Items {
-		var sbr servicebinding.ServiceBinding
-		js, err := u.MarshalJSON()
-		if err != nil {
-			return err
+		for _, u := range list.Items {
+			var sbr servicebinding.ServiceBinding
+			js, err := u.MarshalJSON()
+			if err != nil {
+				return err
+			}
+			err = json.Unmarshal(js, &sbr)
+			if err != nil {
+				return err
+			}
+			services := sbr.Spec.Services
+			if len(services) != 1 {
+				return errors.New("the ServiceBinding resource should define only one service")
+			}
+			service := services[0]
+			if service.Kind == "Service" {
+				serviceBindings[sbr.Status.Secret] = service.Name
+			} else {
+				serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
+			}
 		}
-		err = json.Unmarshal(js, &sbr)
-		if err != nil {
-			return err
-		}
-		services := sbr.Spec.Services
-		if len(services) != 1 {
-			return errors.New("the ServiceBinding resource should define only one service")
-		}
-		service := services[0]
-		if service.Kind == "Service" {
-			serviceBindings[sbr.Status.Secret] = service.Name
-		} else {
-			serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
-		}
-	}
-
-	if !ok {
+	} else {
 		// service binding operator is not installed
 		// get the secrets instead of the service binding objects to retrieve the link data
 		secrets, err := client.GetKubeClient().ListSecrets(selector)
