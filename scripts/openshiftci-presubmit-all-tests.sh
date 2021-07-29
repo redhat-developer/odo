@@ -19,6 +19,7 @@ mkdir -p $GOPATH/bin
 make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+export GINKGO_TEST_ARGS=-v
 
 # Copy kubeconfig to temporary kubeconfig file
 # Read and Write permission to temporary kubeconfig file
