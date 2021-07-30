@@ -58,11 +58,11 @@ if [ $KUBERNETES == "true" ]; then
   install_redis_operator kubectl operators operatorhubio-catalog olm
 else
   if [$NIGHTLY == "true"]; then
-  # Deploy SBO master catalog source on OCP Nightly test run
-  deploy_service_binding_operator_master
+    # Deploy SBO master catalog source on OCP Nightly test run
+    deploy_service_binding_operator_master
 
-  SBO_SOURCE="service-binding-master"
-  SBO_NAME="service-binding-operator"
+    SBO_SOURCE="service-binding-master"
+    SBO_NAME="service-binding-operator"
   fi
 
   # install "redis-oprator" using "oc" in "openshift-operators" namespace; use "community-operators" catalog source from "openshift-marketplace" namespace

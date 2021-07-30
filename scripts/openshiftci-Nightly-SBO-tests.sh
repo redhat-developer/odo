@@ -27,7 +27,7 @@ oc login -u developer -p password@123
 # Check login user name for debugging purpose
 oc whoami
 
-# Integration tests
+# Operatorhub integration tests
 make test-operator-hub
 
 cp -r reports $ARTIFACT_DIR 
