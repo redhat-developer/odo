@@ -212,28 +212,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushLinks(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
-	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
-	}
-
-	if needRestart {
-		s := log.Spinner("Restarting the component")
-		defer s.End(false)
-		err = a.Client.GetKubeClient().WaitForPodDeletion(pod.Name)
-		if err != nil {
-			return err
-		}
-		s.End(true)
-	}
-
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err = a.getPod(true)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-	}
-
 	// list the latest state of the PVCs
 	pvcs, err := a.Client.GetKubeClient().ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
 	if err != nil {
@@ -255,6 +233,33 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	err = service.UpdateServicesWithOwnerReferences(a.Client.GetKubeClient(), k8sComponents, ownerReference)
 	if err != nil {
 		return err
+	}
+
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	needRestart, err := service.PushLinks(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+
+	if needRestart {
+		s := log.Spinner("Restarting the component")
+		defer s.End(false)
+		err = a.Client.GetKubeClient().WaitForPodDeletion(pod.Name)
+		if err != nil {
+			return err
+		}
+		s.End(true)
+	}
+
+	a.deployment, err = a.Client.GetKubeClient().WaitForDeploymentRollout(a.deployment.Name)
+	if err != nil {
+		return errors.Wrap(err, "error while waiting for deployment rollout")
+	}
+
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err = a.getPod(true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
