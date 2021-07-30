@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
@@ -128,12 +129,11 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 	}
 
 	secrets, err := client.ListSecrets(componentlabels.GetSelector(labels[componentlabels.ComponentLabel], labels[applabels.ApplicationLabel]))
-
-	ownerReferences := generator.GetOwnerReference(deployment)
-
 	if err != nil {
 		return false, err
 	}
+
+	ownerReferences := generator.GetOwnerReference(deployment)
 
 	clusterLinksMap := make(map[string]string)
 	for _, secret := range secrets {
@@ -271,6 +271,10 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 
 			_, err = processingPipeline.Process(&serviceBinding)
 			if err != nil {
+				if kerrors.IsForbidden(err) {
+					// due to https://github.com/redhat-developer/service-binding-operator/issues/1003
+					return false, fmt.Errorf("please install the service binding operator")
+				}
 				return false, err
 			}
 
