@@ -13,20 +13,18 @@ In this example there are two roles:
 ## Cluster admin
 ---
 
-This section assumes that you have installed minikube and configured it. See the section on setting up[Kubernetes](../getting-started/cluster-setup/kubernetes.md) if you have not already configured it.
+This section assumes that you have installed minikube and configured it. See the section on setting up [Kubernetes](../getting-started/cluster-setup/kubernetes.md) if you have not already configured it.
 
 The cluster admin must install two Operators into the cluster:
 
-1. Operator Backed Service
+1. PostgreSQL Operator
 2. Service Binding Operator
 
-An _Operator Backed Service_ is an operator that helps in deploying instances of a given service, for example PostgreSQL, MySQL, Redis.
+An operator helps in deploying instances of a given service, for example PostgreSQL, MySQL, Redis. Furthermore, these operators are "bind-able" as they expose information necessary for an application to connect to their instances.
 
-Furthermore, these operators are "bind-able" as they expose information necessary for an application to connect to their instances.
+See the [Operator installation guide](../getting-started/cluster-setup/operators.md) to install and configure an operator in the cluster, if you have not done already.
 
 We will use [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) found on the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case.
-
-Service Binding Operator is an operator that helps in easily binding an application to other Operator Backed Services. It accomplishes this through automatically collecting binding information and sharing with an application to bind it with operator managed backing services
 
 ### Installing the Operator Backed Service
 
