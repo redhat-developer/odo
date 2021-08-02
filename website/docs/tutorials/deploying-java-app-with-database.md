@@ -135,7 +135,6 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
     Found the following URLs for component mysboproj
     NAME               STATE      URL                                           PORT     SECURE     KIND
     mysboproj-9080     Pushed     http://mysboproj-9080.192.168.49.2.nip.io     9080     false      ingress
-    [root@pappuses1 jpa]#
     ```
 
 10. Use the URL to navigate to the `CreatePerson.xhtml` data entry page and enter requested data:
@@ -252,10 +251,10 @@ Now, the only thing that remains is to connect the DB and the application. We wi
 
 9. You can see the data that appeared in the results of the test run:
     ```shell
+    sampledb=# SELECT * FROM person;
+
     personid | age |  name   
     ----------+-----+---------
     5 |  52 | person1
     (1 row)
-    
-    sampledb=#
     ```
