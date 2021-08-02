@@ -206,6 +206,10 @@ test-plugin-handler: ## Run odo plugin handler tests
 test-cmd-devfile-catalog: ## Run odo catalog devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/devfile/
 
+.PHONY: test-cmd-devfile-list
+test-cmd-devfile-list: ## Run odo list devfile command tests
+	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo list with devfile" tests/integration/devfile/
+
 .PHONY: test-cmd-devfile-create
 test-cmd-devfile-create: ## Run odo create devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/devfile/
