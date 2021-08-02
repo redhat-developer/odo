@@ -3,7 +3,7 @@ title: Using odo on IBM-Z and Power
 sidebar_position: 2
 ---
 ### Pre-requisites
-1. Read [Architecture > Devfile](../architecture/devfile.md).
+1. [Devfile](../architecture/devfile.md).
 
 ### Deploying your first devfile on IBM Z & Power
 Since the [DefaultDevfileRegistry](https://github.com/odo-devfiles/registry) doesn't support IBM Z & Power now, you will need to create a secure private DevfileRegistry first. To create a new secure private DevfileRegistry, please check the doc [secure registry](../architecture/secure-registry.md).

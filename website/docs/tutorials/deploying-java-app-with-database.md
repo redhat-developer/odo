@@ -13,7 +13,7 @@ In this example there are two roles:
 ## Cluster admin
 ---
 
-This section assumes that you have installed minikube and configured it. See [Getting Started > Cluster Setup > Kubernetes](../getting-started/cluster-setup/kubernetes.md).
+This section assumes that you have installed minikube and configured it. See the section on setting up[Kubernetes](../getting-started/cluster-setup/kubernetes.md) if you have not already configured it.
 
 The cluster admin must install two Operators into the cluster:
 
@@ -24,7 +24,7 @@ An _Operator Backed Service_ is an operator that helps in deploying instances of
 
 Furthermore, these operators are "bind-able" as they expose information necessary for an application to connect to their instances.
 
-We will use Dev4Devs PostgreSQL Operator found in the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case.
+We will use [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) found on the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case.
 
 Service Binding Operator is an operator that helps in easily binding an application to other Operator Backed Services. It accomplishes this through automatically collecting binding information and sharing with an application to bind it with operator managed backing services
 
@@ -42,12 +42,12 @@ Service Binding Operator is an operator that helps in easily binding an applicat
     ```shell
     kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
     ```
-  Refer to [Getting Started > Cluster Setup > Operators](../getting-started/cluster-setup/operators.md) for more information on installing operators.
+  Refer to the [Operators guide](../getting-started/cluster-setup/operators.md) for more information on installing operators.
 
 ## Application Developer
 ---
 
-This section assumes that you have installed `odo`. See [Getting Started > Installation](../getting-started/installation.md).
+This section assumes that you have installed `odo`. See the [Installation guide](../getting-started/installation.md) if you have not already installed odo.
 
 Since the PostgreSQL Operator installed in above step is available only in `my-postgresql-operator-dev4devs-com` namespace, ensure that `odo` uses this namespace to perform any tasks:
 
