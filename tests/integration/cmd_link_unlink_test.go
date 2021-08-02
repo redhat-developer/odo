@@ -19,12 +19,10 @@ var _ = Describe("odo link and unlink command tests", func() {
 		commonVar = helper.CommonBeforeEach()
 		// wait till odo can see that all operators installed by setup script in the namespace
 		odoArgs := []string{"catalog", "list", "services"}
-		operators := []string{"service-binding-operator"}
-		for _, operator := range operators {
-			helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
-				return strings.Contains(output, operator)
-			})
-		}
+		operator := "service-binding-operator"
+		helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
+			return strings.Contains(output, operator)
+		})
 	})
 
 	var _ = AfterEach(func() {
@@ -101,24 +99,21 @@ var _ = Describe("odo link and unlink command tests", func() {
 				JustBeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 				})
-
-				It("should successfully link", func() {
-					By("ensuring that the proper envFrom entry was created", func() {
-						envFromOutput := oc.GetEnvFromEntry(frontendComp, "app", commonVar.Project, "deployment")
-						Expect(envFromOutput).To(ContainSubstring(backendComp))
-						helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
-					})
-					By("finding the link and environment variables in odo describe", func() {
-						checkDescribe(frontendContext, backendComp, true, false)
-					})
-					By("finding the linked environment variable", func() {
-						stdOut := helper.Cmd("odo", "exec", "--context", frontendContext, "--", "sh", "-c", "echo $SERVICE_BACKEND_IP").ShouldPass().Out()
-						Expect(stdOut).To(Not(BeEmpty()))
-					})
-					By("not allowing re-linking", func() {
-						outputErr := helper.Cmd("odo", "link", backendComp, "--context", frontendContext).ShouldFail().Err()
-						Expect(outputErr).To(ContainSubstring("already linked"))
-					})
+				It("should ensure that the proper envFrom entry was created", func() {
+					envFromOutput := oc.GetEnvFromEntry(frontendComp, "app", commonVar.Project, "deployment")
+					Expect(envFromOutput).To(ContainSubstring(backendComp))
+					helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
+				})
+				It("should find the link and environment variables in odo describe", func() {
+					checkDescribe(frontendContext, backendComp, true, false)
+				})
+				It("should find the linked environment variable", func() {
+					stdOut := helper.Cmd("odo", "exec", "--context", frontendContext, "--", "sh", "-c", "echo $SERVICE_BACKEND_IP").ShouldPass().Out()
+					Expect(stdOut).To(Not(BeEmpty()))
+				})
+				It("should not allow re-linking", func() {
+					outputErr := helper.Cmd("odo", "link", backendComp, "--context", frontendContext).ShouldFail().Err()
+					Expect(outputErr).To(ContainSubstring("already linked"))
 				})
 
 				It("should successfully delete component after linked component is deleted", func() {
@@ -136,7 +131,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 					})
 					It("should not allow unlinking again", func() {
 						stdOut := helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("failed to unlink the component \"backend\" since no link was found in the configuration referring this component"))
+						Expect(stdOut).To(ContainSubstring(fmt.Sprintf("failed to unlink the component %s since no link was found in the configuration referring this component", backendComp)))
 					})
 
 					When("odo push is executed", func() {
@@ -149,10 +144,13 @@ var _ = Describe("odo link and unlink command tests", func() {
 					})
 				})
 			})
+			It("should unlinking a non-pushed link successfully", func() {
+				helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
+			})
 		})
 		When("a link is created between the two components with --bind-as-files", func() {
 			JustBeforeEach(func() {
-				helper.Cmd("odo", "link", backendComp, "--bind-as-files").ShouldPass()
+				helper.Cmd("odo", "link", backendComp, "--bind-as-files", "--context", frontendContext).ShouldPass()
 			})
 
 			When("the component is pushed", func() {
@@ -160,18 +158,16 @@ var _ = Describe("odo link and unlink command tests", func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 				})
 
-				It("should successfully link", func() {
-					By("finding the link in odo describe", func() {
-						checkDescribe(frontendContext, backendComp, true, true)
-					})
-					By("finding the binding filepath", func() {
-						stdOut := helper.Cmd("odo", "exec", "--", "ls", "/bindings").ShouldPass().Out()
-						Expect(stdOut).To(Not(ContainSubstring(backendComp)))
-					})
-					By("not allowing re-linking", func() {
-						outputErr := helper.Cmd("odo", "link", backendComp).ShouldFail().Err()
-						Expect(outputErr).To(ContainSubstring("already linked"))
-					})
+				It("should find the link in odo describe", func() {
+					checkDescribe(frontendContext, backendComp, true, true)
+				})
+				It("should list the binding directory", func() {
+					stdOut := helper.Cmd("odo", "exec", "--context", frontendContext, "--", "ls", "/bindings").ShouldPass().Out()
+					Expect(stdOut).To(Not(ContainSubstring(backendComp)))
+				})
+				It("should not allow re-linking", func() {
+					outputErr := helper.Cmd("odo", "link", backendComp, "--context", frontendContext).ShouldFail().Err()
+					Expect(outputErr).To(ContainSubstring("already linked"))
 				})
 
 				When("unlinking the two components", func() {
@@ -193,22 +189,21 @@ var _ = Describe("odo link and unlink command tests", func() {
 							helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 						})
 
-						It("should successfully unlink", func() {
-							By("no longer finding the link in odo describe", func() {
-								stdOut := helper.Cmd("odo", "describe", "--context", frontendContext).ShouldPass().Out()
-								Expect(stdOut).ToNot(ContainSubstring("Linked Services"))
-								Expect(stdOut).ToNot(ContainSubstring(backendComp))
-							})
-							By("not allowing unlinking again", func() {
-								stdOut := helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldFail().Err()
-								Expect(stdOut).To(ContainSubstring(fmt.Sprintf("failed to unlink the component %q since no link was found in the configuration referring this component", backendComp)))
-							})
+						It("should no longer find the link in odo describe", func() {
+							stdOut := helper.Cmd("odo", "describe", "--context", frontendContext).ShouldPass().Out()
+							Expect(stdOut).ToNot(ContainSubstring("Linked Services"))
+							Expect(stdOut).ToNot(ContainSubstring(backendComp))
+						})
+						It("should not allow unlinking again", func() {
+							stdOut := helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldFail().Err()
+							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("failed to unlink the component %q since no link was found in the configuration referring this component", backendComp)))
 						})
 					})
 				})
-
 			})
-
+			It("should unlinking a non-pushed link successfully", func() {
+				helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
+			})
 		})
 	})
 })
