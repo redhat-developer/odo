@@ -32,7 +32,7 @@ Service Binding Operator is an operator that helps in easily binding an applicat
 
 * Run the following `kubectl` command to make the PostgreSQL Operator available in `my-postgresql-operator-dev4devs-com` namespace of your minikube cluster:
 ```shell
-  $ kubectl create -f https://operatorhub.io/install/postgresql-operator-dev4devs-com.yaml
+  kubectl create -f https://operatorhub.io/install/postgresql-operator-dev4devs-com.yaml
   ```
 
 **Note**: The `my-postgresql-operator-dev4devs-com` Operator will be installed in the `my-postgresql-operator-dev4devs-com` namespace and will be usable from this namespace only.
@@ -40,7 +40,7 @@ Service Binding Operator is an operator that helps in easily binding an applicat
 ### Installing the Service Binding Operator
 * Run the following `kubectl` command to make the Service Binding Operator available in all namespaces on your minikube:
     ```shell
-    $ kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
+    kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
     ```
   Refer to [Getting Started > Cluster Setup > Operators](../getting-started/cluster-setup/operators.md) for more information on installing operators.
 
@@ -52,7 +52,7 @@ This section assumes that you have installed `odo`. See [Getting Started > Insta
 Since the PostgreSQL Operator installed in above step is available only in `my-postgresql-operator-dev4devs-com` namespace, ensure that `odo` uses this namespace to perform any tasks:
 
 ```shell
-$ odo project set my-postgresql-operator-dev4devs-com
+odo project set my-postgresql-operator-dev4devs-com
 ```
 ## Importing the demo Java MicroService JPA application
 
@@ -60,27 +60,27 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
 
 1. Clone the sample application to your system:
     ```shell
-    $ git clone https://github.com/OpenLiberty/application-stack-samples.git
+    git clone https://github.com/OpenLiberty/application-stack-samples.git
     ```
 
 2. Go to the sample JPA app directory:
     ```shell
-    $ cd ./application-stack-samples/jpa
+    cd ./application-stack-samples/jpa
     ```
 
 3. Initialize the project:
     ```shell
-    $ odo create java-openliberty mysboproj
+    odo create java-openliberty mysboproj
     ```
 
 4. Push the application to the cluster:
     ```shell
-    $ odo push
+    odo push
     ```
 
 5. The application is now deployed to the cluster - you can view the status of the cluster and the application test results by streaming the OpenShift logs to the terminal.
     ```shell
-    $ odo log
+    odo log
     ```
 
     Notice the failing tests due to an UnknownDatabaseHostException:
@@ -116,17 +116,17 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
 
 6. You can also create an ingress URL with `odo` to access the application:
     ```shell
-    $ odo url create --host $(minikube ip).nip.io
+    odo url create --host $(minikube ip).nip.io
     ```
 
 7. Push the URL to activate it:
     ```shell
-    $ odo push
+    odo push
     ```
 
 8. Display the created URL:
     ```shell
-    $ odo url list
+    odo url list
     ```
 
     You will see a fully formed URL that can be used in a web browser:
@@ -152,7 +152,7 @@ You can use the default configurations of the PostgreSQL Operator to start a Pos
 
 1. Store the YAML of the service in a file:
     ```shell
-    $ odo service create postgresql-operator.v0.1.1/Database --dry-run > db.yaml
+    odo service create postgresql-operator.v0.1.1/Database --dry-run > db.yaml
     ```
 
 2. Modify and add following values under `metadata:` section in the `db.yaml` file:
@@ -175,8 +175,10 @@ You can use the default configurations of the PostgreSQL Operator to start a Pos
 
 4. Create the database from the YAML file:
     ```shell
-    $ odo service create --from-file db.yaml
-    $ odo push
+    odo service create --from-file db.yaml
+   ```
+   ```shell
+    odo push
     ```
 
     This action will create a database instance pod in the `my-postgresql-operator-dev4devs-com` namespace. The application will be configured to use this database.
@@ -187,7 +189,7 @@ Now, the only thing that remains is to connect the DB and the application. We wi
 
 1. Display the services available to odo: - You will see an entry for the PostgreSQL Database Operator displayed:
     ```shell
-    $ odo catalog list services
+    odo catalog list services
     Operators available in the cluster
     NAME                                             CRDs
     postgresql-operator.v0.1.1                       Backup, Database
@@ -195,19 +197,19 @@ Now, the only thing that remains is to connect the DB and the application. We wi
 
 2. List the service associated with the database created via the PostgreSQL Operator:
     ```shell
-    $ odo service list
+    odo service list
     NAME                       MANAGED BY ODO     STATE     AGE
     Database/sampledatabase   Yes (mysboproj)    Pushed    6m35s
     ```
 
 3. Create a Service Binding Request between the application and the database using the Service Binding Operator service created in the previous step `odo link` command:
     ```shell
-    $ odo link Database/sampledatabase
+    odo link Database/sampledatabase
     ```
 
 4. Push this link to the cluster:
     ```shell
-    $ odo push
+    odo push
     ```
 
     After the link has been created and pushed a secret will have been created containing the database connection data that the application requires.
@@ -218,10 +220,10 @@ Now, the only thing that remains is to connect the DB and the application. We wi
 
 5. Once the new pod has initialized you can see the secret database connection data as it is injected into the pod environment by executing the following:
     ```shell
-    $ odo exec -- bash -c 'export | grep DATABASE'
-    declare -x DATABASE_CLUSTERIP="10.106.182.173"
-    declare -x DATABASE_DB_NAME="sampledb"
-    declare -x DATABASE_DB_PASSWORD="samplepwd"
+    odo exec -- bash -c 'export | grep DATABASE' \
+    declare -x DATABASE_CLUSTERIP="10.106.182.173" \
+    declare -x DATABASE_DB_NAME="sampledb" \
+    declare -x DATABASE_DB_PASSWORD="samplepwd" \
     declare -x DATABASE_DB_USER="sampleuser"
     ```
     Once the new version is up (there will be a slight delay until application is available), navigate to the CreatePerson.xhtml using the URL created in a previous step. Enter requested data and click the **Save** button.
