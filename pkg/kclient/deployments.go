@@ -21,6 +21,7 @@ import (
 	"k8s.io/klog"
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
 )
 
 func boolPtr(b bool) *bool {
@@ -116,8 +117,8 @@ func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error
 	})
 }
 
-// WaitForPodNotReady waits for the status of the given pod to be not ready, or the pod to be deleted
-func (c *Client) WaitForPodNotReady(name string) error {
+// WaitForPodDeletion waits for the given pod to be deleted
+func (c *Client) WaitForPodDeletion(name string) error {
 	watch, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
 	if err != nil {
 		return err
@@ -131,20 +132,14 @@ func (c *Client) WaitForPodNotReady(name string) error {
 	for {
 		select {
 		case <-time.After(time.Minute):
-			return fmt.Errorf("timeout while waiting for %q pod to stop", name)
+			return fmt.Errorf("timeout while waiting for %q pod to be deleted", name)
 
 		case val, ok := <-watch.ResultChan():
 			if !ok {
 				return errors.New("error getting value from resultchan")
 			}
-			if pod, ok := val.Object.(*corev1.Pod); ok {
-				for _, cond := range pod.Status.Conditions {
-					if cond.Type == "Ready" {
-						if cond.Status == corev1.ConditionFalse {
-							return nil
-						}
-					}
-				}
+			if val.Type == apiMachineryWatch.Deleted {
+				return nil
 			}
 		}
 	}
@@ -329,12 +324,14 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 }
 
 // CreateDynamicResource creates a dynamic custom resource
-func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, group, version, resource string) error {
+func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, ownerReferences []metav1.OwnerReference, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
 	deployment := &unstructured.Unstructured{
 		Object: exampleCustomResource,
 	}
+
+	deployment.SetOwnerReferences(ownerReferences)
 
 	debugOut, _ := json.MarshalIndent(deployment, " ", " ")
 	klog.V(5).Infoln("Creating resource:")

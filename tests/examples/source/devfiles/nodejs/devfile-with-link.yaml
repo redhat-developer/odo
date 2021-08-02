@@ -47,6 +47,8 @@ components:
       kind: Redis
       metadata:
         name: myredis
+        annotations:
+          service.binding/name: path={.metadata.name}
       spec:
         redisExporter:
           enabled: true

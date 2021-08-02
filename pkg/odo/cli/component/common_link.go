@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -94,7 +94,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return err
 	}
 
-	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+	if o.Context.EnvSpecificInfo != nil {
 		return o.completeForOperator()
 	}
 
@@ -134,7 +134,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
-	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+	if o.Context.EnvSpecificInfo != nil {
 		return o.validateForOperator()
 	}
 
@@ -167,7 +167,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
-	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+	if o.Context.EnvSpecificInfo != nil {
 		if o.operationName == unlink {
 			return o.unlinkOperator()
 		}
@@ -281,15 +281,6 @@ func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
 
 // completeForOperator completes the options when svc is supported
 func (o *commonLinkOptions) completeForOperator() (err error) {
-	serviceBindingSupport, err := o.Client.GetKubeClient().IsServiceBindingSupported()
-	if err != nil {
-		return err
-	}
-
-	if !serviceBindingSupport {
-		return fmt.Errorf("please install Service Binding Operator to be able to create/delete a link\nrefer https://odo.dev/docs/install-service-binding-operator")
-	}
-
 	o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(o.suppliedName)
 	if err != nil {
 		o.serviceName = o.suppliedName
@@ -326,7 +317,7 @@ func (o *commonLinkOptions) completeForOperator() (err error) {
 		Spec: servicebinding.ServiceBindingSpec{
 			DetectBindingResources: true,
 			BindAsFiles:            o.bindAsFiles,
-			Application: &servicebinding.Application{
+			Application: servicebinding.Application{
 				Ref: servicebinding.Ref{
 					Name:     deployment.Name,
 					Group:    deploymentGVR.Group,
@@ -344,6 +335,9 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 	var svcFullName string
 
 	if o.isTargetAService {
+		if !o.csvSupport {
+			return fmt.Errorf("operator hub is required for linking to services")
+		}
 		// let's validate if the service exists
 		svcFullName = strings.Join([]string{o.serviceType, o.serviceName}, "/")
 		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)

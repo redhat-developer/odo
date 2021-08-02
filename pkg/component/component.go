@@ -18,10 +18,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
-
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/service"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -38,7 +38,7 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/api/v1alpha1"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -1490,11 +1490,11 @@ func GetComponentState(client *occlient.Client, componentName, applicationName s
 
 // GetComponent provides component definition
 func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
-	return getRemoteComponentMetadata(client, componentName, applicationName, projectName, true, true)
+	return getRemoteComponentMetadata(client, componentName, applicationName, true, true)
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, projectName string, getUrls, getStorage bool) (component Component, err error) {
+func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, getUrls, getStorage bool) (component Component, err error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
@@ -1562,18 +1562,12 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		}
 	}
 
-	ok, err := client.GetKubeClient().IsServiceBindingSupported()
+	linkedSecrets := fromCluster.GetLinkedSecrets()
+	err = setLinksServiceNames(client, linkedSecrets, componentlabels.GetSelector(componentName, applicationName))
 	if err != nil {
-		return Component{}, fmt.Errorf("unable to check if service binding is supported: %w", err)
+		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
 	}
-	if ok {
-		linkedSecrets := fromCluster.GetLinkedSecrets()
-		err = setLinksServiceNames(client, linkedSecrets)
-		if err != nil {
-			return Component{}, fmt.Errorf("unable to get name of services: %w", err)
-		}
-		component.Status.LinkedServices = linkedSecrets
-	}
+	component.Status.LinkedServices = linkedSecrets
 
 	component.Namespace = client.Namespace
 	component.Spec.App = applicationName
@@ -1584,31 +1578,82 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 }
 
 // setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
-func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount) error {
-	serviceBindings := map[string]string{}
-	list, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
-	if err != nil || list == nil {
-		return err
+func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount, selector string) error {
+	ok, err := client.GetKubeClient().IsServiceBindingSupported()
+	if err != nil {
+		return fmt.Errorf("unable to check if service binding is supported: %w", err)
 	}
-	for _, u := range list.Items {
-		var sbr servicebinding.ServiceBinding
-		js, err := u.MarshalJSON()
+
+	serviceBindings := map[string]string{}
+	if ok {
+		// service binding operator is installed on the cluster
+		list, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		if err != nil || list == nil {
+			return err
+		}
+
+		for _, u := range list.Items {
+			var sbr servicebinding.ServiceBinding
+			js, err := u.MarshalJSON()
+			if err != nil {
+				return err
+			}
+			err = json.Unmarshal(js, &sbr)
+			if err != nil {
+				return err
+			}
+			services := sbr.Spec.Services
+			if len(services) != 1 {
+				return errors.New("the ServiceBinding resource should define only one service")
+			}
+			service := services[0]
+			if service.Kind == "Service" {
+				serviceBindings[sbr.Status.Secret] = service.Name
+			} else {
+				serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
+			}
+		}
+	} else {
+		// service binding operator is not installed
+		// get the secrets instead of the service binding objects to retrieve the link data
+		secrets, err := client.GetKubeClient().ListSecrets(selector)
 		if err != nil {
 			return err
 		}
-		err = json.Unmarshal(js, &sbr)
+
+		// get the services to get their names against the component names
+		services, err := client.GetKubeClient().ListServices("")
 		if err != nil {
 			return err
 		}
-		services := sbr.Spec.Services
-		if len(services) != 1 {
-			return errors.New("the ServiceBinding resource should define only one service")
+
+		serviceCompMap := make(map[string]string)
+		for _, gotService := range services {
+			serviceCompMap[gotService.Labels[componentlabels.ComponentLabel]] = gotService.Name
 		}
-		service := services[0]
-		if service.Kind == "Service" {
-			serviceBindings[sbr.Status.Secret] = service.Name
-		} else {
-			serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
+
+		for _, secret := range secrets {
+			serviceName, serviceOK := secret.Labels[service.ServiceLabel]
+			_, linkOK := secret.Labels[service.LinkLabel]
+			serviceKind, serviceKindOK := secret.Labels[service.ServiceKind]
+			if serviceKindOK && serviceOK && linkOK {
+				if serviceKind == "Service" {
+					if _, ok := serviceBindings[secret.Name]; !ok {
+						serviceBindings[secret.Name] = serviceCompMap[serviceName]
+					}
+				} else {
+					// service name is stored as kind-name in the labels
+					parts := strings.SplitN(serviceName, "-", 2)
+					if len(parts) < 2 {
+						continue
+					}
+
+					serviceName = fmt.Sprintf("%v/%v", parts[0], parts[1])
+					if _, ok := serviceBindings[secret.Name]; !ok {
+						serviceBindings[secret.Name] = serviceName
+					}
+				}
+			}
 		}
 	}
 
