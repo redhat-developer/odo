@@ -907,8 +907,9 @@ func getOperatorGVRList(client *kclient.Client) ([]meta.RESTMapping, error) {
 		return operatorGVRList, err
 	}
 	for _, c := range csvs.Items {
-		for _, cr := range c.Spec.CustomResourceDefinitions.Owned {
-			g, v, r := GetGVRFromCR(&cr)
+		owned := c.Spec.CustomResourceDefinitions.Owned
+		for i := range owned {
+			g, v, r := GetGVRFromCR(&owned[i])
 			operatorGVRList = append(operatorGVRList, meta.RESTMapping{
 				Resource: schema.GroupVersionResource{
 					Group:    g,
