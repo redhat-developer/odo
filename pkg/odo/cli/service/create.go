@@ -27,10 +27,6 @@ const (
 )
 
 var (
-	createExample = ktemplates.Examples(`
-    # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
-    %[1]s dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret`)
-
 	createOperatorExample = ktemplates.Examples(`
 	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator.
 	%[1]s etcdoperator.v0.9.4/EtcdCluster`)
