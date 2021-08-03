@@ -5,7 +5,6 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/service"
-	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -13,19 +12,13 @@ import (
 const serviceRecommendedCommandName = "service"
 
 var (
-	serviceExample = ktemplates.Examples(`  # Describe a service catalog service
-    %[1]s mysql-persistent
-	
-	# Describe a Operator backed service
+	serviceExample = ktemplates.Examples(`# Describe a Operator backed service
 	%[1]s 
 	`)
 
 	serviceLongDesc = ktemplates.LongDesc(`Describes a service type.
-	This command supports both Service Catalog services and Operator backed services.
+	This command supports both Operator backed services.
 	A user can describe an Operator backed service by providing the full identifier for an Operand i.e. <operator_type>/<cr_name> which they can find by running "odo catalog list services".
-
-	If the format doesn't match <operator_type>/<cr_name> then service catalog services would be searched.  
-
 `)
 )
 
@@ -33,9 +26,6 @@ var (
 type DescribeServiceOptions struct {
 	// name of the service to describe, from command arguments
 	serviceName string
-	// resolved service
-	service svc.ServiceClass
-	plans   []svc.ServicePlan
 	// generic context options common to all commands
 	*genericclioptions.Context
 
@@ -59,7 +49,7 @@ func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args 
 	if _, _, err := service.SplitServiceKindName(args[0]); err == nil {
 		o.backend = NewOperatorBackend()
 	} else {
-		o.backend = NewServiceCatalogBackend()
+		return fmt.Errorf("no deployable operators found")
 	}
 
 	return o.backend.CompleteDescribeService(o, args)
