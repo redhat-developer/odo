@@ -1407,14 +1407,10 @@ func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 	return nil
 }
 
-// StartSignalWatcher watches for kill,interrupt etc signals and cleans up temp files and folders
-func StartSignalWatcher(handle func()) {
+// StartSignalWatcher watches for signals and handles the situation before exiting the program
+func StartSignalWatcher(watchSignals []os.Signal, handle func()) {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
+	signal.Notify(signals, watchSignals...)
 	defer signal.Stop(signals)
 
 	<-signals
@@ -1465,7 +1461,7 @@ func GitSubDir(srcPath, destinationPath, subDir string) error {
 
 // gitSubDir handles subDir for git components
 func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem) error {
-	go StartSignalWatcher(func() {
+	go StartSignalWatcher([]os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT}, func() {
 		err := cleanDir(destinationPath, map[string]bool{
 			"devfile.yaml": true,
 		}, fs)

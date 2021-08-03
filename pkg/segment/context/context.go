@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"os"
 	"sync"
 
 	"github.com/openshift/odo/pkg/util"
@@ -83,6 +84,10 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 // SetTelemetryStatus sets telemetry status before a command is run
 func SetTelemetryStatus(ctx context.Context, isEnabled bool) {
 	setContextProperty(ctx, TelemetryStatus, isEnabled)
+}
+
+func SetSignal(ctx context.Context, signal os.Signal) {
+	setContextProperty(ctx, "Signal", signal)
 }
 
 // GetTelemetryStatus gets the telemetry status that is set before a command is run

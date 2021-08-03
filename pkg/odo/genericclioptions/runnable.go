@@ -8,7 +8,12 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
+
+	commonutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/version"
 
@@ -77,7 +82,12 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
-
+	if cmd.Name() == "push" {
+		// TODO: capture ctrl^z
+		go commonutil.StartSignalWatcher([]os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT}, func() {
+			startTelemetry(cmd, errors.Errorf("user quit"), startTime)
+		})
+	}
 	err = o.Validate()
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
