@@ -20,7 +20,18 @@ Next step is installing operators. To learn about what operators, see [Getting S
     ```
   Note: We are not using the latest v0.18.2 because it is buggy.
 
-2. Operators can be installed in a specific namespace or across the cluster(i.e. in all the namespaces). To install an operator, we need to make sure that the namespace contains `OperatorGroup` resource. Running the command below will create the necessary resource in `operators` namespace.
+### Installing Operator into the cluster
+1. Navigate to [OperatorHub](https://operatorhub.io).
+2. Search for the operator.
+3. Navigate to its detail's page.
+4. Follow the instruction in the installation popup.
+  ```shell
+  kubectl create -f <link>
+  ```
+
+### Installing Service Binding Operator
+// TODO: Explain why we have a separate section on installing the SBO
+1. Operators can be installed in a specific namespace or across the cluster(i.e. in all the namespaces). To install an operator, we need to make sure that the namespace contains `OperatorGroup` resource. Running the command below will create the necessary resource in `operators` namespace.
   ```shell
   kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
   ```
