@@ -131,7 +131,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 					})
 					It("should not allow unlinking again", func() {
 						stdOut := helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring(fmt.Sprintf("failed to unlink the component %s since no link was found in the configuration referring this component", backendComp)))
+						Expect(stdOut).To(ContainSubstring(fmt.Sprintf("failed to unlink the component %q since no link was found in the configuration referring this component", backendComp)))
 					})
 
 					When("odo push is executed", func() {
@@ -139,7 +139,9 @@ var _ = Describe("odo link and unlink command tests", func() {
 							helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 						})
 						It("should no longer find the link in odo describe", func() {
-							checkDescribe(frontendContext, backendComp, true, false)
+							stdOut := helper.Cmd("odo", "describe", "--context", frontendContext).ShouldPass().Out()
+							Expect(stdOut).ToNot(ContainSubstring("Linked Services"))
+							Expect(stdOut).ToNot(ContainSubstring(backendComp))
 						})
 					})
 				})
@@ -163,7 +165,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 				})
 				It("should list the binding directory", func() {
 					stdOut := helper.Cmd("odo", "exec", "--context", frontendContext, "--", "ls", "/bindings").ShouldPass().Out()
-					Expect(stdOut).To(Not(ContainSubstring(backendComp)))
+					Expect(stdOut).To(ContainSubstring(backendComp))
 				})
 				It("should not allow re-linking", func() {
 					outputErr := helper.Cmd("odo", "link", backendComp, "--context", frontendContext).ShouldFail().Err()
