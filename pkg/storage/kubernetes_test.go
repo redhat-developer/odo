@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	storageLabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/testingutil"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,12 +24,12 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 		generic generic
 	}
 	tests := []struct {
-		name         string
-		fields       fields
-		returnedPods *corev1.PodList
-		returnedPVCs *corev1.PersistentVolumeClaimList
-		want         StorageList
-		wantErr      bool
+		name                string
+		fields              fields
+		returnedDeployments *appsv1.DeploymentList
+		returnedPVCs        *corev1.PersistentVolumeClaimList
+		want                StorageList
+		wantErr             bool
 	}{
 		{
 			name: "case 1: should error out for multiple pods returned",
@@ -38,10 +39,10 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					componentName: "nodejs",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("nodejs", "pod-0"),
-					*testingutil.CreateFakePod("nodejs", "pod-1"),
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeployment("nodejs"),
+					*testingutil.CreateFakeDeployment("nodejs"),
 				},
 			},
 			wantErr: true,
@@ -54,8 +55,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					componentName: "nodejs",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{},
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{},
 			},
 			want:    StorageList{},
 			wantErr: false,
@@ -68,9 +69,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					appName:       "app",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("nodejs", "pod-0"),
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeployment("nodejs"),
 				},
 			},
 			want:    StorageList{},
@@ -84,9 +85,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					appName:       "app",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
@@ -116,9 +117,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					componentName: "nodejs",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
@@ -152,9 +153,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					appName:       "app",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 						}),
@@ -178,9 +179,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					appName:       "app",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-nodejs-vol", MountPath: "/data"},
 						}),
@@ -207,9 +208,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					componentName: "nodejs",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
@@ -238,9 +239,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					componentName: "nodejs",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
@@ -275,8 +276,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 					componentName: "nodejs",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "nodejs",
@@ -284,21 +285,22 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 								"component": "nodejs",
 							},
 						},
-						Spec: corev1.PodSpec{
-							InitContainers: []corev1.Container{
-								{
-									Name: "supervisord",
-									VolumeMounts: []corev1.VolumeMount{
+						Spec: appsv1.DeploymentSpec{
+							Template: corev1.PodTemplateSpec{
+								Spec: corev1.PodSpec{
+									InitContainers: []corev1.Container{
 										{
-											Name:      "odo-shared-project",
-											MountPath: "/opt/",
+											Name: "supervisord",
+											VolumeMounts: []corev1.VolumeMount{
+												{
+													Name:      "odo-shared-project",
+													MountPath: "/opt/",
+												},
+											},
 										},
 									},
 								},
 							},
-						},
-						Status: corev1.PodStatus{
-							Phase: corev1.PodRunning,
 						},
 					},
 				},
@@ -318,8 +320,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 				return true, tt.returnedPVCs, nil
 			})
 
-			fakeClientSet.Kubernetes.PrependReactor("list", "pods", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, tt.returnedPods, nil
+			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.returnedDeployments, nil
 			})
 
 			fkocclient, _ := occlient.FakeNew()
@@ -360,7 +362,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 		want                 StorageList
 		wantErr              bool
 		returnedLocalStorage []localConfigProvider.LocalStorage
-		returnedPods         *corev1.PodList
+		returnedDeployments  *appsv1.DeploymentList
 		returnedPVCs         *corev1.PersistentVolumeClaimList
 	}{
 		{
@@ -372,8 +374,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{},
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{},
@@ -390,9 +392,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{testingutil.CreateFakeContainer("container-0")}),
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{testingutil.CreateFakeContainer("container-0")}),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
@@ -423,9 +425,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Container: "container-0",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
@@ -467,9 +469,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Container: "container-0",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-00-vol", MountPath: "/data"},
 							{Name: "volume-11-vol", MountPath: "/path"},
@@ -513,9 +515,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Container: "container-1",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 						}),
@@ -549,9 +551,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Container: "container-0",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePodWithContainers("nodejs", "pod-0", []corev1.Container{
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 						}),
@@ -588,10 +590,10 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Container: "container-0",
 				},
 			},
-			returnedPods: &corev1.PodList{
-				Items: []corev1.Pod{
-					*testingutil.CreateFakePod("nodejs", "pod-0"),
-					*testingutil.CreateFakePod("nodejs", "pod-1"),
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeployment("nodejs"),
+					*testingutil.CreateFakeDeployment("nodejs"),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{},
@@ -607,8 +609,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				return true, tt.returnedPVCs, nil
 			})
 
-			fakeClientSet.Kubernetes.PrependReactor("list", "pods", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, tt.returnedPods, nil
+			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.returnedDeployments, nil
 			})
 
 			fkocclient, _ := occlient.FakeNew()
