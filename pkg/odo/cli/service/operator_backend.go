@@ -22,6 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	ErrNoMetadataName = errors.New("couldn't find metadata.name in the yaml")
+)
+
 // This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
 func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
 	// since interactive mode is not supported for Operators yet, set it to false
@@ -79,7 +83,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		b.group, b.version, b.kind = gvk.Group, gvk.Version, gvk.Kind
 
 		if u.GetName() == "" {
-			return fmt.Errorf("couldn't find \"metadata.name\" in the yaml; provide a name for the service")
+			return ErrNoMetadataName
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
@@ -140,7 +144,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		}
 
 		if u.GetName() == "" {
-			return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
+			return ErrNoMetadataName
 		}
 
 		// CRD is valid. We can use it further to create a service from it.
