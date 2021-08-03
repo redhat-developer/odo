@@ -8,8 +8,8 @@ This quickstart shows you how to build and deploy a real world application in a 
 
 * Deploy the Spring Boot application to a Kubernetes cluster.
 * Be able to access the application outside the cluster.
-* Be able to access application environment outside the cluster.
-* Link the Spring Boot application with Postgres microservice.
+* Create an instance of the Postgres service.
+* Link the Spring Boot application with Postgres service.
 
 ## Pre-requisite
 * Setup a Kubernetes/OpenShift cluster. See guides on setting up a [Kubernetes](cluster-setup/kubernetes.md) or [Openshift](cluster-setup/openshift.md) cluster if you have not already done so.
@@ -148,4 +148,9 @@ This quickstart shows you how to build and deploy a real world application in a 
   Make sure that you see the Postgres and the Service Binding operator.
 
 
-// TODO: Add something about odo exec and operator and linking.
+// TODO:
+* Add something about odo exec and operator and linking.
+* Remove the Extending Application part. Extending only makes sense if the application can be a standalone functioning unit without the extension.
+  Petclinic is probably not capable of it and requires a database connection to be standalone functioning unit.
+* Agendas must have their own separate sections
+* Look into using MariaDB operator since the petclinin uses MySQL bts.
