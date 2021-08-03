@@ -69,6 +69,24 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
 			})
 
+			When("a storage is added and deployed", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "storage", "create", "--context", commonVar.Context).ShouldPass()
+					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+				})
+
+				When("a link between the component and the service is created", func() {
+
+					BeforeEach(func() {
+						helper.Cmd("odo", "link", svcFullName, "--context", commonVar.Context).ShouldPass()
+					})
+
+					It("should run odo push successfully", func() {
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+					})
+				})
+			})
+
 			When("a link between the component and the service is created", func() {
 
 				BeforeEach(func() {
