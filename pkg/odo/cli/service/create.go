@@ -120,7 +120,7 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 func (o *CreateOptions) Validate() (err error) {
 	// if we are in interactive mode, all values are already valid
 	if o.interactive {
-		return nil
+		return fmt.Errorf("odo doesn't support interactive mode for creating Operator backed service")
 	}
 
 	return o.Backend.ValidateServiceCreate(o)
