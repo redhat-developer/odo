@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/ghodss/yaml"
@@ -64,25 +66,25 @@ func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Compo
 		strCRD := c.Kubernetes.Inlined
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return false, err
 		}
 
-		if !isLinkResource(d.OriginalCRD["kind"].(string)) {
+		if !isLinkResource(u.GetKind()) {
 			// operator hub is not installed on the cluster
 			// or it's a service binding related resource
 			continue
 		}
 
-		crdName, ok := getCRDName(d.OriginalCRD)
-		if !ok {
-			continue
-		}
+		crdName := u.GetName()
 
-		cr, _, err := createOperatorService(client, d, labels, []metav1.OwnerReference{ownerReference})
-		delete(deployed, cr+"/"+crdName)
+		u.SetOwnerReferences([]metav1.OwnerReference{ownerReference})
+		u.SetLabels(labels)
+
+		err = CreateOperatorService(client, u)
+		delete(deployed, u.GetKind()+"/"+crdName)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
@@ -93,7 +95,7 @@ func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Compo
 			}
 		}
 
-		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
+		name := u.GetName()
 		log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
 		restartNeeded = true
 	}
@@ -149,13 +151,13 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 		strCRD := c.Kubernetes.Inlined
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return false, err
 		}
 
-		if !isLinkResource(d.OriginalCRD["kind"].(string)) {
+		if !isLinkResource(u.GetKind()) {
 			// not a service binding object, thus continue
 			continue
 		}

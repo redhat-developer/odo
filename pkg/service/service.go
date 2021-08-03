@@ -5,6 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/restmapper"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -42,78 +49,16 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
 
-// GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
-// It returns a CR (string representation) and CSV (Operator) upon successfully
-// able to find them, an error otherwise.
-func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
-	cr := crd["kind"].(string)
-	csvs, err := client.ListClusterServiceVersions()
-	if err != nil {
-		return cr, olm.ClusterServiceVersion{}, err
-	}
-
-	csv, err := doesCRExist(cr, csvs)
-	if err != nil {
-		return cr, olm.ClusterServiceVersion{},
-			fmt.Errorf("could not find specified service/custom resource: %s; please check the \"kind\" field in the yaml (it's case-sensitive)", cr)
-	}
-	return cr, csv, nil
-}
-
-// doesCRExist checks if the CR exists in the CSV
-func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterServiceVersion, error) {
-	for _, csv := range csvs.Items {
-		for _, operatorCR := range csv.Spec.CustomResourceDefinitions.Owned {
-			if kind == operatorCR.Kind {
-				return csv, nil
-			}
-		}
-	}
-	return olm.ClusterServiceVersion{}, errors.New("could not find the requested cluster resource")
-}
-
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
-func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
-	err := client.CreateDynamicResource(CustomResourceDefinition, nil, group, version, resource)
-	if err != nil {
-		return errors.Wrap(err, "unable to create operator backed service")
-	}
-	return nil
-}
-
-// DeleteServiceAndUnlinkComponents will delete the service with the provided `name`
-// it also removes links to that service in components of the application
-func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName string, applicationName string) error {
-	// first we attempt to delete the service instance itself
-	labels := componentlabels.GetLabels(serviceName, applicationName, false)
-	err := client.GetKubeClient().DeleteServiceInstance(labels)
+func CreateOperatorService(client *kclient.Client, CustomResourceDefinition unstructured.Unstructured) error {
+	gvr, err := GetGVRFromUnstructured(client, CustomResourceDefinition)
 	if err != nil {
 		return err
 	}
-
-	// lookup all the components of the application
-	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-	componentsDCs, err := client.ListDeploymentConfigs(applicationSelector)
+	err = client.CreateDynamicResource(CustomResourceDefinition, gvr)
 	if err != nil {
-		return errors.Wrapf(err, "unable to list the components in order to check if they need to be unlinked")
+		return errors.Wrap(err, "unable to create operator backed service")
 	}
-
-	// go through the components and check if they have the service name as part of the envFrom configuration
-	for _, dc := range componentsDCs {
-		for _, envFromSourceName := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
-			if envFromSourceName.SecretRef.Name == serviceName {
-				if componentName, ok := dc.Labels[componentlabels.ComponentLabel]; ok {
-					err := client.UnlinkSecret(serviceName, componentName, applicationName)
-					if err != nil {
-						klog.Warningf("Unable to unlink component %s from service", componentName)
-					} else {
-						klog.V(2).Infof("Component %s was successfully unlinked from service", componentName)
-					}
-				}
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -146,10 +91,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 		}
 	}
 
-	group, version, resource, err := GetGVRFromCR(cr)
-	if err != nil {
-		return err
-	}
+	group, version, resource := GetGVRFromCR(cr)
 
 	return client.DeleteDynamicResource(name, group, version, resource)
 }
@@ -315,32 +257,14 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	return allCRInstances, failedListingCR, nil
 }
 
-// GetGVKRFromCR returns values for group, version, kind and resource for a
-// given Custom Resource (CR)
-func GetGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
-	return getGVKRFromCR(cr)
-}
+func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (string, string, string, error) {
+	var group, version, resource string
 
-func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
-	version = cr.Version
-	kind = cr.Kind
-
-	gr := strings.SplitN(cr.Name, ".", 2)
-	if len(gr) != 2 {
-		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
-		return
-	}
-	resource = gr[0]
-	group = gr[1]
-
-	return
-}
-
-func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, version, resource string, err error) {
 	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
 		custRes := customresource
 		if custRes.Kind == cr {
-			return GetGVRFromCR(&custRes)
+			group, version, resource = GetGVRFromCR(&custRes)
+			return group, version, resource, nil
 		}
 	}
 	return "", "", "", fmt.Errorf("couldn't parse group, version, resource from Operator %q", csv.Name)
@@ -348,18 +272,15 @@ func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, versio
 
 // GetGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
+func GetGVRFromCR(cr *olm.CRDDescription) (string, string, string) {
+	var group, version, resource string
 	version = cr.Version
 
 	gr := strings.SplitN(cr.Name, ".", 2)
-	if len(gr) != 2 {
-		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
-		return
-	}
 	resource = gr[0]
 	group = gr[1]
 
-	return
+	return group, version, resource
 }
 
 func GetGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
@@ -423,10 +344,7 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 func GetCRInstances(client *kclient.Client, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	group, version, resource, err := GetGVRFromCR(customResource)
-	if err != nil {
-		return nil, err
-	}
+	group, version, resource := GetGVRFromCR(customResource)
 
 	instances, err := client.ListDynamicResource(group, version, resource)
 	if err != nil {
@@ -610,8 +528,8 @@ func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 	return services, nil
 }
 
-// ListDevfileServices returns the services defined in a Devfile
-func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.Unstructured, error) {
+// ListDevfileServices returns the names of the services defined in a Devfile
+func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) ([]string, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
 	}
@@ -621,14 +539,33 @@ func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.
 	if err != nil {
 		return nil, err
 	}
-	services := map[string]unstructured.Unstructured{}
+
+	operatorGVRList, err := getOperatorGVRList(client)
+	if err != nil {
+		return nil, err
+	}
+	var services []string
 	for _, c := range components {
 		var u unstructured.Unstructured
 		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
 		if err != nil {
 			return nil, err
 		}
-		services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
+
+		gvr, err := GetGVRFromUnstructured(client, u)
+		if err != nil {
+			return nil, err
+		}
+		var match bool
+		for _, i := range operatorGVRList {
+			if i.Resource == gvr.Resource {
+				match = true
+				break
+			}
+		}
+		if match {
+			services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
+		}
 	}
 	return services, nil
 }
@@ -719,84 +656,16 @@ func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.Devfile
 	return devfileObj.WriteYamlDevfile()
 }
 
-// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
-// (when they use --from-file flag), and few other attributes that are likely
-// to be used to validate a CRD before creating a service from it
-type DynamicCRD struct {
-	// contains the CR as obtained from CSV or user
-	OriginalCRD map[string]interface{}
-}
-
-func NewDynamicCRD() *DynamicCRD {
-	return &DynamicCRD{}
-}
-
-// ValidateMetadataInCRD validates if the CRD has metadata.name field and returns an error
-func (d *DynamicCRD) ValidateMetadataInCRD() error {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
-	}
-
-	if _, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return nil
-	}
-	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
-// SetServiceName modifies the CRD to contain user provided name on the CLI
-// instead of using the default one in almExample
-func (d *DynamicCRD) SetServiceName(name string) {
-	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
-
-	for k := range metaMap {
-		if k == "name" {
-			metaMap[k] = name
-			return
-		}
-	}
-	metaMap["name"] = name
-}
-
-// GetServiceNameFromCRD fetches the service name from metadata.name field of the CRD
-func (d *DynamicCRD) GetServiceNameFromCRD() (string, error) {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
-	}
-
-	if name, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return name, nil
-	}
-	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
-// AddComponentLabelsToCRD appends odo labels to CRD if "labels" field already exists in metadata; else creates labels
-func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
-	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
-
-	for k := range metaMap {
-		if k == "labels" {
-			metaLabels := metaMap["labels"].(map[string]interface{})
-			for i := range labels {
-				metaLabels[i] = labels[i]
-			}
-			return
-		}
-	}
-	// if metadata doesn't have 'labels' field, we set it up
-	metaMap["labels"] = labels
-}
-
 // PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 func PushServices(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) error {
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
+	if err != nil {
+		return err
+	}
+
+	operatorGVRList, err := getOperatorGVRList(client)
 	if err != nil {
 		return err
 	}
@@ -820,25 +689,46 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 		strCRD := c.Kubernetes.Inlined
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return err
 		}
 
-		if !csvSupported || (isLinkResource(d.OriginalCRD["kind"].(string))) {
+		if !csvSupported || (isLinkResource(u.GetKind())) {
 			// operator hub is not installed on the cluster
 			// or it's a service binding related resource
 			continue
 		}
 
-		crdName, ok := getCRDName(d.OriginalCRD)
-		if !ok {
-			continue
+		crdName := u.GetName()
+
+		gvr, err := GetGVRFromUnstructured(client, u)
+		if err != nil {
+			return err
 		}
 
-		cr, kind, err := createOperatorService(client, d, labels, []metav1.OwnerReference{})
-		delete(deployed, cr+"/"+crdName)
+		// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
+		// if yes, it is an Operator backed service, and we assign all labels to it in next step
+		// if no, it is likely a Kubernetes built-in resource, and we need not set all labels to it.
+		var match bool
+		for _, i := range operatorGVRList {
+			if i.Resource == gvr.Resource {
+				match = true
+				break
+			}
+		}
+
+		// add labels to the CRD before creation
+		if match {
+			u.SetLabels(labels)
+		} else {
+			// Kubernetes built-in resource; only set managed-by label to it
+			u.SetLabels(map[string]string{"app.kubernetes.io/managed-by": "odo"})
+		}
+
+		err = CreateOperatorService(client, u)
+		delete(deployed, u.GetKind()+"/"+crdName)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
@@ -849,8 +739,9 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 			}
 		}
 
-		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
-		log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{kind, name}, "/"), "odo link -h")
+		if match {
+			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), crdName}, "/"), "odo link -h")
+		}
 		madeChange = true
 	}
 
@@ -923,45 +814,29 @@ func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []d
 		strCRD := c.Kubernetes.Inlined
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return err
 		}
 
-		if isLinkResource(d.OriginalCRD["kind"].(string)) {
+		if isLinkResource(u.GetKind()) {
 			// ignore service binding resources
 			continue
 		}
 
-		cr, csv, err := GetCSV(client, d.OriginalCRD)
+		gvr, err := GetGVRFromUnstructured(client, u)
 		if err != nil {
 			return err
 		}
 
-		var group, version, resource string
-		for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-			if crd.Kind == cr {
-				group, version, _, resource, err = getGVKRFromCR(crd)
-				if err != nil {
-					return err
-				}
-				break
-			}
-		}
-
-		crdName, ok := getCRDName(d.OriginalCRD)
-		if !ok {
-			continue
-		}
-
-		u, err := client.GetDynamicResource(group, version, resource, crdName)
+		d, err := client.GetDynamicResource(gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, u.GetName())
 		if err != nil {
 			return err
 		}
 
 		found := false
-		for _, ownerRef := range u.GetOwnerReferences() {
+		for _, ownerRef := range d.GetOwnerReferences() {
 			if ownerRef.UID == ownerReference.UID {
 				found = true
 				break
@@ -970,9 +845,9 @@ func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []d
 		if found {
 			continue
 		}
-		u.SetOwnerReferences(append(u.GetOwnerReferences(), ownerReference))
+		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
 
-		err = client.UpdateDynamicResource(group, version, resource, crdName, u)
+		err = client.UpdateDynamicResource(gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, u.GetName(), d)
 		if err != nil {
 			return err
 		}
@@ -980,49 +855,68 @@ func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []d
 	return nil
 }
 
-func getCRDName(crd map[string]interface{}) (string, bool) {
-	metadata, ok := crd["metadata"].(map[string]interface{})
-	if !ok {
-		return "", false
-	}
-	name, ok := metadata["name"].(string)
-	if !ok {
-		return "", false
-	}
-	return name, true
-}
-
 func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
 }
 
-// createOperatorService creates the given operator on the cluster
-// it returns the CR,Kind and errors
-func createOperatorService(client *kclient.Client, d *DynamicCRD, labels map[string]string, ownerReferences []metav1.OwnerReference) (string, string, error) {
-	cr, csv, err := GetCSV(client, d.OriginalCRD)
+// GetGVKFromUnstructured takes an unstructured struct and returns group, version and kind information as strings
+// It assumes group to be "core" for cases where metadata.apiVersion can't be split using forward slash, e.g. 'v1'
+func GetGVKFromUnstructured(u unstructured.Unstructured) schema.GroupVersionKind {
+	apiVersion := strings.Split(u.GetAPIVersion(), "/")
+	var group, version, kind string
+	if len(apiVersion) != 2 {
+		group = ""
+		version = apiVersion[0]
+	} else {
+		group = apiVersion[0]
+		version = apiVersion[1]
+	}
+	kind = u.GetKind()
+	return schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	}
+}
+
+// GetGVRFromUnstructured returns GVR from unstructured data
+func GetGVRFromUnstructured(client *kclient.Client, u unstructured.Unstructured) (*meta.RESTMapping, error) {
+	gvk := GetGVKFromUnstructured(u)
+
+	cfg, err := client.KubeConfig.ClientConfig()
 	if err != nil {
-		return "", "", err
+		return &meta.RESTMapping{}, err
 	}
 
-	var group, version, kind, resource string
-	for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-		if crd.Kind == cr {
-			group, version, kind, resource, err = getGVKRFromCR(crd)
-			if err != nil {
-				return cr, "", err
-			}
-			break
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return &meta.RESTMapping{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+// getOperatorGVRList creates a slice of GVRs that are provided by Operators (CSV)
+func getOperatorGVRList(client *kclient.Client) ([]meta.RESTMapping, error) {
+	var operatorGVRList []meta.RESTMapping
+
+	// ignoring the error because
+	csvs, err := client.ListClusterServiceVersions()
+	if err != nil {
+		return operatorGVRList, err
+	}
+	for _, c := range csvs.Items {
+		for _, cr := range c.Spec.CustomResourceDefinitions.Owned {
+			g, v, r := GetGVRFromCR(&cr)
+			operatorGVRList = append(operatorGVRList, meta.RESTMapping{
+				Resource: schema.GroupVersionResource{
+					Group:    g,
+					Version:  v,
+					Resource: r,
+				},
+			})
 		}
 	}
-
-	// add labels to the CRD before creation
-	d.AddComponentLabelsToCRD(labels)
-
-	// create the service on cluster
-	err = client.CreateDynamicResource(d.OriginalCRD, ownerReferences, group, version, resource)
-	if err != nil {
-		// return the cr name for deletion from the push map in the push code
-		return cr, "", err
-	}
-	return cr, kind, err
+	return operatorGVRList, nil
 }

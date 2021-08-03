@@ -56,7 +56,7 @@ func (o *ServiceListOptions) listOperatorServices() (err error) {
 	var devfileList map[string]unstructured.Unstructured
 	var devfileComponent string
 	if o.EnvSpecificInfo != nil {
-		devfileList, err = svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
+		devfileList, err = svc.ListDevfileServices(o.KClient, o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return fmt.Errorf("error reading devfile")
 		}

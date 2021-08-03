@@ -27,10 +27,7 @@ func (crb *CRDBuilder) SetAndValidate(param string, value string) error {
 }
 
 func (crb *CRDBuilder) Map() (map[string]interface{}, error) {
-	group, version, _, err := GetGVRFromCR(crb.crd)
-	if err != nil {
-		return nil, err
-	}
+	group, version, _ := GetGVRFromCR(crb.crd)
 	crb.cr["apiVersion"] = group + "/" + version
 	crb.cr["kind"] = crb.crd.Kind
 	crb.cr["metadata"] = make(map[string]interface{})

@@ -18,6 +18,7 @@
 - Fix description for "odo link" command ([#4930](https://github.com/openshift/odo/pull/4930))
 - Add deprecation warnings for s2i components([#4967](https://github.com/openshift/odo/issues/4967))
 - Dropping support for service catalog based services ([#4906](https://github.com/openshift/odo/pull/4906))
+- Support for creating Kubernetes built-in resource ([#4685](https://github.com/openshift/odo/issues/4685))
 
 ### Bug Fixes
 
