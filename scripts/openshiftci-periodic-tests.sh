@@ -27,14 +27,18 @@ oc login -u developer -p password@123
 oc whoami
 
 # Integration tests
-make test-integration
-make test-integration-devfile
-make test-cmd-login-logout
-make test-cmd-project
-make test-operator-hub
+make test-integration || error=true
+make test-integration-devfile || error=true
+make test-cmd-login-logout || error=true
+make test-cmd-project || error=true
+make test-operator-hub || error=true
 
 # E2e tests
-make test-e2e-all
+make test-e2e-all || error=true
+
+if [ $error ]; then
+    exit -1
+fi
 
 cp -r reports $ARTIFACT_DIR 
 
