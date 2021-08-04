@@ -4,11 +4,7 @@
 
 ### Feature/Enhancements
 
-- Support for `preStart` lifecycle events ([#4901](https://github.com/openshift/odo/issues/4901))
-
 ### Bug Fixes
-
-- `odo push` now displays "Waiting for component to start" only once ([4919](https://github.com/openshift/odo/pull/4919))
 
 ### Tests
 
@@ -16,16 +12,31 @@
 
 ### Documentation
 
-## 2.2.x
+## 2.2.4
 
 ### Feature/Enhancements
 
+- Support for `preStart` lifecycle events ([#4901](https://github.com/openshift/odo/issues/4901))
+- Do not cancel the whole execution if one of the test suite fails ([#4943](https://github.com/openshift/odo/issues/4943))
+- Allow linking using ServiceBinding without ServiceBindingOperator ([#4543](https://github.com/openshift/odo/issues/4543)).
+- Add Sonar Cloud config file: sonar-project.properties([#4900](https://github.com/openshift/odo/pull/4900))
+
 ### Bug Fixes
+
 - Fix component create and delete help examples([#4904](https://github.com/openshift/odo/pull/4904))
+- `odo push` now displays "Waiting for component to start" only once ([4919](https://github.com/openshift/odo/pull/4919))
+- Modifies the error message to list the available starters ([#4935](https://github.com/openshift/odo/pull/4935))
+- Add language and projectType metadata in devfile for s2i components([#4911](https://github.com/openshift/odo/pull/4911))
 
 ### Tests
 
+- Test storage + link ([#4954](https://github.com/openshift/odo/pull/4954))
+
 ### Documentation
+
+- Add Getting Started > Basics documentation ([#4914](https://github.com/openshift/odo/pull/4914))
+- Add documentation for global configuration ([#4921](https://github.com/openshift/odo/pull/4921))
+- Add odo installation docs ([#4923](https://github.com/openshift/odo/pull/4923))
 
 ## 2.2.3
 
