@@ -87,7 +87,7 @@ func SetTelemetryStatus(ctx context.Context, isEnabled bool) {
 }
 
 func SetSignal(ctx context.Context, signal os.Signal) {
-	setContextProperty(ctx, "Signal", signal)
+	setContextProperty(ctx, "receivedSignal", signal.String())
 }
 
 // GetTelemetryStatus gets the telemetry status that is set before a command is run

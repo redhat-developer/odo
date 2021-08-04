@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
 	commonutil "github.com/openshift/odo/pkg/util"
+
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/version"
 
@@ -82,12 +85,16 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
-	if cmd.Name() == "push" {
-		// TODO: capture ctrl^z
-		go commonutil.StartSignalWatcher([]os.Signal{syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT}, func() {
-			startTelemetry(cmd, errors.Errorf("user quit"), startTime)
-		})
-	}
+	// TODO: capture ctrl^z
+	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt, os.Kill}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, captureSignals...)
+	go commonutil.StartSignalWatcher(captureSignals, func() {
+		receivedSignal := <-c
+		scontext.SetSignal(cmd.Context(), receivedSignal)
+		startTelemetry(cmd, errors.Wrapf(terminal.InterruptErr, "user interrupted the command execution"), startTime)
+	})
+
 	err = o.Validate()
 	if err != nil {
 		startTelemetry(cmd, err, startTime)

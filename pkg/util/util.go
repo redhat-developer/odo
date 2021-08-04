@@ -1461,7 +1461,7 @@ func GitSubDir(srcPath, destinationPath, subDir string) error {
 
 // gitSubDir handles subDir for git components
 func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem) error {
-	go StartSignalWatcher([]os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT}, func() {
+	go StartSignalWatcher([]os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}, func() {
 		err := cleanDir(destinationPath, map[string]bool{
 			"devfile.yaml": true,
 		}, fs)
