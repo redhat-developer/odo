@@ -1,27 +1,31 @@
 #  Odo Changelog
 
-## Next
+## 2.3.0
 
 ### Feature/Enhancements
 
-- Support for `preStart` lifecycle events ([#4901](https://github.com/openshift/odo/issues/4901))
-
 ### Bug Fixes
-
-- `odo push` now displays "Waiting for component to start" only once ([4919](https://github.com/openshift/odo/pull/4919))
 
 ### Tests
 
 ### Documentation
 
-## 2.2.x
+## 2.2.4
 
 ### Feature/Enhancements
 
+- Support for `preStart` lifecycle events ([#4901](https://github.com/openshift/odo/issues/4901))
+- Do not cancel the whole execution if one of the test suite fails ([#4943](https://github.com/openshift/odo/issues/4943))
+
 ### Bug Fixes
+
 - Fix component create and delete help examples([#4904](https://github.com/openshift/odo/pull/4904))
+- `odo push` now displays "Waiting for component to start" only once ([4919](https://github.com/openshift/odo/pull/4919))
+- Modifies the error message to list the available starters ([#4935](https://github.com/openshift/odo/pull/4935))
 
 ### Tests
+
+- Test storage + link ([#4954](https://github.com/openshift/odo/pull/4954))
 
 ### Documentation
 
