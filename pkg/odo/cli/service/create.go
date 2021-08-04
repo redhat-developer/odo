@@ -82,9 +82,6 @@ func NewCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been created
 func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if len(args) < 1 {
-		return fmt.Errorf("odo doesn't support interactive mode for creating Operator backed service")
-	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		DevfilePath:      component.DevfilePath,
@@ -110,7 +107,9 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return err
 	}
 	//if no args are provided, user wants interactive mode
-
+	if len(args) == 0 {
+		return fmt.Errorf("odo doesn't support interactive mode for creating Operator backed service")
+	}
 	o.Backend = NewOperatorBackend()
 	o.interactive = false
 	return o.Backend.CompleteServiceCreate(o, cmd, args)
