@@ -1,6 +1,6 @@
 #  Odo Changelog
 
-## 2.3.0
+## Next
 
 ### Feature/Enhancements
 
