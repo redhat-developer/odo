@@ -1,8 +1,8 @@
 #!/bin/bash
 set -x
 
-export SBO_SOURCE="redhat-operators"
-export SBO_NAME="rh-service-binding-operator"
+export SBO_CATALOG_SOURCE="redhat-operators"
+export SBO_SUBSCRIPTION_NAME="rh-service-binding-operator"
 
 install_redis_operator(){
   $1 create -f - <<EOF
@@ -57,17 +57,17 @@ if [ $KUBERNETES == "true" ]; then
   # install "redis-oprator" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog source from "olm" namespace
   install_redis_operator kubectl operators operatorhubio-catalog olm
 else
-  if [$NIGHTLY == "true"]; then
+  if [ $NIGHTLY == "true" ]; then
     # Deploy SBO master catalog source on OCP Nightly test run
     deploy_service_binding_operator_master
 
-    SBO_SOURCE="service-binding-master"
-    SBO_NAME="service-binding-operator"
+    SBO_CATALOG_SOURCE="service-binding-master"
+    SBO_SUBSCRIPTION_NAME="service-binding-operator"
   fi
 
   # install "redis-oprator" using "oc" in "openshift-operators" namespace; use "community-operators" catalog source from "openshift-marketplace" namespace
   install_redis_operator oc openshift-operators community-operators openshift-marketplace
 
-  # install "service-binding-operator" using "oc" in "openshift-operators" namespace; use SBO_SOURCE env var catalog source from "openshift-marketplace" namespace
-  install_service_binding_operator oc openshift-operators $SBO_NAME $SBO_SOURCE openshift-marketplace
+  # install "service-binding-operator" using "oc" in "openshift-operators" namespace; use SBO_CATALOG_SOURCE env var catalog source from "openshift-marketplace" namespace
+  install_service_binding_operator oc openshift-operators $SBO_SUBSCRIPTION_NAME $SBO_CATALOG_SOURCE openshift-marketplace
 fi
