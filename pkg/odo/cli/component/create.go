@@ -116,9 +116,11 @@ odo catalog list components
 %[1]s nodejs frontend --context ./frontend
 
 # Create new Java component with binary named sample.jar in './target' directory; this flag is specific to S2I
+# DEPRECATED: Use the devfile to create a component
 %[1]s java:8 --s2i --binary target/sample.jar
 
 # Create new Node.js component with source from remote git repository; this flag is specific to S2I
+# DEPRECATED: Use the devfile to create a component
 %[1]s nodejs --s2i --git https://github.com/openshift/nodejs-ex.git
 
 # Create new Node.js component with custom ports and environment variables
@@ -352,6 +354,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	err = co.checkConflictingFlags()
 	if err != nil {
 		return
+	}
+
+	if co.forceS2i {
+		// Note: Remove this deprecation warning once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
+		log.Deprecate("S2I components", "consider creating a devfile component instead")
 	}
 
 	var catalogList catalog.ComponentTypeList
@@ -1052,6 +1059,12 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "context", completion.FileCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "binary", completion.FileCompletionHandler)
+
+	// Note: Remove these deprecation warnings once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
+	for _, flagName := range []string{"s2i", "git", "ref", "binary"} {
+		flag := componentCreateCmd.Flag(flagName)
+		flag.Deprecated = "support for the S2I components has been deprecated, consider creating a devfile component instead."
+	}
 
 	return componentCreateCmd
 }
