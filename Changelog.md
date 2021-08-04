@@ -23,12 +23,17 @@
 - Fix component create and delete help examples([#4904](https://github.com/openshift/odo/pull/4904))
 - `odo push` now displays "Waiting for component to start" only once ([4919](https://github.com/openshift/odo/pull/4919))
 - Modifies the error message to list the available starters ([#4935](https://github.com/openshift/odo/pull/4935))
+- Add language and projectType metadata in devfile for s2i components([#4911](https://github.com/openshift/odo/pull/4911))
 
 ### Tests
 
 - Test storage + link ([#4954](https://github.com/openshift/odo/pull/4954))
 
 ### Documentation
+
+- Add Getting Started > Basics documentation ([#4914](https://github.com/openshift/odo/pull/4914))
+- Add documentation for global configuration ([#4921](https://github.com/openshift/odo/pull/4921))
+- Add odo installation docs ([#4923](https://github.com/openshift/odo/pull/4923))
 
 ## 2.2.3
 
