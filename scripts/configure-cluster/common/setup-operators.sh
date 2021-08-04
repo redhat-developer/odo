@@ -39,7 +39,7 @@ deploy_service_binding_operator_master(){
   apiVersion: operators.coreos.com/v1alpha1
   kind: CatalogSource
   metadata:
-    name: service-binding-master
+    name: $1
     namespace: openshift-marketplace
   spec:
     displayName: Service Binding Operator build from master
@@ -58,11 +58,11 @@ if [ $KUBERNETES == "true" ]; then
   install_redis_operator kubectl operators operatorhubio-catalog olm
 else
   if [ $NIGHTLY == "true" ]; then
-    # Deploy SBO master catalog source on OCP Nightly test run
-    deploy_service_binding_operator_master
-
     SBO_CATALOG_SOURCE="service-binding-master"
     SBO_SUBSCRIPTION_NAME="service-binding-operator"
+
+    # Deploy SBO master catalog source on OCP Nightly test run
+    deploy_service_binding_operator_master $SBO_CATALOG_SOURCE
   fi
 
   # install "redis-oprator" using "oc" in "openshift-operators" namespace; use "community-operators" catalog source from "openshift-marketplace" namespace
