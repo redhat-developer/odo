@@ -16,6 +16,7 @@
 
 - Support for `preStart` lifecycle events ([#4901](https://github.com/openshift/odo/issues/4901))
 - Do not cancel the whole execution if one of the test suite fails ([#4943](https://github.com/openshift/odo/issues/4943))
+- Allow linking using ServiceBinding without ServiceBindingOperator ([#4543](https://github.com/openshift/odo/issues/4543)).
 
 ### Bug Fixes
 
