@@ -17,7 +17,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
-		// wait till odo can see that all operators installed by setup script in the namespace
+		// wait until timeout(sec) for odo to see all the operators installed by setup script in the namespace
 		odoArgs := []string{"catalog", "list", "services"}
 		operator := "service-binding-operator"
 		helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
@@ -30,19 +30,21 @@ var _ = Describe("odo link and unlink command tests", func() {
 	})
 
 	Context("Running the help command", func() {
-		By("for link command", func() {
-			appHelp := helper.Cmd("odo", "link", "-h").ShouldPass().Out()
-			helper.MatchAllInOutput(appHelp, []string{"Link component to a service ", "backed by an Operator or Service Catalog", "or component", "works only with s2i components"})
-		})
-		By("for unlink command", func() {
-			appHelp := helper.Cmd("odo", "unlink", "-h").ShouldPass().Out()
-			Expect(appHelp).To(ContainSubstring("Unlink component or service from a component"))
+		It("should display the help", func() {
+			By("for the link command", func() {
+				appHelp := helper.Cmd("odo", "link", "-h").ShouldPass().Out()
+				helper.MatchAllInOutput(appHelp, []string{"Link component to a service ", "backed by an Operator or Service Catalog", "or component", "works only with s2i components"})
+			})
+			By("for the unlink command", func() {
+				appHelp := helper.Cmd("odo", "unlink", "-h").ShouldPass().Out()
+				Expect(appHelp).To(ContainSubstring("Unlink component or service from a component"))
+			})
 		})
 	})
 
 	When("two components are deployed", func() {
 		var frontendContext, backendContext, frontendURL, frontendComp, backendComp string
-		var oc helper.OcRunner
+		var runner helper.CliRunner
 
 		// checkDescribe: checks that the linked component and related variables are present in the output of odo describe
 		var checkDescribe = func(contextDir string, compName string, pushed bool, bindAsFiles bool) {
@@ -68,7 +70,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 		}
 
 		JustBeforeEach(func() {
-			oc = helper.NewOcRunner("oc")
+			runner = helper.GetCliRunner()
 
 			frontendComp = fmt.Sprintf("frontend-%v", helper.RandString(3))
 			frontendContext = helper.CreateNewContext()
@@ -100,7 +102,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 				})
 				It("should ensure that the proper envFrom entry was created", func() {
-					envFromOutput := oc.GetEnvFromEntry(frontendComp, "app", commonVar.Project, "deployment")
+					envFromOutput := runner.GetEnvFromEntry(frontendComp, "app", commonVar.Project)
 					Expect(envFromOutput).To(ContainSubstring(backendComp))
 					helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 				})

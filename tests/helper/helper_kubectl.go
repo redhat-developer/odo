@@ -329,3 +329,8 @@ func (kubectl KubectlRunner) GetSecrets(project string) string {
 func (kubectl KubectlRunner) GetEnvRefNames(componentName, appName, projectName string) []string {
 	return GetEnvRefNames(kubectl.path, componentName, appName, projectName)
 }
+
+// GetEnvFromEntry returns envFrom entry of the deployment
+func (kubectl KubectlRunner) GetEnvFromEntry(componentName string, appName string, projectName string) string {
+	return GetEnvFromEntry(kubectl.path, componentName, appName, projectName)
+}
