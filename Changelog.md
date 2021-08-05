@@ -4,6 +4,8 @@
 
 ### Feature/Enhancements
 
+- Added a column in odo list output to indicate components created by odo ([#4962](https://github.com/openshift/odo/pull/4962))
+
 ### Bug Fixes
 
 ### Tests
