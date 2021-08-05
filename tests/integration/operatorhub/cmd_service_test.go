@@ -562,12 +562,12 @@ spec:`
 
 					It("should fail to create a service based on a template without metadata", func() {
 						stdOut := helper.Cmd("odo", "service", "create", "--from-file", noMetaFileName, "--project", commonVar.Project).ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
+						Expect(stdOut).To(ContainSubstring("invalid \"metadata\" in the yaml; provide a valid \"metadata.name\""))
 					})
 
 					It("should fail to create a service based on a template with invalid metadata", func() {
 						stdOut := helper.Cmd("odo", "service", "create", "--from-file", invalidFileName, "--project", commonVar.Project).ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
+						Expect(stdOut).To(ContainSubstring("invalid \"metadata\" in the yaml; provide a valid \"metadata.name\""))
 					})
 				})
 			})

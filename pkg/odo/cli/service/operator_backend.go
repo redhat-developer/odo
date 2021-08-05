@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	ErrNoMetadataName = errors.New("couldn't find metadata.name in the yaml")
+	ErrNoMetadataName = errors.New("invalid \"metadata\" in the yaml; provide a valid \"metadata.name\"")
 )
 
 // This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
