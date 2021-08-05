@@ -66,7 +66,7 @@ Here myetcdcluster is the name of the EtcdCluster service which can be found usi
 We've also created a backend application called 'backend' with port 8080 exposed:
 odo create nodejs backend --port 8080
 
-We can now link the two applications (works only with s2i components):
+We can now link the two applications:
 odo link backend --component frontend
 
 Now the frontend has 2 ENV variables it can use:
