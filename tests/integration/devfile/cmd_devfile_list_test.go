@@ -61,9 +61,8 @@ var _ = Describe("odo list with devfile", func() {
 			output = helper.Cmd("odo", "list", "--project", commonVar.Project).ShouldPass().Out()
 			// this test makes sure that a devfile component doesn't show up as an s2i component as well
 			Expect(helper.Suffocate(output)).To(Equal(helper.Suffocate(fmt.Sprintf(`
-			Devfile Components:
-			APP        NAME       PROJECT        TYPE       STATE
-			app        %[1]s     %[2]s           nodejs     Pushed
+			APP        NAME       PROJECT        TYPE       STATE        MANAGED BY ODO
+			app        %[1]s     %[2]s           nodejs     Pushed		 Yes
 			`, cmpName, commonVar.Project))))
 
 			By("checking that it shows components in all applications")

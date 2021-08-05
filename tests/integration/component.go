@@ -645,7 +645,7 @@ func componentTests(args ...string) {
 
 			// check the status of devfile component
 			stdout := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass().Out()
-			helper.MatchAllInOutput(stdout, []string{cmpName, "Devfile Components", "Pushed"})
+			helper.MatchAllInOutput(stdout, []string{cmpName, "Pushed"})
 
 			// verify the url
 			stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
@@ -688,7 +688,7 @@ func componentTests(args ...string) {
 
 		// verifyListOutput verifies if the components not managed by odo are listed
 		var verifyListOutput = func(output string, componentList []compStruct) {
-			Expect(output).To(ContainSubstring("Other Components running on the cluster(read-only)"))
+			helper.MatchAllInOutput(output, []string{"MANAGED BY ODO", "No"})
 			for _, comp := range componentList {
 				Expect(output).To(ContainSubstring(comp.Name))
 				Expect(output).To(ContainSubstring(comp.App))

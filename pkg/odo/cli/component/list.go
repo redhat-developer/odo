@@ -297,12 +297,14 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 
 	if !log.IsJSON() {
 
-		if len(devfileComponents) != 0 {
+		if len(devfileComponents) != 0 || len(otherComps) != 0 {
 			lo.hasDevfileComponents = true
-			fmt.Fprintln(w, "Devfile Components: ")
-			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE", "\t", "MANAGED BY ODO")
 			for _, comp := range devfileComponents {
-				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Status.State)
+				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Status.State, "\t", "Yes")
+			}
+			for _, comp := range otherComps {
+				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", component.StateTypePushed, "\t", "No")
 			}
 			w.Flush()
 
@@ -318,15 +320,6 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
 			for _, comp := range s2iComponents {
 				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
-			}
-			w.Flush()
-		}
-		if len(otherComps) != 0 {
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "Other Components running on the cluster(read-only): ")
-			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE")
-			for _, comp := range otherComps {
-				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type)
 			}
 			w.Flush()
 		}
