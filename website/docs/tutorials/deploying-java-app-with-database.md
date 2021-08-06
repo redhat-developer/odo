@@ -3,35 +3,35 @@ title: Deploying a Java OpenLiberty application with PostgreSQL
 sidebar_position: 1
 ---
 
-This scenario illustrates deploying a Java application with odo and linking it to an in-cluster PostgreSQL service in the minikube environment.
+This tutorial illustrates deploying a [Java OpenLiberty](https://openliberty.io/) application with odo and linking it to an in-cluster PostgreSQL service in the minikube environment.
 
 There are two roles in this example:
 
-1. Cluster Admin - Prepare the cluster by installing the required operators into the cluster.
+1. Cluster Admin - Prepare the cluster by installing the required operators on the cluster.
 2. Application Developer - Imports a Java application, creates a Database instance, and connect the application to the Database instance.
 
 ## Cluster admin
 ---
 
-This section assumes that you have installed minikube and configured it. See the section on setting up a [Kubernetes](../getting-started/cluster-setup/kubernetes.md) cluster using minikube if you have not already configured it.
+This section assumes that you have installed [minikube and configured it](../getting-started/cluster-setup/kubernetes.md).
+
+We will be using Operators in this guide. An Operator helps in deploying the instances of a given service, for example PostgreSQL, MySQL, Redis.
+
+Furthermore, these Operators are "bind-able". Meaning, if they expose information necessary to connect to them, odo can help connect your component to their instances,
+
+See the [Operator installation guide](../getting-started/cluster-setup/kubernetes.md) to install and configure an Operator in the Kubernetes cluster, if you have not already done so.
 
 The cluster admin must install two Operators into the cluster:
 
 1. PostgreSQL Operator
 2. Service Binding Operator
 
-An operator helps in deploying instances of a given service, for example PostgreSQL, MySQL, Redis.
-
-Furthermore, these operators are "bind-able" as they expose information necessary for an application to connect to their instances.
-
-See the [Operator installation guide](../getting-started/cluster-setup/kubernetes.md) to install and configure an operator in the Kubernetes cluster, if you have not already done so.
-
 We will use [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) found on the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case.
-
+   
 ## Application Developer
 ---
 
-This section assumes that you have installed `odo`. See the [Installation guide](../getting-started/installation.md) if you have not already installed it.
+This section assumes that you have [installed `odo`](../getting-started/installation.md).
 
 Since the PostgreSQL Operator installed in above step is available only in `my-postgresql-operator-dev4devs-com` namespace, ensure that `odo` uses this namespace to perform any tasks:
 
@@ -52,7 +52,7 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
     cd ./application-stack-samples/jpa
     ```
 
-3. Initialize the project:
+3. Initialize the application:
     ```shell
     odo create java-openliberty mysboproj
     ```
@@ -60,7 +60,7 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
 
 4. Push the application to the cluster:
     ```shell
-    odo push --show-logs
+    odo push --show-log
     ```
 
 5. The application is now deployed to the cluster - you can view the status of the cluster, and the application test results by streaming the cluster logs into the terminal.
@@ -100,14 +100,14 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
     ```
    Note: This error will be fixed at a later stage in the tutorial when we connect a database instance to this application.
 
-6. You can also create an ingress URL with `odo` to access the application:
+6. You can also create a URL with `odo` to access the application:
     ```shell
     odo url create --host $(minikube ip).nip.io
     ```
 
 7. Push the URL to activate it:
     ```shell
-    odo push --show-logs
+    odo push --show-log
     ```
 
 8. Display the created URL:
@@ -123,9 +123,8 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
     mysboproj-9080     Pushed     http://mysboproj-9080.192.168.49.2.nip.io     9080     false      ingress
     ```
 
-10. Use the URL to navigate to the `CreatePerson.xhtml` data entry page and enter requested data:
-URL/CreatePerson.xhtml and enter a user's name and age data using the form.
-
+10. Use the URL to navigate to the `CreatePerson.xhtml` data entry page to use the application:
+    In case of this tutorial, we will access `http://mysboproj-9080.192.168.49.2.nip.io/CreatePerson.xhtml`. Note that the URL could be different for you. Now, enter a name and age data using the form.
 11. Click on the **Save** button when complete
 
 
@@ -163,7 +162,7 @@ You can use the default configuration of the PostgreSQL Operator to start a Post
     odo service create --from-file db.yaml
    ```
    ```shell
-    odo push --show-logs
+    odo push --show-log
     ```
 
     This action will create a database instance pod in the `my-postgresql-operator-dev4devs-com` namespace. The application will be configured to use this database.
@@ -202,7 +201,7 @@ Now, the only thing that remains is to connect the DB and the application. We wi
 
 4. Push this link to the cluster:
     ```shell
-    odo push --show-logs
+    odo push --show-log
     ```
 
     After the link has been created and pushed, a secret will have been created containing the database connection data that the application requires.
