@@ -68,7 +68,6 @@ else
     fi
 fi
 
-cp -r reports $ARTIFACT_DIR
-cp -r tests/reports/ $ARTIFACT_DIR/reports/
+cp -r reports tests/reports $ARTIFACT_DIR
 
 oc logout
