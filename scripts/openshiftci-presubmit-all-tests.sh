@@ -69,5 +69,6 @@ else
 fi
 
 cp -r reports $ARTIFACT_DIR
+cp -r tests/reports/ $ARTIFACT_DIR/reports/
 
 oc logout
