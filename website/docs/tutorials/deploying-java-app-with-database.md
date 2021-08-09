@@ -15,11 +15,15 @@ There are two roles in this example:
 
 This section assumes that you have installed [minikube and configured it](../getting-started/cluster-setup/kubernetes.md).
 
+[//]: # (Move this section to Architecture > Service Binding or create a new Operators doc)
+
 We will be using Operators in this guide. An Operator helps in deploying the instances of a given service, for example PostgreSQL, MySQL, Redis.
 
-Furthermore, these Operators are "bind-able". Meaning, if they expose information necessary to connect to them, odo can help connect your component to their instances,
+Furthermore, these Operators are "bind-able". Meaning, if they expose information necessary to connect to them, odo can help connect your component to their instances.
 
-See the [Operator installation guide](../getting-started/cluster-setup/kubernetes.md) to install and configure an Operator in the Kubernetes cluster, if you have not already done so.
+[//]: # (Move until here)
+
+See the [Operator installation guide](../getting-started/cluster-setup/kubernetes.md) to install and configure an Operator in the Kubernetes cluster.
 
 The cluster admin must install two Operators into the cluster:
 
@@ -58,14 +62,14 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
     ```
    `java-openliberty` is the type of your application and `mysboproject` is the name of your application.
 
-4. Push the application to the cluster:
+4. Deploy the application to the cluster:
     ```shell
     odo push --show-log
     ```
 
-5. The application is now deployed to the cluster - you can view the status of the cluster, and the application test results by streaming the cluster logs into the terminal.
+5. The application is now deployed to the cluster - you can view the status of the cluster, and the application test results by streaming the cluster logs of the component that we pushed to the cluster in the previous step.
     ```shell
-    odo log
+    odo log --follow
     ```
 
     Notice the failing tests due to an `UnknownDatabaseHostException`:
@@ -125,14 +129,14 @@ In this example we will use odo to manage a sample [Java MicroServices JPA appli
 
 10. Use the URL to navigate to the `CreatePerson.xhtml` data entry page to use the application:
     In case of this tutorial, we will access `http://mysboproj-9080.192.168.49.2.nip.io/CreatePerson.xhtml`. Note that the URL could be different for you. Now, enter a name and age data using the form.
+
 11. Click on the **Save** button when complete
 
-
-Note that the entry of any data does not result in the data being displayed when you click on the "View Persons Record List" link.
+Note that the entry of any data does not result in the data being displayed when you click on the "View Persons Record List" link, until we connect the application to a database.
 
 ### Creating a database to be used by the sample application
 
-You can use the default configuration of the PostgreSQL Operator to start a Postgre database from it. But, since our app uses few specific configuration values, lets make sure they are properly populated in the database service we start.
+You can use the default configuration of the PostgreSQL Operator to start a Postgre database from it. But since our app uses few specific configuration values, lets make sure they are properly populated in the database service we start.
 
 1. Store the YAML of the service in a file:
     ```shell
@@ -147,8 +151,7 @@ You can use the default configuration of the PostgreSQL Operator to start a Post
       service.binding/db_password: 'path={.spec.databasePassword}'
       service.binding/db_user: 'path={.spec.databaseUser}'
     ```
-
-    This configuration ensures that when a database service is started using this file, appropriate annotations are added to it. Annotations help the Service Binding Operator in injecting those values into the application. Hence, the above configuration will help Service Binding Operator inject the values for `databaseName`, `databasePassword` and `databaseUser` into the application.
+   This configuration ensures that when a database service is started using this file, appropriate annotations are added to it. Annotations help the Service Binding Operator in injecting those values into the application. Hence, the above configuration will help Service Binding Operator inject the values for `databaseName`, `databasePassword` and `databaseUser` into the application.
 
 3. Change the following values under `spec:` section of the YAML file:
     ```yaml
@@ -171,19 +174,7 @@ You can use the default configuration of the PostgreSQL Operator to start a Post
 
 Now, the only thing that remains is to connect the DB and the application. We will use odo to create a link to the Dev4Devs PostgreSQL Database Operator in order to access the database connection information.
 
-1. Display the services available to odo: - You will see an entry for the PostgreSQL Database Operator displayed:
-    ```shell
-   odo catalog list services
-   ```
-   Your output should look similar to the following:
-   ```shell
-   $ odo catalog list services
-   Operators available in the cluster
-   NAME                                             CRDs
-   postgresql-operator.v0.1.1                       Backup, Database
-    ```
-
-2. List the service associated with the database created via the PostgreSQL Operator:
+1. List the service associated with the database created via the PostgreSQL Operator:
     ```shell
     odo service list
    ```
@@ -194,12 +185,12 @@ Now, the only thing that remains is to connect the DB and the application. We wi
     Database/sampledatabase   Yes (mysboproj)    Pushed    6m35s
     ```
 
-3. Create a Service Binding Request between the application, and the database using the Service Binding Operator service created in the previous step:
+2. Create a Service Binding Request between the application, and the database using the Service Binding Operator service created in the previous step:
     ```shell
     odo link Database/sampledatabase
     ```
 
-4. Push this link to the cluster:
+3. Push this link to the cluster:
     ```shell
     odo push --show-log
     ```
@@ -212,7 +203,7 @@ Now, the only thing that remains is to connect the DB and the application. We wi
 
     Note: Pushing the newly created link will terminate the existing application pod and start a new application pod that mounts this secret.
 
-5. Once the new pod has initialized, you can see the secret database connection data as it is injected into the pod environment by executing the following:
+4. Once the new pod has initialized, you can see the secret database connection data as it is injected into the pod environment by executing the following:
     ```shell
     odo exec -- bash -c 'export | grep DATABASE' \
     declare -x DATABASE_CLUSTERIP="10.106.182.173" \
@@ -226,11 +217,11 @@ Now, the only thing that remains is to connect the DB and the application. We wi
     
     You may inspect the database instance itself and query the table to see the data in place by using the postgreSQL command line tool, `psql`.
 
-6. Navigate to the pod containing your db from the dashboard console. Use `minikube dashboard` to start the console.
+5. Navigate to the pod containing your db from the dashboard console. Use `minikube dashboard` to start the console.
 
-7. Click on the terminal tab.
+6. Click on the terminal tab.
 
-8. At the terminal prompt access `psql` for your database `sampledb`.
+7. At the terminal prompt access `psql` for your database `sampledb`.
     ```shell
    psql sampledb
    ```
@@ -243,12 +234,12 @@ Now, the only thing that remains is to connect the DB and the application. We wi
    sampledb=#
     ```
 
-9. Issue the following SQL statement from your :
+8. Issue the following SQL statement from your :
     ```postgresql
     SELECT * FROM person;
     ```
 
-10. You can see the data that appeared in the results of the test run:
+9. You can see the data that appeared in the results of the test run:
     ```shell
     sampledb=# SELECT * FROM person;
 
