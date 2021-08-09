@@ -47,8 +47,6 @@ type CreateOptions struct {
 	ParametersMap map[string]string
 	// interactive specifies whether the command operates in interactive mode or not
 	interactive bool
-	// outputCLI specifies whether to output the non-interactive version of the command or not
-	outputCLI bool
 	// CmdFullName records the command's full name
 	CmdFullName string
 	// whether or not to wait for the service to be ready
