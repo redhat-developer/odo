@@ -81,6 +81,14 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					helper.Cmd("odo", "delete", "--all", "-f", "--context", commonVar.Context).ShouldPass().Out()
 				})
 
+				It("should try to create a service in dry run mode with some provided params", func() {
+					serviceName := helper.RandString(10)
+					output := helper.Cmd("odo", "service", "create", postgresDatabase, serviceName, "-p",
+						"databaseName=odo", "-p", "size=1", "-p", "databaseUser=odo", "-p",
+						"databaseStorageRequest=1Gi", "-p", "databasePassword=odopasswd", "--dry-run", "--context", commonVar.Context).ShouldPass().Out()
+					helper.MatchAllInOutput(output, []string{fmt.Sprintf("name: %s", serviceName), "odo", "odopasswd", "1Gi"})
+				})
+
 				When("creating a postgres operand with params", func() {
 					var operandName string
 
