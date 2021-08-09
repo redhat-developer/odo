@@ -40,6 +40,6 @@ if [ $error ]; then
     exit -1
 fi
 
-cp -r reports $ARTIFACT_DIR 
+cp -r reports tests/reports $ARTIFACT_DIR 
 
 oc logout
