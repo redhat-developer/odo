@@ -2,6 +2,10 @@
 
 ## Next
 
+### Cleanup
+
+- Dropping support for service catalog based services ([#4906](https://github.com/openshift/odo/pull/4906))
+
 ### Feature/Enhancements
 
 - Added a column in odo list output to indicate components created by odo ([#4962](https://github.com/openshift/odo/pull/4962))
