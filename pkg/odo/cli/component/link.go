@@ -44,7 +44,7 @@ var (
 # and make the secrets accessible as files in the '/bindings/etcd/' directory
 %[1]s EtcdCluster/myetcd  --bind-as-files --name etcd`)
 
-	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component (works only with s2i components)
+	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component
 
 If the source component is not provided, the current active component is assumed.
 In both use cases, link adds the appropriate secret to the environment of the source component. 
@@ -66,7 +66,7 @@ Here myetcdcluster is the name of the EtcdCluster service which can be found usi
 We've also created a backend application called 'backend' with port 8080 exposed:
 odo create nodejs backend --port 8080
 
-We can now link the two applications (works only with s2i components):
+We can now link the two applications:
 odo link backend --component frontend
 
 Now the frontend has 2 ENV variables it can use:

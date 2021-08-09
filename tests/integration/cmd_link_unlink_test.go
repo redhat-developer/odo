@@ -32,7 +32,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 	Context("when running help for link and unlink command", func() {
 		It("should display the help", func() {
 			appHelp := helper.Cmd("odo", "link", "-h").ShouldPass().Out()
-			helper.MatchAllInOutput(appHelp, []string{"Link component to a service ", "backed by an Operator or Service Catalog", "or component", "works only with s2i components"})
+			helper.MatchAllInOutput(appHelp, []string{"Link component to a service ", "backed by an Operator or Service Catalog", "or component"})
 			appHelp = helper.Cmd("odo", "unlink", "-h").ShouldPass().Out()
 			Expect(appHelp).To(ContainSubstring("Unlink component or service from a component"))
 		})
