@@ -51,7 +51,7 @@ const ServiceKind = "app.kubernetes.io/service-kind"
 
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
 func CreateOperatorService(client *kclient.Client, CustomResourceDefinition unstructured.Unstructured) error {
-	gvr, err := GetGVRFromUnstructured(client, CustomResourceDefinition)
+	gvr, err := GetRestMappingFromUnstructured(client, CustomResourceDefinition)
 	if err != nil {
 		return err
 	}
@@ -551,14 +551,13 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 		if err != nil {
 			return nil, err
 		}
-
-		gvr, err := GetGVRFromUnstructured(client, u)
+		restMapping, err := GetRestMappingFromUnstructured(client, u)
 		if err != nil {
 			return nil, err
 		}
 		var match bool
 		for _, i := range operatorGVRList {
-			if i.Resource == gvr.Resource {
+			if i.Resource == restMapping.Resource {
 				match = true
 				break
 			}
@@ -703,7 +702,7 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 
 		crdName := u.GetName()
 
-		gvr, err := GetGVRFromUnstructured(client, u)
+		restMapping, err := GetRestMappingFromUnstructured(client, u)
 		if err != nil {
 			return err
 		}
@@ -713,7 +712,7 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 		// if no, it is likely a Kubernetes built-in resource, and we need not set all labels to it.
 		var match bool
 		for _, i := range operatorGVRList {
-			if i.Resource == gvr.Resource {
+			if i.Resource == restMapping.Resource {
 				match = true
 				break
 			}
@@ -825,12 +824,12 @@ func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []d
 			continue
 		}
 
-		gvr, err := GetGVRFromUnstructured(client, u)
+		restMapping, err := GetRestMappingFromUnstructured(client, u)
 		if err != nil {
 			return err
 		}
 
-		d, err := client.GetDynamicResource(gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, u.GetName())
+		d, err := client.GetDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName())
 		if err != nil {
 			return err
 		}
@@ -847,7 +846,7 @@ func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []d
 		}
 		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
 
-		err = client.UpdateDynamicResource(gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, u.GetName(), d)
+		err = client.UpdateDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName(), d)
 		if err != nil {
 			return err
 		}
@@ -859,29 +858,9 @@ func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
 }
 
-// GetGVKFromUnstructured takes an unstructured struct and returns group, version and kind information as strings
-// It assumes group to be "core" for cases where metadata.apiVersion can't be split using forward slash, e.g. 'v1'
-func GetGVKFromUnstructured(u unstructured.Unstructured) schema.GroupVersionKind {
-	apiVersion := strings.Split(u.GetAPIVersion(), "/")
-	var group, version, kind string
-	if len(apiVersion) != 2 {
-		group = ""
-		version = apiVersion[0]
-	} else {
-		group = apiVersion[0]
-		version = apiVersion[1]
-	}
-	kind = u.GetKind()
-	return schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	}
-}
-
-// GetGVRFromUnstructured returns GVR from unstructured data
-func GetGVRFromUnstructured(client *kclient.Client, u unstructured.Unstructured) (*meta.RESTMapping, error) {
-	gvk := GetGVKFromUnstructured(u)
+// GetRestMappingFromUnstructured returns GVR from unstructured data
+func GetRestMappingFromUnstructured(client *kclient.Client, u unstructured.Unstructured) (*meta.RESTMapping, error) {
+	gvk := u.GroupVersionKind()
 
 	cfg, err := client.KubeConfig.ClientConfig()
 	if err != nil {

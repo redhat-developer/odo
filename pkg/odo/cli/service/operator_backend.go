@@ -79,7 +79,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
-		gvk := svc.GetGVKFromUnstructured(u)
+		gvk := u.GroupVersionKind()
 		b.group, b.version, b.kind = gvk.Group, gvk.Version, gvk.Kind
 
 		if u.GetName() == "" {
