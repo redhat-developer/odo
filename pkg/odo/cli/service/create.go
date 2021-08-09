@@ -1,29 +1,19 @@
 package service
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"strings"
-	"text/template"
-
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"strings"
 )
 
 const (
 	createRecommendedCommandName = "create"
-	equivalentTemplate           = "{{.CmdFullName}} {{.ServiceType}}" +
-		"{{if .ServiceName}} {{.ServiceName}}{{end}}" +
-		" --app {{.Application}}" +
-		" --project {{.Project}}" +
-		"{{if .Plan}} --plan {{.Plan}}{{end}}" +
-		"{{range $key, $value := .ParametersMap}} -p {{$key}}={{$value}}{{end}}"
 )
 
 var (
@@ -132,25 +122,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		log.Info("Successfully added service to the configuration; do 'odo push' to create service on the cluster")
 	}
 
-	equivalent := o.outputNonInteractiveEquivalent()
-	if len(equivalent) > 0 {
-		log.Info("Equivalent command:\n" + ui.StyledOutput(equivalent, "cyan"))
-	}
 	return
-}
-
-// outputNonInteractiveEquivalent outputs the populated options as the equivalent command that would be used in non-interactive mode
-func (o *CreateOptions) outputNonInteractiveEquivalent() string {
-	if o.outputCLI {
-		var tpl bytes.Buffer
-		t := template.Must(template.New("service-create-cli").Parse(equivalentTemplate))
-		e := t.Execute(&tpl, o)
-		if e != nil {
-			panic(e) // shouldn't happen
-		}
-		return strings.TrimSpace(tpl.String())
-	}
-	return ""
 }
 
 // NewCmdServiceCreate implements the odo service create command.
