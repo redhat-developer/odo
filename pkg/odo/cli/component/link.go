@@ -12,7 +12,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -181,8 +180,6 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 
 	//Adding context flag
 	genericclioptions.AddContextFlag(linkCmd, &o.componentContext)
-
-	completion.RegisterCommandHandler(linkCmd, completion.LinkCompletionHandler)
 
 	return linkCmd
 }

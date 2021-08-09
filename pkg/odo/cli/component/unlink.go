@@ -7,7 +7,6 @@ import (
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
 
 	"github.com/openshift/odo/pkg/odo/util"
@@ -111,8 +110,6 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	AddComponentFlag(unlinkCmd)
 	// Adding context flag
 	genericclioptions.AddContextFlag(unlinkCmd, &o.componentContext)
-
-	completion.RegisterCommandHandler(unlinkCmd, completion.UnlinkCompletionHandler)
 
 	return unlinkCmd
 }

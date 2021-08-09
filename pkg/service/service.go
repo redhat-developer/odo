@@ -10,7 +10,6 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
@@ -43,44 +42,7 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
 
-// NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
-func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
-	return ServicePlanParameter{
-		Name:    name,
-		Default: defaultValue,
-		Validatable: validation.Validatable{
-			Type:     typeName,
-			Required: required,
-		},
-	}
-}
-
 type servicePlanParameters []ServicePlanParameter
-
-func (params servicePlanParameters) Len() int {
-	return len(params)
-}
-
-func (params servicePlanParameters) Less(i, j int) bool {
-	return params[i].Name < params[j].Name
-}
-
-func (params servicePlanParameters) Swap(i, j int) {
-	params[i], params[j] = params[j], params[i]
-}
-
-// CreateService creates new service from serviceCatalog
-// It returns string representation of service instance created on the cluster and error (if any).
-func CreateService(client *occlient.Client, serviceName, serviceType, servicePlan string, parameters map[string]string, applicationName string) (string, error) {
-	labels := componentlabels.GetLabels(serviceName, applicationName, true)
-	// save service type as label
-	labels[componentlabels.ComponentTypeLabel] = serviceType
-	serviceInstance, err := client.GetKubeClient().CreateServiceInstance(serviceName, serviceType, servicePlan, parameters, labels)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to create service instance")
-	}
-	return serviceInstance, nil
-}
 
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
 // It returns a CR (string representation) and CSV (Operator) upon successfully

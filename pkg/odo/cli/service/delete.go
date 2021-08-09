@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -111,6 +110,5 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 	}
 	serviceDeleteCmd.Flags().BoolVarP(&o.serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.componentContext)
-	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 	return serviceDeleteCmd
 }
