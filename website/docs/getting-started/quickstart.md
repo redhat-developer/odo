@@ -40,7 +40,7 @@ This quickstart shows you how to build and deploy a real world application in a 
 
 4. Deploy the application into the cluster. This step might take a few minutes depending on your internet connection.
   ```shell
-  odo push --show-logs
+  odo push --show-log
   ```
 
 5. Check the application description for more information about it.
@@ -75,7 +75,7 @@ This quickstart shows you how to build and deploy a real world application in a 
 
 7. Deploy the changes.
   ```shell
-  odo push --show-logs
+  odo push --show-log
   ```
 
 8. Check the url list to obtain the URL.
