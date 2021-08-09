@@ -45,6 +45,9 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	if !util.IsValidKubeConfigPath() {
+		return fmt.Errorf("please provide a valid kubeconfig file path")
+	}
 	devfilePath := filepath.Join(o.contextDir, "devfile.yaml")
 	if util.CheckPathExists(devfilePath) {
 		o.devfilePath = devfilePath

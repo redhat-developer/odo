@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/util"
 	"strings"
 
 	"github.com/openshift/odo/pkg/config"
@@ -73,6 +74,9 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	checkRouteAvailability := false
 	if o.now {
 		checkRouteAvailability = true
+		if !util.IsValidKubeConfigPath() {
+			return fmt.Errorf("please provide a valid kubeconfig file path")
+		}
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:                    cmd,
