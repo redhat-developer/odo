@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
-	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
@@ -583,113 +582,9 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	return kind, name, nil
 }
 
-// GetServiceClassAndPlans returns the service class details with the associated plans
-// serviceName is the name of the service class
-// the first parameter returned is the ServiceClass object
-// the second parameter returned is the array of ServicePlan associated with the service class
-func GetServiceClassAndPlans(client *occlient.Client, serviceName string) (ServiceClass, []ServicePlan, error) {
-	result, err := client.GetKubeClient().GetClusterServiceClass(serviceName)
-	if err != nil {
-		return ServiceClass{}, nil, errors.Wrap(err, "unable to get the given service")
-	}
-
-	var meta map[string]interface{}
-	err = json.Unmarshal(result.Spec.ExternalMetadata.Raw, &meta)
-	if err != nil {
-		return ServiceClass{}, nil, errors.Wrap(err, "unable to unmarshal data the given service")
-	}
-
-	service := ServiceClass{
-		Name:              result.Spec.ExternalName,
-		Bindable:          result.Spec.Bindable,
-		ShortDescription:  result.Spec.Description,
-		Tags:              result.Spec.Tags,
-		ServiceBrokerName: result.Spec.ClusterServiceBrokerName,
-	}
-
-	if val, ok := meta["longDescription"]; ok {
-		service.LongDescription = val.(string)
-	}
-
-	if val, ok := meta["dependencies"]; ok {
-		versions := fmt.Sprint(val)
-		versions = strings.Replace(versions, "[", "", -1)
-		versions = strings.Replace(versions, "]", "", -1)
-		service.VersionsAvailable = strings.Split(versions, " ")
-	}
-
-	// get the plans according to the service name
-	planResults, err := client.GetKubeClient().ListClusterServicePlansByServiceName(result.Name)
-	if err != nil {
-		return ServiceClass{}, nil, errors.Wrap(err, "unable to get plans for the given service")
-	}
-
-	var plans []ServicePlan
-	for _, result := range planResults {
-		plan, err := NewServicePlan(result)
-		if err != nil {
-			return ServiceClass{}, nil, err
-		}
-
-		plans = append(plans, plan)
-	}
-
-	return service, plans, nil
-}
-
 type InstanceCreateParameterSchema struct {
 	Required   []string
 	Properties map[string]ServicePlanParameter
-}
-
-// NewServicePlan creates a new ServicePlan based on the specified ClusterServicePlan
-func NewServicePlan(result scv1beta1.ClusterServicePlan) (plan ServicePlan, err error) {
-	plan = ServicePlan{
-		Name:        result.Spec.ExternalName,
-		Description: result.Spec.Description,
-	}
-
-	// get the display name from the external meta data
-	var externalMetaData map[string]interface{}
-	err = json.Unmarshal(result.Spec.ExternalMetadata.Raw, &externalMetaData)
-	if err != nil {
-		return plan, errors.Wrap(err, "unable to unmarshal data the given service")
-	}
-
-	if val, ok := externalMetaData["displayName"]; ok {
-		plan.DisplayName = val.(string)
-	}
-
-	// get the create parameters
-	schema := InstanceCreateParameterSchema{}
-	paramBytes := result.Spec.InstanceCreateParameterSchema.Raw
-	err = json.Unmarshal(paramBytes, &schema)
-	if err != nil {
-		return plan, errors.Wrapf(err, "unable to unmarshal data the given service: %s", string(paramBytes[:]))
-	}
-
-	plan.Parameters = make([]ServicePlanParameter, 0, len(schema.Properties))
-	for k, v := range schema.Properties {
-		v.Name = k
-		// we set the Required flag if the name of parameter
-		// is one of the parameters indicated as required
-		// these parameters are not strictly required since they might have default values
-		v.Required = isRequired(schema.Required, k)
-
-		plan.Parameters = append(plan.Parameters, v)
-	}
-
-	return
-}
-
-// isRequired checks whether the parameter with the specified name is among the given list of required ones
-func isRequired(required []string, name string) bool {
-	for _, n := range required {
-		if n == name {
-			return true
-		}
-	}
-	return false
 }
 
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
