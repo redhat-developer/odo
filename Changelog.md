@@ -5,6 +5,7 @@
 ### Feature/Enhancements
 
 - Added a column in odo list output to indicate components created by odo ([#4962](https://github.com/openshift/odo/pull/4962))
+- Fix description for "odo link" command ([#4930](https://github.com/openshift/odo/pull/4930))
 
 ### Bug Fixes
 
