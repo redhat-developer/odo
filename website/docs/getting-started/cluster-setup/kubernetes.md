@@ -15,6 +15,7 @@ If you are using a Kubernetes cluster other than minikube, this guide assumes th
 * [Install the Service Binding Operator](#install-the-service-binding-operator)
 * [Install an operator](#install-an-operator)
 * [Verify the operator installation](#verify-the-operator-installation)
+* [Enable Ingress addon](#enable-ingress-addon)
 
 ## Install the OLM
 The Operator Lifecycle Manager(OLM) is a component of the Operator Framework, an open source toolkit to manage Kubernetes native applications, called Operators, in a streamlined and scalable way.[(Source)](https://olm.operatorframework.io/)
@@ -63,11 +64,26 @@ service-binding-operator.v0.9.1     ServiceBinding, ServiceBinding
 ```
 If you do not see your installed operator in the list, follow the [troubleshooting guide](#troubleshoot-the-operator-installation) to find the issue and debug it.
 
+## Enable Ingress addon
+To access an application externally, odo creates a URL; addons such as ingress helps enable this feature on a Kubernetes cluster.
+
+To enable the **ingress** addon on a minikube cluster, run the following command:
+```shell
+minikube addons enable ingress
+```
+To enable this feature on a Kubernetes cluster other than minikube, run the following command to install the default setup:
+```shell
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.48.1/deploy/static/provider/cloud/deploy.yaml
+```
+To learn more about setting up ingress, see the [Ingress prerequisites](https://kubernetes.io/docs/concepts/services-networking/ingress/#prerequisites) on the official kubernetes documentation.
+
+To learn more about ingress addon, see the [official kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/).
+
 ## Troubleshoot the Operator installation
 There are two ways to confirm that the operator has been installed properly.
 The examples you may see in this guide uses [Datadog Operator](https://operatorhub.io/operator/datadog-operator) and [Service Binding Operator](https://operatorhub.io/operator/service-binding-operator).
-1. Verify that its pod started and is in “Running” state.  
-  ```s****************hell
+1. Verify that its pod started and is in “Running” state.
+  ```shell
   kubectl get pods -n operators
   ```
 The output can look similar to:
@@ -97,5 +113,5 @@ The output can look similar to:
   ```
   If you see output like above where the pod is in CrashLoopBackOff state or any other state other than Running, delete the pod:
   ```shell
-  kubectl delete pods -n olm <operatorhubio-catalog-name>
+  kubectl delete pods/<operatorhubio-catalog-name> -n olm
   ```
