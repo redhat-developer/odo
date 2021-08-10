@@ -1540,6 +1540,10 @@ func GetEnvWithDefault(key string, defaultval string) string {
 	return val
 }
 
+func IsInvalidKubeConfigError(err error) bool {
+	return strings.Contains(err.Error(), "invalid configuration")
+}
+
 //IsValidKubeConfigPath checks if specified `KUBECONFIG` value is a valid file i.e the path should exist and be a file
 //if env `KUBECONFIG` is set then that is used or default `KUBECONFIG` is checked
 func IsValidKubeConfigPath() error {

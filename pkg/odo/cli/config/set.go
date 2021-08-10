@@ -85,6 +85,12 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		IsNow:                  o.now,
 		CheckRouteAvailability: checkRouteAvailability,
 	})
+	if err != nil {
+		if util.IsInvalidKubeConfigError(err) {
+			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
+		}
+		return err
+	}
 	if o.Context.EnvSpecificInfo != nil {
 		o.IsDevfile = true
 		o.DevfilePath = o.Context.EnvSpecificInfo.GetDevfilePath()
