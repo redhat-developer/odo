@@ -69,9 +69,9 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	checkRouteAvailability := false
 	if o.now {
 		checkRouteAvailability = true
-		if err1 := util.IsValidKubeConfigPath(); err1 != nil {
-			return err1
-		}
+	}
+	if errZ := util.IsValidKubeConfigPath(); errZ != nil {
+		return errZ
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:                    cmd,

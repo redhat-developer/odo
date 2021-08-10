@@ -45,8 +45,8 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if err1 := util.IsValidKubeConfigPath(); err1 != nil {
-		return err1
+	if errY := util.IsValidKubeConfigPath(); errY != nil {
+		return errY
 	}
 	devfilePath := filepath.Join(o.contextDir, "devfile.yaml")
 	if util.CheckPathExists(devfilePath) {
