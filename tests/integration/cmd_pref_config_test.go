@@ -235,23 +235,31 @@ var _ = Describe("odo preference and config command tests", func() {
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
 		var kubeconfigOld string
+		var ocRunner helper.OcRunner
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-			kubeconfigOld = os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", helper.CreateEmptyFile(commonVar.Context, "", ""))
+			ocRunner = helper.NewOcRunner("oc")
 		})
 		AfterEach(func() {
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 		When("user is working with a devfile component", func() {
 			It("should set, list and delete config successfully", func() {
+				if helper.IsKubernetesCluster() {
+					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
+				}
+				ocRunner.Logout()
 				helper.Cmd("odo", "config", "set", "--force", "--context", commonVar.Context, "Name", "foobar").ShouldPass()
 				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(configValue).To(ContainSubstring("foobar"))
 				helper.Cmd("odo", "config", "unset", "--force", "--context", commonVar.Context, "Name").ShouldPass()
 			})
 			It("should set, list and delete config envs successfully", func() {
+				if helper.IsKubernetesCluster() {
+					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
+				}
+				ocRunner.Logout()
 				helper.Cmd("odo", "config", "set", "--force", "--env", "hello=world", "--context", commonVar.Context).ShouldPass()
 				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
 				helper.MatchAllInOutput(configValue, []string{"hello", "world"})

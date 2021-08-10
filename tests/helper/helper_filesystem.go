@@ -340,13 +340,3 @@ func CreateSimpleFile(context, filePrefix, fileExtension string) (string, string
 
 	return FilePath, string(content)
 }
-
-func CreateEmptyFile(context, filePrefix, fileExtension string) string {
-	FilePath := filepath.Join(context, filePrefix+RandString(10)+fileExtension)
-	emptyFile, err := os.Create(FilePath)
-	if err != nil {
-		Expect(err).NotTo(HaveOccurred())
-	}
-	Expect(emptyFile.Close()).NotTo(HaveOccurred())
-	return FilePath
-}

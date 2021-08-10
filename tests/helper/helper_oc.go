@@ -771,3 +771,7 @@ func (oc OcRunner) GetSecrets(project string) string {
 func (oc OcRunner) GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string {
 	return GetVolumeNamesFromDeployment(oc.path, componentName, appName, projectName)
 }
+
+func (oc OcRunner) Logout() {
+	Cmd(oc.path, "logout")
+}
