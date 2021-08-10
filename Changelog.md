@@ -11,10 +11,11 @@
 
 ### Tests
 
-- runs nightly test of main branch of odo against [SBO master branch](https://github.com/redhat-developer/service-binding-operator) ([4942](https://github.com/openshift/odo/issues/4942))
+- runs nightly test of main branch of odo against [SBO master branch](https://github.com/redhat-developer/service-binding-operator) ([#4942](https://github.com/openshift/odo/issues/4942))
 
 ### Documentation
 
+- Documents steps for component creation ([#4982](https://github.com/openshift/odo/pull/4982))
 ## 2.2.4
 
 ### Feature/Enhancements
