@@ -113,6 +113,32 @@ func componentTests(args ...string) {
 		Expect(val).To(Equal("BAR"))
 	})
 
+	It("should print deprecation warning when creating a S2I component", func() {
+		// Note: Remove these tests once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
+		// We are using .Err() since warnings are considered as a part of Error
+		stdOut := helper.Cmd("odo", "create", "nodejs", "--s2i", "--context", commonVar.Context).ShouldPass().Err()
+		Expect(stdOut).To(ContainSubstring("S2I components Deprecated"))
+	})
+
+	It("should print deprecation warning when creating and pushing a S2I git component", func() {
+		// Note: Remove these tests once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
+		// We are using .Err() since warnings are considered as a part of Error
+		stdOut := helper.Cmd("odo", "create", "nodejs", "--s2i", "--git", "https://github.com/openshift/nodejs-ex.git", "--context", commonVar.Context).ShouldPass().Err()
+		Expect(stdOut).To(ContainSubstring("S2I components Deprecated"))
+		stdOut = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldRun().Err()
+		Expect(stdOut).To(ContainSubstring("S2I components Deprecated"))
+	})
+
+	It("should print deprecation warning when creating and pushing a S2I binary component", func() {
+		// Note: Remove these tests once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
+		helper.CopyExample(filepath.Join("binary", "java", "openjdk"), commonVar.Context)
+		// We are using .Err() since warnings are considered as a part of Error
+		stdOut := helper.Cmd("odo", "create", "java:8", "sb-jar-test", "--s2i", "--binary", filepath.Join(commonVar.Context, "sb.jar"), "--context", commonVar.Context).ShouldPass().Err()
+		Expect(stdOut).To(ContainSubstring("S2I components Deprecated"))
+		stdOut = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldRun().Err()
+		Expect(stdOut).To(ContainSubstring("S2I components Deprecated"))
+	})
+
 	When("in context directory", func() {
 
 		BeforeEach(func() {

@@ -88,8 +88,17 @@ func (po *PushOptions) GetComponentContext() string {
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.CompleteDevfilePath()
+	devfileExists := util.CheckPathExists(po.DevfilePath)
 
-	if util.CheckPathExists(po.DevfilePath) {
+	if !devfileExists {
+		// Note: Remove this deprecation warning once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
+		log.Deprecate(
+			"S2I components",
+			"Convert your existing S2I component to a Devfile component with `odo utils convert-to-devfile`, or consider re-creating with a Devfile component.",
+		)
+	}
+
+	if devfileExists {
 
 		po.Devfile, err = devfile.ParseFromFile(po.DevfilePath)
 		if err != nil {
