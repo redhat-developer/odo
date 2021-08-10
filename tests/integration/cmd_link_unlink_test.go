@@ -33,7 +33,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 		It("should display the help", func() {
 			By("for the link command", func() {
 				appHelp := helper.Cmd("odo", "link", "-h").ShouldPass().Out()
-				helper.MatchAllInOutput(appHelp, []string{"Link component to a service ", "backed by an Operator or Service Catalog", "or component", "works only with s2i components"})
+				helper.MatchAllInOutput(appHelp, []string{"Link component to a service ", "backed by an Operator or Service Catalog", "or component"})
 			})
 			By("for the unlink command", func() {
 				appHelp := helper.Cmd("odo", "unlink", "-h").ShouldPass().Out()
@@ -69,7 +69,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.Cmd("odo", "push", "--context", contextDir).ShouldPass()
 		}
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			runner = helper.GetCliRunner()
 
 			frontendComp = fmt.Sprintf("frontend-%v", helper.RandString(3))
@@ -82,13 +82,13 @@ var _ = Describe("odo link and unlink command tests", func() {
 			createAndPush("python", backendComp, backendContext)
 		})
 
-		JustAfterEach(func() {
+		AfterEach(func() {
 			helper.DeleteDir(frontendContext)
 			helper.DeleteDir(backendContext)
 		})
 
 		When("a link is created between the two components", func() {
-			JustBeforeEach(func() {
+			BeforeEach(func() {
 				// we link
 				helper.Cmd("odo", "link", backendComp, "--context", frontendContext).ShouldPass()
 			})
@@ -98,7 +98,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			})
 
 			When("the link is pushed", func() {
-				JustBeforeEach(func() {
+				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 				})
 				It("should ensure that the proper envFrom entry was created", func() {
@@ -125,7 +125,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 				})
 
 				When("unlinking the two components", func() {
-					JustBeforeEach(func() {
+					BeforeEach(func() {
 						helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
 					})
 					It("should find the link in odo describe", func() {
@@ -137,7 +137,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 					})
 
 					When("odo push is executed", func() {
-						JustBeforeEach(func() {
+						BeforeEach(func() {
 							helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 						})
 						It("should no longer find the link in odo describe", func() {
@@ -153,12 +153,16 @@ var _ = Describe("odo link and unlink command tests", func() {
 			})
 		})
 		When("a link is created between the two components with --bind-as-files", func() {
-			JustBeforeEach(func() {
+			BeforeEach(func() {
 				helper.Cmd("odo", "link", backendComp, "--bind-as-files", "--context", frontendContext).ShouldPass()
 			})
 
+			It("should unlinking a non-pushed link successfully", func() {
+				helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
+			})
+
 			When("the component is pushed", func() {
-				JustBeforeEach(func() {
+				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 				})
 
@@ -175,7 +179,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 				})
 
 				When("unlinking the two components", func() {
-					JustBeforeEach(func() {
+					BeforeEach(func() {
 						helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
 					})
 
@@ -189,7 +193,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 					})
 
 					When("odo push is executed", func() {
-						JustBeforeEach(func() {
+						BeforeEach(func() {
 							helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 						})
 
@@ -204,9 +208,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 						})
 					})
 				})
-			})
-			It("should unlinking a non-pushed link successfully", func() {
-				helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
 			})
 		})
 	})
