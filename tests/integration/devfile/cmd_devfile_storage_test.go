@@ -322,6 +322,17 @@ var _ = Describe("odo devfile storage command tests", func() {
 			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
 
 			Expect(len(PVCs)).To(Equal(0))
+			output := commonVar.CliRunner.GetVolumeNamesFromDeployment(cmpName, "app", commonVar.Project)
+			found := false
+			for key, value := range output {
+				if key == "odo-projects" {
+					if value == "emptyDir" {
+						found = true
+						break
+					}
+				}
+			}
+			Expect(found).To(BeTrue())
 		})
 	})
 
@@ -342,11 +353,28 @@ var _ = Describe("odo devfile storage command tests", func() {
 			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
 
 			Expect(len(PVCs)).To(Not(Equal(0)))
+
+			output := commonVar.CliRunner.GetVolumeNamesFromDeployment(cmpName, "app", commonVar.Project)
+			found := false
+			for key, value := range output {
+				if key == "odo-projects" {
+					if len(PVCs) > 0 && value == PVCs[0] {
+						found = true
+						break
+					}
+				}
+			}
+			Expect(found).To(BeTrue())
+
+			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
+
+			// check if the owner reference is set on the source code PVC properly or not
+			commonVar.CliRunner.WaitAndCheckForTerminatingState("pvc", commonVar.Project, 1)
 		})
 	})
 
 	Context("When ephemeral is not set in preference.yaml", func() {
-		It("should not create a pvc to store source code  (default is ephemeral=false)", func() {
+		It("should not create a pvc to store source code  (default is ephemeral=true)", func() {
 
 			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
 			helper.Cmd("odo", args...).ShouldPass()
@@ -362,6 +390,19 @@ var _ = Describe("odo devfile storage command tests", func() {
 			PVCs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
 
 			Expect(len(PVCs)).To(Equal(0))
+
+			output := commonVar.CliRunner.GetVolumeNamesFromDeployment(cmpName, "app", commonVar.Project)
+
+			found := false
+			for key, value := range output {
+				if key == "odo-projects" {
+					if value == "emptyDir" {
+						found = true
+						break
+					}
+				}
+			}
+			Expect(found).To(BeTrue())
 		})
 	})
 })

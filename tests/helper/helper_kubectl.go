@@ -334,3 +334,8 @@ func (kubectl KubectlRunner) GetEnvRefNames(componentName, appName, projectName 
 func (kubectl KubectlRunner) GetEnvFromEntry(componentName string, appName string, projectName string) string {
 	return GetEnvFromEntry(kubectl.path, componentName, appName, projectName)
 }
+
+// GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
+func (kubectl KubectlRunner) GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string {
+	return GetVolumeNamesFromDeployment(kubectl.path, componentName, appName, projectName)
+}

@@ -477,6 +477,10 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
 		}
 
+		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {
+			odoSourcePVCName = pvc.Name
+		}
+
 		volumeNameToVolInfo[pvc.Labels[storagelabels.StorageLabel]] = storage.VolumeInfo{
 			PVCName:    pvc.Name,
 			VolumeName: generatedVolumeName,

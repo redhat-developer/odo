@@ -119,3 +119,26 @@ func GetEnvFromEntry(path string, componentName string, appName string, projectN
 		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'").ShouldPass().Out()
 	return strings.TrimSpace(envFromOut)
 }
+
+// GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
+func GetVolumeNamesFromDeployment(path, componentName, appName, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentLabel, componentName, applabels.ApplicationLabel, appName)
+	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
+		"-o", "jsonpath='{range .items[0].spec.template.spec.volumes[*]}{.name}{\":\"}{.persistentVolumeClaim.claimName}{\"\\n\"}{end}'").ShouldPass().Out()
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		name := splits[0]
+
+		// if there is no persistent volume claim for the volume
+		// we mark it as emptyDir
+		value := "emptyDir"
+		if len(splits) > 1 && splits[1] != "" {
+			value = splits[1]
+		}
+		mapOutput[name] = value
+	}
+	return mapOutput
+}
