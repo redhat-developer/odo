@@ -1,4 +1,4 @@
 ---
 title: "component"
-sidebar_position: 2
 ---
+This document is a work in progress.
