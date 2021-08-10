@@ -1565,6 +1565,10 @@ func IsValidKubeConfigPath() bool {
 	return true
 }
 
+func NewInvalidKubeConfigPathError() error {
+	return fmt.Errorf("please provide valid path for KUBECONFIG env or unset it to use default kubeconfig")
+}
+
 // GetGitOriginPath gets the remote fetch URL from the given git repo
 // if the repo is not a git repo, the error is ignored
 func GetGitOriginPath(path string) string {

@@ -75,7 +75,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	if o.now {
 		checkRouteAvailability = true
 		if !util.IsValidKubeConfigPath() {
-			return fmt.Errorf("please provide a valid kubeconfig file path")
+			return util.NewInvalidKubeConfigPathError()
 		}
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{

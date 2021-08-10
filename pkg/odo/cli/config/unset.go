@@ -70,7 +70,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if o.now {
 		checkRouteAvailability = true
 		if !util.IsValidKubeConfigPath() {
-
+			return util.NewInvalidKubeConfigPathError()
 		}
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
