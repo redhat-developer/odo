@@ -4,20 +4,14 @@ sidebar_position: 1
 ---
 
 # Setup a minikube cluster
-Please note that this documentation is only useful in setting up a development environment, it is not recommended for a production environment.
+*Note that this documentation is only useful in setting up a development environment; it is not recommended for a production environment.*
 
+## Prerequisites
 This guide assumes that you have [installed minikube](https://minikube.sigs.k8s.io/docs/start/) on your system.
 
-If you are using a Kubernetes cluster other than minikube, this guide assumes that you have admin privileges to the cluster and are logged in with the admin user; operator installation is only possible with an admin user.
+If you are using a Kubernetes cluster other than minikube, this guide assumes that you have admin privileges to the cluster and are logged in with the admin user; Operator installation is only possible with an admin user.
 
-**Agenda for this guide:**
-* [Install the OLM](#install-the-olm)
-* [Install the Service Binding Operator](#install-the-service-binding-operator)
-* [Install an operator](#install-an-operator)
-* [Verify the operator installation](#verify-the-operator-installation)
-* [Enable Ingress addon](#enable-ingress-addon)
-
-## Install the OLM
+## Install the Operator Lifecycle Manager(OLM)
 The Operator Lifecycle Manager(OLM) is a component of the Operator Framework, an open source toolkit to manage Kubernetes native applications, called Operators, in a streamlined and scalable way.[(Source)](https://olm.operatorframework.io/)
 
 To install operators, we will first need to install OLM [(Operator Lifecycle Manager)](https://olm.operatorframework.io/) addon to the minikube cluster.
@@ -40,7 +34,7 @@ If you want to access this resource from other namespaces as well, add your targ
 
 See [Verify the Operator installation](#verify-the-operator-installation) to ensure the operator is installed successfully.
 
-## Install an operator
+## Install an Operator
 1. Visit the [OperatorHub](https://operatorhub.io) website.
 2. Search for an operator of your choice.
 3. Navigate to its detail page.
