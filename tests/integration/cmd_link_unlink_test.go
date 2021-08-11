@@ -44,7 +44,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 	When("two components are deployed", func() {
 		var frontendContext, backendContext, frontendURL, frontendComp, backendComp string
-		var runner helper.CliRunner
 
 		// checkDescribe: checks that the linked component and related variables are present in the output of odo describe
 		var checkDescribe = func(contextDir string, compName string, pushed bool, bindAsFiles bool) {
@@ -70,8 +69,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 		}
 
 		BeforeEach(func() {
-			runner = helper.GetCliRunner()
-
 			frontendComp = fmt.Sprintf("frontend-%v", helper.RandString(3))
 			frontendContext = helper.CreateNewContext()
 			createAndPush("nodejs", frontendComp, frontendContext)
@@ -102,7 +99,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
 				})
 				It("should ensure that the proper envFrom entry was created", func() {
-					envFromOutput := runner.GetEnvFromEntry(frontendComp, "app", commonVar.Project)
+					envFromOutput := commonVar.CliRunner.GetEnvFromEntry(frontendComp, "app", commonVar.Project)
 					Expect(envFromOutput).To(ContainSubstring(backendComp))
 					helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 				})
