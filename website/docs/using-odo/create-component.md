@@ -94,7 +94,7 @@ Here `java-springboot` is the type of the component, `petclinic` is the name of 
 
 ## Starter projects
 
-Besides creating a component for a code that wrote or cloned, you could also use "starter project" when creating a component.
+Besides creating a component for an existing code, you could also use "starter project" when creating a component.
 
 Starter projects are example projects developed by the community to showcase the usability of devfiles. An odo user can use these starter projects by running `odo create` command in an empty directory.
 
