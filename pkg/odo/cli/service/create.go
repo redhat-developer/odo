@@ -20,7 +20,7 @@ var (
 	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator.
 	%[1]s etcdoperator.v0.9.4/EtcdCluster`)
 
-    createShortDesc = `Create a new service from Operator Hub and deploy it on OpenShift.`
+	createShortDesc = `Create a new service from Operator Hub and deploy it on OpenShift.`
 
 	createLongDesc = ktemplates.LongDesc(`
 Create a new service from Operator Hub and deploy it on OpenShift.
