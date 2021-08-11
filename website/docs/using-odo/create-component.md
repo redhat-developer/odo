@@ -10,6 +10,15 @@ In simplest terms, when you "create" an odo component, you populate your current
 
 However, odo users are not expected to know how the `devfile.yaml` is organized; it is the odo commands that would create, update, or delete it.
 
+One final thing to keep in mind - there can be only one odo component in a directory. Nesting odo components is not expected to work well. In other terms, if you have multiple parts (components), say frontend and backend, of your microservices application that you want to create odo components for, you should put them in separate directories and not try to nest them. Take a look at example structure below:
+```shell
+$ tree my-awesome-microservices-app 
+my-awesome-microservices-app
+├── backend
+│   └── devfile.yaml
+└── frontend
+    └── devfile.yaml
+```
 In this guide, we are going to create a Spring Boot component to deploy the [Spring Boot petclinic](https://github.com/spring-projects/spring-petclinic) project to a Kubernetes cluster.
 
 Let's clone the project first:
