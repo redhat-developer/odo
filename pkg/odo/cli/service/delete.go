@@ -32,7 +32,7 @@ type DeleteOptions struct {
 	*genericclioptions.Context
 	// Context to use when listing service. This will use app and project values from the context
 	componentContext string
-	// Backend is the service provider backend (Operator Hub or Service Catalog) that was used to create the service
+	// Backend is the service provider backend that was used to create the service
 	Backend ServiceProviderBackend
 }
 

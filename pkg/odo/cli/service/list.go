@@ -25,7 +25,7 @@ type ServiceListOptions struct {
 	*genericclioptions.Context
 	// Context to use when listing service. This will use app and project values from the context
 	componentContext string
-	// choose between Operator Hub and Service Catalog. If true, Operator Hub
+	// If true, Operator Hub is installed on the cluster
 	csvSupport bool
 }
 

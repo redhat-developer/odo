@@ -58,7 +58,7 @@ type CreateOptions struct {
 	DryRun bool
 	// Location of the file in which yaml specification of CR is stored.
 	fromFile string
-	// Backend is the service provider backend (Operator Hub or Service Catalog) providing the service requested by the user
+	// Backend is the service provider backend providing the service requested by the user
 	Backend ServiceProviderBackend
 }
 
