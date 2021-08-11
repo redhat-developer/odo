@@ -16,6 +16,7 @@
 
 ### Documentation
 
+- Documents steps for component creation ([#4982](https://github.com/openshift/odo/pull/4982))
 ## 2.2.4
 
 ### Feature/Enhancements
