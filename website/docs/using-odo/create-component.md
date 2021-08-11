@@ -6,7 +6,9 @@ sidebar_position: 1
 
 [Component](../getting-started/basics#component) is the most basic unit of operation for odo. And the way to create one is using `odo create` (short for `odo component create`) command.
 
-In simplest terms, when you "create" an odo component, you populate your current working directory with the file `devfile.yaml`. It is a manifest file that contains information about various resources (URL, Storage, Services, etc.) that correspond to your component, and will be created on the Kubernetes cluster when you execute `odo push` command. Most odo commands will first modify (add or remove configuration from) this file, and then subsequent `odo push` will create or delete the resources from the Kubernetes cluster. However, odo users are not expected to know how the `devfile.yaml` is organized; it is the odo commands that would create, update, or delete it.
+In simplest terms, when you "create" an odo component, you populate your current working directory with the file `devfile.yaml`. A Devfile is a manifest file that contains information about various resources (URL, Storage, Services, etc.) that correspond to your component, and will be created on the Kubernetes cluster when you execute `odo push` command. Most odo commands will first modify (add or remove configuration from) this file, and then subsequent `odo push` will create or delete the resources from the Kubernetes cluster.
+
+However, odo users are not expected to know how the `devfile.yaml` is organized; it is the odo commands that would create, update, or delete it.
 
 In this guide, we are going to create a Spring Boot component to deploy the [Spring Boot petclinic](https://github.com/spring-projects/spring-petclinic) project to a Kubernetes cluster.
 
@@ -23,12 +25,16 @@ odo project create myproject
 Alternatively, you could also use one of the existing projects on the cluster:
 ```shell
 odo project list
-odo project set <project-name>  # replace <project-name> with a valid value from the list
+```
+Now, set the project in which you want to create the component:
+```shell
+# replace <project-name> with a valid value from the list
+odo project set <project-name>
 ```
 
 odo supports interactive and non-interactive ways of creating a component.
 
-## Interactively creating a component
+## Creating a component interactively
 
 To interactively create a component, `cd` into the cloned petclinic project (already done if you copy-pasted the command above) and execute:
 ```shell
@@ -38,7 +44,7 @@ You will be prompted with a few questions one after the another. Let's go throug
 
 1. First question is about selecting the component type:
     ```shell
-    odo create
+    $ odo create
     ? Which devfile component type do you wish to create  [Use arrows to move, enter to select, type to filter]
     > java-maven
     java-maven
@@ -54,7 +60,7 @@ You will be prompted with a few questions one after the another. Let's go throug
 
 2. Next, odo asks you to name the component:
     ```shell
-    odo create                
+    $ odo create                
     ? Which devfile component type do you wish to create java-springboot
     ? What do you wish to name the new devfile component (java-springboot) petclinic
     ```
@@ -62,15 +68,15 @@ You will be prompted with a few questions one after the another. Let's go throug
 
 3. Next, odo asks you for the project in which you would like to create the component. Use the project `myproject` that we created earlier or the one you had set using `odo project set` command
    ```shell
-   odo create
+   $ odo create
    ? Which devfile component type do you wish to create java-springboot
    ? What do you wish to name the new devfile component java-springboot
    ? What project do you want the devfile component to be created in myproject
    ```
    Now you will have a `devfile.yaml` in your current working directory. But odo is just not done asking you questions yet.
-4. Lastly, odo asks you if you would like to download a starter project. Since we already cloned the petclinic project, we answer in No by typing `n` and hitting the return key:
+4. Lastly, odo asks you if you would like to download a "starter project". Since we already cloned the petclinic project, we answer in No by typing `n` and hitting the return key. We discuss starter projects later in [this document](#starter-projects):
    ```shell
-   odo create
+   $ odo create
    ? Which devfile component type do you wish to create java-springboot
    ? What do you wish to name the new devfile component java-springboot
    ? What project do you want the devfile component to be created in myproject
@@ -84,7 +90,7 @@ You will be prompted with a few questions one after the another. Let's go throug
    
 Your Spring Boot component is now ready for use.
 
-## Non-interactively creating a component
+## Creating a component non-interactively
 
 To non-interactively create the same component as we created in interactive mode, `cd` into the cloned petclinic project and execute:
 ```shell
@@ -103,7 +109,7 @@ Starter projects are example projects developed by the community to showcase the
 To interactively create a Java Spring Boot component using the starter project, you can follow the below steps:
 ```shell
 mkdir myOdoComponent && cd myOdoComponent
-$ odo create
+odo create
 ```
 In the questions that odo asks you next, provide answers like below:
 ```shell
@@ -136,6 +142,6 @@ odo create java-springboot myFirstComponent --starter
 
 odo follows a "create & push" workflow for almost all the commands. Meaning, most odo commands won't create resources on Kubernetes cluster unless you run `odo push` command.
 
-Among the various ways described above, irrespective of how you created the component, the next step to create the resources for our component on the cluster would be to run `odo push`
+Among the various ways described above, irrespective of how you created the component, the next step to create the resources for our component on the cluster would be to run `odo push`.
 
 Note that first run of `odo push` could take a long time for the Spring Boot petclinic project. This is because of the dependencies being pulled by maven for Spring Boot framework. Subsequent `odo push` runs shouldn't take longer when working on the same Kubernetes cluster. 
