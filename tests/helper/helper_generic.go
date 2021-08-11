@@ -307,11 +307,6 @@ func CommonBeforeEach() CommonVar {
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
-
-	if CurrentGinkgoTestDescription().Failed {
-		Cmd("oc", "project").ShouldPass()
-		Cmd("oc", "describe", "namespace", commonVar.Project).ShouldPass()
-	}
 	// delete the random project/namespace created in CommonBeforeEach
 	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
 
