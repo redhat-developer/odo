@@ -1548,23 +1548,16 @@ func IsInvalidKubeConfigError(err error) bool {
 //if env `KUBECONFIG` is set then that is used or default `KUBECONFIG` is checked
 func IsValidKubeConfigPath() error {
 	v := os.Getenv("KUBECONFIG")
-	if v == "" {
-		if home := homedir.HomeDir(); home != "" {
-			v = filepath.Join(home, ".kube", "config")
-			klog.V(4).Infof("using default kubeconfig path %s", v)
-		} else {
-			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
+	if v != "" {
+		f1, err := os.Stat(v)
+		if os.IsNotExist(err) {
+			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", v)
 			return NewInvalidKubeConfigPathError()
 		}
-	}
-	f1, err := os.Stat(v)
-	if os.IsNotExist(err) {
-		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", v)
-		return NewInvalidKubeConfigPathError()
-	}
-	if f1.IsDir() {
-		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which is a directory", v)
-		return NewInvalidKubeConfigPathError()
+		if f1.IsDir() {
+			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which is a directory", v)
+			return NewInvalidKubeConfigPathError()
+		}
 	}
 	return nil
 }
