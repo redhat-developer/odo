@@ -1550,9 +1550,12 @@ func IsValidKubeConfigPath() error {
 	v := os.Getenv("KUBECONFIG")
 	if v != "" {
 		f1, err := os.Stat(v)
-		if os.IsNotExist(err) {
-			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", v)
-			return NewInvalidKubeConfigPathError()
+		if err != nil {
+			if os.IsNotExist(err) {
+				klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", v)
+				return NewInvalidKubeConfigPathError()
+			}
+			return err
 		}
 		if f1.IsDir() {
 			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which is a directory", v)
