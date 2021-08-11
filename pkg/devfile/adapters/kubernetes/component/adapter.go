@@ -479,6 +479,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 
 		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {
 			odoSourcePVCName = pvc.Name
+			continue
 		}
 
 		volumeNameToVolInfo[pvc.Labels[storagelabels.StorageLabel]] = storage.VolumeInfo{

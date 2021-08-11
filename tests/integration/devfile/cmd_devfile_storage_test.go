@@ -365,6 +365,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 				}
 			}
 			Expect(found).To(BeTrue())
+			Expect(len(output)).To(Equal(2))
 
 			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
 

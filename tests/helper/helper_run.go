@@ -130,6 +130,9 @@ func GetVolumeNamesFromDeployment(path, componentName, appName, projectName stri
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimPrefix(line, "'")
 		splits := strings.Split(line, ":")
+		if splits[0] == "" {
+			continue
+		}
 		name := splits[0]
 
 		// if there is no persistent volume claim for the volume
