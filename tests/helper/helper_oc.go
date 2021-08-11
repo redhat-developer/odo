@@ -616,8 +616,6 @@ func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 func (oc OcRunner) CreateRandNamespaceProject() string {
 	projectName := SetProjectName()
 	oc.createRandNamespaceProject(projectName)
-	session := CmdRunner("oc", "project")
-	WaitForOutputToContain("Using project "+projectName, 3, 1, session)
 	return projectName
 }
 
