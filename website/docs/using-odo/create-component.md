@@ -16,7 +16,7 @@ git clone https://github.com/spring-projects/spring-petclinic
 cd spring-petclinic
 ```
 
-Next, let's create a [project](../command-reference/project) on the Kubernetes cluster in which we will be creating our component:
+Next, let's create a project <!-- add link to project command reference here --> on the Kubernetes cluster in which we will be creating our component:
 ```shell
 odo project create myproject
 ```
@@ -138,4 +138,4 @@ odo follows a "create & push" workflow for almost all the commands. Meaning, mos
 
 Among the various ways described above, irrespective of how you created the component, the next step to create the resources for our component on the cluster would be to run `odo push`
 
-Note that first run of `odo push` could take a long time for the Spring Boot petclinic project. This is because of the dependencies being pulled by Spring Boot framework. Subsequent `odo push` runs shouldn't take longer when working on the same Kubernetes cluster.
+Note that first run of `odo push` could take a long time for the Spring Boot petclinic project. This is because of the dependencies being pulled by maven for Spring Boot framework. Subsequent `odo push` runs shouldn't take longer when working on the same Kubernetes cluster. 
