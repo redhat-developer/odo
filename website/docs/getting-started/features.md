@@ -9,7 +9,7 @@ By using odo, application developers can develop, test, debug, and deploy micros
 
 odo follows "create and push" workflow for almost everything. It means, as a user, when you "create", something the information (or manifest) is stored in a configuration file, and then upon doing a "push" it gets created  on the Kubernetes cluster. You can take an existing git repository and create an odo component from it, which can be pushed to a Kubernetes cluster.
 
-odo helps "deploy and link" multiple components and services with each other. Using odo, developers can create and deploy services based on [Kubernetes Operators](https://github.com/operator-framework/) in their [development cluster](cluster-setup/development-clusters). These services can be created using any of the Operators available on [OperatorHub.io](https://operatorhub.io). Next, upon linking this service, odo injects the service configuration into the microservice created using odo. Your application can use this configuration to communicate with the Operator backed service. 
+odo helps "deploy and link" multiple components and services with each other. Using odo, developers can create and deploy services based on [Kubernetes Operators](https://github.com/operator-framework/) in their development cluster<!--TODO: add link to development cluster when ready-->. These services can be created using any of the Operators available on [OperatorHub.io](https://operatorhub.io). Next, upon linking this service, odo injects the service configuration into the microservice created using odo. Your application can use this configuration to communicate with the Operator backed service. 
 
 
 ### What can odo do?
