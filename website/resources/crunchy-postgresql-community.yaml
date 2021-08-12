@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-postgresql
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: operatorgroup
+  namespace: my-postgresql
+spec:
+  targetNamespaces:
+  - petclinic
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: my-postgresql
+  namespace: my-postgresql
+spec:
+  channel: stable
+  name: postgresql
+  source: operatorhubio-catalog
+  sourceNamespace: olm
