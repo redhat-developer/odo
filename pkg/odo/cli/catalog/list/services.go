@@ -17,7 +17,7 @@ import (
 
 const servicesRecommendedCommandName = "services"
 
-var servicesExample = `  # Get the supported services from service catalog
+var servicesExample = `  # Get the supported services
   %[1]s`
 
 // ServiceOptions encapsulates the options for the odo catalog list services command
