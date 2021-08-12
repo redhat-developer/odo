@@ -112,3 +112,10 @@ func GetEnvRefNames(path, componentName, appName, projectName string) []string {
 	}
 	return result
 }
+
+// GetEnvFromEntry returns envFrom entry of the deployment
+func GetEnvFromEntry(path string, componentName string, appName string, projectName string) string {
+	envFromOut := Cmd(path, "get", "deployment", componentName+"-"+appName, "--namespace", projectName,
+		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'").ShouldPass().Out()
+	return strings.TrimSpace(envFromOut)
+}

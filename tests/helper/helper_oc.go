@@ -501,11 +501,9 @@ func (oc OcRunner) GetVolumeMountPath(dcName string, namespace string) string {
 	return strings.TrimSpace(volumePaths)
 }
 
-// GetEnvFromEntry returns envFrom entry
+// GetEnvFromEntry returns envFrom entry of the deployment
 func (oc OcRunner) GetEnvFromEntry(componentName string, appName string, projectName string) string {
-	envFromOut := Cmd(oc.path, "get", "dc", componentName+"-"+appName, "--namespace", projectName,
-		"-o", "jsonpath='{.spec.template.spec.containers[0].envFrom}'").ShouldPass().Out()
-	return strings.TrimSpace(envFromOut)
+	return GetEnvFromEntry(oc.path, componentName, appName, projectName)
 }
 
 // GetEnvs returns all env variables in deployment config

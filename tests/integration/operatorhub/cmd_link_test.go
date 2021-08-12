@@ -131,7 +131,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					helper.Cmd("odo", "link", svcFullName, "--bind-as-files", "--name", bindingName, "--context", commonVar.Context).ShouldPass()
 				})
 
-				It("should dislay the link in odo describe", func() {
+				It("should display the link in odo describe", func() {
 					stdOut := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
 					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})

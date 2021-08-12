@@ -33,4 +33,5 @@ type CliRunner interface {
 	PodsShouldBeRunning(project string, regex string)
 	CreateSecret(secretName, secretPass, project string)
 	GetSecrets(project string) string
+	GetEnvFromEntry(componentName string, appName string, projectName string) string
 }
