@@ -142,6 +142,10 @@ var _ = Describe("odo link and unlink command tests", func() {
 							Expect(stdOut).ToNot(ContainSubstring("Linked Services"))
 							Expect(stdOut).ToNot(ContainSubstring(backendComp))
 						})
+						It("should not allow unlinking again", func() {
+							stdOut := helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldFail().Err()
+							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("failed to unlink the component %q since no link was found in the configuration referring this component", backendComp)))
+						})
 					})
 				})
 			})
