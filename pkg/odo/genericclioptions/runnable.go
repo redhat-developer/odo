@@ -89,6 +89,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt, os.Kill}
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, captureSignals...)
+	defer signal.Stop(c)
 	go commonutil.StartSignalWatcher(captureSignals, func() {
 		receivedSignal := <-c
 		scontext.SetSignal(cmd.Context(), receivedSignal)
