@@ -6,7 +6,7 @@ sidebar_position: 1
 This tutorial illustrates deploying a [Java Open Liberty](https://openliberty.io/) application with odo and linking it to an in-cluster PostgreSQL service in a minikube environment.
 
 There are two roles in this example:
-1. Cluster Admin - Prepare the cluster by installing the required operators on the cluster.
+1. Cluster Admin - Prepare the cluster by installing the required Operators on the cluster.
 2. Application Developer - Imports a Java application, creates a Database instance, and connect the application to the Database instance.
 
 ## Cluster admin
@@ -18,19 +18,19 @@ There are two roles in this example:
 ----
 [//]: # (Move this section to Architecture > Service Binding or create a new Operators doc)
 
-We will be using operators in this guide. An operator helps in deploying the instances of a given service, for example PostgreSQL, MySQL, Redis.
+We will be using Operators in this guide. An Operator helps in deploying the instances of a given service, for example PostgreSQL, MySQL, Redis.
 
-Furthermore, these operators are "bind-able". Meaning, if they expose information necessary to connect to them, odo can help connect your component to their instances.
+Furthermore, these Operators are "bind-able". Meaning, if they expose information necessary to connect to them, odo can help connect your component to their instances.
 
 [//]: # (Move until here)
 
-See the [operator installation guide](../getting-started/cluster-setup/kubernetes.md) to install and configure an operator on a minikube cluster.
+See the [Operator installation guide](../getting-started/cluster-setup/kubernetes.md) to install and configure an Operator on a minikube cluster.
 
-The cluster admin must install two operators into the cluster:
+The cluster admin must install two Operators into the cluster:
 1. PostgreSQL Operator
 2. Service Binding Operator
 
-We will use [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) found on the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case. This operator will be installed in `my-postgresql-operator-dev4devs-com` namespace by default, if you want to use another namespace, make sure that you add your namespace to `.spec.targetNamespaces` list in the definition file before installing it. 
+We will use [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) found on the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case. This Operator will be installed in `my-postgresql-operator-dev4devs-com` namespace by default, if you want to use another namespace, make sure that you add your namespace to `.spec.targetNamespaces` list in the definition file before installing it. 
 
 **Note**: We will use the `my-postgresql-operator-dev4devs-com` namespace for this guide.
 
@@ -45,7 +45,7 @@ Since the PostgreSQL Operator installed in above step is available only in `my-p
 ```shell
 odo project set my-postgresql-operator-dev4devs-com
 ```
-If you installed the operator in a different namespace, ensure that odo uses it to perform any tasks:
+If you installed the Operator in a different namespace, ensure that odo uses it to perform any tasks:
 ```shell
 odo project set <your-namespace>
 ```
