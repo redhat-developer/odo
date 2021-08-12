@@ -8,7 +8,6 @@ sidebar_position: 1
 
 ## Prerequisites
 * This guide assumes that you have a Kubernetes cluster setup, this could also be a [minikube](https://minikube.sigs.k8s.io/docs/start/) cluster.
-
 * This guide also assumes that you have admin privileges to the cluster, since the operator installation is only possible with an admin user.
 
 ## Enable Ingress
@@ -29,11 +28,13 @@ To learn more about ingress addon, see the [official kubernetes documentation](h
 ## Install the Operator Lifecycle Manager(OLM)
 The Operator Lifecycle Manager(OLM) is a component of the Operator Framework, an open source toolkit to manage Kubernetes native applications, called Operators, in a streamlined and scalable way.[(Source)](https://olm.operatorframework.io/)
 
-What are Operators? 
+[//]: # (Move this section to Architecture > Service Binding or create a new Operators doc)
+What are Operators?
 >The Operator pattern aims to capture the key aim of a human operator who is managing a service or set of services. Human operators who look after specific applications and services have deep knowledge of how the system ought to behave, how to deploy it, and how to react if there are problems.
 >
 >People who run workloads on Kubernetes often like to use automation to take care of repeatable tasks. The Operator pattern captures how you can write code to automate a task beyond what Kubernetes itself provides.
 > [(Source)](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/#motivation)
+[//]: # (Move until here)
 
 To install an operator, we will first need to install OLM [(Operator Lifecycle Manager)](https://olm.operatorframework.io/) on the cluster.
 ```shell
@@ -60,7 +61,7 @@ See [Verify the Operator installation](#verify-the-operator-installation) to ens
 1. Visit the [OperatorHub](https://operatorhub.io) website.
 2. Search for an operator of your choice.
 3. Navigate to its detail page.
-4. Click on `Install`.
+4. Click on **Install**.
 5. Follow the instruction in the installation popup.
 6. Wait for a few seconds for the operator to install.
 7. [Verify the operator installation](#verify-the-operator-installation).
@@ -89,7 +90,7 @@ The examples you may see in this guide uses [Datadog Operator](https://operatorh
   ```
 The output can look similar to:
   ```shell
-  $ kubectl get csv -n operators 
+  $ kubectl get csv -n operators
   NAME                                       READY   STATUS    RESTARTS   AGE
   datadog-operator-manager-5db67c7f4-hgb59   1/1     Running   0          2m13s
   service-binding-operator-c8d7587b8-lxztx   1/1     Running   5          6d23h
