@@ -657,6 +657,11 @@ func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.Devfile
 
 // PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 func PushServices(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) error {
+	if len(k8sComponents) == 0 {
+		// if there are no k8scomponents, we don't need to do anything
+		klog.V(4).Infof("no Kubernetes inlined components in the devfile")
+		return nil
+	}
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
