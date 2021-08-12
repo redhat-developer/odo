@@ -21,9 +21,9 @@ for PROJECT in ${PROJECT_AND_TIME}; do
         echo "Skipped"
     else
         datetime=${ADDR[1]}
-        timeago='2 days ago'
+        timeago='1 days ago'
 
-        dtSec=$(date --date "$datetime" +'%s') # For "now", use $(date +'%s')
+        dtSec=$(date --date "$datetime" +'%s')
         taSec=$(date --date "$timeago" +'%s')
 
         echo "INFO: dtSec=$dtSec, taSec=$taSec" >&2

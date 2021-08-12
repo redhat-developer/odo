@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -628,8 +629,7 @@ func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 
 func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
-	Expect(session).To(ContainSubstring("New project created"))
+	session := Cmd("oc", "new-project", projectName).ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
 	return projectName
 }
@@ -765,4 +765,37 @@ func (oc OcRunner) CreateSecret(secretName, secretPass, project string) {
 // GetSecrets gets all the secrets belonging to the project
 func (oc OcRunner) GetSecrets(project string) string {
 	return GetSecrets(oc.path, project)
+}
+
+func (oc OcRunner) AddSecret(comvar CommonVar) {
+
+	clusterType := os.Getenv("CLUSTER_TYPE")
+
+	if clusterType != "" {
+		//save token for developer
+		token := oc.GetToken()
+		adminToken := os.Getenv("IBMC_OCLOGIN_APIKEY")
+		if adminToken != "" {
+			ibmcloudAdminToken := os.Getenv("IBMC_ADMIN_LOGIN_APIKEY")
+			cluster := os.Getenv("IBMC_OCP47_SERVER")
+			//login ibmcloud
+			Cmd("ibmcloud", "login", "--apikey", ibmcloudAdminToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
+			//login as admin in cluster
+			Cmd("oc", "login", "--token=", adminToken, "--server=", cluster)
+		} else {
+			pass := os.Getenv("OCP4X_KUBEADMIN_PASSWORD")
+			cluster := os.Getenv("OCP4X_API_URL")
+			//login as kubeadmin
+			Cmd(oc.path, "login", "-u", "kubeadmin", "-p", pass, cluster).ShouldPass()
+		}
+
+		yaml := Cmd(oc.path, "get", "secret", "pull-secret", "-n", "openshift-config", "-o", "yaml").ShouldPass().Out()
+		newYaml := strings.Replace(yaml, "openshift-config", comvar.Project, -1)
+		Cmd(oc.path, "apply", "-f", newYaml)
+
+		ibmcloudDeveloperToken := os.Getenv("IBMC_DEVELOPER_LOGIN_APIKEY")
+		Cmd("ibmcloud", "login", "--apikey", ibmcloudDeveloperToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
+		//login as developer using token
+		oc.LoginUsingToken(token)
+	}
 }
