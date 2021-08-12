@@ -34,4 +34,4 @@ odo abstracts Kubernetes concepts into a developer friendly terminology; in this
   Example of services: MySQL, Redis.
 
 #### Devfile 
-  A devfile is a portable YAML file containing the definition of a component and its related URLs, storages and services. See [Devfile](../architecture/devfile.md) to know more about devfile.
+  A devfile is a portable YAML file containing the definition of a component and its related URLs, storages and services. See Devfile <!--TODO: Add link to devfile in architecture section when ready--> to know more about devfile.

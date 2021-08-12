@@ -1,3 +1,0 @@
----
-title: Feature 1
----
