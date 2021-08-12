@@ -234,7 +234,6 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
-		var kubeconfigOld string
 		var ocRunner helper.OcRunner
 		var token string
 		BeforeEach(func() {
@@ -246,7 +245,6 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 		AfterEach(func() {
 			ocRunner.LoginUsingToken(token)
-			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 		When("user is working with a devfile component", func() {
 			It("should set, list and delete config successfully", func() {
