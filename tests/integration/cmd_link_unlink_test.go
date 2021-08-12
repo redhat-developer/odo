@@ -94,6 +94,10 @@ var _ = Describe("odo link and unlink command tests", func() {
 				checkDescribe(frontendContext, backendComp, false, false)
 			})
 
+			It("should unlinking a non-pushed link successfully", func() {
+				helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
+			})
+
 			When("the link is pushed", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
@@ -148,9 +152,6 @@ var _ = Describe("odo link and unlink command tests", func() {
 						})
 					})
 				})
-			})
-			It("should unlinking a non-pushed link successfully", func() {
-				helper.Cmd("odo", "unlink", backendComp, "--context", frontendContext).ShouldPass()
 			})
 		})
 		When("a link is created between the two components with --bind-as-files", func() {
