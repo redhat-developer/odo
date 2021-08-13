@@ -13,11 +13,11 @@ Agenda:
 ## Pre-requisite
 * Setup a [Kubernetes](cluster-setup/kubernetes.md)/[OpenShift](cluster-setup/openshift.md) cluster.
 * [Install odo](installation.md) on your system.
+* If it is a Kubernetes cluster, have [ingress-controller installed](cluster-setup/kubernetes.md) on the cluster.
 * If it is a remote cluster, be logged in to your cluster. Login interactively to your remote cluster with the command below.
   ```shell
   odo login
   ```
-
 
 ## Creating and Deploying the application
 1. Clone the git repository and cd into it.
@@ -95,8 +95,7 @@ Agenda:
 ## Extending the application: Connecting the application to a PostgreSQL service
 
 ### Pre-requisite
-* [Install the Operator Lifecycle Manager(OLM)](cluster-setup/kubernetes.md) on the Kubernetes cluster.
-* If it is a Kubernetes cluster,[Install the Operator Lifecycle Manager(OLM)](cluster-setup/kubernetes.md) on the cluster.
+* If it is a Kubernetes cluster,[install the Operator Lifecycle Manager(OLM)](cluster-setup/kubernetes.md) on the cluster.
   
   If it is an OpenShift cluster, there is no need.
 
@@ -173,10 +172,38 @@ But, this is currently not possible due to [odo#issue4916](https://github.com/op
   ```shell
   odo push --show-log
   ```
-We now have our application running and database running, but the application is not communicating with database because it is unaware of the password required to connect to the database. The Service Binding Operator helps in linking the application  should be able to retrieve the
-// TODO:
-* Add something about odo exec and operator and linking.
-* Remove the Extending Application part. Extending only makes sense if the application can be a standalone functioning unit without the extension.
-  Petclinic is probably not capable of it and requires a database connection to be standalone functioning unit.
-* Agendas must have their own separate sections
-* Look into using MariaDB operator since the petclinin uses MySQL bts.
+3. We now have our application running and database running, but the application is not communicating with database because it is unaware of the password required to connect to the database. The Service Binding Operator helps in linking the application should be able to retrieve the password, but it is not currently possible. So we go obtain the password manually and tell our application about it.
+  ```shell
+  kubectl get secret hippo-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
+  ```
+  Take a note of this password.
+4. Now, create a new file `src/main/resources/application-postgresql.properties` and add the following data:
+  ```properties
+  database=postgresql
+  spring.datasource.url=jdbc:postgresql://${PGCLUSTER_HOST}:${PGCLUSTER_PORT}/${PGCLUSTER_DATABASE}
+  spring.datasource.username=${PGCLUSTER_USERNAME}
+  spring.datasource.password=
+  
+  spring.datasource.initialization-mode=always
+  spring.jpa.generate-ddl=true
+  ```
+  Set the password obtained in the previous step to `spring.datasource.password`.
+5. Add postgresql dependency to `pom.xml`.
+```xml
+<dependencies>
+    ...
+    <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+</dependencies>
+```
+6. Tell the Spring Boot application to use the newly created postgresql profile.
+```shell
+odo config set --env SPRING_PROFILES_ACTIVE=postgresql
+```
+7. Deploy the changes.
+```shell
+odo push --show-log
+```
