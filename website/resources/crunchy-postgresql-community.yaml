@@ -10,7 +10,7 @@ metadata:
   namespace: my-postgresql
 spec:
   targetNamespaces:
-  - petclinic
+  - default
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription

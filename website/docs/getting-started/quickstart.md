@@ -14,10 +14,15 @@ Agenda:
 * Setup a [Kubernetes](cluster-setup/kubernetes.md)/[OpenShift](cluster-setup/openshift.md) cluster.
 * [Install odo](installation.md) on your system.
 * If it is a Kubernetes cluster, have [ingress-controller installed](cluster-setup/kubernetes.md) on the cluster.
-* If it is a remote cluster, be logged in to your cluster. Login interactively to your remote cluster with the command below.
+* If it is a remote cluster, be logged in to your cluster. Login interactively to your remote cluster with the command:
   ```shell
   odo login
   ```
+* If your internet connection is slow, it is highly advisable that you increase the build timeout to avoid timeout errors with the command:
+  ```shell
+  odo preference set buildtimeout 600
+  ```
+  This sets the BuildTimeout to 10 minutes.
 
 ## Creating and Deploying the application
 1. Clone the git repository and cd into it.
@@ -101,11 +106,12 @@ Agenda:
 
 * Install the Service Binding Operator on the [Kubernetes](cluster-setup/kubernetes.md)/[OpenShift](cluster-setup/openshift.md) cluster.
 
-* Install the PostgreSQL operator into the `petclinic` namespace of the cluster.
-  **Note**: If you are using a namespace other than `petclinic`, then make sure to change the `targetNamespace` in `OperatorGroup` resource inside the `crunchy-postgresql-community.yaml` file.
+* Install the PostgreSQL operator into the `petclinic` namespace of the [Kubernetes](cluster-setup/kubernetes.md)/[OpenShift](cluster-setup/openshift.md) cluster.
+  **Kubernetes**: If you are on a Kubernetes cluster and using a namespace other than `petclinic`, then make sure to change the `targetNamespace` in `OperatorGroup` resource inside the `crunchy-postgresql-community.yaml` file.
   ```shell
-  kubectl apply -f https://odo.dev/resources/crunchy-postgresql-community.yaml
+  kubectl apply -f https://github.com/openshift/odo/blob/main/website/resources/crunchy-postgresql-community.yaml
   ```
+  This step might take some time to install. If it fails due to timeout, delete the pod associated with it in the `my-postgresql` namespace and wait for it to come up again.
 
 * Check if the operators are installed in the cluster by running the following command:
   ```shell
@@ -177,7 +183,7 @@ But, this is currently not possible due to [odo#issue4916](https://github.com/op
   kubectl get secret hippo-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
   ```
   Take a note of this password.
-4. Now, create a new file `src/main/resources/application-postgresql.properties` and add the following data:
+4. Now, create a new file `src/main/resources/application-postgresql.properties` and add the following data; set `spring.datasource.password` to the password obtained in the previous step:
   ```properties
   database=postgresql
   spring.datasource.url=jdbc:postgresql://${PGCLUSTER_HOST}:${PGCLUSTER_PORT}/${PGCLUSTER_DATABASE}
@@ -187,7 +193,6 @@ But, this is currently not possible due to [odo#issue4916](https://github.com/op
   spring.datasource.initialization-mode=always
   spring.jpa.generate-ddl=true
   ```
-  Set the password obtained in the previous step to `spring.datasource.password`.
 5. Add postgresql dependency to `pom.xml`.
 ```xml
 <dependencies>
@@ -207,3 +212,45 @@ odo config set --env SPRING_PROFILES_ACTIVE=postgresql
 ```shell
 odo push --show-log
 ```
+
+Visit the URL and see if the application is accessible. If the application does not load, see the troubleshooting guide to find and fix the issue.
+
+### Troubleshooting the application
+#### Storage related error.
+1. If after Step 7 of [linking the application with the database service](#link-the-application-with-the-database-service) you are unable to reach the URL, check the kubectl events.
+  ```shell
+  kubectl get events
+  ```
+  If you see something similar to the following, then the storage setup of your cluster does not support `ReadWriteMany` access mode for persistent volume claim:
+  ```shell
+  $ kubectl get events
+  3m1s        Warning   ProvisioningFailed       persistentvolumeclaim/hippo-pgbr-repo              Failed to provision volume with StorageClass "standard": invalid AccessModes [ReadWriteMany]: only AccessModes [ReadWriteOnce ReadOnlyMany] are supported
+
+  10m         Warning   FailedScheduling         pod/hippo-backrest-shared-repo-7c5d778876-l7dhk    running PreBind plugin "VolumeBinding": binding volumes: provisioning failed for PVC "hippo-pgbr-repo"
+  ```
+  In this case, edit the `db.yaml` present in your `spring-petclinic` directory and replace `ReadWriteMany` with `ReadWriteOnce`. Service Binding Operator requires ReadWrite access to the application in order establish a communication with the database and application.
+
+2. Deploy the changes to the cluster.
+  ```shell
+  odo push --show-log
+  ```
+
+[//]: # (k get all
+NAME                                              READY   STATUS              RESTARTS   AGE
+pod/hippo-backrest-shared-repo-66ddc6cf77-pwqd4   0/1     ContainerCreating   0          15m
+pod/petclinic-app-758974d79-926g4                 0/1     PodInitializing     0          3m23s
+NAME                                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT             AGE
+service/hippo                        ClusterIP   10.108.182.83    <none>        2022/TCP,5432/TCP   15m
+service/hippo-backrest-shared-repo   ClusterIP   10.99.179.81     <none>        2022/TCP            15m
+service/kubernetes                   ClusterIP   10.96.0.1        <none>        443/TCP             3h20m
+service/petclinic-app                ClusterIP   10.110.182.111   <none>        8080/TCP            172m
+NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/hippo                        0/0     0            0           15m
+deployment.apps/hippo-backrest-shared-repo   0/1     1            0           15m
+deployment.apps/petclinic-app                0/1     1            0           172m
+NAME                                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/hippo-6fc7f5548c                        0         0         0       15m
+replicaset.apps/hippo-backrest-shared-repo-66ddc6cf77   1         1         0       15m
+replicaset.apps/petclinic-app-5c96768d5c                0         0         0       172m
+replicaset.apps/petclinic-app-758974d79                 1         1         0       3m23s
+)
