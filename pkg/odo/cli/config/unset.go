@@ -71,7 +71,6 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		checkRouteAvailability = true
 	}
 
-	var err1 error
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:                    cmd,
 		DevfilePath:            "",
@@ -80,10 +79,10 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		CheckRouteAvailability: checkRouteAvailability,
 	})
 	if err != nil {
-		if util.IsInvalidKubeConfigError(err1) {
-			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err1)
+		if util.IsInvalidKubeConfigError(err) {
+			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
 		}
-		return err1
+		return err
 	}
 	if o.Context.EnvSpecificInfo != nil {
 		o.IsDevfile = true

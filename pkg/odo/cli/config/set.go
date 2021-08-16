@@ -75,7 +75,6 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	if o.now {
 		checkRouteAvailability = true
 	}
-	var err2 error
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:                    cmd,
 		DevfilePath:            "",
@@ -84,10 +83,10 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		CheckRouteAvailability: checkRouteAvailability,
 	})
 	if err != nil {
-		if util.IsInvalidKubeConfigError(err2) {
-			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err2)
+		if util.IsInvalidKubeConfigError(err) {
+			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
 		}
-		return err2
+		return err
 	}
 	if o.Context.EnvSpecificInfo != nil {
 		o.IsDevfile = true
@@ -139,6 +138,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		if err != nil {
 			return err
 		}
+
 		log.Success("Environment variables were successfully updated")
 		if o.now {
 			return o.DevfilePush()
@@ -170,7 +170,6 @@ func (o *SetOptions) DevfileRun() (err error) {
 
 // Run contains the logic for the command
 func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
-
 	if o.IsDevfile {
 		return o.DevfileRun()
 	}
