@@ -42,7 +42,7 @@ func NewListComponentsOptions() *ListComponentsOptions {
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	tasks := util.NewConcurrentTasks(2)
 
-	if err1 := util.IsValidKubeConfigPath(); err1 == nil {
+	if err = util.IsValidKubeConfigPath(); err == nil {
 		o.Context, err = genericclioptions.NewContext(cmd)
 		if err != nil {
 			return err

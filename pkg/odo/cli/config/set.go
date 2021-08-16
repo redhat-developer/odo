@@ -76,14 +76,14 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		checkRouteAvailability = true
 	}
 	var err2 error
-	o.Context, err2 = genericclioptions.New(genericclioptions.CreateParameters{
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:                    cmd,
 		DevfilePath:            "",
 		ComponentContext:       o.GetComponentContext(),
 		IsNow:                  o.now,
 		CheckRouteAvailability: checkRouteAvailability,
 	})
-	if err2 != nil {
+	if err != nil {
 		if util.IsInvalidKubeConfigError(err2) {
 			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err2)
 		}
