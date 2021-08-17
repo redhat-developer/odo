@@ -17,7 +17,7 @@ var (
 	`)
 
 	serviceLongDesc = ktemplates.LongDesc(`Describes a service type.
-	This command supports both Operator backed services.
+	This command supports Operator backed services.
 	A user can describe an Operator backed service by providing the full identifier for an Operand i.e. <operator_type>/<cr_name> which they can find by running "odo catalog list services".
 `)
 )
