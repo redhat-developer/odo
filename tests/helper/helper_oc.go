@@ -14,6 +14,7 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/log"
 )
 
 const (
@@ -770,10 +771,39 @@ func (oc OcRunner) GetSecrets(project string) string {
 func (oc OcRunner) AddSecret(comvar CommonVar) {
 
 	clusterType := os.Getenv("CLUSTER_TYPE")
+	if clusterType == "PSI" || clusterType == "IBM" {
 
-	if clusterType != "" {
-		//save token for developer
-		token := oc.GetToken()
+		token := oc.doAsAdmin(clusterType)
+
+		yaml := Cmd(oc.path, "get", "secret", "pull-secret", "-n", "openshift-config", "-o", "yaml").ShouldPass().Out()
+		newYaml := strings.Replace(yaml, "openshift-config", comvar.Project, -1)
+		filename := fmt.Sprint(RandString(4), ".yaml")
+		f, err := os.Create(filename)
+		if err != nil {
+			fmt.Println(err)
+		}
+		_, err = f.WriteString(newYaml)
+		if err != nil {
+			fmt.Println(err)
+			f.Close()
+		}
+		err = f.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+		log.Info(Cmd("pwd").ShouldPass().Out())
+		Cmd(oc.path, "apply", "-f", filename).ShouldPass()
+		os.Remove(filename)
+		oc.doAsDeveloper(token, clusterType)
+	}
+
+}
+
+func (oc OcRunner) doAsAdmin(clusterType string) string {
+	//save token for developer
+	token := oc.GetToken()
+	if clusterType == "PSI" || clusterType == "IBM" {
+
 		adminToken := os.Getenv("IBMC_OCLOGIN_APIKEY")
 		if adminToken != "" {
 			ibmcloudAdminToken := os.Getenv("IBMC_ADMIN_LOGIN_APIKEY")
@@ -781,21 +811,24 @@ func (oc OcRunner) AddSecret(comvar CommonVar) {
 			//login ibmcloud
 			Cmd("ibmcloud", "login", "--apikey", ibmcloudAdminToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
 			//login as admin in cluster
-			Cmd("oc", "login", "--token=", adminToken, "--server=", cluster)
+			Cmd(oc.path, "login", "--token=", adminToken, "--server=", cluster)
 		} else {
+			log.Info("PSI is used")
 			pass := os.Getenv("OCP4X_KUBEADMIN_PASSWORD")
 			cluster := os.Getenv("OCP4X_API_URL")
 			//login as kubeadmin
 			Cmd(oc.path, "login", "-u", "kubeadmin", "-p", pass, cluster).ShouldPass()
 		}
+	}
+	return token
+}
 
-		yaml := Cmd(oc.path, "get", "secret", "pull-secret", "-n", "openshift-config", "-o", "yaml").ShouldPass().Out()
-		newYaml := strings.Replace(yaml, "openshift-config", comvar.Project, -1)
-		Cmd(oc.path, "apply", "-f", newYaml)
+func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 
+	if clusterType == "IBM" {
 		ibmcloudDeveloperToken := os.Getenv("IBMC_DEVELOPER_LOGIN_APIKEY")
 		Cmd("ibmcloud", "login", "--apikey", ibmcloudDeveloperToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
 		//login as developer using token
-		oc.LoginUsingToken(token)
 	}
+	oc.LoginUsingToken(token)
 }
