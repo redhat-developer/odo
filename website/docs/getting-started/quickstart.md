@@ -58,7 +58,7 @@ Agenda:
   ```shell
   odo url create --port 8080 --host=$(minikube ip).nip.io
   ```
-5. Deploy the application into the cluster. This first time deployment might take anywhere between 4-60minutes depending on your internet and cluster connection.
+5. Deploy the application into the cluster. This first time deployment downloads dependencies for the project and hence it might take anywhere between 4-60 minutes depending on your internet and cluster connection.
   ```shell
   odo push --show-log
   ```
@@ -182,14 +182,20 @@ But, this is currently not possible due to [odo#issue4916](https://github.com/op
   ```shell
   kubectl get secret hippo-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
   ```
-  Take a note of this password.
+  Take a note of the password. Ignore the `%` at the end if any.
+  The output can look similar to:
+  ```shell
+  $ kubectl get secret hippo-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
+  
+  [Q74./[ovz}64ui)O)yiJr7z%
+  ```
 4. Now, create a new file `src/main/resources/application-postgresql.properties` and add the following data; set `spring.datasource.password` to the password obtained in the previous step:
   ```properties
   database=postgresql
   spring.datasource.url=jdbc:postgresql://${PGCLUSTER_HOST}:${PGCLUSTER_PORT}/${PGCLUSTER_DATABASE}
   spring.datasource.username=${PGCLUSTER_USERNAME}
   spring.datasource.password=
-  
+ 
   spring.datasource.initialization-mode=always
   spring.jpa.generate-ddl=true
   ```
