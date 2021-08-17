@@ -3,29 +3,29 @@ title: Kubernetes
 sidebar_position: 1
 ---
 
-# Setup a Kubernetes cluster
+# Setting up a Kubernetes cluster
 *Note that this guide is only helpful in setting up a development environment; this setup is not recommended for a production environment.*
 
 ## Prerequisites
-* This guide assumes that you have a Kubernetes cluster setup, this could also be a [minikube](https://minikube.sigs.k8s.io/docs/start/) cluster.
-* This guide also assumes that you have admin privileges to the cluster, since the operator installation is only possible with an admin user.
+* You have a Kubernetes cluster setup, this could for example be a [minikube](https://minikube.sigs.k8s.io/docs/start/) cluster.
+* You have admin privileges to the cluster, since the operator installation is only possible with an admin user.
 
-## Enable Ingress
-To access an application externally, odo creates a URL; installing an ingress-controller helps in using this feature on a Kubernetes cluster.
-
-To enable the Ingress feature on a Kubernetes cluster _other than minikube_, run the following command to install the default setup:
-```shell
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.48.1/deploy/static/provider/cloud/deploy.yaml
-```
-To learn more about enabling this feature on your cluster, see the [Ingress prerequisites](https://kubernetes.io/docs/concepts/services-networking/ingress/#prerequisites) on the official kubernetes documentation.
+## Enabling Ingress
+To access an application externally, you will create _URLs_ using odo, which are implemented on a Kubernetes cluster by the ingress resources; installing an ingress-controller helps in using this feature on a Kubernetes cluster.
 
 **Minikube:** To install an ingress-controller on a minikube cluster, enable the **ingress** addon with the following command:
 ```shell
 minikube addons enable ingress
 ````
-To learn more about ingress addon, see the [official kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/).
+To learn more about ingress addon, see [the documentation on Kubernetes website](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/).
 
-## Install the Operator Lifecycle Manager(OLM)
+**Other Kubernetes Cluster**: To enable the Ingress feature on a Kubernetes cluster _other than minikube_, using the nginx controller see [the official nginx installation documentation](https://kubernetes.github.io/ingress-nginx/deploy/).
+
+To use a different controller, see [the ingress controller documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/).
+
+To learn more about enabling this feature on your cluster, see the [Ingress prerequisites](https://kubernetes.io/docs/concepts/services-networking/ingress/#prerequisites) on the official kubernetes documentation.
+
+## Installing the Operator Lifecycle Manager(OLM)
 The Operator Lifecycle Manager(OLM) is a component of the Operator Framework, an open source toolkit to manage Kubernetes native applications, called Operators, in a streamlined and scalable way.[(Source)](https://olm.operatorframework.io/)
 
 [//]: # (Move this section to Architecture > Service Binding or create a new Operators doc)
@@ -36,38 +36,39 @@ What are Operators?
 > [(Source)](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/#motivation)
 [//]: # (Move until here)
 
-To install an operator, we will first need to install OLM [(Operator Lifecycle Manager)](https://olm.operatorframework.io/) on the cluster.
+To install an Operator, we will first need to install OLM [(Operator Lifecycle Manager)](https://olm.operatorframework.io/) on the cluster.
 ```shell
 curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.18.3/install.sh | bash -s v0.18.3
 ```
-Running the script will take some time to install all the necessary resources.
+Running the script will take some time to install all the necessary resources in the Kubernetes cluster including the `OperatorGroup` resource,....
 
 Note: Check the OLM [release page](https://github.com/operator-framework/operator-lifecycle-manager/releases/) to use the latest version.
 
-## Install the Service Binding Operator
+## Installing the Service Binding Operator
 odo uses [Service Binding Operator](https://operatorhub.io/operator/service-binding-operator) to provide the `odo link` feature which helps to connect an odo component to a service or another component.
 
-Operators can be installed in a specific namespace or across the cluster(i.e. in all the namespaces). To install an operator, we need to make sure that the namespace contains `OperatorGroup` resource.
+Operators can be installed in a specific namespace or across the cluster(i.e. in all the namespaces).
 ```shell
 kubectl create -f https://operatorhub.io/install/service-binding-operator.yaml
 ```
-Running the command will create the necessary resource in `operators` namespace.
+Running the command will create the necessary resource in the `operators` namespace.
 
 If you want to access this resource from other namespaces as well, add your target namespace to `.spec.targetNamespaces` list.
 
-See [Verify the Operator installation](#verify-the-operator-installation) to ensure that the operator was installed successfully.
+See [Verifying the Operator installation](#verifying-the-operator-installation) to ensure that the operator was installed successfully.
 
-## Install an Operator
+## Installing an Operator
 1. Visit the [OperatorHub](https://operatorhub.io) website.
-2. Search for an operator of your choice.
+2. Search for an Operator of your choice.
 3. Navigate to its detail page.
 4. Click on **Install**.
-5. Follow the instruction in the installation popup.
-6. Wait for a few seconds for the operator to install.
-7. [Verify the operator installation](#verify-the-operator-installation).
+5. Follow the instruction in the installation popup. Please make sure to install the operator in your desired namespace or cluster-wide, depending on your choice and the Operator capability.
+6. [Verifying the operator installation](#verifying-the-operator-installation).
 
-## Verify the Operator installation
-Once the operator is successfully installed on the cluster, you can also use `odo` to verify the operator installation and see the CRDs associated with it; run the following command:
+## Verifying the Operator installation
+Wait for a few seconds for the Operator to install.
+
+Once the operator is successfully installed on the cluster, you can use `odo` to verify the Operator installation and see the CRDs associated with it; run the following command:
 ```shell
 odo catalog list services
 ```
@@ -81,7 +82,7 @@ service-binding-operator.v0.9.1     ServiceBinding, ServiceBinding
 ```
 If you do not see your installed operator in the list, follow the [troubleshooting guide](#troubleshoot-the-operator-installation) to find the issue and debug it.
 
-## Troubleshoot the Operator installation
+## Troubleshooting the Operator installation
 There are two ways to confirm that the operator has been installed properly.
 The examples you may see in this guide uses [Datadog Operator](https://operatorhub.io/operator/datadog-operator) and [Service Binding Operator](https://operatorhub.io/operator/service-binding-operator).
 1. Verify that its pod started and is in “Running” state.
