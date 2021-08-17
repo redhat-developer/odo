@@ -79,8 +79,8 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		CheckRouteAvailability: checkRouteAvailability,
 	})
 	if err != nil {
-		if util.IsInvalidKubeConfigError(err) {
-			return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
+		if err1 := util.IsInvalidKubeConfig(err); err1 != nil {
+			return err1
 		}
 		return err
 	}
