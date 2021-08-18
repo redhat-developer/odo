@@ -120,7 +120,6 @@ func (c *Client) Upload(data TelemetryData) error {
 		properties = properties.Set("error", data.Properties.Error).Set("error-type", data.Properties.ErrorType)
 	}
 
-	fmt.Println("Sending data to telemetry")
 	// queue the data that has telemetry information
 	return c.SegmentClient.Enqueue(analytics.Track{
 		UserId:     userId,
