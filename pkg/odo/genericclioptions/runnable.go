@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
@@ -85,14 +84,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		startTelemetry(cmd, err, startTime)
 	}
 	util.LogErrorAndExit(err, "")
-	// TODO: capture ctrl^z
-	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt, os.Kill}
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, captureSignals...)
-	defer signal.Stop(c)
-	go commonutil.StartSignalWatcher(captureSignals, func() {
-		receivedSignal := <-c
-		scontext.SetSignal(cmd.Context(), receivedSignal)
+
+	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
+	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignals os.Signal) {
+		scontext.SetSignal(cmd.Context(), receivedSignals)
 		startTelemetry(cmd, errors.Wrapf(terminal.InterruptErr, "user interrupted the command execution"), startTime)
 	})
 

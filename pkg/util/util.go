@@ -1408,13 +1408,13 @@ func copyDirWithFS(src string, dst string, fs filesystem.Filesystem) error {
 }
 
 // StartSignalWatcher watches for signals and handles the situation before exiting the program
-func StartSignalWatcher(watchSignals []os.Signal, handle func()) {
+func StartSignalWatcher(watchSignals []os.Signal, handle func(receivedSignals os.Signal)) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, watchSignals...)
 	defer signal.Stop(signals)
 
-	<-signals
-	handle()
+	receivedSignals := <-signals
+	handle(receivedSignals)
 	// exit here to stop spinners from rotating
 	os.Exit(1)
 }
@@ -1461,7 +1461,7 @@ func GitSubDir(srcPath, destinationPath, subDir string) error {
 
 // gitSubDir handles subDir for git components
 func gitSubDir(srcPath, destinationPath, subDir string, fs filesystem.Filesystem) error {
-	go StartSignalWatcher([]os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}, func() {
+	go StartSignalWatcher([]os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}, func(receivedSignals os.Signal) {
 		err := cleanDir(destinationPath, map[string]bool{
 			"devfile.yaml": true,
 		}, fs)
