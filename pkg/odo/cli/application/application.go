@@ -4,17 +4,14 @@ import (
 	"fmt"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/pkg/errors"
-	"k8s.io/klog"
-
-	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/service"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -87,18 +84,5 @@ func printAppInfo(client *occlient.Client, kClient *kclient.Client, appName stri
 			}
 		}
 	}
-	// List services that will be removed
-	serviceList, err := service.List(client, appName)
-	if err != nil {
-		log.Info("No services / could not get services")
-		klog.V(4).Info(err.Error())
-	}
-	if len(serviceList.Items) != 0 {
-		log.Info("This application has following service(s) that will be deleted")
-		for _, ser := range serviceList.Items {
-			log.Info("service named", ser.ObjectMeta.Name, "of type", ser.Spec.Type)
-		}
-	}
-
 	return nil
 }

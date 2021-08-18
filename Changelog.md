@@ -7,6 +7,7 @@
 - Added a column in odo list output to indicate components created by odo ([#4962](https://github.com/openshift/odo/pull/4962))
 - Fix description for "odo link" command ([#4930](https://github.com/openshift/odo/pull/4930))
 - Add deprecation warnings for s2i components([#4967](https://github.com/openshift/odo/issues/4967))
+- Dropping support for service catalog based services ([#4906](https://github.com/openshift/odo/pull/4906))
 
 ### Bug Fixes
 

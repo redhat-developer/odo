@@ -2,13 +2,13 @@ package service
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/service"
 	"strings"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -32,7 +32,7 @@ type DeleteOptions struct {
 	*genericclioptions.Context
 	// Context to use when listing service. This will use app and project values from the context
 	componentContext string
-	// Backend is the service provider backend (Operator Hub or Service Catalog) that was used to create the service
+	// Backend is the service provider backend that was used to create the service
 	Backend ServiceProviderBackend
 }
 
@@ -57,9 +57,12 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return err
 	}
 
-	// decide which service backend to use
-	o.Backend = decideBackend(args[0])
 	o.serviceName = args[0]
+	_, _, err = service.SplitServiceKindName(o.serviceName)
+	if err != nil {
+		return fmt.Errorf("invalid service name")
+	}
+	o.Backend = NewOperatorBackend()
 
 	return
 }
@@ -107,6 +110,5 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 	}
 	serviceDeleteCmd.Flags().BoolVarP(&o.serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
 	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.componentContext)
-	completion.RegisterCommandHandler(serviceDeleteCmd, completion.ServiceCompletionHandler)
 	return serviceDeleteCmd
 }

@@ -17,11 +17,3 @@ type OperatorBackend struct {
 func NewOperatorBackend() *OperatorBackend {
 	return &OperatorBackend{}
 }
-
-// ServiceCatalogBackend implements the interface ServiceProviderBackend and contains methods that help create a service from Service Catalog
-type ServiceCatalogBackend struct {
-}
-
-func NewServiceCatalogBackend() *ServiceCatalogBackend {
-	return &ServiceCatalogBackend{}
-}

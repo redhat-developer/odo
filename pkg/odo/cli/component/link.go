@@ -12,7 +12,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -44,7 +43,7 @@ var (
 # and make the secrets accessible as files in the '/bindings/etcd/' directory
 %[1]s EtcdCluster/myetcd  --bind-as-files --name etcd`)
 
-	linkLongDesc = `Link component to a service (backed by an Operator or Service Catalog) or component
+	linkLongDesc = `Link component to a service (backed by an Operator) or component
 
 If the source component is not provided, the current active component is assumed.
 In both use cases, link adds the appropriate secret to the environment of the source component. 
@@ -72,14 +71,7 @@ odo link backend --component frontend
 Now the frontend has 2 ENV variables it can use:
 COMPONENT_BACKEND_HOST=backend-app
 COMPONENT_BACKEND_PORT=8080
-
-If you wish to use a database, we can use the Service Catalog and link it to our backend:
-odo service create dh-postgresql-apb --plan dev -p postgresql_user=luke -p postgresql_password=secret
-odo link dh-postgresql-apb
-
-Now backend has 2 ENV variables it can use:
-DB_USER=luke
-DB_PASSWORD=secret`
+`
 )
 
 // LinkOptions encapsulates the options for the odo link command
@@ -181,8 +173,6 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 
 	//Adding context flag
 	genericclioptions.AddContextFlag(linkCmd, &o.componentContext)
-
-	completion.RegisterCommandHandler(linkCmd, completion.LinkCompletionHandler)
 
 	return linkCmd
 }

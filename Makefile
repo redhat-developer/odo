@@ -166,10 +166,6 @@ test-cmd-login-logout: ## Run odo login and logout tests
 test-cmd-link-unlink-4-cluster: ## Run link and unlink commnad tests against 4.x cluster
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo link and unlink commnad tests" tests/integration/
 
-.PHONY: test-cmd-link-unlink-311-cluster
-test-cmd-link-unlink-311-cluster: ## Run link and unlink command tests against 3.11 cluster
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/servicecatalog/
-
 .PHONY: test-cmd-service
 test-cmd-service: ## Run odo service command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/servicecatalog/
@@ -298,11 +294,6 @@ test-integration: ## Run command's integration tests irrespective of service cat
 test-integration-devfile: ## Run devfile integration tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/devfile/
 	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) tests/integration/devfile/debug/
-
-# Only service and link command tests are the part of this test run
-.PHONY: test-integration-service-catalog
-test-integration-service-catalog: ## Run command's integration tests which are dependent on service catalog enabled cluster.
-	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/servicecatalog/
 
 .PHONY: test-e2e-beta
 test-e2e-beta: ## Run core beta flow e2e tests

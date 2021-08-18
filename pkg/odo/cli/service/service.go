@@ -14,7 +14,7 @@ import (
 // RecommendedCommandName is the recommended service command name
 const RecommendedCommandName = "service"
 
-var serviceLongDesc = ktemplates.LongDesc(`Perform service catalog operations`)
+var serviceLongDesc = ktemplates.LongDesc(`Perform service related operations`)
 
 // NewCmdService implements the odo service command
 func NewCmdService(name, fullName string) *cobra.Command {
@@ -23,7 +23,7 @@ func NewCmdService(name, fullName string) *cobra.Command {
 	serviceDeleteCmd := NewCmdServiceDelete(deleteRecommendedCommandName, util.GetFullName(fullName, deleteRecommendedCommandName))
 	serviceCmd := &cobra.Command{
 		Use:   name,
-		Short: "Perform service catalog operations",
+		Short: "Perform service related operations",
 		Long:  serviceLongDesc,
 		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
 			serviceCreateCmd.Example,

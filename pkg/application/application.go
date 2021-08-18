@@ -8,7 +8,6 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,21 +84,6 @@ func Delete(client *occlient.Client, name string) error {
 	klog.V(4).Infof("Deleting application %s", name)
 
 	labels := applabels.GetLabels(name, false)
-
-	// first delete the services (ServiceInstance in OpenShift terminology)
-	// belonging to the app
-	svcList, err := service.List(client, name)
-	if err != nil {
-		// error is returned when there's no Service Catalog enabled in the service
-		klog.V(4).Infof("Service catalog is not enabled in the cluster, skipping service deletion")
-	} else {
-		for _, svc := range svcList.Items {
-			err = service.DeleteServiceAndUnlinkComponents(client, svc.Name, name)
-			if err != nil {
-				return errors.Wrapf(err, "unable to delete the application %s due to failure in deleting service(s) in the application", name)
-			}
-		}
-	}
 
 	supported, err := client.IsDeploymentConfigSupported()
 	if err != nil {
