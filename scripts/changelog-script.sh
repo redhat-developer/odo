@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-#!/bin/bash
-
 # This script uses github_changelog_generator to generate a changelog
 # by using the kind labels that we use..
 #
