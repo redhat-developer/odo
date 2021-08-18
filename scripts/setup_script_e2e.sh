@@ -45,9 +45,7 @@ else
         powershell -Command "Expand-Archive -Path $CURRDIR\oc.zip  -DestinationPath $GOBIN"
         chmod +x $GOBIN_TEMP/*
     fi
-    if [[ $BASE_OS == "mac" ]]; then
-        # Skiping download of oc binary for test due to bandwidth issue, binary from cluster is stored in ~/ocforodo dir in macmini 
-        #unzip ./oc.zip -d ~/go/bin/ && chmod +x ~/go/bin/oc
+    if [[ $BASE_OS == "mac" ]]; then 
         unzip ./oc.zip -d $GOBIN && rm -rf ./oc.zip && chmod +x $GOBIN/oc
         PATH="$PATH:/usr/local/bin:/usr/local/go/bin"
     fi
