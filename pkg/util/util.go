@@ -1540,8 +1540,8 @@ func GetEnvWithDefault(key string, defaultval string) string {
 	return val
 }
 
-//IsInvalidKubeConfig checks if specified error is due to invalid kubeconfig
-func IsInvalidKubeConfig(err error) error {
+//IsInvalidKubeConfigError checks if specified error is due to invalid kubeconfig
+func IsInvalidKubeConfigError(err error) error {
 	if strings.Contains(err.Error(), "invalid configuration") {
 		return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
 	}

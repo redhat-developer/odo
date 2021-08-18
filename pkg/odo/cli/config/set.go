@@ -83,7 +83,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		CheckRouteAvailability: checkRouteAvailability,
 	})
 	if err != nil {
-		if err1 := util.IsInvalidKubeConfig(err); err1 != nil {
+		if err1 := util.IsInvalidKubeConfigError(err); err1 != nil {
 			return err1
 		}
 		return err
