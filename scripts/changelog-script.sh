@@ -43,7 +43,7 @@ github_changelog_generator \
 --enhancement-labels "kind/feature" \
 --bugs-label "**Bugs:**" \
 --bug-labels "kind/bug" \
---add-sections '{"documentation":{"prefix":"**Documentation updates:**","labels":["kind/documentation"]}, "tests": {"prefix": "**Testing/CI Updates**", "labels": ["kind/tests"]}, "cleanup": {"prefix": "**Cleanup Updates", "labels": ["kind/cleanup"]}}'
+--add-sections '{"documentation":{"prefix":"**Documentation:**","labels":["kind/documentation"]}, "tests": {"prefix": "**Testing/CI:**", "labels": ["kind/tests"]}, "cleanup": {"prefix": "**Cleanup/Refactor:", "labels": ["kind/cleanup"]}}'
 
 echo ""
 echo "The changelog is located at: /tmp/changelog"
