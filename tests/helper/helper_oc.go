@@ -768,6 +768,7 @@ func (oc OcRunner) GetSecrets(project string) string {
 	return GetSecrets(oc.path, project)
 }
 
+// AddSecret adds pull-secret to the namespace, for e2e-test
 func (oc OcRunner) AddSecret(comvar CommonVar) {
 
 	clusterType := os.Getenv("CLUSTER_TYPE")
@@ -799,6 +800,7 @@ func (oc OcRunner) AddSecret(comvar CommonVar) {
 
 }
 
+// doAsAdmin logins as admin to perform some task that requires admin privileges
 func (oc OcRunner) doAsAdmin(clusterType string) string {
 	//save token for developer
 	token := oc.GetToken()
@@ -823,6 +825,7 @@ func (oc OcRunner) doAsAdmin(clusterType string) string {
 	return token
 }
 
+//  doAsDeveloper logins as developer to perform some task
 func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 
 	if clusterType == "IBM" {
