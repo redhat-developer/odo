@@ -158,9 +158,10 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			if exists {
 				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
 			}
-
-			d.SetServiceName(o.ServiceName)
 		}
+
+		d.SetServiceName(o.ServiceName)
+
 		err = d.ValidateMetadataInCRD()
 		if err != nil {
 			return err
