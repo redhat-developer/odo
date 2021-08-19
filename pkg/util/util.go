@@ -1556,7 +1556,7 @@ func IsValidKubeConfigPath() error {
 		f1, err := os.Stat(kubeConfigPath)
 		if err != nil {
 			if os.IsNotExist(err) {
-				klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", kubeConfigPath)
+				klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %q which does no exist", kubeConfigPath)
 				return NewInvalidKubeConfigPathError()
 			}
 			return err
