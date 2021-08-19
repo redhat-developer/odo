@@ -20,7 +20,7 @@ The exhaustive list of commands accepting the `-o json` flag is currently:
 |--------------------------------|-----------------------------------------|--------------------------------------------------------------|---------------------------|
 | odo application describe       | Application (odo.dev/v1alpha1)          | *n/a*                                                        |no                         |
 | odo application list           | List (odo.dev/v1alpha1)                 | Application (odo.dev/v1alpha1)                               | ?                         |
-| odo catalog list components    | List (odo.dev/v1alpha1)                 | ComponentType (odo.dev/v1alpha1) (s2i) / *missing* (devfile) | yes (s2i) / yes (devfile) |
+| odo catalog list components    | List (odo.dev/v1alpha1)                 | *missing* | yes |
 | odo catalog list services      | List (odo.dev/v1alpha1)                 | ClusterServiceVersion (operators.coreos.com/v1alpha1)        | ?                         |
 | odo catalog describe component | *missing*                               | *n/a*                                                        | yes                       |
 | odo catalog describe service   | CRDDescription (odo.dev/v1alpha1)       | *n/a*                                                        | yes                       |
