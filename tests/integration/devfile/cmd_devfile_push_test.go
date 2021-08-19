@@ -32,13 +32,13 @@ var _ = Describe("odo devfile push command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("creating a nodejs compoenet", func() {
+	When("creating a nodejs component", func() {
 		output := ""
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
-		When("setting git conifg and running odo push", func() {
+		When("setting git config and running odo push", func() {
 			remoteURL := "https://github.com/odo-devfiles/nodejs-ex"
 			BeforeEach(func() {
 				helper.Cmd("git", "init").ShouldPass()
