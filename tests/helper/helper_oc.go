@@ -780,7 +780,7 @@ func (oc OcRunner) AddSecret(comvar CommonVar) {
 		newYaml := strings.Replace(yaml, "openshift-config", comvar.Project, -1)
 		filename := fmt.Sprint(RandString(4), ".yaml")
 		newYamlinByte := []byte(newYaml)
-		err := ioutil.WriteFile(filename, newYamlinByte, 0644)
+		err := ioutil.WriteFile(filename, newYamlinByte, 0600)
 		if err != nil {
 			fmt.Println(err)
 		}
