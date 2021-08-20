@@ -44,7 +44,7 @@ odo uses [Service Binding Operator](https://operatorhub.io/operator/service-bind
 10. Click on the **View Operator** button; this should take you to Operators > Installed Operators > Operator details page, and you should be able to see details of your Operator.
 
 ## Verify the Operator installation
-Once the Operator is successfully installed on the cluster, you can also use `odo` to verify the operator installation and see the CRDs associated with it; run the following command:
+Once the Operator is successfully installed on the cluster, you can also use `odo` to verify the Operator installation and see the CRDs associated with it; run the following command:
 ```shell
 odo catalog list services
 ```
@@ -53,6 +53,6 @@ The output can look similar to:
 $ odo catalog list services
 Services available through Operators
 NAME                                CRDs
-datadog-operator.v0.6.0             DatadogAgent, DatadogMetric, DatadogMonitor
+  datadog-operator.v0.6.0             DatadogAgent, DatadogMetric, DatadogMonitor
 service-binding-operator.v0.9.1     ServiceBinding, ServiceBinding
 ```

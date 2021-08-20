@@ -8,7 +8,7 @@ sidebar_position: 1
 
 ## Prerequisites
 * You have a Kubernetes cluster setup, this could for example be a [minikube](https://minikube.sigs.k8s.io/docs/start/) cluster.
-* You have admin privileges to the cluster, since the operator installation is only possible with an admin user.
+* You have admin privileges to the cluster, since the Operator installation is only possible with an admin user.
 
 ## Enabling Ingress
 To access an application externally, you will create _URLs_ using odo, which are implemented on a Kubernetes cluster by the ingress resources; installing an ingress-controller helps in using this feature on a Kubernetes cluster.
@@ -55,20 +55,20 @@ Running the command will create the necessary resource in the `operators` namesp
 
 If you want to access this resource from other namespaces as well, add your target namespace to `.spec.targetNamespaces` list.
 
-See [Verifying the Operator installation](#verifying-the-operator-installation) to ensure that the operator was installed successfully.
+See [Verifying the Operator installation](#verifying-the-operator-installation) to ensure that the Operator was installed successfully.
 
 ## Installing an Operator
 1. Visit the [OperatorHub](https://operatorhub.io) website.
 2. Search for an Operator of your choice.
 3. Navigate to its detail page.
 4. Click on **Install**.
-5. Follow the instruction in the installation popup. Please make sure to install the operator in your desired namespace or cluster-wide, depending on your choice and the Operator capability.
-6. [Verifying the operator installation](#verifying-the-operator-installation).
+5. Follow the instruction in the installation popup. Please make sure to install the Operator in your desired namespace or cluster-wide, depending on your choice and the Operator capability.
+6. [Verifying the Operator installation](#verifying-the-operator-installation).
 
 ## Verifying the Operator installation
 Wait for a few seconds for the Operator to install.
 
-Once the operator is successfully installed on the cluster, you can use `odo` to verify the Operator installation and see the CRDs associated with it; run the following command:
+Once the Operator is successfully installed on the cluster, you can use `odo` to verify the Operator installation and see the CRDs associated with it; run the following command:
 ```shell
 odo catalog list services
 ```
@@ -80,10 +80,10 @@ NAME                                CRDs
 datadog-operator.v0.6.0             DatadogAgent, DatadogMetric, DatadogMonitor
 service-binding-operator.v0.9.1     ServiceBinding, ServiceBinding
 ```
-If you do not see your installed operator in the list, follow the [troubleshooting guide](#troubleshoot-the-operator-installation) to find the issue and debug it.
+If you do not see your installed Operator in the list, follow the [troubleshooting guide](#troubleshoot-the-operator-installation) to find the issue and debug it.
 
 ## Troubleshooting the Operator installation
-There are two ways to confirm that the operator has been installed properly.
+There are two ways to confirm that the Operator has been installed properly.
 The examples you may see in this guide uses [Datadog Operator](https://operatorhub.io/operator/datadog-operator) and [Service Binding Operator](https://operatorhub.io/operator/service-binding-operator).
 1. Verify that its pod started and is in “Running” state.
   ```shell
