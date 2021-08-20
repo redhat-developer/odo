@@ -19,7 +19,7 @@ minikube addons enable ingress
 ````
 To learn more about ingress addon, see [the documentation on Kubernetes website](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/).
 
-*Other Kubernetes Cluster**: To enable the Ingress feature on a Kubernetes cluster _other than minikube_, using the NGINX Ingress controller see [the official NGINX Ingress controller installation documentation](https://kubernetes.github.io/ingress-nginx/deploy/).
+**Other Kubernetes Cluster**: To enable the Ingress feature on a Kubernetes cluster _other than minikube_, using the NGINX Ingress controller see [the official NGINX Ingress controller installation documentation](https://kubernetes.github.io/ingress-nginx/deploy/).
 
 To use a different controller, see [the Ingress controller documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/).
 
@@ -34,13 +34,14 @@ What are Operators?
 >
 >People who run workloads on Kubernetes often like to use automation to take care of repeatable tasks. The Operator pattern captures how you can write code to automate a task beyond what Kubernetes itself provides.
 > [(Source)](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/#motivation)
+
 [//]: # (Move until here)
 
 To install an Operator, we will first need to install OLM [(Operator Lifecycle Manager)](https://olm.operatorframework.io/) on the cluster.
 ```shell
 curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.18.3/install.sh | bash -s v0.18.3
 ```
-Running the script will take some time to install all the necessary resources in the Kubernetes cluster including the `OperatorGroup` resource,....
+Running the script will take some time to install all the necessary resources in the Kubernetes cluster including the `OperatorGroup` resource.
 
 Note: Check the OLM [release page](https://github.com/operator-framework/operator-lifecycle-manager/releases/) to use the latest version.
 
