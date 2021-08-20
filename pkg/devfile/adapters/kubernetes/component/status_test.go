@@ -244,6 +244,11 @@ func TestGetDeploymentStatus(t *testing.T) {
 				return false, nil, nil
 			})
 
+			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
+				Name:    testComponentName,
+				AppName: testAppName,
+			})
+
 			componentAdapter := New(adapterCtx, *fkclient)
 			fkclient.Namespace = componentAdapter.Client.Namespace
 			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)

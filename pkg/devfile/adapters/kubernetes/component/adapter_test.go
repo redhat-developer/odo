@@ -127,6 +127,10 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					return true, &deployment, nil
 				})
 			}
+			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
+				Name:    testComponentName,
+				AppName: testAppName,
+			})
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
@@ -329,6 +333,12 @@ func TestDoesComponentExist(t *testing.T) {
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
+
+			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
+				Name:    tt.componentName,
+				AppName: tt.appName,
+			})
+
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
