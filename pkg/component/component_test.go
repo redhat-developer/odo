@@ -10,6 +10,8 @@ import (
 	"sort"
 	"testing"
 
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+
 	v1 "k8s.io/api/apps/v1"
 
 	"github.com/devfile/library/pkg/util"
@@ -392,11 +394,13 @@ func TestList(t *testing.T) {
 
 	deploymentList.Items[0].Labels[componentlabels.ComponentTypeLabel] = "nodejs"
 	deploymentList.Items[0].Annotations = map[string]string{
-		ComponentSourceTypeAnnotation: "local",
+		ComponentSourceTypeAnnotation:           "local",
+		componentlabels.ComponentTypeAnnotation: "nodejs",
 	}
 	deploymentList.Items[1].Labels[componentlabels.ComponentTypeLabel] = "wildfly"
 	deploymentList.Items[1].Annotations = map[string]string{
-		ComponentSourceTypeAnnotation: "local",
+		ComponentSourceTypeAnnotation:           "local",
+		componentlabels.ComponentTypeAnnotation: "wildfly",
 	}
 
 	const caseName = "Case 4: List component when openshift cluster not reachable"
@@ -978,6 +982,38 @@ func TestGetComponentFromConfig(t *testing.T) {
 
 }
 
+func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
+	tests := []devfilepkg.DevfileMetadata{
+		{
+			Name:        "ReturnProject",
+			ProjectType: "Maven",
+			Language:    "Java",
+		},
+		{
+			Name:     "ReturnLanguage",
+			Language: "Java",
+		},
+		{
+			Name: "ReturnNA",
+		},
+	}
+	for _, tt := range tests {
+		var want string
+		got := GetComponentTypeFromDevfileMetadata(tt)
+		switch tt.Name {
+		case "ReturnProject":
+			want = tt.ProjectType
+		case "ReturnLanguage":
+			want = tt.Language
+		case "ReturnNA":
+			want = NOTAVAILABLE
+		}
+		if got != want {
+			t.Errorf("Incorrect component type returned; got: %q, want: %q", got, want)
+		}
+	}
+}
+
 func getFakeDC(name, namespace, appName, componentType string) appsv1.DeploymentConfig {
 	return appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -991,7 +1027,8 @@ func getFakeDC(name, namespace, appName, componentType string) appsv1.Deployment
 				componentlabels.ComponentTypeLabel: componentType,
 			},
 			Annotations: map[string]string{
-				ComponentSourceTypeAnnotation: "local",
+				ComponentSourceTypeAnnotation:           "local",
+				componentlabels.ComponentTypeAnnotation: componentType,
 			},
 		},
 		Spec: appsv1.DeploymentConfigSpec{
@@ -1010,6 +1047,7 @@ func getFakeDC(name, namespace, appName, componentType string) appsv1.Deployment
 }
 
 func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
+	sourceType := "local"
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
@@ -1018,11 +1056,22 @@ func getFakeComponent(compName, namespace, appName, compType string, state State
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      compName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				applabels.App:                      appName,
+				applabels.ManagedBy:                "odo",
+				applabels.ApplicationLabel:         appName,
+				componentlabels.ComponentLabel:     compName,
+				componentlabels.ComponentTypeLabel: compType,
+			},
+			Annotations: map[string]string{
+				componentlabels.ComponentTypeAnnotation: compType,
+				ComponentSourceTypeAnnotation:           sourceType,
+			},
 		},
 		Spec: ComponentSpec{
 			Type:       compType,
 			App:        appName,
-			SourceType: "local",
+			SourceType: sourceType,
 		},
 		Status: ComponentStatus{
 			State: state,

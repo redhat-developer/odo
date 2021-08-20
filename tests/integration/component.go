@@ -9,8 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
@@ -294,17 +292,17 @@ func componentTests(args ...string) {
 				Expect(info.GetApplication(), appName)
 				Expect(info.GetName(), cmpName)
 			})
+
 			It("should set the correct component name, language and projectType in devfile metadata", func() {
-				devObj, err := devfile.ParseFromFile(filepath.Join(commonVar.Context, "devfile.yaml"))
-				Expect(err).ToNot(HaveOccurred())
-				metadata := devObj.Data.GetMetadata()
+				metadata := helper.GetMetadataFromDevfile("devfile.yaml")
 				Expect(metadata.Name).To(BeEquivalentTo(cmpName))
 				Expect(metadata.Language).To(ContainSubstring("nodejs"))
 				Expect(metadata.ProjectType).To(ContainSubstring("nodejs"))
 			})
 			It("should list the component when it is not pushed", func() {
 				cmpList := helper.Cmd("odo", append(args, "list", "--context", commonVar.Context)...).ShouldPass().Out()
-				helper.MatchAllInOutput(cmpList, []string{cmpName, "Not Pushed"})
+				metadata := helper.GetMetadataFromDevfile("devfile.yaml")
+				helper.MatchAllInOutput(cmpList, []string{cmpName, "Not Pushed", metadata.ProjectType})
 				helper.Cmd("odo", append(args, "delete", "-f", "--all", "--context", commonVar.Context)...).ShouldPass()
 			})
 
@@ -337,9 +335,10 @@ func componentTests(args ...string) {
 				helper.Cmd("odo", "url", "create", "url-2", "--context", commonVar.Context).ShouldPass()
 				helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 				cmpDescribe := helper.Cmd("odo", append(args, "describe", "--context", commonVar.Context)...).ShouldPass().Out()
+				metadata := helper.GetMetadataFromDevfile("devfile.yaml")
 				helper.MatchAllInOutput(cmpDescribe, []string{
 					cmpName,
-					"nodejs",
+					metadata.ProjectType,
 					"url-1",
 					"url-2",
 					"storage-1",
@@ -357,6 +356,17 @@ func componentTests(args ...string) {
 				BeforeEach(func() {
 					helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 				})
+				When("odo describe is executed", func() {
+					var stdOut string
+					JustBeforeEach(func() {
+						stdOut = helper.Cmd("odo", "describe").ShouldPass().Out()
+					})
+					It("should have the correct component Name and Type in the describe output", func() {
+						metadata := helper.GetMetadataFromDevfile("devfile.yaml")
+						Expect(stdOut).To(ContainSubstring(metadata.ProjectType))
+						Expect(stdOut).To(ContainSubstring(cmpName))
+					})
+				})
 
 				It("should not list component even in new project with --project and --context at the same time", func() {
 					projectList := helper.Cmd("odo", "project", "list").ShouldPass().Out()
@@ -366,7 +376,9 @@ func componentTests(args ...string) {
 
 				It("should list the component", func() {
 					cmpList := helper.Cmd("odo", append(args, "list", "--project", commonVar.Project)...).ShouldPass().Out()
+					metadata := helper.GetMetadataFromDevfile("devfile.yaml")
 					Expect(cmpList).To(ContainSubstring(cmpName))
+					Expect(cmpList).To(ContainSubstring(metadata.ProjectType))
 					actualCompListJSON := helper.Cmd("odo", append(args, "list", "--project", commonVar.Project, "-o", "json")...).ShouldPass().Out()
 					valuesCList := gjson.GetMany(actualCompListJSON, "kind", "devfileComponents.0.kind", "devfileComponents.0.metadata.name", "devfileComponents.0.spec.app")
 					expectedCList := []string{"List", "Component", cmpName, appName}

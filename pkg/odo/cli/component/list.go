@@ -71,7 +71,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		lo.componentType = devObj.Data.GetMetadata().Name
+		lo.componentType = component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 
 	} else {
 		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig

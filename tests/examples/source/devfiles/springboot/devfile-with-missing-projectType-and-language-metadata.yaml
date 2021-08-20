@@ -1,9 +1,7 @@
 ---
 schemaVersion: 2.0.0
 metadata:
-  name: java-spring-boot
-  language: java
-  projectType: spring
+  name: myspringbootproject
 starterProjects:
   - name: springbootproject
     git:
@@ -12,17 +10,17 @@ starterProjects:
 components:
   - name: tools
     container:
-      image: quay.io/eclipse/che-java11-maven:next
+      image: quay.io/eclipse/che-java11-maven:nightly
       memoryLimit: 768Mi
       command: ['tail']
       args: [ '-f', '/dev/null']
-      mountSources: true
       volumeMounts:
         - name: springbootpvc
           path: /data/cache/.m2
+      mountSources: true
   - name: runtime
     container:
-      image: quay.io/eclipse/che-java11-maven:next
+      image: quay.io/eclipse/che-java11-maven:nightly
       memoryLimit: 768Mi
       endpoints:
         - name: "8080-tcp"
@@ -30,10 +28,9 @@ components:
       volumeMounts:
         - name: springbootpvc
           path: /data/cache/.m2
-      mountSources: true
+      mountSources: false
   - name: springbootpvc
-    volume:
-      size: 3Gi
+    volume: {}
 commands:
   - id: defaultbuild
     exec:
@@ -42,6 +39,7 @@ commands:
       workingDir: /projects
       group:
         kind: build
+        isDefault: true
   - id: defaultrun
     exec:
       component: runtime
@@ -50,4 +48,3 @@ commands:
       group:
         kind: run
         isDefault: true
-

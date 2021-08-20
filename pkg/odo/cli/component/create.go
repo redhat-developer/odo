@@ -500,12 +500,20 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					componentName = args[0]
 
 				} else {
-					currentDirPath, err := os.Getwd()
-					if err != nil {
-						return err
+					// If there is an existing devfile, and no component name is passed, parse it from the devfile,
+					// and assign the value if the metadata name is set
+					devfileObj, err := devfile.ParseFromFile(DevfilePath)
+					if (err == nil) && (devfileObj.GetMetadataName() != "") {
+						componentName = devfileObj.GetMetadataName()
+					} else {
+						// If the metadata name is not available, then assign the current directory name to component
+						currentDirPath, err := os.Getwd()
+						if err != nil {
+							return err
+						}
+						currentDirName := filepath.Base(currentDirPath)
+						componentName = currentDirName
 					}
-					currentDirName := filepath.Base(currentDirPath)
-					componentName = currentDirName
 				}
 
 				co.devfileMetadata.devfileSupport = true
@@ -856,7 +864,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 	// Add component type in case it is not already added or is empty
 	if scontext.GetTelemetryStatus(cmd.Context()) {
 		if value, ok := scontext.GetContextProperties(cmd.Context())[scontext.ComponentType]; !ok || value == "" {
-			scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(devObj.Data.GetMetadata()))
+			scontext.SetComponentType(cmd.Context(), component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()))
 		}
 	}
 	err = validate.ValidateDevfileData(devObj.Data)
@@ -887,6 +895,19 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
 		if err != nil {
 			return err
+		}
+	}
+
+	// set user provided component name in the devfile
+	if co.devfileMetadata.componentName != "" {
+		devObj, err = devfile.ParseFromFile(DevfilePath)
+		if err != nil {
+			return fmt.Errorf("failed to create devfile component: %w", err)
+		}
+
+		err = devObj.SetMetadataName(co.devfileMetadata.componentName)
+		if err != nil {
+			return fmt.Errorf("failed to create devfile component: %w", err)
 		}
 	}
 
