@@ -80,16 +80,16 @@ func (k kubernetesClient) Delete(name string) error {
 
 // ListFromCluster lists pvc based Storage from the cluster
 func (k kubernetesClient) ListFromCluster() (StorageList, error) {
-	pod, err := k.client.GetKubeClient().GetOnePod(k.localConfig.GetName(), k.localConfig.GetApplication())
+	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.localConfig.GetName(), k.localConfig.GetApplication())
 	if err != nil {
-		if _, ok := err.(*kclient.PodNotFoundError); ok {
+		if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
 			return StorageList{}, nil
 		}
 		return StorageList{}, err
 	}
 
 	initContainerVolumeMounts := make(map[string]bool)
-	for _, container := range pod.Spec.InitContainers {
+	for _, container := range deployment.Spec.Template.Spec.InitContainers {
 		for _, volumeMount := range container.VolumeMounts {
 			initContainerVolumeMounts[volumeMount.Name] = true
 		}
@@ -97,11 +97,11 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 	var storage []Storage
 	var volumeMounts []Storage
-	for _, container := range pod.Spec.Containers {
+	for _, container := range deployment.Spec.Template.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
 
 			// avoid the volume mounts from the init containers
-			// and the source volume volume mount
+			// and the source volume mount
 			_, ok := initContainerVolumeMounts[volumeMount.Name]
 			if ok || volumeMount.Name == OdoSourceVolume {
 				continue
@@ -146,13 +146,6 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		}
 		if !found {
 			return StorageList{}, fmt.Errorf("mount path for pvc %s not found", pvc.Name)
-		}
-	}
-
-	// to track volumes created by Service Binding Operator
-	for _, volume := range pod.Spec.Volumes {
-		if volume.Secret != nil {
-			validVolumeMounts[volume.Name] = true
 		}
 	}
 
