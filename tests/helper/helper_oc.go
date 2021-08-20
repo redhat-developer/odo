@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -14,7 +15,6 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/log"
 )
 
 const (
@@ -779,20 +779,11 @@ func (oc OcRunner) AddSecret(comvar CommonVar) {
 		yaml := Cmd(oc.path, "get", "secret", "pull-secret", "-n", "openshift-config", "-o", "yaml").ShouldPass().Out()
 		newYaml := strings.Replace(yaml, "openshift-config", comvar.Project, -1)
 		filename := fmt.Sprint(RandString(4), ".yaml")
-		f, err := os.Create(filename)
+		newYamlinByte := []byte(newYaml)
+		err := ioutil.WriteFile(filename, newYamlinByte, 0644)
 		if err != nil {
 			fmt.Println(err)
 		}
-		_, err = f.WriteString(newYaml)
-		if err != nil {
-			fmt.Println(err)
-			f.Close()
-		}
-		err = f.Close()
-		if err != nil {
-			fmt.Println(err)
-		}
-		log.Info(Cmd("pwd").ShouldPass().Out())
 		Cmd(oc.path, "apply", "-f", filename).ShouldPass()
 		os.Remove(filename)
 		oc.doAsDeveloper(token, clusterType)
@@ -815,7 +806,6 @@ func (oc OcRunner) doAsAdmin(clusterType string) string {
 			//login as admin in cluster
 			Cmd(oc.path, "login", "--token=", adminToken, "--server=", cluster)
 		} else {
-			log.Info("PSI is used")
 			pass := os.Getenv("OCP4X_KUBEADMIN_PASSWORD")
 			cluster := os.Getenv("OCP4X_API_URL")
 			//login as kubeadmin
