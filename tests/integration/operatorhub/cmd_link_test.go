@@ -122,7 +122,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					})
 
 					It("should not list the service binding in `odo service list`", func() {
-						stdOut := helper.Cmd("odo", "service", "list")
+						stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context)
 						Expect(stdOut).ToNot(ContainSubstring("ServiceBinding/"))
 					})
 				})
