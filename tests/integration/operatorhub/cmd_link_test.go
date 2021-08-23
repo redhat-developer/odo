@@ -120,6 +120,11 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 						Expect(stdOut).To(ContainSubstring("Environment Variables"))
 						Expect(stdOut).To(ContainSubstring("REDIS_CLUSTERIP"))
 					})
+
+					It("should not list the service binding in `odo service list`", func() {
+						stdOut := helper.Cmd("odo", "service", "list")
+						Expect(stdOut).ToNot(ContainSubstring("ServiceBinding/"))
+					})
 				})
 			})
 
