@@ -9,23 +9,27 @@ require (
 	github.com/devfile/library v1.0.1-0.20210716161803-9de9d4cb6be7
 	github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
 	github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
-	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce
+	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible // indirect
+	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce // indirect
 	github.com/fatih/color v1.10.0
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.2.0
+	github.com/go-openapi/spec v0.19.4
+	github.com/go-openapi/strfmt v0.19.3
+	github.com/go-openapi/validate v0.19.5
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/mock v1.5.0
 	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/googleapis/gnostic v0.5.1
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.8
-	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
