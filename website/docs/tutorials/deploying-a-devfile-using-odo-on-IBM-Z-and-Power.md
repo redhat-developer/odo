@@ -2,8 +2,7 @@
 title: Using odo on IBM-Z and Power
 sidebar_position: 2
 ---
-### Pre-requisites
-1. [Devfile](../architecture/devfile.md).
+[//]: # (Add prerequisite section)
 
 ### Deploying your first devfile on IBM Z & Power
 Since the [DefaultDevfileRegistry](https://github.com/odo-devfiles/registry) doesn't support IBM Z & Power now, you will need to create a secure private DevfileRegistry first. To create a new secure private DevfileRegistry, please check the doc [secure registry](../architecture/secure-registry.md).
@@ -23,4 +22,4 @@ The images can be used for devfiles on IBM Z & Power
 
 **Note**: Access to the Red Hat registry is required to use these images on IBM Power Systems & IBM Z.
 
-Steps to use devfiles can be found in [Deploying your first devfile](deploying-your-first-devfile.md).
+[//]: # (Steps to use devfiles can be found in Deploying your first devfile)
