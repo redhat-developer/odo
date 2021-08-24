@@ -49,19 +49,13 @@ var _ = Describe("odo project command tests", func() {
 	})
 
 	It("should list current empty project in json format", func() {
-		projectListJSON := helper.Cmd("odo", "project", "list", "-o", "json").ShouldPass().Out()
-		listOutputJSON, err := helper.Unindented(projectListJSON)
+		projectListJSON := helper.CmdRunner("odo", "project", "list", "-o", "json")
+		helper.WaitForOutputToContain(commonVar.Project, 180, 3, projectListJSON)
+		listOutputJSON, err := helper.Unindented(string(projectListJSON.Out.Contents()))
 		Expect(err).Should(BeNil())
-		valuesJSON := gjson.GetMany(listOutputJSON, "kind", "items.#.metadata.namespace")
-		expectedJSON := []string{"List", commonVar.Project}
-		Expect(helper.GjsonMatcher(valuesJSON, expectedJSON)).To(Equal(true))
-		// projectListJSON := helper.CmdRunner("odo", "project", "list", "-o", "json")
-		// helper.WaitForOutputToContain(commonVar.Project, 60, 3, projectListJSON)
-		// listOutputJSON, err := helper.Unindented(string(projectListJSON.Out.Contents()))
-		// Expect(err).Should(BeNil())
-		// partOfProjectListJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + commonVar.Project + `","namespace":"` + commonVar.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
-		// Expect(err).Should(BeNil())
-		// Expect(listOutputJSON).To(ContainSubstring(partOfProjectListJSON))
+		partOfProjectListJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + commonVar.Project + `","namespace":"` + commonVar.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+		Expect(err).Should(BeNil())
+		Expect(listOutputJSON).To(ContainSubstring(partOfProjectListJSON))
 	})
 
 	It("should list current empty project", func() {
