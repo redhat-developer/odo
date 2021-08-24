@@ -24,11 +24,8 @@ then
     #PSI cluster login
     oc login -u kubeadmin -p ${OCP4X_KUBEADMIN_PASSWORD} --insecure-skip-tls-verify  ${OCP4X_API_URL}
 else
-    # Login to IBM Cloud using service account API Key
-    ibmcloud login --apikey $IBMC_OCP47_APIKEY -a cloud.ibm.com -r eu-de -g "Developer CI and QE"
-
     # Login to cluster in IBM Cloud using cluster API key
-    oc login --token=$IBMC_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
+    oc login -u $IBM_OC_LOGIN_USER -p $IBMC_ADMIN_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
 
 fi
 set -x
@@ -66,11 +63,9 @@ then
     #PSI cluster login
     oc login -u developer -p ${OCP4X_DEVELOPER_PASSWORD} --insecure-skip-tls-verify ${OCP4X_API_URL}
 else
-    # Login to IBM Cloud using service account API Key
-    ibmcloud login --apikey $IBMC_OCP47_APIKEY -a cloud.ibm.com -r eu-de -g "Developer CI and QE"
 
     # Login to cluster in IBM Cloud using cluster API key
-    oc login --token=$IBMC_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
+    oc login -u $IBM_OC_LOGIN_USER -p $IBMC_DEVELOPER_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
   
 fi
 
@@ -101,7 +96,7 @@ else
     ibmcloud login --apikey $IBMC_OCP47_APIKEY -a cloud.ibm.com -r eu-de -g "Developer CI and QE"
 
     # Login to cluster in IBM Cloud using cluster API key
-    oc login --token=$IBMC_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
+    oc login -u $IBM_OC_LOGIN_USER -p $IBMC_ADMIN_OCLOGIN_APIKEY --server=$IBMC_OCP47_SERVER
     
 fi
 set -x
