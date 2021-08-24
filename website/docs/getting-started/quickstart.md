@@ -10,7 +10,7 @@ Agenda:
 * Create an instance of the Postgres service.
 * Link the Spring Boot application with Postgres service.
 
-## Pre-requisite
+## Prerequisites
 * Setup a [Kubernetes](cluster-setup/kubernetes.md)/[OpenShift](cluster-setup/openshift.md) cluster.
 * [Install odo](installation.md) on your system.
 * If it is a Kubernetes cluster, have [ingress-controller installed](cluster-setup/kubernetes.md) on the cluster.
@@ -18,7 +18,7 @@ Agenda:
   ```shell
   odo login
   ```
-* If your internet connection is slow, it is highly advisable that you increase the build timeout to avoid timeout errors with the command:
+* If your internet connection is slow, it is advisable that you increase the build timeout to avoid timeout errors with the command:
   ```shell
   odo preference set buildtimeout 600
   ```
@@ -44,14 +44,14 @@ Agenda:
 
 7. Create a URL to access this application outside the cluster.
 
-  _OpenShift_ - If you are using an OpenShift cluster, you can skip this step, URL will be automatically created for you.
+  **OpenShift** - If you are using an OpenShift cluster, you can skip this step, URL will be automatically created for you.
 
-  _Kubernetes_ - If you are using a Kubernetes cluster, make sure you have an [ingress controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) installed on your cluster before creating the URL.
+  **Kubernetes** - If you are using a Kubernetes cluster, make sure you have an [ingress controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) installed on your cluster before creating the URL.
    ```shell
     odo url create  --port 8080 --host <your-ingress-domain>
     ```
 
-  _Minikube_ - If you are using a Minikube cluster, make sure you have enabled the ingress addon before creating the URL.
+  **Minikube** - If you are using a Minikube cluster, make sure you have enabled the ingress addon before creating the URL.
   ```shell
   minikube addons enable ingress
   ```
@@ -99,7 +99,7 @@ Agenda:
 
 ## Extending the application: Connecting the application to a PostgreSQL service
 
-### Pre-requisite
+### Prerequisites
 * If it is a Kubernetes cluster,[install the Operator Lifecycle Manager(OLM)](cluster-setup/kubernetes.md) on the cluster.
   
   If it is an OpenShift cluster, there is no need.
@@ -165,14 +165,14 @@ But, this is currently not possible due to [odo#issue4916](https://github.com/op
   ```shell
   $ odo list services
   NAME                MANAGED BY ODO      STATE      AGE
-  Pgcluster/hippo     Yes (petclinic)     Pushed     1m24s
+  Pgcluster/mypg     Yes (petclinic)     Pushed     1m24s
   ```
   Notice the 'Pushed' state.
 
 ### Link the application with the database service
 1. Create a link between the Postgres database instance and the application.
   ```shell
-  odo link Pgcluster/hippo
+  odo link Pgcluster/mypg
   ```
 2. Deploy the changes to the cluster.
   ```shell
@@ -180,12 +180,12 @@ But, this is currently not possible due to [odo#issue4916](https://github.com/op
   ```
 3. We now have our application running and database running, but the application is not communicating with database because it is unaware of the password required to connect to the database. The Service Binding Operator helps in linking the application should be able to retrieve the password, but it is not currently possible. So we go obtain the password manually and tell our application about it.
   ```shell
-  kubectl get secret hippo-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
+  kubectl get secret mypg-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
   ```
   Take a note of the password. Ignore the `%` at the end if any.
   The output can look similar to:
   ```shell
-  $ kubectl get secret hippo-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
+  $ kubectl get secret mypg-hippo-secret -o "jsonpath={.data['password']}" | base64 -d
   
   [Q74./[ovz}64ui)O)yiJr7z%
   ```
@@ -240,23 +240,3 @@ Visit the URL and see if the application is accessible. If the application does 
   ```shell
   odo push --show-log
   ```
-
-[//]: # (k get all
-NAME                                              READY   STATUS              RESTARTS   AGE
-pod/hippo-backrest-shared-repo-66ddc6cf77-pwqd4   0/1     ContainerCreating   0          15m
-pod/petclinic-app-758974d79-926g4                 0/1     PodInitializing     0          3m23s
-NAME                                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT             AGE
-service/hippo                        ClusterIP   10.108.182.83    <none>        2022/TCP,5432/TCP   15m
-service/hippo-backrest-shared-repo   ClusterIP   10.99.179.81     <none>        2022/TCP            15m
-service/kubernetes                   ClusterIP   10.96.0.1        <none>        443/TCP             3h20m
-service/petclinic-app                ClusterIP   10.110.182.111   <none>        8080/TCP            172m
-NAME                                         READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/hippo                        0/0     0            0           15m
-deployment.apps/hippo-backrest-shared-repo   0/1     1            0           15m
-deployment.apps/petclinic-app                0/1     1            0           172m
-NAME                                                    DESIRED   CURRENT   READY   AGE
-replicaset.apps/hippo-6fc7f5548c                        0         0         0       15m
-replicaset.apps/hippo-backrest-shared-repo-66ddc6cf77   1         1         0       15m
-replicaset.apps/petclinic-app-5c96768d5c                0         0         0       172m
-replicaset.apps/petclinic-app-758974d79                 1         1         0       3m23s
-)
