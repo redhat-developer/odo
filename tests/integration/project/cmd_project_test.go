@@ -50,10 +50,10 @@ var _ = Describe("odo project command tests", func() {
 
 	It("should list current empty project in json format", func() {
 		projectListJSON := helper.Cmd("odo", "project", "list", "-o", "json").ShouldPass().Out()
-		getOutputJSON, err := helper.Unindented(projectListJSON)
+		listOutputJSON, err := helper.Unindented(projectListJSON)
 		Expect(err).Should(BeNil())
-		valuesJSON := gjson.GetMany(getOutputJSON, "kind", "metadata.namespace")
-		expectedJSON := []string{"Project", commonVar.Project}
+		valuesJSON := gjson.GetMany(listOutputJSON, "kind", "items.#.metadata.namespace")
+		expectedJSON := []string{"List", commonVar.Project}
 		Expect(helper.GjsonMatcher(valuesJSON, expectedJSON)).To(Equal(true))
 		// projectListJSON := helper.CmdRunner("odo", "project", "list", "-o", "json")
 		// helper.WaitForOutputToContain(commonVar.Project, 60, 3, projectListJSON)
