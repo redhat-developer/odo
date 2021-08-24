@@ -901,10 +901,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		}
 
-		When("odo push -f is executed", func() {
+		Context("odo push -f is executed", func() {
 			ensureFilesSyncedTest(commonVar.Project, true)
 		})
-		When("odo push (without -f) is executed", func() {
+		Context("odo push (without -f) is executed", func() {
 			ensureFilesSyncedTest(commonVar.Project, false)
 		})
 	})
