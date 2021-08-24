@@ -112,7 +112,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			AfterEach(func() {
-				defer helper.DeleteDir(newContext)
+				helper.DeleteDir(newContext)
 				helper.Chdir(commonVar.Context)
 			})
 
@@ -755,8 +755,13 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-	When("pushing devfile without an .odo folder", func() {
+	Context("pushing devfile without an .odo folder", func() {
 		output := ""
+
+		It("should error out on odo push and passing invalid devfile", func() {
+			helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
+		})
+
 		When("doing odo push", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
@@ -767,10 +772,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				Expect(output).To(ContainSubstring("Executing devfile commands for component springboot"))
 			})
-		})
-
-		It("should error out on odo push and passing invalid devfile", func() {
-			helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
 		})
 	})
 
@@ -813,87 +814,98 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-	When("devfile is modified", func() {
+	Context("devfile is modified", func() {
 		// Tests https://github.com/openshift/odo/issues/3838
 		ensureFilesSyncedTest := func(namespace string, shouldForcePush bool) {
-			helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			output := ""
+			When("java-springboot application is created and pushed", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName).ShouldPass()
+					helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 
-			fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
+					fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
+					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+				})
 
-			// 1) Push a standard spring boot project
-			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+				It("should push the component successfully", func() {
+					Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+				})
 
-			// 2) Update the devfile.yaml, causing push to redeploy the component
-			helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 769Mi")
-			commands := []string{"push", "-v", "4", "--project", commonVar.Project}
-			if shouldForcePush {
-				// Test both w/ and w/o '-f'
-				commands = append(commands, "-f")
-			}
+				When("Update the devfile.yaml, do odo push", func() {
 
-			// 3) Ensure the build passes, indicating that all files were correctly synced to the new pod
-			output = helper.Cmd("odo", commands...).ShouldPass().Out()
-			Expect(output).To(ContainSubstring("BUILD SUCCESS"))
+					BeforeEach(func() {
+						helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 769Mi")
+						commands := []string{"push", "-v", "4", "--project", commonVar.Project}
+						if shouldForcePush {
+							commands = append(commands, "-f")
+						}
 
-			// 4) Acquire files from remote container, filtering out target/* and .*
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, namespace)
-			output = commonVar.CliRunner.Exec(podName, namespace, "find", sourcePath)
-			remoteFiles := []string{}
-			outputArr := strings.Split(output, "\n")
-			for _, line := range outputArr {
+						output = helper.Cmd("odo", commands...).ShouldPass().Out()
+					})
 
-				if !strings.HasPrefix(line, sourcePath+"/") || strings.Contains(line, "lost+found") {
-					continue
-				}
+					It("Ensure the build passes", func() {
+						Expect(output).To(ContainSubstring("BUILD SUCCESS"))
+					})
 
-				newLine, err := filepath.Rel(sourcePath, line)
-				Expect(err).ToNot(HaveOccurred())
+					When("compare the local and remote files", func() {
 
-				newLine = filepath.ToSlash(newLine)
-				if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
-					continue
-				}
+						remoteFiles := []string{}
+						localFiles := []string{}
 
-				remoteFiles = append(remoteFiles, newLine)
-			}
+						BeforeEach(func() {
+							podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+							output = commonVar.CliRunner.Exec(podName, namespace, "find", sourcePath)
+							outputArr := strings.Split(output, "\n")
+							for _, line := range outputArr {
 
-			// 5) Acquire file from local context, filtering out .*
-			localFiles := []string{}
-			err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
+								if !strings.HasPrefix(line, sourcePath+"/") || strings.Contains(line, "lost+found") {
+									continue
+								}
 
-				newPath := filepath.ToSlash(path)
+								newLine, err := filepath.Rel(sourcePath, line)
+								Expect(err).ToNot(HaveOccurred())
 
-				if strings.HasPrefix(newPath, ".") {
-					return nil
-				}
+								newLine = filepath.ToSlash(newLine)
+								if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
+									continue
+								}
 
-				localFiles = append(localFiles, newPath)
-				return nil
+								remoteFiles = append(remoteFiles, newLine)
+							}
+
+							// 5) Acquire file from local context, filtering out .*
+							err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+								if err != nil {
+									return err
+								}
+
+								newPath := filepath.ToSlash(path)
+
+								if strings.HasPrefix(newPath, ".") {
+									return nil
+								}
+
+								localFiles = append(localFiles, newPath)
+								return nil
+							})
+							Expect(err).ToNot(HaveOccurred())
+						})
+
+						It("localFiles and remoteFiles should match", func() {
+							sort.Strings(localFiles)
+							sort.Strings(remoteFiles)
+							Expect(localFiles).To(Equal(remoteFiles))
+						})
+					})
+				})
 			})
-			Expect(err).ToNot(HaveOccurred())
-
-			// 6) Sort and compare the local and remote files; they should match
-			sort.Strings(localFiles)
-			sort.Strings(remoteFiles)
-			Expect(localFiles).To(Equal(remoteFiles))
 		}
 
 		When("odo push -f is executed", func() {
-
-			It("should correctly sync files after pod redeploy", func() {
-				ensureFilesSyncedTest(commonVar.Project, true)
-			})
+			ensureFilesSyncedTest(commonVar.Project, true)
 		})
 		When("odo push (without -f) is executed", func() {
-
-			It("should correctly sync files after pod redeploy", func() {
-				ensureFilesSyncedTest(commonVar.Project, false)
-			})
+			ensureFilesSyncedTest(commonVar.Project, false)
 		})
 	})
 
@@ -927,7 +939,7 @@ var _ = Describe("odo devfile push command tests", func() {
 	})
 
 	Context("using OpenShift cluster", func() {
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
 			}
@@ -948,7 +960,7 @@ var _ = Describe("odo devfile push command tests", func() {
 	})
 
 	Context("using Kubernetes cluster", func() {
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") != "true" {
 				Skip("This is a Kubernetes specific scenario, skipping")
 			}
