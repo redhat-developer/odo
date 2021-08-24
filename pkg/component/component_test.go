@@ -23,12 +23,10 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 
-	appsv1 "github.com/openshift/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -379,14 +377,6 @@ func TestList(t *testing.T) {
 	}
 	componentConfig2.Status.State = StateTypeUnknown
 
-	existingSampleLocalConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
-
-	dcList := appsv1.DeploymentConfigList{Items: []appsv1.DeploymentConfig{
-		getFakeDC("frontend", "test", "app", "nodejs"),
-		getFakeDC("backend", "test", "app", "java"),
-		getFakeDC("test", "test", "otherApp", "python"),
-	}}
-
 	deploymentList := v1.DeploymentList{Items: []v1.Deployment{
 		*testingutil.CreateFakeDeployment("comp0"),
 		*testingutil.CreateFakeDeployment("comp1"),
@@ -406,7 +396,6 @@ func TestList(t *testing.T) {
 	const caseName = "Case 4: List component when openshift cluster not reachable"
 	tests := []struct {
 		name                      string
-		dcList                    appsv1.DeploymentConfigList
 		deploymentConfigSupported bool
 		deploymentList            v1.DeploymentList
 		projectExists             bool
@@ -415,59 +404,13 @@ func TestList(t *testing.T) {
 		output                    ComponentList
 	}{
 		{
-			name:                      "Case 1: Components are returned",
-			dcList:                    dcList,
-			deploymentConfigSupported: true,
-			wantErr:                   false,
-			projectExists:             true,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
-				},
-			},
-		},
-		{
-			name:          "Case 2: no component and no config exists",
+			name:          "Case 1: no component and no config exists",
 			wantErr:       false,
 			projectExists: true,
 			output:        newComponentList([]Component{}),
 		},
 		{
-			name:                      "Case 3: Components are returned from the config plus and cluster",
-			dcList:                    dcList,
-			deploymentConfigSupported: true,
-			wantErr:                   false,
-			projectExists:             true,
-			existingLocalConfigInfo:   &existingSampleLocalConfig,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
-					componentConfig,
-				},
-			},
-		},
-		{
-			name:                    caseName,
-			wantErr:                 false,
-			projectExists:           false,
-			existingLocalConfigInfo: &existingSampleLocalConfig,
-			output:                  newComponentList([]Component{componentConfig2}),
-		},
-		{
-			name:                      "Case 5: Components are returned from deployments on a kubernetes cluster",
-			dcList:                    dcList,
+			name:                      "Case 2: Components are returned from deployments on a kubernetes cluster",
 			deploymentList:            deploymentList,
 			wantErr:                   false,
 			projectExists:             true,
@@ -484,27 +427,6 @@ func TestList(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:                      "Case 6: Components are returned from both",
-			dcList:                    dcList,
-			deploymentList:            deploymentList,
-			wantErr:                   false,
-			projectExists:             true,
-			deploymentConfigSupported: true,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("comp0", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("comp1", "test", "app", "wildfly", StateTypePushed),
-					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -516,31 +438,6 @@ func TestList(t *testing.T) {
 
 			client, fakeClientSet := occlient.FakeNew()
 			client.Namespace = "test"
-
-			//fake the dcs
-			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &tt.dcList, nil
-			})
-
-			// Prepend reactor returns the last matched reactor added
-			// We need to return errorNotFound for localconfig only component
-			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.name == caseName {
-					return true, nil, errors.NewUnauthorized("user unauthorized")
-				}
-				getAction, ok := action.(ktesting.GetAction)
-				if !ok {
-					return false, nil, fmt.Errorf("expected a GetAction, got %v", action)
-				}
-				switch getAction.GetName() {
-				case "frontend-app":
-					return true, &tt.dcList.Items[0], nil
-				case "backend-app":
-					return true, &tt.dcList.Items[1], nil
-				default:
-					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
-				}
-			})
 
 			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				listAction, ok := action.(ktesting.ListAction)
@@ -1014,38 +911,6 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getFakeDC(name, namespace, appName, componentType string) appsv1.DeploymentConfig {
-	return appsv1.DeploymentConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", name, appName),
-			Namespace: namespace,
-			Labels: map[string]string{
-				applabels.App:                      appName,
-				applabels.ManagedBy:                "odo",
-				applabels.ApplicationLabel:         appName,
-				componentlabels.ComponentLabel:     name,
-				componentlabels.ComponentTypeLabel: componentType,
-			},
-			Annotations: map[string]string{
-				ComponentSourceTypeAnnotation:           "local",
-				componentlabels.ComponentTypeAnnotation: componentType,
-			},
-		},
-		Spec: appsv1.DeploymentConfigSpec{
-			Template: &corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name: "dummyContainer",
-						},
-					},
-				},
-			},
-		},
-	}
-
 }
 
 func getFakeComponent(compName, namespace, appName, compType string, state State) Component {

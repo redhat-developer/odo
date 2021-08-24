@@ -2,203 +2,62 @@ package url
 
 import (
 	"fmt"
-	"net"
 	"reflect"
-	"strconv"
 
-	"github.com/openshift/odo/pkg/log"
-
-	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
-	iextensionsv1 "k8s.io/api/extensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/klog"
 )
 
-// ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
-/// down if a component name is provided, which will only list URLs for the
-// given component
-func ListPushed(client *occlient.Client, componentName string, applicationName string) (URLList, error) {
+const apiVersion = "odo.dev/v1alpha1"
 
-	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
-
-	if componentName != "" {
-		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
-	}
-
-	klog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
-	routes, err := client.ListRoutes(labelSelector)
-
-	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list route names")
-	}
-
-	var urls []URL
-	for _, r := range routes {
-		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
-			continue
-		}
-		a := NewURL(r)
-		urls = append(urls, a)
-	}
-
-	urlList := NewURLList(urls)
-	return urlList, nil
-
+// generic contains information required for all the URL clients
+type generic struct {
+	appName       string
+	componentName string
+	localConfig   localConfigProvider.LocalConfigProvider
 }
 
-// ListPushedIngress lists the ingress URLs on cluster for the given component
-func ListPushedIngress(client *kclient.Client, componentName string) (URLList, error) {
-	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
-	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
-	ingresses, err := client.ListIngresses(labelSelector)
-	if err != nil {
-		return URLList{}, fmt.Errorf("unable to list ingress names %w", err)
-	}
-
-	var urls []URL
-	urls = append(urls, NewURLsFromKubernetesIngressList(ingresses)...)
-	urlList := NewURLList(urls)
-	return urlList, nil
+type Client interface {
+	Create(url URL) (string, error)
+	Delete(string, localConfigProvider.URLKind) error
+	ListFromCluster() (URLList, error)
+	List() (URLList, error)
 }
 
-type sortableURLs []URL
-
-func (s sortableURLs) Len() int {
-	return len(s)
+type ClientOptions struct {
+	OCClient            occlient.Client
+	IsRouteSupported    bool
+	LocalConfigProvider localConfigProvider.LocalConfigProvider
+	Deployment          *v1.Deployment
 }
 
-func (s sortableURLs) Less(i, j int) bool {
-	return s[i].Name <= s[j].Name
-}
+// NewClient gets the appropriate URL client based on the parameters
+func NewClient(options ClientOptions) Client {
+	var genericInfo generic
 
-func (s sortableURLs) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-// GetProtocol returns the protocol string
-func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
-	if !reflect.DeepEqual(ingress, iextensionsv1.Ingress{}) && ingress.Spec.TLS != nil {
-		return "https"
-	} else if !reflect.DeepEqual(route, routev1.Route{}) && route.Spec.TLS != nil {
-		return "https"
-	}
-	return "http"
-}
-
-// GetURLString returns a string representation of given url
-func GetURLString(protocol, URL, ingressDomain string, isS2I bool) string {
-	if protocol == "" && URL == "" && ingressDomain == "" {
-		return ""
-	}
-	if !isS2I && URL == "" {
-		return protocol + "://" + ingressDomain
-	}
-	// if we are here we are dealing with s2i
-	if URL == "" {
-		return protocol + "://" + "<provided by cluster>"
-	}
-	return protocol + "://" + URL
-}
-
-// Exists checks if the url exists in the component or not
-// urlName is the name of the url for checking
-// componentName is the name of the component to which the url's existence is checked
-// applicationName is the name of the application to which the url's existence is checked
-func Exists(client *occlient.Client, urlName string, componentName string, applicationName string) (bool, error) {
-	urls, err := ListPushed(client, componentName, applicationName)
-	if err != nil {
-		return false, errors.Wrap(err, "unable to list the urls")
-	}
-
-	for _, url := range urls.Items {
-		if url.Name == urlName {
-			return true, nil
+	if options.LocalConfigProvider != nil {
+		genericInfo = generic{
+			appName:       options.LocalConfigProvider.GetApplication(),
+			componentName: options.LocalConfigProvider.GetName(),
+			localConfig:   options.LocalConfigProvider,
 		}
 	}
-	return false, nil
-}
 
-// GetValidExposedPortNumber checks if the given exposed port number is a valid port or not
-// if exposed port is not provided, a random free port will be generated and returned
-func GetValidExposedPortNumber(exposedPort int) (int, error) {
-	// exposed port number will be -1 if the user doesn't specify any port
-	if exposedPort == -1 {
-		freePort, err := util.HTTPGetFreePort()
-		if err != nil {
-			return -1, err
-		}
-		return freePort, nil
-	} else {
-		// check if the given port is available
-		listener, err := net.Listen("tcp", ":"+strconv.Itoa(exposedPort))
-		if err != nil {
-			return -1, errors.Wrapf(err, "given port %d is not available, please choose another port", exposedPort)
-		}
-		defer listener.Close()
-		return exposedPort, nil
+	if options.Deployment != nil {
+		genericInfo.appName = options.Deployment.Labels[applabels.ApplicationLabel]
+		genericInfo.componentName = options.Deployment.Labels[labels.ComponentLabel]
 	}
-}
 
-// getDefaultTLSSecretName returns the name of the default tls secret name
-func getDefaultTLSSecretName(componentName, appName string) string {
-	return componentName + "-" + appName + "-tlssecret"
-}
-
-// ConvertExtensionV1IngressURLToIngress converts IngressURL to Ingress
-func ConvertExtensionV1IngressURLToIngress(ingressURL URL, serviceName string) iextensionsv1.Ingress {
-	port := intstr.IntOrString{
-		Type:   intstr.Int,
-		IntVal: int32(ingressURL.Spec.Port),
+	return kubernetesClient{
+		generic:          genericInfo,
+		isRouteSupported: options.IsRouteSupported,
+		client:           options.OCClient,
 	}
-	ingress := iextensionsv1.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Ingress",
-			APIVersion: "extensions/v1beta1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ingressURL.Name,
-		},
-		Spec: iextensionsv1.IngressSpec{
-			Rules: []iextensionsv1.IngressRule{
-				{
-					Host: ingressURL.Spec.Host,
-					IngressRuleValue: iextensionsv1.IngressRuleValue{
-						HTTP: &iextensionsv1.HTTPIngressRuleValue{
-							Paths: []iextensionsv1.HTTPIngressPath{
-								{
-									Path: ingressURL.Spec.Path,
-									Backend: iextensionsv1.IngressBackend{
-										ServiceName: serviceName,
-										ServicePort: port,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	if len(ingressURL.Spec.TLSSecret) > 0 {
-		ingress.Spec.TLS = []iextensionsv1.IngressTLS{
-			{
-				Hosts: []string{
-					ingressURL.Spec.Host,
-				},
-				SecretName: ingressURL.Spec.TLSSecret,
-			},
-		}
-	}
-	return ingress
 }
 
 type PushParameters struct {
@@ -309,46 +168,4 @@ func Push(parameters PushParameters) error {
 	}
 
 	return nil
-}
-
-type ClientOptions struct {
-	OCClient            occlient.Client
-	IsRouteSupported    bool
-	LocalConfigProvider localConfigProvider.LocalConfigProvider
-}
-
-type Client interface {
-	Create(url URL) (string, error)
-	Delete(string, localConfigProvider.URLKind) error
-	ListFromCluster() (URLList, error)
-	List() (URLList, error)
-}
-
-// NewClient gets the appropriate URL client based on the parameters
-func NewClient(options ClientOptions) Client {
-	genericInfo := generic{
-		appName:       options.LocalConfigProvider.GetApplication(),
-		componentName: options.LocalConfigProvider.GetName(),
-		localConfig:   options.LocalConfigProvider,
-	}
-
-	if _, ok := options.LocalConfigProvider.(*config.LocalConfigInfo); ok {
-		return s2iClient{
-			generic: genericInfo,
-			client:  options.OCClient,
-		}
-	} else {
-		return kubernetesClient{
-			generic:          genericInfo,
-			isRouteSupported: options.IsRouteSupported,
-			client:           options.OCClient,
-		}
-	}
-}
-
-// generic contains information required for all the URL clients
-type generic struct {
-	appName       string
-	componentName string
-	localConfig   localConfigProvider.LocalConfigProvider
 }
