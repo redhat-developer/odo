@@ -43,9 +43,6 @@ case ${1} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
         export PATH="$PATH:/usr/local/go/bin/"
-        export GOPATH=$HOME/go
-        mkdir -p $GOPATH/bin
-        export PATH="$PATH:$(pwd):$GOPATH/bin"
         sh .scripts/minishift-start-if-required.sh
         ;;
     minikube)

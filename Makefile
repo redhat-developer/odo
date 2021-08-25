@@ -18,7 +18,11 @@ TIMEOUT ?= 14400s
 # TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 2
+if $(CLUSTER_ON_IBM_CLOUD)
+   TEST_EXEC_NODES ?= 24
+else
+   TEST_EXEC_NODES ?= 2
+fi
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
