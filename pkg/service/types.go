@@ -53,6 +53,7 @@ type OperatorBackedServiceSpec struct {
 	Kind        string       `json:"kind"`
 	Version     string       `json:"version"`
 	Description string       `json:"description"`
+	DisplayName string       `json:"displayName"`
 	Schema      *spec.Schema `json:"schema"`
 }
 
@@ -62,7 +63,7 @@ type OperatorBackedService struct {
 	Spec              OperatorBackedServiceSpec `json:"spec"`
 }
 
-func NewOperatorBackedService(name string, kind string, version string, description string, spec *spec.Schema) OperatorBackedService {
+func NewOperatorBackedService(name string, kind string, version string, description string, displayName string, spec *spec.Schema) OperatorBackedService {
 	return OperatorBackedService{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       OperatorBackedServiceKind,
@@ -75,6 +76,7 @@ func NewOperatorBackedService(name string, kind string, version string, descript
 			Kind:        kind,
 			Version:     version,
 			Description: description,
+			DisplayName: displayName,
 			Schema:      spec,
 		},
 	}

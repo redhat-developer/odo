@@ -125,7 +125,7 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		return nil
 	}
 
-	svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CRDSpec)
+	svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CR.DisplayName, ohb.CRDSpec)
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(svc)
 	} else {
