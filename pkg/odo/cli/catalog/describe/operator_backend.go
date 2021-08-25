@@ -3,8 +3,12 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"sort"
 	"strings"
 
+	"github.com/go-openapi/spec"
 	"github.com/olekukonko/tablewriter"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -15,11 +19,12 @@ import (
 )
 
 type operatorBackend struct {
-	// the operator name
+	Name           string
 	OperatorType   string
 	CustomResource string
 	CSV            olm.ClusterServiceVersion
 	CR             *olm.CRDDescription
+	CRDSpec        *spec.Schema
 }
 
 func NewOperatorBackend() *operatorBackend {
@@ -27,7 +32,8 @@ func NewOperatorBackend() *operatorBackend {
 }
 
 func (ohb *operatorBackend) CompleteDescribeService(dso *DescribeServiceOptions, args []string) error {
-	oprType, CR, err := service.SplitServiceKindName(args[0])
+	ohb.Name = args[0]
+	oprType, CR, err := service.SplitServiceKindName(ohb.Name)
 	if err != nil {
 		return err
 	}
@@ -77,6 +83,17 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 	}
 
 	ohb.CR = cr
+
+	crd, err := dso.KClient.GetResourceSpecDefinition(ohb.CR.Name, ohb.CR.Version, ohb.CustomResource)
+	if err != nil {
+		log.Warning("Unable to get CRD specifications:", err)
+		return nil
+	}
+	ohb.CRDSpec = crd
+
+	if crd == nil {
+		ohb.CRDSpec = toOpenAPISpec(cr)
+	}
 	return nil
 
 }
@@ -108,16 +125,20 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		return nil
 	}
 
+	svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CRDSpec)
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(service.ConvertCRDToJSONRepr(ohb.CR))
-		return nil
+		machineoutput.OutputSuccess(svc)
+	} else {
+		HumanReadableOutput(os.Stdout, svc)
 	}
-	repr := service.ConvertCRDToRepr(ohb.CR)
+	return nil
+}
 
-	fmt.Printf("Kind: %s\n", repr.Kind)
-	fmt.Printf("Version: %s\n", repr.Version)
-	fmt.Printf("Description: %s\n", repr.Description)
-	fmt.Println("Parameters:")
+func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
+	fmt.Fprintf(w, "Kind: %s\n", service.Spec.Kind)
+	fmt.Fprintf(w, "Version: %s\n", service.Spec.Version)
+	fmt.Fprintf(w, "Description: %s\n", service.Spec.Description)
+	fmt.Fprintln(w, "Parameters:")
 
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
@@ -126,12 +147,56 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
-
 	table.SetHeader([]string{"Path", "DisplayName", "Description"})
-	for _, params := range repr.Parameters {
-		table.Append([]string{params.Path, params.DisplayName, params.Description})
-	}
+	displayProperties(table, service.Spec.Schema, "")
 	table.Render()
-	fmt.Print(tableString)
-	return nil
+	fmt.Fprint(w, tableString)
+}
+
+// displayProperties displays the properties of an OpenAPI schema in a human readable form
+func displayProperties(table *tablewriter.Table, schema *spec.Schema, prefix string) {
+	keys := make([]string, len(schema.Properties))
+	i := 0
+	for key := range schema.Properties {
+		keys[i] = key
+		i++
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		property := schema.Properties[key]
+		if property.Type.Contains("object") {
+			displayProperties(table, &property, prefix+key+".")
+		} else {
+			table.Append([]string{prefix + key, property.Title, property.Description})
+		}
+	}
+}
+
+// toOpenAPISpec transforms Spec descriptors from a CRD description to an OpenAPI schema
+func toOpenAPISpec(repr *olm.CRDDescription) *spec.Schema {
+	schema := new(spec.Schema).Typed("object", "")
+	for _, param := range repr.SpecDescriptors {
+		addParam(schema, param)
+	}
+	return schema
+}
+
+// addParam adds a Spec Descriptor parameter to an OpenAPI schema
+func addParam(schema *spec.Schema, param olm.SpecDescriptor) {
+	parts := strings.SplitN(param.Path, ".", 2)
+	if len(parts) == 1 {
+		child := spec.StringProperty().WithTitle(param.DisplayName).WithDescription(param.Description)
+		schema.SetProperty(parts[0], *child)
+	} else {
+		var child *spec.Schema
+		if _, ok := schema.Properties[parts[0]]; ok {
+			c := schema.Properties[parts[0]]
+			child = &c
+		} else {
+			child = new(spec.Schema).Typed("object", "")
+		}
+		param.Path = parts[1]
+		addParam(child, param)
+		schema.SetProperty(parts[0], *child)
+	}
 }

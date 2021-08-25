@@ -2,9 +2,11 @@ package kclient
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/go-openapi/spec"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -145,4 +147,60 @@ func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 		}
 	}
 	return &olm.ClusterServiceVersion{}, fmt.Errorf("could not find any Operator containing requested CR: %s", name)
+}
+
+// GetResourceSpecDefinition returns the OpenAPI v2 definition of the Kubernetes resource of a given group/version/kind
+func (c *Client) GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error) {
+
+	data, err := c.KubeClient.Discovery().RESTClient().Get().AbsPath("/openapi/v2").SetHeader("Accept", "application/json").Do(context.TODO()).Raw()
+	if err != nil {
+		return nil, err
+	}
+
+	schema := new(spec.Schema)
+	err = json.Unmarshal([]byte(data), schema)
+	if err != nil {
+		return nil, err
+	}
+
+	var crd spec.Schema
+	found := false
+loopDefinitions:
+	for _, definition := range schema.Definitions {
+		extensions := definition.Extensions
+		gvkI, ok := extensions["x-kubernetes-group-version-kind"]
+		if !ok {
+			continue
+		}
+		gvkA, ok := gvkI.([]interface{})
+		if !ok {
+			continue
+		}
+
+		for i := range gvkA {
+			gvk, ok := gvkA[i].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			gvkGroup := gvk["group"].(string)
+			gvkVersion := gvk["version"].(string)
+			gvkKind := gvk["kind"].(string)
+			if strings.HasSuffix(group, gvkGroup) && version == gvkVersion && kind == gvkKind {
+				crd = definition
+				found = true
+				break loopDefinitions
+			}
+		}
+
+	}
+	if !found {
+		return nil, errors.New("no definition found")
+	}
+
+	spec, ok := crd.Properties["spec"]
+	if ok {
+		return &spec, nil
+	}
+	return nil, nil
+
 }
