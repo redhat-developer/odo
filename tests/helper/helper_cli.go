@@ -34,4 +34,5 @@ type CliRunner interface {
 	CreateSecret(secretName, secretPass, project string)
 	GetSecrets(project string) string
 	GetEnvFromEntry(componentName string, appName string, projectName string) string
+	GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string
 }

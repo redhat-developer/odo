@@ -766,3 +766,8 @@ func (oc OcRunner) CreateSecret(secretName, secretPass, project string) {
 func (oc OcRunner) GetSecrets(project string) string {
 	return GetSecrets(oc.path, project)
 }
+
+// GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
+func (oc OcRunner) GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string {
+	return GetVolumeNamesFromDeployment(oc.path, componentName, appName, projectName)
+}

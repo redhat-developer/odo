@@ -21,6 +21,8 @@
 
 ### Bug Fixes
 
+- Fixed issues with non-ephemeral storage mount([#4979](https://github.com/openshift/odo/pull/4979))
+
 ### Tests
 
 - runs nightly test of main branch of odo against [SBO master branch](https://github.com/redhat-developer/service-binding-operator) ([#4942](https://github.com/openshift/odo/issues/4942))
