@@ -1564,7 +1564,7 @@ func CheckKubeConfigPath() error {
 			return err
 		}
 		if f.IsDir() {
-			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which is a directory", kubeConfigPath)
+			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %q which is a directory", kubeConfigPath)
 			return InvalidKubeconfigError
 		}
 	}
