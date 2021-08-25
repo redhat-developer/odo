@@ -43,4 +43,3 @@ fi
 cp -r reports $ARTIFACT_DIR 
 
 oc logout
-
