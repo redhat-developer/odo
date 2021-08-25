@@ -48,7 +48,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 			return err
 		}
 	} else {
-		return fmt.Errorf("failed to list operator backed services, have you installed operators on the cluster?")
+		return fmt.Errorf("failed to list Operator backed services, make sure you have installed the Operators on the cluster")
 	}
 	return
 }
