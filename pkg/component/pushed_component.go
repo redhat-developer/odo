@@ -38,11 +38,12 @@ type PushedComponent interface {
 }
 
 type defaultPushedComponent struct {
-	application string
-	urls        []url.URL
-	storage     []storage.Storage
-	provider    provider
-	client      *occlient.Client
+	application   string
+	urls          []url.URL
+	storage       []storage.Storage
+	provider      provider
+	client        *occlient.Client
+	storageClient storage.Client
 }
 
 func (d defaultPushedComponent) GetLabels() map[string]string {
@@ -95,15 +96,8 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
 	if d.storage == nil {
 		var storageItems []storage.Storage
-		if _, ok := d.provider.(*s2iComponent); ok {
-			storageList, err := storage.ListMounted(d.client, d.GetName(), d.GetApplication())
-			if err != nil {
-				return nil, err
-			}
-			storageItems = append(storageItems, storageList.Items...)
-		}
 		if _, ok := d.provider.(*devfileComponent); ok {
-			storageList, err := storage.DevfileListMounted(d.client.GetKubeClient(), d.GetName(), d.GetApplication())
+			storageList, err := d.storageClient.ListFromCluster()
 			if err != nil {
 				return nil, err
 			}
@@ -268,7 +262,7 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	}
 	res := make(map[string]PushedComponent, len(dcList))
 	for _, dc := range dcList {
-		comp := newPushedComponent(applicationName, &s2iComponent{dc: dc}, c)
+		comp := newPushedComponent(applicationName, &s2iComponent{dc: dc}, c, nil)
 		res[comp.GetName()] = comp
 	}
 
@@ -278,18 +272,24 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	}
 
 	for _, d := range deploymentList.Items {
-		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c)
+		deployment := d
+		storageClient := storage.NewClient(storage.ClientOptions{
+			OCClient:   *c,
+			Deployment: &deployment,
+		})
+		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c, storageClient)
 		res[comp.GetName()] = comp
 	}
 
 	return res, nil
 }
 
-func newPushedComponent(applicationName string, p provider, c *occlient.Client) PushedComponent {
+func newPushedComponent(applicationName string, p provider, c *occlient.Client, storageClient storage.Client) PushedComponent {
 	return &defaultPushedComponent{
-		application: applicationName,
-		provider:    p,
-		client:      c,
+		application:   applicationName,
+		provider:      p,
+		client:        c,
+		storageClient: storageClient,
 	}
 }
 
@@ -312,16 +312,20 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 					if err != nil {
 						return nil, nil
 					} else {
-						return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c), nil
+						return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c, nil), nil
 					}
 				}
 			} else {
-				return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c), nil
+				return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c, nil), nil
 			}
 		}
 		return nil, err
 	}
-	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c), nil
+	storageClient := storage.NewClient(storage.ClientOptions{
+		OCClient:   *c,
+		Deployment: d,
+	})
+	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c, storageClient), nil
 }
 
 func isIgnorableError(err error) bool {

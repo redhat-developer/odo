@@ -6,8 +6,6 @@ import (
 
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/openshift/odo/pkg/storage"
-
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -111,16 +109,6 @@ func printDeleteComponentInfo(client *occlient.Client, componentName string, app
 		}
 		for _, u := range ul.Items {
 			log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
-		}
-	}
-
-	storages, err := storage.List(client, componentDesc.Name, appName)
-	odoutil.LogErrorAndExit(err, "")
-	if len(storages.Items) != 0 {
-		log.Info("This component has following storages which will be deleted with the component")
-		for _, storageName := range componentDesc.Spec.Storage {
-			store := storages.Get(storageName)
-			log.Info("Storage", store.GetName(), "of size", store.Spec.Size)
 		}
 	}
 	return nil

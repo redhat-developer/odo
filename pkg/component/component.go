@@ -34,7 +34,6 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
@@ -228,25 +227,6 @@ func GetComponentLinkedSecretNames(client *occlient.Client, componentName string
 	return secretNames, nil
 }
 
-// GetDevfileComponentLinkedSecretNames
-func GetDevfileComponentLinkedSecretNames(client *kclient.Client, componentName string, applicationName string) (secretNames []string, err error) {
-	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-
-	dc, err := client.GetOneDeploymentFromSelector(componentSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to fetch deployments for the selector %v", componentSelector)
-	}
-
-	for _, env := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
-		if env.SecretRef != nil {
-			secretNames = append(secretNames, env.SecretRef.Name)
-		}
-	}
-
-	return secretNames, nil
-}
-
 // CreateFromPath create new component with source or binary from the given local path
 // sourceType indicates the source type of the component and can be either local or binary
 // envVars is the array containing the environment variables
@@ -394,23 +374,12 @@ func CreateComponent(client *occlient.Client, componentConfig config.LocalConfig
 	envVarsList := componentConfig.GetEnvVars()
 	addDebugPortToEnv(&envVarsList, componentConfig)
 
-	// create and get the storage to be created/mounted during the component creation
-	storageList, err := getStorageFromConfig(&componentConfig)
-	if err != nil {
-		return err
-	}
-	storageToBeMounted, _, err := storage.S2iPush(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
-	if err != nil {
-		return err
-	}
-
 	log.Successf("Initializing component")
 	createArgs := occlient.CreateArgs{
-		Name:               cmpName,
-		ImageName:          cmpType,
-		ApplicationName:    appName,
-		EnvVars:            envVarsList.ToStringSlice(),
-		StorageToBeMounted: storageToBeMounted,
+		Name:            cmpName,
+		ImageName:       cmpType,
+		ApplicationName: appName,
+		EnvVars:         envVarsList.ToStringSlice(),
 	}
 	createArgs.SourceType = cmpSrcType
 	createArgs.SourcePath = componentConfig.GetSourceLocation()
@@ -1209,16 +1178,6 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 	envVarsList := componentConfig.GetEnvVars()
 	addDebugPortToEnv(&envVarsList, componentConfig)
 
-	// retrieve the list of storages to create/mount and unmount
-	storageList, err := getStorageFromConfig(&componentConfig)
-	if err != nil {
-		return err
-	}
-	storageToMount, storageToUnMount, err := storage.S2iPush(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), true)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get storage to mount and unmount")
-	}
-
 	// Retrieve the old source type
 	oldSourceType, _, err := GetComponentSource(client, componentName, applicationName)
 	if err != nil {
@@ -1301,14 +1260,12 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 		return err
 	}
 	updateComponentParams := occlient.UpdateComponentParams{
-		CommonObjectMeta:     commonObjectMeta,
-		ImageMeta:            commonImageMeta,
-		ResourceLimits:       resourceLimits,
-		DcRollOutWaitCond:    occlient.IsDCRolledOut,
-		ExistingDC:           currentDC,
-		StorageToBeMounted:   storageToMount,
-		StorageToBeUnMounted: storageToUnMount,
-		EnvVars:              evl,
+		CommonObjectMeta:  commonObjectMeta,
+		ImageMeta:         commonImageMeta,
+		ResourceLimits:    resourceLimits,
+		DcRollOutWaitCond: occlient.IsDCRolledOut,
+		ExistingDC:        currentDC,
+		EnvVars:           evl,
 	}
 
 	// STEP 2. Determine what the new source is going to be
@@ -1679,21 +1636,6 @@ func GetLogs(client *occlient.Client, componentName string, applicationName stri
 	}
 
 	return nil
-}
-
-// getStorageFromConfig gets all the storage from the config
-// returns a list of storage in storage struct format
-func getStorageFromConfig(localConfig *config.LocalConfigInfo) (storage.StorageList, error) {
-	storageList := storage.StorageList{}
-
-	configStorage, err := localConfig.ListStorage()
-	if err != nil {
-		return storage.StorageList{}, err
-	}
-	for _, storageVar := range configStorage {
-		storageList.Items = append(storageList.Items, storage.NewStorage(storageVar.Name, storageVar.Size, storageVar.Path))
-	}
-	return storageList, nil
 }
 
 func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.LocalConfigInfo) {

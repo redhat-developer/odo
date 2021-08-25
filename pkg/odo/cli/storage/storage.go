@@ -3,10 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/occlient"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/storage"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -44,18 +41,4 @@ func NewCmdStorage(name, fullName string) *cobra.Command {
 	storageCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return storageCmd
-}
-
-// validateStoragePath will validate storagePath, if there is any existing storage with similar path, it will give an error
-func validateStoragePath(client *occlient.Client, storagePath, componentName, applicationName string) error {
-	storeList, err := storage.List(client, componentName, applicationName)
-	if err != nil {
-		return err
-	}
-	for _, store := range storeList.Items {
-		if store.Spec.Path == storagePath {
-			return errors.Errorf("there already is a storage mounted at %s", storagePath)
-		}
-	}
-	return nil
 }
