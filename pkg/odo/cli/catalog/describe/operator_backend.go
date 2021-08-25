@@ -147,7 +147,7 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
-	table.SetHeader([]string{"Path", "DisplayName", "Description"})
+	table.SetHeader([]string{"Required", "Path", "Type", "DisplayName", "Description"})
 	displayProperties(table, service.Spec.Schema, "")
 	table.Render()
 	fmt.Fprint(w, tableString)
@@ -155,6 +155,12 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 
 // displayProperties displays the properties of an OpenAPI schema in a human readable form
 func displayProperties(table *tablewriter.Table, schema *spec.Schema, prefix string) {
+	required := schema.Required
+	requiredMap := map[string]bool{}
+	for _, req := range required {
+		requiredMap[req] = true
+	}
+
 	keys := make([]string, len(schema.Properties))
 	i := 0
 	for key := range schema.Properties {
@@ -162,12 +168,17 @@ func displayProperties(table *tablewriter.Table, schema *spec.Schema, prefix str
 		i++
 	}
 	sort.Strings(keys)
+
 	for _, key := range keys {
 		property := schema.Properties[key]
 		if property.Type.Contains("object") {
 			displayProperties(table, &property, prefix+key+".")
 		} else {
-			table.Append([]string{prefix + key, property.Title, property.Description})
+			requiredInfo := ""
+			if requiredMap[key] {
+				requiredInfo = "Yes"
+			}
+			table.Append([]string{requiredInfo, prefix + key, strings.Join(property.Type, ", "), property.Title, property.Description})
 		}
 	}
 }
