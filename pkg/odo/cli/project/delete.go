@@ -102,7 +102,7 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 
 		successMessage := fmt.Sprintf("Deleted project : %v", pdo.projectName)
 		log.Success(successMessage)
-		log.Warning("Warning! Projects are deleted from the cluster asynchronously. Odo does its best to delete the project. Due to multi-tenant clusters, the project may still exist on a different node.")
+		log.Warning("Warning! Projects are asynchronously deleted from the cluster. odo does its best to delete the project. Due to multi-tenant clusters, the project may still exist on a different node.")
 
 		if log.IsJSON() {
 			machineoutput.SuccessStatus(project.ProjectKind, pdo.projectName, successMessage)

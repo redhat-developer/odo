@@ -78,7 +78,7 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 	s.End(true)
 
-	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
+	successMessage := fmt.Sprintf(`Project %q is ready for use`, pco.projectName)
 	log.Successf(successMessage)
 
 	// Set the current project when created

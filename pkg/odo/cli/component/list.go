@@ -304,45 +304,43 @@ func NewCmdList(name, fullName string) *cobra.Command {
 
 func HumanReadableOutputInPath(wr io.Writer, o component.CombinedComponentList) {
 	w := tabwriter.NewWriter(wr, 5, 2, 3, ' ', tabwriter.TabIndent)
+	defer w.Flush()
 
-	var hasDevfileComponents bool
+	// if we dont have any components then
+	if len(o.DevfileComponents) == 0 && len(o.S2IComponents) == 0 {
+		fmt.Fprintln(w, "No components found")
+		return
+	}
+
 	if len(o.DevfileComponents) != 0 {
-		hasDevfileComponents = true
 		fmt.Fprintln(w, "Devfile Components: ")
 		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "STATE", "\t", "CONTEXT")
 		for _, comp := range o.DevfileComponents {
 			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Status.State, "\t", comp.Status.Context)
 		}
-	}
-	if hasDevfileComponents {
 		fmt.Fprintln(w)
 	}
 
-	var hasS2IComponents bool
 	if len(o.S2IComponents) != 0 {
-		hasS2IComponents = true
 		fmt.Fprintln(w, "S2I Components: ")
 		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE", "\t", "CONTEXT")
 		for _, comp := range o.S2IComponents {
 			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State, "\t", comp.Status.Context)
-
 		}
 	}
-
-	// if we dont have any then
-	if !hasDevfileComponents && !hasS2IComponents {
-		fmt.Fprintln(w, "No components found")
-	}
-
-	w.Flush()
 
 }
 
 func HumanReadableOutput(wr io.Writer, o component.CombinedComponentList) {
 	w := tabwriter.NewWriter(wr, 5, 2, 3, ' ', tabwriter.TabIndent)
-	var hasDevfileComponents bool
+	defer w.Flush()
+
+	if len(o.DevfileComponents) == 0 && len(o.S2IComponents) == 0 && len(o.OtherComponents) == 0 {
+		log.Info("There are no components deployed.")
+		return
+	}
+
 	if len(o.DevfileComponents) != 0 || len(o.OtherComponents) != 0 {
-		hasDevfileComponents = true
 		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE", "\t", "MANAGED BY ODO")
 		for _, comp := range o.DevfileComponents {
 			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Status.State, "\t", "Yes")
@@ -350,27 +348,14 @@ func HumanReadableOutput(wr io.Writer, o component.CombinedComponentList) {
 		for _, comp := range o.OtherComponents {
 			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", component.StateTypePushed, "\t", "No")
 		}
-		w.Flush()
-
-	}
-	if hasDevfileComponents {
 		fmt.Fprintln(w)
 	}
 
-	var hasS2IComponents bool
 	if len(o.S2IComponents) != 0 {
-		hasS2IComponents = true
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		fmt.Fprintln(w, "S2I Components: ")
 		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
 		for _, comp := range o.S2IComponents {
 			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
 		}
-		w.Flush()
-	}
-
-	if !hasDevfileComponents && !hasS2IComponents && len(o.OtherComponents) == 0 {
-		log.Info("There are no components deployed.")
-		return
 	}
 }

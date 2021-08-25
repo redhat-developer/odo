@@ -67,7 +67,7 @@ func showBlankIfNil(intf interface{}) interface{} {
 		return ""
 	}
 
-	// if its a pointer then we should de-ref it because we cant de-ref an interface{}
+	// if it's a pointer then we should de-ref it because we cant de-ref an interface{}
 	if imm.Kind() == reflect.Ptr {
 		return imm.Elem().Interface()
 	}

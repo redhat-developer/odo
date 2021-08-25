@@ -16,6 +16,7 @@ import (
 	"k8s.io/klog"
 )
 
+// Info contains the information about the current Debug session
 type Info struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
