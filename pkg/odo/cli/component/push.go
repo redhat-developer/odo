@@ -2,10 +2,9 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/component"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
 	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/devfile/validate"
@@ -91,138 +90,105 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	devfileExists := util.CheckPathExists(po.DevfilePath)
 
 	if !devfileExists {
-		// Note: Remove this deprecation warning once the S2I cleanup is done, see https://github.com/openshift/odo/issues/4932.
-		log.Deprecate(
-			"S2I components",
-			"Convert your existing S2I component to a Devfile component with `odo utils convert-to-devfile`, or consider re-creating with a Devfile component.",
-		)
+		return fmt.Errorf("the current direcotry doesn't contain a devfile")
 	}
 
-	if devfileExists {
-
-		po.Devfile, err = devfile.ParseFromFile(po.DevfilePath)
-		if err != nil {
-			return errors.Wrap(err, "unable to parse devfile")
-		}
-		err = validate.ValidateDevfileData(po.Devfile.Data)
-		if err != nil {
-			return err
-		}
-
-		// We retrieve the configuration information. If this does not exist, then BLANK is returned (important!).
-		envFileInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
-
-		// If the file does not exist, we should populate the environment file with the correct env.yaml information
-		// such as name and namespace.
-		if !envFileInfo.Exists() {
-			klog.V(4).Info("Environment file does not exist, creating the env.yaml file in order to use 'odo push'")
-
-			// Since the environment file does not exist, we will retrieve a correct namespace from
-			// either cmd commands or the current default kubernetes namespace
-			namespace, err := retrieveCmdNamespace(cmd)
-			if err != nil {
-				return errors.Wrap(err, "unable to determine target namespace for the component")
-			}
-			client, err := genericclioptions.Client()
-			if err != nil {
-				return err
-			}
-			if err := checkDefaultProject(client, namespace); err != nil {
-				return err
-			}
-
-			// Retrieve a default name
-			// 1. Use args[0] if the user has supplied a name to be used
-			// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
-			// 3. Use the folder name that we are pushing from as a default name if none of the above exist
-
-			var name string
-			if len(args) == 1 {
-				name = args[0]
-			} else {
-				name, err = gatherName(po.Devfile, po.DevfilePath)
-				if err != nil {
-					return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
-				}
-			}
-
-			// Create the environment file. This will actually *create* the env.yaml file in your context directory.
-			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Project: namespace, AppName: "app"})
-			if err != nil {
-				return errors.Wrap(err, "failed to create env.yaml for devfile component")
-			}
-
-		} else if envFileInfo.GetNamespace() == "" {
-			// Since the project name doesn't exist in the environment file, we will retrieve a correct namespace from
-			// either cmd commands or the current default kubernetes namespace
-			// and write it to the env.yaml
-			namespace, err := retrieveCmdNamespace(cmd)
-			if err != nil {
-				return errors.Wrap(err, "unable to determine target namespace for devfile")
-			}
-			client, err := genericclioptions.Client()
-			if err != nil {
-				return err
-			}
-
-			if err := checkDefaultProject(client, namespace); err != nil {
-				return err
-			}
-
-			err = envFileInfo.SetConfiguration("project", namespace)
-			if err != nil {
-				return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
-			}
-		} else if envFileInfo.GetNamespace() == "default" {
-			client, err := genericclioptions.Client()
-			if err != nil {
-				return err
-			}
-			if err := checkDefaultProject(client, envFileInfo.GetNamespace()); err != nil {
-				return err
-			}
-		}
-
-		if envFileInfo.GetApplication() == "" {
-			err = envFileInfo.SetConfiguration("app", "")
-			if err != nil {
-				return errors.Wrap(err, "failed to write the app to the env.yaml for devfile component")
-			}
-		}
-
-		po.EnvSpecificInfo = envFileInfo
-
-		po.Context, err = genericclioptions.NewDevfileContext(cmd)
-		if err != nil {
-			return err
-		}
-
-		return nil
+	po.Devfile, err = devfile.ParseFromFile(po.DevfilePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse devfile")
 	}
-
-	// Set the correct context, which also sets the LocalConfigInfo
-	po.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	err = validate.ValidateDevfileData(po.Devfile.Data)
 	if err != nil {
 		return err
 	}
-	err = po.SetSourceInfo()
+
+	// We retrieve the configuration information. If this does not exist, then BLANK is returned (important!).
+	envFileInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
 	if err != nil {
-		return errors.Wrap(err, "unable to set source information")
+		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
-	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
-	if err != nil {
-		return errors.Wrap(err, "unable to apply ignore information")
+	// If the file does not exist, we should populate the environment file with the correct env.yaml information
+	// such as name and namespace.
+	if !envFileInfo.Exists() {
+		klog.V(4).Info("Environment file does not exist, creating the env.yaml file in order to use 'odo push'")
+
+		// Since the environment file does not exist, we will retrieve a correct namespace from
+		// either cmd commands or the current default kubernetes namespace
+		namespace, err := retrieveCmdNamespace(cmd)
+		if err != nil {
+			return errors.Wrap(err, "unable to determine target namespace for the component")
+		}
+		client, err := genericclioptions.Client()
+		if err != nil {
+			return err
+		}
+		if err := checkDefaultProject(client, namespace); err != nil {
+			return err
+		}
+
+		// Retrieve a default name
+		// 1. Use args[0] if the user has supplied a name to be used
+		// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
+		// 3. Use the folder name that we are pushing from as a default name if none of the above exist
+
+		var name string
+		if len(args) == 1 {
+			name = args[0]
+		} else {
+			name, err = gatherName(po.Devfile, po.DevfilePath)
+			if err != nil {
+				return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
+			}
+		}
+
+		// Create the environment file. This will actually *create* the env.yaml file in your context directory.
+		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Project: namespace, AppName: "app"})
+		if err != nil {
+			return errors.Wrap(err, "failed to create env.yaml for devfile component")
+		}
+
+	} else if envFileInfo.GetNamespace() == "" {
+		// Since the project name doesn't exist in the environment file, we will retrieve a correct namespace from
+		// either cmd commands or the current default kubernetes namespace
+		// and write it to the env.yaml
+		namespace, err := retrieveCmdNamespace(cmd)
+		if err != nil {
+			return errors.Wrap(err, "unable to determine target namespace for devfile")
+		}
+		client, err := genericclioptions.Client()
+		if err != nil {
+			return err
+		}
+
+		if err := checkDefaultProject(client, namespace); err != nil {
+			return err
+		}
+
+		err = envFileInfo.SetConfiguration("project", namespace)
+		if err != nil {
+			return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
+		}
+	} else if envFileInfo.GetNamespace() == "default" {
+		client, err := genericclioptions.Client()
+		if err != nil {
+			return err
+		}
+		if err := checkDefaultProject(client, envFileInfo.GetNamespace()); err != nil {
+			return err
+		}
 	}
 
-	// Get the project information and resolve it.
-	prjName := po.LocalConfigInfo.GetProject()
-	po.ResolveSrcAndConfigFlags()
-	err = po.ResolveProject(prjName)
+	if envFileInfo.GetApplication() == "" {
+		err = envFileInfo.SetConfiguration("app", "")
+		if err != nil {
+			return errors.Wrap(err, "failed to write the app to the env.yaml for devfile component")
+		}
+	}
+
+	po.EnvSpecificInfo = envFileInfo
+
+	po.Context, err = genericclioptions.NewDevfileContext(cmd)
 	if err != nil {
 		return err
 	}
@@ -232,36 +198,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
-
-	// If Devfile is present we do not need to validate the below S2I checks
-	// TODO: Perhaps one day move Devfile validation to here instead?
-	if util.CheckPathExists(po.DevfilePath) {
-		return nil
-	}
-
-	// Validation for S2i components
-	log.Info("Validation")
-
-	// First off, we check to see if the component exists. This is ran each time we do `odo push`
-	s := log.Spinner("Checking component")
-	defer s.End(false)
-
-	po.doesComponentExist, err = component.Exists(po.Context.Client, po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
-	if err != nil {
-		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", po.LocalConfigInfo.GetName(), po.LocalConfigInfo.GetApplication())
-	}
-
-	if err = component.ValidateComponentCreateRequest(po.Context.Client, po.LocalConfigInfo.GetComponentSettings(), po.componentContext); err != nil {
-		s.End(false)
-		log.Italic("\nRun 'odo catalog list components' for a list of supported component types")
-		return fmt.Errorf("Invalid component type %s, %v", *po.LocalConfigInfo.GetComponentSettings().Type, errors.Cause(err))
-	}
-
-	if !po.doesComponentExist && po.pushSource && !po.pushConfig {
-		return fmt.Errorf("Component %s does not exist and hence cannot push only source. Please use `odo push` without any flags or with both `--source` and `--config` flags", po.LocalConfigInfo.GetName())
-	}
-
-	s.End(true)
 	return nil
 }
 
@@ -270,20 +206,12 @@ func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
 	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetClusterType(cmd.Context(), po.Client)
 	}
-	// If experimental mode is enabled, use devfile push
-	if util.CheckPathExists(po.DevfilePath) {
-		if scontext.GetTelemetryStatus(cmd.Context()) {
-			scontext.SetComponentType(cmd.Context(), component.GetComponentTypeFromDevfileMetadata(po.Devfile.Data.GetMetadata()))
-		}
-		// Return Devfile push
-		return po.DevfilePush()
-	}
 
-	// Legacy odo push
 	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetComponentType(cmd.Context(), po.LocalConfigInfo.GetType())
+		scontext.SetComponentType(cmd.Context(), component.GetComponentTypeFromDevfileMetadata(po.Devfile.Data.GetMetadata()))
 	}
-	return po.Push()
+	// Return Devfile push
+	return po.DevfilePush()
 }
 
 // NewCmdPush implements the push odo command

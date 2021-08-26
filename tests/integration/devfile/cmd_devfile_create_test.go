@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"encoding/json"
 	"os"
 	"path"
 	"path/filepath"
@@ -59,12 +58,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile component with invalid component type", func() {
 			fakeComponentName := "fake-component"
 			output := helper.Cmd("odo", "create", fakeComponentName).ShouldFail().Err()
-			var expectedString string
-			if os.Getenv("KUBERNETES") == "true" {
-				expectedString = "component type not found"
-			} else {
-				expectedString = "component type \"" + fakeComponentName + "\" not found"
-			}
+			expectedString := "component type \"" + fakeComponentName + "\" is not supported"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
@@ -218,10 +212,10 @@ var _ = Describe("odo devfile create command tests", func() {
 				}
 			})
 
-			It("should fail when we create the devfile or s2i component multiple times", func() {
+			It("should fail when we create the devfile", func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(commonVar.Context, devfile))
 				helper.Cmd("odo", "create", "nodejs").ShouldPass()
-				output := helper.Cmd("odo", "create", "nodejs", "--s2i").ShouldFail().Err()
+				output := helper.Cmd("odo", "create", "nodejs").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
 			})
 		})
@@ -365,66 +359,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		helper.Chdir(commonVar.OriginalWorkingDirectory)
 		helper.DeleteDir(context2)
-	})
-
-	Context("When executing odo create with --s2i flag", func() {
-		var newContext string
-		JustBeforeEach(func() {
-			newContext = path.Join(commonVar.Context, "newContext")
-			devfilePath = filepath.Join(newContext, devfile)
-			helper.MakeDir(newContext)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
-		})
-		JustAfterEach(func() {
-			helper.DeleteDir(newContext)
-		})
-
-		It("should fail to create the devfile component which doesn't have an s2i component of same name", func() {
-			componentName := helper.RandString(6)
-
-			output := helper.Cmd("odo", "catalog", "list", "components", "-o", "json").ShouldPass().Out()
-
-			wantOutput := []string{"java-openliberty"}
-
-			var data map[string]interface{}
-
-			err := json.Unmarshal([]byte(output), &data)
-
-			if err != nil {
-				Expect(err).Should(BeNil())
-			}
-			outputBytes, err := json.Marshal(data["s2iItems"])
-			if err == nil {
-				output = string(outputBytes)
-			}
-
-			helper.DontMatchAllInOutput(output, wantOutput)
-
-			outputBytes, err = json.Marshal(data["devfileItems"])
-			if err == nil {
-				output = string(outputBytes)
-			}
-
-			helper.MatchAllInOutput(output, wantOutput)
-
-			helper.Cmd("odo", "create", "java-openliberty", componentName, "--s2i").ShouldFail().Err()
-		})
-
-		It("should fail to create the devfile component with valid file system path", func() {
-			output := helper.Cmd("odo", "create", "nodejs", "--s2i", "--devfile", devfilePath).ShouldFail().Err()
-			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the devfile via --devfile flag"})
-		})
-
-		It("should fail to create the component specified with valid project and download the source", func() {
-			output := helper.Cmd("odo", "create", "nodejs", "--starter=nodejs-starter", "--s2i").ShouldFail().Err()
-			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the starter via --starter flag"})
-		})
-
-		It("should fail to create the devfile component with --registry specified", func() {
-			output := helper.Cmd("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry", "--s2i").ShouldFail().Err()
-			helper.MatchAllInOutput(output, []string{"you can't set --s2i flag as true if you want to use the registry via --registry flag"})
-		})
-
 	})
 
 	// Currently these tests need interactive mode in order to set the name of the component.

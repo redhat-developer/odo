@@ -6,15 +6,9 @@ import (
 
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/url"
-	"github.com/pkg/errors"
-
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +51,6 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	listCmd := NewCmdList(ListRecommendedCommandName, odoutil.GetFullName(fullName, ListRecommendedCommandName))
 	logCmd := NewCmdLog(LogRecommendedCommandName, odoutil.GetFullName(fullName, LogRecommendedCommandName))
 	pushCmd := NewCmdPush(PushRecommendedCommandName, odoutil.GetFullName(fullName, PushRecommendedCommandName))
-	updateCmd := NewCmdUpdate(UpdateRecommendedCommandName, odoutil.GetFullName(fullName, UpdateRecommendedCommandName))
 	watchCmd := NewCmdWatch(WatchRecommendedCommandName, odoutil.GetFullName(fullName, WatchRecommendedCommandName))
 	testCmd := NewCmdTest(TestRecommendedCommandName, odoutil.GetFullName(fullName, TestRecommendedCommandName))
 	execCmd := NewCmdExec(ExecRecommendedCommandName, odoutil.GetFullName(fullName, ExecRecommendedCommandName))
@@ -77,7 +70,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
-	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd, execCmd)
+	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, watchCmd, execCmd)
 	componentCmd.AddCommand(testCmd, statusCmd)
 
 	// Add a defined annotation in order to appear in the help menu
@@ -92,24 +85,4 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 func AddComponentFlag(cmd *cobra.Command) {
 	cmd.Flags().String(genericclioptions.ComponentFlagName, "", "Component, defaults to active component.")
 	completion.RegisterCommandFlagHandler(cmd, "component", completion.ComponentNameCompletionHandler)
-}
-
-// printDeleteComponentInfo will print things which will be deleted
-func printDeleteComponentInfo(client *occlient.Client, componentName string, appName string, projectName string) error {
-	componentDesc, err := component.GetComponent(client, componentName, appName, projectName)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component description")
-	}
-
-	if len(componentDesc.Spec.URL) != 0 {
-		log.Info("This component has following urls that will be deleted with component")
-		ul, err := url.ListPushed(client, componentDesc.Name, appName)
-		if err != nil {
-			return errors.Wrap(err, "Could not get url list")
-		}
-		for _, u := range ul.Items {
-			log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
-		}
-	}
-	return nil
 }

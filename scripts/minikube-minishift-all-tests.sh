@@ -46,10 +46,6 @@ case ${1} in
         make test-integration-devfile
 
         shout "| Executing on minishift: core beta, java, source e2e tests"
-        make test-e2e-beta
-        make test-e2e-java
-        make test-e2e-source
-        make test-e2e-images
         make test-e2e-devfile
 
         odo logout

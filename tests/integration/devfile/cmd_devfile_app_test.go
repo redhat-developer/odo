@@ -1,7 +1,7 @@
 package devfile
 
 import (
-	"os"
+	"github.com/tidwall/gjson"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -23,6 +23,35 @@ var _ = Describe("odo devfile app command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
+	})
+
+	It("should display the help for app command", func() {
+		appHelp := helper.Cmd("odo", "app", "-h").ShouldPass().Out()
+		// Trimmed the end of the message string to make it compatible across clusters
+		Expect(appHelp).To(ContainSubstring("Performs application operations related to"))
+	})
+
+	Context("on a fresh new project", func() {
+
+		BeforeEach(func() {
+			appList := helper.Cmd("odo", "app", "list", "--project", commonVar.Project).ShouldPass().Out()
+			Expect(appList).To(ContainSubstring("There are no applications deployed"))
+			actual := helper.Cmd("odo", "app", "list", "-o", "json", "--project", commonVar.Project).ShouldPass().Out()
+			values := gjson.GetMany(actual, "kind", "metadata", "items")
+			expected := []string{"List", "{}", "[]"}
+			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+		})
+
+		It("should fail deleting non existing app", func() {
+			appDelete := helper.Cmd("odo", "app", "delete", "test", "--project", commonVar.Project, "-f").ShouldFail().Err()
+			Expect(appDelete).To(ContainSubstring("test app does not exists"))
+		})
+
+		It("should fail describing non existing app", func() {
+			appDescribe := helper.Cmd("odo", "app", "describe", "test", "--project", commonVar.Project).ShouldFail().Err()
+			Expect(appDescribe).To(ContainSubstring("test app does not exists"))
+		})
+
 	})
 
 	When("the user creates and pushes two new devfile components in different apps", func() {
@@ -55,47 +84,6 @@ var _ = Describe("odo devfile app command tests", func() {
 
 			helper.DeleteDir(context0)
 			helper.DeleteDir(context1)
-		})
-
-		When("the user creates and pushes a third s2i component on a openshift cluster", func() {
-
-			var context00 string
-			var info testInfo
-
-			BeforeEach(func() {
-				if os.Getenv("KUBERNETES") == "true" {
-					Skip("This is a OpenShift specific scenario, skipping")
-				}
-
-				context00 = helper.CreateNewContext()
-				component00 := helper.RandString(4)
-				storage00 := helper.RandString(4)
-				url00 := helper.RandString(4)
-				helper.CopyExample(filepath.Join("source", "nodejs"), context00)
-				helper.Cmd("odo", "component", "create", "--s2i", "nodejs", component00, "--app", app0, "--project", namespace, "--context", context00).ShouldPass()
-				helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
-				helper.Cmd("odo", "url", "create", url00, "--port", "8080", "--context", context00).ShouldPass()
-				helper.Cmd("odo", "push", "--context", context00).ShouldPass()
-
-				info = testInfo{
-					app0:      app0,
-					app1:      app1,
-					comp0:     component0,
-					comp00:    component00,
-					url00:     url00,
-					storage00: storage00,
-					namespace: namespace,
-				}
-			})
-
-			AfterEach(func() {
-				helper.Cmd("odo", "delete", "-f", "--context", context00).ShouldPass()
-				helper.DeleteDir(context00)
-			})
-
-			It("should list, describe and delete the app properly with json output", func() {
-				runner(info)
-			})
 		})
 
 		When("the user creates and pushes a third devfile component", func() {

@@ -406,15 +406,5 @@ NOTE: To see the number of available integration test files for validation, pres
 (E2e) End to end test run behaves in the similar way like integration test does. To see the number of available e2e test file for execution, press tab just after writing `make test-e2e-`. For e2e suite level execution of all e2e test spec use `make test-e2e-all`. For example
 
 * To run the java e2e test in parallel, on a test cluster (By default the component test will run in parallel on two ginkgo test node):
-+
-----
-$ make test-e2e-java
-----
-+
-
-* To run the java e2e test sequentially or on single ginkgo test node:
-+
-----
-$ TEST_EXEC_NODES=1 make test-e2e-java
 ----
 

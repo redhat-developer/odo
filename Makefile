@@ -171,33 +171,13 @@ test-cmd-login-logout: ## Run odo login and logout tests
 test-cmd-link-unlink-4-cluster: ## Run link and unlink commnad tests against 4.x cluster
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo link and unlink commnad tests" tests/integration/
 
-.PHONY: test-cmd-service
-test-cmd-service: ## Run odo service command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/servicecatalog/
-
 .PHONY: test-cmd-project
 test-cmd-project: ## Run odo project command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo project command tests" tests/integration/project/
 
-.PHONY: test-cmd-app
-test-cmd-app: ## Run odo app command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo app command tests" tests/integration/
-
-.PHONY: test-cmd-cmp
-test-cmd-cmp: ## Run odo component command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo component command tests" tests/integration/
-
-.PHONY: test-cmd-cmp-sub
-test-cmd-cmp-sub: ## Run odo component subcommands tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo sub component command tests" tests/integration/
-
 .PHONY: test-cmd-pref-config
 test-cmd-pref-config: ## Run odo preference and config command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo preference and config command tests" tests/integration/
-
-.PHONY: test-cmd-push
-test-cmd-push: ## Run odo push command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
 .PHONY: test-plugin-handler
 test-plugin-handler: ## Run odo plugin handler tests
@@ -246,14 +226,6 @@ test-cmd-devfile-registry: ## Run odo devfile registry command tests
 .PHONY: test-cmd-devfile-test
 test-cmd-devfile-test: ## Run odo devfile test command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile test command tests" tests/integration/devfile/
-	
-.PHONY: test-cmd-storage
-test-cmd-storage: ## Run odo storage command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo storage command tests" tests/integration/
-
-.PHONY: test-cmd-url
-test-cmd-url: ## Run odo url command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo url command tests" tests/integration/
 
 .PHONY: test-cmd-devfile-url
 test-cmd-devfile-url: ## Run odo url devfile command tests
@@ -293,28 +265,11 @@ test-cmd-debug: ## Run odo debug command tests
 .PHONY: test-integration
 test-integration: ## Run command's integration tests irrespective of service catalog status in the cluster.
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/
-	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) tests/integration/debug/
 
 .PHONY: test-integration-devfile
 test-integration-devfile: ## Run devfile integration tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/devfile/
 	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) tests/integration/devfile/debug/
-
-.PHONY: test-e2e-beta
-test-e2e-beta: ## Run core beta flow e2e tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo core beta flow" tests/e2escenarios/
-
-.PHONY: test-e2e-java
-test-e2e-java: ## Run java e2e tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo java e2e tests" tests/e2escenarios/
-
-.PHONY: test-e2e-source
-test-e2e-source: ## Run source e2e tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo source e2e tests" tests/e2escenarios/
-
-.PHONY: test-e2e-images
-test-e2e-images: ## Run supported images e2e tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo supported images e2e tests" tests/e2escenarios/
 
 .PHONY: test-e2e-devfile
 test-e2e-devfile: ## Run devfile e2e tests: odo devfile supported tests

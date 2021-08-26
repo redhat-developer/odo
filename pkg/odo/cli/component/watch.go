@@ -6,13 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/pkg/errors"
@@ -21,7 +19,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/pkg/watch"
@@ -45,10 +42,8 @@ type WatchOptions struct {
 	delay   int
 	show    bool
 
-	sourceType       config.SrcType
 	sourcePath       string
 	componentContext string
-	client           *occlient.Client
 
 	componentName string
 	devfilePath   string
@@ -75,62 +70,14 @@ func NewWatchOptions() *WatchOptions {
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	wo.devfilePath = filepath.Join(wo.componentContext, DevfilePath)
 
-	// if experimental mode is enabled and devfile is present
-	if util.CheckPathExists(wo.devfilePath) {
-		wo.Context, err = genericclioptions.NewDevfileContext(cmd)
-		if err != nil {
-			return err
-		}
-		// Set the source path to either the context or current working directory (if context not set)
-		wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to get source path")
-		}
-
-		// Apply ignore information
-		err = genericclioptions.ApplyIgnore(&wo.ignores, wo.sourcePath)
-		if err != nil {
-			return errors.Wrap(err, "unable to apply ignore information")
-		}
-
-		// Get the component name
-		wo.componentName = wo.EnvSpecificInfo.GetName()
-
-		// Parse devfile and validate
-		devObj, err := devfile.ParseFromFile(wo.devfilePath)
-		if err != nil {
-			return err
-		}
-
-		var platformContext interface{}
-		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-		wo.namespace = wo.KClient.Namespace
-		platformContext = kubernetes.KubernetesContext{
-			Namespace: wo.namespace,
-		}
-
-		wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
-
-		return err
-	}
-
-	// Set the correct context
-	wo.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	wo.Context, err = genericclioptions.NewDevfileContext(cmd)
 	if err != nil {
 		return err
 	}
-	wo.client, err = genericclioptions.Client()
+	// Set the source path to either the context or current working directory (if context not set)
+	wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
 	if err != nil {
-		return err
-	}
-	// Set the necessary values within WatchOptions
-	conf := wo.Context.LocalConfigInfo
-	wo.sourceType = conf.LocalConfig.GetSourceType()
-
-	// Get SourceLocation here...
-	wo.sourcePath, err = conf.GetOSSourcePath()
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve absolute path to source location")
+		return errors.Wrap(err, "unable to get source path")
 	}
 
 	// Apply ignore information
@@ -139,7 +86,25 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
-	return
+	// Get the component name
+	wo.componentName = wo.EnvSpecificInfo.GetName()
+
+	// Parse devfile and validate
+	devObj, err := devfile.ParseFromFile(wo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	var platformContext interface{}
+	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
+	wo.namespace = wo.KClient.Namespace
+	platformContext = kubernetes.KubernetesContext{
+		Namespace: wo.namespace,
+	}
+
+	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
+
+	return err
 }
 
 // Validate validates the watch parameters
@@ -154,98 +119,43 @@ func (wo *WatchOptions) Validate() (err error) {
 		klog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
-	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
-	if util.CheckPathExists(wo.devfilePath) {
-		if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
-			return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
-		}
-		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName, wo.Application)
-		if err != nil {
-			return err
-		}
-		if !exists {
-			return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
-		}
-		return nil
+	if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
+		return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
 	}
-
-	// Validate source of component is either local source or binary path until git watch is supported
-	if wo.sourceType != "binary" && wo.sourceType != "local" {
-		return fmt.Errorf("Watch is supported by binary and local components only and source type of component %s is %s",
-			wo.LocalConfigInfo.GetName(),
-			wo.sourceType)
-	}
-
-	// Validate component path existence and accessibility permissions for odo
-	if _, err := os.Stat(wo.sourcePath); err != nil {
-		return errors.Wrapf(err, "Cannot watch %s", wo.sourcePath)
-	}
-
-	cmpName := wo.LocalConfigInfo.GetName()
-	appName := wo.LocalConfigInfo.GetApplication()
-	if len(wo.Application) != 0 {
-		appName = wo.Application
-	}
-
-	exists, err := component.Exists(wo.Client, cmpName, appName)
+	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName, wo.Application)
 	if err != nil {
-		return
+		return err
 	}
 	if !exists {
 		return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
 	}
-	return
+	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run(cmd *cobra.Command) (err error) {
-	// if experimental mode is enabled and devfile is present
-	if util.CheckPathExists(wo.devfilePath) {
-
-		err = watch.DevfileWatchAndPush(
-			os.Stdout,
-			watch.WatchParameters{
-				ComponentName:       wo.componentName,
-				ApplicationName:     wo.Context.Application,
-				Path:                wo.sourcePath,
-				FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
-				PushDiffDelay:       wo.delay,
-				StartChan:           nil,
-				ExtChan:             make(chan bool),
-				DevfileWatchHandler: wo.regenerateAdapterAndPush,
-				Show:                wo.show,
-				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
-				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
-				DevfileDebugCmd:     strings.ToLower(wo.devfileDebugCommand),
-				EnvSpecificInfo:     wo.EnvSpecificInfo,
-			},
-		)
-		if err != nil {
-			return errors.Wrapf(err, "Error while trying to watch %s", wo.sourcePath)
-		}
-		return err
-	}
-
-	err = watch.WatchAndPush(
-		wo.Context.Client,
+	err = watch.DevfileWatchAndPush(
 		os.Stdout,
 		watch.WatchParameters{
-			ComponentName:       wo.LocalConfigInfo.GetName(),
+			ComponentName:       wo.componentName,
 			ApplicationName:     wo.Context.Application,
 			Path:                wo.sourcePath,
 			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
 			PushDiffDelay:       wo.delay,
 			StartChan:           nil,
 			ExtChan:             make(chan bool),
-			DevfileWatchHandler: nil,
-			WatchHandler:        component.PushLocal,
+			DevfileWatchHandler: wo.regenerateAdapterAndPush,
 			Show:                wo.show,
+			DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
+			DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
+			DevfileDebugCmd:     strings.ToLower(wo.devfileDebugCommand),
+			EnvSpecificInfo:     wo.EnvSpecificInfo,
 		},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "Error while trying to watch %s", wo.sourcePath)
 	}
-	return
+	return err
 }
 
 // NewCmdWatch implements the watch odo command
