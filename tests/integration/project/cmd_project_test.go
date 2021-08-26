@@ -49,12 +49,9 @@ var _ = Describe("odo project command tests", func() {
 	})
 
 	It("should list current empty project in json format", func() {
-		projectListJSON := helper.Cmd("odo", "project", "list", "-o", "json").ShouldPass().Out()
-		listOutputJSON, err := helper.Unindented(projectListJSON)
-		Expect(err).Should(BeNil())
-		partOfProjectListJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + commonVar.Project + `","namespace":"` + commonVar.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
-		Expect(err).Should(BeNil())
-		Expect(listOutputJSON).To(ContainSubstring(partOfProjectListJSON))
+		helper.WaitForCmdOut("odo", []string{"project", "list", "-o", "json"}, 5, true, func(output string) bool {
+			return strings.Contains(output, commonVar.Project)
+		})
 	})
 
 	It("should list current empty project", func() {
