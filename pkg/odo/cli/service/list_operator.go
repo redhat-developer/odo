@@ -78,8 +78,10 @@ func (o *ServiceListOptions) listOperatorServices() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "MANAGED BY ODO", "\t", "STATE", "\t", "AGE")
 	for _, name := range orderedNames {
-		managedByOdo, state, duration := getTabularInfo(servicesItems[name], devfileComponent)
-		fmt.Fprintln(w, name, "\t", managedByOdo, "\t", state, "\t", duration)
+		if !strings.HasPrefix(name, "ServiceBinding/") {
+			managedByOdo, state, duration := getTabularInfo(servicesItems[name], devfileComponent)
+			fmt.Fprintln(w, name, "\t", managedByOdo, "\t", state, "\t", duration)
+		}
 	}
 	w.Flush()
 
