@@ -178,9 +178,21 @@ func displayProperties(table *tablewriter.Table, schema *spec.Schema, prefix str
 			if requiredMap[key] {
 				requiredInfo = "Yes"
 			}
-			table.Append([]string{requiredInfo, prefix + key, strings.Join(property.Type, ", "), property.Title, property.Description})
+			table.Append([]string{requiredInfo, prefix + key, getTypeString(property), property.Title, property.Description})
 		}
 	}
+}
+
+func getTypeString(property spec.Schema) string {
+	if len(property.Type) != 1 {
+		// should not happen
+		return strings.Join(property.Type, ", ")
+	}
+	tpe := property.Type[0]
+	if tpe == "array" {
+		tpe = "[]" + getTypeString(*property.Items.Schema)
+	}
+	return tpe
 }
 
 // toOpenAPISpec transforms Spec descriptors from a CRD description to an OpenAPI schema
