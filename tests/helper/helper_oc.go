@@ -3,8 +3,6 @@ package helper
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -769,6 +767,11 @@ func (oc OcRunner) GetSecrets(project string) string {
 	return GetSecrets(oc.path, project)
 }
 
+// GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
+func (oc OcRunner) GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string {
+	return GetVolumeNamesFromDeployment(oc.path, componentName, appName, projectName)
+}
+
 // AddSecret adds pull-secret to the namespace, for e2e-test
 func (oc OcRunner) AddSecret(comvar CommonVar) {
 
@@ -825,4 +828,3 @@ func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 		//login as developer using token
 	}
 	oc.LoginUsingToken(token)
-}

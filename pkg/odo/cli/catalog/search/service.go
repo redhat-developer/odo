@@ -96,7 +96,7 @@ func NewCmdCatalogSearchService(name, fullName string) *cobra.Command {
 		Long: `Search service type in catalog.
 
 This searches for a partial match for the given search term in all the available
-services from service catalog.
+services from operator hub services.
 `,
 		Example: fmt.Sprintf(serviceExample, fullName),
 		Args:    cobra.ExactArgs(1),

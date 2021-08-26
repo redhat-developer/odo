@@ -2,18 +2,12 @@
 > Uncomment only one ` /kind` line, and delete the rest.
 > For example, `> /kind bug` would simply become: `/kind bug`
 
-> /kind api-change
 > /kind bug
-> /kind cleanup
-> /kind deprecation
-> /kind design
-> /kind failing-test
 > /kind feature
-> /kind flake
-> /kind code-refactoring
->
-> Documentation changes: CI will automatically skip test runs if it is a doc related change.
+> /kind cleanup
+> /kind tests
 > /kind documentation
+> Feel free to use other [labels](https://github.com/openshift/odo/labels) as needed. However one of the above labels must be present or the PR will not be reviewed. This instruction is for reviewers as well.
 
 **What does this PR do / why we need it**:
 
@@ -28,8 +22,6 @@ Fixes #?
 - [ ] Integration test 
 
 - [ ] Documentation 
-
-- [ ] Update changelog
 
 - [ ] I have read the [test guidelines](https://github.com/openshift/odo/blob/master/docs/dev/test-architecture.adoc)
 

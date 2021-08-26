@@ -4,6 +4,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -25,4 +26,11 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 		},
 	}
 	return &deployment
+}
+
+// CreateFakeDeploymentsWithContainers creates a fake pod with the given pod name, container name and containers
+func CreateFakeDeploymentsWithContainers(podName string, containers []corev1.Container) *appsv1.Deployment {
+	fakeDeployment := CreateFakeDeployment(podName)
+	fakeDeployment.Spec.Template.Spec.Containers = containers
+	return fakeDeployment
 }

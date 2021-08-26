@@ -8,7 +8,12 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
+
+	commonutil "github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
+	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
 	"github.com/openshift/odo/pkg/version"
 
@@ -34,7 +39,7 @@ type Runnable interface {
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
-	var startTime time.Time
+	startTime := time.Now()
 	cfg, _ := preference.New()
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
 
@@ -62,7 +67,12 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
 	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 
-	startTime = time.Now()
+	// Send data to telemetry in case of user interrupt
+	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
+	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignal os.Signal) {
+		scontext.SetSignal(cmd.Context(), receivedSignal)
+		startTelemetry(cmd, errors.Wrapf(terminal.InterruptErr, "user interrupted the command execution"), startTime)
+	})
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions

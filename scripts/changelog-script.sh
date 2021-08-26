@@ -1,8 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# This script generates the baseline release notes without the changelog
-# User must copy contents of `Changelog.md` into appropriate location in
-# release notes
+# This script uses github_changelog_generator to generate a changelog
+# by using the kind labels that we use..
+#
+# Then outputs it to STDOUT. This helps generate a changelog when doing a release.
+
+# Get the variables we're going to use..
+if [ -z "$GITHUB_TOKEN" ]
+then
+  echo -e "GITHUB_TOKEN environment variable is blank..\nGet your GitHub token and then:\nexport GITHUB_TOKEN=yourtoken"
+  exit 1
+fi
 
 if [ -z "$1" ]  || [ -z "$2" ]
 then
@@ -12,26 +20,29 @@ fi
 
 MIRROR="https://mirror.openshift.com/pub/openshift-v4/clients/odo/$2/"
 INSTALLATION_GUIDE="https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/installing-odo.html"
-GIT_TREE="https://github.com/openshift/odo/tree/$2"
-FULL_CHANGELOG="https://github.com/openshift/odo/compare/$1...$2"
 
-echo -e "
-# Release of $2
-
-## [$2]($GIT_TREE) ($(date '+%Y-%m-%d'))
-
-[Full Changelog]($FULL_CHANGELOG)
-
--- COPY CONTENT FROM Changelog.md here --
-
-# Installation of $2
-
+echo -e "# Installation of $2
 To install odo, follow our installation guide at [docs.openshift.com]($INSTALLATION_GUIDE)
+After each release, binaries are synced to [mirror.openshift.com]($MIRROR)" > /tmp/base
 
-After each release, binaries are synced to [mirror.openshift.com]($MIRROR)" > /tmp/changelog
+github_changelog_generator \
+--max-issues 500 \
+--user openshift \
+--project odo \
+--no-issues \
+-t $GITHUB_TOKEN \
+--since-tag $1 \
+--future-release $2 \
+--base /tmp/base \
+--output /tmp/changelog \
+--exclude-labels "lifecycle/rotten,duplicate,question,invalid,wontfix" \
+--header-label "# Release of $2" \
+--enhancement-label "**Features/Enhancements:**" \
+--enhancement-labels "kind/feature" \
+--bugs-label "**Bugs:**" \
+--bug-labels "kind/bug" \
+--add-sections '{"documentation":{"prefix":"**Documentation:**","labels":["kind/documentation"]}, "tests": {"prefix": "**Testing/CI:**", "labels": ["kind/tests"]}, "cleanup": {"prefix": "**Cleanup/Refactor:", "labels": ["kind/cleanup"]}}'
 
-echo "The changelog is located at: /tmp/changelog"
 echo ""
-echo "Contents of changelog : "
-cat /tmp/changelog
+echo "The changelog is located at: /tmp/changelog"
 echo ""

@@ -4,11 +4,24 @@
 
 ### Feature/Enhancements
 
+### Bug Fixes
+
+### Tests
+
+### Documentation
+
+## 2.3
+
+### Feature/Enhancements
+
 - Added a column in odo list output to indicate components created by odo ([#4962](https://github.com/openshift/odo/pull/4962))
 - Fix description for "odo link" command ([#4930](https://github.com/openshift/odo/pull/4930))
 - Add deprecation warnings for s2i components([#4967](https://github.com/openshift/odo/issues/4967))
+- Dropping support for service catalog based services ([#4906](https://github.com/openshift/odo/pull/4906))
 
 ### Bug Fixes
+
+- Fixed issues with non-ephemeral storage mount([#4979](https://github.com/openshift/odo/pull/4979))
 
 ### Tests
 
@@ -17,6 +30,8 @@
 ### Documentation
 
 - Documents steps for component creation ([#4982](https://github.com/openshift/odo/pull/4982))
+- Add Cluster setup documentation ([#4973](https://github.com/openshift/odo/pull/4973))
+
 ## 2.2.4
 
 ### Feature/Enhancements
