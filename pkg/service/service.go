@@ -542,6 +542,10 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	return kind, name, nil
 }
 
+type InstanceCreateParameterSchema struct {
+	Required []string
+}
+
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
 func IsCSVSupported() (bool, error) {
 	client, err := occlient.New()
