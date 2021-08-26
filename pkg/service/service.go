@@ -553,11 +553,17 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 		}
 		restMapping, err := GetRestMappingFromUnstructured(client, u)
 		if err != nil {
-			return nil, err
+			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster
+			// this could be a case when an Operator backed service was added to devfile while working on a cluster
+			// that had the Operator installed but "odo service list" is run when that Operator is either no longer
+			// available or on a different cluster
+			services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
+			continue
 		}
 		var match bool
 		for _, i := range operatorGVRList {
 			if i.Resource == restMapping.Resource {
+				// if it's an Operator backed service, it will match; if it's Pod, Deployment, etc. it won't
 				match = true
 				break
 			}
@@ -566,6 +572,8 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 			services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
 		}
 	}
+	// final list of services includes Operator backed services both supported and unsupported by the underlying k8s cluster
+	// but it doesn't include things like Pod, Deployment, etc.
 	return services, nil
 }
 
@@ -669,19 +677,23 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 		return err
 	}
 
-	operatorGVRList, err := getOperatorGVRList(client)
-	if err != nil {
-		return err
-	}
+	var operatorGVRList []meta.RESTMapping
+	var deployed map[string]DeployedInfo
+	if csvSupported {
+		operatorGVRList, err = getOperatorGVRList(client)
+		if err != nil {
+			return err
+		}
 
-	deployed, err := ListDeployedServices(client, labels)
-	if err != nil {
-		return err
-	}
+		deployed, err = ListDeployedServices(client, labels)
+		if err != nil {
+			return err
+		}
 
-	for key, deployedResource := range deployed {
-		if deployedResource.isLinkResource {
-			delete(deployed, key)
+		for key, deployedResource := range deployed {
+			if deployedResource.isLinkResource {
+				delete(deployed, key)
+			}
 		}
 	}
 
@@ -904,4 +916,39 @@ func getOperatorGVRList(client *kclient.Client) ([]meta.RESTMapping, error) {
 		}
 	}
 	return operatorGVRList, nil
+}
+
+func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Component) error {
+	if len(k8sComponents) == 0 {
+		return nil
+	}
+
+	var unsupportedResources []unstructured.Unstructured
+	for _, c := range k8sComponents {
+		// get the string representation of the YAML definition of a CRD
+		strCRD := c.Kubernetes.Inlined
+
+		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
+		if err != nil {
+			return err
+		}
+
+		_, err = GetRestMappingFromUnstructured(client, u)
+		if err != nil {
+			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster
+			unsupportedResources = append(unsupportedResources, u)
+		}
+	}
+
+	if len(unsupportedResources) > 0 {
+		// tell the user about all the unsupported resources in one message
+		var gvr []string
+		for _, u := range unsupportedResources {
+			gvr = append(gvr, u.GetKind())
+		}
+		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing `odo push`: %s", strings.Join(gvr, ", "))
+	}
+	return nil
 }
