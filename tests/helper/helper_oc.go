@@ -3,6 +3,8 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -828,3 +830,4 @@ func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 		//login as developer using token
 	}
 	oc.LoginUsingToken(token)
+}
