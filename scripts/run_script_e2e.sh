@@ -86,7 +86,6 @@ make test-e2e-all || error=true
 
 
 shout "copying artifacts"
-cp -r reports $ARTIFACT_DIR
 cp -r reports tests/reports $ARTIFACT_DIR
 
 shout "cleaning up post tests"
