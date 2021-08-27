@@ -84,6 +84,10 @@ make test-cmd-project || error=true
 shout "Running e2e tests"
 make test-e2e-all || error=true
 
+
+shout "copying artifacts"
+cp -r reports $ARTIFACT_DIR
+
 shout "cleaning up post tests"
 shout "Logging into 4x cluster for cleanup (logs hidden)"
 set +x
