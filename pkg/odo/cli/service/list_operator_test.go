@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -155,7 +156,7 @@ func TestMixServices(t *testing.T) {
 		name               string
 		clusterListInlined []string
 		devfileList        []string
-		want               map[string]*serviceItem
+		want               []serviceItem
 	}{
 		{
 			name: "two in cluster and two in devfile, including one in common",
@@ -166,7 +167,9 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: odo
     app.kubernetes.io/instance: component1
-  creationTimestamp: 2021-06-02T08:39:20Z00:00`,
+  creationTimestamp: 2021-06-02T08:39:20Z00:00
+spec:
+  field1: value1`,
 				`
 kind: kind2
 metadata:
@@ -174,10 +177,29 @@ metadata:
   labels:
     app.kubernetes.io/managed-by: odo
     app.kubernetes.io/instance: component2
-  creationTimestamp: 2021-06-02T08:39:20Z00:00`},
-			devfileList: []string{"kind1/name1", "kind3/name3"},
-			want: map[string]*serviceItem{
-				"kind1/name1": {
+  creationTimestamp: 2021-06-02T08:39:20Z00:00
+spec:
+  field2: value2`},
+			devfileList: []string{`
+kind: kind1
+metadata:
+    name: name1
+spec:
+    field1: value1`, `
+kind: kind3
+metadata:
+    name: name3
+spec:
+    field3: value3`},
+			want: []serviceItem{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.dev/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "kind1/name1",
+					},
 					ClusterInfo: &clusterInfo{
 						Labels: map[string]string{
 							"app.kubernetes.io/managed-by": "odo",
@@ -186,8 +208,16 @@ metadata:
 						CreationTimestamp: atime,
 					},
 					InDevfile: true,
+					Deployed:  true,
 				},
-				"kind2/name2": {
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.dev/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "kind2/name2",
+					},
 					ClusterInfo: &clusterInfo{
 						Labels: map[string]string{
 							"app.kubernetes.io/managed-by": "odo",
@@ -196,26 +226,51 @@ metadata:
 						CreationTimestamp: atime,
 					},
 					InDevfile: false,
+					Deployed:  true,
 				},
-				"kind3/name3": {
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "odo.dev/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "kind3/name3",
+					},
 					ClusterInfo: nil,
 					InDevfile:   true,
+					Deployed:    false,
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			us := make([]unstructured.Unstructured, len(tt.clusterListInlined))
+			usCluster := make([]unstructured.Unstructured, len(tt.clusterListInlined))
 			for i, clusterInlined := range tt.clusterListInlined {
-				err := yaml.Unmarshal([]byte(clusterInlined), &us[i])
+				err := yaml.Unmarshal([]byte(clusterInlined), &usCluster[i])
 				if err != nil {
-					t.Errorf("Fail to unmarshal spec manifest")
+					t.Errorf("Fail to unmarshal spec manifest %q: %u", clusterInlined, err)
 				}
 			}
-			result := mixServices(us, tt.devfileList)
-			if !reflect.DeepEqual(result, tt.want) {
-				t.Errorf("Failed %s", t.Name())
+			usDevfiles := make(map[string]unstructured.Unstructured)
+			for _, devfile := range tt.devfileList {
+				usDevfile := unstructured.Unstructured{}
+				err := yaml.Unmarshal([]byte(devfile), &usDevfile)
+				if err != nil {
+					t.Errorf("Fail to unmarshal spec manifest %q, %u", devfile, err)
+				}
+				usDevfiles[usDevfile.GetKind()+"/"+usDevfile.GetName()] = usDevfile
+			}
+			result := mixServices(usCluster, usDevfiles)
+			for i := range result.Items {
+				if reflect.DeepEqual(result.Items[i].Manifest, unstructured.Unstructured{}) {
+					t.Errorf("Manifest is empty")
+				}
+				// do not check manifest content
+				result.Items[i].Manifest = unstructured.Unstructured{}
+			}
+			if !reflect.DeepEqual(result.Items, tt.want) {
+				t.Errorf("Failed %s\n\ngot: %+v\n\nwant: %+v\n", t.Name(), result.Items, tt.want)
 			}
 		})
 	}

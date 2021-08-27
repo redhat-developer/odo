@@ -618,7 +618,7 @@ func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 }
 
 // ListDevfileServices returns the names of the services defined in a Devfile
-func ListDevfileServices(devfileObj parser.DevfileObj) ([]string, error) {
+func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.Unstructured, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
 	}
@@ -628,14 +628,14 @@ func ListDevfileServices(devfileObj parser.DevfileObj) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var services []string
+	services := map[string]unstructured.Unstructured{}
 	for _, c := range components {
 		var u unstructured.Unstructured
 		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
 		if err != nil {
 			return nil, err
 		}
-		services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
+		services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
 	}
 	return services, nil
 }

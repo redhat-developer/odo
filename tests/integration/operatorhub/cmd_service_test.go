@@ -280,6 +280,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						helper.MatchAllInOutput(string(content), matchInOutput)
 					})
 
+					It("should list the service in JSON format", func() {
+						jsonOut := helper.Cmd("odo", "service", "list", "-o", "json").ShouldPass().Out()
+						helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"redis.redis.opstreelabs.in/v1beta1\"", "\"kind\": \"Redis\"", "\"name\": \"redis\""})
+					})
+
 					When("odo push is executed", func() {
 
 						BeforeEach(func() {
