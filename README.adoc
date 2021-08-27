@@ -27,6 +27,8 @@ Existing tools such as `kubectl` and `oc` are more operations-focused and requir
 * Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real time.
 * Lists all the available components and services from the cluster.
 
+Learn more about the features provided by odo on link:https://odo.dev/docs/getting-started/features[odo.dev].
+
 [[core-concepts]]
 == Core concepts
 
@@ -44,10 +46,13 @@ Examples of services: MariaDB, MySQL.
 Devfile::
 A portable file responsible for your entire reproducible development environment.
 
+Learn more about core concepts on link:https://odo.dev/docs/getting-started/basics[odo.dev].
+
 [id="odo-supported-devfiles"]
 === Official Devfiles
 
-Devfiles describe your development environment link. link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Click here for more information on Devfile.]
+Devfiles describe your development environment link. link:docs/public/deploying-a-devfile-using-odo.adoc[Click here for more information on Devfile.]
+// TODO: Change this to odo.dev once migrated.
 
 .List of Devfiles which are officially supported by odo
 [options="header"]
@@ -57,31 +62,31 @@ Devfiles describe your development environment link. link:https://odo.dev/docs/d
 | Java
 | java-maven
 | Upstream Maven and OpenJDK 11
-| link:https://github.com/devfile/registry/blob/master/stacks/java-maven/devfile.yaml[java-maven/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/main/stacks/java-maven/devfile.yaml[java-maven/devfile.yaml]
 | amd64
 
 | Java
 | java-openliberty
 | Open Liberty microservice in Java      
-| link:https://github.com/devfile/registry/blob/master/stacks/java-openliberty/devfile.yaml[java-openliberty/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/main/stacks/java-openliberty/devfile.yaml[java-openliberty/devfile.yaml]
 | amd64
 
 | Java
 | java-quarkus
 | Upstream Quarkus with Java+GraalVM
-| link:https://github.com/devfile/registry/blob/master/stacks/java-quarkus/devfile.yaml[java-quarkus/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/main/stacks/java-quarkus/devfile.yaml[java-quarkus/devfile.yaml]
 | amd64
 
 | Java
 | java-springboot
 | Spring Boot® using Java 
-| link:https://github.com/devfile/registry/blob/master/stacks/java-springboot/devfile.yaml[java-springboot/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/main/stacks/java-springboot/devfile.yaml[java-springboot/devfile.yaml]
 | amd64
 
 | Node.JS
 | nodejs
 | Stack with NodeJS 14
-| link:https://github.com/devfile/registry/blob/master/stacks/nodejs/devfile.yaml[nodejs/devfile.yaml]
+| link:https://github.com/devfile/registry/blob/main/stacks/nodejs/devfile.yaml[nodejs/devfile.yaml]
 | amd64, s390x, ppc64le
 
 |===
@@ -116,31 +121,31 @@ With your approval, odo will collect pseudonymized usage data and send it to Red
 [[official-documentation]]
 == Official documentation
 
+* link:https://odo.dev/docs/intro/[Introduction to odo]
+* link:https://odo.dev/docs/getting-started/installation/[Installing odo]
+//* link:docs/public/deploying-a-devfile-using-odo.adoc/[Deploying a devfile using odo]
+* link:https://docs.devfile.io/docs/devfile/2.1.0/user-guide/api-reference.html/[Devfile file reference]
+//* link:docs/public/debugging-using-devfile.adoc[Debugging applications in odo]
+//* link:https://odo.dev/docs/managing-environment-variables-in-odo/[Managing environment variables]
+* link:https://odo.dev/docs/getting-started/configure[Configuring the odo CLI]
+* link:https://odo.dev/docs/getting-started/cluster-setup/kubernetes[Setting up odo for a Kubernetes cluster]
+* link:https://odo.dev/docs/getting-started/cluster-setup/openshift[Setting up odo for an OpenShift cluster]
+//* link:https://odo.dev/docs/odo-architecture/[Architecture of odo]
+//* link:https://odo.dev/docs/odo-cli-reference/[odo CLI reference]
+//* link:https://odo.dev/docs/operator-hub/[Using Operators with odo]
 
-* link:https://odo.dev/docs/installing-odo/[Installing odo]
-* link:https://odo.dev/docs/understanding-odo/[Understanding odo]
-* link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile using odo]
-* link:https://odo.dev/file-reference/[Devfile file reference]
-* link:https://odo.dev/docs/debugging-applications-in-odo/[Debugging applications in odo]
-* link:https://odo.dev/docs/managing-environment-variables-in-odo/[Managing environment variables]
-* link:https://odo.dev/docs/configuring-the-odo-cli/[Configuring the odo CLI]
-* link:https://odo.dev/docs/odo-architecture/[Architecture of odo]
-* link:https://odo.dev/docs/odo-cli-reference/[odo CLI reference]
-* link:https://odo.dev/docs/operator-hub/[Introduction to Operators]
+Visit link:https://odo.dev/[odo.dev] to learn more about odo.
 
 [[installing-odo]]
 == Installing `odo`
 
-To install on Linux / Windows / macOS follow our guide located on link:https://odo.dev/docs/installing-odo[odo.dev]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
+To install on Linux / Windows / macOS follow our guide located on link:https://odo.dev/docs/getting-started/installation/[odo.dev]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
 
 [[deploying-your-first-application]]
 == Deploying your first application
 
-Click on the tutorial below to deploy your first `odo` application:
-
-link:https://odo.dev/docs/deploying-a-devfile-using-odo/[Deploying a devfile using odo]
-
-The following demonstration provides an overview of `odo`:
+// TODO: Add a link to the quickstart guide once it is in.
+The following demonstration provides an overview of deploying your first application with `odo`:
 
 https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym[image:https://asciinema.org/a/uIcSZvdbrFKKeH2sqrLsFdXym.svg[asciicast]]
 
@@ -174,7 +179,8 @@ If you have an issue with `odo`, please link:https://github.com/openshift/odo/is
 
 === Contributing
 Want to become a contributor and submit your code?
-Please have a look at our link:https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[Development Guide].
+Please have a look at our link:docs/dev/development.adoc[Development Guide].
+To contribute to the documentation, please have a look at our link:https://odo.dev/docs/contributing/docs/[Documentation Guide].
 
 We work in 3-week sprint cycles. On a week when the sprint starts we have two planning calls:
 
@@ -235,4 +241,4 @@ These are some of the IDE plugins which use odo:
 [[experimental-mode]]
 == Experimental mode
 
-Want to try out the odo experimental mode? Please read the link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc[document] for more information.
+Want to try out the odo experimental mode? Please read the link:docs/dev/experimental-mode.adoc[document] for more information.
