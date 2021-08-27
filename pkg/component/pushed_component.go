@@ -247,7 +247,7 @@ func getType(component provider) (string, error) {
 		return componentType, nil
 	} else if _, ok = component.GetLabels()[componentlabels.ComponentTypeLabel]; ok {
 		klog.V(1).Info("No annotation assigned; retuning 'Not available' since labels are assigned. Annotations will be assigned when user pushes again.")
-		return NOTAVAILABLE, nil
+		return NotAvailable, nil
 	}
 	return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
 }

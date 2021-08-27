@@ -42,7 +42,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 		It("should describe the component when it is not pushed", func() {
 			// Using Django example here because it helps to distinguish between language and projectType.
-			// With nodejs, both projectType and language is nodejs, but with python-django, django in the projectType and python is the language
+			// With nodejs, both projectType and language is nodejs, but with python-django, django is the projectType and python is the language
 			// Reference: https://github.com/openshift/odo/issues/4815
 			helper.Cmd("odo", "create", "python-django", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing").ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
@@ -132,7 +132,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 		// Reference: https://github.com/openshift/odo/issues/4815
 		var metadata devfilepkg.DevfileMetadata
 
-		// copyAndCreate copies required devfile and creates a component
+		// copyAndCreate copies required source code and devfile, and creates a component
 		var copyAndCreate = func(path string) {
 			// Using SpringBoot example here because it helps to distinguish between language and projectType.
 			// In terms of SpringBoot, spring in the projectType and java is the language
@@ -178,14 +178,14 @@ var _ = Describe("odo devfile describe command tests", func() {
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 			It("should show 'Not available' for 'Type' in odo describe", func() {
-				checkDescribe(component.NOTAVAILABLE)
+				checkDescribe(component.NotAvailable)
 			})
 			When("the component is pushed", func() {
 				JustBeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 				})
 				It("should show 'Not available' for 'Type' in odo describe", func() {
-					checkDescribe(component.NOTAVAILABLE)
+					checkDescribe(component.NotAvailable)
 				})
 			})
 		})

@@ -503,7 +503,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					// If there is an existing devfile, and no component name is passed, parse it from the devfile,
 					// and assign the value if the metadata name is set
 					devfileObj, err := devfile.ParseFromFile(DevfilePath)
-					if (err == nil) && (devfileObj.GetMetadataName() != "") {
+					if err == nil && devfileObj.GetMetadataName() != "" {
 						componentName = devfileObj.GetMetadataName()
 					} else {
 						// If the metadata name is not available, then assign the current directory name to component

@@ -50,7 +50,7 @@ const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
-const NOTAVAILABLE = "Not available"
+const NotAvailable = "Not available"
 
 const apiVersion = "odo.dev/v1alpha1"
 
@@ -1021,7 +1021,7 @@ func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) strin
 	} else if metadata.Language != "" {
 		componentType = metadata.Language
 	} else {
-		componentType = NOTAVAILABLE
+		componentType = NotAvailable
 	}
 	return componentType
 }

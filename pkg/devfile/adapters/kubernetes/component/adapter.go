@@ -428,11 +428,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 
 	componentName := a.ComponentName
 	var componentType string
-	// We insert the component type in deployment annotations since its value might be in a namespaced/versioned format,
-	// since labels do not support such formats, we extract these formats before assigning its value to the corresponding label.
-	// This annotated value will later be used when listing the components; we do this to show and stay inline with the component type value set in the devfile.
+	// We insert the component type in deployment annotations because its value might be in a namespaced/versioned format,
+	// since labels do not support such formats, we extract the component type from these formats before assigning its value to the corresponding label.
+	// This annotated value will later be used when listing the components; we do this to list/describe and stay inline with the component type value set in the devfile.
 	annotatedComponentType := component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
-	if annotatedComponentType != component.NOTAVAILABLE {
+	if annotatedComponentType != component.NotAvailable {
 		componentType = strings.TrimSuffix(util.ExtractComponentType(componentType), "-")
 	}
 
@@ -525,7 +525,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		deployment.Annotations = make(map[string]string)
 	}
 
-	// Add annotation for component type; this will be later used while listing/describing a component
+	// Add annotation for component type; this will later be used while listing/describing a component
 	deployment.Annotations[componentlabels.ComponentTypeAnnotation] = annotatedComponentType
 
 	if vcsUri := util.GetGitOriginPath(a.Context); vcsUri != "" {

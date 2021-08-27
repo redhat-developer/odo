@@ -998,19 +998,21 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		var want string
-		got := GetComponentTypeFromDevfileMetadata(tt)
-		switch tt.Name {
-		case "ReturnProject":
-			want = tt.ProjectType
-		case "ReturnLanguage":
-			want = tt.Language
-		case "ReturnNA":
-			want = NOTAVAILABLE
-		}
-		if got != want {
-			t.Errorf("Incorrect component type returned; got: %q, want: %q", got, want)
-		}
+		t.Run(tt.Name, func(t *testing.T) {
+			var want string
+			got := GetComponentTypeFromDevfileMetadata(tt)
+			switch tt.Name {
+			case "ReturnProject":
+				want = tt.ProjectType
+			case "ReturnLanguage":
+				want = tt.Language
+			case "ReturnNA":
+				want = NotAvailable
+			}
+			if got != want {
+				t.Errorf("Incorrect component type returned; got: %q, want: %q", got, want)
+			}
+		})
 	}
 }
 

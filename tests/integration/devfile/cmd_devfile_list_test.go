@@ -119,10 +119,10 @@ var _ = Describe("odo list with devfile", func() {
 		// Reference: https://github.com/openshift/odo/issues/4815
 		var metadata devfilepkg.DevfileMetadata
 
-		// copyAndCreate copies required devfile and creates a component
+		// copyAndCreate copies required source code and devfile, and creates a component
 		var copyAndCreate = func(path string) {
 			// Using SpringBoot example here because it helps to distinguish between language and projectType.
-			// In terms of SpringBoot, spring in the projectType and java is the language
+			// In terms of SpringBoot, spring is the projectType and java is the language
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", path), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "create", "--context", commonVar.Context).ShouldPass()
@@ -164,14 +164,14 @@ var _ = Describe("odo list with devfile", func() {
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 			It("should show 'Not available' for 'Type' in odo list", func() {
-				checkList(component.NOTAVAILABLE)
+				checkList(component.NotAvailable)
 			})
 			When("the component is pushed", func() {
 				JustBeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 				})
 				It("should show 'Not available' for 'Type' in odo list", func() {
-					checkList(component.NOTAVAILABLE)
+					checkList(component.NotAvailable)
 				})
 			})
 		})
