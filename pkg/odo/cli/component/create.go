@@ -447,6 +447,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Configure the default namespace
 		var defaultComponentNamespace string
+		client, err := genericclioptions.Client()
+		if err == nil {
+			defaultComponentNamespace = client.GetCurrentProjectName()
+		}
 
 		var componentType string
 		var componentName string
