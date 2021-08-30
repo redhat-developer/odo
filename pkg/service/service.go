@@ -617,7 +617,7 @@ func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 	return services, nil
 }
 
-// ListDevfileServices returns the names of the services defined in a Devfile
+// ListDevfileServices returns the services defined in a Devfile
 func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.Unstructured, error) {
 	if devfileObj.Data == nil {
 		return nil, nil

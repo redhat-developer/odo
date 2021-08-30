@@ -73,13 +73,6 @@ func (o *ServiceListOptions) listOperatorServices() (err error) {
 	}
 
 	if log.IsJSON() {
-		if len(servicesItems.Items) == 0 {
-			if len(failedListingCR) > 0 {
-				fmt.Printf("Failed to fetch services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
-			}
-			return fmt.Errorf("no operator backed services found in namespace: %s", o.KClient.Namespace)
-		}
-
 		machineoutput.OutputSuccess(servicesItems)
 		return nil
 	}
@@ -149,33 +142,37 @@ func mixServices(clusterList []unstructured.Unstructured, devfileList map[string
 		}
 	}
 
-	orderedNames := getOrderedServicesNames(servicesItems)
-
-	items := make([]serviceItem, len(servicesItems))
-	i := 0
-	for _, name := range orderedNames {
-		items[i] = *servicesItems[name]
-		i++
-	}
 	return serviceItemList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
 			APIVersion: machineoutput.APIVersion,
 		},
-		Items: items,
+		Items: getOrderedServices(servicesItems),
 	}
 }
 
-// getOrderedServicesNames returns the names of the services ordered in alphabetic order
-func getOrderedServicesNames(servicesItems map[string]*serviceItem) (orderedNames []string) {
-	orderedNames = make([]string, len(servicesItems))
+// getOrderedServices returns the services as a slice, ordered by name
+func getOrderedServices(items map[string]*serviceItem) []serviceItem {
+	orderedNames := getOrderedServicesNames(items)
+	result := make([]serviceItem, len(items))
 	i := 0
-	for name := range servicesItems {
+	for _, name := range orderedNames {
+		result[i] = *items[name]
+		i++
+	}
+	return result
+}
+
+// getOrderedServicesNames returns the names of the services ordered in alphabetic order
+func getOrderedServicesNames(items map[string]*serviceItem) []string {
+	orderedNames := make([]string, len(items))
+	i := 0
+	for name := range items {
 		orderedNames[i] = name
 		i++
 	}
 	sort.Strings(orderedNames)
-	return
+	return orderedNames
 }
 
 // getTabularInfo returns information to be displayed in the output for a specific service and a specific current devfile component

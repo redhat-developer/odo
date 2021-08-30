@@ -249,7 +249,7 @@ spec:
 			for i, clusterInlined := range tt.clusterListInlined {
 				err := yaml.Unmarshal([]byte(clusterInlined), &usCluster[i])
 				if err != nil {
-					t.Errorf("Fail to unmarshal spec manifest %q: %u", clusterInlined, err)
+					t.Errorf("Failed to unmarshal spec manifest %q: %u", clusterInlined, err)
 				}
 			}
 			usDevfiles := make(map[string]unstructured.Unstructured)
@@ -257,7 +257,7 @@ spec:
 				usDevfile := unstructured.Unstructured{}
 				err := yaml.Unmarshal([]byte(devfile), &usDevfile)
 				if err != nil {
-					t.Errorf("Fail to unmarshal spec manifest %q, %u", devfile, err)
+					t.Errorf("Failed to unmarshal spec manifest %q, %u", devfile, err)
 				}
 				usDevfiles[usDevfile.GetKind()+"/"+usDevfile.GetName()] = usDevfile
 			}
