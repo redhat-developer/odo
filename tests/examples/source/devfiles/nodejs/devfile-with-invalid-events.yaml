@@ -9,7 +9,7 @@ starterProjects:
 components:
   - name: runtime
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: quay.io/eclipse/che-nodejs10-ubi:next
       memoryLimit: 1024Mi
       endpoints:
         - name: "3000-tcp"
@@ -17,7 +17,7 @@ components:
       mountSources: true
   - name: "tools"
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: quay.io/eclipse/che-nodejs10-ubi:next
       mountSources: true
       memoryLimit: 1024Mi
 commands:

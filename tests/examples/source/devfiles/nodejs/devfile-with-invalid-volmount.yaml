@@ -9,7 +9,7 @@ starterProjects:
 components:
   - name: runtime
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: quay.io/eclipse/che-nodejs10-ubi:next
       endpoints:
         - name: "3000-tcp"
           targetPort: 3000
@@ -19,7 +19,7 @@ components:
           path: /data
   - name: runtime2
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: quay.io/eclipse/che-nodejs10-ubi:next
       mountSources: false
       volumeMounts:
         - name: invalidvol2
