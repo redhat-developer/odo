@@ -580,12 +580,16 @@ spec:`
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-pod.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 		})
 
-		When("listing service", func() {
+		When("listing service and pushing the component", func() {
 			It("should show the service in devfile in 'odo service list'", func() {
 				// this test case helps check if odo can list services that are present in devfile but the corresponding
 				// Operator is not installed on the cluster
 				out := helper.Cmd("odo", "service", "list").ShouldPass().Out()
 				Expect(out).To(ContainSubstring("EtcdCluster/etcdcluster"))
+			})
+			It("should fail to push since the Operator doesn't exist on the cluster", func() {
+				out := helper.Cmd("odo", "push").ShouldFail().Out()
+				helper.MatchAllInOutput(out, []string{"Failed to start component with name", "please install corresponding Operator(s)", "EtcdCluster"})
 			})
 		})
 
