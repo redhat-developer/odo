@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -98,6 +99,14 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})
 
+				It("should not insert the link definition in devfile.yaml when the inlined flag is not used", func() {
+					devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
+					content, err := ioutil.ReadFile(devfilePath)
+					Expect(err).To(BeNil())
+					matchInOutput := []string{"inlined", "ServiceBinding"}
+					helper.DontMatchAllInOutput(string(content), matchInOutput)
+				})
+
 				When("odo push is executed", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
@@ -141,6 +150,14 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					Expect(stdOut).To(ContainSubstring(svcFullName))
 				})
 
+				It("should not insert the link definition in devfile.yaml when the inlined flag is not used", func() {
+					devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
+					content, err := ioutil.ReadFile(devfilePath)
+					Expect(err).To(BeNil())
+					matchInOutput := []string{"inlined", "Redis", "redis", "ServiceBinding"}
+					helper.DontMatchAllInOutput(string(content), matchInOutput)
+				})
+
 				When("odo push is executed", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
@@ -154,6 +171,78 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 					It("should find bindings for service", func() {
 						helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/bindings/"+bindingName+"/clusterIP").ShouldPass()
+					})
+
+					It("should display the link in odo describe", func() {
+						stdOut := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
+						Expect(stdOut).To(ContainSubstring(svcFullName))
+						Expect(stdOut).To(ContainSubstring("Files"))
+						Expect(stdOut).To(ContainSubstring("/bindings/" + bindingName + "/clusterIP"))
+					})
+				})
+			})
+
+			When("a link between the component and the service is created inline", func() {
+
+				BeforeEach(func() {
+					helper.Cmd("odo", "link", svcFullName, "--context", commonVar.Context, "--inlined").ShouldPass()
+				})
+
+				It("should insert service definition in devfile.yaml when the inlined flag is used", func() {
+					devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
+					content, err := ioutil.ReadFile(devfilePath)
+					Expect(err).To(BeNil())
+					matchInOutput := []string{"kubernetes", "inlined", "ServiceBinding"}
+					helper.MatchAllInOutput(string(content), matchInOutput)
+				})
+
+				It("should find the link in odo describe", func() {
+					stdOut := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(svcFullName))
+				})
+
+				When("odo push is executed", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+						name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+						Expect(name).To(Not(BeEmpty()))
+					})
+
+					It("should find the link in odo describe", func() {
+						stdOut := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
+						Expect(stdOut).To(ContainSubstring(svcFullName))
+						Expect(stdOut).To(ContainSubstring("Environment Variables"))
+						Expect(stdOut).To(ContainSubstring("REDIS_CLUSTERIP"))
+					})
+				})
+			})
+
+			When("a link with between the component and the service is created with --bind-as-files and --inlined", func() {
+
+				var bindingName string
+				BeforeEach(func() {
+					bindingName = "sbr-" + helper.RandString(6)
+					helper.Cmd("odo", "link", svcFullName, "--bind-as-files", "--name", bindingName, "--context", commonVar.Context, "--inlined").ShouldPass()
+				})
+
+				It("should insert service definition in devfile.yaml when the inlined flag is used", func() {
+					devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
+					content, err := ioutil.ReadFile(devfilePath)
+					Expect(err).To(BeNil())
+					matchInOutput := []string{"kubernetes", "inlined", "Redis", "redis", "ServiceBinding"}
+					helper.MatchAllInOutput(string(content), matchInOutput)
+				})
+
+				It("should display the link in odo describe", func() {
+					stdOut := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(svcFullName))
+				})
+
+				When("odo push is executed", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+						name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
+						Expect(name).To(Not(BeEmpty()))
 					})
 
 					It("should display the link in odo describe", func() {

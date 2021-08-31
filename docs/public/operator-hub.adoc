@@ -87,6 +87,11 @@ In above output, `etcdoperator.v0.9.4` is the Operator while `EtcdCluster`,
 
 In this example, we will be deploying `EtcdCluster` service from link:https://operatorhub.io/operator/etcd[etcd Operator] to an OpenShift / Kubernetes cluster. This service is provided by the Operator `etcdoperator`. Please ensure that this Operator is installed on your OpenShift / Kubernetes cluster before trying to create `EtcdCluster` service from it. If it's not installed, please install it by logging into your OpenShift / Kubernetes cluster as `kube:admin` user.
 
+[IMPORTANT]
+====
+By default, the service definition is persisted in a separate file. We can use the `--inlined` flag to save it in the devfile instead.
+====
+
 . Create an `EtcdCluster` service from the `etcdoperator.v0.9.4` Operator:
 +
 [source,sh]
@@ -196,7 +201,7 @@ $ odo push
 
 [IMPORTANT]
 ====
-For the link between a component and Operator Hub backed service to take effect, make sure you do `odo push`. The link won't be effective otherwise.
+For the link between a component and Operator Hub backed service to take effect, make sure you do `odo push`. The link won't be effective otherwise. By default, the link definition is persisted in a separate file. We can use the `--inlined` flag to save it in the devfile instead.
 ====
 
 === Unlinking an odo component from an Operator backed service

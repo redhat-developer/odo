@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
+// CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
 func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
 	// since interactive mode is not supported for Operators yet, set it to false
 	o.interactive = false
@@ -215,14 +215,28 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 
 		return nil
 	} else {
-		crdYaml, err := yaml.Marshal(b.CustomResourceDefinition)
-		if err != nil {
-			return err
-		}
 
-		err = svc.AddKubernetesComponentToDevfile(string(crdYaml), o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
-		if err != nil {
-			return err
+		if o.inlined {
+			crdYaml, err := yaml.Marshal(b.CustomResourceDefinition)
+			if err != nil {
+				return err
+			}
+
+			err = svc.AddKubernetesComponentToDevfile(string(crdYaml), o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
+			if err != nil {
+				return err
+			}
+
+		} else {
+			crdYaml, err := yaml.Marshal(b.CustomResourceDefinition)
+			if err != nil {
+				return err
+			}
+
+			err = svc.AddKubernetesComponent(string(crdYaml), o.ServiceName, o.componentContext, o.EnvSpecificInfo.GetDevfileObj())
+			if err != nil {
+				return err
+			}
 		}
 
 		if log.IsJSON() {
@@ -253,7 +267,7 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 		return err
 	}
 
-	err = svc.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj())
+	err = svc.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete service from the devfile")
 	}
@@ -285,7 +299,7 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 		}
 	}
 
-	devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
+	devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
 	if err != nil {
 		return err
 	}

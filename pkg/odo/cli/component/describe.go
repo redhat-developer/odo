@@ -2,10 +2,10 @@ package component
 
 import (
 	"fmt"
-
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"os"
 
 	"github.com/openshift/odo/pkg/component"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -38,6 +38,12 @@ func NewDescribeOptions() *DescribeOptions {
 
 // Complete completes describe args
 func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	if do.componentContext == "" {
+		do.componentContext, err = os.Getwd()
+		if err != nil {
+			return err
+		}
+	}
 	err = do.ComponentOptions.Complete(name, cmd, args)
 	if err != nil {
 		return err
@@ -58,7 +64,7 @@ func (do *DescribeOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project, do.componentContext)
 	if err != nil {
 		return err
 	}

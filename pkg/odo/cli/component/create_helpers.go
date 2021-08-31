@@ -84,7 +84,7 @@ func (co *CreateOptions) DevfileJSON() error {
 		return err
 	}
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(co.Client, co.LocalConfigInfo, envInfo, envInfo.GetName(), envInfo.GetApplication(), co.Project, co.ComponentContext)
 	if err != nil {
 		return err
 	}

@@ -266,14 +266,14 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("a Redis instance is created with no name", func() {
+				When("a Redis instance is created with no name and inlined flag is used", func() {
 					var stdOut string
 					BeforeEach(func() {
-						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "--project", commonVar.Project).ShouldPass().Out()
+						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "--project", commonVar.Project, "--inlined").ShouldPass().Out()
 						Expect(stdOut).To(ContainSubstring("Successfully added service to the configuration"))
 					})
 
-					It("should insert service definition in devfile.yaml", func() {
+					It("should insert service definition in devfile.yaml when the inlined flag is used", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
@@ -408,6 +408,14 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 					AfterEach(func() {
 						helper.Cmd("odo", "service", "delete", svcFullName, "-f").ShouldRun()
+					})
+
+					It("should not insert service definition in devfile.yaml when the inlined flag is not used", func() {
+						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
+						content, err := ioutil.ReadFile(devfilePath)
+						Expect(err).To(BeNil())
+						matchInOutput := []string{"redis", "Redis", "inlined"}
+						helper.DontMatchAllInOutput(string(content), matchInOutput)
 					})
 
 					It("should be listed as Not pushed", func() {
