@@ -736,11 +736,12 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 		}
 
 		// add labels to the CRD before creation
+		existingLabels := u.GetLabels()
 		if match {
-			u.SetLabels(labels)
+			u.SetLabels(mergeLabels(existingLabels, labels))
 		} else {
 			// Kubernetes built-in resource; only set managed-by label to it
-			u.SetLabels(map[string]string{"app.kubernetes.io/managed-by": "odo"})
+			u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
 		}
 
 		err = CreateOperatorService(client, u)
@@ -780,6 +781,18 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 	}
 
 	return nil
+}
+
+func mergeLabels(labels ...map[string]string) map[string]string {
+	mergedLabels := map[string]string{}
+
+	for _, l := range labels {
+		for k, v := range l {
+			mergedLabels[k] = v
+		}
+	}
+
+	return mergedLabels
 }
 
 // DeployedInfo holds information about the services present on the cluster
