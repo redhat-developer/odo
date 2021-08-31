@@ -573,4 +573,42 @@ spec:`
 			})
 		})
 	})
+
+	Context("Operator present in devfile is not installed on the cluster", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-pod.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+
+		When("listing service", func() {
+			It("should show the service in devfile in 'odo service list'", func() {
+				// this test case helps check if odo can list services that are present in devfile but the corresponding
+				// Operator is not installed on the cluster
+				out := helper.Cmd("odo", "service", "list").ShouldPass().Out()
+				Expect(out).To(ContainSubstring("EtcdCluster/etcdcluster"))
+			})
+		})
+
+		When("deleting service", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f").ShouldPass()
+			})
+
+			It("should not show the service in devfile in 'odo service list'", func() {
+				// below command will fail as the underlying devfile doesn't have any services any more
+				out := helper.Cmd("odo", "service", "list").ShouldFail().Out()
+				Expect(out).ToNot(ContainSubstring("EtcdCluster/etcdcluster"))
+			})
+
+			When("odo push is executed, nginx pod should be created on the cluster", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "push").ShouldPass()
+				})
+
+				It("should have pod in Running state on the cluster", func() {
+					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `nginx`)
+				})
+			})
+		})
+	})
 })

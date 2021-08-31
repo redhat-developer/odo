@@ -215,7 +215,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 
 	// First let's get the list of all the operators in the namespace
 	csvs, err := client.ListClusterServiceVersions()
-	if err == kclient.ErrNoSuchOperator {
+	if err != nil {
 		return nil, nil, err
 	}
 
@@ -793,7 +793,7 @@ func ListDeployedServices(client *kclient.Client, labels map[string]string) (map
 	deployed := map[string]DeployedInfo{}
 
 	deployedServices, _, err := ListOperatorServices(client)
-	if err != nil && err != kclient.ErrNoSuchOperator {
+	if err != nil {
 		// We ignore ErrNoSuchOperator error as we can deduce Operator Services are not installed
 		return nil, err
 	}
@@ -918,6 +918,7 @@ func getOperatorGVRList(client *kclient.Client) ([]meta.RESTMapping, error) {
 	return operatorGVRList, nil
 }
 
+// ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
 func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Component) error {
 	if len(k8sComponents) == 0 {
 		return nil
