@@ -1,12 +1,12 @@
 ---
 title: JSON Output
-sidebar_position: 2
+sidebar_position: 1
 ---
 # JSON Output
 
 The `odo` commands that output some content generally accept a `-o json` flag to output this content in a JSON format, suitable for other programs to parse this output more easily.
 
-The output structure is similar to Kubernetes resources, with `Kind`, `apiVersion`, `metadata` ,`spec` and `status` fields.
+The output structure is similar to Kubernetes resources, with `kind`, `apiVersion`, `metadata` ,`spec` and `status` fields.
 
 List commands return a `List` resource, containing an `items` (or similar) field listing the items of the list, each item being also similar to Kubernetes resources.
 

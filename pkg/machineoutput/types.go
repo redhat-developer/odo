@@ -9,11 +9,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SuccessStatus outputs a metav1.Status with the Status field set to "Success"
 func SuccessStatus(kind string, name string, msg string) {
-	Status(kind, name, metav1.StatusSuccess, msg)
+	status(kind, name, metav1.StatusSuccess, msg)
 }
 
-func Status(kind string, name string, statusStr string, msg string) {
+// status outputs a metav1.Status resource
+func status(kind string, name string, statusStr string, msg string) {
 	status := metav1.Status{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Status",

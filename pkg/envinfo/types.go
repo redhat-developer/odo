@@ -60,16 +60,16 @@ func (o Info) Output(w io.Writer) {
 }
 
 func showBlankIfNil(intf interface{}) interface{} {
-	imm := reflect.ValueOf(intf)
+	value := reflect.ValueOf(intf)
 
 	// if the value is nil then we should return a blank string
-	if imm.IsNil() {
+	if value.IsNil() {
 		return ""
 	}
 
 	// if it's a pointer then we should de-ref it because we cant de-ref an interface{}
-	if imm.Kind() == reflect.Ptr {
-		return imm.Elem().Interface()
+	if value.Kind() == reflect.Ptr {
+		return value.Elem().Interface()
 	}
 
 	return intf

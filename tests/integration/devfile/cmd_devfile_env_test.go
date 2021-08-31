@@ -61,59 +61,59 @@ var _ = Describe("odo devfile env command tests", func() {
 			expected := []string{"EnvInfo", "acomponentname", commonVar.Project, "app"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 		})
-	})
 
-	When("executing env set", func() {
-		BeforeEach(func() {
-			helper.Cmd("odo", "create", "nodejs").ShouldPass()
-			helper.Cmd("odo", "env", "set", "Name", testName, "-f").ShouldPass()
-			helper.Cmd("odo", "env", "set", "Project", testProject, "-f").ShouldPass()
-			helper.Cmd("odo", "env", "set", "DebugPort", testDebugPort, "-f").ShouldPass()
-		})
-
-		It("should successfully view the parameters", func() {
-			output := helper.Cmd("odo", "env", "view").ShouldPass().Out()
-			wantOutput := []string{
-				"PARAMETER NAME",
-				"PARAMETER VALUE",
-				"NAME",
-				testName,
-				"Project",
-				testProject,
-				"DebugPort",
-				testDebugPort,
-			}
-			helper.MatchAllInOutput(output, wantOutput)
-		})
-
-		It("should successfully view the parameters with JSON output", func() {
-			output := helper.Cmd("odo", "env", "view", "-o", "json").ShouldPass().Out()
-			values := gjson.GetMany(output, "kind", "spec.name", "spec.project", "spec.debugPort")
-			expected := []string{"EnvInfo", testName, testProject, testDebugPort}
-			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-		})
-
-		When("unsetting a parameter", func() {
+		When("executing env set", func() {
 			BeforeEach(func() {
-				helper.Cmd("odo", "env", "unset", "DebugPort", "-f").ShouldPass()
+				helper.Cmd("odo", "env", "set", "Name", testName, "-f").ShouldPass()
+				helper.Cmd("odo", "env", "set", "Project", testProject, "-f").ShouldPass()
+				helper.Cmd("odo", "env", "set", "DebugPort", testDebugPort, "-f").ShouldPass()
 			})
 
-			It("should not show the parameter", func() {
+			It("should successfully view the parameters", func() {
 				output := helper.Cmd("odo", "env", "view").ShouldPass().Out()
-				dontWantOutput := []string{
+				wantOutput := []string{
+					"PARAMETER NAME",
+					"PARAMETER VALUE",
+					"NAME",
+					testName,
+					"Project",
+					testProject,
+					"DebugPort",
 					testDebugPort,
+					"Application",
+					"app",
 				}
-				helper.DontMatchAllInOutput(output, dontWantOutput)
-				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
+				helper.MatchAllInOutput(output, wantOutput)
 			})
 
-			It("should not show the parameter in JSON output", func() {
+			It("should successfully view the parameters with JSON output", func() {
 				output := helper.Cmd("odo", "env", "view", "-o", "json").ShouldPass().Out()
-				values := gjson.GetMany(output, "kind", "spec.debugPort")
-				expected := []string{"EnvInfo", ""}
+				values := gjson.GetMany(output, "kind", "spec.name", "spec.project", "spec.debugPort")
+				expected := []string{"EnvInfo", testName, testProject, testDebugPort}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
+
+			When("unsetting a parameter", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "env", "unset", "DebugPort", "-f").ShouldPass()
+				})
+
+				It("should not show the parameter", func() {
+					output := helper.Cmd("odo", "env", "view").ShouldPass().Out()
+					dontWantOutput := []string{
+						testDebugPort,
+					}
+					helper.DontMatchAllInOutput(output, dontWantOutput)
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
+				})
+
+				It("should not show the parameter in JSON output", func() {
+					output := helper.Cmd("odo", "env", "view", "-o", "json").ShouldPass().Out()
+					values := gjson.GetMany(output, "kind", "spec.debugPort")
+					expected := []string{"EnvInfo", ""}
+					Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+				})
+			})
 		})
 	})
-
 })
