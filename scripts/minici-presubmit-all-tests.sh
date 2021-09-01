@@ -23,6 +23,7 @@ case $1 in
         export TIMEOUT="4h00m"
         ;;
     k8s)
+        #Removing minishift (dropped support for 3.11) and adding K8S on IBM Cloud
         export JOB_NAME="odo-k8s-ibmc-pr-tests"
         export SENDQUEUE="amqp.ci.queue.k8sibmc.send"
         export SENDTOPIC="amqp.ci.topic.k8sibmc.send"

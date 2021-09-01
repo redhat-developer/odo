@@ -25,6 +25,10 @@ make bin
 cp -avrf ./odo $GOBIN/
 
 setup_kubeconfig() {
+    # Login as admin to IBM Cloud and get kubeconfig file for K8S cluster
+    ibmcloud login --apikey $IBMC_ADMIN_OCLOGIN_APIKEY -a cloud.ibm.com -r eu-de -g "Developer-CI-and-QE"
+    ibmcloud ks cluster config --cluster $IBMC_K8S_CLUSTER_ID
+
     export KUBECONFIG=$HOME/.kube/config
     if [[ ! -f $KUBECONFIG ]]; then
         echo "Could not find kubeconfig file"
