@@ -2,6 +2,9 @@
 # this scripts logins as kubeadmin and removes the namespaces that are more than oneday old.
 # this script is used in a kubernetes cronjob for PSI/IBM cloud openshift cluster.
 
+# TEAM_PROVIDED is used to check if the namespace belongs to that team or not 
+TEAM_PROVIDED=${TEAM_PROVIDED:-"odo"}
+
 # login as kubeadmin
 if [[ $CLUSTER_TYPE == "PSI" ]]; then
     ￼ #PSI cluster login
@@ -26,7 +29,7 @@ for PROJECT in ${PROJECT_AND_TIME}; do
         TEAMANDTYPE=$(kubectl get configmaps $CONFIGMAP -n $PRJ -o jsonpath='{.data.team}{"|"}{.data.type}') # fetch team and tyoe(testing) data from the configmap
         IFS='|' read -r TEAM TYPE <<<"$TEAMANDTYPE"                                                          # seperate the TEAM and TYPE of creation using IFS(Input Field Seperators) value `|`
 
-        if [[ $TYPE -eq "testing" ]]; then # check if type if testing
+        if [[ $TYPE -eq "testing" ]] &&  [[ $TEAM -eq $TEAM_PROVIDED ]]; then # check if type if testing
 
             dtSec=$(date --date "${TIME}" +'%s')    # convert time in sec for namespace age
             taSec=$(date --date "1 days ago" +'%s') # convert time allowed for the namespace to be in the cluster
