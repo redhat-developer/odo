@@ -887,7 +887,7 @@ func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
 }
 
-// GetRestMappingFromUnstructured returns GVR from unstructured data
+// GetRestMappingFromUnstructured returns rest mappings from unstructured data
 func GetRestMappingFromUnstructured(client *kclient.Client, u unstructured.Unstructured) (*meta.RESTMapping, error) {
 	gvk := u.GroupVersionKind()
 
@@ -905,7 +905,7 @@ func GetRestMappingFromUnstructured(client *kclient.Client, u unstructured.Unstr
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
 
-// getOperatorGVRList creates a slice of GVRs that are provided by Operators (CSV)
+// getOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
 func getOperatorGVRList(client *kclient.Client) ([]meta.RESTMapping, error) {
 	var operatorGVRList []meta.RESTMapping
 
@@ -957,11 +957,11 @@ func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Comp
 
 	if len(unsupportedResources) > 0 {
 		// tell the user about all the unsupported resources in one message
-		var gvr []string
+		var unsupported []string
 		for _, u := range unsupportedResources {
-			gvr = append(gvr, u.GetKind())
+			unsupported = append(unsupported, u.GetKind())
 		}
-		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing `odo push`: %s", strings.Join(gvr, ", "))
+		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing \"odo push\": %s", strings.Join(unsupported, ", "))
 	}
 	return nil
 }
