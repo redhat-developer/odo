@@ -632,7 +632,7 @@ func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := Cmd("oc", "new-project", projectName).ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
-	Cmd("oc", "label", "namespace", projectName, "app=test", "team=odo").ShouldPass() //labels added for cleanup purpose
+	oc.addConfigMapForCleanup(projectName)
 	return projectName
 }
 
@@ -830,4 +830,9 @@ func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 		//login as developer using token
 	}
 	oc.LoginUsingToken(token)
+}
+
+// add config map to the project for cleanup
+func (oc OcRunner) addConfigMapForCleanup(projectName string) {
+	Cmd(oc.path, "create", "configmap", "config-map-for-cleanup", "--from-literal", "type=testing", "--from-literal", "team=odo", "-n", projectName).ShouldPass()
 }
