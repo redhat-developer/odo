@@ -16,8 +16,6 @@ const (
 
 	// OdoSourceVolumeSize specifies size for odo source volume.
 	OdoSourceVolumeSize = "2Gi"
-
-	apiVersion = "odo.dev/v1alpha1"
 )
 
 // generic contains information required for all the Storage clients
