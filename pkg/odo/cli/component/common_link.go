@@ -20,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 )
 
 const unlink = "unlink"
@@ -98,37 +97,20 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return o.completeForOperator()
 	}
 
-	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
-	if err != nil {
-		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
-		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Processing to only use components", suppliedName)
-		svcExists = false
-	}
-
 	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
 	}
 
-	if !cmpExists && !svcExists {
+	if !cmpExists {
 		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo %s'", suppliedName, o.operationName)
 	}
 
-	o.isTargetAService = svcExists
-
-	if svcExists {
-		if cmpExists {
-			klog.V(4).Infof("Both a service and component with name %s - assuming a(n) %s to the service is required", suppliedName, o.operationName)
-		}
-
-		o.secretName = suppliedName
-	} else {
-		secretName, err := secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
-		if err != nil {
-			return err
-		}
-		o.secretName = secretName
+	secretName, err := secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
+	if err != nil {
+		return err
 	}
+	o.secretName = secretName
 
 	return nil
 }
