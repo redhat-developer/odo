@@ -630,7 +630,7 @@ func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 
 func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := Cmd("oc", "new-project", projectName).ShouldPass().Out()
+	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
 	oc.addConfigMapForCleanup(projectName)
 	return projectName
