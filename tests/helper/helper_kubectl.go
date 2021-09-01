@@ -160,11 +160,10 @@ func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
 func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	Cmd("kubectl", "create", "namespace", projectName).ShouldPass()
-	Cmd("kubectl", "label", "namespace", projectName, "app=test", "team=odo").ShouldPass() // labels added for cleanup purpose
 	Cmd("kubectl", "config", "set-context", "--current", "--namespace", projectName).ShouldPass()
 	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
-	kubectl.addConfigMapForCleanup(projectName)
+	kubectl.addConfigMapForCleanup(projectName) //add configmap for cleanup
 	return projectName
 }
 
