@@ -32,6 +32,7 @@ type kubernetesClient struct {
 func (k kubernetesClient) Create(storage Storage) error {
 
 	if k.componentName == "" || k.appName == "" {
+		// required for generating the labels
 		return fmt.Errorf("the component name, the app name or both are empty")
 	}
 

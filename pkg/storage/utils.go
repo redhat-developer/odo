@@ -69,7 +69,7 @@ func generatePVCName(volName, componentName, appName string) (string, error) {
 	return pvcName, nil
 }
 
-// ConvertListLocalToMachine It converts storage config list to StorageList type
+// ConvertListLocalToMachine converts storage config list to StorageList type
 func ConvertListLocalToMachine(storageListConfig []localConfigProvider.LocalStorage) StorageList {
 
 	var storageListLocal []Storage

@@ -93,17 +93,16 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 	return d.urls, nil
 }
 
+// GetStorage gets the storage using the storage client of the given pushed component
 func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
 	if d.storage == nil {
-		var storageItems []storage.Storage
 		if _, ok := d.provider.(*devfileComponent); ok {
 			storageList, err := d.storageClient.ListFromCluster()
 			if err != nil {
 				return nil, err
 			}
-			storageItems = append(storageItems, storageList.Items...)
+			d.storage = append(d.storage, storageList.Items...)
 		}
-		d.storage = storageItems
 	}
 	return d.storage, nil
 }
