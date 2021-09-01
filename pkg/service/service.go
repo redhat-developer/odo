@@ -711,9 +711,8 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 			return err
 		}
 
-		if !csvSupported || (isLinkResource(u.GetKind())) {
-			// operator hub is not installed on the cluster
-			// or it's a service binding related resource
+		if isLinkResource(u.GetKind()) {
+			// it's a service binding related resource
 			continue
 		}
 
