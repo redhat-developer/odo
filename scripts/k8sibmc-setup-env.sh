@@ -8,8 +8,8 @@ shout() {
 }
 
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
-export HOME=`pwd`/home
-export GOPATH="`pwd`/home/go"
+export HOME="~/"
+export GOPATH="~/go"
 export GOBIN="$GOPATH/bin"
 mkdir -p $GOBIN
 # This is one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
