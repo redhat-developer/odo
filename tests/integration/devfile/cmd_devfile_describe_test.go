@@ -98,7 +98,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 	Context("when running odo describe for machine readable output", func() {
 		When("a component is created with a custom name", func() {
 			const compName = "myComp"
-			JustBeforeEach(func() {
+			BeforeEach(func() {
 				helper.Cmd("odo", "create", "nodejs", compName, "--context", commonVar.Context).ShouldPass()
 			})
 			It("json output should show the custom component name", func() {
@@ -130,16 +130,10 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 	Context("devfile has missing metadata", func() {
 		// Reference: https://github.com/openshift/odo/issues/4815
-		var metadata devfilepkg.DevfileMetadata
+		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
+		// In terms of SpringBoot, spring is the projectType and java is the language
 
-		// copyAndCreate copies required source code and devfile, and creates a component
-		var copyAndCreate = func(path string) {
-			// Using SpringBoot example here because it helps to distinguish between language and projectType.
-			// In terms of SpringBoot, spring in the projectType and java is the language
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", path), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.Cmd("odo", "create", "--context", commonVar.Context).ShouldPass()
-		}
+		var metadata devfilepkg.DevfileMetadata
 
 		// checkDescribe checks the describe output (both normal and json) to see if it contains the expected componentType
 		var checkDescribe = func(componentType string) {
@@ -154,8 +148,8 @@ var _ = Describe("odo devfile describe command tests", func() {
 		}
 
 		When("projectType is missing", func() {
-			JustBeforeEach(func() {
-				copyAndCreate("devfile-with-missing-projectType-metadata.yaml")
+			BeforeEach(func() {
+				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-metadata.yaml"), commonVar.Context)
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 
@@ -163,7 +157,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 				checkDescribe(metadata.Language)
 			})
 			When("the component is pushed", func() {
-				JustBeforeEach(func() {
+				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 				})
 				It("should show the language for 'Type' in odo describe", func() {
@@ -173,15 +167,15 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 		})
 		When("projectType and language is missing", func() {
-			JustBeforeEach(func() {
-				copyAndCreate("devfile-with-missing-projectType-and-language-metadata.yaml")
+			BeforeEach(func() {
+				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-and-language-metadata.yaml"), commonVar.Context)
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 			It("should show 'Not available' for 'Type' in odo describe", func() {
 				checkDescribe(component.NotAvailable)
 			})
 			When("the component is pushed", func() {
-				JustBeforeEach(func() {
+				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 				})
 				It("should show 'Not available' for 'Type' in odo describe", func() {

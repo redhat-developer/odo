@@ -358,7 +358,7 @@ func componentTests(args ...string) {
 				})
 				When("odo describe is executed", func() {
 					var stdOut string
-					JustBeforeEach(func() {
+					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "describe").ShouldPass().Out()
 					})
 					It("should have the correct component Name and Type in the describe output", func() {
