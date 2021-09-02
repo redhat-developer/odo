@@ -21,7 +21,7 @@ TIMEOUT ?= 14400s
 if $(CLUSTER_ON_IBM_CLOUD)
    TEST_EXEC_NODES ?= 24
 else
-   TEST_EXEC_NODES ?= 2
+   TEST_EXEC_NODES ?= 4
 fi
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
