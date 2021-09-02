@@ -335,6 +335,7 @@ func NewOfflineDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
+	internalCxt.LocalConfigProvider = envInfo
 	internalCxt.resolveApp(false, envInfo)
 
 	// resolve the component

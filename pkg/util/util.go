@@ -49,6 +49,8 @@ const (
 	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
 )
 
+var InvalidKubeconfigError = fmt.Errorf("please provide valid file path for KUBECONFIG env or unset it to use default kubeconfig")
+
 // httpCacheDir determines directory where odo will cache HTTP respones
 var httpCacheDir = filepath.Join(os.TempDir(), "odohttpcache")
 
@@ -1540,29 +1542,33 @@ func GetEnvWithDefault(key string, defaultval string) string {
 	return val
 }
 
-//IsValidKubeConfigPath checks if specified `KUBECONFIG` value is a valid file i.e the path should exist and be a file
+//IsInvalidKubeConfigError checks if specified error is due to invalid kubeconfig
+func IsInvalidKubeConfigError(err error) error {
+	if strings.Contains(err.Error(), "invalid configuration") {
+		return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
+	}
+	return nil
+}
+
+//CheckKubeConfigPath checks if specified `KUBECONFIG` value is a valid file i.e the path should exist and be a file
 //if env `KUBECONFIG` is set then that is used or default `KUBECONFIG` is checked
-func IsValidKubeConfigPath() bool {
-	v := os.Getenv("KUBECONFIG")
-	if v == "" {
-		if home := homedir.HomeDir(); home != "" {
-			v = filepath.Join(home, ".kube", "config")
-			klog.V(4).Infof("using default kubeconfig path %s", v)
-		} else {
-			klog.V(4).Infof("no KUBECONFIG provided and cannot fallback to default")
-			return false
+func CheckKubeConfigPath() error {
+	kubeConfigPath := os.Getenv("KUBECONFIG")
+	if kubeConfigPath != "" {
+		f, err := os.Stat(kubeConfigPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %q which does no exist", kubeConfigPath)
+				return InvalidKubeconfigError
+			}
+			return err
+		}
+		if f.IsDir() {
+			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %q which is a directory", kubeConfigPath)
+			return InvalidKubeconfigError
 		}
 	}
-	f1, err := os.Stat(v)
-	if os.IsNotExist(err) {
-		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which does no exist", v)
-		return false
-	}
-	if f1.IsDir() {
-		klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %s which is a directory", v)
-		return false
-	}
-	return true
+	return nil
 }
 
 // GetGitOriginPath gets the remote fetch URL from the given git repo

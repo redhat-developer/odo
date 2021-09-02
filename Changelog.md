@@ -22,6 +22,7 @@
 ### Bug Fixes
 
 - Fixed issues with non-ephemeral storage mount([#4979](https://github.com/openshift/odo/pull/4979))
+- Adding kubeconfig validation and updating tests for logged out scenario ([#4975](https://github.com/openshift/odo/issues/4975))
 
 ### Tests
 

@@ -234,25 +234,36 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
-		It("should list config successfully", func() {
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "--git", "https://github.com/openshift/nodejs-ex", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-			helper.Cmd("odo", "config", "set", "--env", "hello=world", "--context", commonVar.Context).ShouldPass()
-			kubeconfigOld := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", "/no/such/path")
-			configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-			helper.MatchAllInOutput(configValue, []string{"hello", "world"})
-			os.Setenv("KUBECONFIG", kubeconfigOld)
+		var ocRunner helper.OcRunner
+		var token string
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "create", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			ocRunner = helper.NewOcRunner("oc")
+			token = ocRunner.GetToken()
+			ocRunner.Logout()
 		})
-
-		It("should set config variable without logging in", func() {
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-			kubeconfigOld := os.Getenv("KUBECONFIG")
-			os.Setenv("KUBECONFIG", "/no/such/path")
-			helper.Cmd("odo", "config", "set", "--force", "--context", commonVar.Context, "Name", "foobar").ShouldPass()
-			configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-			Expect(configValue).To(ContainSubstring("foobar"))
-			helper.Cmd("odo", "config", "unset", "--force", "--context", commonVar.Context, "Name").ShouldPass()
-			os.Setenv("KUBECONFIG", kubeconfigOld)
+		AfterEach(func() {
+			ocRunner.LoginUsingToken(token)
+		})
+		When("user is working with a devfile component", func() {
+			It("should set, list and delete config successfully", func() {
+				if helper.IsKubernetesCluster() {
+					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
+				}
+				helper.Cmd("odo", "config", "set", "--force", "--context", commonVar.Context, "Name", "foobar").ShouldPass()
+				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
+				Expect(configValue).To(ContainSubstring("foobar"))
+				helper.Cmd("odo", "config", "unset", "--force", "--context", commonVar.Context, "Name").ShouldPass()
+			})
+			It("should set, list and delete config envs successfully", func() {
+				if helper.IsKubernetesCluster() {
+					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
+				}
+				helper.Cmd("odo", "config", "set", "--force", "--env", "hello=world", "--context", commonVar.Context).ShouldPass()
+				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
+				helper.MatchAllInOutput(configValue, []string{"hello", "world"})
+			})
 		})
 	})
 
