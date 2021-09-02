@@ -836,3 +836,7 @@ func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 func (oc OcRunner) addConfigMapForCleanup(projectName string) {
 	Cmd(oc.path, "create", "configmap", "config-map-for-cleanup", "--from-literal", "type=testing", "--from-literal", "team=odo", "-n", projectName).ShouldPass()
 }
+
+func (oc OcRunner) Logout() {
+	Cmd(oc.path, "logout")
+}
