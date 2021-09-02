@@ -373,3 +373,9 @@ func VerifyResourcesToBeDeleted(runner CliRunner, resources []ResourceInfo) {
 		runner.VerifyResourceToBeDeleted(item)
 	}
 }
+
+func SetDefaultDevfileRegistryAsStaging() {
+	const registryName string = "DefaultDevfileRegistry"
+	const addRegistryURL string = "https://registry.stage.devfile.io"
+	Cmd("odo", "registry", "update", registryName, addRegistryURL, "-f").ShouldPass()
+}

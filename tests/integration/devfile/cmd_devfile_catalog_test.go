@@ -22,6 +22,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		// odo catalog list components.
 		// TODO: Investigate this more.
 		helper.Cmd("odo", "preference", "set", "registrycachetime", "0").ShouldPass()
+		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)
