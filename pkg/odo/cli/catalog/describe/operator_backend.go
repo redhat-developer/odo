@@ -138,8 +138,12 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 	fmt.Fprintf(w, "Kind: %s\n", service.Spec.Kind)
 	fmt.Fprintf(w, "Version: %s\n", service.Spec.Version)
 	fmt.Fprintf(w, "Description: %s\n", service.Spec.Description)
-	fmt.Fprintln(w, "Parameters:")
 
+	if service.Spec.Schema == nil {
+		log.Warning("Unable to get parameters from CRD or CSV")
+		return
+	}
+	fmt.Fprintln(w, "Parameters:")
 	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -197,6 +201,9 @@ func getTypeString(property spec.Schema) string {
 
 // toOpenAPISpec transforms Spec descriptors from a CRD description to an OpenAPI schema
 func toOpenAPISpec(repr *olm.CRDDescription) *spec.Schema {
+	if len(repr.SpecDescriptors) == 0 {
+		return nil
+	}
 	schema := new(spec.Schema).Typed("object", "")
 	for _, param := range repr.SpecDescriptors {
 		addParam(schema, param)
