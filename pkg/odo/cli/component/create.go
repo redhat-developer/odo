@@ -445,9 +445,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.interactive = true
 		}
 
-		// Configure the default namespace
-		var defaultComponentNamespace string
-
 		var componentType string
 		var componentName string
 		var componentNamespace string
@@ -480,7 +477,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 						return err
 					}
 				} else {
-					componentNamespace = ui.EnterDevfileComponentProject(defaultComponentNamespace)
+					client, err := genericclioptions.Client()
+					// if the user is logged in or if we have cluster information, display the default project
+					if err == nil {
+						componentNamespace = ui.EnterDevfileComponentProject(client.GetCurrentProjectName())
+					}
 				}
 			}
 
