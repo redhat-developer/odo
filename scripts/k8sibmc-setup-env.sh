@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#Sets up requirements to run tests in K8S cluster hosted in the IBM Cloud
 
 shout() {
   set +x
@@ -11,7 +12,7 @@ export HOME=`pwd`/home
 export GOPATH="`pwd`/home/go"
 export GOBIN="$GOPATH/bin"
 mkdir -p $GOBIN
-# This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
+# This is one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
 # Add GOBIN which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
@@ -47,26 +48,8 @@ case ${1} in
     k8s)
         setup_kubeconfig
         ;;
-    minikube)
-        mkStatus=$(minikube status)
-        shout "| Checking if Minikube needs to be started..."
-        if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" == *"kubelet: Running"* ]]; then 
-            if [[ "$mkStatus" == *"kubeconfig: Misconfigured"* ]]; then
-                minikube update-context
-            fi
-            setup_kubeconfig
-            kubectl config use-context minikube
-        else
-            minikube delete
-            shout "| Start minikube"
-            minikube start --vm-driver=docker --container-runtime=docker
-            setup_kubeconfig
-        fi
-        
-        minikube version
-        ;;
     *)
-        echo "<<< Need parameter set to minikube or minishift >>>"
+        echo "<<< Need parameter set to K8S >>>"
         exit 1
         ;;
 esac
@@ -77,7 +60,7 @@ esac
 SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
 # The OLM Version
-export OLM_VERSION="v0.17.0"
+export OLM_VERSION="v0.18.3"
 # Enable OLM for running operator tests
 curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$OLM_VERSION/install.sh | bash -s $OLM_VERSION
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Runs integration tests on K8S cluster hosted in IBM Cloud
 
 shout() {
   set +x
@@ -34,7 +35,7 @@ case ${1} in
         odo logout
         ;;
     *)
-        echo "Need parameter set to minikube or k8s"
+        echo "Need parameter set to k8s"
         exit 1
         ;;
 esac

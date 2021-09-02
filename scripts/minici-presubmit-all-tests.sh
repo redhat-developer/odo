@@ -28,8 +28,8 @@ case $1 in
         export SENDQUEUE="amqp.ci.queue.k8sibmc.send"
         export SENDTOPIC="amqp.ci.topic.k8sibmc.send"
         export EXCHANGE="amqp.ci.exchange.k8sibmc.send"
-        export SETUP_SCRIPT="scripts/minikube-k8sibmc-setup-env.sh k8s"
-        export RUN_SCRIPT="scripts/minikube-k8sibmc-all-tests.sh k8s"
+        export SETUP_SCRIPT="scripts/k8sibmc-setup-env.sh k8s"
+        export RUN_SCRIPT="scripts/k8sibmc-all-tests.sh k8s"
         export TIMEOUT="4h00m"
         ;;
     *)
