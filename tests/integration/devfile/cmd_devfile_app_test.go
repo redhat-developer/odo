@@ -18,6 +18,7 @@ var _ = Describe("odo devfile app command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		namespace = commonVar.Project
+		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)

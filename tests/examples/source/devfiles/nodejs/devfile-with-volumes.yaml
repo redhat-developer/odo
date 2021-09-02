@@ -9,7 +9,7 @@ starterProjects:
 components:
   - name: runtime
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: quay.io/eclipse/che-nodejs10-ubi:next
       memoryLimit: 1024Mi
       env:
         - name: FOO
@@ -23,7 +23,7 @@ components:
           path: /data
   - name: runtime2
     container:
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: quay.io/eclipse/che-nodejs10-ubi:next
       memoryLimit: 1024Mi
       mountSources: false
       volumeMounts:

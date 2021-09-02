@@ -30,6 +30,7 @@ var _ = Describe("odo devfile status command tests", func() {
 		namespace = commonVar.Project
 		context = commonVar.Context
 		helper.Chdir(commonVar.Context)
+		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// Clean up after the test

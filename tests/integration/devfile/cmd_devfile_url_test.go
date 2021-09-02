@@ -22,6 +22,7 @@ var _ = Describe("odo devfile url command tests", func() {
 		commonVar = helper.CommonBeforeEach()
 		componentName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
+		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)

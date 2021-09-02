@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/util"
 	"strings"
 
 	"github.com/openshift/odo/pkg/config"
@@ -81,6 +82,12 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		IsNow:                  o.now,
 		CheckRouteAvailability: checkRouteAvailability,
 	})
+	if err != nil {
+		if err1 := util.IsInvalidKubeConfigError(err); err1 != nil {
+			return err1
+		}
+		return err
+	}
 	if o.Context.EnvSpecificInfo != nil {
 		o.IsDevfile = true
 		o.DevfilePath = o.Context.EnvSpecificInfo.GetDevfilePath()
@@ -131,6 +138,7 @@ func (o *SetOptions) DevfileRun() (err error) {
 		if err != nil {
 			return err
 		}
+
 		log.Success("Environment variables were successfully updated")
 		if o.now {
 			return o.DevfilePush()
@@ -162,7 +170,6 @@ func (o *SetOptions) DevfileRun() (err error) {
 
 // Run contains the logic for the command
 func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
-
 	if o.IsDevfile {
 		return o.DevfileRun()
 	}
