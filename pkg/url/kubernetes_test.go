@@ -2,10 +2,11 @@ package url
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/unions"
-	networkingv1 "k8s.io/api/networking/v1"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/unions"
+	networkingv1 "k8s.io/api/networking/v1"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
@@ -33,7 +34,7 @@ import (
 func getFakeURL(name string, host string, port int, path string, protocol string, kind localConfigProvider.URLKind, urlState StateType) URL {
 	return URL{
 		TypeMeta: v1.TypeMeta{
-			Kind:       "url",
+			Kind:       "URL",
 			APIVersion: "odo.dev/v1alpha1",
 		},
 		ObjectMeta: v1.ObjectMeta{
@@ -94,7 +95,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					ingress1,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				NewURLFromKubernetesIngress(ingress0, false),
 				NewURLFromKubernetesIngress(ingress1, false),
 			}),
@@ -114,9 +115,9 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					route1,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormat(route0),
-				getMachineReadableFormat(route1)},
+			want: NewURLList([]URL{
+				NewURL(route0),
+				NewURL(route1)},
 			),
 		},
 		{
@@ -140,11 +141,11 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					ingress1,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				NewURLFromKubernetesIngress(ingress0, false),
 				NewURLFromKubernetesIngress(ingress1, false),
-				getMachineReadableFormat(route0),
-				getMachineReadableFormat(route1),
+				NewURL(route0),
+				NewURL(route1),
 			}),
 		},
 		{
@@ -156,7 +157,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 				},
 				isRouteSupported: true,
 			},
-			want: getMachineReadableFormatForList(nil),
+			want: NewURLList(nil),
 		},
 		{
 			name: "case 5: ignore the routes with ingress kind owners",
@@ -173,8 +174,8 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 					routeOwnedByIngress,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
-				getMachineReadableFormat(route0)},
+			want: NewURLList([]URL{
+				NewURL(route0)},
 			),
 		},
 	}
@@ -261,7 +262,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				getFakeURL("example-1", "example-1.com", 8080, "", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 				getFakeURL("example-2", "example-2.com", 8080, "", "http", localConfigProvider.INGRESS, StateTypeNotPushed)}),
 		},
@@ -282,7 +283,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedLocalURLs: []localConfigProvider.LocalURL{},
 
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				getFakeURL("testRoute0", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted),
 				getFakeURL("testRoute1", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted)}),
 		},
@@ -322,7 +323,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypePushed),
 				getFakeURL("testRoute0", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypePushed),
 			}),
@@ -363,7 +364,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypePushed),
 				getFakeURL("testRoute0", "", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeNotPushed),
 				getFakeURL("testRoute1", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted),
@@ -395,7 +396,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 					Kind:   localConfigProvider.INGRESS,
 				},
 			},
-			want: getMachineReadableFormatForList([]URL{
+			want: NewURLList([]URL{
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			}),
 		},

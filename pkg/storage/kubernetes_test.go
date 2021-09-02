@@ -103,8 +103,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
 				},
 			},
 			wantErr: false,
@@ -138,9 +138,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-1"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-1"),
 				},
 			},
 			wantErr: false,
@@ -195,7 +195,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
 				},
 			},
 			wantErr: false,
@@ -261,9 +261,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-0"),
-					generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), "", "container-1"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-1"),
 				},
 			},
 			wantErr: false,
@@ -380,7 +380,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{},
 			},
-			want:    GetMachineReadableFormatForList(nil),
+			want:    NewStorageList(nil),
 			wantErr: false,
 		},
 		{
@@ -400,7 +400,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{},
 			},
-			want:    GetMachineReadableFormatForList(nil),
+			want:    NewStorageList(nil),
 			wantErr: false,
 		},
 		{
@@ -441,9 +441,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
-			want: GetMachineReadableFormatForList([]Storage{
-				generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
-				generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), StateTypePushed, "container-0"),
+			want: NewStorageList([]Storage{
+				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/path"), StateTypePushed, "container-0"),
 			}),
 			wantErr: false,
 		},
@@ -485,11 +485,11 @@ func Test_kubernetesClient_List(t *testing.T) {
 					*testingutil.FakePVC("volume-11", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-11"}),
 				},
 			},
-			want: GetMachineReadableFormatForList([]Storage{
-				generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), StateTypeNotPushed, "container-0"),
-				generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/path"), StateTypeNotPushed, "container-0"),
-				generateStorage(GetMachineReadableFormat("volume-00", "5Gi", "/data"), StateTypeLocallyDeleted, "container-0"),
-				generateStorage(GetMachineReadableFormat("volume-11", "10Gi", "/path"), StateTypeLocallyDeleted, "container-0"),
+			want: NewStorageList([]Storage{
+				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypeNotPushed, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/path"), StateTypeNotPushed, "container-0"),
+				generateStorage(NewStorage("volume-00", "5Gi", "/data"), StateTypeLocallyDeleted, "container-0"),
+				generateStorage(NewStorage("volume-11", "10Gi", "/path"), StateTypeLocallyDeleted, "container-0"),
 			}),
 			wantErr: false,
 		},
@@ -529,9 +529,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
 				},
 			},
-			want: GetMachineReadableFormatForList([]Storage{
-				generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
-				generateStorage(GetMachineReadableFormat("volume-1", "10Gi", "/data"), StateTypeNotPushed, "container-1"),
+			want: NewStorageList([]Storage{
+				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/data"), StateTypeNotPushed, "container-1"),
 			}),
 			wantErr: false,
 		},
@@ -568,9 +568,9 @@ func Test_kubernetesClient_List(t *testing.T) {
 					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
 				},
 			},
-			want: GetMachineReadableFormatForList([]Storage{
-				generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
-				generateStorage(GetMachineReadableFormat("volume-0", "5Gi", "/data"), StateTypeLocallyDeleted, "container-1"),
+			want: NewStorageList([]Storage{
+				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypeLocallyDeleted, "container-1"),
 			}),
 			wantErr: false,
 		},
@@ -664,7 +664,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: GetMachineFormatWithContainer("storage-0", "5Gi", "/data", "runtime"),
+				storage: NewStorageWithContainer("storage-0", "5Gi", "/data", "runtime"),
 			},
 		},
 		{
@@ -676,7 +676,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: GetMachineFormatWithContainer("storage-0", "example", "/data", "runtime"),
+				storage: NewStorageWithContainer("storage-0", "example", "/data", "runtime"),
 			},
 			wantErr: true,
 		},
@@ -689,7 +689,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: GetMachineFormatWithContainer("odo-projects-vol", "5Gi", "/data", "runtime"),
+				storage: NewStorageWithContainer("odo-projects-vol", "5Gi", "/data", "runtime"),
 			},
 		},
 	}

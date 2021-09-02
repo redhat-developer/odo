@@ -83,11 +83,11 @@ func (o InfoOptions) Validate() error {
 
 // Run implements all the necessary functionality for port-forward cmd.
 func (o InfoOptions) Run(cmd *cobra.Command) error {
-	if debugFileInfo, debugging := debug.GetDebugInfo(o.PortForwarder); debugging {
+	if debugInfo, debugging := debug.GetInfo(o.PortForwarder); debugging {
 		if log.IsJSON() {
-			machineoutput.OutputSuccess(debugFileInfo)
+			machineoutput.OutputSuccess(debugInfo)
 		} else {
-			log.Infof("Debug is running for the component on the local port : %v", debugFileInfo.Spec.LocalPort)
+			log.Infof("Debug is running for the component on the local port : %v", debugInfo.Spec.LocalPort)
 		}
 	} else {
 		return fmt.Errorf("debug is not running for the component %v", o.componentName)

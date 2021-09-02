@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
 	scontext "github.com/openshift/odo/pkg/segment/context"
@@ -60,7 +61,6 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetClusterType(cmd.Context(), pco.Client)
 	}
-	successMessage := fmt.Sprintf(`Project '%s' is ready for use`, pco.projectName)
 
 	// Create the "spinner"
 	s := &log.Status{}
@@ -77,20 +77,24 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 		return err
 	}
 	s.End(true)
+
+	successMessage := fmt.Sprintf(`Project %q is ready for use`, pco.projectName)
 	log.Successf(successMessage)
 
-	// Set the current project when created. If it's json output, we output a json output error
+	// Set the current project when created
 	err = project.SetCurrent(pco.Context, pco.projectName)
 	if err != nil {
 		return err
 	}
 
+	log.Successf("New project created and now using project: %v", pco.projectName)
+
 	// If -o json has been passed, let's output the appropriate json output.
 	if log.IsJSON() {
-		project.MachineReadableSuccessOutput(pco.projectName, successMessage)
-	} else {
-		log.Successf("New project created and now using project: %v", pco.projectName)
+		prj := project.NewProject(pco.projectName, true)
+		machineoutput.OutputSuccess(prj)
 	}
+
 	return
 }
 

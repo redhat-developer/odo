@@ -101,14 +101,14 @@ func (s s2iClient) ListFromCluster() (StorageList, error) {
 			}
 			storageName := getStorageFromPVC(&pvc)
 			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+			storageMachineReadable := NewStorage(getStorageFromPVC(&pvc),
 				storageSize.String(),
 				mountedStorageMap[storageName],
 			)
 			storage = append(storage, storageMachineReadable)
 		}
 	}
-	storageList := GetMachineReadableFormatForList(storage)
+	storageList := NewStorageList(storage)
 	return storageList, nil
 }
 
@@ -146,5 +146,5 @@ func (s s2iClient) List() (StorageList, error) {
 		}
 	}
 
-	return GetMachineReadableFormatForList(storageList), nil
+	return NewStorageList(storageList), nil
 }

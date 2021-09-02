@@ -23,13 +23,13 @@ func Test_s2iClient_List(t *testing.T) {
 
 	pvc3 := testingutil.FakePVC(generatePVCNameFromStorageName("storage-3-app"), "100Mi", getStorageLabels("storage-3", componentName, appName))
 
-	storage1 := GetMachineReadableFormat("storage-1", "100Mi", "/tmp1")
+	storage1 := NewStorage("storage-1", "100Mi", "/tmp1")
 	storage1.Status = StateTypePushed
 
-	storage2 := GetMachineReadableFormat("storage-2", "100Mi", "/tmp2")
+	storage2 := NewStorage("storage-2", "100Mi", "/tmp2")
 	storage2.Status = StateTypeNotPushed
 
-	storage3 := GetMachineReadableFormat("storage-3", "100Mi", "/tmp3")
+	storage3 := NewStorage("storage-3", "100Mi", "/tmp3")
 	storage3.Status = StateTypeLocallyDeleted
 
 	type fields struct {
@@ -62,7 +62,7 @@ func Test_s2iClient_List(t *testing.T) {
 			mountedMap: map[string]*corev1.PersistentVolumeClaim{
 				"/tmp1": pvc1,
 			},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{storage1}),
+			wantedStorageList: NewStorageList([]Storage{storage1}),
 			wantErr:           false,
 		},
 		{
@@ -80,7 +80,7 @@ func Test_s2iClient_List(t *testing.T) {
 				Items: []corev1.PersistentVolumeClaim{},
 			},
 			mountedMap:        map[string]*corev1.PersistentVolumeClaim{},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{storage2}),
+			wantedStorageList: NewStorageList([]Storage{storage2}),
 			wantErr:           false,
 		},
 
@@ -100,7 +100,7 @@ func Test_s2iClient_List(t *testing.T) {
 				Items: []corev1.PersistentVolumeClaim{*pvc1, *pvc3},
 			},
 			mountedMap:        map[string]*corev1.PersistentVolumeClaim{"/tmp1": pvc1, "/tmp3": pvc3},
-			wantedStorageList: GetMachineReadableFormatForList([]Storage{storage1, storage3}),
+			wantedStorageList: NewStorageList([]Storage{storage1, storage3}),
 			wantErr:           false,
 		},
 	}

@@ -10,18 +10,18 @@ import (
 
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // fakeOdoDebugFileString creates a json string of a fake OdoDebugFile
-func fakeOdoDebugFileString(typeMeta v1.TypeMeta, processID int, projectName, appName, componentName string, remotePort, localPort int) (string, error) {
-	odoDebugFile := OdoDebugFile{
+func fakeOdoDebugFileString(typeMeta metav1.TypeMeta, processID int, projectName, appName, componentName string, remotePort, localPort int) (string, error) {
+	file := Info{
 		TypeMeta: typeMeta,
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: projectName,
 			Name:      componentName,
 		},
-		Spec: OdoDebugFileSpec{
+		Spec: InfoSpec{
 			App:            appName,
 			DebugProcessID: processID,
 			RemotePort:     remotePort,
@@ -29,7 +29,7 @@ func fakeOdoDebugFileString(typeMeta v1.TypeMeta, processID int, projectName, ap
 		},
 	}
 
-	data, err := json.Marshal(odoDebugFile)
+	data, err := json.Marshal(file)
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +50,7 @@ func Test_createDebugInfoFile(t *testing.T) {
 		name             string
 		args             args
 		alreadyExistFile bool
-		wantDebugInfo    OdoDebugFile
+		wantDebugInfo    Info
 		wantErr          bool
 	}{
 		{
@@ -64,16 +64,16 @@ func Test_createDebugInfoFile(t *testing.T) {
 				portPair: "5858:9001",
 				fs:       fs,
 			},
-			wantDebugInfo: OdoDebugFile{
-				TypeMeta: v1.TypeMeta{
+			wantDebugInfo: Info{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "nodejs-ex",
 					Namespace: "testing-1",
 				},
-				Spec: OdoDebugFileSpec{
+				Spec: InfoSpec{
 					DebugProcessID: os.Getpid(),
 					App:            "app",
 					RemotePort:     9001,
@@ -94,16 +94,16 @@ func Test_createDebugInfoFile(t *testing.T) {
 				portPair: "5758:9004",
 				fs:       fs,
 			},
-			wantDebugInfo: OdoDebugFile{
-				TypeMeta: v1.TypeMeta{
+			wantDebugInfo: Info{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "nodejs-ex",
 					Namespace: "testing-1",
 				},
-				Spec: OdoDebugFileSpec{
+				Spec: InfoSpec{
 					DebugProcessID: os.Getpid(),
 					App:            "app",
 					RemotePort:     9004,
@@ -134,7 +134,7 @@ func Test_createDebugInfoFile(t *testing.T) {
 			if err != nil {
 				t.Errorf("error while reading file, cause: %v", err)
 			}
-			var odoDebugFileData OdoDebugFile
+			var odoDebugFileData Info
 			err = json.Unmarshal(readBytes, &odoDebugFileData)
 			if err != nil {
 				t.Errorf("error occured while unmarshalling json, cause: %v", err)
@@ -164,8 +164,8 @@ func Test_getDebugInfo(t *testing.T) {
 		args               args
 		fileExists         bool
 		debugPortListening bool
-		readDebugFile      OdoDebugFile
-		wantDebugFile      OdoDebugFile
+		readDebugFile      Info
+		wantDebugFile      Info
 		debugRunning       bool
 	}{
 		{
@@ -178,32 +178,32 @@ func Test_getDebugInfo(t *testing.T) {
 				},
 				fs: fs,
 			},
-			wantDebugFile: OdoDebugFile{
-				TypeMeta: v1.TypeMeta{
+			wantDebugFile: Info{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "nodejs-ex",
 					Namespace: "testing-1",
 				},
-				Spec: OdoDebugFileSpec{
+				Spec: InfoSpec{
 					DebugProcessID: os.Getpid(),
 					App:            "app",
 					RemotePort:     5858,
 					LocalPort:      9001,
 				},
 			},
-			readDebugFile: OdoDebugFile{
-				TypeMeta: v1.TypeMeta{
+			readDebugFile: Info{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "nodejs-ex",
 					Namespace: "testing-1",
 				},
-				Spec: OdoDebugFileSpec{
+				Spec: InfoSpec{
 					DebugProcessID: os.Getpid(),
 					App:            "app",
 					RemotePort:     5858,
@@ -225,8 +225,8 @@ func Test_getDebugInfo(t *testing.T) {
 				fs: fs,
 			},
 			debugPortListening: true,
-			wantDebugFile:      OdoDebugFile{},
-			readDebugFile:      OdoDebugFile{},
+			wantDebugFile:      Info{},
+			readDebugFile:      Info{},
 			fileExists:         false,
 			debugRunning:       false,
 		},
@@ -241,17 +241,17 @@ func Test_getDebugInfo(t *testing.T) {
 				fs: fs,
 			},
 			debugPortListening: false,
-			wantDebugFile:      OdoDebugFile{},
-			readDebugFile: OdoDebugFile{
-				TypeMeta: v1.TypeMeta{
+			wantDebugFile:      Info{},
+			readDebugFile: Info{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "nodejs-ex",
 					Namespace: "testing-1",
 				},
-				Spec: OdoDebugFileSpec{
+				Spec: InfoSpec{
 					DebugProcessID: os.Getpid(),
 					App:            "app",
 					RemotePort:     5858,
@@ -272,17 +272,17 @@ func Test_getDebugInfo(t *testing.T) {
 				fs: fs,
 			},
 			debugPortListening: true,
-			wantDebugFile:      OdoDebugFile{},
-			readDebugFile: OdoDebugFile{
-				TypeMeta: v1.TypeMeta{
+			wantDebugFile:      Info{},
+			readDebugFile: Info{
+				TypeMeta: metav1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "nodejs-ex",
 					Namespace: "testing-1",
 				},
-				Spec: OdoDebugFileSpec{
+				Spec: InfoSpec{
 					DebugProcessID: os.Getpid() + 818177979,
 					App:            "app",
 					RemotePort:     5858,
@@ -347,7 +347,7 @@ func Test_getDebugInfo(t *testing.T) {
 				}
 			}
 
-			got, resultRunning := getDebugInfo(tt.args.defaultPortForwarder, tt.args.fs)
+			got, resultRunning := getInfo(tt.args.defaultPortForwarder, tt.args.fs)
 
 			if !reflect.DeepEqual(got, tt.wantDebugFile) {
 				t.Errorf("getDebugInfo() got = %v, want %v", got, tt.wantDebugFile)

@@ -7,9 +7,11 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/util"
@@ -191,6 +193,14 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		log.Italic("\nTo apply the URL configuration changes, please use `odo push`")
 	}
 
+	if log.IsJSON() {
+		u := url.NewURLFromLocalURL(o.url)
+		u.Status.State = url.StateTypeNotPushed
+		if o.now {
+			u.Status.State = url.StateTypePushed
+		}
+		machineoutput.OutputSuccess(u)
+	}
 	return
 }
 
@@ -198,11 +208,12 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	o := NewURLCreateOptions()
 	urlCreateCmd := &cobra.Command{
-		Use:     name + " [url name]",
-		Short:   urlCreateShortDesc,
-		Long:    urlCreateLongDesc,
-		Example: fmt.Sprintf(urlCreateExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         name + " [url name]",
+		Short:       urlCreateShortDesc,
+		Long:        urlCreateLongDesc,
+		Example:     fmt.Sprintf(urlCreateExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

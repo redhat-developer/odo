@@ -1,23 +1,29 @@
 package url
 
 import (
+	"fmt"
+	"reflect"
+
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/unions"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 )
 
-// URL is
+const URLKind = "URL"
+
+// URL is an abstraction giving network access to the component from outside the cluster
 type URL struct {
-	v1.TypeMeta   `json:",inline"`
-	v1.ObjectMeta `json:"metadata,omitempty"`
-	Spec          URLSpec   `json:"spec,omitempty"`
-	Status        URLStatus `json:"status,omitempty"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              URLSpec   `json:"spec,omitempty"`
+	Status            URLStatus `json:"status,omitempty"`
 }
 
-// URLSpec is
+// URLSpec contains the specifications of a URL
 type URLSpec struct {
 	Host         string                      `json:"host,omitempty"`
 	Protocol     string                      `json:"protocol,omitempty"`
@@ -29,14 +35,14 @@ type URLSpec struct {
 	Path         string                      `json:"path,omitempty"`
 }
 
-// URLList is a list of applications
+// URLList is a list of urls
 type URLList struct {
-	v1.TypeMeta `json:",inline"`
-	v1.ListMeta `json:"metadata,omitempty"`
-	Items       []URL `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []URL `json:"items"`
 }
 
-// URLStatus is Status of url
+// URLStatus is the current status of a url
 type URLStatus struct {
 	// "Pushed" or "Not Pushed" or "Locally Delted"
 	State StateType `json:"state"`
@@ -52,6 +58,117 @@ const (
 	// StateTypeLocallyDeleted means that URL was deleted from the local config, but it is still present on the cluster/container
 	StateTypeLocallyDeleted = "Locally Deleted"
 )
+
+// NewURL gives machine readable URL definition
+func NewURL(r routev1.Route) URL {
+	return URL{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       URLKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: r.Labels[urlLabels.URLLabel],
+		},
+		Spec: URLSpec{
+			Host:     r.Spec.Host,
+			Port:     r.Spec.Port.TargetPort.IntValue(),
+			Protocol: GetProtocol(r, iextensionsv1.Ingress{}),
+			Secure:   r.Spec.TLS != nil,
+			Path:     r.Spec.Path,
+			Kind:     localConfigProvider.ROUTE,
+		},
+	}
+
+}
+
+func NewURLList(urls []URL) URLList {
+	return URLList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       machineoutput.ListKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    urls,
+	}
+}
+
+// NewURLFromConfigURL creates a URL from a ConfigURL
+func NewURLFromConfigURL(configURL localConfigProvider.LocalURL) URL {
+	return URL{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       URLKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configURL.Name,
+		},
+		Spec: URLSpec{
+			Port:   configURL.Port,
+			Secure: configURL.Secure,
+			Kind:   localConfigProvider.ROUTE,
+			Path:   "/",
+		},
+	}
+}
+
+// NewURLFromEnvinfoURL creates a URL from a EnvinfoURL
+func NewURLFromEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName string) URL {
+	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
+	// default to route kind if none is provided
+	kind := envinfoURL.Kind
+	if kind == "" {
+		kind = localConfigProvider.ROUTE
+	}
+	url := URL{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       URLKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: envinfoURL.Name,
+		},
+		Spec: URLSpec{
+			Host:      envinfoURL.Host,
+			Protocol:  envinfoURL.Protocol,
+			Port:      envinfoURL.Port,
+			Secure:    envinfoURL.Secure,
+			Kind:      kind,
+			TLSSecret: envinfoURL.TLSSecret,
+			Path:      envinfoURL.Path,
+		},
+	}
+	if kind == localConfigProvider.INGRESS {
+		url.Spec.Host = hostString
+		if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
+			url.Spec.TLSSecret = envinfoURL.TLSSecret
+		} else if envinfoURL.Secure {
+			url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
+		}
+	}
+	return url
+}
+
+// NewURLFromLocalURL creates a URL from a localConfigProvider.LocalURL
+func NewURLFromLocalURL(localURL localConfigProvider.LocalURL) URL {
+	return URL{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       URLKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: localURL.Name,
+		},
+		Spec: URLSpec{
+			Host:      localURL.Host,
+			Protocol:  localURL.Protocol,
+			Port:      localURL.Port,
+			Secure:    localURL.Secure,
+			Kind:      localURL.Kind,
+			TLSSecret: localURL.TLSSecret,
+			Path:      localURL.Path,
+		},
+	}
+}
 
 func NewURLsFromKubernetesIngressList(kil *unions.KubernetesIngressList) []URL {
 	var urlList []URL
@@ -69,7 +186,10 @@ func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress, skipIfGenerated b
 		return URL{}
 	}
 	u := URL{
-		TypeMeta: metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       URLKind,
+			APIVersion: machineoutput.APIVersion,
+		},
 	}
 	if ki.NetworkingV1Ingress != nil {
 		u.ObjectMeta = metav1.ObjectMeta{Name: ki.NetworkingV1Ingress.Labels[urlLabels.URLLabel]}
@@ -118,4 +238,15 @@ func (urls URLList) Get(urlName string) URL {
 	}
 	return URL{}
 
+}
+
+func (urls URLList) AreOutOfSync() bool {
+	outOfSync := false
+	for _, u := range urls.Items {
+		if u.Status.State != StateTypePushed {
+			outOfSync = true
+			break
+		}
+	}
+	return outOfSync
 }

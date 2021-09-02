@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/openshift/odo/pkg/util"
+	"github.com/tidwall/gjson"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -51,11 +51,9 @@ var _ = Describe("odo devfile debug command tests", func() {
 			// Make sure that the debug information output, outputs correctly.
 			// We do *not* check the json output since the debugProcessID will be different each time.
 			helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", commonVar.Context}, 1, false, func(output string) bool {
-				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-					strings.Contains(output, `"localPort": `+freePort) {
-					return true
-				}
-				return false
+				values := gjson.GetMany(output, "kind", "spec.localPort")
+				expected := []string{"OdoDebugInfo", freePort}
+				return helper.GjsonMatcher(values, expected)
 			})
 
 			stopChannel <- true

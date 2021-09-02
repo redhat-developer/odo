@@ -2,8 +2,9 @@ package url
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/unions"
 	"sort"
+
+	"github.com/openshift/odo/pkg/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
@@ -53,11 +54,11 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
 			continue
 		}
-		clusterURL := getMachineReadableFormat(r)
+		clusterURL := NewURL(r)
 		clusterURLs = append(clusterURLs, clusterURL)
 	}
 
-	return getMachineReadableFormatForList(clusterURLs), nil
+	return NewURLList(clusterURLs), nil
 }
 
 // List lists both route/ingress based URLs and local URLs with respective states
@@ -88,7 +89,7 @@ func (k kubernetesClient) List() (URLList, error) {
 			if !k.isRouteSupported && url.Kind == localConfigProvider.ROUTE {
 				continue
 			}
-			localURL := ConvertEnvinfoURL(url, k.componentName)
+			localURL := NewURLFromEnvinfoURL(url, k.componentName)
 			if localURL.Spec.Protocol == "" {
 				if localURL.Spec.Secure {
 					localURL.Spec.Protocol = "https"
@@ -130,7 +131,7 @@ func (k kubernetesClient) List() (URLList, error) {
 
 	// sort urls by name to get consistent output
 	sort.Sort(urls)
-	urlList := getMachineReadableFormatForList(urls)
+	urlList := NewURLList(urls)
 	return urlList, nil
 }
 

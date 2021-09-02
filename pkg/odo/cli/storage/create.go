@@ -86,7 +86,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	if log.IsJSON() {
-		storageResultMachineReadable := storage.GetMachineReadableFormat(o.storage.Name, o.storage.Size, o.storage.Path)
+		storageResultMachineReadable := storage.NewStorage(o.storage.Name, o.storage.Size, o.storage.Path)
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.Context.LocalConfigProvider.GetName())

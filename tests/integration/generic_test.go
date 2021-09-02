@@ -86,8 +86,8 @@ var _ = Describe("odo generic", func() {
 		// odo project create foobar -o json
 		It("should be able to create project and show output in json format", func() {
 			actual := helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass().Out()
-			values := gjson.GetMany(actual, "kind", "message")
-			expected := []string{"Project", "is ready for use"}
+			values := gjson.GetMany(actual, "kind", "metadata.name", "status.active")
+			expected := []string{"Project", projectName, "true"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 		})
 	})
@@ -123,7 +123,7 @@ var _ = Describe("odo generic", func() {
 
 			actual := helper.Cmd("odo", "project", "delete", projectName, "-o", "json").ShouldPass().Out()
 			valuesDel := gjson.GetMany(actual, "kind", "message")
-			expectedDel := []string{"Project", "Deleted project"}
+			expectedDel := []string{"Status", "Deleted project"}
 			Expect(helper.GjsonMatcher(valuesDel, expectedDel)).To(Equal(true))
 
 		})
