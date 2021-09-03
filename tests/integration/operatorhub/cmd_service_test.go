@@ -209,7 +209,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance definition copied from example file", func() {
+				When("a Redis instance definition copied from example file", func() {
 
 					var fileName string
 
@@ -266,7 +266,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with no name", func() {
+				When("a Redis instance is created with no name", func() {
 					var stdOut string
 					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "--project", commonVar.Project).ShouldPass().Out()
@@ -395,7 +395,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with a specific name", func() {
+				When("a Redis instance is created with a specific name", func() {
 
 					var name string
 					var svcFullName string
@@ -522,7 +522,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with a specific name and json output", func() {
+				When("a Redis instance is created with a specific name and json output", func() {
 
 					var name string
 					var svcFullName string
@@ -542,6 +542,57 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						values := gjson.GetMany(output, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
 						expected := []string{"Service", "Redis/" + name, "Redis", name}
 						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					})
+
+					It("should describe service in json format", func() {
+						values := gjson.GetMany(output, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
+						expected := []string{"Service", "Redis/" + name, "Redis", name}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					})
+
+					It("should not contain cluster specific information in json format", func() {
+						descOutput := helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+						values := gjson.GetMany(descOutput, "inDevfile", "deployed", "manifest.metadata.creationTimestamp")
+						expected := []string{"true", "false", ""}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					})
+
+					It("should not contain cluster specific information in describe json output", func() {
+						descOutput := helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+						values := gjson.GetMany(descOutput, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
+						expected := []string{"Service", "Redis/" + name, "Redis", name}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					})
+
+					When("odo push is executed", func() {
+
+						BeforeEach(func() {
+							helper.Cmd("odo", "push").ShouldPass()
+						})
+
+						It("should contain cluster specific information in json format", func() {
+							descOutput := helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+							values := gjson.GetMany(descOutput, "inDevfile", "deployed")
+							expected := []string{"true", "true"}
+							Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+							tsValue := gjson.Get(descOutput, "manifest.metadata.creationTimestamp")
+							Expect(tsValue.Str).NotTo(BeEmpty())
+						})
+
+						When("service is deleted from devfile", func() {
+							BeforeEach(func() {
+								helper.Cmd("odo", "service", "delete", "Redis/"+name, "--project", commonVar.Project, "-f").ShouldPass()
+							})
+
+							It("should contain cluster specific information in json format", func() {
+								descOutput := helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+								values := gjson.GetMany(descOutput, "inDevfile", "deployed")
+								expected := []string{"false", "true"}
+								Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+								tsValue := gjson.Get(descOutput, "manifest.metadata.creationTimestamp")
+								Expect(tsValue.Str).NotTo(BeEmpty())
+							})
+						})
 					})
 				})
 

@@ -14,10 +14,12 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
@@ -234,17 +236,12 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 }
 
 // ServiceDefined returns true if the service is defined in the devfile
-func (b *OperatorBackend) ServiceDefined(o *DeleteOptions) (bool, error) {
-	_, instanceName, err := svc.SplitServiceKindName(o.serviceName)
+func (b *OperatorBackend) ServiceDefined(ctx *genericclioptions.Context, name string) (bool, error) {
+	_, instanceName, err := svc.SplitServiceKindName(name)
 	if err != nil {
 		return false, err
 	}
-
-	return svc.IsDefined(instanceName, o.EnvSpecificInfo.GetDevfileObj())
-}
-
-func (b *OperatorBackend) ServiceExists(o *DeleteOptions) (bool, error) {
-	return svc.OperatorSvcExists(o.KClient, o.serviceName)
+	return svc.IsDefined(instanceName, ctx.EnvSpecificInfo.GetDevfileObj())
 }
 
 func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, application string) error {
@@ -269,4 +266,40 @@ func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterSe
 	}
 
 	return svc.BuildCRDFromParams(cr, o.ParametersMap)
+}
+
+func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app string) error {
+
+	clusterList, _, err := svc.ListOperatorServices(o.KClient)
+	if err != nil {
+		return err
+	}
+	var clusterFound *unstructured.Unstructured
+	for _, clusterInstance := range clusterList {
+		fullName := strings.Join([]string{clusterInstance.GetKind(), clusterInstance.GetName()}, "/")
+		if fullName == serviceName {
+			clusterFound = &clusterInstance
+			break
+		}
+	}
+
+	devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
+	if err != nil {
+		return err
+	}
+	devfileService, inDevfile := devfileList[serviceName]
+
+	item := NewServiceItem(serviceName)
+	item.InDevfile = inDevfile
+	item.Deployed = clusterFound != nil
+	if item.Deployed {
+		item.Manifest = clusterFound.Object
+	} else if item.InDevfile {
+		item.Manifest = devfileService.Object
+	}
+
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(item)
+	}
+	return nil
 }

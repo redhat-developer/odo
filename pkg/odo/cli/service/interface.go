@@ -1,6 +1,9 @@
 package service
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/spf13/cobra"
+)
 
 // ServiceProviderBackend is implemented by the backends supported by odo
 // It is used in "odo service create" and "odo service delete"
@@ -9,7 +12,7 @@ type ServiceProviderBackend interface {
 	ValidateServiceCreate(options *CreateOptions) error
 	RunServiceCreate(options *CreateOptions) error
 
-	ServiceDefined(options *DeleteOptions) (bool, error)
-	ServiceExists(options *DeleteOptions) (bool, error)
+	ServiceDefined(context *genericclioptions.Context, name string) (bool, error)
 	DeleteService(options *DeleteOptions, serviceName, app string) error
+	DescribeService(options *DescribeOptions, serviceName, app string) error
 }
