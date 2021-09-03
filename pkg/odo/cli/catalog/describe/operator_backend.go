@@ -140,7 +140,7 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 	fmt.Fprintf(w, "Description: %s\n", service.Spec.Description)
 
 	if service.Spec.Schema == nil {
-		log.Warning("Unable to get parameters from CRD or CSV")
+		log.Warningf("Unable to get parameters from CRD or CSV; Operator %q doesn't have the required information", service.Name)
 		return
 	}
 	fmt.Fprintln(w, "Parameters:")
