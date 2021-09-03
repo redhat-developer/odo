@@ -356,17 +356,6 @@ func componentTests(args ...string) {
 				BeforeEach(func() {
 					helper.Cmd("odo", append(args, "push", "--context", commonVar.Context)...).ShouldPass()
 				})
-				When("odo describe is executed", func() {
-					var stdOut string
-					BeforeEach(func() {
-						stdOut = helper.Cmd("odo", "describe").ShouldPass().Out()
-					})
-					It("should have the correct component Name and Type in the describe output", func() {
-						metadata := helper.GetMetadataFromDevfile("devfile.yaml")
-						Expect(stdOut).To(ContainSubstring(metadata.ProjectType))
-						Expect(stdOut).To(ContainSubstring(cmpName))
-					})
-				})
 
 				It("should not list component even in new project with --project and --context at the same time", func() {
 					projectList := helper.Cmd("odo", "project", "list").ShouldPass().Out()

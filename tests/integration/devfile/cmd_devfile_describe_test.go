@@ -43,7 +43,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 		It("should describe the component when it is not pushed", func() {
 			// Using Django example here because it helps to distinguish between language and projectType.
 			// With nodejs, both projectType and language is nodejs, but with python-django, django is the projectType and python is the language
-			// Reference: https://github.com/openshift/odo/issues/4815
 			helper.Cmd("odo", "create", "python-django", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing").ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-2", "--port", "4000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
@@ -102,7 +101,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 				helper.Cmd("odo", "create", "nodejs", compName, "--context", commonVar.Context).ShouldPass()
 			})
 			It("json output should show the custom component name", func() {
-				// Reference: https://github.com/openshift/odo/issues/4815
 				output := helper.Cmd("odo", "describe", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
 				expected := gjson.Get(output, "metadata.name").String()
 				Expect(strings.ToLower(expected)).To(Equal(strings.ToLower(compName)))
@@ -129,9 +127,8 @@ var _ = Describe("odo devfile describe command tests", func() {
 	})
 
 	Context("devfile has missing metadata", func() {
-		// Reference: https://github.com/openshift/odo/issues/4815
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
-		// In terms of SpringBoot, spring is the projectType and java is the language
+		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/issues/4815
 
 		var metadata devfilepkg.DevfileMetadata
 

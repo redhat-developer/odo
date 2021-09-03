@@ -116,9 +116,8 @@ var _ = Describe("odo list with devfile", func() {
 		})
 	})
 	Context("devfile has missing metadata", func() {
-		// Reference: https://github.com/openshift/odo/issues/4815
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
-		// In terms of SpringBoot, spring is the projectType and java is the language
+		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/issues/4815
 
 		var metadata devfilepkg.DevfileMetadata
 
