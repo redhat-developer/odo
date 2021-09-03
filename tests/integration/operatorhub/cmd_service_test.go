@@ -588,8 +588,8 @@ spec:`
 				Expect(out).To(ContainSubstring("EtcdCluster/etcdcluster"))
 			})
 			It("should fail to push since the Operator doesn't exist on the cluster", func() {
-				out := helper.Cmd("odo", "push").ShouldFail().Out()
-				helper.MatchAllInOutput(out, []string{"Failed to start component with name", "please install corresponding Operator(s)", "EtcdCluster"})
+				err := helper.Cmd("odo", "push").ShouldFail().Err()
+				helper.MatchAllInOutput(err, []string{"Failed to start component with name", "please install corresponding Operator(s)", "EtcdCluster"})
 			})
 		})
 
@@ -600,8 +600,8 @@ spec:`
 
 			It("should not show the service in devfile in 'odo service list'", func() {
 				// below command will fail as the underlying devfile doesn't have any services any more
-				out := helper.Cmd("odo", "service", "list").ShouldFail().Out()
-				Expect(out).ToNot(ContainSubstring("EtcdCluster/etcdcluster"))
+				err := helper.Cmd("odo", "service", "list").ShouldFail().Err()
+				Expect(err).ToNot(ContainSubstring("EtcdCluster/etcdcluster"))
 			})
 
 			When("odo push is executed, nginx pod should be created on the cluster", func() {
