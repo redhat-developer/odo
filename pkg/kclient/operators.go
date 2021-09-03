@@ -151,14 +151,17 @@ func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 
 // GetResourceSpecDefinition returns the OpenAPI v2 definition of the Kubernetes resource of a given group/version/kind
 func (c *Client) GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error) {
-
 	data, err := c.KubeClient.Discovery().RESTClient().Get().AbsPath("/openapi/v2").SetHeader("Accept", "application/json").Do(context.TODO()).Raw()
 	if err != nil {
 		return nil, err
 	}
+	return getResourceSpecDefinitionFromSwagger(data, group, version, kind)
+}
 
+// getResourceSpecDefinitionFromSwagger returns the OpenAPI v2 definition of the Kubernetes resource of a given group/version/kind, for a given swagger data
+func getResourceSpecDefinitionFromSwagger(data []byte, group, version, kind string) (*spec.Schema, error) {
 	schema := new(spec.Schema)
-	err = json.Unmarshal([]byte(data), schema)
+	err := json.Unmarshal([]byte(data), schema)
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +175,16 @@ loopDefinitions:
 		if !ok {
 			continue
 		}
+		// The concrete type of this extension is expected to be an array of interface{}
+		// If not, we ignore it
 		gvkA, ok := gvkI.([]interface{})
 		if !ok {
 			continue
 		}
 
 		for i := range gvkA {
+			// The concrete type of each element is expected to be a map[string]interface{}
+			// If not, we ignore it
 			gvk, ok := gvkA[i].(map[string]interface{})
 			if !ok {
 				continue
@@ -202,5 +209,4 @@ loopDefinitions:
 		return &spec, nil
 	}
 	return nil, nil
-
 }
