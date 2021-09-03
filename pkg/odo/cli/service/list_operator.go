@@ -13,17 +13,30 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	svc "github.com/openshift/odo/pkg/service"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+const ServiceItemKind = "Service"
+
 type clusterInfo struct {
-	Labels            map[string]string
-	CreationTimestamp time.Time
+	Labels            map[string]string `json:"labels"`
+	CreationTimestamp time.Time         `json:"creationTimestamp"`
 }
 
 type serviceItem struct {
-	ClusterInfo *clusterInfo
-	InDevfile   bool
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	ClusterInfo       *clusterInfo              `json:"clusterInfo,omitempty"`
+	InDevfile         bool                      `json:"inDevfile"`
+	Deployed          bool                      `json:"deployed"`
+	Manifest          unstructured.Unstructured `json:"manifest"`
+}
+
+type serviceItemList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []serviceItem `json:"items"`
 }
 
 // listOperatorServices lists the operator backed services
@@ -38,22 +51,9 @@ func (o *ServiceListOptions) listOperatorServices() (err error) {
 		return err
 	}
 
-	// In JSON, only return services deployed
-	if log.IsJSON() {
-		if len(clusterList) == 0 {
-			if len(failedListingCR) > 0 {
-				fmt.Printf("Failed to fetch services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
-			}
-			return fmt.Errorf("no operator backed services found in namespace: %s", o.KClient.Namespace)
-		}
-
-		machineoutput.OutputSuccess(clusterList)
-		return nil
-	}
-
 	// get the services defined in the devfile
 	// and the name of the component of the devfile
-	var devfileList []string
+	var devfileList map[string]unstructured.Unstructured
 	var devfileComponent string
 	if o.EnvSpecificInfo != nil {
 		devfileList, err = svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
@@ -65,23 +65,25 @@ func (o *ServiceListOptions) listOperatorServices() (err error) {
 
 	servicesItems := mixServices(clusterList, devfileList)
 
-	if len(servicesItems) == 0 {
+	if len(servicesItems.Items) == 0 {
 		if len(failedListingCR) > 0 {
 			fmt.Printf("Failed to fetch services for operator(s): %q\n\n", strings.Join(failedListingCR, ", "))
 		}
 		return fmt.Errorf("no operator backed services found in namespace: %s", o.KClient.Namespace)
 	}
 
-	orderedNames := getOrderedServicesNames(servicesItems)
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(servicesItems)
+		return nil
+	}
 
 	// output result
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "MANAGED BY ODO", "\t", "STATE", "\t", "AGE")
-	for _, name := range orderedNames {
-		if !strings.HasPrefix(name, "ServiceBinding/") {
-			managedByOdo, state, duration := getTabularInfo(servicesItems[name], devfileComponent)
-			fmt.Fprintln(w, name, "\t", managedByOdo, "\t", state, "\t", duration)
-		}
+	for i := range servicesItems.Items {
+		item := servicesItems.Items[i]
+		managedByOdo, state, duration := getTabularInfo(&item, devfileComponent)
+		fmt.Fprintln(w, item.Name, "\t", managedByOdo, "\t", state, "\t", duration)
 	}
 	w.Flush()
 
@@ -93,40 +95,84 @@ func (o *ServiceListOptions) listOperatorServices() (err error) {
 }
 
 // mixServices returns a structure containing both the services in cluster and defined in devfile
-func mixServices(clusterList []unstructured.Unstructured, devfileList []string) (servicesItems map[string]*serviceItem) {
-	servicesItems = map[string]*serviceItem{}
+func mixServices(clusterList []unstructured.Unstructured, devfileList map[string]unstructured.Unstructured) serviceItemList {
+	servicesItems := map[string]*serviceItem{}
 	for _, item := range clusterList {
+		if item.GetKind() == "ServiceBinding" {
+			continue
+		}
 		name := strings.Join([]string{item.GetKind(), item.GetName()}, "/")
 		if _, ok := servicesItems[name]; !ok {
-			servicesItems[name] = &serviceItem{}
+			servicesItems[name] = &serviceItem{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       ServiceItemKind,
+					APIVersion: machineoutput.APIVersion,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+			}
 		}
+		servicesItems[name].Manifest = item
+		servicesItems[name].Deployed = true
 		servicesItems[name].ClusterInfo = &clusterInfo{
 			Labels:            item.GetLabels(),
 			CreationTimestamp: item.GetCreationTimestamp().Time,
 		}
 	}
 
-	for _, item := range devfileList {
-		name := item
+	for name, manifest := range devfileList {
+		if manifest.GetKind() == "ServiceBinding" {
+			continue
+		}
 		if _, ok := servicesItems[name]; !ok {
-			servicesItems[name] = &serviceItem{}
+			servicesItems[name] = &serviceItem{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       ServiceItemKind,
+					APIVersion: machineoutput.APIVersion,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+			}
 		}
 		servicesItems[name].InDevfile = true
+		if !servicesItems[name].Deployed {
+			servicesItems[name].Manifest = manifest
+		}
 	}
-	return
 
+	return serviceItemList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: machineoutput.APIVersion,
+		},
+		Items: getOrderedServices(servicesItems),
+	}
+}
+
+// getOrderedServices returns the services as a slice, ordered by name
+func getOrderedServices(items map[string]*serviceItem) []serviceItem {
+	orderedNames := getOrderedServicesNames(items)
+	result := make([]serviceItem, len(items))
+	i := 0
+	for _, name := range orderedNames {
+		result[i] = *items[name]
+		i++
+	}
+	return result
 }
 
 // getOrderedServicesNames returns the names of the services ordered in alphabetic order
-func getOrderedServicesNames(servicesItems map[string]*serviceItem) (orderedNames []string) {
-	orderedNames = make([]string, len(servicesItems))
+func getOrderedServicesNames(items map[string]*serviceItem) []string {
+	orderedNames := make([]string, len(items))
 	i := 0
-	for name := range servicesItems {
+	for name := range items {
 		orderedNames[i] = name
 		i++
 	}
 	sort.Strings(orderedNames)
-	return
+	return orderedNames
 }
 
 // getTabularInfo returns information to be displayed in the output for a specific service and a specific current devfile component
