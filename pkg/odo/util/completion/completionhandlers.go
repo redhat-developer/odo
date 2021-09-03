@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
@@ -93,44 +92,6 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	}
 
 	for _, storage := range storageList {
-		// we found the storage name in the list which means
-		// that the storage name has been already selected by the user so no need to suggest more
-		if args.commands[storage.Name] {
-			return nil
-		}
-		completions = append(completions, storage.Name)
-	}
-	return completions
-}
-
-// StorageMountCompletionHandler provides storage name completion for storage mount
-var StorageMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-	storages, err := storage.ListUnmounted(context.Client, context.Application)
-	if err != nil {
-		return completions
-	}
-
-	for _, storage := range storages.Items {
-		// we found the storage name in the list which means
-		// that the storage name has been already selected by the user so no need to suggest more
-		if args.commands[storage.Name] {
-			return nil
-		}
-		completions = append(completions, storage.Name)
-	}
-	return completions
-}
-
-// StorageUnMountCompletionHandler provides storage name completion for storage unmount
-var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-	storageList, err := storage.ListMounted(context.Client, context.Component(), context.Application)
-	if err != nil {
-		return completions
-	}
-
-	for _, storage := range storageList.Items {
 		// we found the storage name in the list which means
 		// that the storage name has been already selected by the user so no need to suggest more
 		if args.commands[storage.Name] {

@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,10 +21,19 @@ import (
 type kubernetesClient struct {
 	generic
 	client occlient.Client
+
+	// if we don't have access to the local config
+	// we can use the deployment to call ListFromCluster() and
+	// directly list storage from the cluster without the local config
+	deployment *v1.Deployment
 }
 
 // Create creates a pvc from the given Storage
 func (k kubernetesClient) Create(storage Storage) error {
+
+	if k.componentName == "" || k.appName == "" {
+		return fmt.Errorf("the component name and the app name should be provided")
+	}
 
 	pvcName, err := generatePVCName(storage.Name, k.componentName, k.appName)
 	if err != nil {
@@ -80,16 +90,19 @@ func (k kubernetesClient) Delete(name string) error {
 
 // ListFromCluster lists pvc based Storage from the cluster
 func (k kubernetesClient) ListFromCluster() (StorageList, error) {
-	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.localConfig.GetName(), k.localConfig.GetApplication())
-	if err != nil {
-		if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
-			return StorageList{}, nil
+	if k.deployment == nil {
+		var err error
+		k.deployment, err = k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
+		if err != nil {
+			if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
+				return StorageList{}, nil
+			}
+			return StorageList{}, err
 		}
-		return StorageList{}, err
 	}
 
 	initContainerVolumeMounts := make(map[string]bool)
-	for _, container := range deployment.Spec.Template.Spec.InitContainers {
+	for _, container := range k.deployment.Spec.Template.Spec.InitContainers {
 		for _, volumeMount := range container.VolumeMounts {
 			initContainerVolumeMounts[volumeMount.Name] = true
 		}
@@ -97,7 +110,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 	var storage []Storage
 	var volumeMounts []Storage
-	for _, container := range deployment.Spec.Template.Spec.Containers {
+	for _, container := range k.deployment.Spec.Template.Spec.Containers {
 		for _, volumeMount := range container.VolumeMounts {
 
 			// avoid the volume mounts from the init containers
@@ -122,7 +135,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, nil
 	}
 
-	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.localConfig.GetName(), storagelabels.SourcePVCLabel)
+	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.componentName, storagelabels.SourcePVCLabel)
 
 	pvcs, err := k.client.GetKubeClient().ListPVCs(selector)
 	if err != nil {
@@ -160,6 +173,10 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 // List lists pvc based Storage and local Storage with respective states
 func (k kubernetesClient) List() (StorageList, error) {
+	if k.localConfig == nil {
+		return StorageList{}, fmt.Errorf("no local config was provided")
+	}
+
 	localConfigStorage, err := k.localConfig.ListStorage()
 	if err != nil {
 		return StorageList{}, err

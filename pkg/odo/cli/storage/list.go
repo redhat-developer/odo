@@ -24,8 +24,7 @@ var (
 	storageListShortDesc = `List storage attached to a component`
 	storageListLongDesc  = ktemplates.LongDesc(`List storage attached to a component`)
 	storageListExample   = ktemplates.Examples(`
-	# List all storage attached or mounted to the current component and 
-  # all unattached or unmounted storage in the current application
+	# List all storage attached to the current component
   %[1]s
 	`)
 )
@@ -76,11 +75,11 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageList)
 	} else {
-		localContaieners, err := o.Context.LocalConfigProvider.GetContainers()
+		localContainers, err := o.Context.LocalConfigProvider.GetContainers()
 		if err != nil {
 			return err
 		}
-		if !o.Context.LocalConfigInfo.Exists() && isContainerDisplay(storageList, localContaieners) {
+		if !o.Context.LocalConfigInfo.Exists() && isContainerDisplay(storageList, localContainers) {
 			printStorageWithContainer(storageList, o.Context.LocalConfigProvider.GetName())
 		} else {
 			printStorage(storageList, o.Context.LocalConfigProvider.GetName())
