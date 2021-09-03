@@ -714,7 +714,7 @@ func (oc OcRunner) PodsShouldBeRunning(project string, regex string) {
 	// Look for pods with specified regex
 	pod := regexp.MustCompile(regex).FindString(pods)
 	args := []string{"get", "pods", pod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
-	oc.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
+	oc.WaitForRunnerCmdOut(args, 5, true, func(output string) bool {
 		return strings.Contains(output, "Running")
 	})
 }
