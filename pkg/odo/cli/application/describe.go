@@ -91,7 +91,6 @@ func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 			return err
 		}
 
-
 		if len(componentList.Items) == 0 {
 			fmt.Printf("Application %s has no components or services deployed.", o.appName)
 		} else {
