@@ -42,8 +42,6 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
 
-type servicePlanParameters []ServicePlanParameter
-
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
 // It returns a CR (string representation) and CSV (Operator) upon successfully
 // able to find them, an error otherwise.
@@ -542,11 +540,6 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	name := sn[1]
 
 	return kind, name, nil
-}
-
-type InstanceCreateParameterSchema struct {
-	Required   []string
-	Properties map[string]ServicePlanParameter
 }
 
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion

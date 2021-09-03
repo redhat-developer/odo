@@ -140,6 +140,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			It("should describe the operator with human-readable output", func() {
 				output := helper.Cmd("odo", "catalog", "describe", "service", redisCluster).ShouldPass().Out()
 				Expect(output).To(ContainSubstring("Kind: Redis"))
+				Expect(output).To(MatchRegexp("Yes *redisExporter.image *string"))
 			})
 
 			It("should describe the example of the operator", func() {
@@ -156,8 +157,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should describe the operator with json output", func() {
 				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", redisCluster, "-o", "json").ShouldPass().Out()
-				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName")
-				expected := []string{"Redis", "Redis"}
+				values := gjson.GetMany(outputJSON, "spec.kind", "spec.displayName", "spec.schema.type", "spec.schema.properties.redisExporter.properties.image.type")
+				expected := []string{"Redis", "Redis", "object", "string"}
 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 			})
 
