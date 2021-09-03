@@ -23,6 +23,7 @@ var _ = Describe("odo java e2e tests", func() {
 		// initialize oc runner
 		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
+		oc.AddSecret(commonVar)
 	})
 
 	// Clean up after the test

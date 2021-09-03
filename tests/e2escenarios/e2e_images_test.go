@@ -25,6 +25,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 		// initialize oc runner
 		oc = helper.NewOcRunner("oc")
 		commonVar = helper.CommonBeforeEach()
+		oc.AddSecret(commonVar)
 	})
 
 	// Clean up after the test

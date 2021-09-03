@@ -163,6 +163,7 @@ func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) stri
 	Cmd("kubectl", "config", "set-context", "--current", "--namespace", projectName).ShouldPass()
 	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
+	kubectl.addConfigMapForCleanup(projectName) //add configmap for cleanup
 	return projectName
 }
 
@@ -338,4 +339,9 @@ func (kubectl KubectlRunner) GetEnvFromEntry(componentName string, appName strin
 // GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
 func (kubectl KubectlRunner) GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string {
 	return GetVolumeNamesFromDeployment(kubectl.path, componentName, appName, projectName)
+}
+
+// add config map to the project for cleanup
+func (kubectl KubectlRunner) addConfigMapForCleanup(projectName string) {
+	Cmd(kubectl.path, "create", "configmap", "config-map-for-cleanup", "--from-literal", "type=testing", "--from-literal", "team=odo", "-n", projectName).ShouldPass()
 }

@@ -3,6 +3,8 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -629,8 +631,8 @@ func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
 func (oc OcRunner) createRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
-	Expect(session).To(ContainSubstring("New project created"))
 	Expect(session).To(ContainSubstring(projectName))
+	oc.addConfigMapForCleanup(projectName)
 	return projectName
 }
 
@@ -770,6 +772,69 @@ func (oc OcRunner) GetSecrets(project string) string {
 // GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
 func (oc OcRunner) GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string {
 	return GetVolumeNamesFromDeployment(oc.path, componentName, appName, projectName)
+}
+
+// AddSecret adds pull-secret to the namespace, for e2e-test
+func (oc OcRunner) AddSecret(comvar CommonVar) {
+
+	clusterType := os.Getenv("CLUSTER_TYPE")
+	if clusterType == "PSI" || clusterType == "IBM" {
+
+		token := oc.doAsAdmin(clusterType)
+
+		yaml := Cmd(oc.path, "get", "secret", "pull-secret", "-n", "openshift-config", "-o", "yaml").ShouldPass().Out()
+		newYaml := strings.Replace(yaml, "openshift-config", comvar.Project, -1)
+		filename := fmt.Sprint(RandString(4), ".yaml")
+		newYamlinByte := []byte(newYaml)
+		err := ioutil.WriteFile(filename, newYamlinByte, 0600)
+		if err != nil {
+			fmt.Println(err)
+		}
+		Cmd(oc.path, "apply", "-f", filename).ShouldPass()
+		os.Remove(filename)
+		oc.doAsDeveloper(token, clusterType)
+	}
+
+}
+
+// doAsAdmin logins as admin to perform some task that requires admin privileges
+func (oc OcRunner) doAsAdmin(clusterType string) string {
+	//save token for developer
+	token := oc.GetToken()
+	if clusterType == "PSI" || clusterType == "IBM" {
+
+		adminToken := os.Getenv("IBMC_OCLOGIN_APIKEY")
+		if adminToken != "" {
+			ibmcloudAdminToken := os.Getenv("IBMC_ADMIN_LOGIN_APIKEY")
+			cluster := os.Getenv("IBMC_OCP47_SERVER")
+			//login ibmcloud
+			Cmd("ibmcloud", "login", "--apikey", ibmcloudAdminToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
+			//login as admin in cluster
+			Cmd(oc.path, "login", "--token=", adminToken, "--server=", cluster)
+		} else {
+			pass := os.Getenv("OCP4X_KUBEADMIN_PASSWORD")
+			cluster := os.Getenv("OCP4X_API_URL")
+			//login as kubeadmin
+			Cmd(oc.path, "login", "-u", "kubeadmin", "-p", pass, cluster).ShouldPass()
+		}
+	}
+	return token
+}
+
+//  doAsDeveloper logins as developer to perform some task
+func (oc OcRunner) doAsDeveloper(token, clusterType string) {
+
+	if clusterType == "IBM" {
+		ibmcloudDeveloperToken := os.Getenv("IBMC_DEVELOPER_LOGIN_APIKEY")
+		Cmd("ibmcloud", "login", "--apikey", ibmcloudDeveloperToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
+		//login as developer using token
+	}
+	oc.LoginUsingToken(token)
+}
+
+// add config map to the project for cleanup
+func (oc OcRunner) addConfigMapForCleanup(projectName string) {
+	Cmd(oc.path, "create", "configmap", "config-map-for-cleanup", "--from-literal", "type=testing", "--from-literal", "team=odo", "-n", projectName).ShouldPass()
 }
 
 func (oc OcRunner) Logout() {
