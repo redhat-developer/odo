@@ -540,10 +540,18 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 		return nil, err
 	}
 
-	operatorGVRList, err := getOperatorGVRList(client)
+	csvSupported, err := client.IsCSVSupported()
 	if err != nil {
 		return nil, err
 	}
+	var operatorGVRList []meta.RESTMapping
+	if csvSupported {
+		operatorGVRList, err = getOperatorGVRList(client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	services := map[string]unstructured.Unstructured{}
 	for _, c := range components {
 		var u unstructured.Unstructured
