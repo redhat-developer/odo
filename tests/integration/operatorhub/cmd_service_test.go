@@ -522,6 +522,29 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
+				When("an Redis instance is created with a specific name and json output", func() {
+
+					var name string
+					var svcFullName string
+					var output string
+
+					BeforeEach(func() {
+						name = helper.RandString(6)
+						svcFullName = strings.Join([]string{"Redis", name}, "/")
+						output = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+					})
+
+					AfterEach(func() {
+						helper.Cmd("odo", "service", "delete", svcFullName, "-f").ShouldRun()
+					})
+
+					It("should contain service description in json format", func() {
+						values := gjson.GetMany(output, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
+						expected := []string{"Service", "Redis/" + name, "Redis", name}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					})
+				})
+
 				Context("Invalid service templates exist", func() {
 
 					var tmpContext string

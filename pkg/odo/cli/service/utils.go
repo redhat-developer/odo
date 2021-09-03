@@ -16,7 +16,7 @@ func validDevfileDirectory(componentContext string) error {
 	devfilePath := filepath.Join(componentContext, component.DevfilePath)
 	if !util.CheckPathExists(devfilePath) {
 		return fmt.Errorf("service can be created/deleted from a valid component directory only\n"+
-			"refer %q for more information", "odo servce create -h")
+			"refer %q for more information", "odo service create -h")
 	}
 	return nil
 }

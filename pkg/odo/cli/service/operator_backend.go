@@ -13,7 +13,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/pkg/machineoutput"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
@@ -220,9 +220,16 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 		if err != nil {
 			return err
 		}
+
+		if log.IsJSON() {
+			svcFullName := strings.Join([]string{b.CustomResource, o.ServiceName}, "/")
+			svc := NewServiceItem(svcFullName)
+			svc.Manifest = b.CustomResourceDefinition
+			svc.InDevfile = true
+			machineoutput.OutputSuccess(svc)
+		}
 	}
 	s.End(true)
-
 	return
 }
 
@@ -261,5 +268,5 @@ func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterSe
 		return nil, fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
 	}
 
-	return service.BuildCRDFromParams(cr, o.ParametersMap)
+	return svc.BuildCRDFromParams(cr, o.ParametersMap)
 }
