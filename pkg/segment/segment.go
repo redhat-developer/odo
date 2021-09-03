@@ -120,6 +120,18 @@ func (c *Client) Upload(data TelemetryData) error {
 		properties = properties.Set("error", data.Properties.Error).Set("error-type", data.Properties.ErrorType)
 	}
 
+	// send the Identify message data that helps identify the user on segment
+	err := c.SegmentClient.Enqueue(analytics.Identify{
+		UserId: strings.TrimSpace(string(userId)),
+		Traits: addConfigTraits(),
+	})
+	if err != nil {
+		klog.V(4).Infof("Cannot send Identify telemetry event: %q", err)
+		// This doesn't have to be a fatal error, as we can still try to track normal event
+		// There just might be some missing information about the user, but this will be only
+		// in case that this was the first time we tried to send identify event for give userId.
+	}
+
 	// queue the data that has telemetry information
 	return c.SegmentClient.Enqueue(analytics.Track{
 		UserId:     userId,
@@ -157,15 +169,6 @@ func getUserIdentity(client *Client, telemetryFilePath string) (string, error) {
 		if err := ioutil.WriteFile(telemetryFilePath, id, 0600); err != nil {
 			return "", err
 		}
-		// Since a new ID was created, send the Identify message data that helps identify the user on segment
-		if err1 := client.SegmentClient.Enqueue(analytics.Identify{
-			UserId: strings.TrimSpace(string(id)),
-			Traits: addConfigTraits(),
-		}); err1 != nil {
-			// TODO: maybe change this to klog Info instead of returning
-			return "", err1
-		}
-
 	}
 	return strings.TrimSpace(string(id)), nil
 }
