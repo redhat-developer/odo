@@ -528,8 +528,8 @@ func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 	return services, nil
 }
 
-// ListDevfileServices returns the names of the services defined in a Devfile
-func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) ([]string, error) {
+// ListDevfileServices returns the services defined in a Devfile
+func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (map[string]unstructured.Unstructured, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
 	}
@@ -544,7 +544,7 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 	if err != nil {
 		return nil, err
 	}
-	var services []string
+	services := map[string]unstructured.Unstructured{}
 	for _, c := range components {
 		var u unstructured.Unstructured
 		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
@@ -557,7 +557,7 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 			// this could be a case when an Operator backed service was added to devfile while working on a cluster
 			// that had the Operator installed but "odo service list" is run when that Operator is either no longer
 			// available or on a different cluster
-			services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
+			services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
 			continue
 		}
 		var match bool
@@ -569,7 +569,7 @@ func ListDevfileServices(client *kclient.Client, devfileObj parser.DevfileObj) (
 			}
 		}
 		if match {
-			services = append(services, strings.Join([]string{u.GetKind(), c.Name}, "/"))
+			services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
 		}
 	}
 	// final list of services includes Operator backed services both supported and unsupported by the underlying k8s cluster
