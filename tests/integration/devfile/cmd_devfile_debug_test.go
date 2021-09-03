@@ -24,7 +24,6 @@ var _ = Describe("odo devfile debug command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		componentName = helper.RandString(6)
-		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)
@@ -111,6 +110,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			runningString := helper.Cmd("odo", "debug", "info", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(runningString).To(ContainSubstring(freePort))
 			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-odo-debug.json"))
+			helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-nodejs-cmp-odo-debug.json"))
 			stopChannel <- true
 		})
 
@@ -150,6 +150,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			// but the solution is unacceptable https://github.com/golang/go/issues/6720#issuecomment-66087749
 			if runtime.GOOS != "windows" {
 				Expect(helper.ListFilesInDir(os.TempDir())).To(Not(ContainElement(commonVar.Project + "-app" + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json")))
+				helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-app"+"-nodejs-cmp-"+commonVar.Project+"-odo-debug.json"))
 			}
 
 		})

@@ -328,7 +328,7 @@ func CommonAfterEach(commonVar CommonVar) {
 func GjsonMatcher(values []gjson.Result, expected []string) bool {
 	matched := 0
 	for i, v := range values {
-		if strings.Contains(v.String(), expected[i]) {
+		if CaseInsensitiveStringContains(v.String(), expected[i]) {
 			matched++
 		}
 	}
@@ -349,6 +349,12 @@ func GjsonExactMatcher(values []gjson.Result, expected []string) bool {
 	}
 	numVars := len(expected)
 	return matched == numVars
+}
+
+// CaseInsensitiveStringContains reports whether substr is within s, ignoring the case
+func CaseInsensitiveStringContains(s, substr string) bool {
+	s, substr = strings.ToLower(s), strings.ToLower(substr)
+	return strings.Contains(s, substr)
 }
 
 //SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
