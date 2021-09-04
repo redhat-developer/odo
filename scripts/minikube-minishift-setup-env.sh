@@ -39,6 +39,54 @@ setup_kubeconfig() {
     fi
 }
 
+setup_minikube_developer() {
+  openssl genrsa -out developer.key 2048
+  openssl req -new -key developer.key -out developer.csr -subj "/CN=developer/O=minikube"
+  openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
+  kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
+  kubectl config set-context developer-context --cluster=minikube --user=developer
+  kubectl create -f - <<EOF
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: odo-user
+rules:
+- apiGroups: [""] # “” indicates the core API group
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["operators.coreos.com"]
+  resources: ["clusterserviceversions"]
+  verbs: ["*"]
+- apiGroups: ["redis.redis.opstreelabs.in"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+- apiGroups: ["route.openshift.io"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: odo-user-binding
+subjects:
+- kind: User
+  name: developer # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole #this must be Role or ClusterRole
+  name: odo-user
+  apiGroup: rbac.authorization.k8s.io
+EOF
+}
+
 case ${1} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
@@ -53,7 +101,8 @@ case ${1} in
                 minikube update-context
             fi
             setup_kubeconfig
-            kubectl config use-context minikube
+            setup_minikube_developer
+            kubectl config use-context developer-context
         else
             minikube delete
             shout "| Start minikube"
