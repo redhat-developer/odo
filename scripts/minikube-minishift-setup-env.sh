@@ -86,6 +86,8 @@ roleRef:
   name: odo-user
   apiGroup: rbac.authorization.k8s.io
 EOF
+    echo "Current context is: \n"
+    echo $(kubectl config get-contexts | grep "*")
 }
 
 case ${1} in
