@@ -40,12 +40,15 @@ setup_kubeconfig() {
 }
 
 setup_minikube_developer() {
+    pwd=`pwd`
+    certdir=`mktemp -d`
+    cd $certdir
     shout "Starting to create minikube developer"
     openssl genrsa -out developer.key 2048
     openssl req -new -key developer.key -out developer.csr -subj "/CN=developer/O=minikube"
     openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
     kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
-    kubectl config set-context developer-context --cluster=minikube --user=developer
+    kubectl config set-context developer-minikube --cluster=minikube --user=developer
     kubectl create -f - <<EOF
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -86,8 +89,8 @@ roleRef:
   name: odo-user
   apiGroup: rbac.authorization.k8s.io
 EOF
-    echo "Current context is: \n"
-    echo $(kubectl config get-contexts | grep "*")
+    # Go back to the pwd
+    cd $pwd || return
 }
 
 case ${1} in
@@ -110,10 +113,11 @@ case ${1} in
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
             setup_kubeconfig
+            setup_minikube_developer
         fi
-        
+
         minikube version
-        # Setup to find nessasary data from cluster setup
+        # Setup to find necessary data from cluster setup
         ## Constants
         SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
@@ -133,8 +137,11 @@ case ${1} in
         # Create Operators for Operator tests
         sh $SETUP_OPERATORS
 
-        # Create a developer user and change the context to use it after the setup is done
-        setup_minikube_developer
+        # Create a developer user if it is not created already and change the context to use it after the setup is done
+        kubectl config get-contexts developer-minikube
+        if [ $? -ne 0 ]; then
+          setup_minikube_developer
+        fi
         kubectl config use-context developer-context
         ;;
     *)
