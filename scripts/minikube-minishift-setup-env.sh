@@ -142,7 +142,7 @@ case ${1} in
         if [ $? -ne 0 ]; then
           setup_minikube_developer
         fi
-        kubectl config use-context developer-context
+        kubectl config use-context developer-minikube
         ;;
     *)
         echo "<<< Need parameter set to minikube or minishift >>>"
