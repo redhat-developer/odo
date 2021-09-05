@@ -102,7 +102,7 @@ case ${1} in
             fi
             setup_kubeconfig
             setup_minikube_developer
-            kubectl config use-context developer-context
+            kubectl config use-context minikube
         else
             minikube delete
             shout "| Start minikube"
@@ -130,6 +130,9 @@ case ${1} in
 
         # Create Operators for Operator tests
         sh $SETUP_OPERATORS
+
+        # Change the user to developer after the operators have been setup
+        kubectl config use-context developer-context
         ;;
     *)
         echo "<<< Need parameter set to minikube or minishift >>>"
