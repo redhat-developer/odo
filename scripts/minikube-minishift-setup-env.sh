@@ -40,12 +40,13 @@ setup_kubeconfig() {
 }
 
 setup_minikube_developer() {
-  openssl genrsa -out developer.key 2048
-  openssl req -new -key developer.key -out developer.csr -subj "/CN=developer/O=minikube"
-  openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
-  kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
-  kubectl config set-context developer-context --cluster=minikube --user=developer
-  kubectl create -f - <<EOF
+    shout "Starting to create minikube developer"
+    openssl genrsa -out developer.key 2048
+    openssl req -new -key developer.key -out developer.csr -subj "/CN=developer/O=minikube"
+    openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
+    kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
+    kubectl config set-context developer-context --cluster=minikube --user=developer
+    kubectl create -f - <<EOF
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -101,7 +102,6 @@ case ${1} in
                 minikube update-context
             fi
             setup_kubeconfig
-            setup_minikube_developer
             kubectl config use-context minikube
         else
             minikube delete
@@ -131,7 +131,8 @@ case ${1} in
         # Create Operators for Operator tests
         sh $SETUP_OPERATORS
 
-        # Change the user to developer after the operators have been setup
+        # Create a developer user and change the context to use it after the setup is done
+        setup_minikube_developer
         kubectl config use-context developer-context
         ;;
     *)
