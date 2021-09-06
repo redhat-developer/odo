@@ -103,6 +103,8 @@ func BindingDefinitions(ctx pipeline.Context) {
 			if !kerrors.IsForbidden(err) {
 				requestRetry(ctx, collect.ErrorReadingCRD, err)
 				return
+			} else {
+				klog.V(4).Infof("Skipping the check for CRD, user does not have access")
 			}
 		}
 		if crd != nil {
@@ -110,8 +112,6 @@ func BindingDefinitions(ctx pipeline.Context) {
 			if err != nil {
 				requestRetry(ctx, collect.ErrorReadingDescriptorReason, err)
 				return
-			} else {
-				klog.V(4).Infof("Skipping the check for CRD, user does not have access")
 			}
 			if descr != nil {
 				util.MergeMaps(anns, bindingAnnotations(descr))
