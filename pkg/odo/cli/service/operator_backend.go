@@ -7,9 +7,11 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift/odo/pkg/log"
@@ -275,10 +277,10 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 		return err
 	}
 	var clusterFound *unstructured.Unstructured
-	for _, clusterInstance := range clusterList {
+	for i, clusterInstance := range clusterList {
 		fullName := strings.Join([]string{clusterInstance.GetKind(), clusterInstance.GetName()}, "/")
 		if fullName == serviceName {
-			clusterFound = &clusterInstance
+			clusterFound = &clusterList[i]
 			break
 		}
 	}
@@ -300,6 +302,50 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(item)
+		return nil
 	}
+
+	return HumanReadableOutput(os.Stdout, item)
+}
+
+// HumanReadableOutput outputs the list of projects in a human readable format
+func HumanReadableOutput(w io.Writer, item *serviceItem) error {
+	fmt.Fprintf(w, "Version: %s\n", item.Manifest["apiVersion"])
+	fmt.Fprintf(w, "Kind: %s\n", item.Manifest["kind"])
+	metadata, ok := item.Manifest["metadata"].(map[string]interface{})
+	if !ok {
+		return errors.New("unable to get name from manifest")
+	}
+	fmt.Fprintf(w, "Name: %s\n", metadata["name"])
+	spec, ok := item.Manifest["spec"].(map[string]interface{})
+	if !ok {
+		return errors.New("unable to get specifications from manifest")
+	}
+
+	fmt.Fprintln(w, "Parameters:")
+
+	wr := tabwriter.NewWriter(w, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprint(wr, "NAME", "\t", "VALUE", "\n")
+	displayParameters(wr, spec, "")
+	wr.Flush()
 	return nil
+}
+
+func displayParameters(wr *tabwriter.Writer, spec map[string]interface{}, prefix string) {
+	keys := make([]string, len(spec))
+	i := 0
+	for key := range spec {
+		keys[i] = key
+		i++
+	}
+
+	for _, k := range keys {
+		v := spec[k]
+		switch val := v.(type) {
+		case map[string]interface{}:
+			displayParameters(wr, val, prefix+k+".")
+		default:
+			fmt.Fprintf(wr, "%s%s\t%v\n", prefix, k, val)
+		}
+	}
 }
