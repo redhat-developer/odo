@@ -73,7 +73,9 @@ rules:
 - apiGroups: ["route.openshift.io"]
   resources: ["*"]
   verbs: ["*"]
-
+- apiGroups: ["apps.openshift.io"]
+  resources: ["*"]
+  verbs: ["*"]
 ---
 
 kind: ClusterRoleBinding
