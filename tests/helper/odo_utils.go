@@ -5,6 +5,9 @@ import (
 	"regexp"
 	"strings"
 
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -120,4 +123,11 @@ func DeleteProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
 	session := Cmd("odo", "project", "delete", projectName, "-f").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
+}
+
+// GetMetadataFromDevfile retrieves the metadata from devfile
+func GetMetadataFromDevfile(devfilePath string) devfilepkg.DevfileMetadata {
+	devObj, err := devfile.ParseFromFile(devfilePath)
+	Expect(err).ToNot(HaveOccurred())
+	return devObj.Data.GetMetadata()
 }

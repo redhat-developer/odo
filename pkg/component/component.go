@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devfile/api/v2/pkg/devfile"
+
 	v1 "k8s.io/api/apps/v1"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -48,6 +50,7 @@ const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
+const NotAvailable = "Not available"
 
 const apiVersion = "odo.dev/v1alpha1"
 
@@ -988,7 +991,7 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 		if err != nil {
 			return Component{}, parser.DevfileObj{}, err
 		}
-		component, err := getComponentFrom(info, devfile.Data.GetMetadata().Name)
+		component, err := getComponentFrom(info, GetComponentTypeFromDevfileMetadata(devfile.Data.GetMetadata()))
 		if err != nil {
 			return Component{}, parser.DevfileObj{}, err
 		}
@@ -1007,6 +1010,20 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 		return component, devfile, nil
 	}
 	return Component{}, parser.DevfileObj{}, nil
+}
+
+// GetComponentTypeFromDevfileMetadata returns component type from the devfile metadata;
+// it could either be projectType or language, if neither of them are set, return 'Not available'
+func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
+	var componentType string
+	if metadata.ProjectType != "" {
+		componentType = metadata.ProjectType
+	} else if metadata.Language != "" {
+		componentType = metadata.Language
+	} else {
+		componentType = NotAvailable
+	}
+	return componentType
 }
 
 func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
@@ -1519,12 +1536,19 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 		}
 	}
 
+	// Secrets
 	linkedSecrets := fromCluster.GetLinkedSecrets()
 	err = setLinksServiceNames(client, linkedSecrets, componentlabels.GetSelector(componentName, applicationName))
 	if err != nil {
 		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
 	}
 	component.Status.LinkedServices = linkedSecrets
+
+	// Annotations
+	component.Annotations = fromCluster.GetAnnotations()
+
+	// Labels
+	component.Labels = fromCluster.GetLabels()
 
 	component.Namespace = client.Namespace
 	component.Spec.App = applicationName

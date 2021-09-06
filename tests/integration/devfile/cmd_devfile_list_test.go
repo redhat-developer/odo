@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/tests/helper"
 	"github.com/tidwall/gjson"
 
@@ -109,6 +111,61 @@ var _ = Describe("odo list with devfile", func() {
 					output := helper.Cmd("odo", "list", "--all-apps", "--project", commonVar.Project).ShouldPass().Out()
 					Expect(output).To(ContainSubstring(cmpName))
 					Expect(output).To(ContainSubstring(cmpName2))
+				})
+			})
+		})
+	})
+	Context("devfile has missing metadata", func() {
+		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
+		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/issues/4815
+
+		var metadata devfilepkg.DevfileMetadata
+
+		// checkList checks the list output (both normal and json) to see if it contains the expected componentType
+		var checkList = func(componentType string) {
+			By("checking the normal output", func() {
+				stdOut := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring(componentType))
+			})
+			By("checking the json output", func() {
+				stdOut := helper.Cmd("odo", "list", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
+				Expect(gjson.Get(stdOut, "devfileComponents.0.spec.type").String()).To(Equal(componentType))
+			})
+		}
+
+		When("projectType is missing", func() {
+			BeforeEach(func() {
+				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-metadata.yaml"), commonVar.Context)
+				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+
+			It("should show the language for 'Type' in odo list", func() {
+				checkList(metadata.Language)
+			})
+			When("the component is pushed", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+				})
+				It("should show the language for 'Type' in odo list", func() {
+					checkList(metadata.Language)
+				})
+			})
+		})
+
+		When("projectType and language is missing", func() {
+			BeforeEach(func() {
+				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-and-language-metadata.yaml"), commonVar.Context)
+				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+			It("should show 'Not available' for 'Type' in odo list", func() {
+				checkList(component.NotAvailable)
+			})
+			When("the component is pushed", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+				})
+				It("should show 'Not available' for 'Type' in odo list", func() {
+					checkList(component.NotAvailable)
 				})
 			})
 		})

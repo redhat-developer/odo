@@ -394,3 +394,10 @@ func SetDefaultDevfileRegistryAsStaging() {
 	const addRegistryURL string = "https://registry.stage.devfile.io"
 	Cmd("odo", "registry", "update", registryName, addRegistryURL, "-f").ShouldPass()
 }
+
+// CopyAndCreate copies required source code and devfile to the given context directory, and creates a component
+func CopyAndCreate(sourcePath, devfilePath, contextDir string) {
+	CopyExample(sourcePath, contextDir)
+	CopyExampleDevFile(devfilePath, filepath.Join(contextDir, "devfile.yaml"))
+	Cmd("odo", "create", "--context", contextDir).ShouldPass()
+}

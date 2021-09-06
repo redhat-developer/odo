@@ -50,6 +50,12 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the devfile component with valid component name", func() {
 			helper.Cmd("odo", "create", "java-openliberty", cmpName).ShouldPass()
 		})
+		It("should set the correct devfile metadata component name and language on component creation", func() {
+			helper.Cmd("odo", "create", "java-openliberty", cmpName).ShouldPass()
+			metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(metadata.Name).To(BeEquivalentTo(cmpName))
+			Expect(metadata.Language).To(ContainSubstring("java"))
+		})
 
 		It("should fail to create the devfile component with invalid component type", func() {
 			fakeComponentName := "fake-component"

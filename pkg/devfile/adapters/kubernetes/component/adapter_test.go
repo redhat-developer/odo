@@ -47,6 +47,9 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				applabels.ApplicationLabel:     testAppName,
 				componentLabels.ComponentLabel: testComponentName,
 			},
+			Annotations: map[string]string{
+				componentLabels.ComponentTypeAnnotation: "",
+			},
 		},
 	}
 
@@ -90,6 +93,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
+				deployment.Annotations[componentLabels.ComponentTypeAnnotation] = string(tt.componentType)
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
@@ -98,6 +102,8 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					if err != nil {
 						t.Error(err)
 					}
+					metadata := devfileData.GetMetadata()
+					metadata.ProjectType = string(tt.componentType)
 					err = devfileData.AddComponents([]devfilev1.Component{comp})
 					if err != nil {
 						t.Error(err)

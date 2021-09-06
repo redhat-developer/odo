@@ -243,10 +243,13 @@ func getSource(component provider) (string, string, error) {
 }
 
 func getType(component provider) (string, error) {
-	if componentType, ok := component.GetLabels()[componentlabels.ComponentTypeLabel]; ok {
+	if componentType, ok := component.GetAnnotations()[componentlabels.ComponentTypeAnnotation]; ok {
 		return componentType, nil
+	} else if _, ok = component.GetLabels()[componentlabels.ComponentTypeLabel]; ok {
+		klog.V(1).Info("No annotation assigned; retuning 'Not available' since labels are assigned. Annotations will be assigned when user pushes again.")
+		return NotAvailable, nil
 	}
-	return "", fmt.Errorf("%s component doesn't provide a type label", component.GetName())
+	return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
 }
 
 // GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name

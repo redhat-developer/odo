@@ -273,7 +273,7 @@ func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
 	// If experimental mode is enabled, use devfile push
 	if util.CheckPathExists(po.DevfilePath) {
 		if scontext.GetTelemetryStatus(cmd.Context()) {
-			scontext.SetComponentType(cmd.Context(), GetComponentTypeFromDevfile(po.Devfile.Data.GetMetadata()))
+			scontext.SetComponentType(cmd.Context(), component.GetComponentTypeFromDevfileMetadata(po.Devfile.Data.GetMetadata()))
 		}
 		// Return Devfile push
 		return po.DevfilePush()

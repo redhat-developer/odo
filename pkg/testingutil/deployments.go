@@ -23,6 +23,9 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 				componentlabels.ComponentLabel: podName,
 				applabels.ManagedBy:            "odo",
 			},
+			Annotations: map[string]string{
+				componentlabels.ComponentTypeAnnotation: podName,
+			},
 		},
 	}
 	return &deployment

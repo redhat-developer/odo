@@ -1,9 +1,8 @@
 ---
 schemaVersion: 2.0.0
 metadata:
-  name: java-spring-boot
+  name: myspringbootproject
   language: java
-  projectType: spring
 starterProjects:
   - name: springbootproject
     git:
@@ -16,10 +15,10 @@ components:
       memoryLimit: 768Mi
       command: ['tail']
       args: [ '-f', '/dev/null']
-      mountSources: true
       volumeMounts:
         - name: springbootpvc
           path: /data/cache/.m2
+      mountSources: true
   - name: runtime
     container:
       image: quay.io/eclipse/che-java11-maven:next
@@ -30,10 +29,9 @@ components:
       volumeMounts:
         - name: springbootpvc
           path: /data/cache/.m2
-      mountSources: true
+      mountSources: false
   - name: springbootpvc
-    volume:
-      size: 3Gi
+    volume: {}
 commands:
   - id: defaultbuild
     exec:
@@ -42,6 +40,7 @@ commands:
       workingDir: /projects
       group:
         kind: build
+        isDefault: true
   - id: defaultrun
     exec:
       component: runtime
@@ -50,4 +49,3 @@ commands:
       group:
         kind: run
         isDefault: true
-
