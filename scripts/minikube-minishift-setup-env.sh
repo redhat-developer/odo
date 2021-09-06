@@ -67,7 +67,7 @@ rules:
 - apiGroups: ["redis.redis.opstreelabs.in"]
   resources: ["*"]
   verbs: ["*"]
-- apiGroups: ["networking.k8s.io"]
+- apiGroups: ["networking.k8s.io", "extensions"]
   resources: ["ingresses"]
   verbs: ["*"]
 - apiGroups: ["route.openshift.io"]
