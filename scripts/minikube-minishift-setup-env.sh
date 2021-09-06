@@ -39,6 +39,63 @@ setup_kubeconfig() {
     fi
 }
 
+setup_minikube_developer() {
+    pwd=`pwd`
+    certdir=`mktemp -d`
+    cd $certdir
+    shout "Creating a minikube developer user"
+    openssl genrsa -out developer.key 2048
+    openssl req -new -key developer.key -out developer.csr -subj "/CN=developer/O=minikube"
+    openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
+    kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
+    kubectl config set-context developer-minikube --cluster=minikube --user=developer
+    # Create role and rolebinding to allow the user necessary access to the cluster; this does not include access to CRD
+    kubectl create -f - <<EOF
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: odo-user
+rules:
+- apiGroups: [""] # “” indicates the core API group
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["apps"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["operators.coreos.com"]
+  resources: ["clusterserviceversions"]
+  verbs: ["*"]
+- apiGroups: ["redis.redis.opstreelabs.in"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io", "extensions"]
+  resources: ["ingresses"]
+  verbs: ["*"]
+- apiGroups: ["route.openshift.io"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["apps.openshift.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: odo-user-binding
+subjects:
+- kind: User
+  name: developer # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole #this must be Role or ClusterRole
+  name: odo-user
+  apiGroup: rbac.authorization.k8s.io
+EOF
+    # Go back to the pwd
+    cd $pwd || return
+}
+
 case ${1} in
     minishift)
         export MINISHIFT_ENABLE_EXPERIMENTAL=y 
@@ -59,10 +116,11 @@ case ${1} in
             shout "| Start minikube"
             minikube start --vm-driver=docker --container-runtime=docker
             setup_kubeconfig
+            setup_minikube_developer
         fi
-        
+
         minikube version
-        # Setup to find nessasary data from cluster setup
+        # Setup to find necessary data from cluster setup
         ## Constants
         SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
@@ -74,13 +132,17 @@ case ${1} in
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
-        
+
         set -x
         # Set kubernetes env var as true, to distinguish the platform inside the tests
         export KUBERNETES=true
 
         # Create Operators for Operator tests
         sh $SETUP_OPERATORS
+
+        # Create a developer user if it is not created already and change the context to use it after the setup is done
+        kubectl config get-contexts developer-minikube || setup_minikube_developer
+        kubectl config use-context developer-minikube
         ;;
     *)
         echo "<<< Need parameter set to minikube or minishift >>>"

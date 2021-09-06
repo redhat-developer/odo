@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
-	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/builder"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -330,6 +329,5 @@ func getPipeline(client *kclient.Client) (pipeline.Pipeline, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return builder.DefaultBuilder.WithContextProvider(context.Provider(client.DynamicClient, context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
+	return OdoDefaultBuilder.WithContextProvider(context.Provider(client.DynamicClient, context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
 }
