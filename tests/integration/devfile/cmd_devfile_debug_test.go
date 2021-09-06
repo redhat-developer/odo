@@ -151,7 +151,6 @@ var _ = Describe("odo devfile debug command tests", func() {
 			// but the solution is unacceptable https://github.com/golang/go/issues/6720#issuecomment-66087749
 			if runtime.GOOS != "windows" {
 				Expect(helper.ListFilesInDir(os.TempDir())).To(Not(ContainElement(commonVar.Project + "-app" + "-nodejs-cmp-" + commonVar.Project + "-odo-debug.json")))
-				helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-app"+"-nodejs-cmp-"+commonVar.Project+"-odo-debug.json"))
 			}
 
 		})
