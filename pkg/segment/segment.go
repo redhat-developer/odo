@@ -98,7 +98,7 @@ func (c *Client) Upload(data TelemetryData) error {
 	}
 
 	// obtain the user ID
-	userId, uerr := getUserIdentity(c, c.TelemetryFilePath)
+	userId, uerr := getUserIdentity(c.TelemetryFilePath)
 	if uerr != nil {
 		return uerr
 	}
@@ -122,7 +122,7 @@ func (c *Client) Upload(data TelemetryData) error {
 
 	// send the Identify message data that helps identify the user on segment
 	err := c.SegmentClient.Enqueue(analytics.Identify{
-		UserId: strings.TrimSpace(string(userId)),
+		UserId: userId,
 		Traits: addConfigTraits(),
 	})
 	if err != nil {
@@ -147,7 +147,7 @@ func addConfigTraits() analytics.Traits {
 }
 
 // getUserIdentity returns the anonymous ID if it exists, else creates a new one and sends the data to Segment
-func getUserIdentity(client *Client, telemetryFilePath string) (string, error) {
+func getUserIdentity(telemetryFilePath string) (string, error) {
 	var id []byte
 
 	// Get-or-Create the '$HOME/.redhat' directory
