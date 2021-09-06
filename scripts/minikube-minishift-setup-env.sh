@@ -49,7 +49,7 @@ setup_minikube_developer() {
     openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
     kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
     kubectl config set-context developer-minikube --cluster=minikube --user=developer
-    # Create role and rolebinding to allow the user admin access to the cluster; this does not include access to CRD
+    # Create role and rolebinding to allow the user necessary access to the cluster; this does not include access to CRD
     kubectl create -f - <<EOF
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
