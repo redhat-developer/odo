@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/klog"
+	"github.com/openshift/odo/pkg/log"
 
 	"github.com/redhat-developer/service-binding-operator/apis"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"
@@ -77,7 +77,7 @@ func ProvisionedService(ctx pipeline.Context) {
 					requestRetry(ctx, collect.ErrorReadingCRD, err)
 					return
 				} else {
-					klog.V(4).Infof("Skipping the check for CRD, user does not have access")
+					log.Warning("Skipping the check for CRD, user does not have access")
 				}
 			}
 			if crd == nil {
@@ -104,7 +104,7 @@ func BindingDefinitions(ctx pipeline.Context) {
 				requestRetry(ctx, collect.ErrorReadingCRD, err)
 				return
 			} else {
-				klog.V(4).Infof("Skipping the check for CRD, user does not have access")
+				log.Warning("Skipping the check for CRD, user does not have access")
 			}
 		}
 		if crd != nil {
