@@ -43,12 +43,13 @@ setup_minikube_developer() {
     pwd=`pwd`
     certdir=`mktemp -d`
     cd $certdir
-    shout "Starting to create minikube developer"
+    shout "Creating a minikube developer user"
     openssl genrsa -out developer.key 2048
     openssl req -new -key developer.key -out developer.csr -subj "/CN=developer/O=minikube"
     openssl x509 -req -in developer.csr -CA ~/.minikube/ca.crt -CAkey ~/.minikube/ca.key -CAcreateserial -out developer.crt -days 500
     kubectl config set-credentials developer --client-certificate=developer.crt --client-key=developer.key
     kubectl config set-context developer-minikube --cluster=minikube --user=developer
+    # Create role and rolebinding to allow the user admin access to the cluster; this does not include access to CRD
     kubectl create -f - <<EOF
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -131,7 +132,7 @@ case ${1} in
         set +x
         # Get kubectl cluster info
         kubectl cluster-info
-        
+
         set -x
         # Set kubernetes env var as true, to distinguish the platform inside the tests
         export KUBERNETES=true
@@ -140,10 +141,7 @@ case ${1} in
         sh $SETUP_OPERATORS
 
         # Create a developer user if it is not created already and change the context to use it after the setup is done
-        kubectl config get-contexts developer-minikube
-        if [ $? -ne 0 ]; then
-          setup_minikube_developer
-        fi
+        kubectl config get-contexts developer-minikube || setup_minikube_developer
         kubectl config use-context developer-minikube
         ;;
     *)
