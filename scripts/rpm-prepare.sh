@@ -5,7 +5,7 @@ set +ex
 echo "Reading ODO_VERSION, ODO_RELEASE and GIT_COMMIT env, if they are set"
 # Change version as needed. In most cases ODO_RELEASE would not be touched unless
 # we want to do a re-lease of same version as we are not backporting
-export ODO_VERSION=${ODO_VERSION:=2.3.0}
+export ODO_VERSION=${ODO_VERSION:=2.3.1}
 export ODO_RELEASE=${ODO_RELEASE:=1}
 
 export GIT_COMMIT=${GIT_COMMIT:=`git rev-parse --short HEAD 2>/dev/null`}
