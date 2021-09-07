@@ -299,7 +299,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 				var secretOutput string
 				for i := range secrets.Data {
 					if linkedService.MountVolume {
-						secretOutput += fmt.Sprintf("    · %v\n", filepath.Join(linkedService.MountPath, i))
+						secretOutput += fmt.Sprintf("    · %v\n", filepath.ToSlash(filepath.Join(linkedService.MountPath, i)))
 					} else {
 						secretOutput += fmt.Sprintf("    · %v\n", i)
 					}
