@@ -285,21 +285,19 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 		}
 	}
 
+	devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
+	if err != nil {
+		return err
+	}
+	devfileService, inDevfile := devfileList[serviceName]
+
 	item := NewServiceItem(serviceName)
+	item.InDevfile = inDevfile
 	item.Deployed = clusterFound != nil
 	if item.Deployed {
 		item.Manifest = clusterFound.Object
-	} else {
-		devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
-		if err != nil {
-			return err
-		}
-		devfileService, inDevfile := devfileList[serviceName]
-
-		item.InDevfile = inDevfile
-		if item.InDevfile {
-			item.Manifest = devfileService.Object
-		}
+	} else if item.InDevfile {
+		item.Manifest = devfileService.Object
 	}
 
 	if log.IsJSON() {
