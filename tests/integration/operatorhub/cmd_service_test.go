@@ -528,6 +528,26 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					var svcFullName string
 					var output string
 
+					testServiceInfo := func(serviceName string, text string) {
+						values := gjson.GetMany(text, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
+						expected := []string{"Service", "Redis/" + serviceName, "Redis", serviceName}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					}
+
+					testClusterInfo := func(serviceName string, text string, inDevfile bool, deployed bool) {
+
+						values := gjson.GetMany(text, "inDevfile", "deployed")
+						expected := []string{fmt.Sprintf("%v", inDevfile), fmt.Sprintf("%v", deployed)}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+
+						tsValue := gjson.Get(text, "manifest.metadata.creationTimestamp")
+						if deployed {
+							Expect(tsValue.Str).NotTo(BeEmpty())
+						} else {
+							Expect(tsValue.Str).To(BeEmpty())
+						}
+					}
+
 					BeforeEach(func() {
 						name = helper.RandString(6)
 						svcFullName = strings.Join([]string{"Redis", name}, "/")
@@ -540,15 +560,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 					It("should display valid information in output of create command", func() {
 						By("displaying service information", func() {
-							values := gjson.GetMany(output, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
-							expected := []string{"Service", "Redis/" + name, "Redis", name}
-							Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+							testServiceInfo(name, output)
 						})
 
 						By("not containing cluster specific information", func() {
-							values := gjson.GetMany(output, "inDevfile", "deployed", "manifest.metadata.creationTimestamp")
-							expected := []string{"true", "false", ""}
-							Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+							testClusterInfo(name, output, true, false)
 						})
 					})
 
@@ -558,17 +574,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
 						})
 
-						It("should display valid information", func() {
+						It("should display valid information in output of create command", func() {
 							By("displaying service information", func() {
-								values := gjson.GetMany(descOutput, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
-								expected := []string{"Service", "Redis/" + name, "Redis", name}
-								Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+								testServiceInfo(name, descOutput)
 							})
 
 							By("not containing cluster specific information", func() {
-								values := gjson.GetMany(descOutput, "inDevfile", "deployed", "manifest.metadata.creationTimestamp")
-								expected := []string{"true", "false", ""}
-								Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+								testClusterInfo(name, descOutput, true, false)
 							})
 						})
 					})
@@ -579,13 +591,21 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							helper.Cmd("odo", "push").ShouldPass()
 						})
 
-						It("should describe cluster specific information in json format", func() {
-							descOutput := helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
-							values := gjson.GetMany(descOutput, "inDevfile", "deployed")
-							expected := []string{"true", "true"}
-							Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-							tsValue := gjson.Get(descOutput, "manifest.metadata.creationTimestamp")
-							Expect(tsValue.Str).NotTo(BeEmpty())
+						When("executing odo service describe", func() {
+							var descOutput string
+							BeforeEach(func() {
+								descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+							})
+
+							It("should display valid information in output of create command", func() {
+								By("displaying service information", func() {
+									testServiceInfo(name, descOutput)
+								})
+
+								By("containing cluster specific information", func() {
+									testClusterInfo(name, descOutput, true, true)
+								})
+							})
 						})
 
 						When("service is deleted from devfile", func() {
@@ -593,13 +613,21 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								helper.Cmd("odo", "service", "delete", "Redis/"+name, "--project", commonVar.Project, "-f").ShouldPass()
 							})
 
-							It("should describe cluster specific information in json format", func() {
-								descOutput := helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
-								values := gjson.GetMany(descOutput, "inDevfile", "deployed")
-								expected := []string{"false", "true"}
-								Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-								tsValue := gjson.Get(descOutput, "manifest.metadata.creationTimestamp")
-								Expect(tsValue.Str).NotTo(BeEmpty())
+							When("executing odo service describe", func() {
+								var descOutput string
+								BeforeEach(func() {
+									descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+								})
+
+								It("should display valid information in output of create command", func() {
+									By("displaying service information", func() {
+										testServiceInfo(name, descOutput)
+									})
+
+									By("containing cluster specific information", func() {
+										testClusterInfo(name, descOutput, false, true)
+									})
+								})
 							})
 
 							When("odo push is executed", func() {
@@ -611,7 +639,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldFail()
 								})
 							})
-
 						})
 					})
 				})
