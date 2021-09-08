@@ -15,10 +15,15 @@ TIMEOUT ?= 14400s
 
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
-# TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
+# TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node if running on PSI cluster or 24 nodes if running on IBM Cloud cluster.
+
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 4
+ifdef TEST_EXEC_NODES
+   TEST_EXEC_NODES := $(TEST_EXEC_NODES)
+else
+   TEST_EXEC_NODES := 4
+endif
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
