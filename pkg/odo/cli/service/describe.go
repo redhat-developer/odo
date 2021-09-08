@@ -26,7 +26,7 @@ var (
 type DescribeOptions struct {
 	serviceName string
 	*genericclioptions.Context
-	// Context to use when listing service. This will use app and project values from the context
+	// Context to use when describing the service. This will use app and project values from the context
 	componentContext string
 	// Backend is the service provider backend that was used to create the service
 	Backend ServiceProviderBackend
