@@ -27,10 +27,6 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-const provisionedAndBoundStatus = "ProvisionedAndBound"
-const provisionedAndLinkedStatus = "ProvisionedAndLinked"
-const apiVersion = "odo.dev/v1alpha1"
-
 // LinkLabel is the name of the name of the link in the devfile
 const LinkLabel = "app.kubernetes.io/link-name"
 
