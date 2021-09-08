@@ -82,7 +82,7 @@ make test-cmd-project || error=true
 
 # E2e tests
 shout "Running e2e tests"
-make test-e2e-all || error=true
+make test-e2e-devfile || error=true
 
 
 shout "copying artifacts"
