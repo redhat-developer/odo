@@ -95,7 +95,7 @@ func NewCmdServiceDescribe(name, fullName string) *cobra.Command {
 		Short:       "Describe an existing service",
 		Long:        describeLongDesc,
 		Example:     fmt.Sprintf(describeExample, fullName),
-		Args:        cobra.RangeArgs(0, 1),
+		Args:        cobra.ExactArgs(1),
 		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
