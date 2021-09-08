@@ -23,7 +23,6 @@ type ServiceClass struct {
 	ServiceBrokerName string
 }
 
-
 func NewOperatorExample(almExample map[string]interface{}) OperatorExample {
 	return OperatorExample{
 		TypeMeta: metav1.TypeMeta{
@@ -52,7 +51,6 @@ type OperatorBackedService struct {
 
 func NewOperatorBackedService(name string, kind string, version string, description string, displayName string, spec *spec.Schema) OperatorBackedService {
 	return OperatorBackedService{
-=======
 		TypeMeta: metav1.TypeMeta{
 			Kind:       OperatorBackedServiceKind,
 			APIVersion: machineoutput.APIVersion,
