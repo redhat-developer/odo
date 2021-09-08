@@ -19,7 +19,7 @@ var (
     %[1]s mysql-persistent`)
 
 	describeLongDesc = ktemplates.LongDesc(`
-	Outputs a description of an existing service`)
+	Describe an existing service, either defined locally or deployed to the cluster`)
 )
 
 // DescribeOptions encapsulates the options for the odo service describe command

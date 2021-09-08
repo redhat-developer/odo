@@ -5,9 +5,9 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -307,32 +307,36 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 		return nil
 	}
 
-	return HumanReadableOutput(os.Stdout, item)
+	return PrintHumanReadableOutput(item)
 }
 
-// HumanReadableOutput outputs the list of projects in a human readable format
-func HumanReadableOutput(w io.Writer, item *serviceItem) error {
-	fmt.Fprintf(w, "Version: %s\n", item.Manifest["apiVersion"])
-	fmt.Fprintf(w, "Kind: %s\n", item.Manifest["kind"])
+// PrintHumanReadableOutput outputs the description of a service in a human readable format
+func PrintHumanReadableOutput(item *serviceItem) error {
+	log.Describef("Version: ", "%s", item.Manifest["apiVersion"])
+	log.Describef("Kind: ", "%s", item.Manifest["kind"])
 	metadata, ok := item.Manifest["metadata"].(map[string]interface{})
 	if !ok {
 		return errors.New("unable to get name from manifest")
 	}
-	fmt.Fprintf(w, "Name: %s\n", metadata["name"])
+	log.Describef("Name: ", "%s", metadata["name"])
 	spec, ok := item.Manifest["spec"].(map[string]interface{})
 	if !ok {
 		return errors.New("unable to get specifications from manifest")
 	}
 
-	fmt.Fprintln(w, "Parameters:")
+	var tab bytes.Buffer
 
-	wr := tabwriter.NewWriter(w, 5, 2, 3, ' ', tabwriter.TabIndent)
+	wr := tabwriter.NewWriter(&tab, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprint(wr, "NAME", "\t", "VALUE", "\n")
 	displayParameters(wr, spec, "")
 	wr.Flush()
+
+	log.Describef("Parameters:\n", tab.String())
+
 	return nil
 }
 
+// displayParameters adds lines describing fields of a given map
 func displayParameters(wr *tabwriter.Writer, spec map[string]interface{}, prefix string) {
 	keys := make([]string, len(spec))
 	i := 0
