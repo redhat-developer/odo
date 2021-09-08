@@ -14,6 +14,7 @@ SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
 case ${1} in
     k8s)
+        export TEST_EXEC_NODES="24"
         ibmcloud login --apikey $IBMC_DEVELOPER_OCLOGIN_APIKEY -a cloud.ibm.com -r eu-de -g "Developer-CI-and-QE"
         ibmcloud ks cluster config --cluster $IBMC_K8S_CLUSTER_ID
 
