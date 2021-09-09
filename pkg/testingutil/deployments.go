@@ -32,8 +32,9 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 }
 
 // CreateFakeDeploymentsWithContainers creates a fake pod with the given pod name, container name and containers
-func CreateFakeDeploymentsWithContainers(podName string, containers []corev1.Container) *appsv1.Deployment {
+func CreateFakeDeploymentsWithContainers(podName string, containers []corev1.Container, initContainers []corev1.Container) *appsv1.Deployment {
 	fakeDeployment := CreateFakeDeployment(podName)
 	fakeDeployment.Spec.Template.Spec.Containers = containers
+	fakeDeployment.Spec.Template.Spec.InitContainers = initContainers
 	return fakeDeployment
 }
