@@ -330,20 +330,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		volumeMounts = append(volumeMounts, volumeMount)
 	}
 
-	// Add volumes for:
-	// - /opt/app-root
-	// - ${ODO_S2I_DEPLOYMENT_DIR} if outside of /opt/app-root
-
-	var deploymentDir string
-	for _, env := range s2iEnv {
-		if env.Name == "ODO_S2I_DEPLOYMENT_DIR" {
-			deploymentDir = env.Value
-			break
-		}
-	}
-
-	separateDeploymentsMount := len(deploymentDir) > 0 && !strings.HasPrefix(deploymentDir, occlient.DefaultAppRootDir)
-
+	// Add volume for /opt/app-root
 	volumeAppRoot := devfilev1.Component{
 		Name: "app-root-volume",
 		ComponentUnion: devfilev1.ComponentUnion{
@@ -361,6 +348,17 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		Path: occlient.DefaultAppRootDir,
 	}
 	volumeMounts = append(volumeMounts, volumeMountAppRoot)
+
+	// Check to see if ${ODO_S2I_DEPLOYMENT_DIR} directory is inside the /opt/app-root dir.
+	// If not, we need to have a second Volume
+	var deploymentDir string
+	for _, env := range s2iEnv {
+		if env.Name == "ODO_S2I_DEPLOYMENT_DIR" {
+			deploymentDir = env.Value
+			break
+		}
+	}
+	separateDeploymentsMount := len(deploymentDir) > 0 && !strings.HasPrefix(deploymentDir, occlient.DefaultAppRootDir)
 
 	if separateDeploymentsMount {
 		volumeDeployments := devfilev1.Component{
