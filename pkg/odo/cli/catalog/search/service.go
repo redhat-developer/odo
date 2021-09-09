@@ -18,7 +18,6 @@ var serviceExample = `  # Search for a service
 // SearchServiceOptions encapsulates the options for the odo catalog describe service command
 type SearchServiceOptions struct {
 	searchTerm string
-	services   catalog.ServiceTypeList
 	// generic context options common to all commands
 	csvs *olm.ClusterServiceVersionList
 	*genericclioptions.Context
