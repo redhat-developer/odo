@@ -66,51 +66,6 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 	return olm.ClusterServiceVersion{}, errors.New("could not find the requested cluster resource")
 }
 
-// CreateOperatorService creates new service (actually a Deployment) from OperatorHub
-func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
-	err := client.CreateDynamicResource(CustomResourceDefinition, nil, group, version, resource)
-	if err != nil {
-		return errors.Wrap(err, "unable to create operator backed service")
-	}
-	return nil
-}
-
-// DeleteServiceAndUnlinkComponents will delete the service with the provided `name`
-// it also removes links to that service in components of the application
-func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName string, applicationName string) error {
-	// first we attempt to delete the service instance itself
-	labels := componentlabels.GetLabels(serviceName, applicationName, false)
-	err := client.GetKubeClient().DeleteServiceInstance(labels)
-	if err != nil {
-		return err
-	}
-
-	// lookup all the components of the application
-	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-	componentsDCs, err := client.ListDeploymentConfigs(applicationSelector)
-	if err != nil {
-		return errors.Wrapf(err, "unable to list the components in order to check if they need to be unlinked")
-	}
-
-	// go through the components and check if they have the service name as part of the envFrom configuration
-	for _, dc := range componentsDCs {
-		for _, envFromSourceName := range dc.Spec.Template.Spec.Containers[0].EnvFrom {
-			if envFromSourceName.SecretRef.Name == serviceName {
-				if componentName, ok := dc.Labels[componentlabels.ComponentLabel]; ok {
-					err := client.UnlinkSecret(serviceName, componentName, applicationName)
-					if err != nil {
-						klog.Warningf("Unable to unlink component %s from service", componentName)
-					} else {
-						klog.V(2).Infof("Component %s was successfully unlinked from service", componentName)
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563
@@ -195,12 +150,6 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	}
 
 	return allCRInstances, failedListingCR, nil
-}
-
-// GetGVKRFromCR returns values for group, version, kind and resource for a
-// given Custom Resource (CR)
-func GetGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
-	return getGVKRFromCR(cr)
 }
 
 func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
@@ -386,10 +335,6 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	name := sn[1]
 
 	return kind, name, nil
-}
-
-type InstanceCreateParameterSchema struct {
-	Required []string
 }
 
 // IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
