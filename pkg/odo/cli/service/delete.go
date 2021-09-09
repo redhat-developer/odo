@@ -2,8 +2,9 @@ package service
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/service"
 	"strings"
+
+	"github.com/openshift/odo/pkg/service"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -69,7 +70,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	svcDefined, err := o.Backend.ServiceDefined(o)
+	svcDefined, err := o.Backend.ServiceDefined(o.Context, o.serviceName)
 	if err != nil {
 		return err
 	}

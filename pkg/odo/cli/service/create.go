@@ -3,12 +3,13 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"strings"
 )
 
 const (
@@ -127,11 +128,12 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	o := NewCreateOptions()
 	o.CmdFullName = fullName
 	serviceCreateCmd := &cobra.Command{
-		Use:     name + " <operator_type>/<crd_name> [service_name] [flags]",
-		Short:   createShortDesc,
-		Long:    createLongDesc,
-		Example: fmt.Sprintf(createOperatorExample, fullName),
-		Args:    cobra.RangeArgs(0, 2),
+		Use:         name + " <operator_type>/<crd_name> [service_name] [flags]",
+		Short:       createShortDesc,
+		Long:        createLongDesc,
+		Example:     fmt.Sprintf(createOperatorExample, fullName),
+		Args:        cobra.RangeArgs(0, 2),
+		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

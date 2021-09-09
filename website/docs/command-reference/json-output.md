@@ -20,7 +20,7 @@ The exhaustive list of commands accepting the `-o json` flag is currently:
 |--------------------------------|-----------------------------------------|--------------------------------------------------------------|---------------------------|
 | odo application describe       | Application (odo.dev/v1alpha1)          | *n/a*                                                        |no                         |
 | odo application list           | List (odo.dev/v1alpha1)                 | Application (odo.dev/v1alpha1)                               | ?                         |
-| odo catalog list components    | List (odo.dev/v1alpha1)                 | *missing* | yes |
+| odo catalog list components    | List (odo.dev/v1alpha1)                 | *missing*                                                    | yes                       |
 | odo catalog list services      | List (odo.dev/v1alpha1)                 | ClusterServiceVersion (operators.coreos.com/v1alpha1)        | ?                         |
 | odo catalog describe component | *missing*                               | *n/a*                                                        | yes                       |
 | odo catalog describe service   | CRDDescription (odo.dev/v1alpha1)       | *n/a*                                                        | yes                       |
@@ -36,7 +36,9 @@ The exhaustive list of commands accepting the `-o json` flag is currently:
 | odo project get                | Project (odo.dev/v1alpha1)              | *n/a*                                                        | yes                       |
 | odo project list               | List (odo.dev/v1alpha1)                 | Project (odo.dev/v1alpha1)                                   | yes                       |
 | odo registry list              | List (odo.dev/v1alpha1)                 | *missing*                                                    | yes                       |
-| odo service list               | *missing*                               | *depending on services types*                                | ?                         |
+| odo service create             | Service                                 | *n/a*                                                        | yes                       |
+| odo service describe           | Service                                 | *n/a*                                                        | yes                       |
+| odo service list               | List (odo.dev/v1alpha1)                 | Service                                                      | yes                       |
 | odo storage create             | Storage (odo.dev/v1alpha1)              | *n/a*                                                        | yes                       |
 | odo storage delete             | Status (v1)                             | *n/a*                                                        | yes                       |
 | odo storage list               | List (odo.dev/v1alpha1)                 | Storage (odo.dev/v1alpha1)                                   | yes                       |

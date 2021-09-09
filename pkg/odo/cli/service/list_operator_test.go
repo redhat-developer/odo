@@ -267,7 +267,7 @@ spec:
 					t.Errorf("Manifest is empty")
 				}
 				// do not check manifest content
-				result.Items[i].Manifest = unstructured.Unstructured{}
+				result.Items[i].Manifest = unstructured.Unstructured{}.Object
 			}
 			if !reflect.DeepEqual(result.Items, tt.want) {
 				t.Errorf("Failed %s\n\ngot: %+v\n\nwant: %+v\n", t.Name(), result.Items, tt.want)

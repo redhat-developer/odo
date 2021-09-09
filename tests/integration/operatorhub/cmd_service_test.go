@@ -209,7 +209,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance definition copied from example file", func() {
+				When("a Redis instance definition copied from example file", func() {
 
 					var fileName string
 
@@ -266,7 +266,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with no name", func() {
+				When("a Redis instance is created with no name", func() {
 					var stdOut string
 					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "--project", commonVar.Project).ShouldPass().Out()
@@ -395,7 +395,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("an Redis instance is created with a specific name", func() {
+				When("a Redis instance is created with a specific name", func() {
 
 					var name string
 					var svcFullName string
@@ -517,6 +517,127 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									}
 								}
 								Expect(mountFound).To(BeTrue())
+							})
+						})
+					})
+				})
+
+				When("a Redis instance is created with a specific name and json output", func() {
+
+					var name string
+					var svcFullName string
+					var output string
+
+					testServiceInfo := func(serviceName string, text string) {
+						values := gjson.GetMany(text, "kind", "metadata.name", "manifest.kind", "manifest.metadata.name")
+						expected := []string{"Service", "Redis/" + serviceName, "Redis", serviceName}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+					}
+
+					testClusterInfo := func(serviceName string, text string, inDevfile bool, deployed bool) {
+
+						values := gjson.GetMany(text, "inDevfile", "deployed")
+						expected := []string{fmt.Sprintf("%v", inDevfile), fmt.Sprintf("%v", deployed)}
+						Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
+
+						tsValue := gjson.Get(text, "manifest.metadata.creationTimestamp")
+						if deployed {
+							Expect(tsValue.Str).NotTo(BeEmpty())
+						} else {
+							Expect(tsValue.Str).To(BeEmpty())
+						}
+					}
+
+					BeforeEach(func() {
+						name = helper.RandString(6)
+						svcFullName = strings.Join([]string{"Redis", name}, "/")
+						output = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+					})
+
+					AfterEach(func() {
+						helper.Cmd("odo", "service", "delete", svcFullName, "-f").ShouldRun()
+					})
+
+					It("should display valid information in output of create command", func() {
+						By("displaying service information", func() {
+							testServiceInfo(name, output)
+						})
+
+						By("not containing cluster specific information", func() {
+							testClusterInfo(name, output, true, false)
+						})
+					})
+
+					When("executing odo service describe", func() {
+						var descOutput string
+						BeforeEach(func() {
+							descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+						})
+
+						It("should display valid information in output of create command", func() {
+							By("displaying service information", func() {
+								testServiceInfo(name, descOutput)
+							})
+
+							By("not containing cluster specific information", func() {
+								testClusterInfo(name, descOutput, true, false)
+							})
+						})
+					})
+
+					When("odo push is executed", func() {
+
+						BeforeEach(func() {
+							helper.Cmd("odo", "push").ShouldPass()
+						})
+
+						When("executing odo service describe", func() {
+							var descOutput string
+							BeforeEach(func() {
+								descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+							})
+
+							It("should display valid information in output of create command", func() {
+								By("displaying service information", func() {
+									testServiceInfo(name, descOutput)
+								})
+
+								By("containing cluster specific information", func() {
+									testClusterInfo(name, descOutput, true, true)
+								})
+							})
+						})
+
+						When("service is deleted from devfile", func() {
+							BeforeEach(func() {
+								helper.Cmd("odo", "service", "delete", "Redis/"+name, "--project", commonVar.Project, "-f").ShouldPass()
+							})
+
+							When("executing odo service describe", func() {
+								var descOutput string
+								BeforeEach(func() {
+									descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+								})
+
+								It("should display valid information in output of create command", func() {
+									By("displaying service information", func() {
+										testServiceInfo(name, descOutput)
+									})
+
+									By("containing cluster specific information", func() {
+										testClusterInfo(name, descOutput, false, true)
+									})
+								})
+							})
+
+							When("odo push is executed", func() {
+								BeforeEach(func() {
+									helper.Cmd("odo", "push").ShouldPass()
+								})
+
+								It("should not describe the service anymore", func() {
+									helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldFail()
+								})
 							})
 						})
 					})

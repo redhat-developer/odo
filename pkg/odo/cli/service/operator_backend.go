@@ -5,19 +5,23 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // This CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
@@ -220,24 +224,26 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 		if err != nil {
 			return err
 		}
+
+		if log.IsJSON() {
+			svcFullName := strings.Join([]string{b.CustomResource, o.ServiceName}, "/")
+			svc := NewServiceItem(svcFullName)
+			svc.Manifest = b.CustomResourceDefinition
+			svc.InDevfile = true
+			machineoutput.OutputSuccess(svc)
+		}
 	}
 	s.End(true)
-
 	return
 }
 
 // ServiceDefined returns true if the service is defined in the devfile
-func (b *OperatorBackend) ServiceDefined(o *DeleteOptions) (bool, error) {
-	_, instanceName, err := svc.SplitServiceKindName(o.serviceName)
+func (b *OperatorBackend) ServiceDefined(ctx *genericclioptions.Context, name string) (bool, error) {
+	_, instanceName, err := svc.SplitServiceKindName(name)
 	if err != nil {
 		return false, err
 	}
-
-	return svc.IsDefined(instanceName, o.EnvSpecificInfo.GetDevfileObj())
-}
-
-func (b *OperatorBackend) ServiceExists(o *DeleteOptions) (bool, error) {
-	return svc.OperatorSvcExists(o.KClient, o.serviceName)
+	return svc.IsDefined(instanceName, ctx.EnvSpecificInfo.GetDevfileObj())
 }
 
 func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, application string) error {
@@ -261,5 +267,89 @@ func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterSe
 		return nil, fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
 	}
 
-	return service.BuildCRDFromParams(cr, o.ParametersMap)
+	return svc.BuildCRDFromParams(cr, o.ParametersMap)
+}
+
+func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app string) error {
+
+	clusterList, _, err := svc.ListOperatorServices(o.KClient)
+	if err != nil {
+		return err
+	}
+	var clusterFound *unstructured.Unstructured
+	for i, clusterInstance := range clusterList {
+		fullName := strings.Join([]string{clusterInstance.GetKind(), clusterInstance.GetName()}, "/")
+		if fullName == serviceName {
+			clusterFound = &clusterList[i]
+			break
+		}
+	}
+
+	devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj())
+	if err != nil {
+		return err
+	}
+	devfileService, inDevfile := devfileList[serviceName]
+
+	item := NewServiceItem(serviceName)
+	item.InDevfile = inDevfile
+	item.Deployed = clusterFound != nil
+	if item.Deployed {
+		item.Manifest = clusterFound.Object
+	} else if item.InDevfile {
+		item.Manifest = devfileService.Object
+	}
+
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(item)
+		return nil
+	}
+
+	return PrintHumanReadableOutput(item)
+}
+
+// PrintHumanReadableOutput outputs the description of a service in a human readable format
+func PrintHumanReadableOutput(item *serviceItem) error {
+	log.Describef("Version: ", "%s", item.Manifest["apiVersion"])
+	log.Describef("Kind: ", "%s", item.Manifest["kind"])
+	metadata, ok := item.Manifest["metadata"].(map[string]interface{})
+	if !ok {
+		return errors.New("unable to get name from manifest")
+	}
+	log.Describef("Name: ", "%s", metadata["name"])
+	spec, ok := item.Manifest["spec"].(map[string]interface{})
+	if !ok {
+		return errors.New("unable to get specifications from manifest")
+	}
+
+	var tab bytes.Buffer
+
+	wr := tabwriter.NewWriter(&tab, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprint(wr, "NAME", "\t", "VALUE", "\n")
+	displayParameters(wr, spec, "")
+	wr.Flush()
+
+	log.Describef("Parameters:\n", tab.String())
+
+	return nil
+}
+
+// displayParameters adds lines describing fields of a given map
+func displayParameters(wr *tabwriter.Writer, spec map[string]interface{}, prefix string) {
+	keys := make([]string, len(spec))
+	i := 0
+	for key := range spec {
+		keys[i] = key
+		i++
+	}
+
+	for _, k := range keys {
+		v := spec[k]
+		switch val := v.(type) {
+		case map[string]interface{}:
+			displayParameters(wr, val, prefix+k+".")
+		default:
+			fmt.Fprintf(wr, "%s%s\t%v\n", prefix, k, val)
+		}
+	}
 }

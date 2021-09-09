@@ -27,16 +27,28 @@ type clusterInfo struct {
 type serviceItem struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	ClusterInfo       *clusterInfo              `json:"clusterInfo,omitempty"`
-	InDevfile         bool                      `json:"inDevfile"`
-	Deployed          bool                      `json:"deployed"`
-	Manifest          unstructured.Unstructured `json:"manifest"`
+	ClusterInfo       *clusterInfo           `json:"clusterInfo,omitempty"`
+	InDevfile         bool                   `json:"inDevfile"`
+	Deployed          bool                   `json:"deployed"`
+	Manifest          map[string]interface{} `json:"manifest"`
 }
 
 type serviceItemList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []serviceItem `json:"items"`
+}
+
+func NewServiceItem(name string) *serviceItem {
+	return &serviceItem{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       ServiceItemKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
 }
 
 // listOperatorServices lists the operator backed services
@@ -103,17 +115,9 @@ func mixServices(clusterList []unstructured.Unstructured, devfileList map[string
 		}
 		name := strings.Join([]string{item.GetKind(), item.GetName()}, "/")
 		if _, ok := servicesItems[name]; !ok {
-			servicesItems[name] = &serviceItem{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       ServiceItemKind,
-					APIVersion: machineoutput.APIVersion,
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-			}
+			servicesItems[name] = NewServiceItem(name)
 		}
-		servicesItems[name].Manifest = item
+		servicesItems[name].Manifest = item.Object
 		servicesItems[name].Deployed = true
 		servicesItems[name].ClusterInfo = &clusterInfo{
 			Labels:            item.GetLabels(),
@@ -126,19 +130,11 @@ func mixServices(clusterList []unstructured.Unstructured, devfileList map[string
 			continue
 		}
 		if _, ok := servicesItems[name]; !ok {
-			servicesItems[name] = &serviceItem{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       ServiceItemKind,
-					APIVersion: machineoutput.APIVersion,
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-			}
+			servicesItems[name] = NewServiceItem(name)
 		}
 		servicesItems[name].InDevfile = true
 		if !servicesItems[name].Deployed {
-			servicesItems[name].Manifest = manifest
+			servicesItems[name].Manifest = manifest.Object
 		}
 	}
 
