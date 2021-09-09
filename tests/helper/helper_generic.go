@@ -302,6 +302,7 @@ func CommonBeforeEach() CommonVar {
 	cfg, _ := preference.New()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
+	SetDefaultDevfileRegistryAsStaging()
 	return commonVar
 }
 

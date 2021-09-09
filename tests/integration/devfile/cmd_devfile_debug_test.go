@@ -24,7 +24,6 @@ var _ = Describe("odo devfile debug command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		componentName = helper.RandString(6)
-		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)

@@ -33,7 +33,6 @@ var _ = Describe("odo devfile supported tests", func() {
 		projectDirPath = commonVar.Context + projectDir
 		helper.MakeDir(projectDirPath)
 		helper.Chdir(projectDirPath)
-		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)

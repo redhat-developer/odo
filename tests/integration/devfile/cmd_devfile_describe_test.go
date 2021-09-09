@@ -23,7 +23,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 		}
 
 		commonVar = helper.CommonBeforeEach()
-		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)

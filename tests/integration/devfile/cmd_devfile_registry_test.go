@@ -19,7 +19,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)
