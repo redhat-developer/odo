@@ -37,7 +37,7 @@ func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []
 	o.searchTerm = args[0]
 	o.csvs, err = o.KClient.SearchClusterServiceVersionList(o.searchTerm)
 	if err != nil {
-		return fmt.Errorf("unable to list services because Operator Hub is enabled in your cluster: %v", err)
+		return fmt.Errorf("unable to list services because Operator Hub is not enabled in your cluster: %v", err)
 	}
 
 	return err
