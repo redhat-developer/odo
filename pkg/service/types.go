@@ -12,17 +12,6 @@ type OperatorExample struct {
 	Spec              map[string]interface{} `json:"spec,omitempty"`
 }
 
-// ServiceClass holds the information regarding a service catalog service class
-type ServiceClass struct {
-	Name              string
-	Bindable          bool
-	ShortDescription  string
-	LongDescription   string
-	Tags              []string
-	VersionsAvailable []string
-	ServiceBrokerName string
-}
-
 func NewOperatorExample(almExample map[string]interface{}) OperatorExample {
 	return OperatorExample{
 		TypeMeta: metav1.TypeMeta{
