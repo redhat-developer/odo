@@ -49,16 +49,6 @@ func List(client *occlient.Client) ([]string, error) {
 		appNames = append(appNames, deploymentConfigAppNames...)
 	}
 
-	// Get all ServiceInstances with the "app" label
-	// Okay, so there is an edge-case here.. if Service Catalog is *not* enabled in the cluster, we shouldn't error out..
-	// however, we should at least warn the user.
-	serviceInstanceAppNames, err := client.GetKubeClient().ListServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
-	if err != nil {
-		klog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
-	} else {
-		appNames = append(appNames, serviceInstanceAppNames...)
-	}
-
 	// Filter out any names, as there could be multiple components but within the same application
 	return util.RemoveDuplicates(appNames), nil
 }

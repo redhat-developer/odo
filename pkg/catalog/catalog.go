@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"sort"
 	"strings"
 	"sync"
 
@@ -298,29 +297,6 @@ func ComponentExists(client *occlient.Client, componentType string, componentVer
 	return true, nil
 }
 
-// ListSvcCatServices lists all the available services provided by Service Catalog
-func ListSvcCatServices(client *occlient.Client) (ServiceTypeList, error) {
-
-	clusterServiceClasses, err := getClusterCatalogServices(client)
-	if err != nil {
-		return ServiceTypeList{}, errors.Wrapf(err, "unable to get cluster serviceClassExternalName")
-	}
-
-	// Sorting service classes alphabetically
-	// Reference: https://golang.org/pkg/sort/#example_Slice
-	sort.Slice(clusterServiceClasses, func(i, j int) bool {
-		return clusterServiceClasses[i].Name < clusterServiceClasses[j].Name
-	})
-
-	return ServiceTypeList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		Items: clusterServiceClasses,
-	}, nil
-}
-
 // ListOperatorServices fetches a list of Operators from the cluster and
 // returns only those Operators which are successfully installed on the cluster
 func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
@@ -347,69 +323,6 @@ func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionLis
 	}
 
 	return &csvList, nil
-}
-
-// SearchService searches for the services
-func SearchService(client *occlient.Client, name string) (ServiceTypeList, error) {
-	var result []ServiceType
-	serviceList, err := ListSvcCatServices(client)
-	if err != nil {
-		return ServiceTypeList{}, errors.Wrap(err, "unable to list services")
-	}
-
-	// do a partial search in all the services
-	for _, service := range serviceList.Items {
-		if strings.Contains(service.ObjectMeta.Name, name) {
-			result = append(result, service)
-		}
-	}
-
-	return ServiceTypeList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		Items: result,
-	}, nil
-}
-
-// getClusterCatalogServices returns the names of all the cluster service
-// classes in the cluster
-func getClusterCatalogServices(client *occlient.Client) ([]ServiceType, error) {
-	var classNames []ServiceType
-
-	classes, err := client.GetKubeClient().ListClusterServiceClasses()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get cluster service classes")
-	}
-
-	planListItems, err := client.GetKubeClient().ListClusterServicePlans()
-	if err != nil {
-		return nil, errors.Wrap(err, "Unable to get service plans")
-	}
-	for _, class := range classes {
-
-		var planList []string
-		for _, plan := range planListItems {
-			if plan.Spec.ClusterServiceClassRef.Name == class.Spec.ExternalID {
-				planList = append(planList, plan.Spec.ExternalName)
-			}
-		}
-		classNames = append(classNames, ServiceType{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ServiceType",
-				APIVersion: apiVersion,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: class.Spec.ExternalName,
-			},
-			Spec: ServiceSpec{
-				Hidden:   occlient.HasTag(class.Spec.Tags, "hidden"),
-				PlanList: planList,
-			},
-		})
-	}
-	return classNames, nil
 }
 
 // getDefaultBuilderImages returns the default builder images available in the
