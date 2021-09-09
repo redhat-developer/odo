@@ -24,12 +24,6 @@ var (
 	linkExample = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'myetcd'
 %[1]s EtcdCluster/myetcd
 
-# Link the current component to the 'my-postgresql' service
-%[1]s my-postgresql
-
-# Link component 'nodejs' to the 'my-postgresql' service
-%[1]s my-postgresql --component nodejs
-
 # Link current component to the 'backend' component (backend must have a single exposed port)
 %[1]s backend
 
@@ -43,34 +37,23 @@ var (
 # and make the secrets accessible as files in the '/bindings/etcd/' directory
 %[1]s EtcdCluster/myetcd  --bind-as-files --name etcd`)
 
-	linkLongDesc = `Link component to a service (backed by an Operator) or component
+	linkLongDesc = `Link current or provided component to a service (backed by an Operator) or another component
 
-If the source component is not provided, the current active component is assumed.
-In both use cases, link adds the appropriate secret to the environment of the source component. 
-The source component can then consume the entries of the secret as environment variables.
-
-Using the '--bind-as-files' flag, secrets will be accessible as files instead of environment variables.
-The value of the '--name' flag indicates the name of the directory under '/bindings/' containing the secrets files.
+The appropriate secret will be added to the environment of the source component as environment variables by 
+default.
 
 For example:
 
-We have created a frontend application called 'frontend' using:
-odo create nodejs frontend
-
-If you wish to connect an EtcdCluster service created using etcd Operator to this component:
-odo link EtcdCluster/myetcdcluster
-
-Here myetcdcluster is the name of the EtcdCluster service which can be found using "odo service list"
-
-We've also created a backend application called 'backend' with port 8080 exposed:
-odo create nodejs backend --port 8080
-
-We can now link the two applications:
+Let us say we have created a nodejs application called 'frontend' which we link to an another component called
+'backend' which exposes port 8080, then linking the 2 using:
 odo link backend --component frontend
 
-Now the frontend has 2 ENV variables it can use:
+The frontend has 2 ENV variables it can use:
 COMPONENT_BACKEND_HOST=backend-app
-COMPONENT_BACKEND_PORT=8080
+COMPONENT_BACKEND_PORT=8080 
+
+Using the '--bind-as-files' flag, secrets will be accessible as files instead of environment variables.
+The value of the '--name' flag indicates the name of the directory under '/bindings/' containing the secrets files.
 `
 )
 
