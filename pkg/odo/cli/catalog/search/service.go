@@ -3,7 +3,6 @@ package search
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
