@@ -64,7 +64,7 @@ var _ = Describe("odo storage command tests", func() {
 				})
 
 				It("should list output in json format", func() {
-					valuesStoreL := gjson.GetMany(actualStorageList, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.size")
+					valuesStoreL := gjson.GetMany(actualStorageList, "kind", "items.2.kind", "items.2.metadata.name", "items.2.spec.size")
 					expectedStoreL := []string{"List", "Storage", "mystorage", "1Gi"}
 					Expect(helper.GjsonMatcher(valuesStoreL, expectedStoreL)).To(Equal(true))
 
