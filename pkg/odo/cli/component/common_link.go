@@ -20,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 )
 
 const unlink = "unlink"
@@ -98,72 +97,29 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return o.completeForOperator()
 	}
 
-	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
-	if err != nil {
-		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
-		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Processing to only use components", suppliedName)
-		svcExists = false
-	}
-
 	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
 	}
 
-	if !cmpExists && !svcExists {
+	if !cmpExists {
 		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo %s'", suppliedName, o.operationName)
 	}
 
-	o.isTargetAService = svcExists
-
-	if svcExists {
-		if cmpExists {
-			klog.V(4).Infof("Both a service and component with name %s - assuming a(n) %s to the service is required", suppliedName, o.operationName)
-		}
-
-		o.secretName = suppliedName
-	} else {
-		secretName, err := secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
-		if err != nil {
-			return err
-		}
-		o.secretName = secretName
+	secretName, err := secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
+	if err != nil {
+		return err
 	}
+	o.secretName = secretName
 
 	return nil
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
-	if o.Context.EnvSpecificInfo != nil {
-		return o.validateForOperator()
+	if o.EnvSpecificInfo == nil {
+		return fmt.Errorf("failed to find environment info to validate")
 	}
-
-	if o.isTargetAService {
-		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
-		// which we can link to
-		_, err = o.Client.GetKubeClient().GetServiceBinding(o.secretName, o.Project)
-		if err != nil {
-			return fmt.Errorf("The service was not created via odo. Please delete the service and recreate it using 'odo service create %s'", o.secretName)
-		}
-
-		if wait {
-			// we wait until the secret has been created on the OpenShift
-			// this is done because the secret is only created after the Pod that runs the
-			// service is in running state.
-			// This can take a long time to occur if the image of the service has yet to be downloaded
-			log.Progressf("Waiting for secret of service %s to come up", o.secretName)
-			_, err = o.Client.GetKubeClient().WaitAndGetSecret(o.secretName, o.Project)
-		} else {
-			// we also need to check whether there is a secret with the same name as the service
-			// the secret should have been created along with the secret
-			_, err = o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
-			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'", o.secretName, o.operationName)
-			}
-		}
-	}
-
-	return
+	return o.validateForOperator()
 }
 
 func (o *commonLinkOptions) run() (err error) {

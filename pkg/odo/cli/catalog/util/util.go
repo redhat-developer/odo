@@ -33,24 +33,6 @@ func DisplayComponents(components []string) {
 	w.Flush()
 }
 
-// FilterHiddenServices filters out services that should be hidden from the specified list
-func FilterHiddenServices(input catalog.ServiceTypeList) catalog.ServiceTypeList {
-	inputLength := len(input.Items)
-	filteredServices := make([]catalog.ServiceType, 0, inputLength)
-
-	for _, service := range input.Items {
-		if !service.Spec.Hidden {
-			filteredServices = append(filteredServices, service)
-		}
-	}
-
-	return catalog.ServiceTypeList{
-		TypeMeta: input.TypeMeta,
-		ListMeta: input.ListMeta,
-		Items:    filteredServices,
-	}
-}
-
 // FilterHiddenComponents filters out components that should be hidden from the specified list
 func FilterHiddenComponents(input []catalog.ComponentType) []catalog.ComponentType {
 	inputLength := len(input)
