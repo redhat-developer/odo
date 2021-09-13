@@ -544,9 +544,7 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 		return fmt.Errorf("Platform %s is not supported", platform)
 	}
 
-	// helper.MatchAllInOutput(stdOut, []string{"a.txt", ".abc"})
-	// helper.DontMatchAllInOutput(stdOut, []string{"abcd"})
-
+	// check if contains a.txt, .abc && abcd is deleted
 	cliRunner.WaitForRunnerCmdOut([]string{"exec", podName, "--namespace", project,
 		"--", "ls", "-lai", folderToCheck}, 5, true, func(output string) bool {
 		return !(strings.Contains(output, "abcd")) && (strings.Contains(output, "a.txt")) && (strings.Contains(output, ".abc"))
