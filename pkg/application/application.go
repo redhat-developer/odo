@@ -54,7 +54,7 @@ func List(client *occlient.Client) ([]string, error) {
 }
 
 // Exists checks whether the given app exist or not in the list of applications
-func Exists(app string, client *occlient.Client, kClient *kclient.Client) (bool, error) {
+func Exists(app string, client *occlient.Client, kClient kclient.ClientInterface) (bool, error) {
 
 	appList, err := List(client)
 

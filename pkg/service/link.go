@@ -27,7 +27,7 @@ import (
 // PushLinks updates Link(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 // returns true if the component needs to be restarted (when a link has been created or deleted)
 // if service binding operator is not present, it will call pushLinksWithoutOperator to create the links without it.
-func PushLinks(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
+func PushLinks(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 	serviceBindingSupport, err := client.IsServiceBindingSupported()
 	if err != nil {
 		return false, err
@@ -42,7 +42,7 @@ func PushLinks(client *kclient.Client, k8sComponents []devfile.Component, labels
 
 // pushLinksWithOperator creates links or deletes links (if service binding operator is installed) between components and services
 // returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
+func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 
 	ownerReference := generator.GetOwnerReference(deployment)
 	deployed, err := ListDeployedServices(client, labels)
@@ -126,7 +126,7 @@ func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Compo
 
 // pushLinksWithoutOperator creates links or deletes links (if service binding operator is not installed) between components and services
 // returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
+func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 
 	// check csv support before proceeding
 	csvSupport, err := IsCSVSupported()
@@ -190,7 +190,7 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 			// recreate parts of the service binding request for deletion
 			var newServiceBinding servicebinding.ServiceBinding
 			newServiceBinding.Name = linkName
-			newServiceBinding.Namespace = client.Namespace
+			newServiceBinding.Namespace = client.GetCurrentNamespace()
 			newServiceBinding.Spec.Application = servicebinding.Application{
 				Ref: servicebinding.Ref{
 					Name:     deployment.Name,
@@ -220,7 +220,7 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 
 			// since the library currently doesn't delete the secret after unbinding
 			// delete the secret manually
-			err = client.DeleteSecret(secretName, client.Namespace)
+			err = client.DeleteSecret(secretName, client.GetCurrentNamespace())
 			if err != nil {
 				return false, err
 			}
@@ -266,8 +266,9 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 
 			// set the labels and namespace
 			serviceBinding.SetLabels(labels)
-			serviceBinding.Namespace = client.Namespace
-			serviceBinding.Spec.Services[0].Namespace = &client.Namespace
+			serviceBinding.Namespace = client.GetCurrentNamespace()
+			ns := client.GetCurrentNamespace()
+			serviceBinding.Spec.Services[0].Namespace = &ns
 
 			_, err = json.MarshalIndent(serviceBinding, " ", " ")
 			if err != nil {
@@ -295,7 +296,7 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 			}
 
 			// get the generated secret and update it with the labels and owner reference
-			secret, err := client.GetSecret(serviceBinding.Status.Secret, client.Namespace)
+			secret, err := client.GetSecret(serviceBinding.Status.Secret, client.GetCurrentNamespace())
 			if err != nil {
 				return false, err
 			}
@@ -312,7 +313,7 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 				secret.Labels[ServiceLabel] = fmt.Sprintf("%v-%v", serviceBinding.Spec.Services[0].Kind, serviceBinding.Spec.Services[0].Name)
 			}
 			secret.SetOwnerReferences([]metav1.OwnerReference{ownerReferences})
-			_, err = client.UpdateSecret(secret, client.Namespace)
+			_, err = client.UpdateSecret(secret, client.GetCurrentNamespace())
 			if err != nil {
 				return false, err
 			}
@@ -331,8 +332,8 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 }
 
 // getPipeline gets the pipeline to process service binding requests
-func getPipeline(client *kclient.Client) (pipeline.Pipeline, error) {
-	mgr, err := ctrl.NewManager(client.KubeClientConfig, ctrl.Options{
+func getPipeline(client kclient.ClientInterface) (pipeline.Pipeline, error) {
+	mgr, err := ctrl.NewManager(client.GetClientConfig(), ctrl.Options{
 		Scheme: runtime.NewScheme(),
 		// disable the health probes to prevent binding to them
 		HealthProbeBindAddress: "0",
@@ -342,5 +343,5 @@ func getPipeline(client *kclient.Client) (pipeline.Pipeline, error) {
 	if err != nil {
 		return nil, err
 	}
-	return OdoDefaultBuilder.WithContextProvider(context.Provider(client.DynamicClient, context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
+	return OdoDefaultBuilder.WithContextProvider(context.Provider(client.GetDynamicClient(), context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
 }

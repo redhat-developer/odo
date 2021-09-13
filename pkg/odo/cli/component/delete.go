@@ -94,7 +94,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		return err
 	}
 	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-	do.namespace = do.KClient.Namespace
+	do.namespace = do.KClient.GetCurrentNamespace()
 
 	return nil
 }

@@ -1,11 +1,12 @@
 package utils
 
 import (
+	"strconv"
+
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
-	"strconv"
 
 	"github.com/openshift/odo/pkg/storage"
 	corev1 "k8s.io/api/core/v1"
@@ -43,7 +44,7 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 }
 
 // ComponentExists checks whether a deployment by the given name exists in the given app
-func ComponentExists(client kclient.Client, name string, app string) (bool, error) {
+func ComponentExists(client kclient.ClientInterface, name string, app string) (bool, error) {
 	deployment, err := client.GetOneDeployment(name, app)
 	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
 		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)

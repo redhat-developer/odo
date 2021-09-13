@@ -53,7 +53,7 @@ func AddApplicationFlag(cmd *cobra.Command) {
 }
 
 // printAppInfo will print things which will be deleted
-func printAppInfo(client *occlient.Client, kClient *kclient.Client, appName string, projectName string) error {
+func printAppInfo(client *occlient.Client, kClient kclient.ClientInterface, appName string, projectName string) error {
 	var selector string
 	if appName != "" {
 		selector = applabels.GetSelector(appName)

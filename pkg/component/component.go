@@ -1099,7 +1099,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) ([]Component, erro
 	return components, err
 }
 
-func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Component, error) {
+func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {
@@ -1136,7 +1136,7 @@ func ListDevfileComponentsInPath(client *kclient.Client, paths []string) ([]Comp
 
 				// since the config file maybe belong to a component of a different project
 				if client != nil {
-					client.Namespace = data.GetNamespace()
+					client.SetNamespace(data.GetNamespace())
 					deployment, err := client.GetOneDeployment(comp.Name, comp.Spec.App)
 					if err != nil {
 						comp.Status.State = StateTypeNotPushed

@@ -85,7 +85,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 	var platformContext interface{}
 	kc := kubernetes.KubernetesContext{
-		Namespace: po.KClient.Namespace,
+		Namespace: po.KClient.GetCurrentNamespace(),
 	}
 	platformContext = kc
 
@@ -138,7 +138,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 
 	var platformContext interface{}
 	kc := kubernetes.KubernetesContext{
-		Namespace: lo.KClient.Namespace,
+		Namespace: lo.KClient.GetCurrentNamespace(),
 	}
 	platformContext = kc
 
@@ -207,7 +207,7 @@ func (to *TestOptions) RunTestCommand() error {
 
 	var platformContext interface{}
 	kc := kubernetes.KubernetesContext{
-		Namespace: to.KClient.Namespace,
+		Namespace: to.KClient.GetCurrentNamespace(),
 	}
 	platformContext = kc
 

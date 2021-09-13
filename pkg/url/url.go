@@ -6,14 +6,73 @@ import (
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/klog"
 )
 
 const apiVersion = "odo.dev/v1alpha1"
+
+// ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
+/// down if a component name is provided, which will only list URLs for the
+// given component
+func ListPushed(client *occlient.Client, componentName string, applicationName string) (URLList, error) {
+
+	labelSelector := fmt.Sprintf("%v=%v", applabels.ApplicationLabel, applicationName)
+
+	if componentName != "" {
+		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
+	}
+
+	klog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
+	routes, err := client.ListRoutes(labelSelector)
+
+	if err != nil {
+		return URLList{}, errors.Wrap(err, "unable to list route names")
+	}
+
+	var urls []URL
+	for _, r := range routes {
+		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
+			continue
+		}
+		a := NewURL(r)
+		urls = append(urls, a)
+	}
+
+	urlList := NewURLList(urls)
+	return urlList, nil
+
+}
+
+// ListPushedIngress lists the ingress URLs on cluster for the given component
+func ListPushedIngress(client kclient.ClientInterface, componentName string) (URLList, error) {
+	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
+	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
+	ingresses, err := client.ListIngresses(labelSelector)
+	if err != nil {
+		return URLList{}, fmt.Errorf("unable to list ingress names %w", err)
+	}
+
+	var urls []URL
+	urls = append(urls, NewURLsFromKubernetesIngressList(ingresses)...)
+	urlList := NewURLList(urls)
+	return urlList, nil
+}
+
+type sortableURLs []URL
+
+func (s sortableURLs) Len() int {
+	return len(s)
+}
+
+func (s sortableURLs) Less(i, j int) bool {
+	return s[i].Name <= s[j].Name
+}
 
 // generic contains information required for all the URL clients
 type generic struct {

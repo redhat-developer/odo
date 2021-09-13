@@ -404,7 +404,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string, appName string) (bool, error) {
-	return utils.ComponentExists(*a.Client.GetKubeClient(), cmpName, appName)
+	return utils.ComponentExists(a.Client.GetKubeClient(), cmpName, appName)
 }
 
 func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
@@ -416,7 +416,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	})
 
 	// handle the ephemeral storage
-	err = storage.HandleEphemeralStorage(*a.Client.GetKubeClient(), storageClient, a.ComponentName)
+	err = storage.HandleEphemeralStorage(a.Client.GetKubeClient(), storageClient, a.ComponentName)
 	if err != nil {
 		return err
 	}
@@ -723,7 +723,7 @@ func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, err
 
 // Exec executes a command in the component
 func (a Adapter) Exec(command []string) error {
-	exists, err := utils.ComponentExists(*a.Client.GetKubeClient(), a.ComponentName, a.AppName)
+	exists, err := utils.ComponentExists(a.Client.GetKubeClient(), a.ComponentName, a.AppName)
 	if err != nil {
 		return err
 	}
