@@ -31,7 +31,6 @@ type ClientInterface interface {
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
-	removeDuplicateEnv(deploymentName string) error
 	DeleteDeployment(labels map[string]string) error
 	CreateDynamicResource(exampleCustomResource map[string]interface{}, ownerReferences []metav1.OwnerReference, group, version, resource string) error
 	ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error)
@@ -40,7 +39,6 @@ type ClientInterface interface {
 	DeleteDynamicResource(name, group, version, resource string) error
 	LinkSecret(secretName, componentName, applicationName string) error
 	UnlinkSecret(secretName, componentName, applicationName string) error
-	jsonPatchDeployment(deploymentSelector string, deploymentPatchProvider deploymentPatchProvider) error
 	GetDeploymentLabelValues(label string, selector string) ([]string, error)
 	GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Deployment, error)
 	GetDeploymentAPIVersion() (metav1.GroupVersionResource, error)
@@ -67,7 +65,6 @@ type ClientInterface interface {
 	SetDiscoveryInterface(client discovery.DiscoveryInterface)
 	IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error)
 	IsSSASupported() bool
-	checkIngressSupport() error
 
 	// namespace.go
 	GetCurrentNamespace() string
@@ -90,7 +87,6 @@ type ClientInterface interface {
 	GetCustomResource(customResource string) (*olm.CRDDescription, error)
 	GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error)
 	GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error)
-	//getResourceSpecDefinitionFromSwagger(data []byte, group, version, kind string) (*spec.Schema, error)
 
 	// pods.go
 	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error)
