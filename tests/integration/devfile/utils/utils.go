@@ -521,38 +521,36 @@ func OdoWatchWithIgnore(odoV2Watch OdoV2Watch, context, flag string) {
 }
 
 func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) error {
-	var stdOut string
-
+	var folderToCheck, podName string
+	cliRunner := runner.(helper.CliRunner)
 	switch platform {
 	case "kube":
 		if isDevfileTest {
-			folderToCheck := "/projects"
+			folderToCheck = "/projects"
 			if odoV2Watch.FolderToCheck != "" {
 				folderToCheck = odoV2Watch.FolderToCheck
 			}
 			cliRunner := runner.(helper.CliRunner)
-			podName := cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
-
-			helper.WaitForCmdOut("oc", []string{"exec", podName, "--namespace", project,
-				"--", "ls", "-lai", folderToCheck}, 5, true, func(output string) bool {
-				return !strings.Contains(output, "abcd")
-			})
-
-			stdOut = cliRunner.ExecListDir(podName, project, folderToCheck)
+			podName = cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
 
 		} else {
 			ocRunner := runner.(helper.OcRunner)
-			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
+			podName = ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
 			envs := ocRunner.GetEnvs(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
-			stdOut = ocRunner.ExecListDir(podName, project, filepath.ToSlash(filepath.Join(dir, "src")))
+			folderToCheck = filepath.ToSlash(filepath.Join(dir, "src"))
 		}
 	default:
 		return fmt.Errorf("Platform %s is not supported", platform)
 	}
 
-	helper.MatchAllInOutput(stdOut, []string{"a.txt", ".abc"})
-	helper.DontMatchAllInOutput(stdOut, []string{"abcd"})
+	// helper.MatchAllInOutput(stdOut, []string{"a.txt", ".abc"})
+	// helper.DontMatchAllInOutput(stdOut, []string{"abcd"})
+
+	cliRunner.WaitForRunnerCmdOut([]string{"exec", podName, "--namespace", project,
+		"--", "ls", "-lai", folderToCheck}, 5, true, func(output string) bool {
+		return !(strings.Contains(output, "abcd")) && (strings.Contains(output, "a.txt")) && (strings.Contains(output, ".abc"))
+	})
 
 	return nil
 }
