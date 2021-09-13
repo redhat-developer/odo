@@ -533,10 +533,12 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 			cliRunner := runner.(helper.CliRunner)
 			podName := cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
 
-			Eventually(func() bool {
-				stdOut = cliRunner.ExecListDir(podName, project, folderToCheck)
-				return !strings.Contains(stdOut, "abcd")
-			}, 300, 30).Should(Equal(true))
+			helper.WaitForCmdOut("oc", []string{"exec", podName, "--namespace", project,
+				"--", "ls", "-lai", folderToCheck}, 5, true, func(output string) bool {
+				return !strings.Contains(output, "abcd")
+			})
+
+			stdOut = cliRunner.ExecListDir(podName, project, folderToCheck)
 
 		} else {
 			ocRunner := runner.(helper.OcRunner)
