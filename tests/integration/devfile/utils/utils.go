@@ -530,7 +530,6 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 			if odoV2Watch.FolderToCheck != "" {
 				folderToCheck = odoV2Watch.FolderToCheck
 			}
-			cliRunner := runner.(helper.CliRunner)
 			podName = cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
 
 		} else {
