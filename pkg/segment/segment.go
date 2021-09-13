@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Xuanwo/go-locale"
+
 	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/preference"
@@ -68,6 +70,11 @@ func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
 
 // newCustomClient returns a Client created with custom args
 func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
+	// get the locale informatino
+	tag, err := locale.Detect()
+	if err != nil {
+		return nil, err
+	}
 	// DefaultContext has IP set to 0.0.0.0 so that it does not track user's IP, which it does in case no IP is set
 	client, err := analytics.NewWithConfig(writeKey, analytics.Config{
 		Endpoint: segmentEndpoint,
@@ -78,6 +85,7 @@ func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath st
 			OS: analytics.OSInfo{
 				Name: runtime.GOOS,
 			},
+			Locale: tag.String(),
 		},
 	})
 	if err != nil {
