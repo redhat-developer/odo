@@ -6,18 +6,15 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/component"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
-	"github.com/openshift/odo/pkg/util"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
-	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -188,42 +185,7 @@ You can now access the environment variables from within the component pod, for 
 $%s is now available as a variable within component %s`, exampleEnv, component)
 		}
 	}
-
-	if o.wait {
-		if err := o.waitForLinkToComplete(); err != nil {
-			return err
-		}
-	}
-
 	return
-}
-
-func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
-	var component string
-	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
-		component = o.EnvSpecificInfo.GetName()
-	} else {
-		component = o.Component()
-	}
-
-	labels := componentlabels.GetLabels(component, o.Application, true)
-	selectorLabels, err := util.NamespaceOpenShiftObject(labels[componentlabels.ComponentLabel], labels["app"])
-	if err != nil {
-		return err
-	}
-	podSelector := fmt.Sprintf("deploymentconfig=%s", selectorLabels)
-
-	// first wait for the pod to be pending (meaning that the deployment is being put into effect)
-	// we need this intermediate wait because there is a change that the this point could be reached
-	// without Openshift having had the time to launch the new deployment
-	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodPending, "Waiting for component to redeploy")
-	if err != nil {
-		return err
-	}
-
-	// now wait for the pod to be running
-	_, err = o.Client.GetKubeClient().WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
-	return err
 }
 
 // getServiceBindingName creates a name to be used for creation/deletion of SBR during link/unlink operations
