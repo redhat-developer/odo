@@ -22,7 +22,6 @@ import (
 const unlink = "unlink"
 
 type commonLinkOptions struct {
-	wait             bool
 	port             string
 	secretName       string
 	isTargetAService bool
