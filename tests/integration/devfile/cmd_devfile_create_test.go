@@ -27,7 +27,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		cmpName = helper.RandString(6)
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		helper.SetDefaultDevfileRegistryAsStaging()
 	})
 
 	// This is run after every Spec (It)
