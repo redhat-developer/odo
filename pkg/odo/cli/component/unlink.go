@@ -74,7 +74,7 @@ func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the UnlinkOptions based on completed values
 func (o *UnlinkOptions) Validate() (err error) {
-	return o.validate(false)
+	return o.validate()
 }
 
 // Run contains the logic for the odo link command

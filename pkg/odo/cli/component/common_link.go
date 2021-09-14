@@ -114,7 +114,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	return nil
 }
 
-func (o *commonLinkOptions) validate(wait bool) (err error) {
+func (o *commonLinkOptions) validate() (err error) {
 	if o.EnvSpecificInfo == nil {
 		return fmt.Errorf("failed to find environment info to validate")
 	}
