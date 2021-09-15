@@ -3,13 +3,18 @@ package service
 import (
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // BuildCRDFromParams iterates over the parameter maps provided by the user and builds the CRD
 func BuildCRDFromParams(paramMap map[string]string, group, version, kind string) (map[string]interface{}, error) {
 	spec := map[string]interface{}{}
 	for k, v := range paramMap {
-		addParam(spec, k, v)
+		err := addParam(spec, k, v)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := map[string]interface{}{}
@@ -20,19 +25,29 @@ func BuildCRDFromParams(paramMap map[string]string, group, version, kind string)
 	return result, nil
 }
 
-// TODO check errors
-func addParam(m map[string]interface{}, key string, value string) {
+func addParam(m map[string]interface{}, key string, value string) error {
 	if strings.Contains(key, ".") {
 		parts := strings.SplitN(key, ".", 2)
-		_, ok := m[parts[0]]
-		if !ok {
+		_, found := m[parts[0]]
+		if !found {
 			m[parts[0]] = map[string]interface{}{}
 		}
-		addParam(m[parts[0]].(map[string]interface{}), parts[1], value)
+		submap, ok := m[parts[0]].(map[string]interface{})
+		if !ok {
+			return errors.New("already defined")
+		}
+		err := addParam(submap, parts[1], value)
+		if err != nil {
+			return err
+		}
 	} else {
+		if _, found := m[key]; found {
+			return errors.New("already defined")
+		}
 		// TODO(feloy) convert based on declared type in schema
 		m[key] = convertType(value)
 	}
+	return nil
 }
 
 func convertType(value string) interface{} {
@@ -50,6 +65,6 @@ func convertType(value string) interface{} {
 	if err == nil {
 		return boolv
 	}
-	// if there were errors for everything else we return the value
+	// if there were errors for everything else we return the string value
 	return value
 }
