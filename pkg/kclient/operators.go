@@ -247,7 +247,17 @@ func toOpenAPISpec(repr *olm.CRDDescription) *spec.Schema {
 func addParam(schema *spec.Schema, param olm.SpecDescriptor) {
 	parts := strings.SplitN(param.Path, ".", 2)
 	if len(parts) == 1 {
-		child := spec.StringProperty().WithTitle(param.DisplayName).WithDescription(param.Description)
+		child := spec.StringProperty()
+		if len(param.XDescriptors) == 1 {
+			switch param.XDescriptors[0] {
+			case "urn:alm:descriptor:com.tectonic.ui:podCount":
+				child = spec.Int32Property()
+				// TODO(feloy) more cases, based on
+				// - https://github.com/openshift/console/blob/master/frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md
+				// - https://docs.google.com/document/d/17Tdmpu4R6pA5UC4LumyJ2EP6AcotMWM127Jy728hYCk
+			}
+		}
+		child = child.WithTitle(param.DisplayName).WithDescription(param.Description)
 		schema.SetProperty(parts[0], *child)
 	} else {
 		var child *spec.Schema

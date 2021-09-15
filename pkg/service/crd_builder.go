@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -29,6 +30,26 @@ func addParam(m map[string]interface{}, key string, value string) {
 		}
 		addParam(m[parts[0]].(map[string]interface{}), parts[1], value)
 	} else {
-		m[key] = value
+		// TODO(feloy) convert based on declared type in schema
+		m[key] = convertType(value)
 	}
+}
+
+func convertType(value string) interface{} {
+	intv, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		return int64(intv)
+	}
+	floatv, err := strconv.ParseFloat(value, 64)
+
+	if err == nil {
+		return floatv
+	}
+
+	boolv, err := strconv.ParseBool(value)
+	if err == nil {
+		return boolv
+	}
+	// if there were errors for everything else we return the value
+	return value
 }
