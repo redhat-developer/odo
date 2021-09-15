@@ -156,7 +156,7 @@ func (c *Client) Upload(data TelemetryData) error {
 // addConfigTraits adds information about the system
 func addConfigTraits() analytics.Traits {
 	traits := analytics.NewTraits().Set("os", runtime.GOOS)
-	traits.Set("Timezone", getTimeZoneRelativeToUTC())
+	traits.Set("timezone", getTimeZoneRelativeToUTC())
 	return traits
 }
 
