@@ -75,6 +75,9 @@ func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath st
 		DefaultContext: &analytics.Context{
 			IP:       net.IPv4(0, 0, 0, 0),
 			Timezone: getTimeZoneRelativeToUTC(),
+			OS: analytics.OSInfo{
+				Name: runtime.GOOS,
+			},
 		},
 	})
 	if err != nil {
@@ -153,6 +156,7 @@ func (c *Client) Upload(data TelemetryData) error {
 // addConfigTraits adds information about the system
 func addConfigTraits() analytics.Traits {
 	traits := analytics.NewTraits().Set("os", runtime.GOOS)
+	traits.Set("Timezone", getTimeZoneRelativeToUTC())
 	return traits
 }
 
