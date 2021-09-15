@@ -14,6 +14,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/ghodss/yaml"
+	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -95,6 +97,22 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
+		// Validate spec
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
+		}
+
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		if err != nil {
+			return err
+		}
+
+		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		if err != nil {
+			return err
+		}
+
 		if o.ServiceName != "" && !o.DryRun {
 			// First check if service with provided name already exists
 			svcFullName := strings.Join([]string{b.CustomResource, o.ServiceName}, "/")
@@ -137,7 +155,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		}
 
 		if len(o.parameters) != 0 {
-			builtCRD, err := b.buildCRDfromParams(o, csv)
+			builtCRD, err := b.buildCRDfromParams(o, b.group, b.version, b.CustomResource)
 			if err != nil {
 				return err
 			}
@@ -150,6 +168,22 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			}
 
 			d.OriginalCRD = almExample
+		}
+
+		// Validate spec
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
+		}
+
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		if err != nil {
+			return err
+		}
+
+		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		if err != nil {
+			return err
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
@@ -275,13 +309,8 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 	return nil
 }
 
-func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterServiceVersion) (map[string]interface{}, error) {
-	hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
-	if !hasCR {
-		return nil, fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
-	}
-
-	return svc.BuildCRDFromParams(cr, o.ParametersMap)
+func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, group, version, kind string) (map[string]interface{}, error) {
+	return svc.BuildCRDFromParams(o.ParametersMap, group, version, kind)
 }
 
 func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app string) error {

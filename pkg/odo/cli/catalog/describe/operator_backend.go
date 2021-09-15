@@ -65,35 +65,17 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 		return err
 	}
 
-	// Get the specific CR that matches "kind"
-	crs := dso.KClient.GetCustomResourcesFromCSV(&ohb.CSV)
-
-	var cr *olm.CRDDescription
-	hasCR := false
-	for _, custRes := range *crs {
-		c := custRes
-		if c.Kind == ohb.CustomResource {
-			cr = &c
-			hasCR = true
-			break
-		}
-	}
+	var hasCR bool
+	hasCR, ohb.CR = dso.KClient.CheckCustomResourceInCSV(ohb.CustomResource, &ohb.CSV)
 	if !hasCR {
 		return fmt.Errorf("the %q resource doesn't exist in specified %q operator", ohb.CustomResource, ohb.OperatorType)
 	}
 
-	ohb.CR = cr
-
-	crd, err := dso.KClient.GetResourceSpecDefinition(ohb.CR.Name, ohb.CR.Version, ohb.CustomResource)
+	ohb.CRDSpec, err = dso.KClient.GetCRDSpec(ohb.CR, ohb.OperatorType, ohb.CustomResource)
 	if err != nil {
-		log.Warning("Unable to get CRD specifications:", err)
-		return nil
+		return err
 	}
-	ohb.CRDSpec = crd
 
-	if crd == nil {
-		ohb.CRDSpec = toOpenAPISpec(cr)
-	}
 	return nil
 
 }
@@ -197,36 +179,4 @@ func getTypeString(property spec.Schema) string {
 		tpe = "[]" + getTypeString(*property.Items.Schema)
 	}
 	return tpe
-}
-
-// toOpenAPISpec transforms Spec descriptors from a CRD description to an OpenAPI schema
-func toOpenAPISpec(repr *olm.CRDDescription) *spec.Schema {
-	if len(repr.SpecDescriptors) == 0 {
-		return nil
-	}
-	schema := new(spec.Schema).Typed("object", "")
-	for _, param := range repr.SpecDescriptors {
-		addParam(schema, param)
-	}
-	return schema
-}
-
-// addParam adds a Spec Descriptor parameter to an OpenAPI schema
-func addParam(schema *spec.Schema, param olm.SpecDescriptor) {
-	parts := strings.SplitN(param.Path, ".", 2)
-	if len(parts) == 1 {
-		child := spec.StringProperty().WithTitle(param.DisplayName).WithDescription(param.Description)
-		schema.SetProperty(parts[0], *child)
-	} else {
-		var child *spec.Schema
-		if _, ok := schema.Properties[parts[0]]; ok {
-			c := schema.Properties[parts[0]]
-			child = &c
-		} else {
-			child = new(spec.Schema).Typed("object", "")
-		}
-		param.Path = parts[1]
-		addParam(child, param)
-		schema.SetProperty(parts[0], *child)
-	}
 }

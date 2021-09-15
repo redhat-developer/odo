@@ -2,67 +2,33 @@ package service
 
 import (
 	"strings"
-
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/pkg/errors"
 )
 
-// CRDBuilder is responsible for build the full CR including the meta and spec.
-type CRDBuilder struct {
-	CRDSpecBuilder *CRDSpecBuilder
-	crd            *olm.CRDDescription
-	cr             map[string]interface{}
-}
-
-func NewCRDBuilder(crd *olm.CRDDescription) *CRDBuilder {
-	return &CRDBuilder{
-		CRDSpecBuilder: NewCRDSpecBuilder(crd.SpecDescriptors),
-		crd:            crd,
-		cr:             make(map[string]interface{}),
-	}
-}
-
-func (crb *CRDBuilder) SetAndValidate(param string, value string) error {
-	return crb.CRDSpecBuilder.SetAndValidate(param, value)
-}
-
-func (crb *CRDBuilder) Map() (map[string]interface{}, error) {
-	group, version, _, err := GetGVRFromCR(crb.crd)
-	if err != nil {
-		return nil, err
-	}
-	crb.cr["apiVersion"] = group + "/" + version
-	crb.cr["kind"] = crb.crd.Kind
-	crb.cr["metadata"] = make(map[string]interface{})
-	specMap, err := crb.CRDSpecBuilder.Map()
-	if err != nil {
-		return nil, err
-	}
-	crb.cr["spec"] = specMap
-	return crb.cr, nil
-}
-
 // BuildCRDFromParams iterates over the parameter maps provided by the user and builds the CRD
-func BuildCRDFromParams(cr *olm.CRDDescription, paramMap map[string]string) (map[string]interface{}, error) {
+func BuildCRDFromParams(paramMap map[string]string, group, version, kind string) (map[string]interface{}, error) {
+	spec := map[string]interface{}{}
+	for k, v := range paramMap {
+		addParam(spec, k, v)
+	}
 
-	crBuilder := NewCRDBuilder(cr)
-	var errorStrs []string
+	result := map[string]interface{}{}
+	result["apiVersion"] = group + "/" + version
+	result["kind"] = kind
+	result["metadata"] = make(map[string]interface{})
+	result["spec"] = spec
+	return result, nil
+}
 
-	for key, value := range paramMap {
-		err := crBuilder.SetAndValidate(key, value)
-		if err != nil {
-			errorStrs = append(errorStrs, err.Error())
+// TODO check errors
+func addParam(m map[string]interface{}, key string, value string) {
+	if strings.Contains(key, ".") {
+		parts := strings.SplitN(key, ".", 2)
+		_, ok := m[parts[0]]
+		if !ok {
+			m[parts[0]] = map[string]interface{}{}
 		}
+		addParam(m[parts[0]].(map[string]interface{}), parts[1], value)
+	} else {
+		m[key] = value
 	}
-
-	if len(errorStrs) > 0 {
-		return nil, errors.New(strings.Join(errorStrs, "\n"))
-	}
-
-	builtCRD, err := crBuilder.Map()
-	if err != nil {
-		return nil, err
-	}
-
-	return builtCRD, nil
 }
