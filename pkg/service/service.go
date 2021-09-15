@@ -559,7 +559,7 @@ func addKubernetesComponent(crd, name, componentContext string, devfileObj parse
 				K8sLikeComponent: devfile.K8sLikeComponent{
 					BaseComponent: devfile.BaseComponent{},
 					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-						Uri: filepath.Join(name + ".yaml"),
+						Uri: filepath.Join(uriFolder, name+".yaml"),
 					},
 				},
 			},
@@ -598,7 +598,7 @@ func deleteKubernetesComponentFromDevfile(name string, devfileObj parser.Devfile
 					return err
 				}
 				if len(parsedURL.Host) == 0 || len(parsedURL.Scheme) == 0 {
-					err := fs.Remove(filepath.Join(componentContext, uriFolder, c.Kubernetes.Uri))
+					err := fs.Remove(filepath.Join(componentContext, c.Kubernetes.Uri))
 					if err != nil {
 						return err
 					}
@@ -955,7 +955,7 @@ func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (stri
 		}
 		return string(dataBytes), nil
 	} else {
-		dataBytes, err := fs.ReadFile(filepath.Join(componentContext, uriFolder, uri))
+		dataBytes, err := fs.ReadFile(filepath.Join(componentContext, uri))
 		if err != nil {
 			return "", err
 		}

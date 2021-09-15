@@ -186,7 +186,7 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 									K8sLikeComponent: devfile.K8sLikeComponent{
 										BaseComponent: devfile.BaseComponent{},
 										K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-											Uri: filepath.Base(testFileName.Name()),
+											Uri: filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
 										},
 									},
 								},
@@ -288,7 +288,7 @@ spec:
 				}, []uriComponent{
 					{
 						name: "service1",
-						uri:  filepath.Base(testFileName.Name()),
+						uri:  filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 			},
@@ -409,7 +409,7 @@ spec:
 				}, []uriComponent{
 					{
 						name: "service1",
-						uri:  filepath.Base(testFileName.Name()),
+						uri:  filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
@@ -503,7 +503,7 @@ spec:
 		}, []uriComponent{
 			{
 				name: "service1",
-				uri:  filepath.Base(testFileName.Name()),
+				uri:  filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
 			},
 		}),
 		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
