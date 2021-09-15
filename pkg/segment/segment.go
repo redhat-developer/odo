@@ -70,7 +70,7 @@ func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
 
 // newCustomClient returns a Client created with custom args
 func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
-	// get the locale informatino
+	// get the locale information
 	tag, err := locale.Detect()
 	if err != nil {
 		return nil, err
@@ -165,6 +165,13 @@ func (c *Client) Upload(data TelemetryData) error {
 func addConfigTraits() analytics.Traits {
 	traits := analytics.NewTraits().Set("os", runtime.GOOS)
 	traits.Set("timezone", getTimeZoneRelativeToUTC())
+	// get the locale information
+	tag, err := locale.Detect()
+	if err != nil {
+		klog.V(4).Infof("couldn't fetch locale info: %w", err.Error())
+	} else {
+		traits.Set("locale", tag)
+	}
 	return traits
 }
 
