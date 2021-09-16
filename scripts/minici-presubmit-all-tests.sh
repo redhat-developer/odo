@@ -24,7 +24,7 @@ case $1 in
         ;;
     k8s)
         #Removing minishift (dropped support for 3.11) and adding K8S on IBM Cloud
-        export JOB_NAME="odo-k8s-ibmc-pr-tests"
+        export JOB_NAME="odo-k8s-ibmc-pr-build"
         export SENDQUEUE="amqp.ci.queue.k8sibmc.send"
         export SENDTOPIC="amqp.ci.topic.k8sibmc.send"
         export EXCHANGE="amqp.ci.exchange.k8sibmc.send"
