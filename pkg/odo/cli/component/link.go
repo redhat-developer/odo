@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
@@ -148,10 +146,6 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVar(&o.bindAsFiles, "bind-as-files", false, "If enabled, configuration values will be mounted as files, instead of declared as environment variables")
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	//Adding `--project` flag
-	projectCmd.AddProjectFlag(linkCmd)
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 
