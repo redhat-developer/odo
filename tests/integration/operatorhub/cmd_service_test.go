@@ -139,8 +139,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should describe the operator with human-readable output", func() {
 				output := helper.Cmd("odo", "catalog", "describe", "service", redisCluster).ShouldPass().Out()
-				Expect(output).To(ContainSubstring("Kind: Redis"))
-				Expect(output).To(MatchRegexp("Yes *redisExporter.image *string"))
+				Expect(output).To(MatchRegexp("KIND: *Redis"))
+				Expect(output).To(MatchRegexp(`redisExporter\.image *\(string\) *-required-`))
 			})
 
 			It("should describe the example of the operator", func() {

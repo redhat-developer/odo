@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/go-openapi/spec"
-	"github.com/olekukonko/tablewriter"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/service"
@@ -117,54 +117,65 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 }
 
 func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
-	fmt.Fprintf(w, "Kind: %s\n", service.Spec.Kind)
-	fmt.Fprintf(w, "Version: %s\n", service.Spec.Version)
-	fmt.Fprintf(w, "Description: %s\n", service.Spec.Description)
+	fmt.Fprintf(w, "KIND:    %s\n", service.Spec.Kind)
+	fmt.Fprintf(w, "VERSION: %s\n", service.Spec.Version)
+	fmt.Fprintf(w, "\nDESCRIPTION:\n%s", indentText(service.Spec.Description, 5))
 
 	if service.Spec.Schema == nil {
 		log.Warningf("Unable to get parameters from CRD or CSV; Operator %q doesn't have the required information", service.Name)
 		return
 	}
-	fmt.Fprintln(w, "Parameters:")
-	tableString := &strings.Builder{}
-	table := tablewriter.NewWriter(tableString)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetRowSeparator("")
-	table.SetHeader([]string{"Required", "Path", "Type", "DisplayName", "Description"})
-	displayProperties(table, service.Spec.Schema, "")
-	table.Render()
-	fmt.Fprint(w, tableString)
+	fmt.Fprintln(w, "\nFIELDS:")
+	displayProperties(w, service.Spec.Schema, "")
 }
 
 // displayProperties displays the properties of an OpenAPI schema in a human readable form
-func displayProperties(table *tablewriter.Table, schema *spec.Schema, prefix string) {
+// required fields are displayed first
+func displayProperties(w io.Writer, schema *spec.Schema, prefix string) {
 	required := schema.Required
 	requiredMap := map[string]bool{}
 	for _, req := range required {
 		requiredMap[req] = true
 	}
 
-	keys := make([]string, len(schema.Properties))
-	i := 0
+	reqKeys := []string{}
 	for key := range schema.Properties {
-		keys[i] = key
-		i++
+		if requiredMap[key] {
+			reqKeys = append(reqKeys, key)
+		}
 	}
-	sort.Strings(keys)
+	sort.Strings(reqKeys)
+
+	nonReqKeys := []string{}
+	for key := range schema.Properties {
+		if !requiredMap[key] {
+			nonReqKeys = append(nonReqKeys, key)
+		}
+	}
+	sort.Strings(nonReqKeys)
+	keys := append(reqKeys, nonReqKeys...)
 
 	for _, key := range keys {
 		property := schema.Properties[key]
+		requiredInfo := ""
+		if requiredMap[key] {
+			requiredInfo = "-required-"
+		}
+		fmt.Fprintf(w, "%s%s (%s)   %s\n", strings.Repeat(" ", 3+2*strings.Count(prefix, ".")), prefix+key, getTypeString(property), requiredInfo)
+		nl := false
+		if len(property.Title) > 0 {
+			fmt.Fprintf(w, "%s\n", indentText(property.Title, 5+2*strings.Count(prefix, ".")))
+			nl = true
+		}
+		if len(property.Description) > 0 {
+			fmt.Fprintf(w, "%s\n", indentText(property.Description, 5+2*strings.Count(prefix, ".")))
+			nl = true
+		}
+		if !nl {
+			fmt.Fprintln(w)
+		}
 		if property.Type.Contains("object") {
-			displayProperties(table, &property, prefix+key+".")
-		} else {
-			requiredInfo := ""
-			if requiredMap[key] {
-				requiredInfo = "Yes"
-			}
-			table.Append([]string{requiredInfo, prefix + key, getTypeString(property), property.Title, property.Description})
+			displayProperties(w, &property, prefix+key+".")
 		}
 	}
 }
@@ -179,4 +190,119 @@ func getTypeString(property spec.Schema) string {
 		tpe = "[]" + getTypeString(*property.Items.Schema)
 	}
 	return tpe
+}
+
+func indentText(t string, indent int) string {
+	lines := wrapString(t, 80-indent)
+	res := ""
+	for _, line := range lines {
+		res += strings.Repeat(" ", indent) + line + "\n"
+	}
+	return res
+}
+
+// Following code from https://github.com/kubernetes/kubectl/blob/159a770147fb28337c6807abb1b2b9db843d0aff/pkg/explain/formatter.go
+
+type line struct {
+	wrap  int
+	words []string
+}
+
+func (l *line) String() string {
+	return strings.Join(l.words, " ")
+}
+
+func (l *line) Empty() bool {
+	return len(l.words) == 0
+}
+
+func (l *line) Len() int {
+	return len(l.String())
+}
+
+// Add adds the word to the line, returns true if we could, false if we
+// didn't have enough room. It's always possible to add to an empty line.
+func (l *line) Add(word string) bool {
+	newLine := line{
+		wrap:  l.wrap,
+		words: append(l.words, word),
+	}
+	if newLine.Len() <= l.wrap || len(l.words) == 0 {
+		l.words = newLine.words
+		return true
+	}
+	return false
+}
+
+func wrapString(str string, wrap int) []string {
+	wrapped := []string{}
+	l := line{wrap: wrap}
+	// track the last word added to the current line
+	lastWord := ""
+	flush := func() {
+		if !l.Empty() {
+			lastWord = ""
+			wrapped = append(wrapped, l.String())
+			l = line{wrap: wrap}
+		}
+	}
+
+	// iterate over the lines in the original description
+	for _, str := range strings.Split(str, "\n") {
+		// preserve code blocks and blockquotes as-is
+		if strings.HasPrefix(str, "    ") {
+			flush()
+			wrapped = append(wrapped, str)
+			continue
+		}
+
+		// preserve empty lines after the first line, since they can separate logical sections
+		if len(wrapped) > 0 && len(strings.TrimSpace(str)) == 0 {
+			flush()
+			wrapped = append(wrapped, "")
+			continue
+		}
+
+		// flush if we should start a new line
+		if shouldStartNewLine(lastWord, str) {
+			flush()
+		}
+		words := strings.Fields(str)
+		for _, word := range words {
+			lastWord = word
+			if !l.Add(word) {
+				flush()
+				if !l.Add(word) {
+					panic("Couldn't add to empty line.")
+				}
+			}
+		}
+	}
+	flush()
+	return wrapped
+}
+
+var bullet = regexp.MustCompile(`^(\d+\.?|-|\*)\s`)
+
+func shouldStartNewLine(lastWord, str string) bool {
+	// preserve line breaks ending in :
+	if strings.HasSuffix(lastWord, ":") {
+		return true
+	}
+
+	// preserve code blocks
+	if strings.HasPrefix(str, "    ") {
+		return true
+	}
+	str = strings.TrimSpace(str)
+	// preserve empty lines
+	if len(str) == 0 {
+		return true
+	}
+	// preserve lines that look like they're starting lists
+	if bullet.MatchString(str) {
+		return true
+	}
+	// otherwise combine
+	return false
 }
