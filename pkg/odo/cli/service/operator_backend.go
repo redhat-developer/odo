@@ -120,6 +120,23 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 
 		// CRD is valid. We can use it further to create a service from it.
 		b.CustomResourceDefinition = d.OriginalCRD
+
+		// Validate spec
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
+		}
+
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		if err != nil {
+			return err
+		}
+
+		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		if err != nil {
+			return err
+		}
+
 	} else if b.CustomResource != "" {
 		// make sure that CSV of the specified ServiceType exists
 		csv, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
@@ -138,8 +155,18 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			o.ServiceName = strings.ToLower(b.CustomResource)
 		}
 
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
+		}
+
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		if err != nil {
+			return err
+		}
+
 		if len(o.parameters) != 0 {
-			builtCRD, err := b.buildCRDfromParams(o, b.group, b.version, b.CustomResource)
+			builtCRD, err := svc.BuildCRDFromParams(o.ParametersMap, crd, b.group, b.version, b.CustomResource)
 			if err != nil {
 				return err
 			}
@@ -182,6 +209,13 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 		}
+
+		// Validate spec
+		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		if err != nil {
+			return err
+		}
+
 	} else {
 		// This block is executed only when user has neither provided a
 		// file nor a valid `odo service create <operator-name>` to start
@@ -190,22 +224,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		// `odo service create <operator-name>/<crd-name>`
 
 		return fmt.Errorf("please use a valid command to start an Operator backed service; desired format: %q", "odo service create <operator-name>/<crd-name>")
-	}
-
-	// Validate spec
-	hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
-	if !hasCR {
-		return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
-	}
-
-	crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
-	if err != nil {
-		return err
-	}
-
-	err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -291,10 +309,6 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 	}
 
 	return nil
-}
-
-func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, group, version, kind string) (map[string]interface{}, error) {
-	return svc.BuildCRDFromParams(o.ParametersMap, group, version, kind)
 }
 
 func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app string) error {
