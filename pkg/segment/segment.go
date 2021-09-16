@@ -73,7 +73,7 @@ func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath st
 	// get the locale information
 	tag, err := locale.Detect()
 	if err != nil {
-		return nil, err
+		klog.V(4).Infof("couldn't fetch locale info: %w", err.Error())
 	}
 	// DefaultContext has IP set to 0.0.0.0 so that it does not track user's IP, which it does in case no IP is set
 	client, err := analytics.NewWithConfig(writeKey, analytics.Config{
@@ -170,7 +170,7 @@ func addConfigTraits() analytics.Traits {
 	if err != nil {
 		klog.V(4).Infof("couldn't fetch locale info: %w", err.Error())
 	} else {
-		traits.Set("locale", tag)
+		traits.Set("locale", tag.String())
 	}
 	return traits
 }
