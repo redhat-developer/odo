@@ -271,11 +271,11 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 				}
 
 				empty, err := util.IsEmpty(filepath.Join(do.componentContext, service.UriFolder))
-				if err != nil {
+				if err != nil && !os.IsNotExist(err) {
 					return err
 				}
 
-				if empty {
+				if !os.IsNotExist(err) && empty {
 					err = os.RemoveAll(filepath.Join(do.componentContext, service.UriFolder))
 					if err != nil {
 						return err
