@@ -14,6 +14,8 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -21,6 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/service"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -83,9 +86,13 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
 	if do.componentContext == "" {
-		do.componentContext = LocalDirectoryDefaultLocation
+		dir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		do.componentContext = dir
 	}
 
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
@@ -248,6 +255,28 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		}
 
 		if do.componentForceDeleteFlag {
+			devfileObj, err := devfile.ParseFromFile(do.devfilePath)
+			if err != nil {
+				return err
+			}
+
+			err = common.RemoveDevfileURIContents(devfileObj, do.ComponentContext)
+			if err != nil {
+				return err
+			}
+
+			empty, err := util.IsEmpty(service.UriFolder)
+			if err != nil {
+				return err
+			}
+
+			if empty {
+				err = os.RemoveAll(service.UriFolder)
+				if err != nil {
+					return err
+				}
+			}
+
 			if !util.CheckPathExists(do.devfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}

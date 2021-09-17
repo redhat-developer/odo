@@ -8,7 +8,9 @@ import (
 	"k8s.io/klog"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -218,4 +220,38 @@ func GetSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {
 		}
 	}
 	return syncMap
+}
+
+// RemoveDevfileURIContents removes contents
+// which are used via a URI in the devfile
+func RemoveDevfileURIContents(devfile devfileParser.DevfileObj, componentContext string) error {
+	return removeDevfileURIContents(devfile, componentContext, devfilefs.DefaultFs{})
+}
+
+func removeDevfileURIContents(devfile devfileParser.DevfileObj, componentContext string, fs devfilefs.Filesystem) error {
+	components, err := devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	for _, component := range components {
+		var uri string
+		if component.Kubernetes != nil && component.Kubernetes.Uri != "" {
+			uri = component.Kubernetes.Uri
+		}
+
+		if component.Openshift != nil && component.Openshift.Uri != "" {
+			uri = component.Openshift.Uri
+		}
+
+		if uri == "" {
+			continue
+		}
+
+		completePath := filepath.Join(componentContext, uri)
+		err = fs.Remove(completePath)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

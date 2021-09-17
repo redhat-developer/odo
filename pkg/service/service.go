@@ -41,7 +41,9 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
 
-const uriFolder = "kubernetes"
+const UriFolder = "kubernetes"
+
+const filePrefix = "odo-service-"
 
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
 // It returns a CR (string representation) and CSV (Operator) upon successfully
@@ -535,9 +537,9 @@ func AddKubernetesComponent(crd, name, componentContext string, devfile parser.D
 
 // AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
 func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem) error {
-	filePath := filepath.Join(componentContext, uriFolder, name+".yaml")
-	if _, err := fs.Stat(filepath.Join(componentContext, uriFolder)); os.IsNotExist(err) {
-		err = fs.MkdirAll(filepath.Join(componentContext, uriFolder), os.ModePerm)
+	filePath := filepath.Join(componentContext, UriFolder, filePrefix+name+".yaml")
+	if _, err := fs.Stat(filepath.Join(componentContext, UriFolder)); os.IsNotExist(err) {
+		err = fs.MkdirAll(filepath.Join(componentContext, UriFolder), os.ModePerm)
 		if err != nil {
 			return err
 		}
@@ -559,7 +561,7 @@ func addKubernetesComponent(crd, name, componentContext string, devfileObj parse
 				K8sLikeComponent: devfile.K8sLikeComponent{
 					BaseComponent: devfile.BaseComponent{},
 					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-						Uri: filepath.Join(uriFolder, name+".yaml"),
+						Uri: filepath.Join(UriFolder, filePrefix+name+".yaml"),
 					},
 				},
 			},

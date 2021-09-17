@@ -186,7 +186,7 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 									K8sLikeComponent: devfile.K8sLikeComponent{
 										BaseComponent: devfile.BaseComponent{},
 										K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-											Uri: filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
+											Uri: filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
 										},
 									},
 								},
@@ -288,7 +288,7 @@ spec:
 				}, []uriComponent{
 					{
 						name: "service1",
-						uri:  filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
+						uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 			},
@@ -409,7 +409,7 @@ spec:
 				}, []uriComponent{
 					{
 						name: "service1",
-						uri:  filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
+						uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
@@ -503,7 +503,7 @@ spec:
 		}, []uriComponent{
 			{
 				name: "service1",
-				uri:  filepath.Join(uriFolder, filepath.Base(testFileName.Name())),
+				uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
 			},
 		}),
 		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
@@ -563,11 +563,11 @@ func setup(testFolderName string, fs devfileFileSystem.Filesystem) (devfileFileS
 	if err != nil {
 		return nil, err
 	}
-	err = fs.MkdirAll(filepath.Join(testFolderName, uriFolder), os.ModePerm)
+	err = fs.MkdirAll(filepath.Join(testFolderName, UriFolder), os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
-	testFileName, err := fs.Create(filepath.Join(testFolderName, uriFolder, "example.yaml"))
+	testFileName, err := fs.Create(filepath.Join(testFolderName, UriFolder, "example.yaml"))
 	if err != nil {
 		return nil, err
 	}
@@ -624,15 +624,15 @@ func Test_addKubernetesComponent(t *testing.T) {
 			tt.args.fs = fs
 
 			if tt.args.uriFolderExists || tt.args.fileAlreadyExists {
-				err := fs.MkdirAll(uriFolder, os.ModePerm)
+				err := fs.MkdirAll(UriFolder, os.ModePerm)
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				defer os.RemoveAll(uriFolder)
+				defer os.RemoveAll(UriFolder)
 			}
 
 			if tt.args.fileAlreadyExists {
-				testFileName, err := fs.Create(filepath.Join(uriFolder, tt.args.name+".yaml"))
+				testFileName, err := fs.Create(filepath.Join(UriFolder, filePrefix+tt.args.name+".yaml"))
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
