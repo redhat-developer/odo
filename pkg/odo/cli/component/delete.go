@@ -24,7 +24,6 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/service"
-
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -255,32 +254,34 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		}
 
 		if do.componentForceDeleteFlag {
-			devfileObj, err := devfile.ParseFromFile(do.devfilePath)
-			if err != nil {
-				return err
-			}
-
-			err = common.RemoveDevfileURIContents(devfileObj, do.ComponentContext)
-			if err != nil {
-				return err
-			}
-
-			empty, err := util.IsEmpty(service.UriFolder)
-			if err != nil {
-				return err
-			}
-
-			if empty {
-				err = os.RemoveAll(service.UriFolder)
-				if err != nil {
-					return err
-				}
-			}
-
 			if !util.CheckPathExists(do.devfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
 			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
+
+				// first remove the uri based files mentioned in the devfile
+				devfileObj, err := devfile.ParseFromFile(do.devfilePath)
+				if err != nil {
+					return err
+				}
+
+				err = common.RemoveDevfileURIContents(devfileObj, do.componentContext)
+				if err != nil {
+					return err
+				}
+
+				empty, err := util.IsEmpty(filepath.Join(do.componentContext, service.UriFolder))
+				if err != nil {
+					return err
+				}
+
+				if empty {
+					err = os.RemoveAll(filepath.Join(do.componentContext, service.UriFolder))
+					if err != nil {
+						return err
+					}
+				}
+
 				err = util.DeletePath(do.devfilePath)
 				if err != nil {
 					return err

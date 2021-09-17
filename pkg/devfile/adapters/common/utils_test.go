@@ -628,7 +628,11 @@ func Test_removeDevfileURIContents(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	err = addURIComponents(devfileObj, "some-url.yaml", file1.Name())
+	err = addURIComponents(devfileObj, "some-ingress.yaml", file1.Name())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	err = addURIComponents(devfileObj, "some-route.yaml", "https://example.com")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -668,6 +672,16 @@ func Test_removeDevfileURIContents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := removeDevfileURIContents(tt.args.devfile, tt.args.componentContext, fs); (err != nil) != tt.wantErr {
 				t.Errorf("RemoveDevfileURIContents() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr {
+				files, err := fs.ReadDir(uriFolderName)
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if len(files) != 0 {
+					t.Errorf("some files were not removed from the folder %v", uriFolderName)
+				}
 			}
 
 			_ = fs.RemoveAll(uriFolderName)

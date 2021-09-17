@@ -1,6 +1,7 @@
 package common
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -244,6 +245,14 @@ func removeDevfileURIContents(devfile devfileParser.DevfileObj, componentContext
 		}
 
 		if uri == "" {
+			continue
+		}
+
+		parsedURL, err := url.Parse(uri)
+		if err != nil {
+			continue
+		}
+		if len(parsedURL.Host) != 0 && len(parsedURL.Scheme) != 0 {
 			continue
 		}
 
