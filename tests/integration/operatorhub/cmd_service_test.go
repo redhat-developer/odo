@@ -198,6 +198,20 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
 				})
 
+				It("should fail creating a service with wrong parameters", func() {
+					helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "-p", "a=b").ShouldFail()
+				})
+
+				It("should create a service with parameters of different types", func() {
+					helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator),
+						"-p", "kubernetesConfig.image=quay.io/opstree/redis:v6.2.5",
+						"-p", "kubernetesConfig.imagePullPolicy=IfNotPresent",
+						"-p", "kubernetesConfig.serviceType=ClusterIP",
+						"-p", "redisExporter.enabled=false",
+						"-p", "redisExporter.image=quay.io/opstree/redis-exporter:1.0",
+						"-p", "securityContext.runAsUser=1000").ShouldPass()
+				})
+
 				When("odo push is executed", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "push").ShouldPass()
