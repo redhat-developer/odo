@@ -45,6 +45,8 @@ type commonLinkOptions struct {
 	*genericclioptions.Context
 	// choose between Operator Hub and Service Catalog. If true, Operator Hub
 	csvSupport bool
+
+	inlined bool
 }
 
 func newCommonLinkOptions() *commonLinkOptions {
@@ -327,7 +329,7 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 	}
 
 	if o.operationName == unlink {
-		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName)
+		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
 		if err != nil {
 			return err
 		}
@@ -402,16 +404,24 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 		return err
 	}
 
-	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName)
+	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
 	if err != nil {
 		return err
 	}
 	if found {
 		return fmt.Errorf("component %q is already linked with the %s %q", o.Context.EnvSpecificInfo.GetName(), o.getLinkType(), o.suppliedName)
 	}
-	err = svc.AddKubernetesComponentToDevfile(string(yamlDesc), o.serviceBinding.Name, o.EnvSpecificInfo.GetDevfileObj())
-	if err != nil {
-		return err
+
+	if o.inlined {
+		err = svc.AddKubernetesComponentToDevfile(string(yamlDesc), o.serviceBinding.Name, o.EnvSpecificInfo.GetDevfileObj())
+		if err != nil {
+			return err
+		}
+	} else {
+		err = svc.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.ComponentContext, o.EnvSpecificInfo.GetDevfileObj())
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Successf("Successfully created link between component %q and %s %q\n", o.Context.EnvSpecificInfo.GetName(), o.getLinkType(), o.suppliedName)
@@ -423,12 +433,12 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 func (o *commonLinkOptions) unlinkOperator() (err error) {
 
 	// We already tested `found` in `validateForOperator`
-	name, _, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName)
+	name, _, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
 	if err != nil {
 		return err
 	}
 
-	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj())
+	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.ComponentContext)
 	if err != nil {
 		return err
 	}

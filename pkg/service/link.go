@@ -7,6 +7,7 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -26,22 +27,22 @@ import (
 // PushLinks updates Link(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 // returns true if the component needs to be restarted (when a link has been created or deleted)
 // if service binding operator is not present, it will call pushLinksWithoutOperator to create the links without it.
-func PushLinks(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
+func PushLinks(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 	serviceBindingSupport, err := client.IsServiceBindingSupported()
 	if err != nil {
 		return false, err
 	}
 
 	if !serviceBindingSupport {
-		return pushLinksWithoutOperator(client, k8sComponents, labels, deployment)
+		return pushLinksWithoutOperator(client, k8sComponents, labels, deployment, context)
 	}
 
-	return pushLinksWithOperator(client, k8sComponents, labels, deployment)
+	return pushLinksWithOperator(client, k8sComponents, labels, deployment, context)
 }
 
 // pushLinksWithOperator creates links or deletes links (if service binding operator is installed) between components and services
 // returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
+func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 
 	ownerReference := generator.GetOwnerReference(deployment)
 	deployed, err := ListDeployedServices(client, labels)
@@ -61,6 +62,12 @@ func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Compo
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			if err != nil {
+				return false, err
+			}
+		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		d := NewDynamicCRD()
@@ -119,7 +126,7 @@ func pushLinksWithOperator(client *kclient.Client, k8sComponents []devfile.Compo
 
 // pushLinksWithoutOperator creates links or deletes links (if service binding operator is not installed) between components and services
 // returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment) (bool, error) {
+func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 
 	// check csv support before proceeding
 	csvSupport, err := IsCSVSupported()
@@ -146,6 +153,12 @@ func pushLinksWithoutOperator(client *kclient.Client, k8sComponents []devfile.Co
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			if err != nil {
+				return false, err
+			}
+		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		d := NewDynamicCRD()

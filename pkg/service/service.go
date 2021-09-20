@@ -3,13 +3,18 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
@@ -35,6 +40,10 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
+
+const UriFolder = "kubernetes"
+
+const filePrefix = "odo-service-"
 
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
 // It returns a CR (string representation) and CSV (Operator) upon successfully
@@ -362,7 +371,11 @@ func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
 }
 
 // ListDevfileLinks returns the names of the links defined in a Devfile
-func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
+func ListDevfileLinks(devfileObj parser.DevfileObj, context string) ([]string, error) {
+	return listDevfileLinks(devfileObj, context, devfilefs.DefaultFs{})
+}
+
+func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs.Filesystem) ([]string, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
 	}
@@ -374,8 +387,15 @@ func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 	}
 	var services []string
 	for _, c := range components {
+		inlined := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			inlined, err = getDataFromURI(c.Kubernetes.Uri, context, fs)
+			if err != nil {
+				return []string{}, err
+			}
+		}
 		var u unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
+		err = yaml.Unmarshal([]byte(inlined), &u)
 		if err != nil {
 			return nil, err
 		}
@@ -405,8 +425,12 @@ func ListDevfileLinks(devfileObj parser.DevfileObj) ([]string, error) {
 	return services, nil
 }
 
-// ListDevfileServices returns the services defined in a Devfile
-func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.Unstructured, error) {
+// ListDevfileServices returns the names of the services defined in a Devfile
+func ListDevfileServices(devfileObj parser.DevfileObj, componentContext string) (map[string]unstructured.Unstructured, error) {
+	return listDevfileServices(devfileObj, componentContext, devfilefs.DefaultFs{})
+}
+
+func listDevfileServices(devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) (map[string]unstructured.Unstructured, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
 	}
@@ -418,8 +442,15 @@ func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.
 	}
 	services := map[string]unstructured.Unstructured{}
 	for _, c := range components {
+		inlined := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			inlined, err = getDataFromURI(c.Kubernetes.Uri, componentContext, fs)
+			if err != nil {
+				return nil, err
+			}
+		}
 		var u unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
+		err = yaml.Unmarshal([]byte(inlined), &u)
 		if err != nil {
 			return nil, err
 		}
@@ -429,7 +460,11 @@ func ListDevfileServices(devfileObj parser.DevfileObj) (map[string]unstructured.
 }
 
 // FindDevfileServiceBinding returns the name of the ServiceBinding defined in a Devfile matching kind and name
-func FindDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name string) (string, bool, error) {
+func FindDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, context string) (string, bool, error) {
+	return findDevfileServiceBinding(devfileObj, kind, name, context, devfilefs.DefaultFs{})
+}
+
+func findDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, context string, fs devfilefs.Filesystem) (string, bool, error) {
 	if devfileObj.Data == nil {
 		return "", false, nil
 	}
@@ -441,15 +476,22 @@ func FindDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name s
 	}
 
 	for _, c := range components {
+		inlined := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			inlined, err = getDataFromURI(c.Kubernetes.Uri, context, fs)
+			if err != nil {
+				return "", false, err
+			}
+		}
 		var u unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &u)
+		err = yaml.Unmarshal([]byte(inlined), &u)
 		if err != nil {
 			return "", false, err
 		}
 
 		if isLinkResource(u.GetKind()) {
 			var sbr servicebinding.ServiceBinding
-			err = yaml.Unmarshal([]byte(c.Kubernetes.Inlined), &sbr)
+			err = yaml.Unmarshal([]byte(inlined), &sbr)
 			if err != nil {
 				return "", false, err
 			}
@@ -488,8 +530,57 @@ func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.Devfile
 	return devfileObj.WriteYamlDevfile()
 }
 
+// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
+func AddKubernetesComponent(crd, name, componentContext string, devfile parser.DevfileObj) error {
+	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{})
+}
+
+// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
+func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem) error {
+	filePath := filepath.Join(componentContext, UriFolder, filePrefix+name+".yaml")
+	if _, err := fs.Stat(filepath.Join(componentContext, UriFolder)); os.IsNotExist(err) {
+		err = fs.MkdirAll(filepath.Join(componentContext, UriFolder), os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
+	if _, err := fs.Stat(filePath); !os.IsNotExist(err) {
+		return fmt.Errorf("the file %q already exists", filePath)
+	}
+
+	err := fs.WriteFile(filePath, []byte(crd), 0755)
+	if err != nil {
+		return err
+	}
+
+	err = devfileObj.Data.AddComponents([]devfile.Component{{
+		Name: name,
+		ComponentUnion: devfile.ComponentUnion{
+			Kubernetes: &devfile.KubernetesComponent{
+				K8sLikeComponent: devfile.K8sLikeComponent{
+					BaseComponent: devfile.BaseComponent{},
+					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
+						Uri: filepath.Join(UriFolder, filePrefix+name+".yaml"),
+					},
+				},
+			},
+		},
+	}})
+	if err != nil {
+		return err
+	}
+
+	return devfileObj.WriteYamlDevfile()
+}
+
 // DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj) error {
+func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string) error {
+	return deleteKubernetesComponentFromDevfile(name, devfileObj, componentContext, devfilefs.DefaultFs{})
+}
+
+// deleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
+func deleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) error {
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
 	if err != nil {
 		return err
@@ -501,6 +592,19 @@ func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.Devfile
 			err = devfileObj.Data.DeleteComponent(c.Name)
 			if err != nil {
 				return err
+			}
+
+			if c.Kubernetes.Uri != "" {
+				parsedURL, err := url.Parse(c.Kubernetes.Uri)
+				if err != nil {
+					return err
+				}
+				if len(parsedURL.Host) == 0 || len(parsedURL.Scheme) == 0 {
+					err := fs.Remove(filepath.Join(componentContext, c.Kubernetes.Uri))
+					if err != nil {
+						return err
+					}
+				}
 			}
 			found = true
 			break
@@ -588,7 +692,7 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 }
 
 // PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushServices(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string) error {
+func PushServices(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, context string) error {
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
@@ -611,8 +715,15 @@ func PushServices(client *kclient.Client, k8sComponents []devfile.Component, lab
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
+		inlined := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			inlined, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			if err != nil {
+				return err
+			}
+		}
 		// get the string representation of the YAML definition of a CRD
-		strCRD := c.Kubernetes.Inlined
+		strCRD := inlined
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		d := NewDynamicCRD()
@@ -703,7 +814,7 @@ func ListDeployedServices(client *kclient.Client, labels map[string]string) (map
 
 // UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
-func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference) error {
+func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
 	csvSupport, err := client.IsCSVSupported()
 	if err != nil {
 		return err
@@ -716,6 +827,12 @@ func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []d
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			if err != nil {
+				return err
+			}
+		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		d := NewDynamicCRD()
@@ -820,4 +937,30 @@ func createOperatorService(client *kclient.Client, d *DynamicCRD, labels map[str
 		return cr, "", err
 	}
 	return cr, kind, err
+}
+
+// getDataFromURI gets the data from the given URI
+// if the uri is a local path, we use the componentContext to complete the local path
+func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (string, error) {
+
+	parsedURL, err := url.Parse(uri)
+	if err != nil {
+		return "", err
+	}
+	if len(parsedURL.Host) != 0 && len(parsedURL.Scheme) != 0 {
+		params := util.HTTPRequestParams{
+			URL: uri,
+		}
+		dataBytes, err := util.DownloadFileInMemoryWithCache(params, 1)
+		if err != nil {
+			return "", err
+		}
+		return string(dataBytes), nil
+	} else {
+		dataBytes, err := fs.ReadFile(filepath.Join(componentContext, uri))
+		if err != nil {
+			return "", err
+		}
+		return string(dataBytes), nil
+	}
 }

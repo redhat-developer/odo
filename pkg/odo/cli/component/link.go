@@ -27,6 +27,9 @@ var (
 # Link current component to the 'backend' component (backend must have a single exposed port)
 %[1]s backend
 
+# Link current component to the 'backend' component and puts the link definition in the devfile instead of a separate file
+%[1]s backend --inlined
+
 # Link component 'nodejs' to the 'backend' component
 %[1]s backend --component nodejs
 
@@ -140,6 +143,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 		},
 	}
 
+	linkCmd.PersistentFlags().BoolVarP(&o.inlined, "inlined", "", false, "Puts the link definition in the devfile instead of a separate file")
 	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
 	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")

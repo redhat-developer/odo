@@ -189,7 +189,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	log.Infof("\nCreating Services for component %s", a.ComponentName)
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushServices(a.Client.GetKubeClient(), k8sComponents, labels)
+	err = service.PushServices(a.Client.GetKubeClient(), k8sComponents, labels, a.Context)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}
@@ -230,13 +230,13 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	err = service.UpdateServicesWithOwnerReferences(a.Client.GetKubeClient(), k8sComponents, ownerReference)
+	err = service.UpdateServicesWithOwnerReferences(a.Client.GetKubeClient(), k8sComponents, ownerReference, a.Context)
 	if err != nil {
 		return err
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushLinks(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment)
+	needRestart, err := service.PushLinks(a.Client.GetKubeClient(), k8sComponents, labels, a.deployment, a.Context)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}

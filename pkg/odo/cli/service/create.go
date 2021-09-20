@@ -19,7 +19,10 @@ const (
 var (
 	createOperatorExample = ktemplates.Examples(`
 	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator.
-	%[1]s etcdoperator.v0.9.4/EtcdCluster`)
+	%[1]s etcdoperator.v0.9.4/EtcdCluster
+	
+	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator and puts the service definition in the devfile instead of a separate file.
+	%[1]s etcdoperator.v0.9.4/EtcdCluster --inlined`)
 
 	createShortDesc = `Create a new service from Operator Hub and deploy it on Kubernetes or OpenShift.`
 
@@ -61,6 +64,8 @@ type CreateOptions struct {
 	fromFile string
 	// Backend is the service provider backend providing the service requested by the user
 	Backend ServiceProviderBackend
+
+	inlined bool
 }
 
 // NewCreateOptions creates a new CreateOptions instance
@@ -139,6 +144,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
+	serviceCreateCmd.Flags().BoolVar(&o.inlined, "inlined", false, "Puts the service definition in the devfile instead of a separate file")
 	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the operator backed service")
 	// remove this feature after enabling service create interactive mode for operator backed services
 	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")

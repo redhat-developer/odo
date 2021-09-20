@@ -109,7 +109,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 }
 
 // NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
-func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
+func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	var state State
 	if client == nil {
@@ -126,7 +126,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		if err != nil {
 			return cfd, err
 		}
-		configLinks, err = service.ListDevfileLinks(devfile)
+		configLinks, err = service.ListDevfileLinks(devfile, context)
 	} else {
 		componentDesc, err = GetComponentFromConfig(localConfigInfo)
 	}
