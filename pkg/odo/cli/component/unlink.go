@@ -96,7 +96,6 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 		},
 	}
 
-	unlinkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to unlink")
 	unlinkCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	//Adding `--component` flag
 	AddComponentFlag(unlinkCmd)

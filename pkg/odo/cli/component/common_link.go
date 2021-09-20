@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
@@ -22,7 +21,6 @@ import (
 const unlink = "unlink"
 
 type commonLinkOptions struct {
-	port             string
 	secretName       string
 	isTargetAService bool
 	name             string
@@ -94,21 +92,6 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	if o.Context.EnvSpecificInfo != nil {
 		return o.completeForOperator()
 	}
-
-	cmpExists, err := component.Exists(o.Client, suppliedName, o.Application)
-	if err != nil {
-		return fmt.Errorf("Unable to determine if component exists:\n%v", err)
-	}
-
-	if !cmpExists {
-		return fmt.Errorf("Neither a service nor a component named %s could be located. Please create one of the two before attempting to use 'odo %s'", suppliedName, o.operationName)
-	}
-
-	secretName, err := secret.DetermineSecretName(o.Client, suppliedName, o.Application, o.port)
-	if err != nil {
-		return err
-	}
-	o.secretName = secretName
 
 	return nil
 }
