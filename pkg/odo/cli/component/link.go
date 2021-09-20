@@ -140,11 +140,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 		},
 	}
 
-<<<<<<< HEAD
 	linkCmd.PersistentFlags().BoolVarP(&o.inlined, "inlined", "", false, "Puts the link definition in the devfile instead of a separate file")
-	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
-=======
->>>>>>> 37985d010 (Removing port flag)
 	linkCmd.PersistentFlags().StringVar(&o.name, "name", "", "Name of the created ServiceBinding resource")
 	linkCmd.PersistentFlags().BoolVar(&o.bindAsFiles, "bind-as-files", false, "If enabled, configuration values will be mounted as files, instead of declared as environment variables")
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
