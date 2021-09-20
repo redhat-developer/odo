@@ -89,11 +89,11 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return err
 	}
 
-	if o.Context.EnvSpecificInfo != nil {
-		return o.completeForOperator()
+	if o.Context.EnvSpecificInfo == nil {
+		return fmt.Errorf("failed to find environment info")
 	}
 
-	return nil
+	return o.completeForOperator()
 }
 
 func (o *commonLinkOptions) validate() (err error) {
