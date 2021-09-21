@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/component"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
@@ -62,7 +60,6 @@ The value of the '--name' flag indicates the name of the directory under '/bindi
 
 // LinkOptions encapsulates the options for the odo link command
 type LinkOptions struct {
-	waitForTarget    bool
 	componentContext string
 
 	*commonLinkOptions
@@ -97,7 +94,7 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the LinkOptions based on completed values
 func (o *LinkOptions) Validate() (err error) {
-	err = o.validate(o.waitForTarget)
+	err = o.validate()
 	if err != nil {
 		return err
 	}
@@ -144,17 +141,10 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	}
 
 	linkCmd.PersistentFlags().BoolVarP(&o.inlined, "inlined", "", false, "Puts the link definition in the devfile instead of a separate file")
-	linkCmd.PersistentFlags().StringVar(&o.port, "port", "", "Port of the backend to which to link")
-	linkCmd.PersistentFlags().BoolVarP(&o.wait, "wait", "w", false, "If enabled the link will return only when the component is fully running after the link is created")
-	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 	linkCmd.PersistentFlags().StringVar(&o.name, "name", "", "Name of the created ServiceBinding resource")
 	linkCmd.PersistentFlags().BoolVar(&o.bindAsFiles, "bind-as-files", false, "If enabled, configuration values will be mounted as files, instead of declared as environment variables")
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	//Adding `--project` flag
-	projectCmd.AddProjectFlag(linkCmd)
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(linkCmd)
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 
