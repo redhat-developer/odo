@@ -5,42 +5,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 )
-
-func (co *CreateOptions) SetComponentSettings(args []string) error {
-	err := co.setComponentSourceAttributes()
-	if err != nil {
-		return err
-	}
-	err = co.setComponentName(args)
-	if err != nil {
-		return err
-	}
-
-	var portList []string
-	if len(co.componentPorts) > 0 {
-		portList = co.componentPorts
-	} else {
-		portList, err = co.Client.GetPortsFromBuilderImage(*co.componentSettings.Type)
-		if err != nil {
-			return err
-		}
-	}
-
-	co.componentSettings.Ports = &(portList)
-	co.componentSettings.Project = &(co.Context.Project)
-	envs, err := config.NewEnvVarListFromSlice(co.componentEnvVars)
-	if err != nil {
-		return err
-	}
-	co.componentSettings.Envs = envs
-	co.ignores = []string{}
-	return nil
-}
 
 // decideAndDownloadStarterProject decides the starter project from the value passed by the user and
 // downloads it

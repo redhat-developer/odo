@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -12,10 +11,6 @@ import (
 )
 
 var _ = Describe("odo generic", func() {
-	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
-	var testNodejsGitURL = "https://github.com/sclorg/nodejs-ex"
-	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
-
 	// TODO: A neater way to provide odo path. Currently we assume \
 	// odo and oc in $PATH already
 	var oc helper.OcRunner
@@ -129,77 +124,6 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("creating component with an application and url", func() {
-		JustBeforeEach(func() {
-			helper.Chdir(commonVar.Context)
-		})
-		It("should create the component in default application", func() {
-			helper.Cmd("odo", "create", "--s2i", "php", "testcmp", "--app", "e2e-xyzk", "--project", commonVar.Project, "--git", testPHPGitURL).ShouldPass()
-			helper.Cmd("odo", "config", "set", "Ports", "8080/TCP", "-f").ShouldPass()
-			helper.Cmd("odo", "push").ShouldPass()
-			oc.VerifyCmpName("testcmp", commonVar.Project)
-			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", commonVar.Project)
-			helper.Cmd("odo", "app", "delete", "e2e-xyzk", "-f").ShouldPass()
-		})
-	})
-
-	Context("Overwriting build timeout for git component", func() {
-		JustBeforeEach(func() {
-			helper.Chdir(commonVar.Context)
-		})
-
-		It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL).ShouldPass()
-			helper.Cmd("odo", "preference", "set", "BuildTimeout", "600").ShouldPass()
-			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
-			helper.MatchAllInOutput(buildTimeout, []string{"600"})
-			helper.Cmd("odo", "push").ShouldPass()
-		})
-
-		It("should fail to build component if the given build timeout is pretty less(2s)", func() {
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--git", testNodejsGitURL).ShouldPass()
-			helper.Cmd("odo", "preference", "set", "BuildTimeout", "2").ShouldPass()
-			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
-			helper.MatchAllInOutput(buildTimeout, []string{"2"})
-			stdOut := helper.Cmd("odo", "push").ShouldFail().Err()
-			helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
-		})
-	})
-
-	Context("should list applications in other project", func() {
-		It("should be able to create a php component with application created", func() {
-			helper.Cmd("odo", "create", "--s2i", "php", "testcmp", "--app", "testing", "--project", commonVar.Project, "--ref", "master", "--git", testPHPGitURL, "--context", commonVar.Context).ShouldPass()
-			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-			currentProject := helper.CreateRandProject()
-			currentAppNames := helper.Cmd("odo", "app", "list", "--project", currentProject).ShouldPass().Out()
-			Expect(currentAppNames).To(ContainSubstring("There are no applications deployed in the project '" + currentProject + "'"))
-			appNames := helper.Cmd("odo", "app", "list", "--project", commonVar.Project).ShouldPass().Out()
-			Expect(appNames).To(ContainSubstring("testing"))
-			helper.DeleteProject(currentProject)
-		})
-	})
-
-	Context("when running odo push with flag --show-log", func() {
-		// works
-		It("should be able to push changes", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-
-			// Push the changes with --show-log
-			getLogging := helper.Cmd("odo", "push", "--show-log", "--context", commonVar.Context).ShouldPass().Out()
-			Expect(getLogging).To(ContainSubstring("Creating Kubernetes resources for component nodejs"))
-		})
-	})
-
-	Context("deploying a component with a specific image name", func() {
-		It("should deploy the component", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "create", "--s2i", "nodejs:latest", "testversioncmp", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
-			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-			helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
-		})
-	})
-
 	Context("When deleting two project one after the other", func() {
 		It("should be able to delete sequentially", func() {
 			project1 := helper.CreateRandProject()
@@ -234,63 +158,6 @@ var _ = Describe("odo generic", func() {
 			Expect(kubernetesVersionStringMatch).Should(BeTrue())
 			serverURL := oc.GetCurrentServerURL()
 			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
-		})
-	})
-
-	Context("prevent the user from creating invalid URLs", func() {
-		JustBeforeEach(func() {
-			helper.Chdir(commonVar.Context)
-		})
-		It("should not allow creating a URL with long name", func() {
-			helper.Cmd("odo", "create", "--s2i", "nodejs", "--project", commonVar.Project).ShouldPass()
-			stdOut := helper.Cmd("odo", "url", "create", testLongURLName, "--port", "8080").ShouldFail().Err()
-			Expect(stdOut).To(ContainSubstring("must be shorter than 63 characters"))
-		})
-	})
-
-	Context("When using cpu or memory flag with odo create", func() {
-		cmpName := "nodejs"
-
-		JustBeforeEach(func() {
-			helper.Chdir(commonVar.Context)
-		})
-
-		It("should not allow using any memory or cpu flag", func() {
-
-			cases := []struct {
-				paramName  string
-				paramValue string
-			}{
-				{
-					paramName:  "cpu",
-					paramValue: "0.4",
-				},
-				{
-					paramName:  "mincpu",
-					paramValue: "0.2",
-				},
-				{
-					paramName:  "maxcpu",
-					paramValue: "0.4",
-				},
-				{
-					paramName:  "memory",
-					paramValue: "200Mi",
-				},
-				{
-					paramName:  "minmemory",
-					paramValue: "100Mi",
-				},
-				{
-					paramName:  "maxmemory",
-					paramValue: "200Mi",
-				},
-			}
-			for _, testCase := range cases {
-				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				output := helper.Cmd("odo", "component", "create", "--s2i", "nodejs", cmpName, "--project", commonVar.Project, "--context", commonVar.Context, "--"+testCase.paramName, testCase.paramValue, "--git", "https://github.com/sclorg/nodejs-ex.git").ShouldFail().Err()
-				Expect(output).To(ContainSubstring("unknown flag: --" + testCase.paramName))
-			}
 		})
 	})
 

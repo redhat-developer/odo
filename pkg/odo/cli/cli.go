@@ -188,7 +188,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdList(component.ListRecommendedCommandName, util.GetFullName(fullName, component.ListRecommendedCommandName)),
 		component.NewCmdLog(component.LogRecommendedCommandName, util.GetFullName(fullName, component.LogRecommendedCommandName)),
 		component.NewCmdPush(component.PushRecommendedCommandName, util.GetFullName(fullName, component.PushRecommendedCommandName)),
-		component.NewCmdUpdate(component.UpdateRecommendedCommandName, util.GetFullName(fullName, component.UpdateRecommendedCommandName)),
 		component.NewCmdWatch(component.WatchRecommendedCommandName, util.GetFullName(fullName, component.WatchRecommendedCommandName)),
 		component.NewCmdStatus(component.StatusRecommendedCommandName, util.GetFullName(fullName, component.StatusRecommendedCommandName)),
 		component.NewCmdExec(component.ExecRecommendedCommandName, util.GetFullName(fullName, component.ExecRecommendedCommandName)),

@@ -2,16 +2,12 @@ package utils
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"github.com/fatih/color"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/convert"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -69,11 +65,6 @@ func NewConvertOptions() *ConvertOptions {
 
 // Complete completes ConvertOptions after they've been created
 func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
-	if !util.CheckPathExists(filepath.Join(co.componentContext, component.ConfigFilePath)) {
-		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to convert s2i component to devfile")
-	}
-
 	co.context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err

@@ -6,7 +6,6 @@ import (
 	"index/suffixarray"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -19,12 +18,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-type OdoV1Watch struct {
-	SrcType  string
-	RouteURL string
-	AppName  string
-}
-
 type OdoV2Watch struct {
 	CmpName               string
 	StringsToBeMatched    []string
@@ -34,16 +27,9 @@ type OdoV2Watch struct {
 }
 
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
-// Specify OdoV1Watch for odo version 1, OdoV2Watch for odo version 2(devfile)
+// Specify OdoV2Watch for odo version 2(devfile)
 // platform is kube
-func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, flag string, runner interface{}, platform string) {
-
-	isDevfileTest := false
-
-	// if the odoV2Watch object is not empty, its a devfile test
-	if !reflect.DeepEqual(odoV2Watch, OdoV2Watch{}) {
-		isDevfileTest = true
-	}
+func OdoWatch(odoV2Watch OdoV2Watch, project, context, flag string, runner interface{}, platform string) {
 
 	// After the watch command has started (indicated via channel), simulate file system changes
 	startSimulationCh := make(chan bool)
@@ -59,26 +45,14 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			_, err = os.Create(filepath.Join(context, "a.txt"))
 			Expect(err).To(BeNil())
 
-			if isDevfileTest {
-				if odoV2Watch.SrcType == "openjdk" {
-					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
-				} else {
-					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
-				}
+			if odoV2Watch.SrcType == "openjdk" {
+				helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
 			} else {
-				helper.DeleteDir(filepath.Join(context, "abcd"))
-				if odoV1Watch.SrcType == "openjdk" {
-					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
-				} else {
-					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
-				}
+				helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
 			}
+
 		}
 	}()
-
-	if !isDevfileTest {
-		flag = strings.TrimSpace(fmt.Sprintf("-v 4 %s", flag))
-	}
 
 	success, err := helper.WatchNonRetCmdStdOut(
 		("odo watch " + flag + " --context " + context),
@@ -90,41 +64,32 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 				return true
 			}
 			// Returns true if the test has succeeded, false if not yet
-			if isDevfileTest {
-				stringsMatched := true
 
-				for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
-					if !strings.Contains(output, stringToBeMatched) {
-						fmt.Fprintln(GinkgoWriter, "Missing string: ", stringToBeMatched)
-						stringsMatched = false
-					}
+			stringsMatched := true
+
+			for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
+				if !strings.Contains(output, stringToBeMatched) {
+					fmt.Fprintln(GinkgoWriter, "Missing string: ", stringToBeMatched)
+					stringsMatched = false
 				}
+			}
 
-				if stringsMatched {
+			if stringsMatched {
 
-					// first push is successful
-					// now delete a folder and check if the deletion is propagated properly
-					// and the file is removed from the cluster
-					index := suffixarray.New([]byte(output))
-					offsets := index.Lookup([]byte(filepath.Join(context, "abcd")+" changed"), -1)
+				// first push is successful
+				// now delete a folder and check if the deletion is propagated properly
+				// and the file is removed from the cluster
+				index := suffixarray.New([]byte(output))
+				offsets := index.Lookup([]byte(filepath.Join(context, "abcd")+" changed"), -1)
 
-					// the first occurrence of '<target-dir> changed' means the creation of it was pushed to the cluster
-					// and the first push was successful
-					if len(offsets) == 1 {
-						helper.DeleteDir(filepath.Join(context, "abcd"))
-					} else if len(offsets) > 1 {
-						// the occurrence of 'target-directory' more than once indicates that the deletion was propagated too
-						// Verify directory deleted from component pod
-						err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
-						Expect(err).To(BeNil())
-						return true
-					}
-				}
-			} else {
-				curlURL := helper.Cmd("curl", odoV1Watch.RouteURL).ShouldPass().Out()
-				if strings.Contains(curlURL, "Hello odo") {
-					// Verify delete from component pod
-					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+				// the first occurrence of '<target-dir> changed' means the creation of it was pushed to the cluster
+				// and the first push was successful
+				if len(offsets) == 1 {
+					helper.DeleteDir(filepath.Join(context, "abcd"))
+				} else if len(offsets) > 1 {
+					// the occurrence of 'target-directory' more than once indicates that the deletion was propagated too
+					// Verify directory deleted from component pod
+					err := validateContainerExecListDir(odoV2Watch, runner, platform, project)
 					Expect(err).To(BeNil())
 					return true
 				}
@@ -140,14 +105,6 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 
 	Expect(success).To(Equal(true))
 	Expect(err).To(BeNil())
-
-	if !isDevfileTest {
-		// Verify memory limits to be same as configured
-		getMemoryLimit := runner.(helper.OcRunner).MaxMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
-		Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
-		getMemoryRequest := runner.(helper.OcRunner).MinMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
-		Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
-	}
 }
 
 // OdoWatchWithDebug changes files in the context and watches for the changes to be pushed
@@ -254,25 +211,17 @@ func OdoWatchWithIgnore(odoV2Watch OdoV2Watch, context, flag string) {
 	Expect(err).To(BeNil())
 }
 
-func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) error {
+func validateContainerExecListDir(odoV2Watch OdoV2Watch, runner interface{}, platform, project string) error {
 	var folderToCheck, podName string
 	cliRunner := runner.(helper.CliRunner)
 	switch platform {
 	case "kube":
-		if isDevfileTest {
-			folderToCheck = "/projects"
-			if odoV2Watch.FolderToCheck != "" {
-				folderToCheck = odoV2Watch.FolderToCheck
-			}
-			podName = cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
-
-		} else {
-			ocRunner := runner.(helper.OcRunner)
-			podName = ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
-			envs := ocRunner.GetEnvs(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
-			dir := envs["ODO_S2I_SRC_BIN_PATH"]
-			folderToCheck = filepath.ToSlash(filepath.Join(dir, "src"))
+		folderToCheck = "/projects"
+		if odoV2Watch.FolderToCheck != "" {
+			folderToCheck = odoV2Watch.FolderToCheck
 		}
+		podName = cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
+
 	default:
 		return fmt.Errorf("Platform %s is not supported", platform)
 	}
@@ -298,17 +247,13 @@ func DeleteLocalConfig(args ...string) {
 }
 
 // VerifyCatalogListComponent verifies components inside wantOutput exists or not
-// in both S2I Component list and Devfile Component list
+// in Devfile Component list
 func VerifyCatalogListComponent(output string, cmpName []string) error {
 	var data map[string]interface{}
 	listItems := []string{"devfileItems"}
 
 	if err := json.Unmarshal([]byte(output), &data); err != nil {
 		return err
-	}
-
-	if os.Getenv("KUBERNETES") != "true" {
-		listItems = append(listItems, "s2iItems")
 	}
 
 	for _, items := range listItems {

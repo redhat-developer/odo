@@ -37,7 +37,7 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 
 	// Check to see if the environment file exists
 	if !envInfo.Exists() {
-		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
+		return nil, fmt.Errorf("the current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
 
 	return envInfo, nil
@@ -69,7 +69,7 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 	if !localConfiguration.Exists() && ignoreMissingConfiguration {
 		klog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
 	} else if !localConfiguration.Exists() {
-		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
+		return nil, fmt.Errorf("the current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
 
 	// else simply return the local config info

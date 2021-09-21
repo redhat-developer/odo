@@ -67,7 +67,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
 			}
 			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
+			utils.OdoWatch(odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 		})
 	})
 
@@ -87,7 +87,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing build command", "Executing run command"},
 			}
 			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
+			utils.OdoWatch(odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 		})
 	})
 
@@ -160,7 +160,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
 			}
 			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
+			utils.OdoWatch(odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 		})
 
 	})
@@ -201,7 +201,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 				CmpName:            cmpName,
 				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
 			}
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
+			utils.OdoWatch(odoV2Watch, commonVar.Project, commonVar.Context, watchFlag, commonVar.CliRunner, "kube")
 
 			// check that the --debug-command fails when the component is not pushed using debug mode
 			output = helper.Cmd("odo", "watch", "--debug-command", "debug").WithRetry(1, 1).ShouldFail().Err()

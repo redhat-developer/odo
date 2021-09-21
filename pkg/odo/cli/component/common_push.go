@@ -49,16 +49,6 @@ func NewCommonPushOptions() *CommonPushOptions {
 	}
 }
 
-//InitConfigFromContext initializes localconfiginfo from the context
-func (cpo *CommonPushOptions) InitConfigFromContext() error {
-	var err error
-	cpo.LocalConfigInfo, err = config.NewLocalConfigInfo(cpo.componentContext)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 //InitEnvInfoFromContext initializes envinfo from the context
 func (cpo *CommonPushOptions) InitEnvInfoFromContext() (err error) {
 	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.componentContext)

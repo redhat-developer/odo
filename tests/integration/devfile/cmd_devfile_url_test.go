@@ -47,7 +47,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			Expect(stdout).To(ContainSubstring("host must be provided"))
 
 			stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldFail().Err()
-			Expect(stdout).To(ContainSubstring("The current directory does not represent an odo component"))
+			Expect(stdout).To(ContainSubstring("the current directory does not represent an odo component"))
 			helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext).ShouldPass()
 			helper.Cmd("odo", "url", "create", url2, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext).ShouldPass()
 			stdout = helper.Cmd("odo", "push", "--context", subFolderContext).ShouldPass().Out()

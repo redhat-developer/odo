@@ -2,20 +2,16 @@ package component
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
-
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
-	"github.com/openshift/odo/pkg/component"
 	"github.com/spf13/cobra"
 )
 
@@ -46,13 +42,8 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	lo.devfilePath = "devfile.yaml"
 	lo.devfilePath = filepath.Join(lo.componentContext, lo.devfilePath)
 
-	// if experimental mode is enabled and devfile is present
-	if util.CheckPathExists(lo.devfilePath) {
-		lo.ComponentOptions.Context, err = genericclioptions.NewDevfileContext(cmd)
-		return err
-	}
-
-	return lo.ComponentOptions.Complete(name, cmd, args)
+	lo.ComponentOptions.Context, err = genericclioptions.NewDevfileContext(cmd)
+	return err
 }
 
 // Validate validates the log parameters
@@ -62,15 +53,7 @@ func (lo *LogOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *LogOptions) Run(cmd *cobra.Command) (err error) {
-	stdout := os.Stdout
-
-	// If experimental mode is enabled, use devfile push
-	if util.CheckPathExists(lo.devfilePath) {
-		err = lo.DevfileComponentLog()
-	} else {
-		// Retrieve the log
-		err = component.GetLogs(lo.Context.Client, lo.componentName, lo.Context.Application, lo.logFollow, stdout)
-	}
+	err = lo.DevfileComponentLog()
 	return
 }
 
