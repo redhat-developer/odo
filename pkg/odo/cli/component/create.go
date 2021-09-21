@@ -826,7 +826,8 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 				}
 				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-					token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+					var token string
+					token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 					if err != nil {
 						return errors.Wrap(err, "unable to get secure registry credential from keyring")
 					}
@@ -837,9 +838,16 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 				if err != nil {
 					return err
 				}
+				// if the function fails, remove this newly created devfile
+				defer func() {
+					if err != nil {
+						os.Remove(filepath.Join(co.componentContext, devFile))
+					}
+				}()
 			}
 
-			cfg, err := preference.New()
+			var cfg *preference.PreferenceInfo
+			cfg, err = preference.New()
 			if err != nil {
 				return err
 			}
@@ -873,7 +881,8 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 	}
 
 	if co.devfileMetadata.starterToken == "" && registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-		token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+		var token string
+		token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 		if err != nil {
 			return errors.Wrap(err, "unable to get secure registry credential from keyring")
 		}
