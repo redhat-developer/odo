@@ -81,7 +81,7 @@ func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
 		if err != nil && !isIgnorableError(err) {
 			return []url.URL{}, err
 		}
-		d.urls = append(d.urls, urls.Items...)
+		d.urls = urls.Items
 	}
 	return d.urls, nil
 }
@@ -94,7 +94,7 @@ func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
 			if err != nil {
 				return nil, err
 			}
-			d.storage = append(d.storage, storageList.Items...)
+			d.storage = storageList.Items
 		}
 	}
 	return d.storage, nil

@@ -24,7 +24,6 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
@@ -393,7 +392,6 @@ func TestList(t *testing.T) {
 		componentlabels.ComponentTypeAnnotation: "wildfly",
 	}
 
-	const caseName = "Case 4: List component when openshift cluster not reachable"
 	tests := []struct {
 		name                      string
 		deploymentConfigSupported bool
@@ -446,10 +444,6 @@ func TestList(t *testing.T) {
 				}
 				if len(tt.deploymentList.Items) <= 0 {
 					return true, &tt.deploymentList, nil
-				}
-				if tt.name == caseName {
-					// simulate unavailable cluster
-					return true, nil, errors.NewUnauthorized("user unauthorized")
 				}
 
 				var deploymentLabels0 map[string]string
