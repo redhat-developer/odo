@@ -1,0 +1,105 @@
+---
+- name: Create OpenShift Cluster on IBM Cloud
+  hosts: localhost
+  collections:
+   - ibm.cloudcollection
+  tasks:
+    - name: Fetch the variables from var file
+      include_vars:
+        file: vars.yml
+  
+    - name: Configure Resource Group
+      ibm_resource_group:
+        name: "{{ name_prefix }}-group"
+        state: available
+      register: rg_create_output
+
+    - name: Save Resource Group as fact
+      set_fact:
+        cacheable: True
+        rg: "{{ rg_create_output.resource }}"
+      when: rg_create_output.rc==0
+
+    - name: Configure VPC
+      ibm_is_vpc:
+        name: "{{ name_prefix }}-vpc"
+        resource_group: "{{ rg.id }}"
+        state: available
+      register: vpc_create_output
+
+    - name: Save VPC as fact
+      set_fact:
+        cacheable: True
+        vpc: "{{ vpc_create_output.resource }}"
+      when: vpc_create_output.rc==0
+
+    - name: Configure Public Gateway
+      ibm_is_public_gateway:
+        name: "{{ name_prefix }}-gw"
+        resource_group: "{{ rg.id }}"
+        zone: "{{ cluster_zone }}"
+        vpc: "{{ vpc.id }}"
+        state: available
+      register: gw_create_output
+
+    - name: Save Public Gateway as fact
+      set_fact:
+        cacheable: True
+        gw: "{{ gw_create_output.resource }}"
+      when: gw_create_output.rc==0
+
+    - name: Configure VPC Subnet
+      ibm_is_subnet:
+        name: "{{ name_prefix }}-subnet"
+        resource_group: "{{ rg.id }}"
+        vpc: "{{ vpc.id }}"
+        zone: "{{ cluster_zone }}"
+        total_ipv4_address_count: "{{ total_ipv4_address_count }}"
+        public_gateway: "{{ gw.id }}"
+        state: available
+      register: subnet_create_output
+
+    - name: Save VPC Subnet as fact
+      set_fact:
+        cacheable: True
+        subnet: "{{ subnet_create_output.resource }}"
+      when: subnet_create_output.rc==0
+
+    - name: Configure Cloud Object Storage
+      ibm_resource_instance:
+        name: "{{ name_prefix }}-cos"
+        resource_group_id: "{{ rg.id }}"
+        service: "cloud-object-storage"
+        plan: "standard"
+        location: "global"
+        state: available
+      register: cos_create_output
+
+    - name: Save Cloud ObjectStorage Subnet as fact
+      set_fact:
+        cacheable: True
+        cos: "{{ cos_create_output.resource }}"
+      when: cos_create_output.rc==0
+
+    - name: Consigure OpenShift cluster
+      ibm_container_vpc_cluster:
+        name: "{{ name_prefix }}-cluster"
+        resource_group_id: "{{ rg.id }}"
+        kube_version: "4.7_openshift"
+        flavor: "{{ node_flavor }}"
+        worker_count: "{{ workers }}"
+        vpc_id: "{{ vpc.id }}"
+        cos_instance_crn: "{{ cos.crn }}"
+        zones: 
+        - {
+          subnet_id: "{{ subnet.id }}",
+          name: "{{ cluster_zone }}"
+        }
+        state: available
+      register: cluster_create_output
+
+    - name: Save Cluster as fact
+      set_fact:
+        cacheable: True
+        cluster: "{{ cluster_create_output.resource }}"
+      when: cluster_create_output.rc==0

@@ -1,0 +1,6 @@
+---
+name_prefix: odo-tests
+total_ipv4_address_count: 256
+cluster_zone: eu-de-2
+node_flavor: bx2.4x16
+workers: 2
