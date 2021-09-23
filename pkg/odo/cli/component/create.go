@@ -671,7 +671,6 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specified devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starterToken, "starter-token", "", "Token to be used when downloading starter project")
-	componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Enforce S2I type components")
 	componentCreateCmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
 		if strings.Contains(err.Error(), "flag needs an argument: --starter") {
 			return fmt.Errorf("%w: you can get the list of possible values with the command `odo catalog describe component <type>`", err)
