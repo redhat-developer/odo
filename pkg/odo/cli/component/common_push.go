@@ -113,7 +113,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 				cmpName,
 				err,
 			)
-			os.Exit(1)
+			return err
 		}
 	}
 	// Apply config

@@ -3,10 +3,11 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
-	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"io"
 	"os"
 	"text/tabwriter"
+
+	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
 
 	// Third-party packages
 	"github.com/openshift/odo/pkg/log"
@@ -16,7 +17,6 @@ import (
 
 	// odo packages
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/preference"
 )
 
@@ -57,7 +57,7 @@ func (o *ListOptions) Validate() (err error) {
 func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	cfg, err := preference.New()
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return err
 	}
 
 	registryList := cfg.OdoSettings.RegistryList

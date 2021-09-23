@@ -173,7 +173,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 			componentName,
 			err,
 		)
-		os.Exit(1)
+		return err
 	}
 
 	return util.DisplayLog(lo.logFollow, rd, os.Stdout, componentName, -1)

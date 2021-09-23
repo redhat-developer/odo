@@ -109,7 +109,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 			storages = storage.StorageList{Items: componentDesc.Spec.StorageSpec}
 		} else {
 			localConfig, err := config.New()
-			LogErrorAndExit(err, "")
+			if err != nil {
+				log.Error(errors.Cause(err))
+				return err
+			}
 			storageLocal, err := localConfig.ListStorage()
 			if err != nil {
 				return err
@@ -184,7 +187,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
 			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, project)
-			LogErrorAndExit(err, "")
+			if err != nil {
+				log.Error(errors.Cause(err))
+				return err
+			}
 
 			if len(secrets.Data) > 0 {
 				// Iterate through the secrets to throw in a string
