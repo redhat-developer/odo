@@ -324,7 +324,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create the component and download the source from the specified branch", func() {
-			helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
+			helper.Cmd("odo", "create", "nodejs", "--starter", "nodejs-starter").ShouldPass()
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 		})
