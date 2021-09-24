@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	scontext "github.com/openshift/odo/pkg/segment/context"
 
@@ -72,7 +73,11 @@ func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath st
 		Endpoint: segmentEndpoint,
 		Verbose:  true,
 		DefaultContext: &analytics.Context{
-			IP: net.IPv4(0, 0, 0, 0),
+			IP:       net.IPv4(0, 0, 0, 0),
+			Timezone: getTimeZoneRelativeToUTC(),
+			OS: analytics.OSInfo{
+				Name: runtime.GOOS,
+			},
 		},
 	})
 	if err != nil {
@@ -83,6 +88,14 @@ func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath st
 		Preference:        preference,
 		TelemetryFilePath: telemetryFilePath,
 	}, nil
+}
+
+// getTimeZoneRelativeToUTC returns time zone relative to UTC (UTC +0530, UTC 0000, etc.)
+func getTimeZoneRelativeToUTC() string {
+	// t is a string array of RHC8222Z representation of current time
+	// example - [13 Sep 21 16:37 +0530]
+	var t = strings.Split(time.Now().Format(time.RFC822Z), " ")
+	return fmt.Sprintf("UTC %s", t[len(t)-1])
 }
 
 // Close client connection and send the data
@@ -143,6 +156,7 @@ func (c *Client) Upload(data TelemetryData) error {
 // addConfigTraits adds information about the system
 func addConfigTraits() analytics.Traits {
 	traits := analytics.NewTraits().Set("os", runtime.GOOS)
+	traits.Set("timezone", getTimeZoneRelativeToUTC())
 	return traits
 }
 
