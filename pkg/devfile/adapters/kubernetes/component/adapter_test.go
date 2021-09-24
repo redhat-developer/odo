@@ -322,6 +322,11 @@ func TestDoesComponentExist(t *testing.T) {
 			fkclient, fkclientset := occlient.FakeNew()
 			fkWatch := watch.NewFake()
 
+			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
+				Name:    tt.componentName,
+				AppName: tt.appName,
+			})
+
 			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if patchAction, is := action.(ktesting.PatchAction); is {
 					patch := patchAction.GetPatch()

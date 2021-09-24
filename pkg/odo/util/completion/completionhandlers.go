@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
@@ -59,21 +58,6 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 
 // URLCompletionHandler provides completion for the url commands
 var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-
-	urls, err := url.ListPushed(context.Client, context.Component(), context.Application)
-	if err != nil {
-		return completions
-	}
-
-	for _, url := range urls.Items {
-		// we found the url in the list which means
-		// that the url name has been already selected by the user so no need to suggest more
-		if args.commands[url.Name] {
-			return nil
-		}
-		completions = append(completions, url.Name)
-	}
 	return
 }
 

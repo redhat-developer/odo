@@ -127,7 +127,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			},
 			routeList: &routev1.RouteList{
 				Items: []routev1.Route{
-					testingutil.GetSingleRoute(testURL4.Name, testURL4.Port, componentName, ""),
+					testingutil.GetSingleRoute(testURL4.Name, testURL4.Port, componentName, "app"),
 				},
 			},
 		},
@@ -160,7 +160,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfig.EXPECT().GetName().Return(componentName).AnyTimes()
-			mockLocalConfig.EXPECT().GetApplication().Return("")
+			mockLocalConfig.EXPECT().GetApplication().Return("app")
 			mockLocalConfig.EXPECT().ListURLs().Return(tt.envURLs, nil)
 
 			// Initialising the fakeclient

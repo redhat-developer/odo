@@ -15,6 +15,7 @@ import (
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	appsV1 "k8s.io/api/apps/v1"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,10 +29,18 @@ type kubernetesClient struct {
 	generic
 	isRouteSupported bool
 	client           occlient.Client
+
+	// if we don't have access to the local config
+	// we can use the deployment to call ListFromCluster() and
+	// directly list storage from the cluster without the local config
+	deployment *appsV1.Deployment
 }
 
 // ListFromCluster lists both route and ingress based URLs from the cluster
 func (k kubernetesClient) ListFromCluster() (URLList, error) {
+	if k.componentName == "" || k.appName == "" {
+		return URLList{}, fmt.Errorf("the component name, the app name or both are empty")
+	}
 	labelSelector := componentlabels.GetSelector(k.componentName, k.appName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := k.client.GetKubeClient().ListIngresses(labelSelector)
@@ -137,6 +146,9 @@ func (k kubernetesClient) List() (URLList, error) {
 
 // Delete deletes the URL with the given name and kind
 func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) error {
+	if k.componentName == "" || k.appName == "" {
+		return fmt.Errorf("the component name, the app name or both are empty")
+	}
 	selector := util.ConvertLabelsToSelector(urlLabels.GetLabels(name, k.componentName, k.appName, false))
 
 	switch kind {
@@ -159,6 +171,10 @@ func (k kubernetesClient) Delete(name string, kind localConfigProvider.URLKind) 
 
 // Create creates a route or ingress based on the given URL
 func (k kubernetesClient) Create(url URL) (string, error) {
+	if k.componentName == "" || k.appName == "" {
+		return "", fmt.Errorf("the component name, the app name or both are empty")
+	}
+
 	if url.Spec.Kind != localConfigProvider.INGRESS && url.Spec.Kind != localConfigProvider.ROUTE {
 		return "", fmt.Errorf("urlKind %s is not supported for URL creation", url.Spec.Kind)
 	}
@@ -195,11 +211,14 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	ingressDomain := fmt.Sprintf("%v.%v", url.Name, url.Spec.Host)
 
 	// generate the owner reference
-	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
-	if err != nil {
-		return "", err
+	if k.deployment == nil {
+		var err error
+		k.deployment, err = k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
+		if err != nil {
+			return "", err
+		}
 	}
-	ownerReference := generator.GetOwnerReference(deployment)
+	ownerReference := generator.GetOwnerReference(k.deployment)
 
 	if url.Spec.Secure {
 		if len(url.Spec.TLSSecret) != 0 {
@@ -283,11 +302,14 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}
 
-	deployment, err := k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
-	if err != nil {
-		return "", err
+	if k.deployment == nil {
+		var err error
+		k.deployment, err = k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
+		if err != nil {
+			return "", err
+		}
 	}
-	ownerReference := generator.GetOwnerReference(deployment)
+	ownerReference := generator.GetOwnerReference(k.deployment)
 
 	service, err := k.client.GetKubeClient().GetOneService(k.componentName, k.appName)
 	if err != nil {
