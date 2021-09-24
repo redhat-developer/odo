@@ -1,5 +1,5 @@
 ---
-name_prefix: odo-tests
+name_prefix: odo-tests-openshift
 total_ipv4_address_count: 256
 cluster_zone: eu-de-2
 node_flavor: bx2.4x16
