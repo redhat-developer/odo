@@ -54,48 +54,14 @@ Learn more about core concepts on link:https://odo.dev/docs/getting-started/basi
 Devfiles describe your development environment link. link:docs/public/deploying-a-devfile-using-odo.adoc[Click here for more information on Devfile.]
 // TODO: Change this to odo.dev once migrated.
 
-.List of Devfiles which are officially supported by odo
-[options="header"]
-|===
-|Language | Devfile Name | Description | Devfile Source | Supported Platform
 
-| Java
-| java-maven
-| Upstream Maven and OpenJDK 11
-| link:https://github.com/devfile/registry/blob/main/stacks/java-maven/devfile.yaml[java-maven/devfile.yaml]
-| amd64
 
-| Java
-| java-openliberty
-| Open Liberty microservice in Java      
-| link:https://github.com/devfile/registry/blob/main/stacks/java-openliberty/devfile.yaml[java-openliberty/devfile.yaml]
-| amd64
-
-| Java
-| java-quarkus
-| Upstream Quarkus with Java+GraalVM
-| link:https://github.com/devfile/registry/blob/main/stacks/java-quarkus/devfile.yaml[java-quarkus/devfile.yaml]
-| amd64
-
-| Java
-| java-springboot
-| Spring Boot® using Java 
-| link:https://github.com/devfile/registry/blob/main/stacks/java-springboot/devfile.yaml[java-springboot/devfile.yaml]
-| amd64
-
-| Node.JS
-| nodejs
-| Stack with NodeJS 14
-| link:https://github.com/devfile/registry/blob/main/stacks/nodejs/devfile.yaml[nodejs/devfile.yaml]
-| amd64, s390x, ppc64le
-
-|===
 [id="odo-listing-available-images"]
 ==== Listing available Devfiles
 
 [NOTE]
 ====
-The list of available Devfiles is sourced from the official link:https://github.com/devfile/registry[devfile registry] as well as any other registries added via `odo registry add`.
+The list of available Devfiles is sourced from the official link:https://registry.devfile.io/viewer[devfile registry] as well as any other registries added via `odo registry add`.
 ====
 
 To list the available Devfiles:
@@ -121,25 +87,12 @@ With your approval, odo will collect pseudonymized usage data and send it to Red
 [[official-documentation]]
 == Official documentation
 
-* link:https://odo.dev/docs/intro/[Introduction to odo]
-* link:https://odo.dev/docs/getting-started/installation/[Installing odo]
-//* link:docs/public/deploying-a-devfile-using-odo.adoc/[Deploying a devfile using odo]
-* link:https://docs.devfile.io/docs/devfile/2.1.0/user-guide/api-reference.html/[Devfile file reference]
-//* link:docs/public/debugging-using-devfile.adoc[Debugging applications in odo]
-//* link:https://odo.dev/docs/managing-environment-variables-in-odo/[Managing environment variables]
-* link:https://odo.dev/docs/getting-started/configure[Configuring the odo CLI]
-* link:https://odo.dev/docs/getting-started/cluster-setup/kubernetes[Setting up odo for a Kubernetes cluster]
-* link:https://odo.dev/docs/getting-started/cluster-setup/openshift[Setting up odo for an OpenShift cluster]
-//* link:https://odo.dev/docs/odo-architecture/[Architecture of odo]
-//* link:https://odo.dev/docs/odo-cli-reference/[odo CLI reference]
-//* link:https://odo.dev/docs/operator-hub/[Using Operators with odo]
-
 Visit link:https://odo.dev/[odo.dev] to learn more about odo.
 
 [[installing-odo]]
 == Installing `odo`
 
-To install on Linux / Windows / macOS follow our guide located on link:https://odo.dev/docs/getting-started/installation/[odo.dev]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
+To install on Linux / Windows / macOS follow our guide located on link:https://odo.dev/docs/getting-started/installation/[odo.dev]. All released binaries and tarballs are available at  link:https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/[developers.redhat.com].
 
 [[deploying-your-first-application]]
 == Deploying your first application
@@ -195,50 +148,3 @@ You can find the exact dates of all scheduled odo calls together with sprint dat
 
 To participate in the calls, please join link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
 
-[[odo-roadmap]]
-== Roadmap for odo
-
-Below is a roadmap for odo where 2.1, 2.2 and 2.3 are odo versions.
-
-=== Post v2 (Before 19th Jan)
-
-- Refactor
-- Storage of linking info in devfile so that odo push can support this as well
-
-=== 2.1 Planning (19th Jan - 13th April)
-
-- link:https://github.com/openshift/odo/issues/2756[#2756] - Add `odo deploy` command for initial transition from inner to outer loop
-- link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative:Service (odo deploy)
-- link:https://github.com/openshift/odo/issues/3782[#3782] - Devfile support followup
-- link:https://github.com/openshift/odo/issues/2618[#2618] - Link via ServiceBindingRequest
-- link:https://github.com/openshift/odo/issues/2613[#2613] - Instantiate and manage services through Operator
-- link:https://github.com/openshift/odo/issues/4192[#4192] - Show components created by other tools in odo
-- link:https://github.com/openshift/odo/issues/3132[#3132] - control over how rsync and start/stop happens
-
-=== 2.2 Planning 
-
-- link:https://github.com/openshift/odo/issues/1238[#1238] - Integration with pipelines (CI)
-- link:https://github.com/openshift/odo/issues/4094[#4094] - Builds v2 Support (odo deploy should provide initial support for build v2 strategy)
-- link:https://github.com/openshift/odo/issues/2540[#2540] - e2e tests on windows & macOS
-
-=== 2.3 Planning 
-
-- link:https://github.com/openshift/odo/issues/3026[#3026] - Support for Knative Eventing
-- link:https://github.com/openshift/odo/issues/3664[#3664] - Add --now option support for Storage
-- link:https://github.com/openshift/odo/issues/3126[#3126] - allow `.devfile.yaml`
-- link:https://github.com/openshift/odo/issues/2191[#2191] - URL support for https
-
-[[projects-using-odo]]
-== Projects using odo
-
-These are some of the IDE plugins which use odo:
-
-* link:https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector[VS Code Openshift Connector]
-* link:https://open-vsx.org/extension/redhat/vscode-openshift-connector[Open VSX Openshift Connector]
-* link:http://plugins.jetbrains.com/plugin/12030-openshift-connector-by-red-hat[Openshift Connector for Intellij]
-* link:https://www.eclipse.org/codewind[Codewind for Eclipse Che]
-
-[[experimental-mode]]
-== Experimental mode
-
-Want to try out the odo experimental mode? Please read the link:docs/dev/experimental-mode.adoc[document] for more information.
