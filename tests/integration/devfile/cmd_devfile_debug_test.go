@@ -110,7 +110,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			runningString := helper.Cmd("odo", "debug", "info", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(runningString).To(ContainSubstring(freePort))
 			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-odo-debug.json"))
-			helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-nodejs-cmp-odo-debug.json"))
+			defer helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-nodejs-cmp-odo-debug.json"))
 			stopChannel <- true
 		})
 
