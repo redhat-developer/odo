@@ -311,23 +311,27 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	if execRequired || parameters.RunModeChanged {
+	runCommand := pushDevfileCommands[devfilev1.RunCommandGroupKind]
+	if parameters.Debug {
+		runCommand = pushDevfileCommands[devfilev1.DebugCommandGroupKind]
+	}
+	running, err := a.GetSupervisordCommandStatus(runCommand)
+	if err != nil {
+		return err
+	}
+
+	if !running || execRequired || parameters.RunModeChanged {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
 			return err
 		}
 
-		runCommand := pushDevfileCommands[devfilev1.RunCommandGroupKind]
-		if parameters.Debug {
-			runCommand = pushDevfileCommands[devfilev1.DebugCommandGroupKind]
-		}
-
 		// wait for a second
 		wait := time.After(supervisorDStatusWaitTimeInterval * time.Second)
 		<-wait
 
-		err := a.CheckSupervisordCtlStatus(runCommand)
+		err := a.CheckSupervisordCommandStatus(runCommand)
 		if err != nil {
 			return err
 		}
@@ -339,9 +343,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
-// CheckSupervisordCtlStatus checks the supervisord status according to the given command
-// if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
-func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+// GetSupervisordCommandStatus returns true if the command is running
+// based on `supervisord ctl` output and returns an error if
+// the command is not known by supervisord
+func (a Adapter) GetSupervisordCommandStatus(command devfilev1.Command) (bool, error) {
 	statusInContainer := getSupervisordStatusInContainer(a.pod.Name, command.Exec.Component, a)
 
 	supervisordProgramName := "devrun"
@@ -353,30 +358,39 @@ func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
 
 	for _, status := range statusInContainer {
 		if strings.EqualFold(status.program, supervisordProgramName) {
-			if strings.EqualFold(status.status, "running") {
-				return nil
-			} else {
-				numberOfLines := 20
-				log.Warningf("devfile command \"%s\" exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
-				log.Infof("Last %d lines of the component's log:", numberOfLines)
-
-				rd, err := a.Log(false, command)
-				if err != nil {
-					return err
-				}
-
-				err = util.DisplayLog(false, rd, os.Stderr, a.ComponentName, numberOfLines)
-				if err != nil {
-					return err
-				}
-
-				log.Info("To get the full log output, please run 'odo log'")
-
-				return nil
-			}
+			return strings.EqualFold(status.status, "running"), nil
 		}
 	}
-	return fmt.Errorf("the supervisord program %s not found", supervisordProgramName)
+	return false, fmt.Errorf("the supervisord program %s not found", supervisordProgramName)
+}
+
+// CheckSupervisordCommandStatus checks if the command is running based on supervisord status output.
+// if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
+func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
+
+	running, err := a.GetSupervisordCommandStatus(command)
+	if err != nil {
+		return err
+	}
+
+	if !running {
+		numberOfLines := 20
+		log.Warningf("devfile command %q exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
+		log.Infof("Last %d lines of the component's log:", numberOfLines)
+
+		rd, err := a.Log(false, command)
+		if err != nil {
+			return err
+		}
+
+		err = util.DisplayLog(false, rd, os.Stderr, a.ComponentName, numberOfLines)
+		if err != nil {
+			return err
+		}
+
+		log.Info("To get the full log output, please run 'odo log'")
+	}
+	return nil
 }
 
 // Test runs the devfile test command

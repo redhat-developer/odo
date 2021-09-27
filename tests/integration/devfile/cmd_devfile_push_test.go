@@ -177,6 +177,25 @@ var _ = Describe("odo devfile push command tests", func() {
 					Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
 				})
 			})
+
+			When("the pod is deleted and replaced", func() {
+				BeforeEach(func() {
+					oldPod := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					commonVar.CliRunner.DeletePod(oldPod, commonVar.Project)
+					Eventually(func() bool {
+						newPod := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+						return newPod != "" && newPod != oldPod
+					}, 180, 10).Should(Equal(true))
+					newPod := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, newPod)
+
+				})
+
+				It("should execute run command on odo push", func() {
+					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+					Expect(output).To(ContainSubstring("Executing devrun command"))
+				})
+			})
 		})
 
 		When("creating local files and dir and doing odo push", func() {
