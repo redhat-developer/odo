@@ -69,7 +69,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.Project)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client, o.KClient)
+	exist, err := application.Exists(o.appName, o.Client)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}

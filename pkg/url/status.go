@@ -23,7 +23,7 @@ const (
 )
 
 // StartURLHttpRequestStatusWatchForK8S begins testing URLs for responses, outputting the result to console
-func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client *kclient.Client, localConfigProvider *localConfigProvider.LocalConfigProvider, loggingClient machineoutput.MachineEventLoggingClient) {
+func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client kclient.ClientInterface, localConfigProvider *localConfigProvider.LocalConfigProvider, loggingClient machineoutput.MachineEventLoggingClient) {
 
 	// This is a non-blocking function so that other status watchers may start as needed
 	go func() {
@@ -63,7 +63,7 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client *kclient.Client, localConfig localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
+func getURLsForKubernetes(oclient *occlient.Client, client kclient.ClientInterface, localConfig localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
 	componentName := localConfig.GetName()
 
 	routesSupported := false

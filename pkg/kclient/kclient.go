@@ -67,6 +67,22 @@ func New() (*Client, error) {
 	return NewForConfig(nil)
 }
 
+func (c *Client) GetClient() kubernetes.Interface {
+	return c.KubeClient
+}
+
+func (c *Client) GetConfig() clientcmd.ClientConfig {
+	return c.KubeConfig
+}
+
+func (c *Client) GetClientConfig() *rest.Config {
+	return c.KubeClientConfig
+}
+
+func (c *Client) GetDynamicClient() dynamic.Interface {
+	return c.DynamicClient
+}
+
 // NewForConfig creates a new client with the provided configuration or initializes the configuration if none is provided
 func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	if config == nil {

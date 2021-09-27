@@ -90,7 +90,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		var platformContext interface{}
 		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-		so.namespace = so.KClient.Namespace
+		so.namespace = so.KClient.GetCurrentNamespace()
 		platformContext = kubernetes.KubernetesContext{
 			Namespace: so.namespace,
 		}
@@ -137,7 +137,7 @@ func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
 		// Fallback to k8s if occlient throws an error
 		oclient = nil
 	} else {
-		oclient.Namespace = so.KClient.Namespace
+		oclient.Namespace = so.KClient.GetCurrentNamespace()
 	}
 
 	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfig, loggingClient)

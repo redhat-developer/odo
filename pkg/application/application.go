@@ -1,7 +1,6 @@
 package application
 
 import (
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -54,7 +53,7 @@ func List(client *occlient.Client) ([]string, error) {
 }
 
 // Exists checks whether the given app exist or not in the list of applications
-func Exists(app string, client *occlient.Client, kClient *kclient.Client) (bool, error) {
+func Exists(app string, client *occlient.Client) (bool, error) {
 
 	appList, err := List(client)
 
