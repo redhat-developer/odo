@@ -168,7 +168,7 @@ func addConfigTraits() analytics.Traits {
 	// get the locale information
 	tag, err := locale.Detect()
 	if err != nil {
-		klog.V(4).Infof("couldn't fetch locale info: %w", err.Error())
+		klog.V(4).Infof("couldn't fetch locale info: %w", err)
 	} else {
 		traits.Set("locale", tag.String())
 	}
