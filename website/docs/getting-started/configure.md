@@ -12,15 +12,37 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 <Tabs
-defaultValue="Linux"
+defaultValue="linux"
 values={[
 {label: 'Linux', value: 'linux'},
 {label: 'Windows', value: 'windows'},
 {label: 'Mac', value: 'mac'},
 ]}>
-<TabItem value="linux">/home/userName/.odo/preference.yaml</TabItem>
-<TabItem value="windows">C:\\Users\userName\.odo\preference.yaml</TabItem>
-<TabItem value="mac">/Users/userName/.odo/preference.yaml</TabItem>
+
+<TabItem value="linux">
+
+```sh
+/home/userName/.odo/preference.yaml
+```
+
+</TabItem>
+
+<TabItem value="windows">
+
+```sh
+C:\\Users\userName\.odo\preference.yaml
+```
+
+</TabItem>
+
+<TabItem value="mac">
+
+```sh
+/Users/userName/.odo/preference.yaml
+```
+
+</TabItem>
+
 </Tabs>
 
 ---
