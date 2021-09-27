@@ -315,7 +315,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if parameters.Debug {
 		runCommand = pushDevfileCommands[devfilev1.DebugCommandGroupKind]
 	}
-	running, err := a.GetSupervisordCtlStatus(runCommand)
+	running, err := a.GetSupervisordCommandStatus(runCommand)
 	if err != nil {
 		return err
 	}
@@ -331,7 +331,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		wait := time.After(supervisorDStatusWaitTimeInterval * time.Second)
 		<-wait
 
-		err := a.CheckSupervisordCtlStatus(runCommand)
+		err := a.CheckSupervisordCommandStatus(runCommand)
 		if err != nil {
 			return err
 		}
@@ -343,9 +343,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
-// GetSupervisordCtlStatus returns true if the command is running and returns an error if
-// the command is not found on the supersisord configuration
-func (a Adapter) GetSupervisordCtlStatus(command devfilev1.Command) (bool, error) {
+// GetSupervisordCommandStatus returns true if the command is running
+// based on `supervisord ctl` output and returns an error if
+// the command is not known by supersisord
+func (a Adapter) GetSupervisordCommandStatus(command devfilev1.Command) (bool, error) {
 	statusInContainer := getSupervisordStatusInContainer(a.pod.Name, command.Exec.Component, a)
 
 	supervisordProgramName := "devrun"
@@ -363,11 +364,11 @@ func (a Adapter) GetSupervisordCtlStatus(command devfilev1.Command) (bool, error
 	return false, fmt.Errorf("the supervisord program %s not found", supervisordProgramName)
 }
 
-// CheckSupervisordCtlStatus checks the supervisord status according to the given command
+// CheckSupervisordCommandStatus checks if the command is running based on supervisord status output.
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
-func (a Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
+func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
 
-	running, err := a.GetSupervisordCtlStatus(command)
+	running, err := a.GetSupervisordCommandStatus(command)
 	if err != nil {
 		return err
 	}
