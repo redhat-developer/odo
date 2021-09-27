@@ -345,7 +345,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 // GetSupervisordCommandStatus returns true if the command is running
 // based on `supervisord ctl` output and returns an error if
-// the command is not known by supersisord
+// the command is not known by supervisord
 func (a Adapter) GetSupervisordCommandStatus(command devfilev1.Command) (bool, error) {
 	statusInContainer := getSupervisordStatusInContainer(a.pod.Name, command.Exec.Component, a)
 
@@ -375,7 +375,7 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 
 	if !running {
 		numberOfLines := 20
-		log.Warningf("devfile command \"%s\" exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
+		log.Warningf("devfile command %q exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
 		log.Infof("Last %d lines of the component's log:", numberOfLines)
 
 		rd, err := a.Log(false, command)
