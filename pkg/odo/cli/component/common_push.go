@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -119,7 +118,8 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	// Apply config
 	err := component.ApplyConfig(cpo.Context.Client, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, true)
 	if err != nil {
-		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
+		log.Error("Failed to update config to component deployed.")
+		return err
 	}
 
 	return nil
