@@ -6,7 +6,7 @@ import (
 	devfileData "github.com/devfile/library/pkg/devfile/parser/data"
 	v2 "github.com/devfile/library/pkg/devfile/parser/data/v2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"strings"
+	"github.com/hashicorp/go-multierror"
 )
 
 // ValidateDevfileData validates whether sections of devfile are compatible
@@ -29,48 +29,39 @@ func ValidateDevfileData(data devfileData.DevfileData) error {
 		return err
 	}
 
-	var errstrings []string
+	var returnedErr error
 	switch d := data.(type) {
 	case *v2.DevfileV2:
 		// validate components
 		err = v2Validation.ValidateComponents(components)
 		if err != nil {
-			errstrings = append(errstrings, err.Error())
+			returnedErr = multierror.Append(returnedErr, err)
 		}
 
 		// validate commands
 		err = v2Validation.ValidateCommands(commands, components)
 		if err != nil {
-			errstrings = append(errstrings, err.Error())
+			returnedErr = multierror.Append(returnedErr, err)
 		}
 
 		err = v2Validation.ValidateEvents(data.GetEvents(), commands)
 		if err != nil {
-			errstrings = append(errstrings, err.Error())
+			returnedErr = multierror.Append(returnedErr, err)
 		}
 
 		err = v2Validation.ValidateProjects(projects)
 		if err != nil {
-			errstrings = append(errstrings, err.Error())
+			returnedErr = multierror.Append(returnedErr, err)
 		}
 
 		err = v2Validation.ValidateStarterProjects(starterProjects)
 		if err != nil {
-			errstrings = append(errstrings, err.Error())
+			returnedErr = multierror.Append(returnedErr, err)
 		}
 
-		if len(errstrings) > 0 {
-			return fmt.Errorf(strings.Join(errstrings, "\n"))
-		} else {
-			return nil
-		}
+		return returnedErr
+
 	default:
 		return fmt.Errorf("unknown devfile type %T", d)
 	}
-
-	if len(errstrings) > 0 {
-		return fmt.Errorf(strings.Join(errstrings, "\n"))
-	}
-
-	return nil
 }

@@ -6,33 +6,26 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/api/v2 v2.1.0
-	github.com/devfile/library v1.0.1-0.20210716161803-9de9d4cb6be7
-	github.com/devfile/registry-support/index/generator v0.0.0-20210407161420-cd279527f873
-	github.com/devfile/registry-support/registry-library v0.0.0-20210407161420-cd279527f873
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible // indirect
-	github.com/docker/go-connections v0.4.1-0.20200120150455-7dc0a2d6ddce // indirect
+	github.com/devfile/library v1.1.1-0.20210910214722-7c5ff63711ec
+	github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0
+	github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca
 	github.com/fatih/color v1.10.0
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.2.0
-	github.com/go-openapi/spec v0.19.4
-	github.com/go-openapi/strfmt v0.19.3
-	github.com/go-openapi/validate v0.19.5
+	github.com/go-openapi/spec v0.19.5
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/mock v1.5.0
-	github.com/google/go-cmp v0.5.4 // indirect
-	github.com/googleapis/gnostic v0.5.1
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.8
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/onsi/ginkgo v1.16.1
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.14.0
 	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
 	github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
 	github.com/openshift/library-go v0.0.0-20210106214821-c4d0b9c8d55f
@@ -54,20 +47,19 @@ require (
 	github.com/tidwall/sjson v1.1.6
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zalando/go-keyring v0.1.1
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
 	golang.org/x/tools v0.1.2-0.20210512205948-8287d5da45e4 // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.20.1
-	k8s.io/apimachinery v0.20.1
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
 	k8s.io/cli-runtime v0.20.1
-	k8s.io/client-go v0.20.1
+	k8s.io/client-go v0.21.3
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.4.0
+	k8s.io/klog/v2 v2.8.0
 	k8s.io/kubectl v0.20.1
-	sigs.k8s.io/controller-runtime v0.7.0
+	sigs.k8s.io/controller-runtime v0.9.5
 	sigs.k8s.io/yaml v1.2.0
 
 )
@@ -78,8 +70,10 @@ replace (
 	github.com/apcera/gssapi => github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b
 	github.com/containers/image => github.com/openshift/containers-image v0.0.0-20190130162819-76de87591e9d
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20191121165722-d1d5f6476656
+	k8s.io/api => k8s.io/api v0.20.1
 	k8s.io/apimachinery => github.com/openshift/kubernetes-apimachinery v0.0.0-20210108114224-194a87c5b03a
 	k8s.io/cli-runtime => github.com/openshift/kubernetes-cli-runtime v0.0.0-20210108114725-2ff6add1e911
 	k8s.io/client-go => github.com/openshift/kubernetes-client-go v0.0.0-20210108114446-0829bdd68114
 	k8s.io/kubectl => github.com/openshift/kubernetes-kubectl v0.0.0-20210108115031-c0d78c0aeda3
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.7.0
 )

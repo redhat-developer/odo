@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	apiVersion = "odo.dev/v1alpha1"
+	apiVersion      = "odo.dev/v1alpha1"
+	telemetryClient = "odo"
 )
 
 var supportedImages = map[string]bool{
@@ -172,7 +173,7 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 		}
 	} else {
 		// OCI-based registry
-		devfileIndex, err = registryLibrary.GetRegistryStacks(registry.URL)
+		devfileIndex, err = registryLibrary.GetRegistryIndex(registry.URL, false, telemetryClient, indexSchema.StackDevfileType)
 		if err != nil {
 			return nil, err
 		}

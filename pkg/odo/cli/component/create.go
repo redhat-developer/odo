@@ -111,6 +111,7 @@ odo catalog list components
 %[1]s nodejs --app myapp --project myproject`)
 
 const defaultStarterProjectName = "devfile-starter-project-name"
+const telemetryClient = "odo"
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -497,7 +498,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 					params.Token = token
 				}
 			} else {
-				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, telemetryClient)
 				if err != nil {
 					return err
 				}
@@ -564,7 +565,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
 	}
 	if co.devfileMetadata.devfilePath.value == "" && !devfileExist && !strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
-		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
+		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, telemetryClient)
 		if err != nil {
 			return err
 		}

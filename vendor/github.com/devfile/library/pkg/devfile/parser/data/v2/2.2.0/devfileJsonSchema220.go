@@ -687,6 +687,14 @@ const JsonSchema220 = `{
           "description": "Optional devfile project type",
           "type": "string"
         },
+        "provider": {
+          "description": "Optional devfile provider information",
+          "type": "string"
+        },
+        "supportUrl": {
+          "description": "Optional link to a page that provides support information",
+          "type": "string"
+        },
         "tags": {
           "description": "Optional devfile tags",
           "type": "array",
@@ -1357,7 +1365,7 @@ const JsonSchema220 = `{
                     "additionalProperties": false
                   },
                   "remotes": {
-                    "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
+                    "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
@@ -1388,7 +1396,7 @@ const JsonSchema220 = `{
           }
         },
         "registryUrl": {
-          "description": "Registry URL to pull the parent devfile from when using id in the parent reference. To ensure the parent devfile gets resolved consistently in different environments, it is recommended to always specify the 'regsitryURL' when 'Id' is used.",
+          "description": "Registry URL to pull the parent devfile from when using id in the parent reference. To ensure the parent devfile gets resolved consistently in different environments, it is recommended to always specify the 'registryUrl' when 'id' is used.",
           "type": "string"
         },
         "starterProjects": {
@@ -1441,7 +1449,7 @@ const JsonSchema220 = `{
                     "additionalProperties": false
                   },
                   "remotes": {
-                    "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
+                    "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
@@ -1542,7 +1550,7 @@ const JsonSchema220 = `{
                 "additionalProperties": false
               },
               "remotes": {
-                "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
+                "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
                 "type": "object",
                 "additionalProperties": {
                   "type": "string"
@@ -1630,7 +1638,7 @@ const JsonSchema220 = `{
                 "additionalProperties": false
               },
               "remotes": {
-                "description": "The remotes map which should be initialized in the git project. Must have at least one remote configured",
+                "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
                 "type": "object",
                 "additionalProperties": {
                   "type": "string"
