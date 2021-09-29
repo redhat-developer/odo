@@ -39,7 +39,10 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 		err = nil
 	}
 
-	co.componentName = co.Context.Component(args...)
+	co.componentName, err = co.Context.Component(args...)
+	if err != nil {
+		return nil
+	}
 	return
 }
 

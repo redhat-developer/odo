@@ -102,8 +102,12 @@ func (o *LinkOptions) Validate() (err error) {
 	if o.Context.EnvSpecificInfo != nil {
 		return
 	}
+	componentName, err := o.Component()
+	if err != nil {
+		return err
+	}
 
-	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, o.Component(), o.Application)
+	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, componentName, o.Application)
 	if err != nil {
 		return err
 	}

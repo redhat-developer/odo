@@ -68,11 +68,16 @@ func (o *UpdateOptions) Validate() (err error) {
 func (o *UpdateOptions) Run(cmd *cobra.Command) (err error) {
 	secureBeforeUpdate := false
 	secureAfterUpdate := false
-	if secure, err := registryUtil.IsSecure(o.registryName); secure {
-		secureBeforeUpdate = true
-	} else {
+
+	secure, err := registryUtil.IsSecure(o.registryName)
+	if err != nil {
 		return err
 	}
+
+	if secure {
+		secureBeforeUpdate = true
+	}
+
 	if o.token != "" {
 		secureAfterUpdate = true
 	}
