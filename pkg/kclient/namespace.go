@@ -158,6 +158,10 @@ func (c *Client) GetCurrentNamespace() string {
 	return c.Namespace
 }
 
+func (c *Client) SetNamespace(ns string) {
+	c.Namespace = ns
+}
+
 // WaitForServiceAccountInNamespace waits for the given service account to be ready
 func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
 	if namespace == "" || serviceAccountName == "" {

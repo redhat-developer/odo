@@ -85,7 +85,7 @@ func TestComponentExists(t *testing.T) {
 			})
 
 			// Verify that a component with the specified name exists
-			componentExists, err := ComponentExists(*fkclient, tt.getComponentName, tt.appName)
+			componentExists, err := ComponentExists(fkclient, tt.getComponentName, tt.appName)
 			if !tt.wantErr && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else if !tt.wantErr && componentExists != tt.want {

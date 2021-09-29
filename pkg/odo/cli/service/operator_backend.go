@@ -14,6 +14,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/ghodss/yaml"
+	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/validate"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -61,6 +63,9 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 	// if the user wants to create service from a file, we check for
 	// existence of file and validate if the requested operator and CR
 	// exist on the cluster
+
+	var csv olm.ClusterServiceVersion
+
 	if o.fromFile != "" {
 		if _, err := os.Stat(o.fromFile); err != nil {
 			return errors.Wrap(err, "unable to find specified file")
@@ -78,7 +83,6 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		}
 
 		// Check if the operator and the CR exist on cluster
-		var csv olm.ClusterServiceVersion
 		b.CustomResource, csv, err = svc.GetCSV(o.KClient, d.OriginalCRD)
 		if err != nil {
 			return err
@@ -117,10 +121,25 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		// CRD is valid. We can use it further to create a service from it.
 		b.CustomResourceDefinition = d.OriginalCRD
 
-		return nil
+		// Validate spec
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
+		}
+
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		if err != nil {
+			return err
+		}
+
+		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		if err != nil {
+			return err
+		}
+
 	} else if b.CustomResource != "" {
 		// make sure that CSV of the specified ServiceType exists
-		csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
+		csv, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
 		if err != nil {
 			// error only occurs when OperatorHub is not installed.
 			// k8s does't have it installed by default but OCP does
@@ -136,8 +155,18 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			o.ServiceName = strings.ToLower(b.CustomResource)
 		}
 
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
+		}
+
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		if err != nil {
+			return err
+		}
+
 		if len(o.parameters) != 0 {
-			builtCRD, err := b.buildCRDfromParams(o, csv)
+			builtCRD, err := svc.BuildCRDFromParams(o.ParametersMap, crd, b.group, b.version, b.CustomResource)
 			if err != nil {
 				return err
 			}
@@ -181,7 +210,12 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			}
 		}
 
-		return nil
+		// Validate spec
+		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		if err != nil {
+			return err
+		}
+
 	} else {
 		// This block is executed only when user has neither provided a
 		// file nor a valid `odo service create <operator-name>` to start
@@ -191,6 +225,8 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 
 		return fmt.Errorf("please use a valid command to start an Operator backed service; desired format: %q", "odo service create <operator-name>/<crd-name>")
 	}
+
+	return nil
 }
 
 func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
@@ -273,15 +309,6 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 	}
 
 	return nil
-}
-
-func (b *OperatorBackend) buildCRDfromParams(o *CreateOptions, csv olm.ClusterServiceVersion) (map[string]interface{}, error) {
-	hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
-	if !hasCR {
-		return nil, fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, o.ServiceType)
-	}
-
-	return svc.BuildCRDFromParams(cr, o.ParametersMap)
 }
 
 func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app string) error {

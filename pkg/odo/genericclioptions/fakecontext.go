@@ -5,7 +5,7 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 )
 
-func NewFakeContext(project, application, component string, client *occlient.Client, kclient *kclient.Client) *Context {
+func NewFakeContext(project, application, component string, client *occlient.Client, kclient kclient.ClientInterface) *Context {
 	return &Context{
 		internalCxt{
 			Client:      client,

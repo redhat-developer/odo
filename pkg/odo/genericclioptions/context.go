@@ -45,7 +45,7 @@ type internalCxt struct {
 	cmp                 string
 	OutputFlag          string
 	LocalConfigInfo     *config.LocalConfigInfo
-	KClient             *kclient.Client
+	KClient             kclient.ClientInterface
 	EnvSpecificInfo     *envinfo.EnvSpecificInfo
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }

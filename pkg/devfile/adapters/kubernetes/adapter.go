@@ -42,9 +42,9 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 	return nil
 }
 
-// CheckSupervisordCtlStatus calls the component adapter's CheckSupervisordCtlStatus
-func (k Adapter) CheckSupervisordCtlStatus(command devfilev1.Command) error {
-	err := k.componentAdapter.CheckSupervisordCtlStatus(command)
+// CheckSupervisordCommandStatus calls the component adapter's CheckSupervisordCommandStatus
+func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
+	err := k.componentAdapter.CheckSupervisordCommandStatus(command)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check the status")
 	}

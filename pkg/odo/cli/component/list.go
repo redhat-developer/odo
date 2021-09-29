@@ -108,7 +108,7 @@ func (lo *ListOptions) Validate() (err error) {
 	}
 
 	if util.CheckPathExists(lo.devfilePath) {
-		if lo.Application == "" && lo.KClient.Namespace == "" {
+		if lo.Application == "" && lo.KClient.GetCurrentNamespace() == "" {
 			return odoutil.ThrowContextError()
 		}
 		return nil

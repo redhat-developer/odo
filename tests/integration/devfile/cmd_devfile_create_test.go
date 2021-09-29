@@ -168,6 +168,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
 			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
 
+			newKubeConfig.Close()
 			err = os.Remove(newKubeConfigPath)
 			Expect(err).To(BeNil())
 		})

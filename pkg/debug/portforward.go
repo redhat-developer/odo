@@ -19,14 +19,14 @@ import (
 // DefaultPortForwarder implements the SPDY based port forwarder
 type DefaultPortForwarder struct {
 	client  *occlient.Client
-	kClient *kclient.Client
+	kClient kclient.ClientInterface
 	k8sgenclioptions.IOStreams
 	componentName string
 	appName       string
 	projectName   string
 }
 
-func NewDefaultPortForwarder(componentName, appName string, projectName string, client *occlient.Client, kClient *kclient.Client, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
+func NewDefaultPortForwarder(componentName, appName string, projectName string, client *occlient.Client, kClient kclient.ClientInterface, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
 	return &DefaultPortForwarder{
 		client:        client,
 		kClient:       kClient,
@@ -47,7 +47,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 	var err error
 
 	if f.kClient != nil && isDevfile {
-		conf, err = f.kClient.KubeConfig.ClientConfig()
+		conf, err = f.kClient.GetConfig().ClientConfig()
 		if err != nil {
 			return err
 		}

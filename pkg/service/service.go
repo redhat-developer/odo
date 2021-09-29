@@ -48,7 +48,7 @@ const filePrefix = "odo-service-"
 // GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
 // It returns a CR (string representation) and CSV (Operator) upon successfully
 // able to find them, an error otherwise.
-func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
+func GetCSV(client kclient.ClientInterface, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
 	cr := crd["kind"].(string)
 	csvs, err := client.ListClusterServiceVersions()
 	if err != nil {
@@ -78,7 +78,7 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563
-func DeleteOperatorService(client *kclient.Client, serviceName string) error {
+func DeleteOperatorService(client kclient.ClientInterface, serviceName string) error {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
 		return errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
@@ -114,7 +114,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 
 // ListOperatorServices lists all operator backed services.
 // It returns list of services, slice of services that it failed (if any) to list and error (if any)
-func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, []string, error) {
+func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstructured, []string, error) {
 	klog.V(4).Info("Getting list of services")
 
 	// First let's get the list of all the operators in the namespace
@@ -260,7 +260,7 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 
 // GetCRInstances fetches and returns instances of the CR provided in the
 // "customResource" field. It also returns error (if any)
-func GetCRInstances(client *kclient.Client, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
+func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
 	group, version, resource, err := GetGVRFromCR(customResource)
@@ -293,7 +293,7 @@ func IsOperatorServiceNameValid(name string) (string, string, error) {
 // '<service-kind>/<service-name>'. For example: EtcdCluster/example.
 // It doesn't bother about application since
 // https://github.com/openshift/odo/issues/2801 is blocked
-func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error) {
+func OperatorSvcExists(client kclient.ClientInterface, serviceName string) (bool, error) {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
 		return false, errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
@@ -692,7 +692,7 @@ func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
 }
 
 // PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushServices(client *kclient.Client, k8sComponents []devfile.Component, labels map[string]string, context string) error {
+func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, context string) error {
 
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
@@ -788,7 +788,7 @@ type DeployedInfo struct {
 	isLinkResource bool
 }
 
-func ListDeployedServices(client *kclient.Client, labels map[string]string) (map[string]DeployedInfo, error) {
+func ListDeployedServices(client kclient.ClientInterface, labels map[string]string) (map[string]DeployedInfo, error) {
 	deployed := map[string]DeployedInfo{}
 
 	deployedServices, _, err := ListOperatorServices(client)
@@ -814,7 +814,7 @@ func ListDeployedServices(client *kclient.Client, labels map[string]string) (map
 
 // UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
-func UpdateServicesWithOwnerReferences(client *kclient.Client, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
+func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
 	csvSupport, err := client.IsCSVSupported()
 	if err != nil {
 		return err
@@ -910,7 +910,7 @@ func isLinkResource(kind string) bool {
 
 // createOperatorService creates the given operator on the cluster
 // it returns the CR,Kind and errors
-func createOperatorService(client *kclient.Client, d *DynamicCRD, labels map[string]string, ownerReferences []metav1.OwnerReference) (string, string, error) {
+func createOperatorService(client kclient.ClientInterface, d *DynamicCRD, labels map[string]string, ownerReferences []metav1.OwnerReference) (string, string, error) {
 	cr, csv, err := GetCSV(client, d.OriginalCRD)
 	if err != nil {
 		return "", "", err

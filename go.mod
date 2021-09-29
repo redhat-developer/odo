@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
+	github.com/Xuanwo/go-locale v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/api/v2 v2.1.0
 	github.com/devfile/library v1.1.1-0.20210910214722-7c5ff63711ec
@@ -44,7 +45,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.7.5
-	github.com/tidwall/sjson v1.1.6
+	github.com/tidwall/sjson v1.1.6 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zalando/go-keyring v0.1.1
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6

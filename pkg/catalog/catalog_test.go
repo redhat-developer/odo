@@ -8,10 +8,14 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/testingutil"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -391,6 +395,109 @@ func TestConvertURL(t *testing.T) {
 
 			if !reflect.DeepEqual(gotURL, tt.wantURL) {
 				t.Errorf("Got url: %s, want URL: %s", gotURL, tt.wantURL)
+			}
+		})
+	}
+}
+
+func TestListOperatorServices(t *testing.T) {
+
+	tests := []struct {
+		name              string
+		isCSVsupported    bool
+		isCSVsupportedErr error
+		list              *olm.ClusterServiceVersionList
+		listErr           error
+		expectedList      *olm.ClusterServiceVersionList
+		expectedErr       bool
+	}{
+		{
+			name:              "error getting supported csv",
+			isCSVsupported:    false,
+			isCSVsupportedErr: errors.New("an error"),
+			expectedList:      &olm.ClusterServiceVersionList{},
+			expectedErr:       true,
+		},
+		{
+			name:              "non supported csv",
+			isCSVsupported:    false,
+			isCSVsupportedErr: nil,
+			expectedList:      &olm.ClusterServiceVersionList{},
+			expectedErr:       false,
+		},
+		{
+			name:              "error getting list",
+			isCSVsupported:    true,
+			isCSVsupportedErr: nil,
+			list:              nil,
+			listErr:           errors.New("an error"),
+			expectedList:      &olm.ClusterServiceVersionList{},
+			expectedErr:       true,
+		},
+		{
+			name:              "supported csv, empty list",
+			isCSVsupported:    true,
+			isCSVsupportedErr: nil,
+			list:              &olm.ClusterServiceVersionList{},
+			expectedList:      &olm.ClusterServiceVersionList{},
+			expectedErr:       false,
+		},
+		{
+			name:              "supported csv, return succeeded only",
+			isCSVsupported:    true,
+			isCSVsupportedErr: nil,
+			list: &olm.ClusterServiceVersionList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "a kind",
+					APIVersion: "a version",
+				},
+				Items: []olm.ClusterServiceVersion{
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "Succeeded",
+						},
+					},
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "",
+						},
+					},
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "other phase",
+						},
+					},
+				},
+			},
+			expectedList: &olm.ClusterServiceVersionList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "a kind",
+					APIVersion: "a version",
+				},
+				Items: []olm.ClusterServiceVersion{
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "Succeeded",
+						},
+					},
+				},
+			},
+			expectedErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			kc := kclient.NewMockClientInterface(ctrl)
+			kc.EXPECT().IsCSVSupported().Return(tt.isCSVsupported, tt.isCSVsupportedErr).AnyTimes()
+			kc.EXPECT().ListClusterServiceVersions().Return(tt.list, tt.listErr).AnyTimes()
+			got, gotErr := ListOperatorServices(kc)
+			if gotErr != nil != tt.expectedErr {
+				t.Errorf("Got error %v, expected error %v\n", gotErr, tt.expectedErr)
+			}
+			if !reflect.DeepEqual(got, tt.expectedList) {
+				t.Errorf("Got %v, expected %v\n", got, tt.expectedList)
 			}
 		})
 	}

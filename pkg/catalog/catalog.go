@@ -300,7 +300,7 @@ func ComponentExists(client *occlient.Client, componentType string, componentVer
 
 // ListOperatorServices fetches a list of Operators from the cluster and
 // returns only those Operators which are successfully installed on the cluster
-func ListOperatorServices(client *kclient.Client) (*olm.ClusterServiceVersionList, error) {
+func ListOperatorServices(client kclient.ClientInterface) (*olm.ClusterServiceVersionList, error) {
 	var csvList olm.ClusterServiceVersionList
 
 	// first check for CSV support

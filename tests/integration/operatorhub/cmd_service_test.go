@@ -139,8 +139,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			It("should describe the operator with human-readable output", func() {
 				output := helper.Cmd("odo", "catalog", "describe", "service", redisCluster).ShouldPass().Out()
-				Expect(output).To(ContainSubstring("Kind: Redis"))
-				Expect(output).To(MatchRegexp("Yes *redisExporter.image *string"))
+				Expect(output).To(MatchRegexp("KIND: *Redis"))
+				Expect(output).To(MatchRegexp(`redisExporter\.image *\(string\) *-required-`))
 			})
 
 			It("should describe the example of the operator", func() {
@@ -196,6 +196,20 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				It("should define the CR output of the operator instance in dryRun mode", func() {
 					stdOut := helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "--dry-run", "--project", commonVar.Project).ShouldPass().Out()
 					helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
+				})
+
+				It("should fail creating a service with wrong parameters", func() {
+					helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "-p", "a=b").ShouldFail()
+				})
+
+				It("should create a service with parameters of different types", func() {
+					helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator),
+						"-p", "kubernetesConfig.image=quay.io/opstree/redis:v6.2.5",
+						"-p", "kubernetesConfig.imagePullPolicy=IfNotPresent",
+						"-p", "kubernetesConfig.serviceType=ClusterIP",
+						"-p", "redisExporter.enabled=false",
+						"-p", "redisExporter.image=quay.io/opstree/redis-exporter:1.0",
+						"-p", "securityContext.runAsUser=1000").ShouldPass()
 				})
 
 				When("odo push is executed", func() {

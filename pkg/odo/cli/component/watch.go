@@ -97,7 +97,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	var platformContext interface{}
 	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-	wo.namespace = wo.KClient.Namespace
+	wo.namespace = wo.KClient.GetCurrentNamespace()
 	platformContext = kubernetes.KubernetesContext{
 		Namespace: wo.namespace,
 	}
