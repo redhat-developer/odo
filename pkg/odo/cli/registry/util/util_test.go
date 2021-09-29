@@ -62,7 +62,7 @@ func TestIsSecure(t *testing.T) {
 				t.Errorf("Unable to add registry to preference file with error: %v", err)
 			}
 
-			got := IsSecure(tt.registryName)
+			got, _ := IsSecure(tt.registryName)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %t, want %t", got, tt.want)
 			}

@@ -136,12 +136,14 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 		request := util.HTTPRequestParams{
 			URL: indexLink,
 		}
-		if registryUtil.IsSecure(registry.Name) {
+		if secure, err := registryUtil.IsSecure(registry.Name); secure && err == nil {
 			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 			if err != nil {
 				return nil, errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
 			request.Token = token
+		} else {
+			return nil, err
 		}
 
 		cfg, err := preference.New()

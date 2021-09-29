@@ -1,7 +1,6 @@
 package genericclioptions
 
 import (
-	"github.com/openshift/odo/pkg/odo/util"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -25,20 +24,24 @@ func FlagValueIfSet(cmd *cobra.Command, flagName string) string {
 	return flag
 }
 
-func GetContextFlagValue(command *cobra.Command) string {
+func GetContextFlagValue(command *cobra.Command) (string, error) {
 	contextDir := FlagValueIfSet(command, ContextFlagName)
 
 	// Grab the absolute path of the configuration
 	if contextDir != "" {
 		fAbs, err := pkgUtil.GetAbsPath(contextDir)
-		util.LogErrorAndExit(err, "")
+		if err != nil {
+			return "", err
+		}
 		contextDir = fAbs
 	} else {
 		fAbs, err := pkgUtil.GetAbsPath(".")
-		util.LogErrorAndExit(err, "")
+		if err != nil {
+			return "", err
+		}
 		contextDir = fAbs
 	}
-	return contextDir
+	return contextDir, nil
 }
 
 // AddContextFlag adds `context` flag to given cobra command

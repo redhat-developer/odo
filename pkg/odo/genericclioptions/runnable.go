@@ -76,7 +76,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	// CheckMachineReadableOutput
 	// fixes / checks all related machine readable output functions
-	CheckMachineReadableOutputCommand(cmd)
+	util.LogErrorAndExit(CheckMachineReadableOutputCommand(cmd), "")
 
 	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
 	util.LogErrorAndExit(checkConflictingFlags(cmd, args), "")
@@ -188,7 +188,7 @@ func stringFlagLookup(cmd *cobra.Command, flagName string) string {
 
 // CheckMachineReadableOutputCommand performs machine-readable output functions required to
 // have it work correctly
-func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
+func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
 
 	// Get the needed values
 	outputFlag := pflag.Lookup("o")
@@ -197,8 +197,7 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 
 	// Check the valid output
 	if hasFlagChanged && outputFlag.Value.String() != "json" {
-		log.Error("Please input a valid output format for -o, available format: json")
-		os.Exit(1)
+		return fmt.Errorf("Please input a valid output format for -o, available format: json")
 	}
 
 	// Check that if -o json has been passed, that the command actually USES json.. if not, error out.
@@ -207,9 +206,8 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 		// By default we "disable" logging, so activate it so that the below error can be shown.
 		_ = flag.Set("o", "")
 
-		// Output the error
-		log.Error("Machine readable output is not yet implemented for this command")
-		os.Exit(1)
+		// Return the error
+		return fmt.Errorf("Machine readable output is not yet implemented for this command")
 	}
 
 	// Before running anything, we will make sure that no verbose output is made
@@ -226,4 +224,5 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 			_ = flag.CommandLine.Set("v", level)
 		}
 	}
+	return nil
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/util"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -34,32 +33,41 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
 // errFormatForCommand must contain one %s
-func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
+func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) error {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
-		util.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt errors out if user is trying to create or delete something other than project
 // compare to checkProjectCreateOrDeleteOnlyOnInvalidNamespace, no %s is needed
-func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) {
+func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) error {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "push" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand)
-		util.LogErrorAndExit(err, "")
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // existsOrExit checks if the specified component exists with the given context and exits the app if not.
-func (o *internalCxt) checkComponentExistsOrFail(cmp string) {
+func (o *internalCxt) checkComponentExistsOrFail(cmp string) error {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
-	util.LogErrorAndExit(err, "")
+	if err != nil {
+		return err
+	}
 	if !exists {
 		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 		os.Exit(1)
 	}
+	return nil
 }
 
 // ApplyIgnore will take the current ignores []string and append the mandatory odo-file-index.json and
@@ -68,7 +76,7 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 	if len(*ignores) == 0 {
 		rules, err := pkgUtil.GetIgnoreRulesFromDirectory(sourcePath)
 		if err != nil {
-			util.LogErrorAndExit(err, "")
+			return err
 		}
 		*ignores = append(*ignores, rules...)
 	}

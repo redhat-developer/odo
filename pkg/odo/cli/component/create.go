@@ -163,7 +163,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 	} else {
-		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+		co.Context, err = genericclioptions.NewOfflineDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Configure the context
@@ -488,13 +491,15 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 				params = util.HTTPRequestParams{
 					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 				}
-				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+				if secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name); secure && err == nil {
 					var token string
 					token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 					if err != nil {
 						return errors.Wrap(err, "unable to get secure registry credential from keyring")
 					}
 					params.Token = token
+				} else {
+					return err
 				}
 			} else {
 				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext)
@@ -543,13 +548,15 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return err
 	}
 
-	if co.devfileMetadata.starterToken == "" && registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+	if secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name); co.devfileMetadata.starterToken == "" && secure && err == nil {
 		var token string
 		token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 		if err != nil {
 			return errors.Wrap(err, "unable to get secure registry credential from keyring")
 		}
 		co.devfileMetadata.starterToken = token
+	} else {
+		return err
 	}
 
 	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.componentContext)
