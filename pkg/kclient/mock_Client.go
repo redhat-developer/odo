@@ -394,6 +394,21 @@ func (mr *MockClientInterfaceMockRecorder) GetAndUpdateStorageOwnerReference(pvc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAndUpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).GetAndUpdateStorageOwnerReference), varargs...)
 }
 
+// GetCRDSpec mocks base method.
+func (m *MockClientInterface) GetCRDSpec(cr *v1alpha1.CRDDescription, resourceType, resourceName string) (*spec.Schema, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCRDSpec", cr, resourceType, resourceName)
+	ret0, _ := ret[0].(*spec.Schema)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCRDSpec indicates an expected call of GetCRDSpec.
+func (mr *MockClientInterfaceMockRecorder) GetCRDSpec(cr, resourceType, resourceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCRDSpec", reflect.TypeOf((*MockClientInterface)(nil).GetCRDSpec), cr, resourceType, resourceName)
+}
+
 // GetCSVWithCR mocks base method.
 func (m *MockClientInterface) GetCSVWithCR(name string) (*v1alpha1.ClusterServiceVersion, error) {
 	m.ctrl.T.Helper()

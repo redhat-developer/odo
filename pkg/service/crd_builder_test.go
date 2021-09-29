@@ -1,97 +1,185 @@
 package service
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/stretchr/testify/require"
+	"github.com/go-openapi/spec"
 )
 
-// MockCRDescriptionOne a mock description
-func MockCRDDescriptionOne() *olm.CRDDescription {
-	return &olm.CRDDescription{
-		Name:        "etcdclusters.etcd.database.coreos.com",
-		Version:     "v1beta2",
-		Kind:        "EtcdCluster",
-		DisplayName: "etcd Cluster",
-		Resources: []olm.APIResourceReference{
-			{Kind: "Service", Version: "v1"},
-			{Kind: "Pod", Version: "v1"},
+func TestBuildCRDFromParams(t *testing.T) {
+	tests := []struct {
+		name    string
+		crd     *spec.Schema
+		params  map[string]string
+		want    map[string]interface{}
+		wantErr bool
+	}{
+		{
+			name: "params ok without crd",
+			params: map[string]string{
+				"u":     "1",
+				"a.b.c": "2",
+				"a.b.d": "3",
+				"a.B":   "4",
+			},
+			want: map[string]interface{}{
+				"u": int64(1),
+				"a": map[string]interface{}{
+					"b": map[string]interface{}{
+						"c": int64(2),
+						"d": int64(3),
+					},
+					"B": int64(4),
+				},
+			},
+			wantErr: false,
 		},
-		SpecDescriptors: []olm.SpecDescriptor{
-			{
-				Path:        "size",
-				DisplayName: "Size",
-				Description: "The desired number of member Pods for the etcd cluster.",
-				XDescriptors: []string{
-					"urn:alm:descriptor:com.tectonic.ui:podCount",
+		{
+			name: "typed params without crd",
+			params: map[string]string{
+				"a.bool":   "true",
+				"a.string": "foobar",
+				"a.float":  "1.234",
+			},
+			want: map[string]interface{}{
+				"a": map[string]interface{}{
+					"bool":   true,
+					"string": "foobar",
+					"float":  1.234,
 				},
 			},
-			{
-				Path:        "pod.resources",
-				DisplayName: "Resource Requirements",
-				Description: "Limits describes the minimum/maximum amount of compute resources required/allowed",
-				XDescriptors: []string{
-					"urn:alm:descriptor:com.tectonic.ui:resourceRequirements",
+			wantErr: false,
+		},
+		{
+			name: "typed params with crd",
+			params: map[string]string{
+				"a.bool":    "true",
+				"a.string1": "foobar",
+				"a.string2": "true",
+				"a.string3": "1.234",
+				"a.string4": "11",
+				"a.float":   "1.234",
+				"a.int":     "11",
+			},
+			crd: &spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type: spec.StringOrArray{
+						"object",
+					},
+					Properties: map[string]spec.Schema{
+						"a": {
+							SchemaProps: spec.SchemaProps{
+								Type: spec.StringOrArray{
+									"object",
+								},
+								Properties: map[string]spec.Schema{
+									"bool": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"boolean",
+											},
+										},
+									},
+									"int": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"integer",
+											},
+										},
+									},
+									"float": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"number",
+											},
+										},
+									},
+									"string1": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"string",
+											},
+										},
+									},
+									"string2": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"string",
+											},
+										},
+									},
+									"string3": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"string",
+											},
+										},
+									},
+									"string4": {
+										SchemaProps: spec.SchemaProps{
+											Type: spec.StringOrArray{
+												"string",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
+			want: map[string]interface{}{
+				"a": map[string]interface{}{
+					"bool":    true,
+					"string1": "foobar",
+					"string2": "true",
+					"string3": "1.234",
+					"string4": "11",
+					"float":   1.234,
+					"int":     int64(11),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "params error map defined before value",
+			params: map[string]string{
+				"u":     "1",
+				"a.b.c": "2",
+				"a.b":   "3",
+				"a.B":   "4",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "params error value defined before map",
+			params: map[string]string{
+				"u":     "1",
+				"a.b":   "2",
+				"a.b.c": "3",
+				"a.B":   "4",
+			},
+			want:    nil,
+			wantErr: true,
 		},
 	}
-}
 
-// MockCRDescriptionTwo a mock description
-func MockCRDDescriptionTwo() *olm.CRDDescription {
-	return &olm.CRDDescription{
-		Name:        "pgclusters.crunchydata.com",
-		Version:     "v1",
-		Kind:        "Pgcluster",
-		DisplayName: "Postgres Primary Cluster Member",
-		Description: "Represents a Postgres primary cluster member",
-		Resources: []olm.APIResourceReference{
-			{Kind: "Pgcluster", Version: "v1"},
-			{Kind: "ConfigMap", Version: "v1"},
-			{Kind: "Deployment", Version: "v1"},
-			{Kind: "Job", Version: "v1"},
-			{Kind: "Pod", Version: "v1"},
-			{Kind: "ReplicaSet", Version: "v1"},
-			{Kind: "Secret", Version: "v1"},
-			{Kind: "Service", Version: "v1"},
-			{Kind: "PersistentVolumeClaim", Version: "v1"},
-		},
-		SpecDescriptors: []olm.SpecDescriptor{
-			{
-				Path:        "cppimage",
-				DisplayName: "PostgreSQL Image",
-				Description: "The Crunchy PostgreSQL image to use. Possible values are \"crunchy-postgres-ha\" and \"crunchy-postgres-gis-ha\"",
-			},
-			{
-				Path:        "cppimagetag",
-				DisplayName: "PostgresSQL Image Tag",
-				Description: "The tag of the PostgreSQL image to use. Example is \"ubi7-12.4-4.5.0\"",
-			},
-			{
-				Path:        "host",
-				DisplayName: "PostgreSQL Host",
-			},
-		},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := BuildCRDFromParams(tt.params, tt.crd, "a group", "a version", "a kind")
+			if gotErr != nil != tt.wantErr {
+				t.Errorf("got err: %v, expected err: %v\n", gotErr != nil, tt.wantErr)
+			}
+			if gotErr == nil {
+				if !reflect.DeepEqual(got["spec"], tt.want) {
+					jsonGot, _ := json.Marshal(got["spec"])
+					jsonWant, _ := json.Marshal(tt.want)
+					t.Errorf("\ngot:  %+v\n\nwant: %v\n", string(jsonGot), string(jsonWant))
+				}
+			}
+		})
 	}
-}
-func TestCRDBuilderMap(t *testing.T) {
-	builder := NewCRDBuilder(MockCRDDescriptionTwo())
-	require.Nil(t, builder.SetAndValidate("host", "10.1.10.2"), "set shouldn't fail")
-	require.Nil(t, builder.SetAndValidate("cppimage", "crunchy-postgres-ha"), "set shouldn't fail")
-	require.Nil(t, builder.SetAndValidate("cppimagetag", "2.5"), "set shouldn't fail")
-	outMap, err := builder.Map()
-	require.Nil(t, err, "error shouldn't be nil")
-	expected := map[string]interface{}{
-		"apiVersion": "crunchydata.com/v1",
-		"kind":       "Pgcluster",
-		"metadata":   map[string]interface{}{},
-		"spec": map[string]interface{}{
-			"cppimage":    "crunchy-postgres-ha",
-			"cppimagetag": 2.5,
-			"host":        "10.1.10.2",
-		},
-	}
-	require.Equal(t, outMap, expected, "The map output doesn't match the expected out")
 }

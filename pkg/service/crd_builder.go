@@ -1,68 +1,110 @@
 package service
 
 import (
+	"strconv"
 	"strings"
 
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/go-openapi/spec"
 	"github.com/pkg/errors"
 )
 
-// CRDBuilder is responsible for build the full CR including the meta and spec.
-type CRDBuilder struct {
-	CRDSpecBuilder *CRDSpecBuilder
-	crd            *olm.CRDDescription
-	cr             map[string]interface{}
-}
-
-func NewCRDBuilder(crd *olm.CRDDescription) *CRDBuilder {
-	return &CRDBuilder{
-		CRDSpecBuilder: NewCRDSpecBuilder(crd.SpecDescriptors),
-		crd:            crd,
-		cr:             make(map[string]interface{}),
-	}
-}
-
-func (crb *CRDBuilder) SetAndValidate(param string, value string) error {
-	return crb.CRDSpecBuilder.SetAndValidate(param, value)
-}
-
-func (crb *CRDBuilder) Map() (map[string]interface{}, error) {
-	group, version, _, err := GetGVRFromCR(crb.crd)
-	if err != nil {
-		return nil, err
-	}
-	crb.cr["apiVersion"] = group + "/" + version
-	crb.cr["kind"] = crb.crd.Kind
-	crb.cr["metadata"] = make(map[string]interface{})
-	specMap, err := crb.CRDSpecBuilder.Map()
-	if err != nil {
-		return nil, err
-	}
-	crb.cr["spec"] = specMap
-	return crb.cr, nil
-}
-
 // BuildCRDFromParams iterates over the parameter maps provided by the user and builds the CRD
-func BuildCRDFromParams(cr *olm.CRDDescription, paramMap map[string]string) (map[string]interface{}, error) {
-
-	crBuilder := NewCRDBuilder(cr)
-	var errorStrs []string
-
-	for key, value := range paramMap {
-		err := crBuilder.SetAndValidate(key, value)
+func BuildCRDFromParams(paramMap map[string]string, crd *spec.Schema, group, version, kind string) (map[string]interface{}, error) {
+	spec := map[string]interface{}{}
+	for k, v := range paramMap {
+		err := addParam(spec, crd, k, v)
 		if err != nil {
-			errorStrs = append(errorStrs, err.Error())
+			return nil, err
 		}
 	}
 
-	if len(errorStrs) > 0 {
-		return nil, errors.New(strings.Join(errorStrs, "\n"))
+	result := map[string]interface{}{}
+	result["apiVersion"] = group + "/" + version
+	result["kind"] = kind
+	result["metadata"] = make(map[string]interface{})
+	result["spec"] = spec
+	return result, nil
+}
+
+func addParam(m map[string]interface{}, crd *spec.Schema, key string, value string) error {
+	if strings.Contains(key, ".") {
+		parts := strings.SplitN(key, ".", 2)
+		property := parts[0]
+		_, found := m[property]
+		if !found {
+			m[property] = map[string]interface{}{}
+		}
+		submap, ok := m[property].(map[string]interface{})
+		if !ok {
+			return errors.New("already defined")
+		}
+		var subCRD *spec.Schema
+		if crd != nil {
+			s := crd.Properties[property]
+			subCRD = &s
+		}
+		err := addParam(submap, subCRD, parts[1], value)
+		if err != nil {
+			return err
+		}
+	} else {
+		if _, found := m[key]; found {
+			return errors.New("already defined")
+		}
+
+		var subCRD *spec.Schema
+		if crd != nil {
+			s := crd.Properties[key]
+			subCRD = &s
+		}
+		m[key] = convertType(subCRD, value)
+	}
+	return nil
+}
+
+func convertType(crd *spec.Schema, value string) interface{} {
+	if crd != nil {
+		// do not use 'else' as the Schema can accept several types
+		// the first matching type will be used
+		if crd.Type.Contains("string") {
+			return value
+		}
+		if crd.Type.Contains("integer") {
+			intv, err := strconv.ParseInt(value, 10, 64)
+			if err == nil {
+				return int64(intv)
+			}
+		}
+		if crd.Type.Contains("number") {
+			floatv, err := strconv.ParseFloat(value, 64)
+			if err == nil {
+				return floatv
+			}
+		}
+		if crd.Type.Contains("boolean") {
+			boolv, err := strconv.ParseBool(value)
+			if err == nil {
+				return boolv
+			}
+		}
+	} else {
+		// no crd information available, guess the type depending on the value
+		intv, err := strconv.ParseInt(value, 10, 64)
+		if err == nil {
+			return int64(intv)
+		}
+
+		floatv, err := strconv.ParseFloat(value, 64)
+		if err == nil {
+			return floatv
+		}
+
+		boolv, err := strconv.ParseBool(value)
+		if err == nil {
+			return boolv
+		}
 	}
 
-	builtCRD, err := crBuilder.Map()
-	if err != nil {
-		return nil, err
-	}
-
-	return builtCRD, nil
+	// as a last resort return the string value
+	return value
 }
