@@ -16,6 +16,8 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/go-openapi/spec v0.19.5
+	github.com/go-openapi/strfmt v0.19.3
+	github.com/go-openapi/validate v0.19.5
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/mock v1.5.0
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
@@ -45,7 +47,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.7.5
-	github.com/tidwall/sjson v1.1.6 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zalando/go-keyring v0.1.1
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
