@@ -205,6 +205,45 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout := helper.Cmd("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdout).To(ContainSubstring("url 3000-tcp already exist in devfile endpoint entry"))
 		})
+
+		When("should list url after push using context", func() {
+			subFolderContext := ""
+			url2 := ""
+			BeforeEach(func() {
+				subFolderContext = filepath.Join(commonVar.Context, helper.RandString(6))
+				url2 = "nodejs-project-3000-" + helper.RandString(5)
+				helper.MakeDir(subFolderContext)
+				helper.Chdir(subFolderContext)
+			})
+			When("creating url1,url2 and doing odo push with context flag", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "url", "create", url2, "--port", "3000", "--host", host, "--ingress", "--context", commonVar.Context).ShouldPass()
+					helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", commonVar.Context).ShouldPass()
+					stdout = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+				})
+
+				When("doing url list", func() {
+					BeforeEach(func() {
+						stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
+					})
+					It("should successfully push url1 and url2", func() {
+						helper.MatchAllInOutput(stdout, []string{url1, url2, "Pushed", "false", "ingress"})
+					})
+
+				})
+				It("should successfully push url1 and url2", func() {
+					helper.MatchAllInOutput(stdout, []string{url1 + "." + host, url2})
+				})
+			})
+			It("should fail if url is created from non context dir", func() {
+				stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldFail().Err()
+				Expect(stdout).To(ContainSubstring("the current directory does not represent an odo component"))
+			})
+			It("should fail if host flag not provided with ingress flag", func() {
+				stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", commonVar.Context).ShouldFail().Err()
+				Expect(stdout).To(ContainSubstring("host must be provided"))
+			})
+		})
 	})
 
 	When("creating a java-springboot component", func() {
@@ -245,254 +284,37 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 	// Context("Listing urls", func() {
 
-	// uncomment this ANAND
-	// It("should list url after push using context", func() {
-	// 	// to confirm that --context works we are using a subfolder of the context
-	// 	subFolderContext := filepath.Join(commonVar.Context, helper.RandString(6))
-	// 	helper.MakeDir(subFolderContext)
-	// 	url1 := helper.RandString(5)
-	// 	host := helper.RandString(5) + ".com"
-	// 	url2 := "nodejs-project-3000-" + helper.RandString(5)
+	When("create nodejs compoent with context flag", func() {
+		BeforeEach(func() {
 
-	// 	helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", subFolderContext, componentName).ShouldPass()
+		})
+	})
+	It("should list url after push using context", func() {
+		subFolderContext := filepath.Join(commonVar.Context, helper.RandString(6))
+		helper.MakeDir(subFolderContext)
+		url1 := helper.RandString(5)
+		host := helper.RandString(5) + ".com"
+		url2 := "nodejs-project-3000-" + helper.RandString(5)
 
-	// 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), subFolderContext)
-	// 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(subFolderContext, "devfile.yaml"))
+		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", subFolderContext, componentName).ShouldPass()
+		// to confirm that --context works we are using a subfolder of the context
 
-	// 	stdout := helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", subFolderContext).ShouldFail().Err()
-	// 	Expect(stdout).To(ContainSubstring("host must be provided"))
+		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), subFolderContext)
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(subFolderContext, "devfile.yaml"))
 
-	// 	stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldFail().Err()
-	// 	Expect(stdout).To(ContainSubstring("the current directory does not represent an odo component"))
-	// 	helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext).ShouldPass()
-	// 	helper.Cmd("odo", "url", "create", url2, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext).ShouldPass()
-	// 	stdout = helper.Cmd("odo", "push", "--context", subFolderContext).ShouldPass().Out()
-	// 	helper.MatchAllInOutput(stdout, []string{url1 + "." + host, url2})
+		stdout := helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--ingress", "--context", subFolderContext).ShouldFail().Err()
+		Expect(stdout).To(ContainSubstring("host must be provided"))
 
-	// 	stdout = helper.Cmd("odo", "url", "list", "--context", subFolderContext).ShouldPass().Out()
-	// 	helper.MatchAllInOutput(stdout, []string{url1, url2, "Pushed", "false", "ingress"})
-	// })
+		stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldFail().Err()
+		Expect(stdout).To(ContainSubstring("the current directory does not represent an odo component"))
+		helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext).ShouldPass()
+		helper.Cmd("odo", "url", "create", url2, "--port", "3000", "--host", host, "--ingress", "--context", subFolderContext).ShouldPass()
+		stdout = helper.Cmd("odo", "push", "--context", subFolderContext).ShouldPass().Out()
+		helper.MatchAllInOutput(stdout, []string{url1 + "." + host, url2})
 
-	// 	// done
-	// 	It("should list ingress url with appropriate state", func() {
-	// 		url1 := helper.RandString(5)
-	// 		url2 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		helper.Cmd("odo", "url", "create", url1, "--port", "9090", "--host", host, "--secure", "--ingress").ShouldPass()
-	// 		helper.Cmd("odo", "push").ShouldPass()
-	// 		stdout := helper.Cmd("odo", "url", "list").ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "true", "ingress"})
-
-	// 		helper.Cmd("odo", "url", "delete", url1, "-f").ShouldPass()
-	// 		helper.Cmd("odo", "url", "create", url2, "--port", "8080", "--host", host, "--ingress").ShouldPass()
-	// 		stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", "true", "ingress"})
-	// 		helper.MatchAllInOutput(stdout, []string{url2, "Not Pushed", "false", "ingress"})
-	// 	})
-
-	// 	//done
-	// 	It("should be able to list ingress url in machine readable json format", func() {
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-	// 		// remove the endpoint came with the devfile
-	// 		// need to create an ingress to be more general for openshift/non-openshift cluster to run
-	// 		helper.Cmd("odo", "url", "delete", "3000-tcp", "-f").ShouldPass()
-	// 		createJSON := helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "-o", "json").ShouldPass().Out()
-	// 		createValues := gjson.GetMany(createJSON, "kind", "metadata.name", "spec.port", "status.state")
-	// 		createExpected := []string{"URL", url1, "3000", "Not Pushed"}
-	// 		Expect(helper.GjsonMatcher(createValues, createExpected)).To(Equal(true))
-
-	// 		helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-
-	// 		// odo url list -o json
-	// 		helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
-	// 			if strings.Contains(output, url1) {
-	// 				values := gjson.GetMany(output, "kind", "items.0.kind", "items.0.metadata.name", "items.0.spec.host", "items.0.status.state")
-	// 				expected := []string{"List", "URL", url1, url1, "Pushed"}
-	// 				Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-	// 				return true
-	// 			}
-	// 			return false
-	// 		})
-	// 	})
-
-	// })
-
-	// Context("Creating urls", func() {
-	// 	// done
-	// 	It("should create a URL without port flag if only one port exposed in devfile", func() {
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-	// 		helper.Cmd("odo", "url", "create", url1, "--host", host, "--ingress").ShouldPass()
-	// 		stdout := helper.Cmd("odo", "url", "list").ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{url1, "3000", "Not Pushed"})
-	// 	})
-	// 	//done
-	// 	It("should create a secure URL", func() {
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		helper.Cmd("odo", "url", "create", url1, "--port", "9090", "--host", host, "--secure", "--ingress").ShouldPass()
-
-	// 		stdout := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host})
-	// 		stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host, "true"})
-	// 	})
-	// 	//done
-	// 	It("create and delete with now flag should pass", func() {
-	// 		var stdout string
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		stdout = helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress").ShouldPass().Out()
-
-	// 		// check the env for the runMode
-	// 		envOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, ".odo/env/env.yaml"))
-	// 		Expect(err).To(BeNil())
-	// 		Expect(envOutput).To(ContainSubstring(" RunMode: run"))
-
-	// 		helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
-	// 		stdout = helper.Cmd("odo", "url", "delete", url1, "--now", "-f").ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
-	// 	})
-	// 	//done
-	// 	It("should be able to push again twice after creating and deleting a url", func() {
-	// 		var stdout string
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		helper.Cmd("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress").ShouldPass()
-
-	// 		helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-	// 		stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-	// 		helper.DontMatchAllInOutput(stdout, []string{"successfully deleted", "created"})
-	// 		Expect(stdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
-
-	// 		helper.Cmd("odo", "url", "delete", url1, "-f").ShouldPass()
-
-	// 		helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-	// 		stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-	// 		helper.DontMatchAllInOutput(stdout, []string{"successfully deleted", "created"})
-	// 		Expect(stdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
-	// 	})
-	// 	//done
-	// 	It("should not allow creating an invalid host", func() {
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-	// 		stdout := helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--port", "3000", "--ingress").ShouldFail().Err()
-	// 		Expect(stdout).To(ContainSubstring("is not a valid host name"))
-	// 	})
-	// 	//done
-	// 	It("should not allow using tls secret if url is not secure", func() {
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-	// 		stdout := helper.Cmd("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
-	// 		Expect(stdout).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
-	// 	})
-	// 	//done
-	// 	It("should report multiple issues when it's the case", func() {
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-	// 		stdout := helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
-	// 		Expect(stdout).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
-	// 	})
-	// 	//done
-	// 	It("should not allow creating under an invalid container", func() {
-	// 		containerName := helper.RandString(5)
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-	// 		stdout := helper.Cmd("odo", "url", "create", "--host", "com", "--port", "3000", "--container", containerName, "--ingress").ShouldFail().Err()
-	// 		helper.MatchAllInOutput(stdout, []string{"container", containerName, "not exist"})
-	// 	})
-	// 	//done
-	// 	It("should not allow creating an endpoint with same name", func() {
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project).ShouldPass()
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-	// 		stdout := helper.Cmd("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress").ShouldFail().Err()
-	// 		Expect(stdout).To(ContainSubstring("url 3000-tcp already exist in devfile endpoint entry"))
-	// 	})
-	// 	//done
-	// 	It("should create URL with path defined in Endpoint", func() {
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		helper.Cmd("odo", "url", "create", url1, "--port", "8090", "--host", host, "--path", "testpath", "--ingress").ShouldPass()
-
-	// 		stdout := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{url1, "/testpath", "created"})
-	// 	})
-	// 	//done
-	// 	It("should create URLs under different container names", func() {
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-	// 		url2 := helper.RandString(5)
-
-	// 		helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		helper.Cmd("odo", "url", "create", url1, "--port", "8080", "--host", host, "--container", "runtime", "--ingress").ShouldPass()
-	// 		helper.Cmd("odo", "url", "create", url2, "--port", "9090", "--host", host, "--container", "tools", "--ingress").ShouldPass()
-
-	// 		stdout := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-	// 		helper.MatchAllInOutput(stdout, []string{url1, url2, "created"})
-	// 	})
-
-	// 	//done
-	// 	It("should not create URLs under different container names with same port number", func() {
-	// 		url1 := helper.RandString(5)
-	// 		host := helper.RandString(5) + ".com"
-
-	// 		helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, componentName).ShouldPass()
-
-	// 		helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-	// 		stdout := helper.Cmd("odo", "url", "create", url1, "--port", "8080", "--host", host, "--container", "tools", "--ingress").ShouldFail().Err()
-	// 		helper.MatchAllInOutput(stdout, []string{fmt.Sprintf("cannot set URL %s under container tools", url1), "TargetPort 8080 is being used under container runtime"})
-	// 	})
-	// 	//done
-	// 	It("should error out on devfile flag", func() {
-	// 		helper.Cmd("odo", "url", "create", "mynodejs", "--devfile", "invalid.yaml").ShouldFail()
-	// 		helper.Cmd("odo", "url", "delete", "mynodejs", "--devfile", "invalid.yaml").ShouldFail()
-	// 	})
-
-	// })
+		stdout = helper.Cmd("odo", "url", "list", "--context", subFolderContext).ShouldPass().Out()
+		helper.MatchAllInOutput(stdout, []string{url1, url2, "Pushed", "false", "ingress"})
+	})
 
 	Context("Testing URLs for OpenShift specific scenarios", func() {
 
@@ -502,7 +324,7 @@ var _ = Describe("odo devfile url command tests", func() {
 		ingressurl := helper.RandString(5)
 		host := helper.RandString(5) + ".com"
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
 			}
@@ -513,14 +335,14 @@ var _ = Describe("odo devfile url command tests", func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
-			When("should list route and ingress urls with appropriate state", func() {
+			When("creating multiple url with different state", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "url", "create", url1, "--port", "9090", "--secure").ShouldPass()
 					helper.Cmd("odo", "url", "create", ingressurl, "--port", "8080", "--host", host, "--ingress").ShouldPass()
 					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 					helper.Cmd("odo", "url", "create", url2, "--port", "8080").ShouldPass()
 				})
-				When("url is deleted locally", func() {
+				When("url1 is deleted locally", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "url", "delete", url1, "-f").ShouldPass()
 						stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
@@ -614,33 +436,46 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	Context("Testing URLs for Kubernetes specific scenarios", func() {
-		JustBeforeEach(func() {
+		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") != "true" {
 				Skip("This is a Kubernetes specific scenario, skipping")
 			}
 		})
+		url1 := helper.RandString(5)
 
-		It("should use an existing URL when there are URLs with no host defined in the env file with same port", func() {
-			url1 := helper.RandString(5)
+		When("creating a nodejs component", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
+			When("create url", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "url", "create", "--host", "com", "--port", "3000").ShouldPass()
+				})
+				When("creating a url with ", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "url", "create", url1, "--host", "com", "--port", "8080").ShouldPass()
+					})
 
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
+					It("should use an existing URL when there are URLs with no host defined in the env file with same port", func() {
+						fileOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+						Expect(err).To(BeNil())
+						helper.MatchAllInOutput(fileOutput, []string{url1, "8080"})
+						count := strings.Count(fileOutput, "targetPort")
+						Expect(count).To(Equal(2))
+					})
+				})
+				It("should verify", func() {
+					fileOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+					Expect(err).To(BeNil())
+					helper.MatchAllInOutput(fileOutput, []string{"3000-tcp", "3000"})
+					count := strings.Count(fileOutput, "targetPort")
+					Expect(count).To(Equal(1))
+				})
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			})
 
-			helper.Cmd("odo", "url", "create", "--host", "com", "--port", "3000").ShouldPass()
-			fileOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
-			Expect(err).To(BeNil())
-			helper.MatchAllInOutput(fileOutput, []string{"3000-tcp", "3000"})
-			count := strings.Count(fileOutput, "targetPort")
-			Expect(count).To(Equal(1))
-
-			helper.Cmd("odo", "url", "create", url1, "--host", "com", "--port", "8080").ShouldPass()
-			fileOutput, err = helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
-			Expect(err).To(BeNil())
-			helper.MatchAllInOutput(fileOutput, []string{url1, "8080"})
-			count = strings.Count(fileOutput, "targetPort")
-			Expect(count).To(Equal(2))
 		})
 	})
 })
