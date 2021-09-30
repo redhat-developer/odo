@@ -17,6 +17,7 @@ import (
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
+	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -26,8 +27,7 @@ import (
 )
 
 const (
-	apiVersion      = "odo.dev/v1alpha1"
-	telemetryClient = "odo"
+	apiVersion = "odo.dev/v1alpha1"
 )
 
 var supportedImages = map[string]bool{
@@ -173,7 +173,7 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 		}
 	} else {
 		// OCI-based registry
-		devfileIndex, err = registryLibrary.GetRegistryIndex(registry.URL, false, telemetryClient, indexSchema.StackDevfileType)
+		devfileIndex, err = registryLibrary.GetRegistryIndex(registry.URL, false, registryConsts.TelemetryClient, indexSchema.StackDevfileType)
 		if err != nil {
 			return nil, err
 		}

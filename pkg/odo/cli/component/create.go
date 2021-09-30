@@ -22,6 +22,7 @@ import (
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -111,7 +112,6 @@ odo catalog list components
 %[1]s nodejs --app myapp --project myproject`)
 
 const defaultStarterProjectName = "devfile-starter-project-name"
-const telemetryClient = "odo"
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -498,7 +498,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 					params.Token = token
 				}
 			} else {
-				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, telemetryClient)
+				err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
 				if err != nil {
 					return err
 				}
@@ -565,7 +565,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
 	}
 	if co.devfileMetadata.devfilePath.value == "" && !devfileExist && !strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
-		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, telemetryClient)
+		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
 		if err != nil {
 			return err
 		}
