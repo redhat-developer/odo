@@ -64,13 +64,20 @@ In this example we will use odo to manage a sample [Java JPA MicroService applic
     cd ./application-stack-samples/jpa
     ```
 
-3. Initialize the application:
+3. In case of IBM Z & Power, CRW images are used in devfiles ([Please refer this](https://odo.dev/docs/tutorials/deploying-a-devfile-using-odo-on-IBM-Z-and-Power)), Hence for [devfile.yaml](https://github.com/OpenLiberty/application-stack-samples/blob/main/devfiles/maven-image/devfile.yaml), replace `maven:3.6-adoptopenjdk-11-openj9` with `registry.redhat.io/codeready-workspaces/plugin-java11-openj9-rhel8`:
+    ```
+    sed -i "s/maven:3.6-adoptopenjdk-11-openj9/registry.redhat.io\/codeready-workspaces\/plugin-java11-openj9-rhel8/" ../devfiles/maven-image/devfile.yaml
+    cp ../devfiles/maven-image/devfile.yaml ./
+    odo create mysboproj
+    ```
+    
+4. Initialize the application:
     ```shell
     odo create java-openliberty mysboproj
     ```
    `java-openliberty` is the type of your application and `mysboproj` is the name of your application.
 
-4. Deploy the application to the cluster:
+5. Deploy the application to the cluster:
     ```shell
     odo push --show-log
     ```
@@ -97,7 +104,7 @@ In this example we will use odo to manage a sample [Java JPA MicroService applic
    ```shell
    odo push --show-log -f
    ```
-5. The application is now deployed to the cluster - you can view the status of the cluster, and the application test results by streaming the cluster logs of the component that we pushed to the cluster in the previous step.
+6. The application is now deployed to the cluster - you can view the status of the cluster, and the application test results by streaming the cluster logs of the component that we pushed to the cluster in the previous step.
     ```shell
     odo log --follow
     ```
@@ -134,17 +141,17 @@ In this example we will use odo to manage a sample [Java JPA MicroService applic
     ```
    Note: This error will be fixed at a later stage in the tutorial when we connect a database instance to this application.
 
-6. You can also create a URL with `odo` to access the application:
+7. You can also create a URL with `odo` to access the application:
     ```shell
     odo url create --host $(minikube ip).nip.io
     ```
 
-7. Push the URL to activate it:
+8. Push the URL to activate it:
     ```shell
     odo push --show-log
     ```
 
-8. Display the created URL:
+9. Display the created URL:
     ```shell
     odo url list
     ```
