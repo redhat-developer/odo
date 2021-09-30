@@ -687,12 +687,53 @@ spec:`
 
 					It("should fail to create a service based on a template without metadata", func() {
 						stdOut := helper.Cmd("odo", "service", "create", "--from-file", noMetaFileName, "--project", commonVar.Project).ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
+						Expect(stdOut).To(ContainSubstring("invalid \"metadata\" in the yaml; provide a valid \"metadata.name\""))
 					})
 
 					It("should fail to create a service based on a template with invalid metadata", func() {
 						stdOut := helper.Cmd("odo", "service", "create", "--from-file", invalidFileName, "--project", commonVar.Project).ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
+						Expect(stdOut).To(ContainSubstring("invalid \"metadata\" in the yaml; provide a valid \"metadata.name\""))
+					})
+				})
+				Context("Operator present in devfile is not installed on the cluster", func() {
+					BeforeEach(func() {
+						helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+						helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-pod.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					})
+
+					When("listing service and pushing the component", func() {
+						It("should show the service in devfile in 'odo service list'", func() {
+							// this test case helps check if odo can list services that are present in devfile but the corresponding
+							// Operator is not installed on the cluster
+							out := helper.Cmd("odo", "service", "list").ShouldPass().Out()
+							Expect(out).To(ContainSubstring("EtcdCluster/etcdcluster"))
+						})
+						It("should fail to push since the Operator doesn't exist on the cluster", func() {
+							err := helper.Cmd("odo", "push").ShouldFail().Err()
+							helper.MatchAllInOutput(err, []string{"Failed to start component with name", "please install corresponding Operator(s)", "EtcdCluster"})
+						})
+					})
+
+					When("deleting service", func() {
+						BeforeEach(func() {
+							helper.Cmd("odo", "service", "delete", "EtcdCluster/etcdcluster", "-f").ShouldPass()
+						})
+
+						It("should not show the service in devfile in 'odo service list'", func() {
+							// below command will fail as the underlying devfile doesn't have any services any more
+							err := helper.Cmd("odo", "service", "list").ShouldFail().Err()
+							Expect(err).ToNot(ContainSubstring("EtcdCluster/etcdcluster"))
+						})
+
+						When("odo push is executed, nginx pod should be created on the cluster", func() {
+							BeforeEach(func() {
+								helper.Cmd("odo", "push").ShouldPass()
+							})
+
+							It("should have pod in Running state on the cluster", func() {
+								commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, `nginx`)
+							})
+						})
 					})
 				})
 			})

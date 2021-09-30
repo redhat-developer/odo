@@ -10,6 +10,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -223,6 +224,7 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 
 func TestListDevfileServices(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
+	fkClient, _ := kclient.FakeNew()
 
 	testFolderName := "someFolder"
 	testFileName, err := setup(testFolderName, fs)
@@ -309,7 +311,7 @@ spec:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := listDevfileServices(tt.devfileObj, testFolderName, fs)
+			got, gotErr := listDevfileServices(fkClient, tt.devfileObj, testFolderName, fs)
 			gotKeys := getKeys(got)
 			if !reflect.DeepEqual(gotKeys, tt.wantKeys) {
 				t.Errorf("%s: got %v, expect %v", t.Name(), gotKeys, tt.wantKeys)

@@ -15,6 +15,7 @@ import (
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	v10 "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/api/meta"
 	v11 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	discovery "k8s.io/client-go/discovery"
@@ -105,17 +106,17 @@ func (mr *MockClientInterfaceMockRecorder) CreateDeployment(deploy interface{}) 
 }
 
 // CreateDynamicResource mocks base method.
-func (m *MockClientInterface) CreateDynamicResource(exampleCustomResource map[string]interface{}, ownerReferences []v11.OwnerReference, group, version, resource string) error {
+func (m *MockClientInterface) CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDynamicResource", exampleCustomResource, ownerReferences, group, version, resource)
+	ret := m.ctrl.Call(m, "CreateDynamicResource", exampleCustomResource, gvr)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateDynamicResource indicates an expected call of CreateDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) CreateDynamicResource(exampleCustomResource, ownerReferences, group, version, resource interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) CreateDynamicResource(exampleCustomResource, gvr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).CreateDynamicResource), exampleCustomResource, ownerReferences, group, version, resource)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).CreateDynamicResource), exampleCustomResource, gvr)
 }
 
 // CreateIngress mocks base method.

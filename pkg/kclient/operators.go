@@ -15,10 +15,6 @@ import (
 	"k8s.io/klog"
 )
 
-var (
-	ErrNoSuchOperator = errors.New("could not find specified operator")
-)
-
 const (
 	apiVersion = "odo.dev/v1alpha1"
 )
@@ -42,7 +38,7 @@ func (c *Client) ListClusterServiceVersions() (*olm.ClusterServiceVersionList, e
 	csvs, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
-			return &olm.ClusterServiceVersionList{}, ErrNoSuchOperator
+			return &olm.ClusterServiceVersionList{}, nil
 		}
 		return &olm.ClusterServiceVersionList{}, err
 	}

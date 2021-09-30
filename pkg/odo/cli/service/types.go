@@ -12,6 +12,8 @@ type OperatorBackend struct {
 	version string
 	// Resource of the GVR
 	resource string
+	// Kind of GVK
+	kind string
 }
 
 func NewOperatorBackend() *OperatorBackend {
