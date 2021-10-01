@@ -90,11 +90,11 @@ postgresql-operator.v0.1.1           Backup, Database
 redis-operator.v0.8.0                RedisCluster, Redis
 ```
 
-In this example, you can see that two operators are installed in the cluster. The `postgresql-operator.v0.1.1` operator can deploy services related to PostgreSQL: `Backup` and `Database`. The `redis-operator.v0.8.0` operator can deploy services related to Redis: `RedisCluster` and `Cluster`.
+In this example, you can see that two operators are installed in the cluster. The `postgresql-operator.v0.1.1` operator can deploy services related to PostgreSQL: `Backup` and `Database`. The `redis-operator.v0.8.0` operator can deploy services related to Redis: `RedisCluster` and `Redis`.
 
 Only operators deployed with the help of the [*Operator Lifecycle Manager*](https://olm.operatorframework.io/) are supported by odo. See [Installing the Operator Lifecycle Manager (OLM)](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) for more information.
 
-> Note: To get a list of all the available operators, odo fetches the ClusterServiceVersion (CSV) resources of the current namespace that are in a Succeeded phase. For operators that support cluster-wide access, when a new namespace is created, these resources are automatically added to it, but it may take some time before they are in the Succeeded phase, and odo may return an empty list until the resources are ready.
+> Note: To get a list of all the available operators, odo fetches the `ClusterServiceVersion` (`CSV`) resources of the current namespace that are in a *Succeeded* phase. For operators that support cluster-wide access, when a new namespace is created, these resources are automatically added to it, but it may take some time before they are in the *Succeeded* phase, and odo may return an empty list until the resources are ready.
 
 ### Searching services
 
