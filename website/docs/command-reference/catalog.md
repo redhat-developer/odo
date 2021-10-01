@@ -8,7 +8,7 @@ odo uses different *catalogs* to deploy *components* and *services*.
 
 ## Components
 
-odo uses the portable *devfile* format to describe the components you want to work on. It can connect to various devfile registries to download devfiles for different languages and frameworks. See [`odo registry`](/docs/command-reference/registry) for more information.
+odo uses the portable *devfile* format to describe the components. It can connect to various devfile registries to download devfiles for different languages and frameworks. See [`odo registry`](/docs/command-reference/registry) for more information.
 
 ### Listing components
 
@@ -64,13 +64,16 @@ projectsource:
   custom: null
 ```
 
-`Registry` is the registry from which the devfile is retrieved.
+*Registry* is the registry from which the devfile is retrieved.
 
 *Starter projects* are sample projects in the same language and framework of the devfile, that can help you start a new project. See [`odo create`](/docs/command-reference/create) for more information on creating a project from a starter project.
 
 ## Services
 
 odo can deploy *services* with the help of *operators*.
+
+Only operators deployed with the help of the [*Operator Lifecycle Manager*](https://olm.operatorframework.io/) are supported by odo. See [Installing the Operator Lifecycle Manager (OLM)](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) for more information.
+
 
 ### Listing services
 
@@ -91,8 +94,6 @@ redis-operator.v0.8.0                RedisCluster, Redis
 ```
 
 In this example, you can see that two operators are installed in the cluster. The `postgresql-operator.v0.1.1` operator can deploy services related to PostgreSQL: `Backup` and `Database`. The `redis-operator.v0.8.0` operator can deploy services related to Redis: `RedisCluster` and `Redis`.
-
-Only operators deployed with the help of the [*Operator Lifecycle Manager*](https://olm.operatorframework.io/) are supported by odo. See [Installing the Operator Lifecycle Manager (OLM)](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) for more information.
 
 > Note: To get a list of all the available operators, odo fetches the `ClusterServiceVersion` (`CSV`) resources of the current namespace that are in a *Succeeded* phase. For operators that support cluster-wide access, when a new namespace is created, these resources are automatically added to it, but it may take some time before they are in the *Succeeded* phase, and odo may return an empty list until the resources are ready.
 
