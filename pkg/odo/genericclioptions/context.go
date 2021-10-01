@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -202,12 +203,12 @@ func NewConfigContext(command *cobra.Command) (*Context, error) {
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
-func NewContextCompletion(command *cobra.Command) (*Context, error) {
+func NewContextCompletion(command *cobra.Command) *Context {
 	ctx, err := newContext(command, false, true)
 	if err != nil {
-		return nil, err
+		util.LogErrorAndExit(err, "")
 	}
-	return ctx, nil
+	return ctx
 }
 
 // UpdatedContext returns a new context updated from config file
