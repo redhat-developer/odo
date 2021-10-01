@@ -8,11 +8,11 @@ odo uses different *catalogs* to help you deploy *components* and *services*.
 
 ## Components
 
-odo uses the portable *devfile* format to describe the components you want to work on, and can connect to devfile registries to download devfiles for different languages and frameworks. See [`odo registry`](/docs/command-reference/registry) for more information.
+odo uses the portable *devfile* format to describe the components you want to work on. It can connect to various devfile registries to download devfiles for different languages and frameworks. See [`odo registry`](/docs/command-reference/registry) for more information.
 
 ### Listing components
 
-You can list the available *devfiles* available on the different registries with the command:
+You can list all the *devfiles* available on the different registries with the command:
 
 ```
 $ odo catalog list components
@@ -54,17 +54,17 @@ projectsource:
   custom: null
 ```
 
-The first information is the registry from which is retrieved the devfile.
+`Registry` is the registry from which the devfile is retrieved.
 
 The second information is the list of *starter projects* referenced for this devfile. A *starter project* is a simple project in the same language and framework of the devfile, that can help you start a new project. See [`odo create`](/docs/command-reference/create) for more information on creating a project from a start project.
 
 ## Services
 
-odo can help you deploy *services* with the help of *operators*.
+odo can deploy *services* with the help of *operators*.
 
 ### Listing services
 
-You can get the list of available operators and their associate services with the command:
+You can get the list of available operators and their associated services with the command:
 
 ```
 $ odo catalog list services
@@ -82,7 +82,7 @@ In this example, you can see that two operators are installed in your cluster. T
 
 ### Searching services
 
-You can search for specific services by keyword with the command:
+You can search for a specific service by a keyword with the command:
 
 ```
 $ odo catalog search service postgre
