@@ -15,6 +15,12 @@ odo uses the portable *devfile* format to describe the components you want to wo
 You can list all the *devfiles* available on the different registries with the command:
 
 ```
+odo catalog list components
+```
+
+Example:
+
+```
 $ odo catalog list components
 Odo Devfile Components:
 NAME             DESCRIPTION                          REGISTRY
@@ -29,6 +35,12 @@ python           Python Stack with Python 3.7         DefaultDevfileRegistry
 ### Getting information about a component
 
 You can get more information about a specific component with the command:
+
+```
+odo catalog describe component
+```
+
+Example:
 
 ```
 $ odo catalog describe component nodejs
@@ -65,6 +77,12 @@ odo can deploy *services* with the help of *operators*.
 You can get the list of available operators and their associated services with the command:
 
 ```
+odo catalog list services
+```
+
+Example: 
+
+```
 $ odo catalog list services
 Services available through Operators
 NAME                                 CRDs
@@ -83,6 +101,12 @@ Only operators deployed with the help of the [*Operator Lifecycle Manager*](http
 You can search for a specific service by a keyword with the command:
 
 ```
+odo catalog search service
+```
+
+Example:
+
+```
 $ odo catalog search service postgre
 Services available through Operators
 NAME                           CRDs
@@ -94,6 +118,12 @@ You may see a similar list that contains only the relevant operators, whose name
 ### Getting information about a service
 
 You can get more information about a specific service with the command:
+
+```
+odo catalog describe service
+```
+
+Example:
 
 ```
 $ odo catalog describe service postgresql-operator.v0.1.1/Database
