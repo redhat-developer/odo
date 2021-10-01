@@ -35,8 +35,10 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 		co.Context, err = genericclioptions.NewContext(cmd)
 	}
 	if err != nil {
-		co.Context, _ = genericclioptions.NewOfflineDevfileContext(cmd)
-		err = nil
+		co.Context, err = genericclioptions.NewOfflineDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 	}
 
 	co.componentName, err = co.Context.Component(args...)

@@ -118,8 +118,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	// Apply config
 	err := component.ApplyConfig(cpo.Context.Client, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist, true)
 	if err != nil {
-		log.Error("Failed to update config to component deployed.")
-		return err
+		return errors.Wrapf(err, "Failed to update config to component deployed.")
 	}
 
 	return nil

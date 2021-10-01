@@ -2,10 +2,8 @@ package genericclioptions
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/log"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -57,15 +55,14 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Comman
 	return nil
 }
 
-// existsOrExit checks if the specified component exists with the given context and exits the app if not.
+// checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
 func (o *internalCxt) checkComponentExistsOrFail(cmp string) error {
 	exists, err := component.Exists(o.Client, cmp, o.Application)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		log.Errorf("Component %v does not exist in application %s", cmp, o.Application)
-		os.Exit(1)
+		return fmt.Errorf("Component %v does not exist in application %s", cmp, o.Application)
 	}
 	return nil
 }

@@ -264,8 +264,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 	err = component.ApplyConfig(&a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, false)
 	if err != nil {
-		log.Error("Failed to update config to component deployed.")
-		return err
+		return errors.Wrapf(err, "Failed to update config to component deployed.")
 	}
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required

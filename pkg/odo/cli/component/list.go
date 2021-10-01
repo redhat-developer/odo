@@ -90,7 +90,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 		} else {
 			klog.V(4).Infof("New Config Context")
-			lo.Context = genericclioptions.NewConfigContext(cmd)
+			lo.Context, err = genericclioptions.NewConfigContext(cmd)
+			if err != nil {
+				return err
+			}
 			// for disconnected situation we just assume we have DC support
 			lo.hasDCSupport = true
 		}

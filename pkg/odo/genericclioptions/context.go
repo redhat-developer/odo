@@ -16,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util"
 )
 
 const (
@@ -183,12 +182,12 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) (*Context, error) {
 
 // NewConfigContext is a special kind of context which only contains local configuration, other information is not retrieved
 //  from the cluster. This is useful for commands which don't want to connect to cluster.
-func NewConfigContext(command *cobra.Command) *Context {
+func NewConfigContext(command *cobra.Command) (*Context, error) {
 
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, false)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return nil, err
 	}
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
@@ -198,17 +197,17 @@ func NewConfigContext(command *cobra.Command) *Context {
 			OutputFlag:      outputFlag,
 		},
 	}
-	return ctx
+	return ctx, nil
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
-func NewContextCompletion(command *cobra.Command) *Context {
+func NewContextCompletion(command *cobra.Command) (*Context, error) {
 	ctx, err := newContext(command, false, true)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return nil, err
 	}
-	return ctx
+	return ctx, nil
 }
 
 // UpdatedContext returns a new context updated from config file
@@ -241,7 +240,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return nil, err
 	}
 
 	// Resolve output flag
@@ -292,7 +291,7 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 	// Get valid env information
 	envInfo, err := getValidEnvInfo(command)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return nil, err
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
@@ -344,7 +343,7 @@ func NewOfflineDevfileContext(command *cobra.Command) (*Context, error) {
 	// Get valid env information
 	envInfo, err := getValidEnvInfo(command)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return nil, err
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
@@ -370,7 +369,7 @@ func NewOfflineDevfileContext(command *cobra.Command) (*Context, error) {
 	return context, nil
 }
 
-// Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
+// Component retrieves the optionally specified component or the current one if it is set. If no component is set, returns
 // an error
 func (o *Context) Component(optionalComponent ...string) (string, error) {
 	return o.ComponentAllowingEmpty(false, optionalComponent...)
@@ -382,9 +381,8 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	switch len(optionalComponent) {
 	case 0:
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
-		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we exit with error
+		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we return an error
 		if !allowEmpty && len(o.cmp) == 0 {
-			log.Errorf("No component is set")
 			return "", fmt.Errorf("No component is set")
 		}
 	case 1:

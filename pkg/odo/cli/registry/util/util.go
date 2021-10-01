@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -18,7 +17,6 @@ const (
 func IsSecure(registryName string) (bool, error) {
 	cfg, err := preference.New()
 	if err != nil {
-		log.Error(errors.Cause(err))
 		return false, err
 	}
 
