@@ -32,6 +32,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 		BeforeEach(func() {
 			// Using Django example here because it helps to distinguish between language and projectType.
 			// With nodejs, both projectType and language is nodejs, but with python-django, django is the projectType and python is the language
+			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
 			helper.Cmd("odo", "create", "python-django", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing").ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-2", "--port", "4000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
@@ -62,7 +63,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 			})
 
 			By("checking describe with component name works", func() {
-				// odo should describe not pushed component if component name is given.
+				// odo should describe not-pushed component if component name is given.
 				helper.Cmd("odo", "describe", "cmp-git", "--context", commonVar.Context).ShouldPass()
 				Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
 			})
@@ -84,6 +85,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 	When("executing odo describe from a disconnected cluster", func() {
 		var compName = "mynode"
 		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.Cmd("odo", "create", "nodejs", compName, "--context", commonVar.Context).ShouldPass()
 		})
 		It("should describe successfully", func() {
