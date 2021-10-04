@@ -73,13 +73,6 @@ func toPreferenceItems(prefInfo PreferenceInfo) []PreferenceItem {
 			Description: PushTimeoutSettingDescription,
 		},
 		{
-			Name:        ExperimentalSetting,
-			Value:       odoSettings.Experimental,
-			Default:     false,
-			Type:        getType(prefInfo.GetExperimental()),
-			Description: ExperimentalDescription,
-		},
-		{
 			Name:        ConsentTelemetrySetting,
 			Value:       odoSettings.ConsentTelemetry,
 			Default:     DefaultConsentTelemetrySetting,

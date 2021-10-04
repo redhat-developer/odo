@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -214,7 +213,6 @@ func TestWatchAndPush(t *testing.T) {
 		fileModifications []testingutil.FileProperties
 		requiredFilePaths []testingutil.FileProperties
 		setupEnv          func(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error)
-		isExperimental    bool
 		isDebug           bool
 		devfileBuildCmd   string
 		devfileRunCmd     string
@@ -742,134 +740,114 @@ func TestWatchAndPush(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		// run the test twice, once with experimental on and once with off
-		for i := 0; i < 2; i++ {
-			if i == 1 {
-				tt.isExperimental = true
-				tt.name = strings.ReplaceAll(tt.name, "Case", "(Experimental mode on) Case")
+
+		ExtChan = make(chan bool)
+		StartChan = make(chan bool)
+		t.Log("Running test: ", tt.name)
+		t.Run(tt.name, func(t *testing.T) {
+			mockPush = mockPushParameters{
+				componentName:   tt.componentName,
+				applicationName: tt.applicationName,
+				path:            tt.path,
+				isForcePush:     tt.forcePush,
+				globExps:        tt.ignores,
+				show:            tt.show,
+				isDebug:         tt.isDebug,
+				debugPort:       tt.debugPort,
+				devfileBuildCmd: tt.devfileBuildCmd,
+				devfileRunCmd:   tt.devfileRunCmd,
+				devfileDebugCmd: tt.devfileDebugCmd,
 			}
-			ExtChan = make(chan bool)
-			StartChan = make(chan bool)
-			t.Log("Running test: ", tt.name)
-			t.Run(tt.name, func(t *testing.T) {
-				mockPush = mockPushParameters{
-					componentName:   tt.componentName,
-					applicationName: tt.applicationName,
-					path:            tt.path,
-					isForcePush:     tt.forcePush,
-					globExps:        tt.ignores,
-					show:            tt.show,
-					isDebug:         tt.isDebug,
-					debugPort:       tt.debugPort,
-					devfileBuildCmd: tt.devfileBuildCmd,
-					devfileRunCmd:   tt.devfileRunCmd,
-					devfileDebugCmd: tt.devfileDebugCmd,
-				}
 
-				ExpectedChangedFiles = tt.want
-				DeleteFiles = tt.wantDeleted
-				// Create mock component source
-				basePath, dirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
-				CompDirStructure = dirStructure
-				if err != nil {
-					t.Errorf("failed to setup test environment. Error %v", err)
-				}
+			ExpectedChangedFiles = tt.want
+			DeleteFiles = tt.wantDeleted
+			// Create mock component source
+			basePath, dirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
+			CompDirStructure = dirStructure
+			if err != nil {
+				t.Errorf("failed to setup test environment. Error %v", err)
+			}
 
-				fkclient, _ := occlient.FakeNew()
+			fkclient, _ := occlient.FakeNew()
 
-				// Clear all the created temporary files
-				defer os.RemoveAll(basePath)
-				t.Logf("Done with basePath creation and client init will trigger WatchAndPush and file modifications next...\n%+v\n", CompDirStructure)
+			// Clear all the created temporary files
+			defer os.RemoveAll(basePath)
+			t.Logf("Done with basePath creation and client init will trigger WatchAndPush and file modifications next...\n%+v\n", CompDirStructure)
 
-				go func() {
-					t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
-					// Simulating file modifications for watch to observe
-					pingTimeout := time.After(time.Duration(1) * time.Minute)
-					for {
-						select {
-						case startMsg := <-StartChan:
-							if startMsg {
-								for _, fileModification := range tt.fileModifications {
+			go func() {
+				t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
+				// Simulating file modifications for watch to observe
+				pingTimeout := time.After(time.Duration(1) * time.Minute)
+				for {
+					select {
+					case startMsg := <-StartChan:
+						if startMsg {
+							for _, fileModification := range tt.fileModifications {
 
-									intendedFileRelPath := fileModification.FilePath
-									if fileModification.FileParent != "" {
-										intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
-									}
-
-									fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
-									if _, ok := CompDirStructure[intendedFileRelPath]; ok {
-										fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
-									}
-
-									newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
-									if err != nil {
-										t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
-									}
-
-									muLock.Lock()
-									// If file operation is create, store even such modifications in dir structure for future references
-									if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
-										CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
-											FilePath:         filepath.Base(newFilePath),
-											FileParent:       filepath.Dir(newFilePath),
-											FileType:         testingutil.Directory,
-											ModificationType: testingutil.CREATE,
-										}
-									}
-									muLock.Unlock()
+								intendedFileRelPath := fileModification.FilePath
+								if fileModification.FileParent != "" {
+									intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
 								}
+
+								fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
+								if _, ok := CompDirStructure[intendedFileRelPath]; ok {
+									fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
+								}
+
+								newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
+								if err != nil {
+									t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
+								}
+
+								muLock.Lock()
+								// If file operation is create, store even such modifications in dir structure for future references
+								if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
+									CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
+										FilePath:         filepath.Base(newFilePath),
+										FileParent:       filepath.Dir(newFilePath),
+										FileType:         testingutil.Directory,
+										ModificationType: testingutil.CREATE,
+									}
+								}
+								muLock.Unlock()
 							}
-							t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
-							return
-						case <-pingTimeout:
-							break
 						}
+						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
+						return
+					case <-pingTimeout:
+						break
 					}
-				}()
-
-				// Start WatchAndPush, the unit tested function
-				t.Logf("Starting WatchAndPush now\n")
-
-				watchParameters := WatchParameters{
-					ComponentName: tt.componentName,
-					Path:          basePath,
-					// convert the glob expressions to absolute form for WatchAndPush to work properly
-					FileIgnores:     util.GetAbsGlobExps(basePath, tt.ignores),
-					StartChan:       StartChan,
-					ExtChan:         ExtChan,
-					PushDiffDelay:   tt.delayInterval,
-					Show:            tt.show,
-					DevfileBuildCmd: tt.devfileBuildCmd,
-					DevfileRunCmd:   tt.devfileRunCmd,
-					DevfileDebugCmd: tt.devfileDebugCmd,
 				}
+			}()
 
-				if tt.isExperimental {
-					watchParameters.DevfileWatchHandler = mockDevFilePush
-					runMode := envinfo.Run
-					if tt.isDebug {
-						runMode = envinfo.Debug
-					}
-					watchParameters.EnvSpecificInfo = &envinfo.EnvSpecificInfo{
-						EnvInfo: *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
-							DebugPort: &tt.debugPort,
-							RunMode:   &runMode,
-						}),
-					}
-				} else {
-					watchParameters.ApplicationName = tt.applicationName
-					watchParameters.WatchHandler = mockPushLocal
-				}
+			// Start WatchAndPush, the unit tested function
+			t.Logf("Starting WatchAndPush now\n")
 
-				err = WatchAndPush(
-					fkclient,
-					os.Stdout,
-					watchParameters,
-				)
-				if err != nil && err != ErrUserRequestedWatchExit {
-					t.Errorf("error in WatchAndPush %+v", err)
-				}
-			})
-		}
+			watchParameters := WatchParameters{
+				ComponentName: tt.componentName,
+				Path:          basePath,
+				// convert the glob expressions to absolute form for WatchAndPush to work properly
+				FileIgnores:     util.GetAbsGlobExps(basePath, tt.ignores),
+				StartChan:       StartChan,
+				ExtChan:         ExtChan,
+				PushDiffDelay:   tt.delayInterval,
+				Show:            tt.show,
+				DevfileBuildCmd: tt.devfileBuildCmd,
+				DevfileRunCmd:   tt.devfileRunCmd,
+				DevfileDebugCmd: tt.devfileDebugCmd,
+			}
+
+			watchParameters.ApplicationName = tt.applicationName
+			watchParameters.WatchHandler = mockPushLocal
+
+			err = WatchAndPush(
+				fkclient,
+				os.Stdout,
+				watchParameters,
+			)
+			if err != nil && err != ErrUserRequestedWatchExit {
+				t.Errorf("error in WatchAndPush %+v", err)
+			}
+		})
 	}
 }

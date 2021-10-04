@@ -55,7 +55,7 @@ Table 1. The following table describes the additional information collected by o
 
 |*Preference Change*
 | Preference Key
-| UpdateNotification/NamePrefix/Timeout/BuildTimeout/PushTimeout/Experimental/Ephemeral/ConsentTelemetry
+| UpdateNotification/NamePrefix/Timeout/BuildTimeout/PushTimeout/Ephemeral/ConsentTelemetry
 |===
 
 

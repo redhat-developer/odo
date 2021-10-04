@@ -65,7 +65,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 		It("should get the default global config keys", func() {
 			configOutput := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
-			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "BuildTimeout", "PushTimeout", "Experimental", "Ephemeral", "ConsentTelemetry"}
+			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "BuildTimeout", "PushTimeout", "Ephemeral", "ConsentTelemetry"}
 			helper.MatchAllInOutput(configOutput, preferences)
 			for _, key := range preferences {
 				value := helper.GetPreferenceValue(key)
@@ -82,7 +82,6 @@ var _ = Describe("odo preference and config command tests", func() {
 			{"Timeout", "5", "6", "foo"},
 			{"NamePrefix", "foo", "bar", ""},
 			{"BuildTimeout", "5", "7", "foo"},
-			{"Experimental", "false", "true", "foo"},
 			// !! Do not test ConsentTelemetry with true because it sends out the telemetry data and messes up the statistics !!
 			{"ConsentTelemetry", "false", "false", "foo"},
 			{"PushTimeout", "4", "6", "f00"},

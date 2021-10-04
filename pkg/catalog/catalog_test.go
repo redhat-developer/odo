@@ -185,7 +185,6 @@ func TestGetDevfileRegistries(t *testing.T) {
 		`kind: Preference
 apiversion: odo.openshift.io/v1alpha1
 OdoSettings:
-  Experimental: true
   RegistryList:
   - Name: DefaultDevfileRegistry
     URL: https://registry.devfile.io
