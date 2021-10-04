@@ -25,7 +25,9 @@ const (
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
-	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
+	// Detection of SBO has been removed from issue https://github.com/openshift/odo/issues/5084
+	return false, nil
+	//	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
 }
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster
