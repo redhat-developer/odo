@@ -19,7 +19,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 		commonVar = helper.CommonBeforeEach()
 		// wait until timeout(sec) for odo to see all the operators installed by setup script in the namespace
 		odoArgs := []string{"catalog", "list", "services"}
-		operator := "service-binding-operator"
+		operator := "redis-operator"
 		helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 			return strings.Contains(output, operator)
 		})
