@@ -166,7 +166,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			})
 		})
 
-		When("create and delete with now flag should pass", func() {
+		When("create with now flag", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 			BeforeEach(func() {
@@ -179,7 +179,7 @@ var _ = Describe("odo devfile url command tests", func() {
 				Expect(envOutput).To(ContainSubstring(" RunMode: run"))
 				helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
 			})
-			When("delete with now flag should pass", func() {
+			When("delete with now flag", func() {
 				BeforeEach(func() {
 					stdout = helper.Cmd("odo", "url", "delete", url1, "--now", "-f").ShouldPass().Out()
 				})
@@ -227,7 +227,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			})
 		})
 
-		When("should list url after push using context", func() {
+		When("executing odo outside of context", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 			subFolderContext := ""
@@ -465,7 +465,7 @@ var _ = Describe("odo devfile url command tests", func() {
 					helper.Cmd("odo", "url", "create", "--host", "com", "--port", "3000").ShouldPass()
 				})
 
-				When("creating a url with ", func() {
+				When("creating a second url", func() {
 
 					BeforeEach(func() {
 						helper.Cmd("odo", "url", "create", url1, "--host", "com", "--port", "8080").ShouldPass()
