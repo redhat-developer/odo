@@ -36,7 +36,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, er
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
 		if err != nil {
-			return err
+			return fmt.Errorf(errFormatForCommand, command.Root().Name())
 		}
 	}
 	return nil
@@ -49,7 +49,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Comman
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "push" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand)
 		if err != nil {
-			return err
+			return fmt.Errorf(errFormatForCommand)
 		}
 	}
 	return nil

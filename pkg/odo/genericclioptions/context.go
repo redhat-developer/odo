@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 )
 
@@ -391,7 +390,6 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		o.cmp = cmp
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
-		log.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
 		return "", fmt.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
 	}
 
