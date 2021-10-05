@@ -1,16 +1,8 @@
 package catalog
 
 import (
-	imagev1 "github.com/openshift/api/image/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// ComponentType is the main struct for catalog components
-type ComponentType struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ComponentSpec `json:"spec,omitempty"`
-}
 
 // Registry is the main struct of devfile registry
 type Registry struct {
@@ -28,21 +20,6 @@ type DevfileComponentType struct {
 	Registry    Registry
 	Language    string
 	Tags        []string
-}
-
-// ComponentSpec is the spec for ComponentType
-type ComponentSpec struct {
-	AllTags         []string               `json:"allTags"`
-	NonHiddenTags   []string               `json:"nonHiddenTags"`
-	SupportedTags   []string               `json:"supportedTags"`
-	ImageStreamTags []imagev1.TagReference `json:"imageStreamTags"`
-}
-
-// ComponentTypeList lists all the ComponentType's
-type ComponentTypeList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ComponentType `json:"items"`
 }
 
 // DevfileComponentTypeList lists all the DevfileComponentType's

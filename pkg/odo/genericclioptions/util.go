@@ -51,7 +51,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Comman
 
 // checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
 func (o *internalCxt) checkComponentExistsOrFail(cmp string) error {
-	exists, err := component.Exists(o.Client, cmp, o.Application)
+	exists, err := component.Exists(o.KClient, cmp, o.Application)
 	if err != nil {
 		return err
 	}

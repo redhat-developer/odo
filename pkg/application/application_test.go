@@ -9,7 +9,6 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
 	corev1 "k8s.io/api/core/v1"
@@ -53,7 +52,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			},
 		},
 	}
-
+	dcList :=
 	dcList := appsv1.DeploymentConfigList{
 		Items: []appsv1.DeploymentConfig{
 			{
@@ -66,9 +65,6 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						componentlabels.ComponentTypeLabel: "nodejs",
 						applabels.ManagedBy:                "odo",
 						applabels.ManagerVersion:           version.VERSION,
-					},
-					Annotations: map[string]string{
-						component.ComponentSourceTypeAnnotation: "local",
 					},
 				},
 				Spec: appsv1.DeploymentConfigSpec{
@@ -93,9 +89,6 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						componentlabels.ComponentTypeLabel: "java",
 						applabels.ManagedBy:                "odo",
 						applabels.ManagerVersion:           version.VERSION,
-					},
-					Annotations: map[string]string{
-						component.ComponentSourceTypeAnnotation: "local",
 					},
 				},
 				Spec: appsv1.DeploymentConfigSpec{

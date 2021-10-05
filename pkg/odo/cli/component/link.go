@@ -7,7 +7,6 @@ import (
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 
-	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
@@ -83,44 +82,15 @@ func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		return err
 	}
 
-	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
+	if o.csvSupport {
 		o.operation = o.KClient.LinkSecret
-	} else {
-		o.operation = o.Client.LinkSecret
 	}
-
 	return err
 }
 
 // Validate validates the LinkOptions based on completed values
 func (o *LinkOptions) Validate() (err error) {
-	err = o.validate()
-	if err != nil {
-		return err
-	}
-
-	if o.Context.EnvSpecificInfo != nil {
-		return
-	}
-	componentName, err := o.Component()
-	if err != nil {
-		return err
-	}
-
-	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, componentName, o.Application)
-	if err != nil {
-		return err
-	}
-	for _, alreadyLinkedSecretName := range alreadyLinkedSecretNames {
-		if alreadyLinkedSecretName == o.secretName {
-			targetType := "component"
-			if o.isTargetAService {
-				targetType = "service"
-			}
-			return fmt.Errorf("Component %s has previously been linked to %s %s", o.Project, targetType, o.suppliedName)
-		}
-	}
-	return
+	return o.validate()
 }
 
 // Run contains the logic for the odo link command

@@ -89,19 +89,3 @@ func (c *Client) GetOneRouteFromSelector(selector string) (*routev1.Route, error
 
 	return &routes[0], nil
 }
-
-// ListRouteNames lists all the names of the routes based on the given label
-// selector
-func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
-	routes, err := c.ListRoutes(labelSelector)
-	if err != nil {
-		return nil, err
-	}
-
-	var routeNames []string
-	for _, r := range routes {
-		routeNames = append(routeNames, r.Name)
-	}
-
-	return routeNames, nil
-}

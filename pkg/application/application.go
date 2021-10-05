@@ -18,7 +18,7 @@ const (
 	appList       = "List"
 )
 
-// List all applications names in current project by looking at `app` labels in deploymentconfigs, deployments and services instances
+// List all applications names in current project by looking at `app` labels in deployments and services instances
 func List(client *occlient.Client) ([]string, error) {
 	var appNames []string
 
@@ -26,27 +26,13 @@ func List(client *occlient.Client) ([]string, error) {
 		return appNames, nil
 	}
 
-	deploymentSupported, err := client.IsDeploymentConfigSupported()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get all DeploymentConfigs with the "app" label
+	// Get all Deployments with the "app" label
 	deploymentAppNames, err := client.GetKubeClient().GetDeploymentLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list applications from deployments")
 	}
 
 	appNames = append(appNames, deploymentAppNames...)
-
-	if deploymentSupported {
-		// Get all DeploymentConfigs with the "app" label
-		deploymentConfigAppNames, err := client.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to list applications from deployment config")
-		}
-		appNames = append(appNames, deploymentConfigAppNames...)
-	}
 
 	// Filter out any names, as there could be multiple components but within the same application
 	return util.RemoveDuplicates(appNames), nil
@@ -68,26 +54,14 @@ func Exists(app string, client *occlient.Client) (bool, error) {
 	return false, nil
 }
 
-// Delete the given application by deleting deploymentconfigs, deployments and services instances belonging to this application
+// Delete the given application by deleting deployments and services instances belonging to this application
 func Delete(client *occlient.Client, name string) error {
 	klog.V(4).Infof("Deleting application %s", name)
 
 	labels := applabels.GetLabels(name, false)
 
-	supported, err := client.IsDeploymentConfigSupported()
-	if err != nil {
-		return err
-	}
-	if supported {
-		// delete application from cluster
-		err = client.Delete(labels, false)
-		if err != nil {
-			return errors.Wrapf(err, "unable to delete application %s", name)
-		}
-	}
-
 	// delete application from cluster
-	err = client.GetKubeClient().Delete(labels, false)
+	err := client.GetKubeClient().Delete(labels, false)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}

@@ -40,7 +40,6 @@ type ClientInterface interface {
 	LinkSecret(secretName, componentName, applicationName string) error
 	UnlinkSecret(secretName, componentName, applicationName string) error
 	GetDeploymentLabelValues(label string, selector string) ([]string, error)
-	GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Deployment, error)
 	GetDeploymentAPIVersion() (metav1.GroupVersionResource, error)
 	IsDeploymentExtensionsV1Beta1() (bool, error)
 
