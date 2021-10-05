@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -109,31 +108,6 @@ type mockPushParameters struct {
 }
 
 var mockPush mockPushParameters
-
-// Mocks the devFile push function that's called when odo watch pushes to a component
-func mockDevFilePush(parameters common.PushParameters, _ WatchParameters) error {
-	muLock.Lock()
-	defer muLock.Unlock()
-	if parameters.Show != mockPush.show || parameters.Debug != mockPush.isDebug || parameters.DebugPort != mockPush.debugPort {
-		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
-			"show:" + strconv.FormatBool(parameters.Show),
-			"debug:" + strconv.FormatBool(parameters.Debug),
-			"debugPort:" + strconv.Itoa(parameters.DebugPort),
-		})
-		os.Exit(1)
-	}
-
-	if parameters.DevfileBuildCmd != mockPush.devfileBuildCmd || parameters.DevfileRunCmd != mockPush.devfileRunCmd || parameters.DevfileDebugCmd != mockPush.devfileDebugCmd {
-		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
-			"devfileBuildCmd:" + parameters.DevfileBuildCmd,
-			"devfileRunCmd:" + parameters.DevfileRunCmd,
-			"devfileDebugCmd:" + parameters.DevfileDebugCmd,
-		})
-		os.Exit(1)
-	}
-
-	return commonChecks(parameters.Path, parameters.WatchFiles, parameters.WatchDeletedFiles, parameters.IgnoredFiles)
-}
 
 // Mock PushLocal to collect changed files and compare against expected changed files
 func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, globExps []string, show bool) error {
