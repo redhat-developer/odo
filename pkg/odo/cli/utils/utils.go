@@ -13,7 +13,6 @@ const RecommendedCommandName = "utils"
 // NewCmdUtils implements the utils odo command
 func NewCmdUtils(name, fullName string) *cobra.Command {
 	terminalCmd := NewCmdTerminal(terminalCommandName, odoutil.GetFullName(fullName, terminalCommandName))
-	convertCmd := NewCmdConvert(convertCommandName, odoutil.GetFullName(fullName, convertCommandName))
 	utilsCmd := &cobra.Command{
 		Use:   name,
 		Short: "Utilities for terminal commands and modifying odo configurations",
@@ -26,6 +25,5 @@ func NewCmdUtils(name, fullName string) *cobra.Command {
 	utilsCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	utilsCmd.AddCommand(terminalCmd)
-	utilsCmd.AddCommand(convertCmd)
 	return utilsCmd
 }

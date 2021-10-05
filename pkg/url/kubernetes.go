@@ -324,7 +324,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 		}
 		return "", errors.Wrap(err, "unable to create route")
 	}
-	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", true), nil
+	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
 }
 
 // getResourceName gets the route/ingress resource name

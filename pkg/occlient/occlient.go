@@ -265,10 +265,6 @@ func isServerUp(server string) bool {
 	return true
 }
 
-func getAppRootVolumeName(dcName string) string {
-	return fmt.Sprintf("%s-s2idata", dcName)
-}
-
 // ServerInfo contains the fields that contain the server's information like
 // address, OpenShift and Kubernetes versions
 type ServerInfo struct {

@@ -40,7 +40,6 @@ type ListOptions struct {
 	allAppsFlag      bool
 	componentContext string
 	componentType    string
-	hasDCSupport     bool
 	devfilePath      string
 	*genericclioptions.Context
 }
@@ -61,10 +60,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
-		if err != nil {
-			return err
-		}
 		devObj, err := devfile.ParseFromFile(lo.devfilePath)
 		if err != nil {
 			return err
@@ -77,10 +72,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context, err = genericclioptions.NewContext(cmd, false, true)
-			if err != nil {
-				return err
-			}
-			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 			if err != nil {
 				return err
 			}

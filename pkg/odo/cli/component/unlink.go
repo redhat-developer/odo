@@ -64,8 +64,6 @@ func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	if o.csvSupport && o.Context.EnvSpecificInfo != nil {
 		o.operation = o.KClient.UnlinkSecret
-	} else {
-		o.operation = o.Client.UnlinkSecret
 	}
 	return err
 }

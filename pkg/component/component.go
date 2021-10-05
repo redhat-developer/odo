@@ -193,15 +193,13 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 	return compoList, nil
 }
 
-// List lists all s2i and devfile components in active application
+// List lists all the devfile components in active application
 func List(client *occlient.Client, applicationSelector string) (ComponentList, error) {
-	var components []Component
 	devfileList, err := ListDevfileComponents(client, applicationSelector)
 	if err != nil {
 		return ComponentList{}, nil
 	}
-	components = append(components, devfileList.Items...)
-	return newComponentList(components), nil
+	return newComponentList(devfileList.Items), nil
 }
 
 // GetComponentFromDevfile extracts component's metadata from the specified env info if it exists

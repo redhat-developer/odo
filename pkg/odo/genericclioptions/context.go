@@ -54,7 +54,7 @@ type CreateParameters struct {
 }
 
 // New creates a context based on the given parameters
-func New(parameters CreateParameters, toggles ...bool) (context *Context, err error) {
+func New(parameters CreateParameters) (context *Context, err error) {
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
 	context, err = NewDevfileContext(parameters.Cmd)
 	if err != nil {
@@ -165,9 +165,6 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 		return nil, err
 	}
 
-	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.resolveApp(createAppIfNeeded, envInfo)
-
 	// Create a new kubernetes client
 	internalCxt.KClient, err = kClient()
 	if err != nil {
@@ -180,11 +177,11 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 
 	// Gather the environment information
 	internalCxt.EnvSpecificInfo = envInfo
-
 	err = internalCxt.resolveNamespace(envInfo)
 	if err != nil {
 		return nil, err
 	}
+	internalCxt.resolveApp(createAppIfNeeded, envInfo)
 
 	// resolve the component
 	_, err = internalCxt.resolveAndSetComponent(command, envInfo)

@@ -434,7 +434,7 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 	return c.jsonPatchDeployment(componentlabels.GetSelector(componentName, applicationName), deploymentPatchProvider)
 }
 
-// this function will look up the appropriate DC, and execute the specified patch
+// this function will look up the appropriate Deployment, and execute the specified patch
 // the whole point of using patch is to avoid race conditions where we try to update
 // deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
 // this will result in the triggering of a redeployment

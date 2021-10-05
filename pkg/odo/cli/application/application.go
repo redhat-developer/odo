@@ -58,7 +58,7 @@ func printAppInfo(client *occlient.Client, kClient kclient.ClientInterface, appN
 	if appName != "" {
 		selector = applabels.GetSelector(appName)
 	}
-	componentList, err := component.List(client, selector, nil)
+	componentList, err := component.List(client, selector)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Component list")
 	}

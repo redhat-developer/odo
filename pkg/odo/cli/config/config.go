@@ -16,7 +16,6 @@ const RecommendedCommandName = "config"
 var configLongDesc = ktemplates.LongDesc(`Modifies odo specific configuration settings within the devfile or config file.
 
 %[1]s
-%[2]s
 `)
 
 // NewCmdConfiguration implements the utils config odo command
@@ -27,7 +26,7 @@ func NewCmdConfiguration(name, fullName string) *cobra.Command {
 	configurationCmd := &cobra.Command{
 		Use:   name,
 		Short: "Change or view configuration",
-		Long:  fmt.Sprintf(configLongDesc, config.FormatDevfileSupportedParameters(), config.FormatLocallySupportedParameters()),
+		Long:  fmt.Sprintf(configLongDesc, config.FormatDevfileSupportedParameters()),
 		Example: fmt.Sprintf("%s\n%s\n%s",
 			configurationViewCmd.Example,
 			configurationSetCmd.Example,

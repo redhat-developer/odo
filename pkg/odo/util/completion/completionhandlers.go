@@ -94,18 +94,6 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 
 	tasks := util.NewConcurrentTasks(2)
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		catalogList, _ := catalog.ListComponents(context.Client)
-		for _, builder := range catalogList.Items {
-			if args.commands[builder.Name] {
-				found = true
-				return
-			}
-			if len(builder.Spec.NonHiddenTags) > 0 {
-				*comps = append(*comps, builder.Name)
-			}
-		}
-	}})
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 		components, _ := catalog.ListDevfileComponents("")
 		for _, devfile := range components.Items {
 			if args.commands[devfile.Name] {
