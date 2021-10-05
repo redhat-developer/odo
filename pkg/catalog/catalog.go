@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/zalando/go-keyring"
@@ -221,7 +222,16 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		registry := reg                 // Needed to prevent the lambda from capturing the value
 		registryPriority := regPriority // Needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			registryDevfiles, err := getRegistryDevfiles(registry)
+			maxTries := 4
+			var registryDevfiles []DevfileComponentType
+			var err error
+			for i := 1; i <= maxTries; i++ {
+				registryDevfiles, err = getRegistryDevfiles(registry)
+				if err == nil {
+					break
+				}
+				time.Sleep(time.Duration(maxTries) * 100 * time.Millisecond)
+			}
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo registry update --help`)\n", registry.Name, err)
 				return
