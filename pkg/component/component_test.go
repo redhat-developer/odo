@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -364,18 +363,6 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	mockConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
-	componentConfig, err := GetComponentFromConfig(&mockConfig)
-	if err != nil {
-		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
-	}
-	componentConfig.Status.State = StateTypeNotPushed
-	componentConfig2, err := GetComponentFromConfig(&mockConfig)
-	if err != nil {
-		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
-	}
-	componentConfig2.Status.State = StateTypeUnknown
-
 	deploymentList := v1.DeploymentList{Items: []v1.Deployment{
 		*testingutil.CreateFakeDeployment("comp0"),
 		*testingutil.CreateFakeDeployment("comp1"),
@@ -398,7 +385,6 @@ func TestList(t *testing.T) {
 		deploymentList            v1.DeploymentList
 		projectExists             bool
 		wantErr                   bool
-		existingLocalConfigInfo   *config.LocalConfigInfo
 		output                    ComponentList
 	}{
 		{
@@ -462,7 +448,7 @@ func TestList(t *testing.T) {
 				}
 			})
 
-			results, err := List(client, applabels.GetSelector("app"), tt.existingLocalConfigInfo)
+			results, err := List(client, applabels.GetSelector("app"))
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
@@ -742,135 +728,6 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetComponentFromConfig(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	os.Setenv("LOCALODOCONFIG", tempConfigFile.Name())
-
-	localExistingConfigInfoValue := config.GetOneExistingConfigInfo("comp", "app", "project")
-	localExistingConfigInfoUrls, err := localExistingConfigInfoValue.LocalConfig.ListURLs()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	localExistingConfigInfoStorage, err := localExistingConfigInfoValue.ListStorage()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	localExistingConfigInfoPorts, err := localExistingConfigInfoValue.GetComponentPorts()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	localNonExistingConfigInfoValue := config.GetOneNonExistingConfigInfo()
-	gitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
-	gitExistingConfigInfoUrls, err := gitExistingConfigInfoValue.LocalConfig.ListURLs()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	gitExistingConfigInfoStorage, err := gitExistingConfigInfoValue.ListStorage()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	gitExistingConfigInfoPorts, err := gitExistingConfigInfoValue.GetComponentPorts()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	tests := []struct {
-		name           string
-		isConfigExists bool
-		existingConfig config.LocalConfigInfo
-		wantSpec       Component
-	}{
-		{
-			name:           "case 1: config file exists",
-			isConfigExists: true,
-			existingConfig: localExistingConfigInfoValue,
-			wantSpec: Component{
-				Spec: ComponentSpec{
-					App:    localExistingConfigInfoValue.GetApplication(),
-					Type:   localExistingConfigInfoValue.GetType(),
-					Source: localExistingConfigInfoValue.GetSourceLocation(),
-					URL: []string{
-						localExistingConfigInfoUrls[0].Name, localExistingConfigInfoUrls[1].Name,
-					},
-					Storage: []string{
-						localExistingConfigInfoStorage[0].Name, localExistingConfigInfoStorage[1].Name,
-					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  localExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
-							Value: localExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
-						},
-						{
-							Name:  localExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
-							Value: localExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
-						},
-					},
-					SourceType: "local",
-					Ports:      localExistingConfigInfoPorts,
-				},
-			},
-		},
-		{
-			name:           "case 2: config file doesn't exists",
-			isConfigExists: false,
-			existingConfig: localNonExistingConfigInfoValue,
-			wantSpec:       Component{},
-		},
-		{
-			name:           "case 3: config file exists",
-			isConfigExists: true,
-			existingConfig: gitExistingConfigInfoValue,
-			wantSpec: Component{
-				Spec: ComponentSpec{
-					App:    gitExistingConfigInfoValue.GetApplication(),
-					Type:   gitExistingConfigInfoValue.GetType(),
-					Source: gitExistingConfigInfoValue.GetSourceLocation(),
-					URL: []string{
-						gitExistingConfigInfoUrls[0].Name, gitExistingConfigInfoUrls[1].Name,
-					},
-					Storage: []string{
-						gitExistingConfigInfoStorage[0].Name, gitExistingConfigInfoStorage[1].Name,
-					},
-					Env: []corev1.EnvVar{
-						{
-							Name:  gitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
-							Value: gitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
-						},
-						{
-							Name:  gitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
-							Value: gitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
-						},
-					},
-					SourceType: "git",
-					Ports:      gitExistingConfigInfoPorts,
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := config.NewLocalConfigInfo("")
-			if err != nil {
-				t.Error(err)
-			}
-			cfg := &tt.existingConfig
-
-			got, _ := GetComponentFromConfig(cfg)
-
-			if !reflect.DeepEqual(got.Spec, tt.wantSpec.Spec) {
-				t.Errorf("the component spec is different, want: %v,\n got: %v", tt.wantSpec.Spec, got.Spec)
-			}
-
-		})
-	}
-
 }
 
 func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {

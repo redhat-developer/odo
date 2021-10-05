@@ -14,7 +14,6 @@ import (
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -118,29 +117,27 @@ func NewCreateOptions() *CreateOptions {
 	}
 }
 
-func createDefaultComponentName(context *genericclioptions.Context, componentType string, sourceType config.SrcType, sourcePath string) (string, error) {
+func createDefaultComponentName(componentType string, sourcePath string) (string, error) {
 	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
 	var err error
 	finalSourcePath := sourcePath
 	// we only get absolute path for local source type
-	if sourceType == config.LOCAL {
-		if sourcePath == "" {
-			wd, err := os.Getwd()
-			if err != nil {
-				return "", err
-			}
-			finalSourcePath = wd
-		} else {
-			finalSourcePath, err = filepath.Abs(sourcePath)
-			if err != nil {
-				return "", err
-			}
+
+	if sourcePath == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		finalSourcePath = wd
+	} else {
+		finalSourcePath, err = filepath.Abs(sourcePath)
+		if err != nil {
+			return "", err
 		}
 	}
 
 	componentName, err := component.GetDefaultComponentName(
 		finalSourcePath,
-		sourceType,
 		componentType,
 		component.ComponentList{},
 	)
@@ -156,7 +153,7 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	if co.now {
-		// this populates the LocalConfigInfo as well
+		// this populates the EnvInfo as well
 		co.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		if err != nil {
 			return err
@@ -318,9 +315,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			} else {
 				var err error
 				componentName, err = createDefaultComponentName(
-					co.Context,
 					componentType,
-					config.LOCAL, // always local for devfile
 					co.componentContext,
 				)
 				if err != nil {

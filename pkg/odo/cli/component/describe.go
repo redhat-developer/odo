@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"os"
 
 	"github.com/openshift/odo/pkg/component"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -54,7 +55,7 @@ func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []stri
 // Validate validates the describe parameters
 func (do *DescribeOptions) Validate() (err error) {
 
-	if !((do.Application != "" && do.Project != "") || do.LocalConfigInfo.Exists() || do.EnvSpecificInfo.Exists()) {
+	if !((do.Application != "" && do.Project != "") || do.EnvSpecificInfo.Exists()) {
 		return fmt.Errorf("component %v does not exist", do.componentName)
 	}
 
@@ -64,7 +65,7 @@ func (do *DescribeOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project, do.componentContext)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.EnvSpecificInfo, do.componentName, do.Context.Application, do.Context.Project, do.componentContext)
 	if err != nil {
 		return err
 	}

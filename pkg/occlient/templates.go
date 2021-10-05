@@ -3,10 +3,7 @@ package occlient
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -192,64 +189,6 @@ func FetchContainerResourceLimits(container corev1.Container) corev1.ResourceReq
 // This is a wrapper around the kube client provided ParseQuantity added to in future support more units and make it more readable
 func parseResourceQuantity(resQuantity string) (resource.Quantity, error) {
 	return resource.ParseQuantity(resQuantity)
-}
-
-// GetResourceRequirementsFromCmpSettings converts the cpu and memory request info from component configuration into format usable in dc
-// Parameters:
-//	cfg: Compoennt configuration/settings
-// Returns:
-//	*corev1.ResourceRequirements: component configuration converted into format usable in dc
-func GetResourceRequirementsFromCmpSettings(cfg config.LocalConfigInfo) (*corev1.ResourceRequirements, error) {
-	var resourceRequirements corev1.ResourceRequirements
-	requests := make(corev1.ResourceList)
-	limits := make(corev1.ResourceList)
-
-	cfgMinCPU := cfg.GetMinCPU()
-	cfgMaxCPU := cfg.GetMaxCPU()
-	cfgMinMemory := cfg.GetMinMemory()
-	cfgMaxMemory := cfg.GetMaxMemory()
-
-	if cfgMinCPU != "" {
-		minCPU, err := parseResourceQuantity(cfgMinCPU)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse the min cpu")
-		}
-		requests[corev1.ResourceCPU] = minCPU
-	}
-
-	if cfgMaxCPU != "" {
-		maxCPU, err := parseResourceQuantity(cfgMaxCPU)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse max cpu")
-		}
-		limits[corev1.ResourceCPU] = maxCPU
-	}
-
-	if cfgMinMemory != "" {
-		minMemory, err := parseResourceQuantity(cfgMinMemory)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse min memory")
-		}
-		requests[corev1.ResourceMemory] = minMemory
-	}
-
-	if cfgMaxMemory != "" {
-		maxMemory, err := parseResourceQuantity(cfgMaxMemory)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse max memory")
-		}
-		limits[corev1.ResourceMemory] = maxMemory
-	}
-
-	if len(limits) > 0 {
-		resourceRequirements.Limits = limits
-	}
-
-	if len(requests) > 0 {
-		resourceRequirements.Requests = requests
-	}
-
-	return &resourceRequirements, nil
 }
 
 func generateGitDeploymentConfig(commonObjectMeta metav1.ObjectMeta, image string, containerPorts []corev1.ContainerPort, envVars []corev1.EnvVar, resourceRequirements *corev1.ResourceRequirements) appsv1.DeploymentConfig {

@@ -144,14 +144,6 @@ func (o *CreateOptions) Validate() (err error) {
 		errorList = append(errorList, err.Error())
 	}
 
-	if o.Context.LocalConfigInfo.Exists() {
-		if o.now {
-			if err = o.ValidateComponentCreate(); err != nil {
-				errorList = append(errorList, err.Error())
-			}
-		}
-	}
-
 	if len(errorList) > 0 {
 		for i := range errorList {
 			errorList[i] = fmt.Sprintf("\t- %s", errorList[i])
@@ -173,14 +165,9 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 
 	if o.now {
 		// if the now flag is specified, push the changes
-		if o.Context.LocalConfigInfo.Exists() {
-			o.LocalConfigInfo = o.Context.LocalConfigInfo
-			err = o.Push()
-		} else {
-			o.CompleteDevfilePath()
-			o.EnvSpecificInfo = o.Context.EnvSpecificInfo
-			err = o.DevfilePush()
-		}
+		o.CompleteDevfilePath()
+		o.EnvSpecificInfo = o.Context.EnvSpecificInfo
+		err = o.DevfilePush()
 		if err != nil {
 			return errors.Wrap(err, "failed to push changes")
 		}

@@ -17,9 +17,9 @@ const apiVersion = "odo.dev/v1alpha1"
 
 // generic contains information required for all the URL clients
 type generic struct {
-	appName       string
-	componentName string
-	localConfig   localConfigProvider.LocalConfigProvider
+	appName             string
+	componentName       string
+	localConfigProvider localConfigProvider.LocalConfigProvider
 }
 
 type Client interface {
@@ -42,9 +42,9 @@ func NewClient(options ClientOptions) Client {
 
 	if options.LocalConfigProvider != nil {
 		genericInfo = generic{
-			appName:       options.LocalConfigProvider.GetApplication(),
-			componentName: options.LocalConfigProvider.GetName(),
-			localConfig:   options.LocalConfigProvider,
+			appName:             options.LocalConfigProvider.GetApplication(),
+			componentName:       options.LocalConfigProvider.GetName(),
+			localConfigProvider: options.LocalConfigProvider,
 		}
 	}
 
@@ -61,22 +61,22 @@ func NewClient(options ClientOptions) Client {
 }
 
 type PushParameters struct {
-	LocalConfig      localConfigProvider.LocalConfigProvider
-	URLClient        Client
-	IsRouteSupported bool
+	LocalConfigProvider localConfigProvider.LocalConfigProvider
+	URLClient           Client
+	IsRouteSupported    bool
 }
 
 // Push creates and deletes the required URLs
 func Push(parameters PushParameters) error {
 	urlLOCAL := make(map[string]URL)
 
-	localConfigURLs, err := parameters.LocalConfig.ListURLs()
+	localConfigProviderURLs, err := parameters.LocalConfigProvider.ListURLs()
 	if err != nil {
 		return err
 	}
 
 	// get the local URLs
-	for _, url := range localConfigURLs {
+	for _, url := range localConfigProviderURLs {
 		if !parameters.IsRouteSupported && url.Kind == localConfigProvider.ROUTE {
 			// display warning since Host info is missing
 			log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", url.Name)
@@ -114,7 +114,7 @@ func Push(parameters PushParameters) error {
 				// the default secret name is used during creation
 				// thus setting it to the local URLs to avoid config mismatch
 				if val.Spec.Secure && val.Spec.TLSSecret == "" {
-					val.Spec.TLSSecret = getDefaultTLSSecretName(parameters.LocalConfig.GetName(), parameters.LocalConfig.GetApplication())
+					val.Spec.TLSSecret = getDefaultTLSSecretName(parameters.LocalConfigProvider.GetName(), parameters.LocalConfigProvider.GetApplication())
 				}
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			} else if val.Spec.Kind == localConfigProvider.ROUTE {

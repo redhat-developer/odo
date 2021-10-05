@@ -19,7 +19,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/url"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -48,11 +47,10 @@ type StatusOptions struct {
 
 	devObj parser.DevfileObj
 
-	logFollow       bool
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
-	localConfig     localConfigProvider.LocalConfigProvider
+	logFollow           bool
+	EnvSpecificInfo     *envinfo.EnvSpecificInfo
+	localConfigProvider localConfigProvider.LocalConfigProvider
 	*genericclioptions.Context
-	isDevfile bool
 }
 
 // NewStatusOptions returns new instance of StatusOptions
@@ -64,46 +62,36 @@ func NewStatusOptions() *StatusOptions {
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	so.devfilePath = filepath.Join(so.componentContext, DevfilePath)
 
-	so.isDevfile = util.CheckPathExists(so.devfilePath)
-
-	// If devfile is present
-	if so.isDevfile {
-		so.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(so.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
-		so.Context, err = genericclioptions.NewDevfileContext(cmd)
-		if err != nil {
-			return err
-		}
-		// Get the component name
-		so.componentName = so.EnvSpecificInfo.GetName()
-
-		devObj, err := devfile.ParseFromFile(so.devfilePath)
-		if err != nil {
-			return err
-		}
-		so.devObj = devObj
-		so.EnvSpecificInfo.SetDevfileObj(so.devObj)
-
-		so.localConfig = so.EnvSpecificInfo
-
-		var platformContext interface{}
-		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-		so.namespace = so.KClient.GetCurrentNamespace()
-		platformContext = kubernetes.KubernetesContext{
-			Namespace: so.namespace,
-		}
-
-		so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.Application, devObj, platformContext)
-
+	so.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(so.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve configuration information")
+	}
+	so.Context, err = genericclioptions.NewDevfileContext(cmd)
+	if err != nil {
 		return err
 	}
+	// Get the component name
+	so.componentName = so.EnvSpecificInfo.GetName()
 
-	// Set the correct context
-	so.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	devObj, err := devfile.ParseFromFile(so.devfilePath)
+	if err != nil {
+		return err
+	}
+	so.devObj = devObj
+	so.EnvSpecificInfo.SetDevfileObj(so.devObj)
 
-	return
+	so.localConfigProvider = so.EnvSpecificInfo
+
+	var platformContext interface{}
+	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
+	so.namespace = so.KClient.GetCurrentNamespace()
+	platformContext = kubernetes.KubernetesContext{
+		Namespace: so.namespace,
+	}
+
+	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.Application, devObj, platformContext)
+
+	return err
 }
 
 // Validate validates the status parameters
@@ -118,11 +106,6 @@ func (so *StatusOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
-
-	if !so.isDevfile {
-		return errors.New("the status command is only supported for devfiles")
-	}
-
 	if !log.IsJSON() {
 		return errors.New("this command only supports the '-o json' output format")
 	}
@@ -140,7 +123,7 @@ func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
 		oclient.Namespace = so.KClient.GetCurrentNamespace()
 	}
 
-	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfig, loggingClient)
+	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfigProvider, loggingClient)
 
 	// You can call Run() any time you like, but you can never leave.
 	for {

@@ -57,17 +57,6 @@ func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 		o.componentName = env.GetName()
 		o.Namespace = env.GetNamespace()
-	} else {
-		o.Context, err = genericclioptions.NewContext(cmd)
-		if err != nil {
-			return err
-		}
-		cfg := o.Context.LocalConfigInfo
-		o.LocalConfigInfo = cfg
-
-		o.componentName = cfg.GetName()
-		o.applicationName = cfg.GetApplication()
-		o.Namespace = cfg.GetProject()
 	}
 
 	// Using Discard streams because nothing important is logged

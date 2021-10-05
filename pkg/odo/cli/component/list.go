@@ -7,12 +7,10 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
@@ -74,9 +72,8 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		lo.componentType = component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 
 	} else {
-		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig
+		// here we use use information from user's kubeconfig
 		// as odo list should work in a non-component directory too
-
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context, err = genericclioptions.NewContext(cmd, false, true)
@@ -87,15 +84,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			if err != nil {
 				return err
 			}
-
-		} else {
-			klog.V(4).Infof("New Config Context")
-			lo.Context, err = genericclioptions.NewConfigContext(cmd)
-			if err != nil {
-				return err
-			}
-			// for disconnected situation we just assume we have DC support
-			lo.hasDCSupport = true
 		}
 	}
 
@@ -119,9 +107,8 @@ func (lo *ListOptions) Validate() (err error) {
 	var project, app string
 
 	if !util.CheckKubeConfigExist() {
-		project = lo.LocalConfigInfo.GetProject()
-		app = lo.LocalConfigInfo.GetApplication()
-
+		project = lo.EnvSpecificInfo.GetNamespace()
+		app = lo.EnvSpecificInfo.GetApplication()
 	} else {
 		project = lo.Context.Project
 		app = lo.Application
@@ -144,12 +131,8 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 		if err != nil {
 			return err
 		}
-		s2iComps, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
-		if err != nil {
-			return err
-		}
 
-		combinedComponents := component.NewCombinedComponentList(s2iComps, devfileComps, otherComps)
+		combinedComponents := component.NewCombinedComponentList(devfileComps, otherComps)
 
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(combinedComponents)
@@ -212,46 +195,6 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 		}
 	}
 
-	var s2iComponents []component.Component
-	// we now check if DC is supported
-	if lo.hasDCSupport {
-
-		if lo.allAppsFlag {
-			// retrieve list of application
-			apps, err := application.List(lo.Client)
-			if err != nil {
-				return err
-			}
-
-			if len(apps) == 0 && lo.LocalConfigInfo.Exists() {
-				selector = applabels.GetSelector(lo.LocalConfigInfo.GetApplication())
-				comps, err := component.ListS2IComponents(lo.Client, selector, lo.LocalConfigInfo)
-				if err != nil {
-					return err
-				}
-				s2iComponents = append(s2iComponents, comps.Items...)
-			}
-
-			// iterating over list of application and get list of all components
-			for _, app := range apps {
-				selector = applabels.GetSelector(app)
-				comps, err := component.ListS2IComponents(lo.Client, selector, lo.LocalConfigInfo)
-				if err != nil {
-					return err
-				}
-				s2iComponents = append(s2iComponents, comps.Items...)
-			}
-		} else {
-			selector = applabels.GetSelector(lo.Application)
-			componentList, err := component.ListS2IComponents(lo.Client, selector, lo.LocalConfigInfo)
-			// compat
-			s2iComponents = componentList.Items
-			if err != nil {
-				return errors.Wrapf(err, "failed to fetch component list")
-			}
-		}
-	}
-
 	// list components managed by other sources/tools
 	if lo.allAppsFlag {
 		selector = project.GetNonOdoSelector()
@@ -259,13 +202,13 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 		selector = applabels.GetNonOdoSelector(lo.Application)
 	}
 
-	otherComponents, err := component.List(lo.Client, selector, lo.LocalConfigInfo)
+	otherComponents, err := component.List(lo.Client, selector)
 	if err != nil {
 		return fmt.Errorf("failed to fetch components not managed by odo: %w", err)
 	}
 	otherComps = otherComponents.Items
 
-	combinedComponents := component.NewCombinedComponentList(s2iComponents, devfileComponents, otherComps)
+	combinedComponents := component.NewCombinedComponentList(devfileComponents, otherComps)
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(combinedComponents)
 	} else {
@@ -310,7 +253,7 @@ func HumanReadableOutputInPath(wr io.Writer, o component.CombinedComponentList) 
 	defer w.Flush()
 
 	// if we dont have any components then
-	if len(o.DevfileComponents) == 0 && len(o.S2IComponents) == 0 {
+	if len(o.DevfileComponents) == 0 {
 		fmt.Fprintln(w, "No components found")
 		return
 	}
@@ -323,22 +266,13 @@ func HumanReadableOutputInPath(wr io.Writer, o component.CombinedComponentList) 
 		}
 		fmt.Fprintln(w)
 	}
-
-	if len(o.S2IComponents) != 0 {
-		fmt.Fprintln(w, "S2I Components: ")
-		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE", "\t", "CONTEXT")
-		for _, comp := range o.S2IComponents {
-			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State, "\t", comp.Status.Context)
-		}
-	}
-
 }
 
 func HumanReadableOutput(wr io.Writer, o component.CombinedComponentList) {
 	w := tabwriter.NewWriter(wr, 5, 2, 3, ' ', tabwriter.TabIndent)
 	defer w.Flush()
 
-	if len(o.DevfileComponents) == 0 && len(o.S2IComponents) == 0 && len(o.OtherComponents) == 0 {
+	if len(o.DevfileComponents) == 0 && len(o.OtherComponents) == 0 {
 		log.Info("There are no components deployed.")
 		return
 	}
@@ -352,13 +286,5 @@ func HumanReadableOutput(wr io.Writer, o component.CombinedComponentList) {
 			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", component.StateTypePushed, "\t", "No")
 		}
 		fmt.Fprintln(w)
-	}
-
-	if len(o.S2IComponents) != 0 {
-		fmt.Fprintln(w, "S2I Components: ")
-		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
-		for _, comp := range o.S2IComponents {
-			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
-		}
 	}
 }

@@ -2,11 +2,11 @@ package completion
 
 import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
@@ -65,12 +65,12 @@ var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	localConfig, err := config.New()
+	envInfo, err := envinfo.New()
 	if err != nil {
 		return completions
 	}
 
-	storageList, err := localConfig.ListStorage()
+	storageList, err := envInfo.ListStorage()
 	if err != nil {
 		return completions
 	}
@@ -130,7 +130,7 @@ var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	if context.Application != "" {
 		selector = applabels.GetSelector(context.Application)
 	}
-	components, err := component.List(context.Client, selector, nil)
+	components, err := component.List(context.Client, selector)
 
 	if err != nil {
 		return completions

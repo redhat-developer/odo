@@ -671,9 +671,9 @@ func TestPush(t *testing.T) {
 			fakeClient.SetKubeClient(fakeKClient)
 
 			if err := Push(PushParameters{
-				LocalConfig:      mockLocalConfigProvider,
-				URLClient:        mockURLClient,
-				IsRouteSupported: tt.args.isRouteSupported,
+				LocalConfigProvider: mockLocalConfigProvider,
+				URLClient:           mockURLClient,
+				IsRouteSupported:    tt.args.isRouteSupported,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			}

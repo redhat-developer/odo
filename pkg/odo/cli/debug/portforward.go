@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/component"
@@ -20,6 +19,11 @@ import (
 
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/util/templates"
+)
+
+const (
+	// DefaultDebugPort is the default port used for debugging on remote pod
+	DefaultDebugPort = 5858
 )
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
@@ -86,20 +90,6 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 		o.componentName = env.GetName()
 		o.Namespace = env.GetNamespace()
 
-	} else {
-		// this populates the LocalConfigInfo
-		o.Context, err = genericclioptions.NewContext(cmd)
-		if err != nil {
-			return err
-		}
-
-		// a small shortcut
-		cfg := o.Context.LocalConfigInfo
-		remotePort = cfg.GetDebugPort()
-
-		o.componentName = cfg.GetName()
-		o.applicationName = cfg.GetApplication()
-		o.Namespace = cfg.GetProject()
 	}
 
 	// try to listen on the given local port and check if the port is free or not
@@ -186,7 +176,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 	}
 
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", config.DefaultDebugPort, "Set the local port")
+	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", DefaultDebugPort, "Set the local port")
 
 	return cmd
 }

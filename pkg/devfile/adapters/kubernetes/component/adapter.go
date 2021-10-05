@@ -25,7 +25,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -262,7 +261,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
-	err = component.ApplyConfig(&a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, false)
+	err = component.ApplyConfig(&a.Client, parameters.EnvSpecificInfo, color.Output, componentExists, false)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update config to component deployed.")
 	}

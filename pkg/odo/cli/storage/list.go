@@ -79,7 +79,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		if err != nil {
 			return err
 		}
-		if !o.Context.LocalConfigInfo.Exists() && isContainerDisplay(storageList, localContainers) {
+		if isContainerDisplay(storageList, localContainers) {
 			printStorageWithContainer(storageList, o.Context.LocalConfigProvider.GetName())
 		} else {
 			printStorage(storageList, o.Context.LocalConfigProvider.GetName())

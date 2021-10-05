@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/service"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -21,14 +20,13 @@ import (
 
 // ComponentFullDescriptionSpec represents the complete description of the component
 type ComponentFullDescriptionSpec struct {
-	App        string              `json:"app,omitempty"`
-	Type       string              `json:"type,omitempty"`
-	Source     string              `json:"source,omitempty"`
-	SourceType string              `json:"sourceType,omitempty"`
-	URL        urlpkg.URLList      `json:"urls,omitempty"`
-	Storage    storage.StorageList `json:"storages,omitempty"`
-	Env        []corev1.EnvVar     `json:"env,omitempty"`
-	Ports      []string            `json:"ports,omitempty"`
+	App     string              `json:"app,omitempty"`
+	Type    string              `json:"type,omitempty"`
+	Source  string              `json:"source,omitempty"`
+	URL     urlpkg.URLList      `json:"urls,omitempty"`
+	Storage storage.StorageList `json:"storages,omitempty"`
+	Env     []corev1.EnvVar     `json:"env,omitempty"`
+	Ports   []string            `json:"ports,omitempty"`
 }
 
 // ComponentFullDescription describes a component fully
@@ -109,7 +107,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 }
 
 // NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
-func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
+func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	var state State
 	if client == nil {
@@ -121,15 +119,12 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	var devfile devfileParser.DevfileObj
 	var err error
 	var configLinks []string
-	if envInfo != nil {
-		componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
-		if err != nil {
-			return cfd, err
-		}
-		configLinks, err = service.ListDevfileLinks(devfile, context)
-	} else {
-		componentDesc, err = GetComponentFromConfig(localConfigInfo)
+	componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
+	if err != nil {
+		return cfd, err
 	}
+	configLinks, err = service.ListDevfileLinks(devfile, context)
+
 	if err != nil {
 		return cfd, err
 	}
@@ -145,7 +140,6 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 		}
 		cfd.Spec.Env = componentDescFromCluster.Spec.Env
 		cfd.Spec.Type = componentDescFromCluster.Spec.Type
-		cfd.Spec.SourceType = componentDescFromCluster.Spec.SourceType
 		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
 	}
 
@@ -181,12 +175,8 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	}
 
 	var configProvider localConfigProvider.LocalConfigProvider
-	if envInfo != nil {
-		envInfo.SetDevfileObj(devfile)
-		configProvider = envInfo
-	} else {
-		configProvider = localConfigInfo
-	}
+	envInfo.SetDevfileObj(devfile)
+	configProvider = envInfo
 
 	var derefClient occlient.Client
 
@@ -265,7 +255,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 		// if the component is not pushed
 		for _, componentURL := range cfd.Spec.URL.Items {
 			if componentURL.Status.State == urlpkg.StateTypePushed {
-				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", true), componentURL.Spec.Port)
+				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
 			} else {
 				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, componentURL.Spec.Port)
 			}
@@ -337,7 +327,6 @@ func (cfd *ComponentFullDescription) GetComponent() Component {
 	cmp.Spec.App = cfd.Spec.App
 	cmp.Spec.Ports = cfd.Spec.Ports
 	cmp.Spec.Type = cfd.Spec.Type
-	cmp.Spec.SourceType = string(config.LOCAL)
 	cmp.Spec.StorageSpec = cfd.Spec.Storage.Items
 	cmp.Spec.URLSpec = cfd.Spec.URL.Items
 	for _, url := range cfd.Spec.URL.Items {

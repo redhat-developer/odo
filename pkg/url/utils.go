@@ -73,16 +73,12 @@ func ConvertEnvInfoURL(envInfoURL localConfigProvider.LocalURL, serviceName stri
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(protocol, URL, ingressDomain string, isS2I bool) string {
+func GetURLString(protocol, URL, ingressDomain string) string {
 	if protocol == "" && URL == "" && ingressDomain == "" {
 		return ""
 	}
-	if !isS2I && URL == "" {
-		return protocol + "://" + ingressDomain
-	}
-	// if we are here we are dealing with s2i
 	if URL == "" {
-		return protocol + "://" + "<provided by cluster>"
+		return protocol + "://" + ingressDomain
 	}
 	return protocol + "://" + URL
 }

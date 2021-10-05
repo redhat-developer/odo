@@ -426,7 +426,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 				return true, &tt.returnedRoutes, nil
 			})
 
-			tt.fields.generic.localConfig = mockLocalConfig
+			tt.fields.generic.localConfigProvider = mockLocalConfig
 			k := kubernetesClient{
 				generic:          tt.fields.generic,
 				isRouteSupported: tt.fields.isRouteSupported,

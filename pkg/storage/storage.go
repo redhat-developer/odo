@@ -23,9 +23,9 @@ const (
 
 // generic contains information required for all the Storage clients
 type generic struct {
-	appName       string
-	componentName string
-	localConfig   localConfigProvider.LocalConfigProvider
+	appName             string
+	componentName       string
+	localConfigProvider localConfigProvider.LocalConfigProvider
 }
 
 type ClientOptions struct {
@@ -47,9 +47,9 @@ func NewClient(options ClientOptions) Client {
 
 	if options.LocalConfigProvider != nil {
 		genericInfo = generic{
-			appName:       options.LocalConfigProvider.GetApplication(),
-			componentName: options.LocalConfigProvider.GetName(),
-			localConfig:   options.LocalConfigProvider,
+			appName:             options.LocalConfigProvider.GetApplication(),
+			componentName:       options.LocalConfigProvider.GetName(),
+			localConfigProvider: options.LocalConfigProvider,
 		}
 	}
 

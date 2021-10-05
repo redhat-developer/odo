@@ -88,9 +88,9 @@ func (k kubernetesClient) List() (URLList, error) {
 	}
 
 	localMap := make(map[string]URL)
-	if k.localConfig != nil {
+	if k.localConfigProvider != nil {
 		// get the URLs present on the localConfigProvider
-		localURLS, err := k.localConfig.ListURLs()
+		localURLS, err := k.localConfigProvider.ListURLs()
 		if err != nil {
 			return URLList{}, err
 		}

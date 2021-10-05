@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
@@ -143,15 +142,6 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			if err != nil {
 				return err
 			}
-
-			cfg, err := config.NewLocalConfigInfo(do.componentContext)
-			if err != nil {
-				return err
-			}
-			if err = cfg.DeleteConfigDirIfEmpty(); err != nil {
-				return err
-			}
-
 			log.Successf("Successfully deleted env file")
 		} else {
 			log.Error("Aborting deletion of env folder")
