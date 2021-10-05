@@ -276,7 +276,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/bindings/redis-link/clusterIP").ShouldPass()
 			})
 
-			It("should find owner references on link and service", func() {
+			// Removed from issue https://github.com/openshift/odo/issues/5084
+			XIt("should find owner references on link and service", func() {
 				if os.Getenv("KUBERNETES") == "true" {
 					Skip("This is a OpenShift specific scenario, skipping")
 				}
@@ -346,7 +347,8 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.DeleteDir(context1)
 			})
 
-			It("should link the two components successfully with service binding operator", func() {
+			// Removed from issue https://github.com/openshift/odo/issues/5084
+			XIt("should link the two components successfully with service binding operator", func() {
 
 				if os.Getenv("KUBERNETES") == "true" {
 					// service binding operator is not installed on kubernetes

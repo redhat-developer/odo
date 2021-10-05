@@ -34,9 +34,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
 			operators := []string{"redis-operator"}
-			if os.Getenv("KUBERNETES") != "true" {
-				operators = append(operators, "service-binding-operator")
-			}
 			for _, operator := range operators {
 				helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
 					return strings.Contains(output, operator)
