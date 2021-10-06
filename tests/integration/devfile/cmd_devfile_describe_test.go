@@ -28,12 +28,16 @@ var _ = Describe("odo devfile describe command tests", func() {
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-	When("a component is created", func() {
+	When("a component is created with storage and url", func() {
+		var (
+			compName = "cmp-git"
+			compType = "django"
+		)
 		BeforeEach(func() {
 			// Using Django example here because it helps to distinguish between language and projectType.
 			// With nodejs, both projectType and language is nodejs, but with python-django, django is the projectType and python is the language
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.Cmd("odo", "create", "python-django", "cmp-git", "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing").ShouldPass()
+			helper.Cmd("odo", "create", "python-django", compName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing").ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-2", "--port", "4000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
@@ -48,8 +52,8 @@ var _ = Describe("odo devfile describe command tests", func() {
 		var checkDescribe = func(status string) {
 			cmpDescribe := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
 			helper.MatchAllInOutput(cmpDescribe, []string{
-				"cmp-git",
-				"django",
+				compName,
+				compType,
 				"url-1",
 				"url-2",
 				"storage-1",
@@ -58,20 +62,34 @@ var _ = Describe("odo devfile describe command tests", func() {
 				cmpDescribeJSON, err := helper.Unindented(helper.Cmd("odo", "describe", "-o", "json", "--context", commonVar.Context).ShouldPass().Out())
 				Expect(err).Should(BeNil())
 				valuesDes := gjson.GetMany(cmpDescribeJSON, "kind", "metadata.name", "status.state", "spec.urls.items.0.metadata.name", "spec.urls.items.0.spec.host", "spec.urls.items.1.metadata.name", "spec.urls.items.1.spec.host", "spec.storages.items.0.metadata.name", "spec.storages.items.0.spec.containerName")
-				expectedDes := []string{"Component", "cmp-git", status, "url-1", "url-1.example.com", "url-2", "url-2.example.com", "storage-1", "py-web"}
+				expectedDes := []string{"Component", compName, status, "url-1", "url-1.example.com", "url-2", "url-2.example.com", "storage-1", "py-web"}
 				Expect(helper.GjsonMatcher(valuesDes, expectedDes)).To(Equal(true))
 			})
 
 			By("checking describe with component name works", func() {
 				// odo should describe not-pushed component if component name is given.
-				helper.Cmd("odo", "describe", "cmp-git", "--context", commonVar.Context).ShouldPass()
-				Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
+				helper.Cmd("odo", "describe", compName, "--context", commonVar.Context).ShouldPass()
+				Expect(cmpDescribe).To(ContainSubstring(compName))
 			})
 		}
 
 		It("should describe the component correctly", func() {
 			checkDescribe("Not Pushed")
 		})
+
+		It("should describe the component correctly from a disconnected cluster", func() {
+			By("getting human readable output", func() {
+				output := helper.Cmd("odo", "describe", "--context", commonVar.Context).WithEnv("KUBECONFIG=/no/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
+				helper.MatchAllInOutput(output, []string{compName, compType})
+			})
+
+			By("getting json output", func() {
+				output := helper.Cmd("odo", "describe", "--context", commonVar.Context, "-o", "json").WithEnv("KUBECONFIG=/no/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
+				values := gjson.GetMany(output, "kind", "metadata.name", "spec.type", "status.state")
+				Expect(helper.GjsonMatcher(values, []string{"Component", compName, compType, "Unknown"})).To(Equal(true))
+			})
+		})
+
 		When("the component is pushed", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
@@ -82,25 +100,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 		})
 	})
 
-	When("executing odo describe from a disconnected cluster", func() {
-		var compName = "mynode"
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "create", "nodejs", compName, "--context", commonVar.Context).ShouldPass()
-		})
-		It("should describe successfully", func() {
-			output := helper.Cmd("odo", "describe", "--context", commonVar.Context).WithEnv("KUBECONFIG=/no/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
-			helper.MatchAllInOutput(output, []string{compName, "nodejs"})
-		})
-
-		It("should show json output", func() {
-			output := helper.Cmd("odo", "describe", "--context", commonVar.Context, "-o", "json").WithEnv("KUBECONFIG=/no/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
-			values := gjson.GetMany(output, "kind", "metadata.name", "spec.type", "status.state")
-			Expect(helper.GjsonMatcher(values, []string{"Component", compName, "nodejs", "Unknown"})).To(Equal(true))
-		})
-	})
-
-	Context("devfile has missing metadata", func() {
+	When("devfile has missing metadata", func() {
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
 		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/issues/4815
 
