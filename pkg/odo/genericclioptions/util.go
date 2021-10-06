@@ -34,10 +34,7 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) error {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
-		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
-		if err != nil {
-			return fmt.Errorf(errFormatForCommand, command.Root().Name())
-		}
+		return fmt.Errorf(errFormatForCommand, command.Root().Name())
 	}
 	return nil
 }
@@ -47,10 +44,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, er
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Command, errFormatForCommand string) error {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "push" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
-		err := fmt.Errorf(errFormatForCommand)
-		if err != nil {
-			return fmt.Errorf(errFormatForCommand)
-		}
+		return fmt.Errorf(errFormatForCommand)
 	}
 	return nil
 }
