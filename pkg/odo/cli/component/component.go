@@ -23,7 +23,11 @@ type ComponentOptions struct {
 
 // Complete completes component options
 func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	context := genericclioptions.GetContextFlagValue(cmd)
+	context, err := genericclioptions.GetContextFlagValue(cmd)
+	if err != nil {
+		return err
+	}
+
 	devfilePath := filepath.Join(context, devFile)
 	if util.CheckPathExists(devfilePath) {
 		co.Context, err = genericclioptions.NewDevfileContext(cmd)
@@ -31,11 +35,16 @@ func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []str
 		co.Context, err = genericclioptions.NewContext(cmd)
 	}
 	if err != nil {
-		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
-		err = nil
+		co.Context, err = genericclioptions.NewOfflineDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 	}
 
-	co.componentName = co.Context.Component(args...)
+	co.componentName, err = co.Context.Component(args...)
+	if err != nil {
+		return nil
+	}
 	return
 }
 

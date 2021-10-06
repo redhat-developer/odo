@@ -32,7 +32,6 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 	storagepkg "github.com/openshift/odo/pkg/storage"
 	storagelabels "github.com/openshift/odo/pkg/storage/labels"
 	"github.com/openshift/odo/pkg/sync"
@@ -265,7 +264,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 	err = component.ApplyConfig(&a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, false)
 	if err != nil {
-		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
+		return errors.Wrapf(err, "Failed to update config to component deployed.")
 	}
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required

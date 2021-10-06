@@ -38,7 +38,10 @@ func (gto *GetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if err != nil {
 		return err
 	}
-	gto.componentName = gto.Context.ComponentAllowingEmpty(true)
+	gto.componentName, err = gto.Context.ComponentAllowingEmpty(true)
+	if err != nil {
+		return err
+	}
 	return
 }
 

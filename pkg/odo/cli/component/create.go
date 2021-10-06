@@ -164,7 +164,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 	} else {
-		co.Context = genericclioptions.NewOfflineDevfileContext(cmd)
+		co.Context, err = genericclioptions.NewOfflineDevfileContext(cmd)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Configure the context
@@ -489,7 +492,13 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 				params = util.HTTPRequestParams{
 					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 				}
-				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+
+				secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+				if err != nil {
+					return err
+				}
+
+				if secure {
 					var token string
 					token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 					if err != nil {
@@ -544,7 +553,11 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return err
 	}
 
-	if co.devfileMetadata.starterToken == "" && registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+	secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+	if err != nil {
+		return err
+	}
+	if co.devfileMetadata.starterToken == "" && secure {
 		var token string
 		token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 		if err != nil {

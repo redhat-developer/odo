@@ -3,12 +3,10 @@ package util
 import (
 	// odo packages
 
-	"os"
 	"strings"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -16,11 +14,10 @@ const (
 )
 
 // IsSecure checks if the registry is secure
-func IsSecure(registryName string) bool {
+func IsSecure(registryName string) (bool, error) {
 	cfg, err := preference.New()
 	if err != nil {
-		log.Error(errors.Cause(err))
-		os.Exit(1)
+		return false, err
 	}
 
 	isSecure := false
@@ -33,7 +30,7 @@ func IsSecure(registryName string) bool {
 		}
 	}
 
-	return isSecure
+	return isSecure, nil
 }
 
 func IsGitBasedRegistry(url string) bool {

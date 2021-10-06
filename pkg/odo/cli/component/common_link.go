@@ -116,7 +116,10 @@ func (o *commonLinkOptions) run() (err error) {
 		component = o.EnvSpecificInfo.GetName()
 		err = o.operation(o.secretName, component, o.Application)
 	} else {
-		component = o.Component()
+		component, err = o.Component()
+		if err != nil {
+			return err
+		}
 		err = o.operation(o.secretName, component, o.Application)
 	}
 

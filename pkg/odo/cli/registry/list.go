@@ -3,7 +3,6 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
-	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"io"
 	"os"
 	"text/tabwriter"
@@ -15,8 +14,8 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
+	util "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/preference"
 )
 
@@ -57,7 +56,7 @@ func (o *ListOptions) Validate() (err error) {
 func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	cfg, err := preference.New()
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return err
 	}
 
 	registryList := cfg.OdoSettings.RegistryList
@@ -75,7 +74,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	o.printRegistryList(w, registryList)
 	w.Flush()
 	if o.printGitRegistryDeprecationWarning {
-		util2.PrintGitRegistryDeprecationWarning()
+		util.PrintGitRegistryDeprecationWarning()
 	}
 	return
 }
@@ -94,7 +93,7 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 			secure = "Yes"
 		}
 		fmt.Fprintln(w, registry.Name, "\t", registry.URL, "\t", secure)
-		if util2.IsGitBasedRegistry(registry.URL) {
+		if util.IsGitBasedRegistry(registry.URL) {
 			o.printGitRegistryDeprecationWarning = true
 		}
 	}

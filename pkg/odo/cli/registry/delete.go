@@ -58,8 +58,10 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry delete" command
 func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
-	isSecure := registryUtil.IsSecure(o.registryName)
-
+	isSecure, err := registryUtil.IsSecure(o.registryName)
+	if err != nil {
+		return err
+	}
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to delete registry")

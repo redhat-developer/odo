@@ -17,7 +17,11 @@ func GetValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 // getValidEnvInfo accesses the environment file
 func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 
-	componentContext := GetContextFlagValue(command)
+	componentContext, err := GetContextFlagValue(command)
+
+	if err != nil {
+		return nil, err
+	}
 
 	// Access the env file
 	envInfo, err := envinfo.NewEnvSpecificInfo(componentContext)
@@ -45,7 +49,10 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 
 func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
-	contextDir := GetContextFlagValue(command)
+	contextDir, err := GetContextFlagValue(command)
+	if err != nil {
+		return nil, err
+	}
 
 	// Access the local configuration
 	localConfiguration, err := config.NewLocalConfigInfo(contextDir)

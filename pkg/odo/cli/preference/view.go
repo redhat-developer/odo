@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -46,7 +45,7 @@ func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
 	cfg, err := preference.New()
 
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		return err
 	}
 
 	if log.IsJSON() {
