@@ -26,7 +26,7 @@ NAME                       URL                             SECURE
 DefaultDevfileRegistry     https://registry.devfile.io     No
 ```
 
-After installation, the odo registry will contain the default devfile registry, provided by the `devfile.io` project. 
+`DefaultDevfileRegistry` is the default registry used by odo; it is provided by the devfile.io project.
 
 ## Adding a registry
 
