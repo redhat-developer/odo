@@ -108,7 +108,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 		// checkDescribe checks the describe output (both normal and json) to see if it contains the expected componentType
 		var checkDescribe = func(componentType string) {
-			By("checking the normal output", func() {
+			By("checking the human readable output", func() {
 				stdOut := helper.Cmd("odo", "describe", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring(componentType))
 			})
