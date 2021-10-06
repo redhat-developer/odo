@@ -32,14 +32,9 @@ var (
 
 	# Create a URL for the current component with a specific port
 	%[1]s --port 8080
-  
+
 	# Create a URL with a specific name and port
 	%[1]s example --port 8080
-	  `)
-
-	urlCreateExampleExperimental = ktemplates.Examples(`
-	# Create a URL with a specific name and port
-	%[1]s myurl --port 8080
 
 	# Create a URL of ingress kind for the current component with a host
 	%[1]s --port 8080 --host example.com --ingress
@@ -219,7 +214,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "Port number for the url of the component, required in case of components which expose more than one service port")
-
 	urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
 	urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster IP for this URL")
 	urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
@@ -227,7 +221,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	urlCreateCmd.Flags().StringVarP(&o.path, "path", "", "", "path for this URL")
 	urlCreateCmd.Flags().StringVarP(&o.protocol, "protocol", "", string(devfilev1.HTTPEndpointProtocol), "protocol for this URL")
 	urlCreateCmd.Flags().StringVarP(&o.container, "container", "", "", "container of the endpoint in devfile")
-	urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
 	o.AddContextFlag(urlCreateCmd)

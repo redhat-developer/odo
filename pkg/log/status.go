@@ -265,14 +265,6 @@ func Deprecate(what, nextAction string) {
 	}
 }
 
-// Experimental will output in an appropriate "progress" manner
-func Experimental(a ...interface{}) {
-	if !IsJSON() {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s\n", yellow(fmt.Sprintln(a...)))
-	}
-}
-
 // Warning will output in an appropriate "progress" manner
 func Warning(a ...interface{}) {
 	if !IsJSON() {
