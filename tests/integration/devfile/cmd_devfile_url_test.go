@@ -38,9 +38,8 @@ var _ = Describe("odo devfile url command tests", func() {
 		stdout := ""
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 		})
 
 		It("should not allow creating an invalid host", func() {
@@ -273,9 +272,8 @@ var _ = Describe("odo devfile url command tests", func() {
 	When("creating a java-springboot component", func() {
 		stdout := ""
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, componentName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 		})
 
 		When("create URLs under different container names", func() {
@@ -320,9 +318,8 @@ var _ = Describe("odo devfile url command tests", func() {
 			host := helper.RandString(5) + ".com"
 
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
+				helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 
 			It("should error out when a host is provided with a route on a openShift cluster", func() {
@@ -425,7 +422,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
 				helper.Chdir(commonVar.Context)
-				helper.Cmd("odo", "create", "python", "--project", commonVar.Project, componentName).ShouldPass()
+				helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "python", "devfile-registry.yaml")).ShouldPass()
 			})
 
 			When("creating a url and doing odo push", func() {
@@ -453,9 +450,8 @@ var _ = Describe("odo devfile url command tests", func() {
 
 		When("creating a nodejs component", func() {
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
+				helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 
 			When("creating url", func() {

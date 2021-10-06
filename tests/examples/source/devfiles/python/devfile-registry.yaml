@@ -1,0 +1,49 @@
+commands:
+- exec:
+    commandLine: pip install --user -r requirements.txt
+    component: py-web
+    group:
+      isDefault: true
+      kind: build
+  id: pip-install-requirements
+- exec:
+    commandLine: python app.py
+    component: py-web
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECTS_ROOT}
+  id: run-app
+- exec:
+    commandLine: pip install --user debugpy && python -m debugpy --listen 0.0.0.0:${DEBUG_PORT}
+      app.py
+    component: py-web
+    group:
+      kind: debug
+    workingDir: ${PROJECTS_ROOT}
+  id: debugpy
+components:
+- container:
+    endpoints:
+    - name: web
+      targetPort: 8080
+    image: quay.io/eclipse/che-python-3.7:nightly
+    mountSources: true
+  name: py-web
+metadata:
+  description: Python Stack with Python 3.7
+  displayName: Python
+  icon: https://www.python.org/static/community_logos/python-logo-generic.svg
+  language: python
+  name: python-prj1-api-cajf
+  projectType: python
+  tags:
+  - Python
+  - pip
+  version: 1.0.0
+schemaVersion: 2.0.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/python-ex
+  name: python-example

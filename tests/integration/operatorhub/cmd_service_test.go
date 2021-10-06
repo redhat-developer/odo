@@ -69,7 +69,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 					// change the app name to avoid conflicts
 					appName := helper.RandString(5)
-					helper.Cmd("odo", "create", "nodejs", "--app", appName, "--context", commonVar.Context).ShouldPass().Out()
+					helper.Cmd("odo", "create", "nodejs", "--app", appName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
 					helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", commonVar.Context).ShouldPass()
 				})
 
@@ -107,12 +107,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 						})
 
-						It("should create pods in running state", func() {
+						It("should create pods in running state and list the service", func() {
 							commonVar.CliRunner.PodsShouldBeRunning(projectName, fmt.Sprintf(`%s-.[\-a-z0-9]*`, operandName))
-						})
-
-						It("should list the service", func() {
-							// now test listing of the service using odo
+							// TODO(feloy) These 2 tests cannot run in parallel on the same namespace. Rollback when using a multi-namespace operator
+							//						})
+							//
+							//						It("should list the service", func() {
 							stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context).ShouldPass().Out()
 							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Database/%s", operandName)))
 						})
@@ -181,7 +181,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				BeforeEach(func() {
 					cmpName = helper.RandString(4)
 					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-					helper.Cmd("odo", "create", "nodejs", cmpName).ShouldPass()
+					helper.Cmd("odo", "create", cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 					helper.Cmd("odo", "config", "set", "Memory", "300M", "-f").ShouldPass()
 				})
 

@@ -33,9 +33,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("odo debug on a nodejs:latest component", func() {
 		It("check that machine output debug information works", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--debug", "--context", commonVar.Context).ShouldPass()
 
 			httpPort, err := util.HTTPGetFreePort()
@@ -59,9 +58,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "push", "--debug", "--context", commonVar.Context).ShouldPass()
 
@@ -90,9 +88,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("odo debug info should work on a odo component", func() {
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.Cmd("odo", "create", "nodejs", "nodejs-cmp", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "nodejs-cmp", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--debug", "--context", commonVar.Context).ShouldPass()
 
 			httpPort, err := util.HTTPGetFreePort()
@@ -115,9 +112,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--debug", "--context", commonVar.Context).ShouldPass()
 
 			httpPort, err := util.HTTPGetFreePort()
@@ -157,9 +153,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("when the debug command throws an error during push", func() {
 		It("should wait and error out with some log", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm run debug", "npm run debugs")
 
 			_, output := helper.Cmd("odo", "push", "--debug", "--context", commonVar.Context).ShouldPass().OutAndErr()

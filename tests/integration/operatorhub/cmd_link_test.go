@@ -54,7 +54,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				componentName = "cmp-" + helper.RandString(6)
-				helper.Cmd("odo", "create", "nodejs", componentName, "--context", commonVar.Context, "--project", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "create", componentName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 				helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", commonVar.Context).ShouldPass()
 
 				serviceName := "service-" + helper.RandString(6)
@@ -302,10 +302,9 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			context0 = helper.CreateNewContext()
 			cmp0 = helper.RandString(5)
 
-			helper.Cmd("odo", "create", "nodejs", cmp0, "--context", context0).ShouldPass()
+			helper.Cmd("odo", "create", cmp0, "--context", context0, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context0)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context0, "devfile.yaml"))
 
 			helper.Cmd("odo", "push", "--context", context0).ShouldPass()
 		})
@@ -334,10 +333,9 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				context1 = helper.CreateNewContext()
 				cmp1 = helper.RandString(5)
 
-				helper.Cmd("odo", "create", "nodejs", cmp1, "--context", context1).ShouldPass()
+				helper.Cmd("odo", "create", cmp1, "--context", context1, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml")).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context1)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(context1, "devfile.yaml"))
 
 				helper.Cmd("odo", "push", "--context", context1).ShouldPass()
 			})

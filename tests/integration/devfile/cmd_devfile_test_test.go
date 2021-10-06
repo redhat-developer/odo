@@ -28,10 +28,9 @@ var _ = Describe("odo devfile test command tests", func() {
 
 		// used ";" as consolidating symbol as this spec covers multiple scenerios
 		It("should show error if component is not pushed; should error out if a non-existent command or a command from wrong group is specified", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.Cmd("odo", "test", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("error occurred while getting the pod: pod not found for the selector"))
@@ -45,10 +44,9 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("should show error if no test group is defined", func() {
-			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			output := helper.Cmd("odo", "test", "--context", commonVar.Context).ShouldFail().Err()
 
@@ -56,9 +54,8 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("should show error if devfile has no default test command", func() {
-			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "isDefault: true", "")
 			output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there is no default command"))
@@ -67,7 +64,7 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("should show error if devfile has multiple default test command", func() {
-			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			output := helper.Cmd("odo", "push", "--build-command", "firstbuild", "--run-command", "secondrun", "--context", commonVar.Context).ShouldFail().Err()
@@ -84,10 +81,9 @@ var _ = Describe("odo devfile test command tests", func() {
 	Context("Should run test command successfully", func() {
 
 		It("Should run test command successfully with only one default specified", func() {
-			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			output := helper.Cmd("odo", "test", "--context", commonVar.Context).ShouldPass().Out()
@@ -99,10 +95,9 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("Should run test command successfully with test-command specified", func() {
-			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			output := helper.Cmd("odo", "test", "--test-command", "test2", "--context", commonVar.Context).ShouldPass().Out()
@@ -114,10 +109,9 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("Should run composite test command successfully", func() {
-			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
 			output := helper.Cmd("odo", "test", "--test-command", "compositetest", "--context", commonVar.Context).ShouldPass().Out()

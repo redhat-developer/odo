@@ -157,6 +157,12 @@ func CopyManifestFile(fileName, targetDst string) {
 
 }
 
+func GetExamplePath(args ...string) string {
+	_, filename, _, _ := runtime.Caller(0)
+	path := append([]string{filepath.Dir(filename), "..", "examples"}, args...)
+	return filepath.Join(path...)
+}
+
 // CopyExampleDevFile copies an example devfile from tests/examples/source/devfiles/<componentName>/devfile.yaml
 // into targetDst
 func CopyExampleDevFile(devfilePath, targetDst string) {

@@ -28,9 +28,8 @@ var _ = Describe("odo devfile log command tests", func() {
 
 		It("should log run command output and fail for debug command", func() {
 
-			helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, cmpName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			output := helper.Cmd("odo", "log", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
@@ -48,15 +47,14 @@ var _ = Describe("odo devfile log command tests", func() {
 		})
 
 		It("should error out if component does not exist", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 			helper.Cmd("odo", "log").ShouldFail()
 		})
 
 		It("should log debug command output", func() {
 			projectDir := filepath.Join(commonVar.Context, "projectDir")
 			helper.CopyExample(filepath.Join("source", "web-nodejs-sample"), projectDir)
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName, "--context", projectDir).ShouldPass()
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDir, "devfile.yaml"))
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--context", projectDir, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 			helper.Cmd("odo", "push", "--debug", "--context", projectDir).ShouldPass()
 
 			output := helper.Cmd("odo", "log", "--debug", "--context", projectDir).ShouldPass().Out()

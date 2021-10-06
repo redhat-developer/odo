@@ -40,10 +40,8 @@ var _ = Describe("odo devfile debug command serial tests", func() {
 		helper.MakeDir(projectDirPath)
 		helper.Chdir(projectDirPath)
 
-		helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, componentName).ShouldPass()
+		helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
-		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
-		helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 		helper.Cmd("odo", "push", "--debug").ShouldPass()
 
 		stopChannel := make(chan bool)

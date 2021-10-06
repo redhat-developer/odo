@@ -129,7 +129,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		var token string
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "create", "nodejs", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 			ocRunner = helper.NewOcRunner("oc")
 			token = ocRunner.GetToken()
 			ocRunner.Logout()
@@ -185,7 +185,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		// !! Do not test with true because it sends out the telemetry data and messes up the statistics !!
 		It("should not prompt the user", func() {
 			helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "-f").ShouldPass()
-			output := helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context).ShouldPass().Out()
+			output := helper.Cmd("odo", "create", "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 	})
