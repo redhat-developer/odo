@@ -6,7 +6,7 @@ sidebar_position: 4
 
 odo uses the portable *devfile* format to describe the components. odo can connect to various devfile registries to download devfiles for different languages and frameworks.
 
-You can connect to available public devfile registries, or you can install your own [Secure Registry](/docs/architecture/secure-registry).
+You can connect to publicly available devfile registries, or you can install your own [Secure Registry](/docs/architecture/secure-registry).
 
 You can use the `odo registry` command to manage the registries used by odo to retrieve devfile information.
 
@@ -26,7 +26,7 @@ NAME                       URL                             SECURE
 DefaultDevfileRegistry     https://registry.devfile.io     No
 ```
 
-`DefaultDevfileRegistry` is the default registry used by odo; it is provided by the devfile.io project.
+`DefaultDevfileRegistry` is the default registry used by odo; it is provided by the [devfile.io](https://devfile.io) project.
 
 ## Adding a registry
 
@@ -43,7 +43,7 @@ $ odo registry add StageRegistry https://registry.stage.devfile.io
 New registry successfully added
 ```
 
-If you are deploying your own Secure Registry, you can specify the personal access token to authentify to the secure registry with the `--token` flag:
+If you are deploying your own Secure Registry, you can specify the personal access token to authenticate to the secure registry with the `--token` flag:
 
 ```
 $ odo registry add MyRegistry https://myregistry.example.com --token <access_token>
