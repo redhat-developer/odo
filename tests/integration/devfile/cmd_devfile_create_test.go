@@ -68,7 +68,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		Expect(fileContents).To(ContainSubstring(componentNamespace))
 	})
 
-	Context("odo create is executed with the --registry flag", func() {
+	When("odo create is executed with the --registry flag", func() {
 		It("should successfully create the devfile component if specified registry is valid", func() {
 			componentRegistry := "DefaultDevfileRegistry"
 			helper.Cmd("odo", "create", "java-openliberty", "--registry", componentRegistry).ShouldPass()
@@ -81,7 +81,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("odo create is executed with the --context flag", func() {
+	When("odo create is executed with the --context flag", func() {
 		var newContext, envFilePath string
 		BeforeEach(func() {
 			newContext = filepath.Join(commonVar.Context, "newContext")
@@ -166,7 +166,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("odo create is executed with the --now flag", func() {
+	When("odo create is executed with the --now flag", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 		})
@@ -177,7 +177,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("odo create is executed with the --starter flag", func() {
+	When("odo create is executed with the --starter flag", func() {
 		BeforeEach(func() {
 			contextDevfile = helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
@@ -321,18 +321,22 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should fail to create the devfile component", func() {
 			By("using an invalid file system path", func() {
-				helper.Cmd("odo", "create", "nodejs", "--devfile", "#@!").ShouldFail()
+				errOut := helper.Cmd("odo", "create", "nodejs", "--devfile", "@123!").ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("the devfile path you specify is invalid"))
 			})
 			By("using an invalid URL path", func() {
-				helper.Cmd("odo", "create", "nodejs", "--devfile", "://www.example.com/").ShouldFail()
+				errOut := helper.Cmd("odo", "create", "nodejs", "--devfile", "://www.example.com/").ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("the devfile path you specify is invalid"))
 			})
 
 			By("passing more than 1 arguments", func() {
-				helper.Cmd("odo", "create", "nodejs", "nodejs", "--devfile", devfilePath).ShouldFail()
+				errOut := helper.Cmd("odo", "create", "nodejs", "nodejs", "--devfile", devfilePath).ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("accepts between 0 and 1 arg when using existing devfile, received 2"))
 			})
 
 			By("using --registry flag", func() {
-				helper.Cmd("odo", "create", "nodejs", "--devfile", devfilePath, "--registry", "DefaultDevfileRegistry").ShouldFail()
+				errOut := helper.Cmd("odo", "create", "nodejs", "--devfile", devfilePath, "--registry", "DefaultDevfileRegistry").ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile"))
 			})
 		})
 	})
