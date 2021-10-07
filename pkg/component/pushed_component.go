@@ -209,6 +209,9 @@ func newPushedComponent(applicationName string, p provider, c *occlient.Client, 
 func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
 	d, err := c.GetKubeClient().GetOneDeployment(componentName, applicationName)
 	if err != nil {
+		if isIgnorableError(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	storageClient := storage.NewClient(storage.ClientOptions{

@@ -3,7 +3,6 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -39,19 +37,6 @@ const componentNameMaxLen = -1
 const NotAvailable = "Not available"
 
 const apiVersion = "odo.dev/v1alpha1"
-
-type componentAdapter struct {
-	client occlient.Client
-}
-
-func (a componentAdapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	return a.client.GetKubeClient().ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)
-}
-
-// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a componentAdapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
-	return a.client.GetKubeClient().ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
-}
 
 // GetComponentDir returns source repo name
 // Parameters:
