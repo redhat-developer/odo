@@ -301,6 +301,16 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create using --starter without name", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+		It("should fail requesting user to provide starter and recommending catalog command for the same", func() {
+			output := helper.Cmd("odo", "create", "nodejs", "--starter").ShouldFail().Err()
+			helper.MatchAllInOutput(output, []string{"flag needs an argument: --starter", "odo catalog describe component <type>"})
+		})
+	})
+
 	Context("When executing odo create with git tag or git branch specified in starter project", func() {
 		JustBeforeEach(func() {
 			contextDevfile = helper.CreateNewContext()
