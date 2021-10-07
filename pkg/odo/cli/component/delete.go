@@ -142,6 +142,10 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			if err != nil {
 				return err
 			}
+			err = util.DeletePath(filepath.Join(do.componentContext, util.DotOdoDirectory))
+			if err != nil {
+				return err
+			}
 			log.Successf("Successfully deleted env file")
 		} else {
 			log.Error("Aborting deletion of env folder")
@@ -190,6 +194,29 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
 			if !util.CheckPathExists(do.devfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
+			}
+
+			// first remove the uri based files mentioned in the devfile
+			devfileObj, err := devfile.ParseFromFile(do.devfilePath)
+			if err != nil {
+				return err
+			}
+
+			err = common.RemoveDevfileURIContents(devfileObj, do.componentContext)
+			if err != nil {
+				return err
+			}
+
+			empty, err := util.IsEmpty(filepath.Join(do.componentContext, service.UriFolder))
+			if err != nil && !os.IsNotExist(err) {
+				return err
+			}
+
+			if !os.IsNotExist(err) && empty {
+				err = os.RemoveAll(filepath.Join(do.componentContext, service.UriFolder))
+				if err != nil {
+					return err
+				}
 			}
 
 			err = util.DeletePath(do.devfilePath)

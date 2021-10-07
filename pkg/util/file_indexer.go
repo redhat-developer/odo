@@ -16,7 +16,7 @@ import (
 	"k8s.io/klog"
 )
 
-const fileIndexDirectory = ".odo"
+const DotOdoDirectory = ".odo"
 const fileIndexName = "odo-file-index.json"
 
 // FileIndex holds the file index used for storing local file state change
@@ -79,11 +79,11 @@ func ResolveIndexFilePath(directory string) (string, error) {
 	switch mode := directoryFi.Mode(); {
 	case mode.IsDir():
 		// do directory stuff
-		return filepath.Join(directory, fileIndexDirectory, fileIndexName), nil
+		return filepath.Join(directory, DotOdoDirectory, fileIndexName), nil
 	case mode.IsRegular():
 		// do file stuff
 		// for binary files
-		return filepath.Join(filepath.Dir(directory), fileIndexDirectory, fileIndexName), nil
+		return filepath.Join(filepath.Dir(directory), DotOdoDirectory, fileIndexName), nil
 	}
 
 	return directory, nil
@@ -91,7 +91,7 @@ func ResolveIndexFilePath(directory string) (string, error) {
 
 // GetIndexFileRelativeToContext returns the index file relative to context i.e.; .odo/odo-file-index.json
 func GetIndexFileRelativeToContext() string {
-	return filepath.Join(fileIndexDirectory, fileIndexName)
+	return filepath.Join(DotOdoDirectory, fileIndexName)
 }
 
 // AddOdoFileIndex adds odo-file-index.json to .gitignore
@@ -100,7 +100,7 @@ func AddOdoFileIndex(gitIgnoreFile string) error {
 }
 
 func addOdoFileIndex(gitIgnoreFile string, fs filesystem.Filesystem) error {
-	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(fileIndexDirectory, fileIndexName), fs)
+	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(DotOdoDirectory, fileIndexName), fs)
 }
 
 // CheckGitIgnoreFile checks .gitignore file exists or not, if not then create it
@@ -147,111 +147,6 @@ type IndexerRet struct {
 	RemoteDeleted []string
 	NewFileMap    map[string]FileData
 	ResolvedPath  string
-}
-
-// RunIndexer walks the given directory and finds the files which have changed and which were deleted/renamed
-// it reads the odo index file from the .odo folder
-// if no such file is present, it means it's the first time the folder is being walked and thus returns a empty list
-// after the walk, it stores the list of walked files with some information in a odo index file in the .odo folder
-// The filemap stores the values as "relative filepath" => FileData but it the FilesChanged and filesDeleted are absolute paths
-// to the files
-func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err error) {
-	directory = filepath.FromSlash(directory)
-	ret.ResolvedPath, err = ResolveIndexFilePath(directory)
-
-	if err != nil {
-		return ret, err
-	}
-
-	// check for .gitignore file and add odo-file-index.json to .gitignore
-	gitIgnoreFile, err := CheckGitIgnoreFile(directory)
-	if err != nil {
-		return ret, err
-	}
-
-	// add odo-file-index.json path to .gitignore
-	err = AddOdoFileIndex(gitIgnoreFile)
-	if err != nil {
-		return ret, err
-	}
-
-	// read the odo index file
-	existingFileIndex, err := ReadFileIndex(ret.ResolvedPath)
-	if err != nil {
-		return ret, err
-	}
-
-	ret.NewFileMap = make(map[string]FileData)
-	walk := func(walkFnPath string, fi os.FileInfo, err error) error {
-
-		if err != nil {
-			return err
-		}
-		if fi.IsDir() {
-
-			// if folder is the root folder, don't add it
-			if walkFnPath == directory {
-				return nil
-			}
-
-			match, err := IsGlobExpMatch(walkFnPath, ignoreRules)
-			if err != nil {
-				return err
-			}
-			// the folder matches a glob rule and thus should be skipped
-			if match {
-				return filepath.SkipDir
-			}
-
-			if fi.Name() == fileIndexDirectory || fi.Name() == ".git" {
-				klog.V(4).Info(".odo or .git directory detected, skipping it")
-				return filepath.SkipDir
-			}
-		}
-
-		relativeFilename, err := CalculateFileDataKeyFromPath(walkFnPath, directory)
-		if err != nil {
-			return err
-		}
-
-		if _, ok := existingFileIndex.Files[relativeFilename]; !ok {
-			ret.FilesChanged = append(ret.FilesChanged, walkFnPath)
-			klog.V(4).Infof("file added: %s", walkFnPath)
-		} else if !fi.ModTime().Equal(existingFileIndex.Files[relativeFilename].LastModifiedDate) {
-			ret.FilesChanged = append(ret.FilesChanged, walkFnPath)
-			klog.V(4).Infof("last modified date changed: %s", walkFnPath)
-		} else if fi.Size() != existingFileIndex.Files[relativeFilename].Size {
-			ret.FilesChanged = append(ret.FilesChanged, walkFnPath)
-			klog.V(4).Infof("size changed: %s", walkFnPath)
-		}
-
-		ret.NewFileMap[relativeFilename] = FileData{
-			Size:             fi.Size(),
-			LastModifiedDate: fi.ModTime(),
-		}
-		return nil
-	}
-
-	err = filepath.Walk(directory, walk)
-	if err != nil {
-		return ret, err
-	}
-
-	// find files which are deleted/renamed
-	for fileName := range existingFileIndex.Files {
-		if _, ok := ret.NewFileMap[fileName]; !ok {
-			klog.V(4).Infof("Deleting file: %s", fileName)
-
-			// Return the *absolute* path to the file)
-			fileAbsolutePath, err := GetAbsPath(filepath.Join(directory, fileName))
-			if err != nil {
-				return ret, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
-			}
-			ret.FilesDeleted = append(ret.FilesDeleted, fileAbsolutePath)
-		}
-	}
-
-	return ret, nil
 }
 
 // CalculateFileDataKeyFromPath converts an absolute path to relative (and converts to OS-specific paths) for use
@@ -580,7 +475,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 
 		if stat.IsDir() {
 
-			if stat.Name() == fileIndexDirectory || stat.Name() == ".git" {
+			if stat.Name() == DotOdoDirectory || stat.Name() == ".git" {
 				return IndexerRet{}, nil
 			}
 
