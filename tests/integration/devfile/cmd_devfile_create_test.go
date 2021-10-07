@@ -301,16 +301,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	//Context("When executing odo create using --starter with a devfile component that contains no projects", func() {
-	//	It("should fail with please run 'no starter project found in devfile.'", func() {
-	//		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-starterProject.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-	//
-	//		output := helper.Cmd("odo", "create", "nodejs", "--starter").ShouldFail().Err()
-	//		expectedString := "no starter project found in devfile."
-	//		helper.MatchAllInOutput(output, []string{expectedString})
-	//	})
-	//})
-
 	Context("When executing odo create with git tag or git branch specified in starter project", func() {
 		JustBeforeEach(func() {
 			contextDevfile = helper.CreateNewContext()
