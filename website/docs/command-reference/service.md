@@ -6,13 +6,13 @@ sidebar_position: 3
 
 odo can deploy *services* with the help of *operators*.
 
-The list of available operators and services available for installation can be found with the [`odo catalog` command](http://localhost:3000/docs/command-reference/catalog).
+The list of available operators and services available for installation can be found with the [`odo catalog` command](/docs/command-reference/catalog).
 
-Services are created in the context of a *component*, so you sould have run [`odo create`](/docs/command-reference/create) before to deploy services.
+Services are created in the context of a *component*, so you should have run [`odo create`](/docs/command-reference/create) before you deploy services.
 
-The deployment of a service is done in two steps. The first step is to define the service and store its definition in the devfile, the second step is to deploy the defined service to the cluster, using `odo push`.
-
-This page describes the management of the services definitions, with the subcommands `create`, `delete`, `list` and `describe` of the `service` command.
+The deployment of a service is done in two steps:
+1. Define the service and store its definition in the devfile,
+2. Deploy the defined service to the cluster, using `odo push`.
 
 ## Creating a new service
 
@@ -22,7 +22,7 @@ You can create a new service with the command:
 odo service create
 ```
 
-For example, to create an instance, named `my-redis-service`, of a Redis service with a default configuration, you can run:
+For example, to create an instance of a Redis service named `my-redis-service`, you can run:
 
 ```
 $ odo catalog list services
@@ -77,9 +77,7 @@ components:
 [...]
 ```
 
-### Optional name
-
-The name of the created instance is optional. If you do not provide a name, it will be the lowercased name of the service. For example, the following command will create an instance of a Redis service named `redis`:
+Note that the name of the created instance is optional. If you do not provide a name, it will be the lowercased name of the service. For example, the following command will create an instance of a Redis service named `redis`:
 
 ```
 $ odo service create redis-operator.v0.8.0/Redis
@@ -87,7 +85,7 @@ $ odo service create redis-operator.v0.8.0/Redis
 
 ### Inlining the manifest
 
-By default, a new manifest is created in the `kubernetes/` directory, referenced from the `devfile.yaml` file. It is possible to inline the manifest inside the `devfile.yaml` file, using the `--inlined` flag:
+By default, a new manifest is created in the `kubernetes/` directory, referenced from the `devfile.yaml` file. It is possible to inline the manifest inside the `devfile.yaml` file using the `--inlined` flag:
 
 ```
 $ odo service create redis-operator.v0.8.0/Redis my-redis-service --inlined
@@ -159,13 +157,13 @@ spec:
     image: quay.io/opstree/redis-exporter:1.0
 ```
 
-You can obtain the possible parameters for a specific service from the [`odo catalog describe service` command](/docs/command-reference/catalog).
+You can obtain the possible parameters for a specific service from the [`odo catalog describe service` command](/docs/command-reference/catalog/#getting-information-about-a-service).
 
 #### Using a file
 
 You can use a YAML manifest to specify your own specification.
 
-In the following example, we will configure the Redis service with three parameters:
+In the following example, we will configure the Redis service with three parameters. For this, first create a manifest:
 
 ```
 $ cat > my-redis.yaml <<EOF
@@ -180,7 +178,11 @@ spec:
   redisExporter:
     image: quay.io/opstree/redis-exporter:1.0
 EOF
+```
 
+Then create the service from the manifest:
+
+```
 $ odo service create --from-file my-redis.yaml
 Successfully added service to the configuration; do 'odo push' to create service on the cluster
 ```
@@ -209,7 +211,7 @@ You can use the `--force` (or `-f`) flag to force the deletion of the service wi
 
 ## Listing services
 
-You can get the list of services created for you component, with the command:
+You can get the list of services created for your component with the command:
 
 ```
 odo service list
@@ -225,11 +227,11 @@ Redis/my-redis-service-2   Yes (api)          Pushed            52s
 Redis/my-redis-service-3   Yes (api)          Deleted locally   1m22s
 ```
 
-For each service, it is indicated if the service the service has been pushed to the cluster using `odo push`, or if the service is still running on the cluster but removed from the devfile using `odo service delete`.
+For each service, `STATE` indicates if the service has been pushed to the cluster using `odo push`, or if the service is still running on the cluster but removed from the devfile locally using `odo service delete`.
 
 ## Getting information about a service
 
-You can get the details about a service with the command, including its kind, version, name and list of parameters configured:
+You can get the details about a service such as its kind, version, name and list of configured parameters with the command:
 
 ```
 odo service describe
@@ -239,10 +241,6 @@ odo service describe
 For example:
 
 ```
-$ odo service list
-NAME                       MANAGED BY ODO     STATE          AGE
-Redis/my-redis-service     Yes (api)          Not pushed     
-
 $ odo service describe Redis/my-redis-service
 Version: redis.redis.opstreelabs.in/v1beta1
 Kind: Redis
