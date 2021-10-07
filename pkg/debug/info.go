@@ -90,6 +90,8 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 	if err != nil {
 		return err
 	}
+	defer file.Close() // #nosec G307
+
 	_, err = file.Write(odoDebugPathData)
 	if err != nil {
 		return err
