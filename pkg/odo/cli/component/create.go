@@ -111,8 +111,6 @@ odo catalog list components
 # Create a new Node.js component that is a part of 'myapp' app inside the 'myproject' project 
 %[1]s nodejs --app myapp --project myproject`)
 
-const defaultStarterProjectName = "devfile-starter-project-name"
-
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
 	return &CreateOptions{
@@ -669,11 +667,16 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
-	componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultStarterProjectName //Default value to pass to the flag if one is not specified.
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specified devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starterToken, "starter-token", "", "Token to be used when downloading starter project")
+	componentCreateCmd.SetFlagErrorFunc(func(command *cobra.Command, err error) error {
+		if strings.Contains(err.Error(), "flag needs an argument: --starter") {
+			return fmt.Errorf("%w: you can get the list of possible values with the command `odo catalog describe component <type>`", err)
+		}
+		return err
+	})
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 

@@ -40,8 +40,8 @@ var _ = Describe("odo devfile supported tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	createStarterProjAndSetDebug := func(component, debugLocalPort string) {
-		helper.Cmd("odo", "create", component, "--starter", "--project", commonVar.Project, componentName, "--context", projectDirPath).ShouldPass()
+	createStarterProjAndSetDebug := func(component, starter, debugLocalPort string) {
+		helper.Cmd("odo", "create", component, "--starter", starter, "--project", commonVar.Project, componentName, "--context", projectDirPath).ShouldPass()
 		helper.Cmd("odo", "push", "--context", projectDirPath).ShouldPass()
 		helper.Cmd("odo", "push", "--debug", "--context", projectDirPath).ShouldPass()
 
@@ -64,16 +64,16 @@ var _ = Describe("odo devfile supported tests", func() {
 
 	Context("odo debug support for devfile components", func() {
 		It("Verify output debug information for nodeJS debug works", func() {
-			createStarterProjAndSetDebug("nodejs", "5859")
+			createStarterProjAndSetDebug("nodejs", "nodejs-starter", "5859")
 		})
 		It("Verify output debug information for java-springboot works", func() {
-			createStarterProjAndSetDebug("java-springboot", "5860")
+			createStarterProjAndSetDebug("java-springboot", "springbootproject", "5860")
 		})
 		It("Verify output debug information for java-quarkus debug works", func() {
-			createStarterProjAndSetDebug("java-quarkus", "5862")
+			createStarterProjAndSetDebug("java-quarkus", "community", "5862")
 		})
 		It("Verify output debug information for java-maven debug works", func() {
-			createStarterProjAndSetDebug("java-maven", "5863")
+			createStarterProjAndSetDebug("java-maven", "springbootproject", "5863")
 		})
 	})
 
