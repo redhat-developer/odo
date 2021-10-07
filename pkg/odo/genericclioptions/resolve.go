@@ -18,51 +18,6 @@ func ResolveAppFlag(command *cobra.Command) string {
 	return DefaultAppName
 }
 
-// resolveProject resolves project
-func (o *internalCxt) resolveProject(localConfiguration localConfigProvider.LocalConfigProvider) error {
-	var namespace string
-	command := o.command
-	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	if len(projectFlag) > 0 {
-		// if project flag was set, check that the specified project exists and use it
-		project, err := o.Client.GetProject(projectFlag)
-		if err != nil || project == nil {
-			return err
-		}
-		namespace = projectFlag
-	} else {
-		namespace = localConfiguration.GetNamespace()
-		if namespace == "" {
-			namespace = o.Client.Namespace
-			if len(namespace) <= 0 {
-				errFormat := "Could not get current project. Please create or set a project\n\t%s project create|set <project_name>"
-				err := checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		// check that the specified project exists
-		_, err := o.Client.GetProject(namespace)
-		if err != nil {
-			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
-			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			err = checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	o.Client.GetKubeClient().Namespace = namespace
-	o.Client.Namespace = namespace
-	o.Project = namespace
-	if o.KClient != nil {
-		o.KClient.SetNamespace(namespace)
-	}
-	return nil
-}
-
 // resolveNamespace resolves namespace for devfile component
 func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string
