@@ -28,9 +28,8 @@ var _ = Describe("odo devfile exec command tests", func() {
 	When("a component is created", func() {
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "nodejs", cmpName, "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 		})
 

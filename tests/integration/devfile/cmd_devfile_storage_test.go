@@ -29,10 +29,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 	Context("When devfile storage create command is executed", func() {
 
 		It("should create the storage and mount it on the container", func() {
-			helper.Cmd("odo", "create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageNames := []string{helper.RandString(5), helper.RandString(5)}
 			pathNames := []string{"/data", "/" + storageNames[1]}
@@ -70,11 +69,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create storage and attach to specified container successfully and list it correctly", func() {
-			args := []string{"create", "java-springboot", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageName := helper.RandString(5)
 			pathName := "/data1"
@@ -126,11 +124,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create a storage with default size when --size is not provided", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageName := helper.RandString(5)
 
@@ -145,11 +142,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create a storage when storage is not provided", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.Cmd("odo", "storage", "create", "--path", "/data", "--context", commonVar.Context).ShouldPass()
 
@@ -162,11 +158,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should create, delete and output in json format", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			actualJSONStorage := helper.Cmd("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
 			values := gjson.GetMany(actualJSONStorage, "kind", "metadata.name", "spec.size", "spec.path")
@@ -182,11 +177,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 	Context("When devfile storage list command is executed", func() {
 		It("should list the storage with the proper states", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageNames := []string{helper.RandString(5), helper.RandString(5)}
 			pathNames := []string{"/data", "/data-1"}
@@ -230,11 +224,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should list the storage with the proper states and container names", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
@@ -251,11 +244,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should list output in json format", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.Cmd("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context).ShouldPass()
 
@@ -268,11 +260,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 	Context("When devfile storage commands are invalid", func() {
 		It("should error if same storage name is provided again", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageName := helper.RandString(5)
 			pathNames := []string{"/data", "/data-1"}
@@ -283,11 +274,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should error if same path is provided again", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			storageNames := []string{helper.RandString(5), helper.RandString(5)}
 			pathName := "/data"
@@ -298,11 +288,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		It("should throw error if no storage is present", func() {
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.Cmd("odo", "storage", "delete", helper.RandString(5), "--context", commonVar.Context, "-f").ShouldFail()
 		})
@@ -313,11 +302,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			helper.Cmd("odo", "preference", "set", "ephemeral", "true").ShouldPass()
 
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
@@ -344,11 +332,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 			helper.Cmd("odo", "preference", "set", "ephemeral", "false").ShouldPass()
 
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 
@@ -380,11 +367,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 	Context("When ephemeral is not set in preference.yaml", func() {
 		It("should not create a pvc to store source code  (default is ephemeral=true)", func() {
 
-			args := []string{"create", "nodejs", cmpName, "--context", commonVar.Context, "--project", commonVar.Project}
+			args := []string{"create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")}
 			helper.Cmd("odo", args...).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 

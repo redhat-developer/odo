@@ -41,7 +41,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	Context("when executing watch without pushing a devfile component", func() {
 		It("should fail", func() {
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 			output := helper.Cmd("odo", "watch", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
@@ -53,10 +53,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch after odo push", func() {
 		It("should listen for file changes", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -73,10 +72,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch after odo push with flag commands", func() {
 		It("should listen for file changes", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.Cmd("odo", "push", "--build-command", "build", "--run-command", "run", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -93,10 +91,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch", func() {
 		It("should show validation errors if the devfile is incorrect", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -115,10 +112,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch", func() {
 		It("should use the index information from previous push operation", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			// 1) Push a generic project
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
@@ -146,10 +142,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 		})
 
 		It("should listen for file changes with delay set to 0", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -168,8 +163,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	Context("when executing odo watch after odo push with debug flag", func() {
 		It("should be able to start a debug session after push with debug flag using odo watch and revert back after normal push", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.Cmd("odo", "create", cmpName, "--project", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "create", cmpName, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
 
 			// push with debug flag
 			output := helper.Cmd("odo", "push", "--debug", "--project", commonVar.Project).ShouldPass().Out()
@@ -211,10 +205,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch after odo push with ignores flag", func() {
 		It("should be able to ignore the specified file, .git and odo-file-index.json ", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			output := helper.Cmd("odo", "push", "--build-command", "build", "--run-command", "run", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -232,10 +225,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch", func() {
 		It("ensure that index information is updated by watch", func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			// 1) Push a generic project
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()

@@ -42,10 +42,9 @@ var _ = Describe("odo devfile status command tests", func() {
 
 		It("Verify that odo component status correctly reports supervisord status", func() {
 
-			helper.Cmd("odo", "create", "nodejs", "--project", namespace, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
 
@@ -129,10 +128,9 @@ var _ = Describe("odo devfile status command tests", func() {
 
 		It("Verify that odo component status correctly detects component Kubernetes pods", func() {
 
-			helper.Cmd("odo", "create", "nodejs", "--project", namespace, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
 
@@ -313,10 +311,9 @@ var _ = Describe("odo devfile status command tests", func() {
 
 				urlHost := helper.RandString(12) + ".com"
 
-				helper.Cmd("odo", "create", "nodejs", "--project", namespace, cmpName).ShouldPass()
+				helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 				urlParams := []string{"url", "create", "my-url", "--port", "3000"}
 				// if secure {

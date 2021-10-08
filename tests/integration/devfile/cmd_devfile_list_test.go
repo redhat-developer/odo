@@ -32,9 +32,8 @@ var _ = Describe("odo list with devfile", func() {
 	When("a component created in 'app' application", func() {
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, cmpName).ShouldPass()
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 		})
 
@@ -63,9 +62,8 @@ var _ = Describe("odo list with devfile", func() {
 				cmpName2 = helper.RandString(6)
 				appName = helper.RandString(6)
 
-				helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--app", appName, "--context", context2, cmpName2).ShouldPass()
+				helper.Cmd("odo", "create", "--project", commonVar.Project, "--app", appName, "--context", context2, cmpName2, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
 			})
 
 			AfterEach(func() {
