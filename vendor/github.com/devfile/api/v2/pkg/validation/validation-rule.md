@@ -41,6 +41,9 @@ Common rules for all components types:
 #### Kubernetes & Openshift component 
 - URI needs to be in valid URI format
 
+#### Image component 
+- A Dockerfile Image component's git source cannot have more than one remote defined. If checkout remote is mentioned, validate it against the remote configured map
+
 
 ### Events:
 1. preStart and postStop events can only be Apply commands

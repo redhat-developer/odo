@@ -69,7 +69,7 @@ type Container struct {
 	//
 	// Default value is `false`
 	// +optional
-	DedicatedPod bool `json:"dedicatedPod,omitempty"`
+	DedicatedPod *bool `json:"dedicatedPod,omitempty"`
 }
 
 type EnvVar struct {

@@ -18,14 +18,15 @@ const (
 )
 
 // CommandGroupKind describes the kind of command group.
-// +kubebuilder:validation:Enum=build;run;test;debug
+// +kubebuilder:validation:Enum=build;run;test;debug;deploy
 type CommandGroupKind string
 
 const (
-	BuildCommandGroupKind CommandGroupKind = "build"
-	RunCommandGroupKind   CommandGroupKind = "run"
-	TestCommandGroupKind  CommandGroupKind = "test"
-	DebugCommandGroupKind CommandGroupKind = "debug"
+	BuildCommandGroupKind  CommandGroupKind = "build"
+	RunCommandGroupKind    CommandGroupKind = "run"
+	TestCommandGroupKind   CommandGroupKind = "test"
+	DebugCommandGroupKind  CommandGroupKind = "debug"
+	DeployCommandGroupKind CommandGroupKind = "deploy"
 )
 
 type CommandGroup struct {
@@ -34,7 +35,7 @@ type CommandGroup struct {
 
 	// +optional
 	// Identifies the default command for a given group kind
-	IsDefault bool `json:"isDefault,omitempty"`
+	IsDefault *bool `json:"isDefault,omitempty"`
 }
 
 type BaseCommand struct {
@@ -61,6 +62,9 @@ type Command struct {
 	Id string `json:"id"`
 	// Map of implementation-dependant free-form YAML attributes.
 	// +optional
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	Attributes   attributes.Attributes `json:"attributes,omitempty"`
 	CommandUnion `json:",inline"`
 }
@@ -141,7 +145,7 @@ type ExecCommand struct {
 	// If set to `true` the command won't be restarted and it is expected to handle file changes on its own.
 	//
 	// Default value is `false`
-	HotReloadCapable bool `json:"hotReloadCapable,omitempty"`
+	HotReloadCapable *bool `json:"hotReloadCapable,omitempty"`
 }
 
 type ApplyCommand struct {
@@ -160,7 +164,7 @@ type CompositeCommand struct {
 
 	// Indicates if the sub-commands should be executed concurrently
 	// +optional
-	Parallel bool `json:"parallel,omitempty"`
+	Parallel *bool `json:"parallel,omitempty"`
 }
 
 type CustomCommand struct {

@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/pkg/errors"
@@ -38,7 +39,9 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 	}
 
 	// Successful
-	d.apiVersion = schemaVersion.(string)
+	// split by `-` and get the first substring as schema version, schemaVersion without `-` won't get affected
+	// e.g. 2.2.0-latest => 2.2.0, 2.2.0 => 2.2.0
+	d.apiVersion = strings.Split(schemaVersion.(string), "-")[0]
 	klog.V(4).Infof("devfile schemaVersion: '%s'", d.apiVersion)
 	return nil
 }

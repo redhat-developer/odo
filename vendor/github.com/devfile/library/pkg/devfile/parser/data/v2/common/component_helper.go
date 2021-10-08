@@ -29,6 +29,8 @@ func GetComponentType(component v1.Component) (v1.ComponentType, error) {
 		return v1.KubernetesComponentType, nil
 	case component.Openshift != nil:
 		return v1.OpenshiftComponentType, nil
+	case component.Image != nil:
+		return v1.ImageComponentType, nil
 	case component.Custom != nil:
 		return v1.CustomComponentType, nil
 

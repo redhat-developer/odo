@@ -41,31 +41,33 @@ func ValidateAndReplaceForCommands(variables map[string]string, commands []v1alp
 
 // validateAndReplaceForExecCommand validates the exec command data for global variable references and replaces them with the variable value
 func validateAndReplaceForExecCommand(variables map[string]string, exec *v1alpha2.ExecCommand) error {
-	var err error
 
+	if exec == nil {
+		return nil
+	}
+
+	var err error
 	invalidKeys := make(map[string]bool)
 
-	if exec != nil {
-		// Validate exec command line
-		if exec.CommandLine, err = validateAndReplaceDataWithVariable(exec.CommandLine, variables); err != nil {
-			checkForInvalidError(invalidKeys, err)
-		}
+	// Validate exec command line
+	if exec.CommandLine, err = validateAndReplaceDataWithVariable(exec.CommandLine, variables); err != nil {
+		checkForInvalidError(invalidKeys, err)
+	}
 
-		// Validate exec working dir
-		if exec.WorkingDir, err = validateAndReplaceDataWithVariable(exec.WorkingDir, variables); err != nil {
-			checkForInvalidError(invalidKeys, err)
-		}
+	// Validate exec working dir
+	if exec.WorkingDir, err = validateAndReplaceDataWithVariable(exec.WorkingDir, variables); err != nil {
+		checkForInvalidError(invalidKeys, err)
+	}
 
-		// Validate exec label
-		if exec.Label, err = validateAndReplaceDataWithVariable(exec.Label, variables); err != nil {
-			checkForInvalidError(invalidKeys, err)
-		}
+	// Validate exec label
+	if exec.Label, err = validateAndReplaceDataWithVariable(exec.Label, variables); err != nil {
+		checkForInvalidError(invalidKeys, err)
+	}
 
-		// Validate exec env
-		if len(exec.Env) > 0 {
-			if err = validateAndReplaceForEnv(variables, exec.Env); err != nil {
-				checkForInvalidError(invalidKeys, err)
-			}
+	// Validate exec env
+	if len(exec.Env) > 0 {
+		if err = validateAndReplaceForEnv(variables, exec.Env); err != nil {
+			checkForInvalidError(invalidKeys, err)
 		}
 	}
 
@@ -74,15 +76,17 @@ func validateAndReplaceForExecCommand(variables map[string]string, exec *v1alpha
 
 // validateAndReplaceForCompositeCommand validates the composite command data for global variable references and replaces them with the variable value
 func validateAndReplaceForCompositeCommand(variables map[string]string, composite *v1alpha2.CompositeCommand) error {
-	var err error
 
+	if composite == nil {
+		return nil
+	}
+
+	var err error
 	invalidKeys := make(map[string]bool)
 
-	if composite != nil {
-		// Validate composite label
-		if composite.Label, err = validateAndReplaceDataWithVariable(composite.Label, variables); err != nil {
-			checkForInvalidError(invalidKeys, err)
-		}
+	// Validate composite label
+	if composite.Label, err = validateAndReplaceDataWithVariable(composite.Label, variables); err != nil {
+		checkForInvalidError(invalidKeys, err)
 	}
 
 	return newInvalidKeysError(invalidKeys)
@@ -90,15 +94,17 @@ func validateAndReplaceForCompositeCommand(variables map[string]string, composit
 
 // validateAndReplaceForApplyCommand validates the apply command data for global variable references and replaces them with the variable value
 func validateAndReplaceForApplyCommand(variables map[string]string, apply *v1alpha2.ApplyCommand) error {
-	var err error
 
+	if apply == nil {
+		return nil
+	}
+
+	var err error
 	invalidKeys := make(map[string]bool)
 
-	if apply != nil {
-		// Validate apply label
-		if apply.Label, err = validateAndReplaceDataWithVariable(apply.Label, variables); err != nil {
-			checkForInvalidError(invalidKeys, err)
-		}
+	// Validate apply label
+	if apply.Label, err = validateAndReplaceDataWithVariable(apply.Label, variables); err != nil {
+		checkForInvalidError(invalidKeys, err)
 	}
 
 	return newInvalidKeysError(invalidKeys)

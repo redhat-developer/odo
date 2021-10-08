@@ -27,6 +27,48 @@ type CommandUnionVisitor struct {
 	Custom    func(*CustomCommand) error
 }
 
+var imageUnion reflect.Type = reflect.TypeOf(ImageUnionVisitor{})
+
+func (union ImageUnion) Visit(visitor ImageUnionVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *ImageUnion) discriminator() *string {
+	return (*string)(&union.ImageType)
+}
+func (union *ImageUnion) Normalize() error {
+	return normalizeUnion(union, imageUnion)
+}
+func (union *ImageUnion) Simplify() {
+	simplifyUnion(union, imageUnion)
+}
+
+// +k8s:deepcopy-gen=false
+type ImageUnionVisitor struct {
+	Dockerfile func(*DockerfileImage) error
+}
+
+var dockerfileSrc reflect.Type = reflect.TypeOf(DockerfileSrcVisitor{})
+
+func (union DockerfileSrc) Visit(visitor DockerfileSrcVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *DockerfileSrc) discriminator() *string {
+	return (*string)(&union.SrcType)
+}
+func (union *DockerfileSrc) Normalize() error {
+	return normalizeUnion(union, dockerfileSrc)
+}
+func (union *DockerfileSrc) Simplify() {
+	simplifyUnion(union, dockerfileSrc)
+}
+
+// +k8s:deepcopy-gen=false
+type DockerfileSrcVisitor struct {
+	Uri             func(string) error
+	DevfileRegistry func(*DockerfileDevfileRegistrySource) error
+	Git             func(*DockerfileGitProjectSource) error
+}
+
 var k8sLikeComponentLocation reflect.Type = reflect.TypeOf(K8sLikeComponentLocationVisitor{})
 
 func (union K8sLikeComponentLocation) Visit(visitor K8sLikeComponentLocationVisitor) error {
@@ -69,6 +111,7 @@ type ComponentUnionVisitor struct {
 	Kubernetes func(*KubernetesComponent) error
 	Openshift  func(*OpenshiftComponent) error
 	Volume     func(*VolumeComponent) error
+	Image      func(*ImageComponent) error
 	Plugin     func(*PluginComponent) error
 	Custom     func(*CustomComponent) error
 }
@@ -138,6 +181,7 @@ type ComponentUnionParentOverrideVisitor struct {
 	Kubernetes func(*KubernetesComponentParentOverride) error
 	Openshift  func(*OpenshiftComponentParentOverride) error
 	Volume     func(*VolumeComponentParentOverride) error
+	Image      func(*ImageComponentParentOverride) error
 	Plugin     func(*PluginComponentParentOverride) error
 }
 
@@ -205,6 +249,26 @@ type K8sLikeComponentLocationParentOverrideVisitor struct {
 	Inlined func(string) error
 }
 
+var imageUnionParentOverride reflect.Type = reflect.TypeOf(ImageUnionParentOverrideVisitor{})
+
+func (union ImageUnionParentOverride) Visit(visitor ImageUnionParentOverrideVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *ImageUnionParentOverride) discriminator() *string {
+	return (*string)(&union.ImageType)
+}
+func (union *ImageUnionParentOverride) Normalize() error {
+	return normalizeUnion(union, imageUnionParentOverride)
+}
+func (union *ImageUnionParentOverride) Simplify() {
+	simplifyUnion(union, imageUnionParentOverride)
+}
+
+// +k8s:deepcopy-gen=false
+type ImageUnionParentOverrideVisitor struct {
+	Dockerfile func(*DockerfileImageParentOverride) error
+}
+
 var importReferenceUnionParentOverride reflect.Type = reflect.TypeOf(ImportReferenceUnionParentOverrideVisitor{})
 
 func (union ImportReferenceUnionParentOverride) Visit(visitor ImportReferenceUnionParentOverrideVisitor) error {
@@ -248,6 +312,7 @@ type ComponentUnionPluginOverrideParentOverrideVisitor struct {
 	Kubernetes func(*KubernetesComponentPluginOverrideParentOverride) error
 	Openshift  func(*OpenshiftComponentPluginOverrideParentOverride) error
 	Volume     func(*VolumeComponentPluginOverrideParentOverride) error
+	Image      func(*ImageComponentPluginOverrideParentOverride) error
 }
 
 var commandUnionPluginOverrideParentOverride reflect.Type = reflect.TypeOf(CommandUnionPluginOverrideParentOverrideVisitor{})
@@ -272,6 +337,28 @@ type CommandUnionPluginOverrideParentOverrideVisitor struct {
 	Composite func(*CompositeCommandPluginOverrideParentOverride) error
 }
 
+var dockerfileSrcParentOverride reflect.Type = reflect.TypeOf(DockerfileSrcParentOverrideVisitor{})
+
+func (union DockerfileSrcParentOverride) Visit(visitor DockerfileSrcParentOverrideVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *DockerfileSrcParentOverride) discriminator() *string {
+	return (*string)(&union.SrcType)
+}
+func (union *DockerfileSrcParentOverride) Normalize() error {
+	return normalizeUnion(union, dockerfileSrcParentOverride)
+}
+func (union *DockerfileSrcParentOverride) Simplify() {
+	simplifyUnion(union, dockerfileSrcParentOverride)
+}
+
+// +k8s:deepcopy-gen=false
+type DockerfileSrcParentOverrideVisitor struct {
+	Uri             func(string) error
+	DevfileRegistry func(*DockerfileDevfileRegistrySourceParentOverride) error
+	Git             func(*DockerfileGitProjectSourceParentOverride) error
+}
+
 var k8sLikeComponentLocationPluginOverrideParentOverride reflect.Type = reflect.TypeOf(K8sLikeComponentLocationPluginOverrideParentOverrideVisitor{})
 
 func (union K8sLikeComponentLocationPluginOverrideParentOverride) Visit(visitor K8sLikeComponentLocationPluginOverrideParentOverrideVisitor) error {
@@ -291,6 +378,48 @@ func (union *K8sLikeComponentLocationPluginOverrideParentOverride) Simplify() {
 type K8sLikeComponentLocationPluginOverrideParentOverrideVisitor struct {
 	Uri     func(string) error
 	Inlined func(string) error
+}
+
+var imageUnionPluginOverrideParentOverride reflect.Type = reflect.TypeOf(ImageUnionPluginOverrideParentOverrideVisitor{})
+
+func (union ImageUnionPluginOverrideParentOverride) Visit(visitor ImageUnionPluginOverrideParentOverrideVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *ImageUnionPluginOverrideParentOverride) discriminator() *string {
+	return (*string)(&union.ImageType)
+}
+func (union *ImageUnionPluginOverrideParentOverride) Normalize() error {
+	return normalizeUnion(union, imageUnionPluginOverrideParentOverride)
+}
+func (union *ImageUnionPluginOverrideParentOverride) Simplify() {
+	simplifyUnion(union, imageUnionPluginOverrideParentOverride)
+}
+
+// +k8s:deepcopy-gen=false
+type ImageUnionPluginOverrideParentOverrideVisitor struct {
+	Dockerfile func(*DockerfileImagePluginOverrideParentOverride) error
+}
+
+var dockerfileSrcPluginOverrideParentOverride reflect.Type = reflect.TypeOf(DockerfileSrcPluginOverrideParentOverrideVisitor{})
+
+func (union DockerfileSrcPluginOverrideParentOverride) Visit(visitor DockerfileSrcPluginOverrideParentOverrideVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *DockerfileSrcPluginOverrideParentOverride) discriminator() *string {
+	return (*string)(&union.SrcType)
+}
+func (union *DockerfileSrcPluginOverrideParentOverride) Normalize() error {
+	return normalizeUnion(union, dockerfileSrcPluginOverrideParentOverride)
+}
+func (union *DockerfileSrcPluginOverrideParentOverride) Simplify() {
+	simplifyUnion(union, dockerfileSrcPluginOverrideParentOverride)
+}
+
+// +k8s:deepcopy-gen=false
+type DockerfileSrcPluginOverrideParentOverrideVisitor struct {
+	Uri             func(string) error
+	DevfileRegistry func(*DockerfileDevfileRegistrySourcePluginOverrideParentOverride) error
+	Git             func(*DockerfileGitProjectSourcePluginOverrideParentOverride) error
 }
 
 var componentUnionPluginOverride reflect.Type = reflect.TypeOf(ComponentUnionPluginOverrideVisitor{})
@@ -314,6 +443,7 @@ type ComponentUnionPluginOverrideVisitor struct {
 	Kubernetes func(*KubernetesComponentPluginOverride) error
 	Openshift  func(*OpenshiftComponentPluginOverride) error
 	Volume     func(*VolumeComponentPluginOverride) error
+	Image      func(*ImageComponentPluginOverride) error
 }
 
 var commandUnionPluginOverride reflect.Type = reflect.TypeOf(CommandUnionPluginOverrideVisitor{})
@@ -357,4 +487,46 @@ func (union *K8sLikeComponentLocationPluginOverride) Simplify() {
 type K8sLikeComponentLocationPluginOverrideVisitor struct {
 	Uri     func(string) error
 	Inlined func(string) error
+}
+
+var imageUnionPluginOverride reflect.Type = reflect.TypeOf(ImageUnionPluginOverrideVisitor{})
+
+func (union ImageUnionPluginOverride) Visit(visitor ImageUnionPluginOverrideVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *ImageUnionPluginOverride) discriminator() *string {
+	return (*string)(&union.ImageType)
+}
+func (union *ImageUnionPluginOverride) Normalize() error {
+	return normalizeUnion(union, imageUnionPluginOverride)
+}
+func (union *ImageUnionPluginOverride) Simplify() {
+	simplifyUnion(union, imageUnionPluginOverride)
+}
+
+// +k8s:deepcopy-gen=false
+type ImageUnionPluginOverrideVisitor struct {
+	Dockerfile func(*DockerfileImagePluginOverride) error
+}
+
+var dockerfileSrcPluginOverride reflect.Type = reflect.TypeOf(DockerfileSrcPluginOverrideVisitor{})
+
+func (union DockerfileSrcPluginOverride) Visit(visitor DockerfileSrcPluginOverrideVisitor) error {
+	return visitUnion(union, visitor)
+}
+func (union *DockerfileSrcPluginOverride) discriminator() *string {
+	return (*string)(&union.SrcType)
+}
+func (union *DockerfileSrcPluginOverride) Normalize() error {
+	return normalizeUnion(union, dockerfileSrcPluginOverride)
+}
+func (union *DockerfileSrcPluginOverride) Simplify() {
+	simplifyUnion(union, dockerfileSrcPluginOverride)
+}
+
+// +k8s:deepcopy-gen=false
+type DockerfileSrcPluginOverrideVisitor struct {
+	Uri             func(string) error
+	DevfileRegistry func(*DockerfileDevfileRegistrySourcePluginOverride) error
+	Git             func(*DockerfileGitProjectSourcePluginOverride) error
 }

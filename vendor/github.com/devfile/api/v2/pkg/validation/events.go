@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -15,40 +16,33 @@ const (
 )
 
 // ValidateEvents validates all the devfile events
-func ValidateEvents(events v1alpha2.Events, commands []v1alpha2.Command) error {
+func ValidateEvents(events v1alpha2.Events, commands []v1alpha2.Command) (err error) {
 
 	commandMap := getCommandsMap(commands)
-	var eventErrorsList []string
 
 	switch {
 	case len(events.PreStart) > 0:
 		if preStartErr := isEventValid(events.PreStart, preStart, commandMap); preStartErr != nil {
-			eventErrorsList = append(eventErrorsList, preStartErr.Error())
+			err = multierror.Append(err, preStartErr)
 		}
 		fallthrough
 	case len(events.PostStart) > 0:
 		if postStartErr := isEventValid(events.PostStart, postStart, commandMap); postStartErr != nil {
-			eventErrorsList = append(eventErrorsList, postStartErr.Error())
+			err = multierror.Append(err, postStartErr)
 		}
 		fallthrough
 	case len(events.PreStop) > 0:
 		if preStopErr := isEventValid(events.PreStop, preStop, commandMap); preStopErr != nil {
-			eventErrorsList = append(eventErrorsList, preStopErr.Error())
+			err = multierror.Append(err, preStopErr)
 		}
 		fallthrough
 	case len(events.PostStop) > 0:
 		if postStopErr := isEventValid(events.PostStop, postStop, commandMap); postStopErr != nil {
-			eventErrorsList = append(eventErrorsList, postStopErr.Error())
+			err = multierror.Append(err, postStopErr)
 		}
 	}
 
-	// if there is any validation error, return it
-	if len(eventErrorsList) > 0 {
-		eventErrors := fmt.Sprintf("\n%s", strings.Join(eventErrorsList, "\n"))
-		return fmt.Errorf("devfile events validation error: %s", eventErrors)
-	}
-
-	return nil
+	return err
 }
 
 // isEventValid checks if events belonging to a specific event type are valid ie;

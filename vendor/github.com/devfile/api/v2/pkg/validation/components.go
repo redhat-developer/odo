@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -21,7 +22,8 @@ const (
 // 2. makes sure the volume components are unique
 // 3. checks the URI specified in openshift components and kubernetes components are with valid format
 // 4. makes sure the component name is unique
-func ValidateComponents(components []v1alpha2.Component) error {
+// 5. makes sure the image dockerfile component git src has at most one remote
+func ValidateComponents(components []v1alpha2.Component) (returnedErr error) {
 
 	processedVolumes := make(map[string]bool)
 	processedVolumeMounts := make(map[string][]string)
@@ -31,7 +33,7 @@ func ValidateComponents(components []v1alpha2.Component) error {
 
 	err := v1alpha2.CheckDuplicateKeys(components)
 	if err != nil {
-		return err
+		returnedErr = multierror.Append(returnedErr, err)
 	}
 
 	for _, component := range components {
@@ -47,15 +49,19 @@ func ValidateComponents(components []v1alpha2.Component) error {
 			// Check if any containers are customizing the reserved PROJECT_SOURCE or PROJECTS_ROOT env
 			for _, env := range component.Container.Env {
 				if env.Name == EnvProjectsSrc {
-					return &ReservedEnvError{envName: EnvProjectsSrc, componentName: component.Name}
+					reservedEnvErr := &ReservedEnvError{envName: EnvProjectsSrc, componentName: component.Name}
+					returnedErr = multierror.Append(returnedErr, reservedEnvErr)
 				} else if env.Name == EnvProjectsRoot {
-					return &ReservedEnvError{envName: EnvProjectsRoot, componentName: component.Name}
+					reservedEnvErr := &ReservedEnvError{envName: EnvProjectsRoot, componentName: component.Name}
+					returnedErr = multierror.Append(returnedErr, reservedEnvErr)
 				}
 			}
 
 			err := validateEndpoints(component.Container.Endpoints, processedEndPointPort, processedEndPointName)
-			if err != nil {
-				return resolveErrorMessageWithImportAttributes(err, component.Attributes)
+			if len(err) > 0 {
+				for _, endpointErr := range err {
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(endpointErr, component.Attributes))
+				}
 			}
 		case component.Volume != nil:
 			processedVolumes[component.Name] = true
@@ -65,37 +71,49 @@ func ValidateComponents(components []v1alpha2.Component) error {
 				// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 				if _, err := resource.ParseQuantity(component.Volume.Size); err != nil {
 					invalidVolErr := &InvalidVolumeError{name: component.Name, reason: fmt.Sprintf("size %s for volume component is invalid, %v. Example - 2Gi, 1024Mi", component.Volume.Size, err)}
-					return resolveErrorMessageWithImportAttributes(invalidVolErr, component.Attributes)
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(invalidVolErr, component.Attributes))
 				}
 			}
 		case component.Openshift != nil:
 			if component.Openshift.Uri != "" {
 				err := ValidateURI(component.Openshift.Uri)
 				if err != nil {
-					return resolveErrorMessageWithImportAttributes(err, component.Attributes)
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(err, component.Attributes))
 				}
 			}
 
 			err := validateEndpoints(component.Openshift.Endpoints, processedEndPointPort, processedEndPointName)
-			if err != nil {
-				return resolveErrorMessageWithImportAttributes(err, component.Attributes)
+			if len(err) > 0 {
+				for _, endpointErr := range err {
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(endpointErr, component.Attributes))
+				}
 			}
 		case component.Kubernetes != nil:
 			if component.Kubernetes.Uri != "" {
 				err := ValidateURI(component.Kubernetes.Uri)
 				if err != nil {
-					return resolveErrorMessageWithImportAttributes(err, component.Attributes)
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(err, component.Attributes))
 				}
 			}
 			err := validateEndpoints(component.Kubernetes.Endpoints, processedEndPointPort, processedEndPointName)
-			if err != nil {
-				return resolveErrorMessageWithImportAttributes(err, component.Attributes)
+			if len(err) > 0 {
+				for _, endpointErr := range err {
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(endpointErr, component.Attributes))
+				}
+			}
+		case component.Image != nil:
+			var gitSource v1alpha2.GitLikeProjectSource
+			if component.Image.Dockerfile != nil && component.Image.Dockerfile.Git != nil {
+				gitSource = component.Image.Dockerfile.Git.GitLikeProjectSource
+				if err := validateSingleRemoteGitSrc("component", component.Name, gitSource); err != nil {
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(err, component.Attributes))
+				}
 			}
 		case component.Plugin != nil:
 			if component.Plugin.RegistryUrl != "" {
 				err := ValidateURI(component.Plugin.RegistryUrl)
 				if err != nil {
-					return resolveErrorMessageWithImportAttributes(err, component.Attributes)
+					returnedErr = multierror.Append(returnedErr, resolveErrorMessageWithImportAttributes(err, component.Attributes))
 				}
 			}
 		}
@@ -116,8 +134,8 @@ func ValidateComponents(components []v1alpha2.Component) error {
 
 	if len(invalidVolumeMountsErrList) > 0 {
 		invalidVolumeMountsErr := fmt.Sprintf("\n%s", strings.Join(invalidVolumeMountsErrList, "\n"))
-		return &MissingVolumeMountError{errMsg: invalidVolumeMountsErr}
+		returnedErr = multierror.Append(returnedErr, &MissingVolumeMountError{errMsg: invalidVolumeMountsErr})
 	}
 
-	return nil
+	return returnedErr
 }

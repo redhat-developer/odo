@@ -7,7 +7,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
-var globalVariableRegex = regexp.MustCompile(`\{\{(.*?)\}\}`)
+// example of the regex: {{variable}} / {{ variable }}
+var globalVariableRegex = regexp.MustCompile(`\{\{\s*(.*?)\s*\}\}`)
 
 // VariableWarning stores the invalid variable references for each devfile object
 type VariableWarning struct {

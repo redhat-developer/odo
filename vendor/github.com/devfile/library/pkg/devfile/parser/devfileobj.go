@@ -7,7 +7,6 @@ import (
 
 // Default filenames for create devfile
 const (
-	OutputDevfileJsonPath = "devfile.json"
 	OutputDevfileYamlPath = "devfile.yaml"
 )
 
