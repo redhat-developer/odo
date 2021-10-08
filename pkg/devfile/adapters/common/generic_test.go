@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -50,13 +51,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -69,7 +70,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			cmd: createCommandFrom(commands[2],
 				devfilev1.CompositeCommand{
 					Commands: []string{commands[0], commands[1]},
-					Parallel: false,
+					Parallel: util.GetBoolPtr(false),
 				}),
 			execClient: fakeExecClient,
 			wantErr:    false,
@@ -80,13 +81,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -98,7 +99,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[1]},
-				Parallel: false,
+				Parallel: util.GetBoolPtr(false),
 			}),
 			execClient: fakeExecErrorClient,
 			wantErr:    true,
@@ -109,13 +110,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -127,7 +128,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[1]},
-				Parallel: true,
+				Parallel: util.GetBoolPtr(true),
 			}),
 			execClient: fakeExecClient,
 			wantErr:    false,
@@ -138,13 +139,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -156,7 +157,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[1]},
-				Parallel: true,
+				Parallel: util.GetBoolPtr(true),
 			}),
 			execClient: fakeExecErrorClient,
 			wantErr:    true,
@@ -167,13 +168,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -185,7 +186,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], "fake-command"},
-				Parallel: false,
+				Parallel: util.GetBoolPtr(false),
 			}),
 			execClient: fakeExecClient,
 			wantErr:    true,
@@ -196,13 +197,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -214,7 +215,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[2], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], "fake-command"},
-				Parallel: true,
+				Parallel: util.GetBoolPtr(true),
 			}),
 			execClient: fakeExecClient,
 			wantErr:    true,
@@ -225,13 +226,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -249,7 +250,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[3], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[2]},
-				Parallel: false,
+				Parallel: util.GetBoolPtr(false),
 			}),
 			execClient: fakeExecClient,
 			wantErr:    false,
@@ -260,13 +261,13 @@ func TestExecuteDevfileCommand(t *testing.T) {
 				{
 					Id: commands[0],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
 					Id: commands[1],
 					CommandUnion: devfilev1.CommandUnion{
-						Exec: &devfilev1.ExecCommand{HotReloadCapable: false},
+						Exec: &devfilev1.ExecCommand{HotReloadCapable: util.GetBoolPtr(false)},
 					},
 				},
 				{
@@ -284,7 +285,7 @@ func TestExecuteDevfileCommand(t *testing.T) {
 			},
 			cmd: createCommandFrom(commands[3], devfilev1.CompositeCommand{
 				Commands: []string{commands[0], commands[2]},
-				Parallel: true,
+				Parallel: util.GetBoolPtr(true),
 			}),
 			execClient: fakeExecClient,
 			wantErr:    false,

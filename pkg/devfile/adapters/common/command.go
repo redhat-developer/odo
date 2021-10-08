@@ -8,6 +8,7 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
@@ -34,7 +35,7 @@ func New(devfile devfilev1.Command, knowCommands map[string]devfilev1.Command, e
 				return nil, fmt.Errorf("composite command %q has command %v not found in devfile", cmd, devfile)
 			}
 		}
-		if composite.Parallel {
+		if util.SafeGetBool(composite.Parallel) {
 			return newParallelCompositeCommand(components...), nil
 		}
 		return newCompositeCommand(components...), nil
@@ -69,7 +70,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType devfilev1.CommandGro
 	for _, command := range commands {
 		cmdGroup := parsercommon.GetGroup(command)
 		if cmdGroup != nil && cmdGroup.Kind == groupType {
-			if cmdGroup.IsDefault {
+			if util.SafeGetBool(cmdGroup.IsDefault) {
 				return command, nil
 			} else if reflect.DeepEqual(onlyCommand, devfilev1.Command{}) {
 				// return the only remaining command for the group if there is no default command

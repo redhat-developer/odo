@@ -15,6 +15,7 @@ import (
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/pkg/util"
 
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -394,7 +395,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			endpoint: devfilev1.Endpoint{
 				Name:       urlName,
 				TargetPort: 8080,
-				Secure:     false,
+				Secure:     util.GetBoolPtr(false),
 			},
 			container: "testcontainer1",
 			devObj: parser.DevfileObj{
@@ -444,7 +445,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 								{
 									Name:       urlName,
 									TargetPort: 8080,
-									Secure:     false,
+									Secure:     util.GetBoolPtr(false),
 								},
 							},
 						},
@@ -457,7 +458,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			endpoint: devfilev1.Endpoint{
 				Name:       urlName,
 				TargetPort: 8080,
-				Secure:     false,
+				Secure:     util.GetBoolPtr(false),
 			},
 			container: "testcontainer1",
 			devObj: parser.DevfileObj{
@@ -497,7 +498,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 								{
 									Name:       urlName,
 									TargetPort: 8080,
-									Secure:     false,
+									Secure:     util.GetBoolPtr(false),
 								},
 							},
 						},
@@ -510,7 +511,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 			endpoint: devfilev1.Endpoint{
 				Name:       urlName,
 				TargetPort: 8080,
-				Secure:     false,
+				Secure:     util.GetBoolPtr(false),
 			},
 			container: "testcontainer1",
 			devObj: parser.DevfileObj{
@@ -539,7 +540,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 										{
 											Name:       urlName2,
 											TargetPort: 9090,
-											Secure:     true,
+											Secure:     util.GetBoolPtr(true),
 											Path:       "/testpath",
 											Exposure:   devfilev1.InternalEndpointExposure,
 											Protocol:   devfilev1.HTTPSEndpointProtocol,
@@ -567,7 +568,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 								{
 									Name:       urlName,
 									TargetPort: 8080,
-									Secure:     false,
+									Secure:     util.GetBoolPtr(false),
 								},
 							},
 						},
@@ -581,7 +582,7 @@ func TestAddEndpointInDevfile(t *testing.T) {
 								{
 									Name:       urlName2,
 									TargetPort: 9090,
-									Secure:     true,
+									Secure:     util.GetBoolPtr(true),
 									Path:       "/testpath",
 									Exposure:   devfilev1.InternalEndpointExposure,
 									Protocol:   devfilev1.HTTPSEndpointProtocol,
@@ -649,7 +650,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 										{
 											Name:       urlName,
 											TargetPort: 8080,
-											Secure:     false,
+											Secure:     util.GetBoolPtr(false),
 										},
 									},
 								},
@@ -704,7 +705,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 										{
 											Name:       urlName,
 											TargetPort: 8080,
-											Secure:     false,
+											Secure:     util.GetBoolPtr(false),
 										},
 									},
 								},
@@ -754,7 +755,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 										{
 											Name:       urlName,
 											TargetPort: 8080,
-											Secure:     false,
+											Secure:     util.GetBoolPtr(false),
 										},
 									},
 								},
@@ -768,7 +769,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 										{
 											Name:       urlName2,
 											TargetPort: 9090,
-											Secure:     true,
+											Secure:     util.GetBoolPtr(true),
 											Path:       "/testpath",
 											Exposure:   devfilev1.InternalEndpointExposure,
 											Protocol:   devfilev1.HTTPSEndpointProtocol,
@@ -804,7 +805,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 								{
 									Name:       urlName2,
 									TargetPort: 9090,
-									Secure:     true,
+									Secure:     util.GetBoolPtr(true),
 									Path:       "/testpath",
 									Exposure:   devfilev1.InternalEndpointExposure,
 									Protocol:   devfilev1.HTTPSEndpointProtocol,
@@ -838,7 +839,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 										{
 											Name:       urlName,
 											TargetPort: 8080,
-											Secure:     false,
+											Secure:     util.GetBoolPtr(false),
 										},
 									},
 								},
@@ -863,7 +864,7 @@ func TestRemoveEndpointInDevfile(t *testing.T) {
 								{
 									Name:       urlName,
 									TargetPort: 8080,
-									Secure:     false,
+									Secure:     util.GetBoolPtr(false),
 								},
 							},
 						},

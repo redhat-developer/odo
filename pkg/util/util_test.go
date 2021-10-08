@@ -2786,3 +2786,35 @@ func TestNamespaceKubernetesObjectWithTrim(t *testing.T) {
 		})
 	}
 }
+
+func TestSafeGetBool(t *testing.T) {
+
+	tests := []struct {
+		name string
+		arg  *bool
+		want bool
+	}{
+		{
+			name: "case 1: nil pointer",
+			arg:  nil,
+			want: false,
+		},
+		{
+			name: "case 2: true",
+			arg:  GetBoolPtr(true),
+			want: true,
+		},
+		{
+			name: "case 3: false",
+			arg:  GetBoolPtr(false),
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SafeGetBool(tt.arg); got != tt.want {
+				t.Errorf("SafeGetBool() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

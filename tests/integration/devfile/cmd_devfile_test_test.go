@@ -59,7 +59,7 @@ var _ = Describe("odo devfile test command tests", func() {
 			helper.Cmd("odo", "create", "nodejs", "--context", commonVar.Context, cmpName).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "isDefault: true", "")
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "IsDefault: util.GetBoolPtr(true)", "")
 			output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there is no default command"))
 			output = helper.Cmd("odo", "test", "--context", commonVar.Context).ShouldFail().Err()

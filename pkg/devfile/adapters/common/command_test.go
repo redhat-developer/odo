@@ -102,7 +102,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -138,7 +138,7 @@ func TestGetCommand(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
 								},
 							},
 							CommandLine: commands[0],
@@ -168,7 +168,7 @@ func TestGetCommand(t *testing.T) {
 						Composite: &devfilev1.CompositeCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -284,7 +284,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -364,7 +364,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 						Composite: &devfilev1.CompositeCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							Commands: []string{"build1", "run"},
@@ -385,7 +385,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
 								},
 							},
 							CommandLine: commands[0],
@@ -415,7 +415,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 						Composite: &devfilev1.CompositeCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -428,7 +428,7 @@ func TestGetCommandFromDevfile(t *testing.T) {
 						Composite: &devfilev1.CompositeCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -606,7 +606,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -620,7 +620,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							CommandLine: commands[0],
@@ -698,7 +698,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
 								},
 							},
 							CommandLine: commands[0],
@@ -728,7 +728,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 						Composite: &devfilev1.CompositeCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -741,7 +741,7 @@ func TestGetCommandFromFlag(t *testing.T) {
 						Composite: &devfilev1.CompositeCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: false},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
 								},
 							},
 							Commands: []string{"build", "run"},
@@ -824,7 +824,7 @@ func TestGetBuildCommand(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							CommandLine: command,
@@ -839,7 +839,7 @@ func TestGetBuildCommand(t *testing.T) {
 					Exec: &devfilev1.ExecCommand{
 						LabeledCommand: devfilev1.LabeledCommand{
 							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 							},
 						},
 						CommandLine: command,
@@ -984,7 +984,7 @@ func TestGetDebugCommand(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: true,
+										IsDefault: util.GetBoolPtr(true),
 										Kind:      devfilev1.DebugCommandGroupKind,
 									},
 								},
@@ -1009,7 +1009,7 @@ func TestGetDebugCommand(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: false,
+										IsDefault: util.GetBoolPtr(false),
 										Kind:      devfilev1.DebugCommandGroupKind,
 									},
 								},
@@ -1033,7 +1033,7 @@ func TestGetDebugCommand(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: true,
+										IsDefault: util.GetBoolPtr(true),
 										Kind:      devfilev1.BuildCommandGroupKind,
 									},
 								},
@@ -1109,7 +1109,7 @@ func TestGetTestCommand(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: true,
+										IsDefault: util.GetBoolPtr(true),
 										Kind:      devfilev1.TestCommandGroupKind,
 									},
 								},
@@ -1134,7 +1134,7 @@ func TestGetTestCommand(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: false,
+										IsDefault: util.GetBoolPtr(false),
 										Kind:      devfilev1.TestCommandGroupKind,
 									},
 								},
@@ -1158,7 +1158,7 @@ func TestGetTestCommand(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: true,
+										IsDefault: util.GetBoolPtr(true),
 										Kind:      devfilev1.BuildCommandGroupKind,
 									},
 								},
@@ -1233,7 +1233,7 @@ func TestGetRunCommand(t *testing.T) {
 						Exec: &devfilev1.ExecCommand{
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
-									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+									Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
 								},
 							},
 							CommandLine: command,
@@ -1351,7 +1351,7 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 					LabeledCommand: devfilev1.LabeledCommand{
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
-								IsDefault: true,
+								IsDefault: util.GetBoolPtr(true),
 								Kind:      devfilev1.DebugCommandGroupKind,
 							},
 						},
@@ -1369,7 +1369,7 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 					LabeledCommand: devfilev1.LabeledCommand{
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
-								IsDefault: false,
+								IsDefault: util.GetBoolPtr(false),
 								Kind:      devfilev1.DebugCommandGroupKind,
 							},
 						},
@@ -1465,7 +1465,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
 								Kind:      runGroup,
-								IsDefault: true,
+								IsDefault: util.GetBoolPtr(true),
 							},
 						},
 					},
@@ -1641,7 +1641,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 					LabeledCommand: devfilev1.LabeledCommand{
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
-								IsDefault: true,
+								IsDefault: util.GetBoolPtr(true),
 								Kind:      devfilev1.TestCommandGroupKind,
 							},
 						},
@@ -1659,7 +1659,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 					LabeledCommand: devfilev1.LabeledCommand{
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
-								IsDefault: false,
+								IsDefault: util.GetBoolPtr(false),
 								Kind:      devfilev1.TestCommandGroupKind,
 							},
 						},
