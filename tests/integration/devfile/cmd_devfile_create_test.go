@@ -201,12 +201,6 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(output, []string{expectedString, "available projects", "nodejs-starter"})
 		})
 
-		It("should fail to create the component when the devfile contains no starter project", func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-no-starterProject.yaml"), devfilePath)
-			output := helper.Cmd("odo", "create", "nodejs", "--starter").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("no starter project found in devfile."))
-		})
-
 		When("the starter project has git tag or git branch specified", func() {
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-branch.yaml"), devfilePath)
@@ -232,7 +226,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the component and extract the project in the specified subDir path", func() {
 				var found, notToBeFound int
-				helper.Cmd("odo", "create", "--project", commonVar.Project, "--starter").ShouldPass()
+				helper.Cmd("odo", "create", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
 				pathsToValidate := map[string]bool{
 					filepath.Join(contextDevfile, "java", "com"):                                            true,
 					filepath.Join(contextDevfile, "java", "com", "example"):                                 true,
