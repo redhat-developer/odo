@@ -111,7 +111,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create the devfile component and download the source in the context when used with --starter flag", func() {
-			helper.Cmd("odo", "create", "nodejs", "--starter", "--context", newContext).ShouldPass()
+			helper.Cmd("odo", "create", "nodejs", "--starter", "nodejs-starter", "--context", newContext).ShouldPass()
 			checkNodeJSDirContent(newContext)
 		})
 
@@ -122,7 +122,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create and push the devfile component with --now and show json output", func() {
-			output := helper.Cmd("odo", "create", "nodejs", "--starter", "--context", newContext, "-o", "json", "--now").ShouldPass().Out()
+			output := helper.Cmd("odo", "create", "nodejs", "--starter", "nodejs-starter", "--context", newContext, "-o", "json", "--now").ShouldPass().Out()
 			checkNodeJSDirContent(newContext)
 			helper.MatchAllInOutput(output, []string{"Pushed", "nodejs", "Component"})
 		})
@@ -190,12 +190,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("should successfully create the component and download the source", func() {
-			helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
-			checkNodeJSDirContent(contextDevfile)
-		})
-
-		It("should successfully create the component specified with valid project and download the source", func() {
-			helper.Cmd("odo", "create", "nodejs", "--starter=nodejs-starter").ShouldPass()
+			helper.Cmd("odo", "create", "nodejs", "--starter", "nodejs-starter").ShouldPass()
 			checkNodeJSDirContent(contextDevfile)
 		})
 
@@ -218,13 +213,13 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 
 			It("should successfully create the component and download the source from the specified branch", func() {
-				helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
+				helper.Cmd("odo", "create", "nodejs", "--starter", "nodejs-starter").ShouldPass()
 				checkNodeJSDirContent(contextDevfile)
 			})
 
 			It("should successfully create the component and download the source from the specified tag", func() {
 				helper.ReplaceString(devfilePath, "revision: test-branch", "revision: 0.0.1")
-				helper.Cmd("odo", "create", "nodejs", "--starter").ShouldPass()
+				helper.Cmd("odo", "create", "nodejs", "--starter", "nodejs-starter").ShouldPass()
 				checkNodeJSDirContent(contextDevfile)
 			})
 		})
