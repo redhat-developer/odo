@@ -151,14 +151,15 @@ func TestList(t *testing.T) {
 		componentlabels.ComponentTypeAnnotation: "nodejs",
 	}
 	deploymentList.Items[1].Labels[componentlabels.ComponentTypeLabel] = "wildfly"
-
+	deploymentList.Items[1].Annotations = map[string]string{
+		componentlabels.ComponentTypeAnnotation: "wildfly",
+	}
 	tests := []struct {
-		name                      string
-		deploymentConfigSupported bool
-		deploymentList            v1.DeploymentList
-		projectExists             bool
-		wantErr                   bool
-		output                    ComponentList
+		name           string
+		deploymentList v1.DeploymentList
+		projectExists  bool
+		wantErr        bool
+		output         ComponentList
 	}{
 		{
 			name:          "Case 1: no component and no config exists",
@@ -167,11 +168,10 @@ func TestList(t *testing.T) {
 			output:        newComponentList([]Component{}),
 		},
 		{
-			name:                      "Case 2: Components are returned from deployments on a kubernetes cluster",
-			deploymentList:            deploymentList,
-			wantErr:                   false,
-			projectExists:             true,
-			deploymentConfigSupported: false,
+			name:           "Case 2: Components are returned from deployments on a kubernetes cluster",
+			deploymentList: deploymentList,
+			wantErr:        false,
+			projectExists:  true,
 			output: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
@@ -188,11 +188,6 @@ func TestList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if !tt.deploymentConfigSupported {
-				os.Setenv("KUBERNETES", "true")
-				defer os.Unsetenv("KUBERNETES")
-			}
-
 			client, fakeClientSet := occlient.FakeNew()
 			client.Namespace = "test"
 

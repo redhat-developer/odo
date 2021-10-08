@@ -4,10 +4,20 @@ import (
 	"reflect"
 	"testing"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/version"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ktesting "k8s.io/client-go/testing"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-/* TODO: Fix this unit test. Mock occlient pkg with mockgen and use it for the test.
+//TODO: Fix this unit test. Mock occlient pkg with mockgen and use it for the test.
 func TestGetMachineReadableFormat(t *testing.T) {
 	type args struct {
 		appName     string
@@ -111,17 +121,17 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			client, fakeClientSet := occlient.FakeNew()
 
 			// fake the project
-			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fakeClientSet.Kubernetes.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
 			})
 
 			//fake the deployments
-			fakeClientSet.AppsClientset.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &deploymentList, nil
 			})
 
 			for i := range deploymentList.Items {
-				fakeClientSet.AppsClientset.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				fakeClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 					return true, &deploymentList.Items[i], nil
 				})
 			}
@@ -131,7 +141,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 		})
 	}
 }
-*/
+
 func TestGetMachineReadableFormatForList(t *testing.T) {
 	type args struct {
 		apps []App

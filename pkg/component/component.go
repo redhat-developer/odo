@@ -101,7 +101,7 @@ func GetDefaultComponentName(componentPath string, componentType string, existin
 	return util.GetDNS1123Name(componentName), nil
 }
 
-// ApplyConfig applies the component config onto component dc
+// ApplyConfig applies the component config onto component deployment
 // Parameters:
 //	client: occlient instance
 //	componentConfig: Component configuration
@@ -109,11 +109,6 @@ func GetDefaultComponentName(componentPath string, componentType string, existin
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
-
-	var configProvider localConfigProvider.LocalConfigProvider
-
-	configProvider = &envSpecificInfo
-
 	isRouteSupported := false
 	isRouteSupported, err = client.IsRouteSupported()
 	if err != nil {
@@ -123,11 +118,11 @@ func ApplyConfig(client *occlient.Client, envSpecificInfo envinfo.EnvSpecificInf
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
 		OCClient:            *client,
 		IsRouteSupported:    isRouteSupported,
-		LocalConfigProvider: configProvider,
+		LocalConfigProvider: &envSpecificInfo,
 	})
 
 	return urlpkg.Push(urlpkg.PushParameters{
-		LocalConfigProvider: configProvider,
+		LocalConfigProvider: &envSpecificInfo,
 		URLClient:           urlClient,
 		IsRouteSupported:    isRouteSupported,
 	})

@@ -17,19 +17,11 @@ import (
 
 // CommonPushOptions has data needed for all pushes
 type CommonPushOptions struct {
-	ignores []string
-	show    bool
-
-	sourcePath       string
+	show             bool
 	componentContext string
-
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
-
-	pushConfig         bool
-	pushSource         bool
-	forceBuild         bool
-	doesComponentExist bool
-
+	pushConfig       bool
+	pushSource       bool
+	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 	*genericclioptions.Context
 }
 

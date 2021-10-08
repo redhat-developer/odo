@@ -24,23 +24,6 @@ var (
 	setLongDesc = ktemplates.LongDesc(`Set an individual value in the devfile or odo configuration file.
 %[1]s
 `)
-	setExample = ktemplates.Examples(`
-   # Set a configuration value in the local config
-   %[1]s %[2]s java
-   %[1]s %[3]s test
-   %[1]s %[4]s 50M
-   %[1]s %[5]s 500M
-   %[1]s %[6]s 250M
-   %[1]s %[7]s 4040
-   %[1]s %[8]s false
-   %[1]s %[9]s 0.5
-   %[1]s %[10]s 2
-   %[1]s %[11]s 1
-   %[1]s %[12]s 8080/TCP,8443/TCP
-
-   # Set a env variable in the local config
-   %[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
-	`)
 
 	devfileSetExample = ktemplates.Examples(`
 	# Set a configuration value in the devfile

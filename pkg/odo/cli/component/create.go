@@ -120,7 +120,7 @@ func NewCreateOptions() *CreateOptions {
 func createDefaultComponentName(componentType string, sourcePath string) (string, error) {
 	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
 	var err error
-	finalSourcePath := sourcePath
+	var finalSourcePath string
 	// we only get absolute path for local source type
 
 	if sourcePath == "" {

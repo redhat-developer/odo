@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	odoutil "github.com/openshift/odo/pkg/util"
+
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -56,45 +58,51 @@ type CreateParameters struct {
 // New creates a context based on the given parameters
 func New(parameters CreateParameters) (context *Context, err error) {
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
-	context, err = NewDevfileContext(parameters.Cmd)
-	if err != nil {
-		return context, err
-	}
-	context.ComponentContext = parameters.ComponentContext
+	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
+	if isDevfile {
+		context, err = NewDevfileContext(parameters.Cmd)
+		if err != nil {
+			return context, err
+		}
+		context.ComponentContext = parameters.ComponentContext
 
-	err = context.InitEnvInfoFromContext()
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse devfile and validate
-	devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
-	if err != nil {
-		return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
-	}
-
-	err = validate.ValidateDevfileData(devObj.Data)
-	if err != nil {
-		return context, err
-	}
-
-	context.EnvSpecificInfo.SetDevfileObj(devObj)
-
-	context.Client, err = Client()
-	if err != nil {
-		return nil, err
-	}
-	context.resolveNamespace(context.EnvSpecificInfo)
-
-	if parameters.CheckRouteAvailability {
-		isRouteSupported, err := context.Client.IsRouteSupported()
+		err = context.InitEnvInfoFromContext()
 		if err != nil {
 			return nil, err
 		}
-		context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
-	}
-	context.LocalConfigProvider = context.EnvSpecificInfo
 
+		// Parse devfile and validate
+		if context.EnvSpecificInfo != nil {
+			devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
+			if err != nil {
+				return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
+			}
+
+			err = validate.ValidateDevfileData(devObj.Data)
+			if err != nil {
+				return context, err
+			}
+
+			context.EnvSpecificInfo.SetDevfileObj(devObj)
+		}
+		context.Client, err = Client()
+		if err != nil {
+			return nil, err
+		}
+
+		if err := context.resolveNamespace(context.EnvSpecificInfo); err != nil {
+			return nil, err
+		}
+
+		if parameters.CheckRouteAvailability {
+			isRouteSupported, err := context.Client.IsRouteSupported()
+			if err != nil {
+				return nil, err
+			}
+			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
+		}
+		context.LocalConfigProvider = context.EnvSpecificInfo
+	}
 	return context, nil
 }
 

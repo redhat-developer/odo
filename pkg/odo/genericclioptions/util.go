@@ -128,7 +128,7 @@ func checkIfConfigurationNeeded(command *cobra.Command) (bool, error) {
 			return true, nil
 		}
 		// Case 6 : Check if firstChildCommand is catalog and request is to list or search
-		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
+		if firstChildCommand.Name() == "catalog" {
 			return true, nil
 		}
 		// Case 7: Check if firstChildCommand is component and  request is list

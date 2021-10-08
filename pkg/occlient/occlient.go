@@ -50,13 +50,8 @@ type CreateArgs struct {
 }
 
 const (
-	OpenShiftNameSpace = "openshift"
-
 	// timeout for waiting for project deletion
 	waitForProjectDeletionTimeOut = 3 * time.Minute
-
-	// The length of the string to be generated for names of resources
-	nameLength = 5
 )
 
 // UpdateComponentParams serves the purpose of holding the arguments to a component update request
