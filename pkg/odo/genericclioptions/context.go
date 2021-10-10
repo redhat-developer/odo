@@ -102,6 +102,20 @@ func New(parameters CreateParameters) (context *Context, err error) {
 			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
 		}
 		context.LocalConfigProvider = context.EnvSpecificInfo
+	} else {
+		if parameters.IsNow {
+			context, err = NewContextCreatingAppIfNeeded(parameters.Cmd)
+			if err != nil {
+				return nil, err
+			}
+			context.ComponentContext = parameters.ComponentContext
+		} else {
+			context, err = NewContext(parameters.Cmd)
+			if err != nil {
+				return nil, err
+			}
+			context.ComponentContext = parameters.ComponentContext
+		}
 	}
 	return context, nil
 }
