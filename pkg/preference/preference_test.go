@@ -396,21 +396,28 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           "Case 17: set RegistryCacheTime to non int value",
+			name:           "Case 17: set RegistryCacheTime to 1",
+			parameter:      "RegistryCacheTime",
+			value:          "1",
+			existingConfig: Preference{},
+			wantErr:        false,
+		},
+		{
+			name:           "Case 18: set RegistryCacheTime to non int value",
 			parameter:      "RegistryCacheTime",
 			value:          "a",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 18: set %s to non bool value", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("Case 19: set %s to non bool value", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "123",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 19: set %s from nil to true", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("Case 20: set %s from nil to true", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -418,7 +425,7 @@ func TestSetConfiguration(t *testing.T) {
 			want:           true,
 		},
 		{
-			name:      fmt.Sprintf("Case 20: set %s from true to false", ConsentTelemetrySetting),
+			name:      fmt.Sprintf("Case 21: set %s from true to false", ConsentTelemetrySetting),
 			parameter: ConsentTelemetrySetting,
 			value:     "false",
 			existingConfig: Preference{

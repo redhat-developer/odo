@@ -4,7 +4,6 @@ package watch
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -109,18 +110,29 @@ type mockPushParameters struct {
 
 var mockPush mockPushParameters
 
-// Mock PushLocal to collect changed files and compare against expected changed files
-func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, globExps []string, show bool) error {
+// Mocks the devFile push function that's called when odo watch pushes to a component
+func mockDevFilePush(parameters common.PushParameters, _ WatchParameters) error {
 	muLock.Lock()
 	defer muLock.Unlock()
-	if componentName != mockPush.componentName || applicationName != mockPush.applicationName || isPushForce != mockPush.isForcePush || show != mockPush.show {
+	if parameters.Show != mockPush.show || parameters.Debug != mockPush.isDebug || parameters.DebugPort != mockPush.debugPort {
 		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
-			componentName, applicationName, "isPushForce:" + strconv.FormatBool(isPushForce), "show:" + strconv.FormatBool(show),
+			"show:" + strconv.FormatBool(parameters.Show),
+			"debug:" + strconv.FormatBool(parameters.Debug),
+			"debugPort:" + strconv.Itoa(parameters.DebugPort),
 		})
 		os.Exit(1)
 	}
 
-	return commonChecks(path, files, delFiles, globExps)
+	if parameters.DevfileBuildCmd != mockPush.devfileBuildCmd || parameters.DevfileRunCmd != mockPush.devfileRunCmd || parameters.DevfileDebugCmd != mockPush.devfileDebugCmd {
+		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
+			"devfileBuildCmd:" + parameters.DevfileBuildCmd,
+			"devfileRunCmd:" + parameters.DevfileRunCmd,
+			"devfileDebugCmd:" + parameters.DevfileDebugCmd,
+		})
+		os.Exit(1)
+	}
+
+	return commonChecks(parameters.Path, parameters.WatchFiles, parameters.WatchDeletedFiles, parameters.IgnoredFiles)
 }
 
 // commonChecks is the common checker for both the push handlers
@@ -714,7 +726,6 @@ func TestWatchAndPush(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-
 		ExtChan = make(chan bool)
 		StartChan = make(chan bool)
 		t.Log("Running test: ", tt.name)
@@ -811,8 +822,17 @@ func TestWatchAndPush(t *testing.T) {
 				DevfileDebugCmd: tt.devfileDebugCmd,
 			}
 
-			watchParameters.ApplicationName = tt.applicationName
-			watchParameters.WatchHandler = mockPushLocal
+			watchParameters.DevfileWatchHandler = mockDevFilePush
+			runMode := envinfo.Run
+			if tt.isDebug {
+				runMode = envinfo.Debug
+			}
+			watchParameters.EnvSpecificInfo = &envinfo.EnvSpecificInfo{
+				EnvInfo: *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
+					DebugPort: &tt.debugPort,
+					RunMode:   &runMode,
+				}),
+			}
 
 			err = WatchAndPush(
 				fkclient,
