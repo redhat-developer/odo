@@ -81,7 +81,7 @@ var _ = Describe("odo project command tests", func() {
 		var projectName string
 
 		BeforeEach(func() {
-			projectName = helper.RandString(6)
+			projectName = "cmd-project-" + helper.RandString(6)
 			helper.Cmd("odo", "project", "create", projectName).ShouldPass()
 		})
 
@@ -96,8 +96,12 @@ var _ = Describe("odo project command tests", func() {
 		var output string
 
 		BeforeEach(func() {
-			projectName = helper.RandString(6)
+			projectName = "cmd-project-" + helper.RandString(6)
 			output = helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass().Out()
+		})
+
+		AfterEach(func() {
+			helper.Cmd("odo", "project", "delete", "-f", projectName)
 		})
 
 		It("should display information of created project", func() {
