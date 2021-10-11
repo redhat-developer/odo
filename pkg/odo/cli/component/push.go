@@ -190,7 +190,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	po.EnvSpecificInfo = envFileInfo
 
-	po.Context, err = genericclioptions.NewDevfileContext(cmd)
+	po.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}

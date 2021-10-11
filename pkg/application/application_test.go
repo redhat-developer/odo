@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//TODO: Fix this unit test. Mock occlient pkg with mockgen and use it for the test.
 func TestGetMachineReadableFormat(t *testing.T) {
 	type args struct {
 		appName     string

@@ -61,7 +61,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 
 	eo.devfilePath = filepath.Join(eo.componentContext, devFile)
 
-	eo.componentOptions.Context, err = genericclioptions.NewDevfileContext(cmd)
+	eo.componentOptions.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}

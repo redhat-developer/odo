@@ -47,7 +47,7 @@ func NewInfoOptions() *InfoOptions {
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
-		o.Context, err = genericclioptions.NewDevfileContext(cmd)
+		o.Context, err = genericclioptions.NewContext(cmd)
 		if err != nil {
 			return err
 		}

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	odoutil "github.com/openshift/odo/pkg/util"
-
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/pkg/util"
+
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -60,7 +60,7 @@ func New(parameters CreateParameters) (context *Context, err error) {
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
 	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
 	if isDevfile {
-		context, err = NewDevfileContext(parameters.Cmd)
+		context, err = NewContext(parameters.Cmd)
 		if err != nil {
 			return context, err
 		}
@@ -72,25 +72,25 @@ func New(parameters CreateParameters) (context *Context, err error) {
 		}
 
 		// Parse devfile and validate
-		if context.EnvSpecificInfo != nil {
-			devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
-			if err != nil {
-				return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
-			}
-
-			err = validate.ValidateDevfileData(devObj.Data)
-			if err != nil {
-				return context, err
-			}
-
-			context.EnvSpecificInfo.SetDevfileObj(devObj)
+		devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
+		if err != nil {
+			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
+
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return context, err
+		}
+
+		context.EnvSpecificInfo.SetDevfileObj(devObj)
+
 		context.Client, err = Client()
 		if err != nil {
 			return nil, err
 		}
 
-		if err := context.resolveNamespace(context.EnvSpecificInfo); err != nil {
+		err = context.resolveNamespace(context.EnvSpecificInfo)
+		if err != nil {
 			return nil, err
 		}
 
@@ -139,38 +139,28 @@ func completeDevfilePath(componentContext, devfilePath string) string {
 }
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command, toggles ...bool) (*Context, error) {
-	createApp := false
-	if len(toggles) == 1 {
-		createApp = toggles[0]
-	}
-	return newDevfileContext(command, createApp)
-}
-
-// NewDevfileContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewDevfileContext(command *cobra.Command) (*Context, error) {
-	return newDevfileContext(command, false)
+func NewContext(command *cobra.Command) (*Context, error) {
+	return newContext(command, false)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
 // provided command, creating the application if none already exists
 func NewContextCreatingAppIfNeeded(command *cobra.Command) (*Context, error) {
-	return newDevfileContext(command, true)
+	return newContext(command, true)
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
-//TODO: Check if this works
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := newDevfileContext(command, false)
+	ctx, err := newContext(command, false)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
 	return ctx
 }
 
-// newDevfileContext creates a new context based on command flags for devfile components
-func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error) {
+// newContext creates a new context based on command flags for devfile components
+func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error) {
 
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -197,17 +187,16 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 		return nil, err
 	}
 
-	// Gather the environment information
+	// Gather env specific info
 	internalCxt.EnvSpecificInfo = envInfo
-	err = internalCxt.resolveNamespace(envInfo)
-	if err != nil {
-		return nil, err
-	}
 	internalCxt.resolveApp(createAppIfNeeded, envInfo)
 
+	if err := internalCxt.resolveNamespace(envInfo); err != nil {
+		return nil, err
+	}
+
 	// resolve the component
-	_, err = internalCxt.resolveAndSetComponent(command, envInfo)
-	if err != nil {
+	if _, err = internalCxt.resolveAndSetComponent(command, envInfo); err != nil {
 		return nil, err
 	}
 	// Create a context from the internal representation
@@ -217,8 +206,8 @@ func newDevfileContext(command *cobra.Command, createAppIfNeeded bool) (*Context
 	return context, nil
 }
 
-// NewOfflineDevfileContext initializes a context for devfile components without any cluster calls
-func NewOfflineDevfileContext(command *cobra.Command) (*Context, error) {
+// NewOfflineContext initializes a context for devfile components without any cluster calls
+func NewOfflineContext(command *cobra.Command) (*Context, error) {
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 

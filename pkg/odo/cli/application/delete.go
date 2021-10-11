@@ -37,7 +37,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.NewDevfileContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}

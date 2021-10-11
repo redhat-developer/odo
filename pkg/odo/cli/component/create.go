@@ -159,7 +159,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 	} else {
-		co.Context, err = genericclioptions.NewOfflineDevfileContext(cmd)
+		co.Context, err = genericclioptions.NewOfflineContext(cmd)
 		if err != nil {
 			return err
 		}
