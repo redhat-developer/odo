@@ -7,7 +7,7 @@ import (
 
 // ComponentType describes the type of component.
 // Only one of the following component type may be specified.
-// +kubebuilder:validation:Enum=Container;Kubernetes;Openshift;Volume;Plugin;Custom
+// +kubebuilder:validation:Enum=Container;Kubernetes;Openshift;Volume;Image;Plugin;Custom
 type ComponentType string
 
 const (
@@ -16,6 +16,7 @@ const (
 	OpenshiftComponentType  ComponentType = "Openshift"
 	PluginComponentType     ComponentType = "Plugin"
 	VolumeComponentType     ComponentType = "Volume"
+	ImageComponentType      ComponentType = "Image"
 	CustomComponentType     ComponentType = "Custom"
 )
 
@@ -34,6 +35,9 @@ type Component struct {
 	Name string `json:"name"`
 	// Map of implementation-dependant free-form YAML attributes.
 	// +optional
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	Attributes     attributes.Attributes `json:"attributes,omitempty"`
 	ComponentUnion `json:",inline"`
 }
@@ -68,6 +72,10 @@ type ComponentUnion struct {
 	// shared by several other components
 	// +optional
 	Volume *VolumeComponent `json:"volume,omitempty"`
+
+	// Allows specifying the definition of an image for outer loop builds
+	// +optional
+	Image *ImageComponent `json:"image,omitempty"`
 
 	// Allows importing a plugin.
 	//

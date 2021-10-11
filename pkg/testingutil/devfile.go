@@ -6,6 +6,7 @@ import (
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // GetFakeContainerComponent returns a fake container component for testing
@@ -56,7 +57,7 @@ func GetFakeExecRunCommands() []v1.Command {
 						BaseCommand: v1.BaseCommand{
 							Group: &v1.CommandGroup{
 								Kind:      v1.RunCommandGroupKind,
-								IsDefault: true,
+								IsDefault: util.GetBoolPtr(true),
 							},
 						},
 					},
@@ -251,7 +252,7 @@ func DevfileObjWithSecureEndpoints(fs devfilefs.Filesystem) parser.DevfileObj {
 						{
 							Name:       "port-8080",
 							TargetPort: 8080,
-							Secure:     true,
+							Secure:     util.GetBoolPtr(true),
 						},
 					},
 				},

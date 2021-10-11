@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/util"
 )
 
 var buildGroup = devfilev1.BuildCommandGroupKind
@@ -34,7 +35,7 @@ func TestValidateCommand(t *testing.T) {
 					Composite: &devfilev1.CompositeCommand{
 						LabeledCommand: devfilev1.LabeledCommand{
 							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: true},
+								Group: &devfilev1.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
 							},
 						},
 					},
@@ -50,7 +51,7 @@ func TestValidateCommand(t *testing.T) {
 					Composite: &devfilev1.CompositeCommand{
 						LabeledCommand: devfilev1.LabeledCommand{
 							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: true},
+								Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
 							},
 						},
 					},

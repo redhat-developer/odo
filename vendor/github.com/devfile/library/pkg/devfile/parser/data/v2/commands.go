@@ -55,13 +55,17 @@ func (d *DevfileV2) GetCommands(options common.DevfileOptions) ([]v1.Command, er
 func (d *DevfileV2) AddCommands(commands []v1.Command) error {
 	var errorsList []string
 	for _, command := range commands {
+		var err error
 		for _, devfileCommand := range d.Commands {
 			if command.Id == devfileCommand.Id {
-				errorsList = append(errorsList, (&common.FieldAlreadyExistError{Name: command.Id, Field: "command"}).Error())
-				continue
+				err = &common.FieldAlreadyExistError{Name: command.Id, Field: "command"}
+				errorsList = append(errorsList, err.Error())
+				break
 			}
 		}
-		d.Commands = append(d.Commands, command)
+		if err == nil {
+			d.Commands = append(d.Commands, command)
+		}
 	}
 	if len(errorsList) > 0 {
 		return fmt.Errorf("errors while adding commands:\n%s", strings.Join(errorsList, "\n"))

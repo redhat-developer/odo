@@ -72,47 +72,65 @@ func ValidateAndReplaceForStarterProjects(variables map[string]string, starterPr
 // validateandReplaceForProjectSource validates a project source location for global variable references and replaces them with the variable value
 func validateandReplaceForProjectSource(variables map[string]string, projectSource *v1alpha2.ProjectSource) error {
 
-	var err error
+	if projectSource == nil {
+		return nil
+	}
 
+	var err error
 	invalidKeys := make(map[string]bool)
 
-	if projectSource != nil {
-		switch {
-		case projectSource.Zip != nil:
-			if projectSource.Zip.Location, err = validateAndReplaceDataWithVariable(projectSource.Zip.Location, variables); err != nil {
-				checkForInvalidError(invalidKeys, err)
-			}
-		case projectSource.Git != nil:
-			gitProject := &projectSource.Git.GitLikeProjectSource
+	switch {
+	case projectSource.Zip != nil:
+		if projectSource.Zip.Location, err = validateAndReplaceDataWithVariable(projectSource.Zip.Location, variables); err != nil {
+			checkForInvalidError(invalidKeys, err)
+		}
+	case projectSource.Git != nil:
+		gitProject := &projectSource.Git.GitLikeProjectSource
 
-			if gitProject.CheckoutFrom != nil {
-				// validate git checkout revision
-				if gitProject.CheckoutFrom.Revision, err = validateAndReplaceDataWithVariable(gitProject.CheckoutFrom.Revision, variables); err != nil {
-					checkForInvalidError(invalidKeys, err)
-				}
+		if err = validateAndReplaceForGitProjectSource(variables, gitProject); err != nil {
+			checkForInvalidError(invalidKeys, err)
+		}
+	}
 
-				// // validate git checkout remote
-				if gitProject.CheckoutFrom.Remote, err = validateAndReplaceDataWithVariable(gitProject.CheckoutFrom.Remote, variables); err != nil {
-					checkForInvalidError(invalidKeys, err)
-				}
-			}
+	return newInvalidKeysError(invalidKeys)
+}
 
-			// validate git remotes
-			for k := range gitProject.Remotes {
-				// validate remote map value
-				if gitProject.Remotes[k], err = validateAndReplaceDataWithVariable(gitProject.Remotes[k], variables); err != nil {
-					checkForInvalidError(invalidKeys, err)
-				}
+// validateAndReplaceForGitProjectSource validates a project git src for global variable references and replaces them with the variable value
+func validateAndReplaceForGitProjectSource(variables map[string]string, gitProject *v1alpha2.GitLikeProjectSource) error {
 
-				// validate remote map key
-				var updatedKey string
-				if updatedKey, err = validateAndReplaceDataWithVariable(k, variables); err != nil {
-					checkForInvalidError(invalidKeys, err)
-				} else if updatedKey != k {
-					gitProject.Remotes[updatedKey] = gitProject.Remotes[k]
-					delete(gitProject.Remotes, k)
-				}
-			}
+	if gitProject == nil {
+		return nil
+	}
+
+	var err error
+	invalidKeys := make(map[string]bool)
+
+	if gitProject.CheckoutFrom != nil {
+		// validate git checkout revision
+		if gitProject.CheckoutFrom.Revision, err = validateAndReplaceDataWithVariable(gitProject.CheckoutFrom.Revision, variables); err != nil {
+			checkForInvalidError(invalidKeys, err)
+		}
+
+		// // validate git checkout remote
+		if gitProject.CheckoutFrom.Remote, err = validateAndReplaceDataWithVariable(gitProject.CheckoutFrom.Remote, variables); err != nil {
+			checkForInvalidError(invalidKeys, err)
+		}
+	}
+
+	// validate git remotes
+	for k := range gitProject.Remotes {
+		// validate remote map value
+		if gitProject.Remotes[k], err = validateAndReplaceDataWithVariable(gitProject.Remotes[k], variables); err != nil {
+			checkForInvalidError(invalidKeys, err)
+		}
+
+		// validate remote map key
+		var updatedKey string
+		if updatedKey, err = validateAndReplaceDataWithVariable(k, variables); err != nil {
+			checkForInvalidError(invalidKeys, err)
+		} else if updatedKey != k {
+			gitProject.Remotes[updatedKey] = gitProject.Remotes[k]
+			delete(gitProject.Remotes, k)
 		}
 	}
 

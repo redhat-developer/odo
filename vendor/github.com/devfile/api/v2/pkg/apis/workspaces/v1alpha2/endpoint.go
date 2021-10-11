@@ -94,7 +94,7 @@ type Endpoint struct {
 	// Describes whether the endpoint should be secured and protected by some
 	// authentication process. This requires a protocol of `https` or `wss`.
 	// +optional
-	Secure bool `json:"secure,omitempty"`
+	Secure *bool `json:"secure,omitempty"`
 
 	// Path of the endpoint URL
 	// +optional
@@ -108,5 +108,8 @@ type Endpoint struct {
 	//
 	// - type: "terminal" / "ide" / "ide-dev",
 	// +optional
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
 	Attributes attributes.Attributes `json:"attributes,omitempty"`
 }

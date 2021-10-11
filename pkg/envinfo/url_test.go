@@ -1,9 +1,10 @@
 package envinfo
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"reflect"
 	"testing"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -13,6 +14,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
 )
 
 func TestEnvInfo_CompleteURL(t *testing.T) {
@@ -1066,6 +1068,7 @@ func Test_updateEndpointInDevfile(t *testing.T) {
 				TargetPort: 3030,
 				Protocol:   v1.WSSEndpointProtocol,
 				Exposure:   v1.PublicEndpointExposure,
+				Secure:     util.GetBoolPtr(false),
 			},
 			wantErr: false,
 		},
@@ -1083,6 +1086,7 @@ func Test_updateEndpointInDevfile(t *testing.T) {
 				Name:       "port-3030",
 				TargetPort: 3030,
 				Exposure:   v1.PublicEndpointExposure,
+				Secure:     util.GetBoolPtr(false),
 			},
 			wantErr: false,
 		},
@@ -1102,6 +1106,7 @@ func Test_updateEndpointInDevfile(t *testing.T) {
 				TargetPort: 3000,
 				Path:       "/user",
 				Exposure:   v1.PublicEndpointExposure,
+				Secure:     util.GetBoolPtr(false),
 			},
 			wantErr: false,
 		},
@@ -1119,7 +1124,7 @@ func Test_updateEndpointInDevfile(t *testing.T) {
 			wantEndpoint: v1.Endpoint{
 				Name:       "port-3030",
 				TargetPort: 3000,
-				Secure:     true,
+				Secure:     util.GetBoolPtr(true),
 				Exposure:   v1.PublicEndpointExposure,
 			},
 			wantErr: false,

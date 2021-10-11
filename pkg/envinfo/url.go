@@ -284,7 +284,7 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 		newEndpointEntry := devfilev1.Endpoint{
 			Name:       url.Name,
 			Path:       url.Path,
-			Secure:     url.Secure,
+			Secure:     util.GetBoolPtr(url.Secure),
 			Exposure:   devfilev1.PublicEndpointExposure,
 			TargetPort: url.Port,
 			Protocol:   devfilev1.EndpointProtocol(strings.ToLower(url.Protocol)),
@@ -341,7 +341,7 @@ func (ei *EnvInfo) ListURLs() ([]localConfigProvider.LocalURL, error) {
 			}
 
 			secure := false
-			if localEndpoint.Secure || localEndpoint.Protocol == "https" || localEndpoint.Protocol == "wss" {
+			if util.SafeGetBool(localEndpoint.Secure) || localEndpoint.Protocol == "https" || localEndpoint.Protocol == "wss" {
 				secure = true
 			}
 
@@ -461,12 +461,12 @@ func updateEndpointInDevfile(devObj parser.DevfileObj, url localConfigProvider.L
 					}
 
 					// prevent write unless required
-					if endpoint.Exposure != devfilev1.PublicEndpointExposure || url.Secure != endpoint.Secure ||
+					if endpoint.Exposure != devfilev1.PublicEndpointExposure || url.Secure != util.SafeGetBool(endpoint.Secure) ||
 						url.Path != endpoint.Path || url.Protocol != string(endpoint.Protocol) {
 						endpoint = devfilev1.Endpoint{
 							Name:       url.Name,
 							Path:       url.Path,
-							Secure:     url.Secure,
+							Secure:     &url.Secure,
 							Exposure:   devfilev1.PublicEndpointExposure,
 							TargetPort: url.Port,
 							Protocol:   devfilev1.EndpointProtocol(strings.ToLower(url.Protocol)),

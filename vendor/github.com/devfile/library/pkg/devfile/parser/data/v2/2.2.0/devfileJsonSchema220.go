@@ -69,7 +69,8 @@ const JsonSchema220 = `{
                       "build",
                       "run",
                       "test",
-                      "debug"
+                      "debug",
+                      "deploy"
                     ]
                   }
                 },
@@ -116,7 +117,8 @@ const JsonSchema220 = `{
                       "build",
                       "run",
                       "test",
-                      "debug"
+                      "debug",
+                      "deploy"
                     ]
                   }
                 },
@@ -187,7 +189,8 @@ const JsonSchema220 = `{
                       "build",
                       "run",
                       "test",
-                      "debug"
+                      "debug",
+                      "deploy"
                     ]
                   }
                 },
@@ -245,6 +248,11 @@ const JsonSchema220 = `{
           {
             "required": [
               "volume"
+            ]
+          },
+          {
+            "required": [
+              "image"
             ]
           }
         ],
@@ -403,6 +411,124 @@ const JsonSchema220 = `{
                   },
                   "additionalProperties": false
                 }
+              }
+            },
+            "additionalProperties": false
+          },
+          "image": {
+            "description": "Allows specifying the definition of an image for outer loop builds",
+            "type": "object",
+            "required": [
+              "imageName"
+            ],
+            "oneOf": [
+              {
+                "required": [
+                  "dockerfile"
+                ]
+              }
+            ],
+            "properties": {
+              "dockerfile": {
+                "description": "Allows specifying dockerfile type build",
+                "type": "object",
+                "oneOf": [
+                  {
+                    "required": [
+                      "uri"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "devfileRegistry"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "git"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "args": {
+                    "description": "The arguments to supply to the dockerfile build.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "buildContext": {
+                    "description": "Path of source directory to establish build context. Defaults to ${PROJECT_ROOT} in the container",
+                    "type": "string"
+                  },
+                  "devfileRegistry": {
+                    "description": "Dockerfile's Devfile Registry source",
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "description": "Id in a devfile registry that contains a Dockerfile. The src in the OCI registry required for the Dockerfile build will be downloaded for building the image.",
+                        "type": "string"
+                      },
+                      "registryUrl": {
+                        "description": "Devfile Registry URL to pull the Dockerfile from when using the Devfile Registry as Dockerfile src. To ensure the Dockerfile gets resolved consistently in different environments, it is recommended to always specify the 'devfileRegistryUrl' when 'Id' is used.",
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "git": {
+                    "description": "Dockerfile's Git source",
+                    "type": "object",
+                    "required": [
+                      "remotes"
+                    ],
+                    "properties": {
+                      "checkoutFrom": {
+                        "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
+                        "type": "object",
+                        "properties": {
+                          "remote": {
+                            "description": "The remote name should be used as init. Required if there are more than one remote configured",
+                            "type": "string"
+                          },
+                          "revision": {
+                            "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "fileLocation": {
+                        "description": "Location of the Dockerfile in the Git repository when using git as Dockerfile src. Defaults to Dockerfile.",
+                        "type": "string"
+                      },
+                      "remotes": {
+                        "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects \u0026 Image Component's Git source can only have at most one remote configured.",
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "rootRequired": {
+                    "description": "Specify if a privileged builder pod is required.\n\nDefault value is 'false'",
+                    "type": "boolean"
+                  },
+                  "uri": {
+                    "description": "URI Reference of a Dockerfile. It can be a full URL or a relative URI from the current devfile as the base URI.",
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "imageName": {
+                "description": "Name of the image for the resulting outerloop build",
+                "type": "string"
               }
             },
             "additionalProperties": false
@@ -789,7 +915,8 @@ const JsonSchema220 = `{
                           "build",
                           "run",
                           "test",
-                          "debug"
+                          "debug",
+                          "deploy"
                         ]
                       }
                     },
@@ -833,7 +960,8 @@ const JsonSchema220 = `{
                           "build",
                           "run",
                           "test",
-                          "debug"
+                          "debug",
+                          "deploy"
                         ]
                       }
                     },
@@ -896,7 +1024,8 @@ const JsonSchema220 = `{
                           "build",
                           "run",
                           "test",
-                          "debug"
+                          "debug",
+                          "deploy"
                         ]
                       }
                     },
@@ -954,6 +1083,11 @@ const JsonSchema220 = `{
               {
                 "required": [
                   "volume"
+                ]
+              },
+              {
+                "required": [
+                  "image"
                 ]
               }
             ],
@@ -1104,6 +1238,115 @@ const JsonSchema220 = `{
                       },
                       "additionalProperties": false
                     }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "image": {
+                "description": "Allows specifying the definition of an image for outer loop builds",
+                "type": "object",
+                "oneOf": [
+                  {
+                    "required": [
+                      "dockerfile"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "dockerfile": {
+                    "description": "Allows specifying dockerfile type build",
+                    "type": "object",
+                    "oneOf": [
+                      {
+                        "required": [
+                          "uri"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "devfileRegistry"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "git"
+                        ]
+                      }
+                    ],
+                    "properties": {
+                      "args": {
+                        "description": "The arguments to supply to the dockerfile build.",
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "buildContext": {
+                        "description": "Path of source directory to establish build context. Defaults to ${PROJECT_ROOT} in the container",
+                        "type": "string"
+                      },
+                      "devfileRegistry": {
+                        "description": "Dockerfile's Devfile Registry source",
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "description": "Id in a devfile registry that contains a Dockerfile. The src in the OCI registry required for the Dockerfile build will be downloaded for building the image.",
+                            "type": "string"
+                          },
+                          "registryUrl": {
+                            "description": "Devfile Registry URL to pull the Dockerfile from when using the Devfile Registry as Dockerfile src. To ensure the Dockerfile gets resolved consistently in different environments, it is recommended to always specify the 'devfileRegistryUrl' when 'Id' is used.",
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "git": {
+                        "description": "Dockerfile's Git source",
+                        "type": "object",
+                        "properties": {
+                          "checkoutFrom": {
+                            "description": "Defines from what the project should be checked out. Required if there are more than one remote configured",
+                            "type": "object",
+                            "properties": {
+                              "remote": {
+                                "description": "The remote name should be used as init. Required if there are more than one remote configured",
+                                "type": "string"
+                              },
+                              "revision": {
+                                "description": "The revision to checkout from. Should be branch name, tag or commit id. Default branch is used if missing or specified revision is not found.",
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "fileLocation": {
+                            "description": "Location of the Dockerfile in the Git repository when using git as Dockerfile src. Defaults to Dockerfile.",
+                            "type": "string"
+                          },
+                          "remotes": {
+                            "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects \u0026 Image Component's Git source can only have at most one remote configured.",
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "rootRequired": {
+                        "description": "Specify if a privileged builder pod is required.\n\nDefault value is 'false'",
+                        "type": "boolean"
+                      },
+                      "uri": {
+                        "description": "URI Reference of a Dockerfile. It can be a full URL or a relative URI from the current devfile as the base URI.",
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "imageName": {
+                    "description": "Name of the image for the resulting outerloop build",
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -1365,7 +1608,7 @@ const JsonSchema220 = `{
                     "additionalProperties": false
                   },
                   "remotes": {
-                    "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
+                    "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects \u0026 Image Component's Git source can only have at most one remote configured.",
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
@@ -1449,7 +1692,7 @@ const JsonSchema220 = `{
                     "additionalProperties": false
                   },
                   "remotes": {
-                    "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
+                    "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects \u0026 Image Component's Git source can only have at most one remote configured.",
                     "type": "object",
                     "additionalProperties": {
                       "type": "string"
@@ -1550,7 +1793,7 @@ const JsonSchema220 = `{
                 "additionalProperties": false
               },
               "remotes": {
-                "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
+                "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects \u0026 Image Component's Git source can only have at most one remote configured.",
                 "type": "object",
                 "additionalProperties": {
                   "type": "string"
@@ -1638,7 +1881,7 @@ const JsonSchema220 = `{
                 "additionalProperties": false
               },
               "remotes": {
-                "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects can only have at most one remote configured.",
+                "description": "The remotes map which should be initialized in the git project. Projects must have at least one remote configured while StarterProjects \u0026 Image Component's Git source can only have at most one remote configured.",
                 "type": "object",
                 "additionalProperties": {
                   "type": "string"

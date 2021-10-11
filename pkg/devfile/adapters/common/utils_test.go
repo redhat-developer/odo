@@ -14,6 +14,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	odotestingutil "github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
 )
 
 func TestIsEnvPresent(t *testing.T) {
@@ -146,7 +147,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 						BaseCommand: devfilev1.BaseCommand{
 							Group: &devfilev1.CommandGroup{
 								Kind:      runGroup,
-								IsDefault: true,
+								IsDefault: util.GetBoolPtr(true),
 							},
 						},
 					},
@@ -303,7 +304,7 @@ func TestGetCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: false,
+							HotReloadCapable: util.GetBoolPtr(false),
 						},
 					},
 				},
@@ -313,7 +314,7 @@ func TestGetCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: false,
+							HotReloadCapable: util.GetBoolPtr(false),
 						},
 					},
 				},
@@ -326,7 +327,7 @@ func TestGetCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: false,
+							HotReloadCapable: util.GetBoolPtr(false),
 						},
 					},
 				},
@@ -334,7 +335,7 @@ func TestGetCommands(t *testing.T) {
 					Id: "somecommand2",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: false,
+							HotReloadCapable: util.GetBoolPtr(false),
 						},
 					},
 				},
@@ -354,7 +355,7 @@ func TestGetCommands(t *testing.T) {
 					Id: "somecommand",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: false,
+							HotReloadCapable: util.GetBoolPtr(false),
 						},
 					},
 				},
@@ -362,7 +363,7 @@ func TestGetCommands(t *testing.T) {
 					Id: "somecommand2",
 					CommandUnion: devfilev1.CommandUnion{
 						Exec: &devfilev1.ExecCommand{
-							HotReloadCapable: false,
+							HotReloadCapable: util.GetBoolPtr(false),
 						},
 					},
 				},

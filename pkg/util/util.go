@@ -1595,3 +1595,16 @@ func GetGitOriginPath(path string) string {
 	}
 	return ""
 }
+
+// BoolPtr returns pointer to passed boolean
+func GetBoolPtr(b bool) *bool {
+	return &b
+}
+
+// SafeGetBool returns the value of the bool pointer, or false if the pointer is nil
+func SafeGetBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
+}

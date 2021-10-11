@@ -8,6 +8,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
@@ -145,7 +146,7 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 			}
 		}
 
-		restart := IsRestartRequired(command.Exec.HotReloadCapable, params.RunModeChanged)
+		restart := IsRestartRequired(util.SafeGetBool(command.Exec.HotReloadCapable), params.RunModeChanged)
 
 		// if we need to restart, issue supervisor command to stop all running commands first
 		// we do not need to restart Hot reload capable commands

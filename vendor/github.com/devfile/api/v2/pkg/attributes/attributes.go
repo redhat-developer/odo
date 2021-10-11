@@ -19,7 +19,7 @@ func (attributes Attributes) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]apiext.JSON(attributes))
 }
 
-// UnmarshalJSON implements custom JSON unmarshaling
+// UnmarshalJSON implements custom JSON unmarshalling
 // to support free-form attributes
 func (attributes *Attributes) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, (*map[string]apiext.JSON)(attributes))

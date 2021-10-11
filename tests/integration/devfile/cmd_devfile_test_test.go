@@ -58,9 +58,9 @@ var _ = Describe("odo devfile test command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "isDefault: true", "")
 			output := helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldFail().Err()
-			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there is no default command"))
+			Expect(output).To(ContainSubstring("command group test warning - there should be exactly one default command, currently there is no default command"))
 			output = helper.Cmd("odo", "test", "--context", commonVar.Context).ShouldFail().Err()
-			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there is no default command"))
+			Expect(output).To(ContainSubstring("command group test warning - there should be exactly one default command, currently there is no default command"))
 		})
 
 		It("should show error if devfile has multiple default test command", func() {
@@ -68,9 +68,9 @@ var _ = Describe("odo devfile test command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			output := helper.Cmd("odo", "push", "--build-command", "firstbuild", "--run-command", "secondrun", "--context", commonVar.Context).ShouldFail().Err()
-			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there is more than one default command"))
+			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there are multiple default commands"))
 			output = helper.Cmd("odo", "test", "--context", commonVar.Context).ShouldFail().Err()
-			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there is more than one default command"))
+			Expect(output).To(ContainSubstring("command group test error - there should be exactly one default command, currently there are multiple default commands"))
 		})
 
 		It("should error out on devfile flag", func() {

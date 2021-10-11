@@ -1,9 +1,10 @@
 package url
 
 import (
-	"github.com/openshift/odo/pkg/unions"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/unions"
 
 	"github.com/golang/mock/gomock"
 	routev1 "github.com/openshift/api/route/v1"

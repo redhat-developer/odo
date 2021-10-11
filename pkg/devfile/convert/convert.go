@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -194,7 +195,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 					BaseCommand: devfilev1.BaseCommand{
 						Group: &devfilev1.CommandGroup{
 							Kind:      devfilev1.BuildCommandGroupKind,
-							IsDefault: true,
+							IsDefault: util.GetBoolPtr(true),
 						},
 					},
 				},
@@ -212,7 +213,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 					BaseCommand: devfilev1.BaseCommand{
 						Group: &devfilev1.CommandGroup{
 							Kind:      devfilev1.RunCommandGroupKind,
-							IsDefault: true,
+							IsDefault: util.GetBoolPtr(true),
 						},
 					},
 				},
@@ -230,7 +231,7 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 					BaseCommand: devfilev1.BaseCommand{
 						Group: &devfilev1.CommandGroup{
 							Kind:      devfilev1.DebugCommandGroupKind,
-							IsDefault: true,
+							IsDefault: util.GetBoolPtr(true),
 						},
 					},
 				},
@@ -401,7 +402,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		endpoint := devfilev1.Endpoint{
 			Name:       url.Name,
 			TargetPort: url.Port,
-			Secure:     url.Secure,
+			Secure:     &url.Secure,
 		}
 
 		endpoints = append(endpoints, endpoint)
@@ -441,7 +442,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 			endpoint := devfilev1.Endpoint{
 				Name:       fmt.Sprintf("%s-%d", protocol, intPort),
 				TargetPort: intPort,
-				Secure:     false,
+				Secure:     util.GetBoolPtr(false),
 			}
 
 			endpoints = append(endpoints, endpoint)

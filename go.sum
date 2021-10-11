@@ -246,10 +246,14 @@ github.com/deislabs/oras v0.8.1/go.mod h1:Mx0rMSbBNaNfY9hjpccEnxkOqJL6KGjtxNHPLC
 github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3/go.mod h1:zAg7JM8CkOJ43xKXIj7eRO9kmWm/TW578qo+oDO6tuM=
 github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/devfile/api/v2 v2.0.0-20210910153124-da620cd1a7a1/go.mod h1:kLX/nW93gigOHXK3NLeJL2fSS/sgEe+OHu8bo3aoOi4=
+github.com/devfile/api/v2 v2.0.0-20210917193329-089a48011460 h1:cmd+3poyUwevcWchYdvE02YT1nQU4SJpA5/wrdLrpWE=
+github.com/devfile/api/v2 v2.0.0-20210917193329-089a48011460/go.mod h1:kLX/nW93gigOHXK3NLeJL2fSS/sgEe+OHu8bo3aoOi4=
 github.com/devfile/api/v2 v2.1.0 h1:hodMaQpa9onnx8uG5NBxIuzBjC7AUkLTGCcuvZyED7g=
 github.com/devfile/api/v2 v2.1.0/go.mod h1:Cot4snybn3qhIh48oIFi9McocnIx7zY5fFbjfrIpPvg=
 github.com/devfile/library v1.1.1-0.20210910214722-7c5ff63711ec h1:UtJiFJfnC7fhup2MbGOzt6DCKMFKJTw47aHHETLfcZA=
 github.com/devfile/library v1.1.1-0.20210910214722-7c5ff63711ec/go.mod h1:svPWwWb+BP15SXCHl0dyOeE4Sohrjl5a2BaOzc/riLc=
+github.com/devfile/library v1.2.0 h1:OT1Irwg5EZhlCpsAFkjIzd3bqyzbLG0JmFPMHeE1e7M=
+github.com/devfile/library v1.2.0/go.mod h1:gyiQS+ZImnM4/d+wFUl3gJmIozOSXMenl0WX8cx4zu4=
 github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0 h1:F2OkuW0ASrSz5d06tJxWfweUNYTnsOCyiGTEORisokE=
 github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0/go.mod h1:bLGagbW2SFn7jo5+kUPlCMehIGqWkRtLKc5O0OyJMJM=
 github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca h1:MioKDSUEwwYCGEjGioWYO1vodYAutS+ESkZBGCPtx/U=

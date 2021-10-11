@@ -7,6 +7,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -181,11 +182,11 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	emptyString := ""
 	defaultCommand := []string{"tail"}
 	execRunGroup := devfilev1.CommandGroup{
-		IsDefault: true,
+		IsDefault: util.GetBoolPtr(true),
 		Kind:      devfilev1.RunCommandGroupKind,
 	}
 	execDebugGroup := devfilev1.CommandGroup{
-		IsDefault: true,
+		IsDefault: util.GetBoolPtr(true),
 		Kind:      devfilev1.DebugCommandGroupKind,
 	}
 	defaultArgs := []string{"-f", "/dev/null"}
@@ -574,7 +575,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 							LabeledCommand: devfilev1.LabeledCommand{
 								BaseCommand: devfilev1.BaseCommand{
 									Group: &devfilev1.CommandGroup{
-										IsDefault: true,
+										IsDefault: util.GetBoolPtr(true),
 										Kind:      devfilev1.BuildCommandGroupKind,
 									},
 								},

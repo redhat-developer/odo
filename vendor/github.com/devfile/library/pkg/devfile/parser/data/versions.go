@@ -44,5 +44,5 @@ func init() {
 	devfileApiVersionToJSONSchema[APISchemaVersion210] = v210.JsonSchema210
 	devfileApiVersionToJSONSchema[APISchemaVersion220] = v220.JsonSchema220
 	// should use hightest v2 schema version since it is expected to be backward compatible with the same api version
-	devfileApiVersionToJSONSchema[APIVersionAlpha2] = v210.JsonSchema210
+	devfileApiVersionToJSONSchema[APIVersionAlpha2] = v220.JsonSchema220
 }
