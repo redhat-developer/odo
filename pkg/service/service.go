@@ -8,12 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
-	"k8s.io/client-go/restmapper"
-
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -81,7 +76,7 @@ func DeleteOperatorService(client kclient.ClientInterface, serviceName string) e
 		}
 	}
 
-	group, version, resource := GetGVRFromCR(cr)
+	group, version, resource := kclient.GetGVRFromCR(cr)
 
 	return client.DeleteDynamicResource(name, group, version, resource)
 }
@@ -141,24 +136,11 @@ func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (string, strin
 	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
 		custRes := customresource
 		if custRes.Kind == cr {
-			group, version, resource = GetGVRFromCR(&custRes)
+			group, version, resource = kclient.GetGVRFromCR(&custRes)
 			return group, version, resource, nil
 		}
 	}
 	return "", "", "", fmt.Errorf("couldn't parse group, version, resource from Operator %q", csv.Name)
-}
-
-// GetGVRFromCR parses and returns the values for group, version and resource
-// for a given Custom Resource (CR).
-func GetGVRFromCR(cr *olm.CRDDescription) (string, string, string) {
-	var group, version, resource string
-	version = cr.Version
-
-	gr := strings.SplitN(cr.Name, ".", 2)
-	resource = gr[0]
-	group = gr[1]
-
-	return group, version, resource
 }
 
 func GetGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
@@ -222,7 +204,7 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	group, version, resource := GetGVRFromCR(customResource)
+	group, version, resource := kclient.GetGVRFromCR(customResource)
 
 	instances, err := client.ListDynamicResource(group, version, resource)
 	if err != nil {
@@ -403,7 +385,7 @@ func listDevfileServices(client kclient.ClientInterface, devfileObj parser.Devfi
 	}
 	var operatorGVRList []meta.RESTMapping
 	if csvSupported {
-		operatorGVRList, err = getOperatorGVRList(client)
+		operatorGVRList, err = client.GetOperatorGVRList()
 		if err != nil {
 			return nil, err
 		}
@@ -423,7 +405,7 @@ func listDevfileServices(client kclient.ClientInterface, devfileObj parser.Devfi
 		if err != nil {
 			return nil, err
 		}
-		restMapping, err := GetRestMappingFromUnstructured(client, u)
+		restMapping, err := client.GetRestMappingFromUnstructured(u)
 		if err != nil {
 			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster
 			// this could be a case when an Operator backed service was added to devfile while working on a cluster
@@ -626,7 +608,7 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 	var deployed map[string]DeployedInfo
 
 	if csvSupported {
-		operatorGVRList, err = getOperatorGVRList(client)
+		operatorGVRList, err = client.GetOperatorGVRList()
 		if err != nil {
 			return err
 		}
@@ -671,7 +653,7 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 
 		crdName := u.GetName()
 
-		restMapping, err := GetRestMappingFromUnstructured(client, u)
+		restMapping, err := client.GetRestMappingFromUnstructured(u)
 		if err != nil {
 			return err
 		}
@@ -754,31 +736,6 @@ type DeployedInfo struct {
 	isLinkResource bool
 }
 
-// getOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
-func getOperatorGVRList(client kclient.ClientInterface) ([]meta.RESTMapping, error) {
-	var operatorGVRList []meta.RESTMapping
-
-	// ignoring the error because
-	csvs, err := client.ListClusterServiceVersions()
-	if err != nil {
-		return operatorGVRList, err
-	}
-	for _, c := range csvs.Items {
-		owned := c.Spec.CustomResourceDefinitions.Owned
-		for i := range owned {
-			g, v, r := GetGVRFromCR(&owned[i])
-			operatorGVRList = append(operatorGVRList, meta.RESTMapping{
-				Resource: schema.GroupVersionResource{
-					Group:    g,
-					Version:  v,
-					Resource: r,
-				},
-			})
-		}
-	}
-	return operatorGVRList, nil
-}
-
 func ListDeployedServices(client kclient.ClientInterface, labels map[string]string) (map[string]DeployedInfo, error) {
 	deployed := map[string]DeployedInfo{}
 
@@ -837,7 +794,7 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sCompon
 			continue
 		}
 
-		restMapping, err := GetRestMappingFromUnstructured(client, u)
+		restMapping, err := client.GetRestMappingFromUnstructured(u)
 		if err != nil {
 			return err
 		}
@@ -871,25 +828,10 @@ func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
 }
 
-// GetRestMappingFromUnstructured returns rest mappings from unstructured data
-func GetRestMappingFromUnstructured(client kclient.ClientInterface, u unstructured.Unstructured) (*meta.RESTMapping, error) {
-	gvk := u.GroupVersionKind()
-
-	cfg := client.GetClientConfig()
-
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return &meta.RESTMapping{}, err
-	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-}
-
 // createOperatorService creates the given operator on the cluster
 // it returns the CR,Kind and errors
 func createOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) error {
-	gvr, err := GetRestMappingFromUnstructured(client, u)
+	gvr, err := client.GetRestMappingFromUnstructured(u)
 	if err != nil {
 		return err
 	}
@@ -946,9 +888,11 @@ func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Comp
 			return err
 		}
 
-		_, err = GetRestMappingFromUnstructured(client, u)
-		if err != nil {
-			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster
+		_, err = client.GetRestMappingFromUnstructured(u)
+		if err != nil && u.GetKind() != "ServiceBinding" {
+			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster;
+			// but if it's a "ServiceBinding" resource, we don't add it to unsupported list because odo can create links
+			// without having SBO installed
 			unsupportedResources = append(unsupportedResources, u)
 		}
 	}

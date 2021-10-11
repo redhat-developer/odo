@@ -779,6 +779,21 @@ func (mr *MockClientInterfaceMockRecorder) GetOneServiceFromSelector(selector in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneServiceFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneServiceFromSelector), selector)
 }
 
+// GetOperatorGVRList mocks base method.
+func (m *MockClientInterface) GetOperatorGVRList() ([]meta.RESTMapping, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOperatorGVRList")
+	ret0, _ := ret[0].([]meta.RESTMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOperatorGVRList indicates an expected call of GetOperatorGVRList.
+func (mr *MockClientInterfaceMockRecorder) GetOperatorGVRList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperatorGVRList", reflect.TypeOf((*MockClientInterface)(nil).GetOperatorGVRList))
+}
+
 // GetPVCFromName mocks base method.
 func (m *MockClientInterface) GetPVCFromName(pvcName string) (*v10.PersistentVolumeClaim, error) {
 	m.ctrl.T.Helper()
@@ -837,6 +852,21 @@ func (m *MockClientInterface) GetResourceSpecDefinition(group, version, kind str
 func (mr *MockClientInterfaceMockRecorder) GetResourceSpecDefinition(group, version, kind interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceSpecDefinition", reflect.TypeOf((*MockClientInterface)(nil).GetResourceSpecDefinition), group, version, kind)
+}
+
+// GetRestMappingFromUnstructured mocks base method.
+func (m *MockClientInterface) GetRestMappingFromUnstructured(arg0 unstructured.Unstructured) (*meta.RESTMapping, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestMappingFromUnstructured", arg0)
+	ret0, _ := ret[0].(*meta.RESTMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestMappingFromUnstructured indicates an expected call of GetRestMappingFromUnstructured.
+func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromUnstructured(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromUnstructured", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromUnstructured), arg0)
 }
 
 // GetSecret mocks base method.

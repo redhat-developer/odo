@@ -89,6 +89,8 @@ type ClientInterface interface {
 	GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error)
 	GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error)
 	GetCRDSpec(cr *olm.CRDDescription, resourceType string, resourceName string) (*spec.Schema, error)
+	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
+	GetOperatorGVRList() ([]meta.RESTMapping, error)
 
 	// pods.go
 	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error)

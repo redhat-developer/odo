@@ -1,16 +1,22 @@
 package service
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/ghodss/yaml"
+	"github.com/openshift/odo/pkg/kclient"
+	"k8s.io/apimachinery/pkg/api/meta"
+
+	"github.com/golang/mock/gomock"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -224,7 +230,6 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 
 func TestListDevfileServices(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
-	fkClient, _ := kclient.FakeNew()
 
 	testFolderName := "someFolder"
 	testFileName, err := setup(testFolderName, fs)
@@ -248,10 +253,18 @@ spec:
 	}
 
 	tests := []struct {
-		name       string
-		devfileObj parser.DevfileObj
-		wantKeys   []string
-		wantErr    error
+		name             string
+		devfileObj       parser.DevfileObj
+		wantKeys         []string
+		wantErr          error
+		csvSupport       bool
+		csvSupportErr    error
+		gvrList          []meta.RESTMapping
+		gvrListErr       error
+		restMapping      *meta.RESTMapping
+		restMappingErr   error
+		u                unstructured.Unstructured
+		inlinedComponent string
 	}{
 		{
 			name: "No service in devfile",
@@ -259,8 +272,16 @@ spec:
 				Data: getDevfileData(t, nil, nil),
 				Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 			},
-			wantKeys: []string{},
-			wantErr:  nil,
+			wantKeys:         []string{},
+			wantErr:          nil,
+			csvSupport:       true,
+			csvSupportErr:    nil,
+			gvrList:          []meta.RESTMapping{},
+			gvrListErr:       nil,
+			restMapping:      &meta.RESTMapping{},
+			restMappingErr:   nil,
+			u:                unstructured.Unstructured{},
+			inlinedComponent: "",
 		},
 		{
 			name: "Services including service bindings in devfile",
@@ -287,15 +308,56 @@ spec:
     name: redis
     version: v1beta1`,
 					},
-				}, []uriComponent{
+				}, nil),
+			},
+			wantKeys:       []string{"ServiceBinding/link1"},
+			wantErr:        nil,
+			csvSupport:     true,
+			csvSupportErr:  nil,
+			gvrList:        []meta.RESTMapping{},
+			gvrListErr:     nil,
+			restMapping:    &meta.RESTMapping{},
+			restMappingErr: errors.New("some error"), // because SBO is not installed
+			u:              unstructured.Unstructured{},
+			inlinedComponent: `
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: nodejs-prj1-api-vtzg-redis-redis
+spec:
+  application:
+    group: apps
+    name: nodejs-prj1-api-vtzg-app
+    resource: deployments
+    version: v1
+  bindAsFiles: false
+  detectBindingResources: true
+  services:
+  - group: redis.redis.opstreelabs.in
+    kind: Redis
+    name: redis
+    version: v1beta1`,
+		},
+		{
+			name: "URI reference in devfile",
+			devfileObj: parser.DevfileObj{
+				Data: getDevfileData(t, nil, []uriComponent{
 					{
 						name: "service1",
 						uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 			},
-			wantKeys: []string{"Redis/service1", "ServiceBinding/link1"},
-			wantErr:  nil,
+			wantKeys:         []string{"Redis/service1"},
+			wantErr:          nil,
+			csvSupport:       false,
+			csvSupportErr:    nil,
+			gvrList:          nil,
+			gvrListErr:       nil,
+			restMapping:      nil,
+			restMappingErr:   errors.New("some error"), // because Redis Operator is not installed
+			u:                unstructured.Unstructured{},
+			inlinedComponent: uriData,
 		},
 	}
 
@@ -311,6 +373,17 @@ spec:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+
+			fkClient := kclient.NewMockClientInterface(mockCtrl)
+			fkClient.EXPECT().IsCSVSupported().Return(tt.csvSupport, tt.csvSupportErr).AnyTimes()
+			fkClient.EXPECT().GetOperatorGVRList().Return(tt.gvrList, tt.gvrListErr).AnyTimes()
+			_ = yaml.Unmarshal([]byte(tt.inlinedComponent), &tt.u)
+
+			fkClient.EXPECT().GetRestMappingFromUnstructured(tt.u).Return(tt.restMapping, tt.restMappingErr).AnyTimes()
+			//fkClient.EXPECT().GetRestMappingFromUnstructured(tt.u).Return(tt.restMapping, tt.restMappingErr).Times(2)
+
 			got, gotErr := listDevfileServices(fkClient, tt.devfileObj, testFolderName, fs)
 			gotKeys := getKeys(got)
 			if !reflect.DeepEqual(gotKeys, tt.wantKeys) {

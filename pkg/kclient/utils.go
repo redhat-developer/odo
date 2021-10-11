@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -59,4 +61,17 @@ func getErrorMessageFromEvents(failedEvents map[string]corev1.Event) strings.Bui
 	table.Render()
 
 	return *tableString
+}
+
+// GetGVRFromCR parses and returns the values for group, version and resource
+// for a given Custom Resource (CR).
+func GetGVRFromCR(cr *olm.CRDDescription) (string, string, string) {
+	var group, version, resource string
+	version = cr.Version
+
+	gr := strings.SplitN(cr.Name, ".", 2)
+	resource = gr[0]
+	group = gr[1]
+
+	return group, version, resource
 }

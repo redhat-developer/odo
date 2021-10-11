@@ -6,6 +6,14 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/restmapper"
+
 	"github.com/go-openapi/spec"
 	"github.com/openshift/odo/pkg/log"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -269,4 +277,44 @@ func addParam(schema *spec.Schema, param olm.SpecDescriptor) {
 		addParam(child, param)
 		schema.SetProperty(parts[0], *child)
 	}
+}
+
+// GetRestMappingFromUnstructured returns rest mappings from unstructured data
+func (client *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured) (*meta.RESTMapping, error) {
+	gvk := u.GroupVersionKind()
+
+	cfg := client.GetClientConfig()
+
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return &meta.RESTMapping{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+// GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
+func (client *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
+	var operatorGVRList []meta.RESTMapping
+
+	// ignoring the error because
+	csvs, err := client.ListClusterServiceVersions()
+	if err != nil {
+		return operatorGVRList, err
+	}
+	for _, c := range csvs.Items {
+		owned := c.Spec.CustomResourceDefinitions.Owned
+		for i := range owned {
+			g, v, r := GetGVRFromCR(&owned[i])
+			operatorGVRList = append(operatorGVRList, meta.RESTMapping{
+				Resource: schema.GroupVersionResource{
+					Group:    g,
+					Version:  v,
+					Resource: r,
+				},
+			})
+		}
+	}
+	return operatorGVRList, nil
 }
