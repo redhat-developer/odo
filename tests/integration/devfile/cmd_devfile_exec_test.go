@@ -68,7 +68,7 @@ var _ = Describe("odo devfile exec command tests", func() {
 			})
 
 			It("should error out when an invalid command is given by the user", func() {
-				output := helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "invalidCommand").ShouldFail().Out()
+				output := helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "invalidCommand").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("executable file not found in $PATH"))
 			})
 		})
