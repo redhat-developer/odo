@@ -61,7 +61,6 @@ func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
 	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(cfg.OdoSettings.Timeout))
 	fmt.Fprintln(w, "BuildTimeout", "\t", showBlankIfNil(cfg.OdoSettings.BuildTimeout))
 	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(cfg.OdoSettings.PushTimeout))
-	fmt.Fprintln(w, "Experimental", "\t", showBlankIfNil(cfg.OdoSettings.Experimental))
 	fmt.Fprintln(w, "Ephemeral", "\t", showBlankIfNil(cfg.OdoSettings.Ephemeral))
 	fmt.Fprintln(w, "ConsentTelemetry", "\t", showBlankIfNil(cfg.OdoSettings.ConsentTelemetry))
 

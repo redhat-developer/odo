@@ -355,7 +355,7 @@ NOTE: To see the number of available integration test file for validation, press
 
 *Running integration tests on Kubernetes:*
 
-By default, the link:https://github.com/openshift/odo/tree/main/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/main/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
+By default, the link:https://github.com/openshift/odo/tree/main/tests/integration/devfile[`integration tests`] for the devfile feature run against a `kubernetes` cluster.
 
 The tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two ways (parallel and sequential). To control the parallel run use environment variable `TEST_EXEC_NODES`. For example, the devfile tests can be run
 
@@ -366,19 +366,6 @@ Set the `KUBERNETES` environment variable
 +
 ----
 $ export KUBERNETES=true
-----
-
-+
-Enable the experimental mode
-+
-----
-$ export ODO_EXPERIMENTAL=true
-----
-+
-OR
-+
-----
-$ odo preference set Experimental true -f
 ----
 
 * To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):

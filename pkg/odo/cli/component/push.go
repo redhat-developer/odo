@@ -34,11 +34,9 @@ var pushCmdExample = (`  # Push source code to the current component
 # Push source code in ~/mycode to component called my-component
 %[1]s my-component --context ~/mycode
 
-# Push source code with custom devfile commands using --build-command and --run-command for experimental mode
+# Push source code with custom devfile commands using --build-command and --run-command
 %[1]s --build-command="mybuild" --run-command="myrun"
-  `)
 
-var pushCmdExampleExperimentalOnly = (`
 # Output JSON events corresponding to devfile command execution and log text
 %[1]s -o json
   `)
@@ -218,19 +216,13 @@ func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
 func NewCmdPush(name, fullName string) *cobra.Command {
 	po := NewPushOptions()
 
-	annotations := map[string]string{"command": "component"}
-
-	pushCmdExampleText := pushCmdExample
-	annotations["machineoutput"] = "json"
-	pushCmdExampleText += pushCmdExampleExperimentalOnly
-
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
 		Short:       "Push source code to a component",
 		Long:        `Push source code to a component.`,
-		Example:     fmt.Sprintf(ktemplates.Examples(pushCmdExampleText), fullName),
+		Example:     fmt.Sprintf(ktemplates.Examples(pushCmdExample), fullName),
 		Args:        cobra.MaximumNArgs(2),
-		Annotations: annotations,
+		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(po, cmd, args)
 		},

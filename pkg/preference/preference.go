@@ -53,12 +53,6 @@ const (
 	// PushTimeoutSetting is the name of the setting controlling PushTimeout
 	PushTimeoutSetting = "PushTimeout"
 
-	// ExperimentalSetting is the name of the setting controlling exposure of features in development/experimental mode
-	ExperimentalSetting = "Experimental"
-
-	// ExperimentalDescription is human-readable description for the experimental setting
-	ExperimentalDescription = "Set this value to true to expose features in development/experimental mode"
-
 	// RegistryCacheTimeSetting is human-readable description for the registrycachetime setting
 	RegistryCacheTimeSetting = "RegistryCacheTime"
 
@@ -117,7 +111,6 @@ var (
 		TimeoutSetting:            TimeoutSettingDescription,
 		BuildTimeoutSetting:       BuildTimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
-		ExperimentalSetting:       ExperimentalDescription,
 		RegistryCacheTimeSetting:  RegistryCacheTimeDescription,
 		EphemeralSetting:          EphemeralDescription,
 		ConsentTelemetrySetting:   ConsentTelemetryDescription,
@@ -150,9 +143,6 @@ type OdoSettings struct {
 
 	// PushTimeout for OpenShift pod timeout check
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
-
-	// Experimental for exposing features in development/experimental mode
-	Experimental *bool `yaml:"Experimental,omitempty"`
 
 	// RegistryList for telling odo to connect to all the registries in the registry list
 	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
@@ -424,13 +414,6 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "nameprefix":
 			c.OdoSettings.NamePrefix = &value
 
-		case "experimental":
-			val, err := strconv.ParseBool(strings.ToLower(value))
-			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
-			}
-			c.OdoSettings.Experimental = &val
-
 		case "ephemeral":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
@@ -521,13 +504,6 @@ func (c *PreferenceInfo) GetEphemeralSourceVolume() bool {
 // and if absent then returns default
 func (c *PreferenceInfo) GetNamePrefix() string {
 	return util.GetStringOrEmpty(c.OdoSettings.NamePrefix)
-}
-
-// GetExperimental returns the value of Experimental from preferences
-// and if absent then returns default
-// default value: false, experimental mode is disabled by default
-func (c *PreferenceInfo) GetExperimental() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Experimental, false)
 }
 
 // GetConsentTelemetry returns the value of ConsentTelemetry from preferences

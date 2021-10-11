@@ -395,69 +395,29 @@ func TestSetConfiguration(t *testing.T) {
 			want:           99,
 			wantErr:        false,
 		},
-		// experimental setting
 		{
-			name:           fmt.Sprintf("Case 17: %s set nil to true", ExperimentalSetting),
-			parameter:      ExperimentalSetting,
-			value:          "true",
-			existingConfig: Preference{},
-			want:           true,
-			wantErr:        false,
-		},
-		{
-			name:      fmt.Sprintf("Case 18: %s set true to false", ExperimentalSetting),
-			parameter: ExperimentalSetting,
-			value:     "false",
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					Experimental: &trueValue,
-				},
-			},
-			want:    false,
-			wantErr: false,
-		},
-		{
-			name:      fmt.Sprintf("Case 19: %s set false to true", ExperimentalSetting),
-			parameter: ExperimentalSetting,
-			value:     "true",
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					Experimental: &falseValue,
-				},
-			},
-			want:    true,
-			wantErr: false,
-		},
-		{
-			name:           fmt.Sprintf("Case 20: %s invalid value", ExperimentalSetting),
-			parameter:      ExperimentalSetting,
-			value:          "invalid_value",
-			existingConfig: Preference{},
-			wantErr:        true,
-		},
-		{
-			name:           "Case 25: set RegistryCacheTime to 1",
+			name:           "Case 17: set RegistryCacheTime to 1",
 			parameter:      "RegistryCacheTime",
 			value:          "1",
 			existingConfig: Preference{},
 			wantErr:        false,
 		},
 		{
-			name:           "Case 26: set RegistryCacheTime to non int value",
+			name:           "Case 18: set RegistryCacheTime to non int value",
 			parameter:      "RegistryCacheTime",
 			value:          "a",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 27: set %s to non bool value", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("Case 19: set %s to non bool value", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "123",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 28: set %s from nil to true", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("Case 20: set %s from nil to true", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -465,7 +425,7 @@ func TestSetConfiguration(t *testing.T) {
 			want:           true,
 		},
 		{
-			name:      fmt.Sprintf("Case 29: set %s from true to false", ConsentTelemetrySetting),
+			name:      fmt.Sprintf("Case 21: set %s from true to false", ConsentTelemetrySetting),
 			parameter: ConsentTelemetrySetting,
 			value:     "false",
 			existingConfig: Preference{
@@ -499,10 +459,6 @@ func TestSetConfiguration(t *testing.T) {
 					if *cfg.OdoSettings.Timeout != tt.want {
 						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", cfg.OdoSettings.Timeout, tt.want)
 					}
-				case "experimental":
-					if *cfg.OdoSettings.Experimental != tt.want {
-						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", cfg.OdoSettings.Experimental, tt.want)
-					}
 				case "registrycachetime":
 					if *cfg.OdoSettings.RegistryCacheTime != tt.want {
 						t.Errorf("unexpected value after execution of SetConfiguration\ngot: %v \nexpected: %d\n", *cfg.OdoSettings.RegistryCacheTime, tt.want)
@@ -512,7 +468,6 @@ func TestSetConfiguration(t *testing.T) {
 				// negative cases
 				switch tt.parameter {
 				case "updatenotification":
-				case "experimental":
 				case "timeout":
 					typedval, err := strconv.Atoi(tt.value)
 					// if err is found in cases other than value <0 or !ok
@@ -633,62 +588,6 @@ func TestGetupdateNotification(t *testing.T) {
 
 			if output != tt.want {
 				t.Errorf("GetUpdateNotification returned unexpected value\ngot: %t \nexpected: %t\n", output, tt.want)
-			}
-
-		})
-	}
-}
-
-func TestGetExperimental(t *testing.T) {
-
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
-	trueValue := true
-	falseValue := false
-
-	tests := []struct {
-		name           string
-		existingConfig Preference
-		want           bool
-	}{
-		{
-			name:           fmt.Sprintf("Case 1: %s nil", ExperimentalSetting),
-			existingConfig: Preference{},
-			want:           false,
-		},
-		{
-			name: fmt.Sprintf("Case 2: %s true", ExperimentalSetting),
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					Experimental: &trueValue,
-				},
-			},
-			want: true,
-		},
-		{
-			name: fmt.Sprintf("Case 3: %s false", ExperimentalSetting),
-			existingConfig: Preference{
-				OdoSettings: OdoSettings{
-					Experimental: &falseValue,
-				},
-			},
-			want: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := PreferenceInfo{
-				Preference: tt.existingConfig,
-			}
-			output := cfg.GetExperimental()
-
-			if output != tt.want {
-				t.Errorf("GetExperimental returned unexpected value\ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
 		})
