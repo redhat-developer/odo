@@ -2,11 +2,11 @@ package component
 
 import (
 	"fmt"
-	"path/filepath"
 
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
@@ -74,7 +74,7 @@ func NewLinkOptions() *LinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.commonLinkOptions.devfilePath = filepath.Join(o.componentContext, DevfilePath)
+	o.commonLinkOptions.devfilePath = devfile.DevfileLocation(o.componentContext)
 	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 
 	err = o.complete(name, cmd, args, o.componentContext)

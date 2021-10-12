@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
@@ -39,10 +39,21 @@ func NewServiceListOptions() *ServiceListOptions {
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
 		return err
+	} else if o.csvSupport {
+		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+			Cmd:              cmd,
+			DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
+			ComponentContext: o.componentContext,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("failed to list Operator backed services, make sure you have installed the Operators on the cluster")
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
-		DevfilePath:      component.DevfilePath,
+		DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
 	return err

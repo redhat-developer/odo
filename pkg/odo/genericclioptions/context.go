@@ -134,7 +134,7 @@ func completeDevfilePath(componentContext, devfilePath string) string {
 	if len(devfilePath) > 0 {
 		return filepath.Join(componentContext, devfilePath)
 	} else {
-		return filepath.Join(componentContext, "devfile.yaml")
+		return devfile.DevfileLocation(componentContext)
 	}
 }
 

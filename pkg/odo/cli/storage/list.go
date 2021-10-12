@@ -5,10 +5,10 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
 
@@ -45,7 +45,7 @@ func NewStorageListOptions() *ListOptions {
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
-		DevfilePath:      component.DevfilePath,
+		DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
 

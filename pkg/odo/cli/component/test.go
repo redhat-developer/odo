@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -46,7 +45,7 @@ func NewTestOptions() *TestOptions {
 
 // Complete completes TestOptions after they've been created
 func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	to.devfilePath = filepath.Join(to.componentContext, DevfilePath)
+	to.devfilePath = devfile.DevfileLocation(to.componentContext)
 	to.Context, err = genericclioptions.NewContext(cmd)
 	return
 }

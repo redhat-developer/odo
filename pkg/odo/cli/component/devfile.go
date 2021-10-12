@@ -2,7 +2,6 @@ package component
 
 import (
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -22,17 +21,17 @@ import (
 	"github.com/openshift/odo/pkg/log"
 )
 
-// Constants for devfile component
-const (
-	devFile = "devfile.yaml"
-)
+// // Constants for devfile component
+// const (
+// 	devFile = "devfile.yaml"
+// )
 
-// DevfilePath is the devfile path that is used by odo,
-// which means odo can:
-// 1. Directly use the devfile in DevfilePath
-// 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
-// 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
-var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
+// // DevfilePath is the devfile path that is used by odo,
+// // which means odo can:
+// // 1. Directly use the devfile in DevfilePath
+// // 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
+// // 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
+//var DevfilePath = devfile.DevfileLocation("")
 
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() error {

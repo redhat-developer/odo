@@ -52,7 +52,7 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	lo.devfilePath = filepath.Join(lo.componentContext, DevfilePath)
+	lo.devfilePath = devfile.DevfileLocation(lo.componentContext)
 
 	if util.CheckPathExists(lo.devfilePath) {
 

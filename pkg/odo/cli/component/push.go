@@ -76,7 +76,7 @@ func (po *PushOptions) CompleteDevfilePath() {
 	if len(po.DevfilePath) > 0 {
 		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
 	} else {
-		po.DevfilePath = filepath.Join(po.componentContext, "devfile.yaml")
+		po.DevfilePath = filepath.Join(po.componentContext, devfile.DevfileFilenamesProvider(po.componentContext))
 	}
 }
 

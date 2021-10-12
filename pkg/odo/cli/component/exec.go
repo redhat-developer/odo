@@ -3,8 +3,7 @@ package component
 import (
 	"fmt"
 
-	"path/filepath"
-
+	pkgdevfile "github.com/openshift/odo/pkg/devfile"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -58,8 +57,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 	if len(eo.command) != len(args) {
 		return fmt.Errorf("no parameter is expected for the command")
 	}
-
-	eo.devfilePath = filepath.Join(eo.componentContext, devFile)
+	eo.devfilePath = pkgdevfile.DevfileLocation(eo.componentContext)
 
 	eo.componentOptions.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {

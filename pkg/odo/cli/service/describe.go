@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/cli/component"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/service"
 	svc "github.com/openshift/odo/pkg/service"
@@ -40,7 +40,7 @@ func NewDescribeOptions() *DescribeOptions {
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
-		DevfilePath:      component.DevfilePath,
+		DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
 	if err != nil {

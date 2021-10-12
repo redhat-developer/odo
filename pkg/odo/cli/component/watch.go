@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
@@ -68,7 +67,7 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.devfilePath = filepath.Join(wo.componentContext, DevfilePath)
+	wo.devfilePath = devfile.DevfileLocation(wo.componentContext)
 
 	wo.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {

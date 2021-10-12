@@ -85,8 +85,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		do.componentContext = dir
 	}
-
-	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
+	do.devfilePath = devfile.DevfileLocation(do.componentContext)
 
 	do.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {

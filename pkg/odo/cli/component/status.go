@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -60,7 +59,7 @@ func NewStatusOptions() *StatusOptions {
 
 // Complete completes status args
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	so.devfilePath = filepath.Join(so.componentContext, DevfilePath)
+	so.devfilePath = devfile.DevfileLocation(so.componentContext)
 
 	so.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(so.componentContext)
 	if err != nil {

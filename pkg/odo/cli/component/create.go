@@ -82,6 +82,8 @@ var (
 	envDir  = filepath.Join(".odo", "env")
 )
 
+var CreateDevfilePath = devfile.DevfileLocation("")
+
 // EnvFilePath is the path of env file for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
@@ -168,8 +170,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 	}
 
+	DevfilePath := CreateDevfilePath
 	// Configure the context
 	if co.componentContext != "" {
+		devFile := devfile.DevfileFilenamesProvider(co.componentContext)
 		DevfilePath = filepath.Join(co.componentContext, devFile)
 		EnvFilePath = filepath.Join(co.componentContext, envFile)
 		co.PushOptions.componentContext = co.componentContext
@@ -456,7 +460,7 @@ func (co *CreateOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 	var devfileData []byte
-	devfileExist := util.CheckPathExists(DevfilePath)
+	devfileExist := util.CheckPathExists(co.DevfilePath)
 	// Use existing devfile directly from --devfile flag
 	if co.devfileMetadata.devfilePath.value != "" {
 		if co.devfileMetadata.devfilePath.protocol == "http(s)" {
@@ -479,9 +483,9 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		if devfileExist {
 			// if local devfile already exists read that
 			// odo create command was expected in a directory already containing devfile
-			devfileData, err = ioutil.ReadFile(DevfilePath)
+			devfileData, err = ioutil.ReadFile(co.DevfilePath)
 			if err != nil {
-				return errors.Wrapf(err, "failed to read devfile from %s", DevfilePath)
+				return errors.Wrapf(err, "failed to read devfile from %s", co.DevfilePath)
 			}
 		} else {
 			// Download devfile from registry
@@ -514,7 +518,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 				// if the function fails, remove this newly created devfile
 				defer func() {
 					if err != nil {
-						os.Remove(filepath.Join(co.componentContext, devFile))
+						os.Remove(co.DevfilePath)
 					}
 				}()
 			}
@@ -528,7 +532,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 			if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
 				devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
 			} else {
-				devfileData, err = ioutil.ReadFile(DevfilePath)
+				devfileData, err = ioutil.ReadFile(co.DevfilePath)
 			}
 			if err != nil {
 				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
@@ -573,9 +577,9 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 
 	// save devfile and corresponding resources if possible
 	// use original devfileData to persist original formatting of the devfile file
-	err = ioutil.WriteFile(DevfilePath, devfileData, 0644) // #nosec G306
+	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
-		return errors.Wrapf(err, "unable to save devfile to %s", DevfilePath)
+		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
 	}
 	if co.devfileMetadata.devfilePath.value == "" && !devfileExist && !strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
 		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
@@ -586,7 +590,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 
 	// set user provided component name in the devfile
 	if co.devfileMetadata.componentName != "" {
-		devObj, err = devfile.ParseFromFile(DevfilePath)
+		devObj, err = devfile.ParseFromFile(co.DevfilePath)
 		if err != nil {
 			return fmt.Errorf("failed to create devfile component: %w", err)
 		}

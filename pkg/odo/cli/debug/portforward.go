@@ -5,13 +5,12 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strconv"
 	"syscall"
 
 	"github.com/openshift/odo/pkg/debug"
+	devfilepkg "github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 
@@ -73,7 +72,7 @@ func NewPortForwardOptions() *PortForwardOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = filepath.Join(o.contextDir, component.DevfilePath)
+	o.devfilePath = devfilepkg.DevfileLocation(o.contextDir)
 
 	var remotePort int
 
