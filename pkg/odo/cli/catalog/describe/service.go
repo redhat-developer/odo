@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -26,7 +25,6 @@ var (
 type DescribeServiceOptions struct {
 	// generic context options common to all commands
 	*genericclioptions.Context
-
 	backend   CatalogProviderBackend
 	isExample bool
 }
@@ -43,13 +41,9 @@ func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args 
 		return err
 	}
 
-	// if the argument contains "/" then we assume the user wants to describe a CRD.
-	if _, _, err := service.SplitServiceKindName(args[0]); err == nil {
-		o.backend = NewOperatorBackend()
-	} else {
-		return fmt.Errorf("no deployable operators found")
-	}
-
+	//we initialize operator backend regardless of if we can split name or not. Decision
+	//to describe crs or not will be taken later
+	o.backend = NewOperatorBackend()
 	return o.backend.CompleteDescribeService(o, args)
 }
 

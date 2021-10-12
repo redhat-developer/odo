@@ -23,6 +23,7 @@ func NewOperatorExample(almExample map[string]interface{}) OperatorExample {
 }
 
 const OperatorBackedServiceKind = "Service"
+const OperatorBackedServiceCRListKind = "ServiceList"
 
 type OperatorBackedServiceSpec struct {
 	Kind        string       `json:"kind"`
@@ -54,5 +55,35 @@ func NewOperatorBackedService(name string, kind string, version string, descript
 			DisplayName: displayName,
 			Schema:      spec,
 		},
+	}
+}
+
+type OperatorServiceCRItem struct {
+	Kind        string `json:"kind"`
+	Description string `json:"description"`
+}
+
+type OperatorServiceCRListSpec struct {
+	DisplayName string                  `json:"displayName"`
+	Description string                  `json:"description"`
+	CRDS        []OperatorServiceCRItem `json:"crds"`
+}
+
+type OperatorBackedServiceCRList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              OperatorServiceCRListSpec `json:"spec"`
+}
+
+func NewOperatorBackedCRList(name string) *OperatorBackedServiceCRList {
+	return &OperatorBackedServiceCRList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       OperatorBackedServiceCRListKind,
+			APIVersion: machineoutput.APIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: OperatorServiceCRListSpec{},
 	}
 }
