@@ -97,44 +97,40 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 }
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
-	if ohb.CRDList == nil {
-		if dso.isExample {
-			almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
+	if ohb.CRDList == nil && dso.isExample {
+		almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+			jsonExample := service.NewOperatorExample(almExample)
+			jsonCR, err := json.MarshalIndent(jsonExample, "", "  ")
 			if err != nil {
 				return err
 			}
-			if log.IsJSON() {
-				jsonExample := service.NewOperatorExample(almExample)
-				jsonCR, err := json.MarshalIndent(jsonExample, "", "  ")
-				if err != nil {
-					return err
-				}
 
-				fmt.Println(string(jsonCR))
+			fmt.Println(string(jsonCR))
 
-			} else {
-				yamlCR, err := yaml.Marshal(almExample)
-				if err != nil {
-					return err
-				}
-
-				log.Info(string(yamlCR))
+		} else {
+			yamlCR, err := yaml.Marshal(almExample)
+			if err != nil {
+				return err
 			}
-			return nil
-		}
 
+			log.Info(string(yamlCR))
+		}
 		svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CR.DisplayName, ohb.CRDSpec)
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(svc)
 		} else {
 			HumanReadableOutput(os.Stdout, svc)
 		}
-		return nil
-	}
-	if log.IsJSON() {
-		machineoutput.OutputSuccess(ohb.CRDList)
 	} else {
-		HumanReadableCRList(os.Stdout, ohb.CRDList)
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(ohb.CRDList)
+		} else {
+			HumanReadableCRList(os.Stdout, ohb.CRDList)
+		}
 	}
 	return nil
 }
