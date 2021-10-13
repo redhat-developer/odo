@@ -13,8 +13,6 @@ IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11 nod
 
 . $KUBEADMIN_SCRIPT
 
-. $SETUP_POSTGRES_OPERATOR
-
 # Setup the cluster for Operator tests
 sh $SETUP_OPERATORS
 
