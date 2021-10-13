@@ -68,19 +68,8 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 		return err
 	}
 
-	if ohb.OperatorType != "" && ohb.CustomResource == "" {
-		//we don't have cr so list all possible crds
-		ohb.CRDList = service.NewOperatorBackedCRList(ohb.OperatorType)
-		crds := *dso.KClient.GetCustomResourcesFromCSV(&ohb.CSV)
-		ohb.CRDList.Spec.DisplayName = ohb.CSV.Spec.DisplayName
-		ohb.CRDList.Spec.Description = ohb.CSV.Spec.Description
-		for _, custRes := range crds {
-			ohb.CRDList.Spec.CRDS = append(ohb.CRDList.Spec.CRDS, service.OperatorServiceCRItem{
-				Kind:        custRes.Kind,
-				Description: custRes.Description,
-			})
-		}
-	} else {
+	//if both operator type and cr are known, validate that it exists
+	if ohb.OperatorType != "" && ohb.CustomResource != "" {
 		var hasCR bool
 		hasCR, ohb.CR = dso.KClient.CheckCustomResourceInCSV(ohb.CustomResource, &ohb.CSV)
 		if !hasCR {
@@ -97,7 +86,24 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 }
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
-	if ohb.CRDList == nil && dso.isExample {
+	if ohb.OperatorType != "" && ohb.CustomResource == "" {
+		//we don't have cr so list all possible crds
+		ohb.CRDList = service.NewOperatorBackedCRList(ohb.OperatorType)
+		crds := *dso.KClient.GetCustomResourcesFromCSV(&ohb.CSV)
+		ohb.CRDList.Spec.DisplayName = ohb.CSV.Spec.DisplayName
+		ohb.CRDList.Spec.Description = ohb.CSV.Spec.Description
+		for _, custRes := range crds {
+			ohb.CRDList.Spec.CRDS = append(ohb.CRDList.Spec.CRDS, service.OperatorServiceCRItem{
+				Kind:        custRes.Kind,
+				Description: custRes.Description,
+			})
+		}
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(ohb.CRDList)
+		} else {
+			HumanReadableCRListOutput(os.Stdout, ohb.CRDList)
+		}
+	} else if ohb.OperatorType != "" && ohb.CustomResource != "" && dso.isExample {
 		almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
 		if err != nil {
 			return err
@@ -126,11 +132,7 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 			HumanReadableOutput(os.Stdout, svc)
 		}
 	} else {
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(ohb.CRDList)
-		} else {
-			HumanReadableCRListOutput(os.Stdout, ohb.CRDList)
-		}
+		return fmt.Errorf("unable to parse service type")
 	}
 	return nil
 }
