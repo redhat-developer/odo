@@ -57,6 +57,19 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				redisCluster = fmt.Sprintf("%s/Redis", redisOperator)
 			})
 
+			It("should describe operator without crd with human readable output", func() {
+				output := helper.Cmd("odo", "catalog", "describe", "service", redisOperator).ShouldPass().Out()
+				helper.MatchAllInOutput(output, []string{
+					"redis-operator", "NAME", "DESCRIPTION", "CRDs", "RedisCluster", "Redis",
+				})
+			})
+
+			It("should describe operator without crd in machine readable format", func() {
+				outputJSON := helper.Cmd("odo", "catalog", "describe", "service", redisOperator, "-o", "json").ShouldPass().Out()
+				displayName := gjson.Get(outputJSON, "spec.displayName")
+				Expect(displayName).To(ContainSubstring("Redis Operator"))
+			})
+
 			It("should describe the operator with human-readable output", func() {
 				output := helper.Cmd("odo", "catalog", "describe", "service", redisCluster).ShouldPass().Out()
 				Expect(output).To(MatchRegexp("KIND: *Redis"))

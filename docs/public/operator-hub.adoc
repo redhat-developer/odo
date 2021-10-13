@@ -82,6 +82,104 @@ etcdoperator.v0.9.4           EtcdCluster, EtcdBackup, EtcdRestore
 In above output, `etcdoperator.v0.9.4` is the Operator while `EtcdCluster`,
 `EtcdBackup` and `EtcdRestore` are the CRDs provided by this Operator.
 
+==== Describing operators
+
+For more details, you can describe the operators on the cluster using the `odo catalog describe service <operator-type>[/<crd>]` Not providing the crd name will describe the operator alongwith all its crds. For example:
+
+To describe a redis operator on the cluster, you can do
+
+[source,sh]
+----
+$ odo catalog describe service redis-operator.v0.8.0
+NAME:		redis-operator.v0.8.0
+DESCRIPTION:
+A Golang based redis operator that will make/oversee Redis
+standalone/cluster mode setup on top of the Kubernetes. It can create a
+redis cluster setup with best practices on Cloud as well as the Bare metal
+environment. Also, it provides an in-built monitoring capability using
+redis-exporter.
+
+### Supported Features
+
+Here the features which are supported by this operator:-
+- Redis cluster/standalone mode setup
+- Redis cluster failover and recovery
+- Inbuilt monitoring with prometheus exporter
+- Dynamic storage provisioning with pvc template
+- Resources restrictions with k8s requests and limits
+- Password/Password-less setup
+- External configuration support for leader and follower
+- Node selector and affinity for follower and leader
+- Priority class to manage setup priority
+- SecurityContext to manipulate kernel parameters
+
+### Documentation
+
+[Documentation](https://ot-container-kit.github.io/redis-operator/)
+
+### Getting Help
+This project is managed by OpsTree Solutions. If you have any queries or
+suggestions, mail us at opensource@opstree.com.
+
+### Contributing
+
+You can contribute to this project by:-
+- Raising Bugs and Feature Requests
+- Fixing issue by opening a Pull Request
+- Improving Documentation
+
+### License
+
+Logging Operator is licensed under [Apache License, Version
+2.0](https://github.com/OT-CONTAINER-KIT/redis-operator/blob/master/LICENSE)
+
+CRDs:
+NAME		DESCRIPTION
+RedisCluster	Redis Cluster
+Redis		Redis
+
+----
+
+You can further describe the `RedisCluster` crd in the operator by doing
+
+[source,sh]
+----
+$ > odo catalog describe service redis-operator.v0.8.0/RedisCluster
+KIND:    RedisCluster
+VERSION: v1beta1
+
+DESCRIPTION:
+     Redis Cluster
+
+FIELDS:
+   clusterSize (integer)   -required-
+
+   kubernetesConfig (object)   -required-
+     KubernetesConfig will be the JSON struct for Basic Redis Config
+
+     kubernetesConfig.image (string)   -required-
+
+     kubernetesConfig.serviceType (string)   -required-
+
+     kubernetesConfig.imagePullPolicy (string)
+       PullPolicy describes a policy for if/when to pull a container image
+
+     kubernetesConfig.imagePullSecrets ([]object)
+
+     kubernetesConfig.redisSecret (object)
+       ExistingPasswordSecret is the struct to access the existing secret
+
+       kubernetesConfig.redisSecret.key (string)
+
+       kubernetesConfig.redisSecret.name (string)
+
+     kubernetesConfig.resources (object)
+       ResourceRequirements describes the compute resource requirements.
+
+       kubernetesConfig.resources.limits (object)
+         Limits describes the maximum amount of compute resources allowed. More
+... (output cut short for beverity)
+----
 
 === Creating an Operator backed service
 
