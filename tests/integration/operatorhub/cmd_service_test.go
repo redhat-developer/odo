@@ -46,83 +46,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			Expect(stdOut).To(ContainSubstring("service can be created/deleted from a valid component directory only"))
 		})
 
-		Context("a namespace specific operator is installed", func() {
-
-			var postgresOperator string
-			var postgresDatabase string
-			var projectName string
-
-			BeforeEach(func() {
-				if os.Getenv("KUBERNETES") == "true" {
-					Skip("This is a OpenShift specific scenario, skipping")
-				}
-				projectName = util.GetEnvWithDefault("REDHAT_POSTGRES_OPERATOR_PROJECT", "odo-operator-test")
-				helper.GetCliRunner().SetProject(projectName)
-				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
-				postgresOperator = regexp.MustCompile(`postgresql-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
-				postgresDatabase = fmt.Sprintf("%s/Database", postgresOperator)
-			})
-
-			When("a nodejs component is created", func() {
-
-				BeforeEach(func() {
-					helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-					// change the app name to avoid conflicts
-					appName := helper.RandString(5)
-					helper.Cmd("odo", "create", "nodejs", "--app", appName, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
-					helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", commonVar.Context).ShouldPass()
-				})
-
-				AfterEach(func() {
-					// we do this because for these specific tests we dont delete the project
-					helper.Cmd("odo", "delete", "--all", "-f", "--context", commonVar.Context).ShouldPass().Out()
-				})
-
-				It("should try to create a service in dry run mode with some provided params", func() {
-					serviceName := helper.RandString(10)
-					output := helper.Cmd("odo", "service", "create", postgresDatabase, serviceName, "-p",
-						"databaseName=odo", "-p", "size=1", "-p", "databaseUser=odo", "-p",
-						"databaseStorageRequest=1Gi", "-p", "databasePassword=odopasswd", "--dry-run", "--context", commonVar.Context).ShouldPass().Out()
-					helper.MatchAllInOutput(output, []string{fmt.Sprintf("name: %s", serviceName), "odo", "odopasswd", "1Gi"})
-				})
-
-				When("creating a postgres operand with params", func() {
-					var operandName string
-
-					BeforeEach(func() {
-						operandName = helper.RandString(10)
-						helper.Cmd("odo", "service", "create", postgresDatabase, operandName, "-p",
-							"databaseName=odo", "-p", "size=1", "-p", "databaseUser=odo", "-p",
-							"databaseStorageRequest=1Gi", "-p", "databasePassword=odopasswd", "--context", commonVar.Context).ShouldPass().Out()
-
-					})
-
-					AfterEach(func() {
-						helper.Cmd("odo", "service", "delete", fmt.Sprintf("Database/%s", operandName), "-f", "--context", commonVar.Context).ShouldPass().Out()
-						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-					})
-
-					When("odo push is executed", func() {
-						BeforeEach(func() {
-							helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-						})
-
-						It("should create pods in running state and list the service", func() {
-							commonVar.CliRunner.PodsShouldBeRunning(projectName, fmt.Sprintf(`%s-.[\-a-z0-9]*`, operandName))
-							// TODO(feloy) These 2 tests cannot run in parallel on the same namespace. Rollback when using a multi-namespace operator
-							//						})
-							//
-							//						It("should list the service", func() {
-							stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context).ShouldPass().Out()
-							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Database/%s", operandName)))
-						})
-					})
-
-				})
-
-			})
-		})
-
 		Context("a specific operator is installed", func() {
 			var redisOperator string
 			var redisCluster string
@@ -207,6 +130,55 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						"-p", "redisExporter.enabled=false",
 						"-p", "redisExporter.image=quay.io/opstree/redis-exporter:1.0",
 						"-p", "securityContext.runAsUser=1000").ShouldPass()
+				})
+
+				It("should try to create a service in dry run mode with some provided params", func() {
+					serviceName := helper.RandString(10)
+					output := helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), serviceName,
+						"-p", "kubernetesConfig.image=quay.io/opstree/redis:v6.2.5",
+						"-p", "redisExporter.image=quay.io/opstree/redis-exporter:1.0",
+						"-p", "kubernetesConfig.serviceType=ClusterIP",
+						"-p", "kubernetesConfig.resources.requests.cpu=100m",
+						"-p", "kubernetesConfig.resources.requests.memory=128Mi",
+						"--dry-run", "--context", commonVar.Context).ShouldPass().Out()
+					helper.MatchAllInOutput(output, []string{fmt.Sprintf("name: %s", serviceName), "quay.io/opstree/redis:v6.2.5", "ClusterIP", "100m", "128Mi"})
+				})
+
+				When("creating a postgres operand with params", func() {
+					var operandName string
+
+					BeforeEach(func() {
+						operandName = helper.RandString(10)
+						helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), operandName,
+							"-p", "kubernetesConfig.image=quay.io/opstree/redis:v6.2.5",
+							"-p", "redisExporter.image=quay.io/opstree/redis-exporter:1.0",
+							"-p", "kubernetesConfig.serviceType=ClusterIP",
+							"-p", "kubernetesConfig.resources.requests.cpu=100m",
+							"-p", "kubernetesConfig.resources.requests.memory=128Mi",
+							"--context", commonVar.Context).ShouldPass().Out()
+
+					})
+
+					AfterEach(func() {
+						helper.Cmd("odo", "service", "delete", fmt.Sprintf("Redis/%s", operandName), "-f", "--context", commonVar.Context).ShouldPass().Out()
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+					})
+
+					When("odo push is executed", func() {
+						BeforeEach(func() {
+							helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+						})
+
+						It("should create pods in running state", func() {
+							commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, fmt.Sprintf(`%s-0`, operandName))
+						})
+
+						It("should list the service", func() {
+							stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context).ShouldPass().Out()
+							Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Redis/%s", operandName)))
+						})
+					})
+
 				})
 
 				When("odo push is executed", func() {
