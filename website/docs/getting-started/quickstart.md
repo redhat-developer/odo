@@ -24,7 +24,7 @@ At the end of the guide, you will be able to list, add and delete todo items fro
 
 ## Clone the code
 
-Clone [this git repo](https://github.com/dharmit/odo-quickstart/) repository and `cd` into it:
+Clone [this git repository](https://github.com/dharmit/odo-quickstart/) and `cd` into it:
 ```shell
 git clone https://github.com/dharmit/odo-quickstart
 cd odo-quickstart
