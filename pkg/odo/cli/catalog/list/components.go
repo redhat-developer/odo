@@ -35,8 +35,6 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	tasks := util.NewConcurrentTasks(2)
-
 	if err = util.CheckKubeConfigPath(); err == nil {
 		o.Context, err = genericclioptions.NewContext(cmd)
 		if err != nil {
@@ -44,17 +42,15 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 		}
 	}
 
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
-		if o.catalogDevfileList.DevfileRegistries == nil {
-			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-		}
-		if err != nil {
-			errChannel <- err
-		}
-	}})
+	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+	if err != nil {
+		return err
+	}
+	if o.catalogDevfileList.DevfileRegistries == nil {
+		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+	}
 
-	return tasks.Run()
+	return
 }
 
 // Validate validates the ListComponentsOptions based on completed values

@@ -93,7 +93,7 @@ func (o *UnsetOptions) Validate() (err error) {
 	return
 }
 
-// DevfileRun is ran when the context detects a devfile locally
+// Run contains the logic for the command
 func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 	if o.envArray != nil {
 

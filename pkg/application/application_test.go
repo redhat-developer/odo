@@ -103,16 +103,6 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			},
 		},
 	}
-	//deploymentList := appsv1.DeploymentList{
-	//	Items: []appsv1.Deployment{
-	//		*testingutil.CreateFakeDeploymentsWithContainers("frontend", []corev1.Container{
-	//			{Name: "dummyContainer"},
-	//		}, []corev1.Container{}),
-	//		*testingutil.CreateFakeDeploymentsWithContainers("backend", []corev1.Container{
-	//			{Name: "dummyContainer"},
-	//		}, []corev1.Container{}),
-	//	},
-	//}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -67,7 +67,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		lo.componentType = component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 
 	} else {
-		// here we use use information from user's kubeconfig
+		// here we use information from user's kubeconfig
 		// as odo list should work in a non-component directory too
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")

@@ -108,12 +108,6 @@ func (do *DeleteOptions) Validate() (err error) {
 func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
-	return do.DevFileRun()
-}
-
-// DevFileRun has the logic to perform the required actions as part of command for devfiles
-func (do *DeleteOptions) DevFileRun() (err error) {
-	// devfile delete
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 		err = do.DevfileComponentDelete()
 		if err != nil {
