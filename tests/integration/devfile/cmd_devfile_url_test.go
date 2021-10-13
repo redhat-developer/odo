@@ -313,14 +313,14 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.Cmd("odo", "url", "create", url1, "--port", "8080", "--host", host, "--container", "runtime", "--ingress").ShouldPass().Out()
 		})
 
-		It("creating url", func() {
+		It("should create url", func() {
 			helper.MatchAllInOutput(stdout, []string{url1, "created"})
 		})
 		When("listing url", func() {
 			BeforeEach(func() {
 				stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
 			})
-			It("should list url created by odo", func() {
+			It("should list urls", func() {
 				helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "false", "ingress"})
 			})
 		})
