@@ -12,11 +12,11 @@ In this guide, we will create an nginx Deployment using its Kubernetes manifest.
 
 As with other resources like URL, Storage and Services, to create a Kubernetes resource, we first need to have an odo component. We will keep it simple by using a nodejs starter project. In an empty directory, create a component using:
 ```shell
-odo create nodejs --starter
+odo create nodejs --starter nodejs-starter
 ```
 Example:
 ```shell
-$ odo create nodejs --starter
+$ odo create nodejs --starter nodejs-starter
 Devfile Object Validation
  ✓  Checking devfile existence [52416ns]
  ✓  Creating a devfile component from registry: stage [95517ns]
