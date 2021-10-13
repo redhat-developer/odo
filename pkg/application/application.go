@@ -21,10 +21,8 @@ const (
 
 // List all applications names in current project by looking at `app` labels in deployments
 func List(client *kclient.Client) ([]string, error) {
-	var appNames []string
-
 	if client == nil {
-		return appNames, nil
+		return nil, nil
 	}
 
 	// Get all Deployments with the "app" label

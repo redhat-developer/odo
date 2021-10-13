@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,7 @@ import (
 var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	applications, err := application.List(context.Client)
+	applications, err := application.List(context.Client.GetKubeClient())
 	if err != nil {
 		return completions
 	}
@@ -92,19 +91,15 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	comps := &completions
 	found := false
 
-	tasks := util.NewConcurrentTasks(2)
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		components, _ := catalog.ListDevfileComponents("")
-		for _, devfile := range components.Items {
-			if args.commands[devfile.Name] {
-				found = true
-				return
-			}
-			*comps = append(*comps, devfile.Name)
+	components, _ := catalog.ListDevfileComponents("")
+	for _, devfile := range components.Items {
+		if args.commands[devfile.Name] {
+			found = true
+			return
 		}
-	}})
+		*comps = append(*comps, devfile.Name)
+	}
 
-	_ = tasks.Run()
 	if found {
 		return nil
 	}

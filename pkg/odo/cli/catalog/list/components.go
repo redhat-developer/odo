@@ -62,21 +62,21 @@ func (o *ListComponentsOptions) Validate() (err error) {
 	return err
 }
 
-type combinedCatalogList struct {
+type catalogList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	DevfileItems      []catalog.DevfileComponentType `json:"devfileItems,omitempty"`
+	Items             []catalog.DevfileComponentType `json:"items,omitempty"`
 }
 
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
-		combinedList := combinedCatalogList{
+		combinedList := catalogList{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "List",
 				APIVersion: "odo.dev/v1alpha1",
 			},
-			DevfileItems: o.catalogDevfileList.Items,
+			Items: o.catalogDevfileList.Items,
 		}
 		machineoutput.OutputSuccess(combinedList)
 	} else {
