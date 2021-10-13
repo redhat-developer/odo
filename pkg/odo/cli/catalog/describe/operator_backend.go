@@ -103,7 +103,9 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		} else {
 			HumanReadableCRListOutput(os.Stdout, ohb.CRDList)
 		}
-	} else if ohb.OperatorType != "" && ohb.CustomResource != "" && dso.isExample {
+		return nil
+	}
+	if dso.isExample {
 		almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
 		if err != nil {
 			return err
@@ -125,14 +127,12 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 
 			log.Info(string(yamlCR))
 		}
-		svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CR.DisplayName, ohb.CRDSpec)
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(svc)
-		} else {
-			HumanReadableOutput(os.Stdout, svc)
-		}
+	}
+	svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CR.DisplayName, ohb.CRDSpec)
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(svc)
 	} else {
-		return fmt.Errorf("unable to parse service type")
+		HumanReadableOutput(os.Stdout, svc)
 	}
 	return nil
 }
