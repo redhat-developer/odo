@@ -75,7 +75,7 @@ type OperatorBackedServiceCRList struct {
 	Spec              OperatorServiceCRListSpec `json:"spec"`
 }
 
-func NewOperatorBackedCRList(name string) *OperatorBackedServiceCRList {
+func NewOperatorBackedCRList(name string, displayName string, description string) *OperatorBackedServiceCRList {
 	return &OperatorBackedServiceCRList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       OperatorBackedServiceCRListKind,
@@ -84,6 +84,9 @@ func NewOperatorBackedCRList(name string) *OperatorBackedServiceCRList {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: OperatorServiceCRListSpec{},
+		Spec: OperatorServiceCRListSpec{
+			DisplayName: displayName,
+			Description: description,
+		},
 	}
 }

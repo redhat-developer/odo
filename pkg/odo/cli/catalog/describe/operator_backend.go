@@ -88,10 +88,8 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
 	if ohb.OperatorType != "" && ohb.CustomResource == "" {
 		//we don't have cr so list all possible crds
-		ohb.CRDList = service.NewOperatorBackedCRList(ohb.OperatorType)
+		ohb.CRDList = service.NewOperatorBackedCRList(ohb.OperatorType, ohb.CSV.Spec.DisplayName, ohb.CSV.Spec.Description)
 		crds := *dso.KClient.GetCustomResourcesFromCSV(&ohb.CSV)
-		ohb.CRDList.Spec.DisplayName = ohb.CSV.Spec.DisplayName
-		ohb.CRDList.Spec.Description = ohb.CSV.Spec.Description
 		for _, custRes := range crds {
 			ohb.CRDList.Spec.CRDS = append(ohb.CRDList.Spec.CRDS, service.OperatorServiceCRItem{
 				Kind:        custRes.Kind,
