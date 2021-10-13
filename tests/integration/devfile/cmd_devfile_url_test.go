@@ -302,6 +302,30 @@ var _ = Describe("odo devfile url command tests", func() {
 		})
 	})
 
+	When("Creating nodejs component and url with .devfile.yaml", func() {
+		url1 := helper.RandString(5)
+		host := helper.RandString(5) + ".com"
+		stdout := ""
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
+			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			stdout = helper.Cmd("odo", "url", "create", url1, "--port", "8080", "--host", host, "--container", "runtime", "--ingress").ShouldPass().Out()
+		})
+
+		It("creating url", func() {
+			helper.MatchAllInOutput(stdout, []string{url1, "created"})
+		})
+		When("listing url", func() {
+			BeforeEach(func() {
+				stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
+			})
+			It("should list url created by odo", func() {
+				helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "false", "ingress"})
+			})
+		})
+	})
+
 	Context("Testing URLs for OpenShift specific scenarios", func() {
 
 		stdout := ""

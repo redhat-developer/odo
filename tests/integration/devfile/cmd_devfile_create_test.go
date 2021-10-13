@@ -344,4 +344,15 @@ var _ = Describe("odo devfile create command tests", func() {
 			})
 		})
 	})
+	When("creating a component using .devfile.yaml", func() {
+		stdout := ""
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
+			stdout = helper.Cmd("odo", "create", cmpName, "--project", commonVar.Project).ShouldPass().Out()
+		})
+
+		It("should successfully create a devfile component", func() {
+			Expect(stdout).To(ContainSubstring("Please use `odo push` command to create the component with source deployed"))
+		})
+	})
 })
