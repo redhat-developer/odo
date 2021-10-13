@@ -129,7 +129,7 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(ohb.CRDList)
 		} else {
-			HumanReadableCRList(os.Stdout, ohb.CRDList)
+			HumanReadableCRListOutput(os.Stdout, ohb.CRDList)
 		}
 	}
 	return nil
@@ -148,7 +148,7 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 	displayProperties(w, service.Spec.Schema, "")
 }
 
-func HumanReadableCRList(w io.Writer, crsList *service.OperatorBackedServiceCRList) {
+func HumanReadableCRListOutput(w io.Writer, crsList *service.OperatorBackedServiceCRList) {
 	fmt.Fprintf(w, "NAME:		%s\n", crsList.Name)
 	fmt.Fprintf(w, "DESCRIPTION:\n%s\n", crsList.Spec.Description)
 	fmt.Fprintf(w, "CRDs:\nNAME\t\tDESCRIPTION\n")
