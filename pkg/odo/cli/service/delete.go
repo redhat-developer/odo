@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/service"
 
 	"github.com/openshift/odo/pkg/log"
@@ -46,7 +46,7 @@ func NewDeleteOptions() *DeleteOptions {
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
-		DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
+		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
 	if err != nil {

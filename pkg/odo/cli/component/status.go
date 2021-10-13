@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
@@ -59,7 +60,7 @@ func NewStatusOptions() *StatusOptions {
 
 // Complete completes status args
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	so.devfilePath = devfile.DevfileLocation(so.componentContext)
+	so.devfilePath = location.DevfileLocation(so.componentContext)
 
 	so.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(so.componentContext)
 	if err != nil {

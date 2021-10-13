@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -39,7 +39,7 @@ func NewLogOptions() *LogOptions {
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	lo.devfilePath = devfile.DevfileLocation(lo.componentContext)
+	lo.devfilePath = location.DevfileLocation(lo.componentContext)
 
 	lo.ComponentOptions.Context, err = genericclioptions.NewContext(cmd)
 	return err

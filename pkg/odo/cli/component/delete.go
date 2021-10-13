@@ -12,6 +12,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -85,7 +86,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		do.componentContext = dir
 	}
-	do.devfilePath = devfile.DevfileLocation(do.componentContext)
+	do.devfilePath = location.DevfileLocation(do.componentContext)
 
 	do.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {

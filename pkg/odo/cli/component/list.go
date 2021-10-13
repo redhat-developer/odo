@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
@@ -52,7 +53,7 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	lo.devfilePath = devfile.DevfileLocation(lo.componentContext)
+	lo.devfilePath = location.DevfileLocation(lo.componentContext)
 
 	if util.CheckPathExists(lo.devfilePath) {
 

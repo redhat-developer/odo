@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -134,7 +135,7 @@ func completeDevfilePath(componentContext, devfilePath string) string {
 	if len(devfilePath) > 0 {
 		return filepath.Join(componentContext, devfilePath)
 	} else {
-		return devfile.DevfileLocation(componentContext)
+		return location.DevfileLocation(componentContext)
 	}
 }
 

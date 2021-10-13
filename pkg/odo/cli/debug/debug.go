@@ -11,8 +11,6 @@ import (
 const (
 	// RecommendedCommandName is the recommended debug command name
 	RecommendedCommandName = "debug"
-
-	devfile = "devfile.yaml"
 )
 
 var debugLongDesc = ktemplates.LongDesc(`Debug allows you to remotely debug your application.`)

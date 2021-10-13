@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
@@ -42,7 +42,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 	} else if o.csvSupport {
 		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 			Cmd:              cmd,
-			DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
+			DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 			ComponentContext: o.componentContext,
 		})
 		if err != nil {

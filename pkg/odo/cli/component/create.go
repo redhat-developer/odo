@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
@@ -81,8 +82,6 @@ var (
 	envFile = filepath.Join(".odo", "env", "env.yaml")
 	envDir  = filepath.Join(".odo", "env")
 )
-
-var CreateDevfilePath = devfile.DevfileLocation("")
 
 // EnvFilePath is the path of env file for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
@@ -170,11 +169,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 	}
 
-	DevfilePath := CreateDevfilePath
+	DevfilePath := location.DevfileLocation("")
 	// Configure the context
 	if co.componentContext != "" {
-		devFile := devfile.DevfileFilenamesProvider(co.componentContext)
-		DevfilePath = filepath.Join(co.componentContext, devFile)
+		DevfilePath = location.DevfileLocation(co.componentContext)
 		EnvFilePath = filepath.Join(co.componentContext, envFile)
 		co.PushOptions.componentContext = co.componentContext
 	}

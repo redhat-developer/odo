@@ -9,6 +9,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
@@ -79,7 +80,7 @@ func getEnvInfoFile(envDir string) (string, string, error) {
 		}
 	}
 
-	return filepath.Join(envDir, ".odo", "env", envInfoFileName), filepath.Join(envDir, "devfile.yaml"), nil
+	return filepath.Join(envDir, ".odo", "env", envInfoFileName), location.DevfileLocation(envDir), nil
 }
 
 // New returns the EnvSpecificInfo

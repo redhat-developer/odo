@@ -7,6 +7,7 @@ import (
 	scontext "github.com/openshift/odo/pkg/segment/context"
 
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -76,7 +77,7 @@ func (po *PushOptions) CompleteDevfilePath() {
 	if len(po.DevfilePath) > 0 {
 		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
 	} else {
-		po.DevfilePath = filepath.Join(po.componentContext, devfile.DevfileFilenamesProvider(po.componentContext))
+		po.DevfilePath = filepath.Join(po.componentContext, location.DevfileFilenamesProvider(po.componentContext))
 	}
 }
 

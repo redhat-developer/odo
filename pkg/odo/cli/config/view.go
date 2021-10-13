@@ -7,7 +7,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -39,7 +39,7 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	devfilePath := devfile.DevfileLocation(o.contextDir)
+	devfilePath := location.DevfileLocation(o.contextDir)
 	if util.CheckPathExists(devfilePath) {
 		o.devfilePath = devfilePath
 		o.IsDevfile = true

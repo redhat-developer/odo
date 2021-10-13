@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/util"
 )
@@ -13,7 +13,7 @@ func validDevfileDirectory(componentContext string) error {
 	if componentContext == "" {
 		componentContext = component.LocalDirectoryDefaultLocation
 	}
-	devfilePath := devfile.DevfileLocation(componentContext)
+	devfilePath := location.DevfileLocation(componentContext)
 	if !util.CheckPathExists(devfilePath) {
 		return fmt.Errorf("service can be created/deleted from a valid component directory only\n"+
 			"refer %q for more information", "odo service create -h")

@@ -2,14 +2,13 @@ package devfile
 
 import (
 	"fmt"
-	"path/filepath"
+
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
 )
 
 func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
@@ -67,29 +66,4 @@ func variableWarning(section string, variable string, messages []string) string 
 	}
 	return fmt.Sprintf("Invalid variable(s) %s in %q section with name %q. ", strings.Join(quotedVars, ","), section, variable)
 
-}
-
-//  possibleDevfileNames contains possivle devfile name that should be checked in the context dir.
-var possibleDevfileNames = [...]string{"devfile.yaml", ".devfile.yaml"}
-
-// DevfileFilenamesProvider checks if the context dir contains devfile with possible names from possibleDevfileNames variable,
-// else it returns "devfile.yaml" as default value.
-func DevfileFilenamesProvider(contexDir string) string {
-	for _, devFile := range possibleDevfileNames {
-		if util.CheckPathExists(filepath.Join(contexDir, devFile)) {
-			return devFile
-		}
-	}
-	return "devfile.yaml"
-}
-
-// DevfileLocation returns path to devfile File with approprite devfile File name from possibleDevfileNames variable,
-// if contextDir value is provided as argument then DevfileLocation returns devfile path
-// else it assumes current dir as contextDir and returns appropriate value.
-func DevfileLocation(contexDir string) string {
-	if contexDir == "" {
-		contexDir = "./"
-	}
-	devFile := DevfileFilenamesProvider(contexDir)
-	return filepath.Join(contexDir, devFile)
 }

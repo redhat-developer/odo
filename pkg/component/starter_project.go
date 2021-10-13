@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/log"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
@@ -20,11 +21,8 @@ import (
 )
 
 const (
-	devFile                   = "devfile.yaml"
 	defaultStarterProjectName = "devfile-starter-project-name"
 )
-
-var DevfilePath = filepath.Join("./", devFile)
 
 func checkoutProject(subDir, zipURL, path, starterToken string) error {
 
@@ -90,7 +88,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	}
 
 	// We will check to see if the project has a valid directory
-	err = util.IsValidProjectDir(path, DevfilePath)
+	err = util.IsValidProjectDir(path, location.DevfileLocation(""))
 	if err != nil {
 		return err
 	}
