@@ -150,31 +150,21 @@ The list of fields is extracted from the *OpenAPI schema* included in the `CRD`.
 It is also possible to request description of operator backed service without providing crd type information. Let us say you want to describe redis operator on cluster without CRD, you can do
 
 ```shell
-$ odo catalog describe service redis-operator.v0.8.0
+odo catalog describe service redis-operator.v0.8.0
 NAME:		redis-operator.v0.8.0
-
 DESCRIPTION:
 
-A Golang based redis operator that will make/oversee Redis
-standalone/cluster mode setup on top of the Kubernetes. It can create a
-
-### Supported Features
-
-Here the features which are supported by this operator:-
-- Redis cluster/standalone mode setup
-- Redis cluster failover and recovery
-- Inbuilt monitoring with prometheus exporter
-...
-
-### Documentation
-
-[Documentation](https://ot-container-kit.github.io/redis-operator/)
-
-...
+	A Golang based redis operator that will make/oversee Redis
+	standalone/cluster mode setup on top of the Kubernetes. It can create a
+	redis cluster setup with best practices on Cloud as well as the Bare metal
+	environment. Also, it provides an in-built monitoring capability using
+	redis-exporter.
+	
+... (cut short for beverity)	
 
 CRDs:
-
 NAME		DESCRIPTION
 RedisCluster	Redis Cluster
 Redis		Redis
+
 ```
