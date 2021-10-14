@@ -53,7 +53,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
-	apps, err := application.List(o.Client)
+	apps, err := application.List(o.Client.GetKubeClient())
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}

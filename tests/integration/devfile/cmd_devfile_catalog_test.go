@@ -87,7 +87,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 			wantOutput := []string{
 				"odo.dev/v1alpha1",
-				"devfileItems",
+				"items",
 				"java-openliberty",
 				"java-springboot",
 				"nodejs",

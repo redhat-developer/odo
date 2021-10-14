@@ -250,7 +250,7 @@ func DeleteLocalConfig(args ...string) {
 // in Devfile Component list
 func VerifyCatalogListComponent(output string, cmpName []string) error {
 	var data map[string]interface{}
-	listItems := []string{"devfileItems"}
+	listItems := []string{"items"}
 
 	if err := json.Unmarshal([]byte(output), &data); err != nil {
 		return err

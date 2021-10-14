@@ -89,20 +89,15 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 	comps := &completions
-	found := false
 
 	components, _ := catalog.ListDevfileComponents("")
 	for _, devfile := range components.Items {
 		if args.commands[devfile.Name] {
-			found = true
-			return
+			return nil
 		}
 		*comps = append(*comps, devfile.Name)
 	}
 
-	if found {
-		return nil
-	}
 	return completions
 }
 
