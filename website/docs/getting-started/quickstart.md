@@ -6,21 +6,29 @@ sidebar_position: 3
 In this guide, we will be using odo to set up a todo application based on Java Spring Boot framework for the backend/APIs, ReactJS for the frontend, and PostgreSQL database to store the todo items.
 
 We will be performing following tasks using odo in this guide:
-1. Create an odo component for both the frontend and backend applications
-2. Create an Operator backed service for PostgreSQL database
-3. Link the backend component with the PostgreSQL service
-4. Link the frontend component with the backend component
+1. Create a project
+2. Create an odo component for both the frontend and backend applications
+3. Create an Operator backed service for PostgreSQL database
+4. Link the backend component with the PostgreSQL service
+5. Link the frontend component with the backend component
 
 At the end of the guide, you will be able to list, add and delete todo items from the web browser.
 
 ## Prerequisites
 
 * A [development Kubernetes](./cluster-setup/kubernetes.md) cluster.
-* [Crunchy's Postgres Operator](https://operatorhub.io/operator/postgresql) installed on the cluster. Assuming you have admin privileges on the development Kubernetes cluster, you can install it using below command:
+* Install [Crunchy's Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster. Again, assuming you have admin privileges on the development Kubernetes cluster, you can install it using below command:
   ```shell
   kubectl create -f https://operatorhub.io/install/postgresql.yaml
   ```   
 * odo binary [installed](./installation.md) on your system.
+
+## Create a project
+
+We will create a project named `quickstart` on the cluster to keep quickstart related activities separate from rest of the cluster:
+```shell
+odo project create quickstart
+```
 
 ## Clone the code
 
@@ -62,11 +70,6 @@ If the `PHASE` is something other than `Succeeded`, you won't see it in `odo cat
 
 Now create the service using:
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
-<Tabs groupId="operating-systems">
-<TabItem value="linux" label="Linux/mac OS" default>
 
 ```sh
 odo service create --from-file ../postgrescluster.yaml
@@ -77,22 +80,6 @@ Example output:
 $ odo service create --from-file ../postgrescluster.yaml
 Successfully added service to the configuration; do 'odo push' to create service on the cluster
 ````
-
-</TabItem>
-<TabItem value="windows" label="Windows">
-
-```sh
-odo service create --from-file ..\postgrescluster.yaml
-```
-
-Example output:
-```sh
-$ odo service create --from-file ..\postgrescluster.yaml
-Successfully added service to the configuration; do 'odo push' to create service on the cluster
-````
-
-</TabItem>
-</Tabs>
 
 The `postgrescluster.yaml` file in the repository contains configuration that should help bring up a Postgres database. Do a push to create the database on the cluster:
 ```shell
@@ -139,27 +126,12 @@ In this case, the URL to load in browser would be `http://8080-tcp.192.168.39.11
 
 Our frontend component is a React application that communicates with the backend component. Create the frontend component:
 
-<Tabs groupId="operating-systems">
-<TabItem value="linux" label="Linux/mac OS" default>
-
 ```sh
 cd ../frontend
 odo create nodejs frontend
 odo url create --port 3000 --host `minikube ip`.nip.io
 odo push
 ```
-</TabItem>
-
-<TabItem value="windows" label="Windows">
-
-```sh
-cd ..\frontend
-odo create nodejs frontend
-odo url create --port 3000 --host `minikube ip`.nip.io
-odo push
-```
-</TabItem>
-</Tabs>
 
 Open the URL for the component in the browser, but note that you won't be able to add, remove or list the todos yet because we haven't linked the frontend and the backend components:
 ```shell
