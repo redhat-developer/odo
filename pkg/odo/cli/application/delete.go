@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"path/filepath"
 
 	odoUtil "github.com/openshift/odo/pkg/odo/util"
 
@@ -38,11 +37,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if util.CheckPathExists(filepath.Join(".odo", "config.yaml")) {
-		o.Context, err = genericclioptions.NewContext(cmd)
-	} else {
-		o.Context, err = genericclioptions.NewDevfileContext(cmd)
-	}
+	o.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}
@@ -64,7 +59,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client)
+	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -74,7 +69,7 @@ func (o *DeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo command
 func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
-		err = application.Delete(o.Client, o.appName)
+		err = application.Delete(o.Client.GetKubeClient(), o.appName)
 		if err != nil {
 			return err
 		}
@@ -88,7 +83,7 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.Project)) {
-		err = application.Delete(o.Client, o.appName)
+		err = application.Delete(o.Client.GetKubeClient(), o.appName)
 		if err != nil {
 			return err
 		}

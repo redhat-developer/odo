@@ -23,7 +23,6 @@ type ComponentSpec struct {
 	App         string            `json:"app,omitempty"`
 	Type        string            `json:"type,omitempty"`
 	Source      string            `json:"source,omitempty"`
-	SourceType  string            `json:"sourceType,omitempty"`
 	URL         []string          `json:"url,omitempty"`
 	URLSpec     []url.URL         `json:"-"`
 	Storage     []string          `json:"storage,omitempty"`
@@ -58,7 +57,6 @@ type ComponentStatus struct {
 type CombinedComponentList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ListMeta   `json:"metadata,omitempty"`
-	S2IComponents     []Component `json:"s2iComponents"`
 	DevfileComponents []Component `json:"devfileComponents"`
 	OtherComponents   []Component `json:"otherComponents"`
 }
@@ -112,10 +110,8 @@ func newComponentList(comps []Component) ComponentList {
 }
 
 // NewCombinedComponentList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
-func NewCombinedComponentList(s2iComps []Component, devfileComps []Component, otherComps []Component) CombinedComponentList {
-	if len(s2iComps) == 0 {
-		s2iComps = []Component{}
-	}
+func NewCombinedComponentList(devfileComps []Component, otherComps []Component) CombinedComponentList {
+
 	if len(devfileComps) == 0 {
 		devfileComps = []Component{}
 	}
@@ -129,7 +125,6 @@ func NewCombinedComponentList(s2iComps []Component, devfileComps []Component, ot
 			APIVersion: machineoutput.APIVersion,
 		},
 		ListMeta:          metav1.ListMeta{},
-		S2IComponents:     s2iComps,
 		DevfileComponents: devfileComps,
 		OtherComponents:   otherComps,
 	}

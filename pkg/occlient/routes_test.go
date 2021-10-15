@@ -4,7 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	appsv1 "github.com/openshift/api/apps/v1"
+	appsV1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,17 +14,33 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
+// GenerateOwnerReference generates an ownerReference which can then be set as
+// owner for various OpenShift objects and ensure that when the owner object is
+// deleted from the cluster, all other objects are automatically removed by
+// OpenShift garbage collector
+func GenerateOwnerReference(deployment *appsV1.Deployment) metav1.OwnerReference {
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "Deployment",
+		Name:       deployment.Name,
+		UID:        deployment.UID,
+	}
+
+	return ownerReference
+}
+
 func TestCreateRoute(t *testing.T) {
 	tests := []struct {
-		name       string
-		urlName    string
-		service    string
-		portNumber intstr.IntOrString
-		labels     map[string]string
-		wantErr    bool
-		existingDC appsv1.DeploymentConfig
-		secureURL  bool
-		path       string
+		name               string
+		urlName            string
+		service            string
+		portNumber         intstr.IntOrString
+		labels             map[string]string
+		wantErr            bool
+		existingDeployment *appsV1.Deployment
+		secureURL          bool
+		path               string
 	}{
 		{
 			name:       "Case : mailserver",
@@ -34,8 +52,8 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "python",
 			},
-			wantErr:    false,
-			existingDC: *fakeDeploymentConfig("mailserver", "", nil, nil, t),
+			wantErr:            false,
+			existingDeployment: testingutil.CreateFakeDeployment("mailserver"),
 		},
 
 		{
@@ -48,8 +66,8 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "golang",
 			},
-			wantErr:    false,
-			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
+			wantErr:            false,
+			existingDeployment: testingutil.CreateFakeDeployment("blog"),
 		},
 
 		{
@@ -62,9 +80,9 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "golang",
 			},
-			wantErr:    false,
-			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
-			secureURL:  true,
+			wantErr:            false,
+			existingDeployment: testingutil.CreateFakeDeployment("blog"),
+			secureURL:          true,
 		},
 
 		{
@@ -77,9 +95,9 @@ func TestCreateRoute(t *testing.T) {
 				"app.kubernetes.io/instance": "backend",
 				"app.kubernetes.io/name":     "golang",
 			},
-			wantErr:    false,
-			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
-			path:       "/testpath",
+			wantErr:            false,
+			existingDeployment: testingutil.CreateFakeDeployment("blog"),
+			path:               "/testpath",
 		},
 	}
 	for _, tt := range tests {
@@ -87,10 +105,10 @@ func TestCreateRoute(t *testing.T) {
 			// initialising the fakeclient
 			fkclient, fkclientset := FakeNew()
 
-			ownerReferences := GenerateOwnerReference(&tt.existingDC)
+			ownerReferences := GenerateOwnerReference(tt.existingDeployment)
 
-			fkclientset.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &tt.existingDC, nil
+			fkclientset.AppsClientset.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, tt.existingDeployment, nil
 			})
 
 			createdRoute, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels, tt.secureURL, tt.path, ownerReferences)
@@ -195,55 +213,6 @@ func TestListRoutes(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ListRoutes() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestListRouteNames(t *testing.T) {
-	type args struct {
-		labelSelector string
-	}
-	tests := []struct {
-		name           string
-		args           args
-		returnedRoutes routev1.RouteList
-		want           []string
-		wantErr        bool
-	}{
-		{
-			name: "case 1: list multiple routes",
-			args: args{
-				labelSelector: "app.kubernetes.io/instance",
-			},
-			returnedRoutes: *testingutil.GetRouteListWithMultiple("nodejs", "app"),
-			want:           []string{"example", "example-1"},
-		},
-		{
-			name: "case 2: no routes returned",
-			args: args{
-				labelSelector: "app.kubernetes.io/instance",
-			},
-			returnedRoutes: routev1.RouteList{},
-			want:           nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// initialising the fakeclient
-			fkclient, fkclientset := FakeNew()
-
-			fkclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &tt.returnedRoutes, nil
-			})
-
-			got, err := fkclient.ListRouteNames(tt.args.labelSelector)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ListRouteNames() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListRouteNames() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -88,9 +88,9 @@ func (k kubernetesClient) List() (URLList, error) {
 	}
 
 	localMap := make(map[string]URL)
-	if k.localConfig != nil {
+	if k.localConfigProvider != nil {
 		// get the URLs present on the localConfigProvider
-		localURLS, err := k.localConfig.ListURLs()
+		localURLS, err := k.localConfigProvider.ListURLs()
 		if err != nil {
 			return URLList{}, err
 		}
@@ -324,7 +324,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 		}
 		return "", errors.Wrap(err, "unable to create route")
 	}
-	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", true), nil
+	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
 }
 
 // getResourceName gets the route/ingress resource name

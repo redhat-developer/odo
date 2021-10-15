@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -68,17 +67,6 @@ func (o *DeleteOptions) Validate() (err error) {
 	if url == nil {
 		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.LocalConfigProvider.GetName())
 	}
-
-	if o.LocalConfigInfo.Exists() {
-		if o.now {
-			o.LocalConfigInfo = o.Context.LocalConfigInfo
-			err = o.ValidateComponentCreate()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	return
 }
 
@@ -94,18 +82,11 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 		log.Successf("URL %s removed from component %s", o.urlName, o.LocalConfigProvider.GetName())
 
 		if o.now {
-			if o.LocalConfigInfo.Exists() {
-				err = o.Push()
-				if err != nil {
-					return errors.Wrap(err, "failed to push changes")
-				}
-			} else {
-				o.CompleteDevfilePath()
-				o.EnvSpecificInfo = o.Context.EnvSpecificInfo
-				err = o.DevfilePush()
-				if err != nil {
-					return err
-				}
+			o.CompleteDevfilePath()
+			o.EnvSpecificInfo = o.Context.EnvSpecificInfo
+			err = o.DevfilePush()
+			if err != nil {
+				return err
 			}
 			log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 		}

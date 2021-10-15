@@ -3,15 +3,12 @@ package component
 import (
 	"fmt"
 
-	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/storage"
 	"github.com/openshift/odo/pkg/url"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
@@ -33,7 +30,6 @@ type PushedComponent interface {
 	GetURLs() ([]url.URL, error)
 	GetApplication() string
 	GetType() (string, error)
-	GetSource() (string, string, error)
 	GetStorage() ([]storage.Storage, error)
 }
 
@@ -61,10 +57,6 @@ func (d defaultPushedComponent) GetName() string {
 
 func (d defaultPushedComponent) GetType() (string, error) {
 	return getType(d.provider)
-}
-
-func (d defaultPushedComponent) GetSource() (string, string, error) {
-	return getSource(d.provider)
 }
 
 func (d defaultPushedComponent) GetEnvVars() []v12.EnvVar {
@@ -102,46 +94,6 @@ func (d defaultPushedComponent) GetStorage() ([]storage.Storage, error) {
 
 func (d defaultPushedComponent) GetApplication() string {
 	return d.application
-}
-
-type s2iComponent struct {
-	dc appsv1.DeploymentConfig
-}
-
-func (s s2iComponent) GetLinkedSecrets() (secretMounts []SecretMount) {
-	for _, env := range s.dc.Spec.Template.Spec.Containers[0].EnvFrom {
-		if env.SecretRef != nil {
-			secretMounts = append(secretMounts, SecretMount{
-				SecretName:  env.SecretRef.Name,
-				MountVolume: false,
-			})
-		}
-	}
-	return secretMounts
-}
-
-func (s s2iComponent) GetEnvVars() []v12.EnvVar {
-	return s.dc.Spec.Template.Spec.Containers[0].Env
-}
-
-func (s s2iComponent) GetLabels() map[string]string {
-	return s.dc.Labels
-}
-
-func (s s2iComponent) GetAnnotations() map[string]string {
-	return s.dc.Annotations
-}
-
-func (s s2iComponent) GetName() string {
-	return s.dc.Labels[componentlabels.ComponentLabel]
-}
-
-func (s s2iComponent) GetType() (string, error) {
-	return getType(s)
-}
-
-func (s s2iComponent) GetSource() (string, string, error) {
-	return getSource(s)
 }
 
 type devfileComponent struct {
@@ -206,35 +158,6 @@ func (d devfileComponent) GetType() (string, error) {
 	return getType(d)
 }
 
-func (d devfileComponent) GetSource() (string, string, error) {
-	return getSource(d)
-}
-
-type noSourceError struct {
-	msg string
-}
-
-func (n noSourceError) Error() string {
-	return n.msg
-}
-
-func getSource(component provider) (string, string, error) {
-	annotations := component.GetAnnotations()
-	if sourceType, ok := annotations[ComponentSourceTypeAnnotation]; ok {
-		if !validateSourceType(sourceType) {
-			return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
-		}
-		var sourcePath string
-		if sourceType == string(config.GIT) {
-			sourcePath = annotations[componentSourceURLAnnotation]
-		}
-
-		klog.V(4).Infof("Source for component %s is %s (%s)", component.GetName(), sourcePath, sourceType)
-		return sourceType, sourcePath, nil
-	}
-	return "", "", noSourceError{msg: fmt.Sprintf("%s component doesn't provide a source type annotation", component.GetName())}
-}
-
 func getType(component provider) (string, error) {
 	if componentType, ok := component.GetAnnotations()[componentlabels.ComponentTypeAnnotation]; ok {
 		return componentType, nil
@@ -249,23 +172,11 @@ func getType(component provider) (string, error) {
 func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 
-	dcList, err := c.ListDeploymentConfigs(applicationSelector)
-	if err != nil {
-		if !isIgnorableError(err) {
-			return nil, err
-		}
-	}
-	res := make(map[string]PushedComponent, len(dcList))
-	for _, dc := range dcList {
-		comp := newPushedComponent(applicationName, &s2iComponent{dc: dc}, c, nil, nil)
-		res[comp.GetName()] = comp
-	}
-
 	deploymentList, err := c.GetKubeClient().ListDeployments(applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
-
+	res := make(map[string]PushedComponent, len(deploymentList.Items))
 	for _, d := range deploymentList.Items {
 		deployment := d
 		storageClient := storage.NewClient(storage.ClientOptions{
@@ -299,26 +210,7 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 	d, err := c.GetKubeClient().GetOneDeployment(componentName, applicationName)
 	if err != nil {
 		if isIgnorableError(err) {
-			// if it's not found, check if there's a deploymentconfig
-			deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
-			if err != nil {
-				return nil, err
-			}
-			dc, err := c.GetDeploymentConfigFromName(deploymentName)
-			if err != nil {
-				if kerrors.IsNotFound(err) {
-					// in case where odo's standard naming practices are not followed, it makes sense to do a double check with component name
-					// this is useful when dealing with components that are not managed/created by odo
-					dc, err = c.GetDeploymentConfigFromName(componentName)
-					if err != nil {
-						return nil, nil
-					} else {
-						return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c, nil, nil), nil
-					}
-				}
-			} else {
-				return newPushedComponent(applicationName, &s2iComponent{dc: *dc}, c, nil, nil), nil
-			}
+			return nil, nil
 		}
 		return nil, err
 	}

@@ -2,13 +2,12 @@ package completion
 
 import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
+	"github.com/openshift/odo/pkg/envinfo"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,7 @@ import (
 var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	applications, err := application.List(context.Client)
+	applications, err := application.List(context.Client.GetKubeClient())
 	if err != nil {
 		return completions
 	}
@@ -65,12 +64,12 @@ var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *ge
 var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	localConfig, err := config.New()
+	envInfo, err := envinfo.New()
 	if err != nil {
 		return completions
 	}
 
-	storageList, err := localConfig.ListStorage()
+	storageList, err := envInfo.ListStorage()
 	if err != nil {
 		return completions
 	}
@@ -90,36 +89,15 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 	comps := &completions
-	found := false
 
-	tasks := util.NewConcurrentTasks(2)
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		catalogList, _ := catalog.ListComponents(context.Client)
-		for _, builder := range catalogList.Items {
-			if args.commands[builder.Name] {
-				found = true
-				return
-			}
-			if len(builder.Spec.NonHiddenTags) > 0 {
-				*comps = append(*comps, builder.Name)
-			}
+	components, _ := catalog.ListDevfileComponents("")
+	for _, devfile := range components.Items {
+		if args.commands[devfile.Name] {
+			return nil
 		}
-	}})
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		components, _ := catalog.ListDevfileComponents("")
-		for _, devfile := range components.Items {
-			if args.commands[devfile.Name] {
-				found = true
-				return
-			}
-			*comps = append(*comps, devfile.Name)
-		}
-	}})
-
-	_ = tasks.Run()
-	if found {
-		return nil
+		*comps = append(*comps, devfile.Name)
 	}
+
 	return completions
 }
 
@@ -130,7 +108,7 @@ var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	if context.Application != "" {
 		selector = applabels.GetSelector(context.Application)
 	}
-	components, err := component.List(context.Client, selector, nil)
+	components, err := component.List(context.Client, selector)
 
 	if err != nil {
 		return completions

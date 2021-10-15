@@ -38,7 +38,7 @@ func NewListOptions() *ListOptions {
 
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.NewDevfileContext(cmd)
+	o.Context, err = genericclioptions.NewContext(cmd)
 	return
 }
 
@@ -53,7 +53,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
-	apps, err := application.List(o.Client)
+	apps, err := application.List(o.Client.GetKubeClient())
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}

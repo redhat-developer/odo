@@ -311,65 +311,6 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			want:    StorageList{},
 			wantErr: false,
 		},
-		{
-			name: "case 11: s2i converted component",
-			fields: fields{
-				generic: generic{
-					appName:       "app",
-					componentName: "nodejs",
-				},
-			},
-			returnedDeployments: &appsv1.DeploymentList{
-				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeploymentsWithContainers("nodejs",
-						[]corev1.Container{
-							testingutil.CreateFakeContainerWithVolumeMounts("s2i-builder", []corev1.VolumeMount{
-								{
-									Name:      "odo-projects",
-									MountPath: "/tmp/projects",
-								},
-								{
-									Name:      "odo-supervisord-shared-data",
-									MountPath: "/opt/odo/",
-								},
-								{
-									Name:      "app-root-volume-wildfly-wildfly-oupn-app-vol",
-									MountPath: "/opt/app-root",
-								},
-								{
-									Name:      "deployments-volume-wildfly-wildfly-oupn-app-vol",
-									MountPath: "/deployments",
-								}}),
-						}, []corev1.Container{
-							testingutil.CreateFakeContainerWithVolumeMounts("copy-app-root-container-copy-app-root-1", []corev1.VolumeMount{
-								{
-									Name:      "app-root-volume-wildfly-wildfly-oupn-app-vol",
-									MountPath: "/mnt/app-root",
-								},
-							}),
-							testingutil.CreateFakeContainerWithVolumeMounts("copy-supervisord", []corev1.VolumeMount{
-								{
-									Name:      "odo-supervisord-shared-data",
-									MountPath: "/opt/odo/",
-								},
-							}),
-						}),
-				},
-			},
-			returnedPVCs: &corev1.PersistentVolumeClaimList{
-				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("app-root-volume-wildfly-wildfly-oupn-app", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "app-root-volume-wildfly-wildfly-oupn-app"}),
-					*testingutil.FakePVC("deployments-volume-wildfly-wildfly-oupn-app", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "deployments-volume-wildfly-wildfly-oupn-app"}),
-				},
-			},
-			want: StorageList{
-				Items: []Storage{
-					generateStorage(NewStorage("app-root-volume-wildfly-wildfly-oupn-app", "5Gi", "/opt/app-root"), "", "s2i-builder"),
-					generateStorage(NewStorage("deployments-volume-wildfly-wildfly-oupn-app", "10Gi", "/deployments"), "", "s2i-builder"),
-				},
-			},
-			wantErr: false,
-		},
 	}
 
 	for _, tt := range tests {
@@ -394,7 +335,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			mockLocalConfig.EXPECT().GetName().Return(tt.fields.generic.componentName).AnyTimes()
 			mockLocalConfig.EXPECT().GetApplication().Return(tt.fields.generic.appName).AnyTimes()
 
-			tt.fields.generic.localConfig = mockLocalConfig
+			tt.fields.generic.localConfigProvider = mockLocalConfig
 
 			k := kubernetesClient{
 				generic: tt.fields.generic,
@@ -685,7 +626,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			mockLocalConfig.EXPECT().GetApplication().Return(tt.fields.generic.appName).AnyTimes()
 			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage, nil)
 
-			tt.fields.generic.localConfig = mockLocalConfig
+			tt.fields.generic.localConfigProvider = mockLocalConfig
 
 			k := kubernetesClient{
 				generic: tt.fields.generic,

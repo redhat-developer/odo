@@ -4,23 +4,21 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/version"
-
-	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/version"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGetMachineReadableFormat(t *testing.T) {
 	type args struct {
-		// client      *occlient.Client
 		appName     string
 		projectName string
 		active      bool
@@ -53,9 +51,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			},
 		},
 	}
-
-	dcList := appsv1.DeploymentConfigList{
-		Items: []appsv1.DeploymentConfig{
+	deploymentList := appsv1.DeploymentList{
+		Items: []appsv1.Deployment{
 			{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "frontend-myapp",
@@ -67,12 +64,9 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						applabels.ManagedBy:                "odo",
 						applabels.ManagerVersion:           version.VERSION,
 					},
-					Annotations: map[string]string{
-						component.ComponentSourceTypeAnnotation: "local",
-					},
 				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -94,12 +88,9 @@ func TestGetMachineReadableFormat(t *testing.T) {
 						applabels.ManagedBy:                "odo",
 						applabels.ManagerVersion:           version.VERSION,
 					},
-					Annotations: map[string]string{
-						component.ComponentSourceTypeAnnotation: "local",
-					},
 				},
-				Spec: appsv1.DeploymentConfigSpec{
-					Template: &corev1.PodTemplateSpec{
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -119,18 +110,18 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			client, fakeClientSet := occlient.FakeNew()
 
 			// fake the project
-			fakeClientSet.ProjClientset.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			fakeClientSet.Kubernetes.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &testingutil.FakeOnlyOneExistingProjects().Items[0], nil
 			})
 
-			//fake the dcs
-			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-				return true, &dcList, nil
+			//fake the deployments
+			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &deploymentList, nil
 			})
 
-			for i := range dcList.Items {
-				fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-					return true, &dcList.Items[i], nil
+			for i := range deploymentList.Items {
+				fakeClientSet.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &deploymentList.Items[i], nil
 				})
 			}
 			if got := GetMachineReadableFormat(client, tt.args.appName, tt.args.projectName); !reflect.DeepEqual(got, tt.want) {

@@ -109,31 +109,13 @@ func TestGetURLString(t *testing.T) {
 		protocol      string
 		URL           string
 		ingressDomain string
-		isS2I         bool
 		expected      string
 	}{
-		{
-			name:          "simple s2i case",
-			protocol:      "http",
-			URL:           "example.com",
-			ingressDomain: "",
-			isS2I:         true,
-			expected:      "http://example.com",
-		},
-		{
-			name:          "all blank with s2i",
-			protocol:      "",
-			URL:           "",
-			ingressDomain: "",
-			isS2I:         true,
-			expected:      "",
-		},
 		{
 			name:          "all blank without s2i",
 			protocol:      "",
 			URL:           "",
 			ingressDomain: "",
-			isS2I:         false,
 			expected:      "",
 		},
 		{
@@ -141,17 +123,15 @@ func TestGetURLString(t *testing.T) {
 			protocol:      "http",
 			URL:           "",
 			ingressDomain: "spring-8080.192.168.39.247.nip.io",
-			isS2I:         false,
 			expected:      "http://spring-8080.192.168.39.247.nip.io",
 		},
 	}
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			output := GetURLString(testCase.protocol, testCase.URL, testCase.ingressDomain, testCase.isS2I)
+			output := GetURLString(testCase.protocol, testCase.URL, testCase.ingressDomain)
 			if output != testCase.expected {
 				t.Errorf("Expected: %v, got %v", testCase.expected, output)
-
 			}
 		})
 	}

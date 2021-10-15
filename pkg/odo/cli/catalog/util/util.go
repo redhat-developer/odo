@@ -33,19 +33,6 @@ func DisplayComponents(components []string) {
 	w.Flush()
 }
 
-// FilterHiddenComponents filters out components that should be hidden from the specified list
-func FilterHiddenComponents(input []catalog.ComponentType) []catalog.ComponentType {
-	inputLength := len(input)
-	filteredComponents := make([]catalog.ComponentType, 0, inputLength)
-	for _, component := range input {
-		// we keep the image if it has tags that are no hidden
-		if len(component.Spec.NonHiddenTags) > 0 {
-			filteredComponents = append(filteredComponents, component)
-		}
-	}
-	return filteredComponents
-}
-
 // DisplayClusterServiceVersions displays installed Operators in a human friendly manner
 func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)

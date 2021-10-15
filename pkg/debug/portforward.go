@@ -61,11 +61,6 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 		if err != nil {
 			return err
 		}
-
-		pod, err = f.client.GetPodUsingDeploymentConfig(f.componentName, f.appName)
-		if err != nil {
-			return err
-		}
 	}
 
 	if pod.Status.Phase != corev1.PodRunning {

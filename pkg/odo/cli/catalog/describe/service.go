@@ -38,7 +38,7 @@ func NewDescribeServiceOptions() *DescribeServiceOptions {
 
 // Complete completes DescribeServiceOptions after they've been created
 func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.NewContext(cmd, true)
+	o.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}

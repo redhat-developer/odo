@@ -63,8 +63,8 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client kclient.ClientInterface, localConfig localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
-	componentName := localConfig.GetName()
+func getURLsForKubernetes(oclient *occlient.Client, client kclient.ClientInterface, lcProvider localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
+	componentName := lcProvider.GetName()
 
 	routesSupported := false
 
@@ -81,7 +81,7 @@ func getURLsForKubernetes(oclient *occlient.Client, client kclient.ClientInterfa
 	}
 
 	urlClient := NewClient(ClientOptions{
-		LocalConfigProvider: localConfig,
+		LocalConfigProvider: lcProvider,
 		OCClient:            *oclient,
 		IsRouteSupported:    routesSupported,
 	})
@@ -103,10 +103,10 @@ func getURLsForKubernetes(oclient *occlient.Client, client kclient.ClientInterfa
 
 		if u.Spec.Kind != localConfigProvider.ROUTE {
 			protocol = GetProtocol(routev1.Route{}, ConvertExtensionV1IngressURLToIngress(u, componentName))
-			properURL = GetURLString(protocol, "", u.Spec.Host, false)
+			properURL = GetURLString(protocol, "", u.Spec.Host)
 		} else {
 			protocol = u.Spec.Protocol
-			properURL = GetURLString(protocol, u.Spec.Host, "", false)
+			properURL = GetURLString(protocol, u.Spec.Host, "")
 		}
 
 		statusURLVal := statusURL{

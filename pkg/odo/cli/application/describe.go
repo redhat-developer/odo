@@ -2,11 +2,8 @@ package application
 
 import (
 	"fmt"
-	"path/filepath"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
-
-	odoutil "github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
@@ -41,11 +38,7 @@ func NewDescribeOptions() *DescribeOptions {
 
 // Complete completes DescribeOptions after they've been created
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if odoutil.CheckPathExists(filepath.Join(".odo", "config.yaml")) {
-		o.Context, err = genericclioptions.NewContext(cmd)
-	} else {
-		o.Context, err = genericclioptions.NewDevfileContext(cmd)
-	}
+	o.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}
@@ -69,7 +62,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.Project)
 	}
 
-	exist, err := application.Exists(o.appName, o.Client)
+	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -86,7 +79,7 @@ func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 		if o.appName != "" {
 			selector = applabels.GetSelector(o.appName)
 		}
-		componentList, err := component.List(o.Client, selector, nil)
+		componentList, err := component.List(o.Client, selector)
 		if err != nil {
 			return err
 		}

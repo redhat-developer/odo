@@ -47,7 +47,7 @@ func NewTestOptions() *TestOptions {
 // Complete completes TestOptions after they've been created
 func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	to.devfilePath = filepath.Join(to.componentContext, DevfilePath)
-	to.Context, err = genericclioptions.NewDevfileContext(cmd)
+	to.Context, err = genericclioptions.NewContext(cmd)
 	return
 }
 

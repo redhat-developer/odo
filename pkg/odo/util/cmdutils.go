@@ -6,8 +6,9 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/openshift/odo/pkg/envinfo"
+
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -108,11 +109,11 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 			// Retrieve the storage list
 			storages = storage.StorageList{Items: componentDesc.Spec.StorageSpec}
 		} else {
-			localConfig, err := config.New()
+			envInfo, err := envinfo.New()
 			if err != nil {
 				return err
 			}
-			storageLocal, err := localConfig.ListStorage()
+			storageLocal, err := envInfo.ListStorage()
 			if err != nil {
 				return err
 			}
@@ -157,9 +158,9 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 
 				switch url.Spec.Kind {
 				case localConfigProvider.ROUTE:
-					urlString = urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", false)
+					urlString = urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "")
 				case localConfigProvider.INGRESS:
-					urlString = urlPkg.GetURLString(url.Spec.Protocol, "", url.Spec.Host, false)
+					urlString = urlPkg.GetURLString(url.Spec.Protocol, "", url.Spec.Host)
 				default:
 					continue
 				}
@@ -238,7 +239,7 @@ func VisitCommands(cmd *cobra.Command, f func(*cobra.Command)) {
 // as well as changes whether or not machine readable output
 // has been passed in..
 //
-// Return the flag usages for the help outout
+// Return the flag usages for the help output
 func ModifyAdditionalFlags(cmd *cobra.Command) string {
 
 	// Hide the machine readable output if the command

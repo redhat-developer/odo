@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
@@ -89,7 +88,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 
-	do.Context, err = genericclioptions.NewDevfileContext(cmd)
+	do.Context, err = genericclioptions.NewContext(cmd)
 	if err != nil {
 		return err
 	}
@@ -109,12 +108,6 @@ func (do *DeleteOptions) Validate() (err error) {
 func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
-	return do.DevFileRun()
-}
-
-// DevFileRun has the logic to perform the required actions as part of command for devfiles
-func (do *DeleteOptions) DevFileRun() (err error) {
-	// devfile delete
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 		err = do.DevfileComponentDelete()
 		if err != nil {
@@ -143,15 +136,10 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			if err != nil {
 				return err
 			}
-
-			cfg, err := config.NewLocalConfigInfo(do.componentContext)
+			err = util.DeletePath(filepath.Join(do.componentContext, util.DotOdoDirectory))
 			if err != nil {
 				return err
 			}
-			if err = cfg.DeleteConfigDirIfEmpty(); err != nil {
-				return err
-			}
-
 			log.Successf("Successfully deleted env file")
 		} else {
 			log.Error("Aborting deletion of env folder")
@@ -200,6 +188,29 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
 			if !util.CheckPathExists(do.devfilePath) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
+			}
+
+			// first remove the uri based files mentioned in the devfile
+			devfileObj, err := devfile.ParseFromFile(do.devfilePath)
+			if err != nil {
+				return err
+			}
+
+			err = common.RemoveDevfileURIContents(devfileObj, do.componentContext)
+			if err != nil {
+				return err
+			}
+
+			empty, err := util.IsEmpty(filepath.Join(do.componentContext, service.UriFolder))
+			if err != nil && !os.IsNotExist(err) {
+				return err
+			}
+
+			if !os.IsNotExist(err) && empty {
+				err = os.RemoveAll(filepath.Join(do.componentContext, service.UriFolder))
+				if err != nil {
+					return err
+				}
 			}
 
 			err = util.DeletePath(do.devfilePath)

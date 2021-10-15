@@ -434,7 +434,7 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 	return c.jsonPatchDeployment(componentlabels.GetSelector(componentName, applicationName), deploymentPatchProvider)
 }
 
-// this function will look up the appropriate DC, and execute the specified patch
+// jsonPatchDeployment will look up the appropriate Deployment, and execute the specified patch
 // the whole point of using patch is to avoid race conditions where we try to update
 // deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
 // this will result in the triggering of a redeployment
@@ -467,15 +467,15 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 // returns slice of unique label values
 func (c *Client) GetDeploymentLabelValues(label string, selector string) ([]string, error) {
 
-	// List DeploymentConfig according to selectors
-	dcList, err := c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+	// List Deployment according to selectors
+	deploymentList, err := c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
 	}
 
 	// Grab all the matched strings
 	var values []string
-	for _, elem := range dcList.Items {
+	for _, elem := range deploymentList.Items {
 		for key, val := range elem.Labels {
 			if key == label {
 				values = append(values, val)
@@ -487,27 +487,6 @@ func (c *Client) GetDeploymentLabelValues(label string, selector string) ([]stri
 	sort.Strings(values)
 
 	return values, nil
-}
-
-// GetDeploymentConfigsFromSelector returns an array of Deployment Config
-// resources which match the given selector
-func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Deployment, error) {
-	var dcList *appsv1.DeploymentList
-	var err error
-
-	if selector != "" {
-		dcList, err = c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: selector,
-		})
-	} else {
-		dcList, err = c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
-			FieldSelector: fields.Set{"metadata.namespace": c.Namespace}.AsSelector().String(),
-		})
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
-	}
-	return dcList.Items, nil
 }
 
 // GetDeploymentAPIVersion returns a map with Group, Version, Resource information of Deployment objects

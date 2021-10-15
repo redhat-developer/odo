@@ -81,8 +81,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(urls)
 	} else {
-		isS2i := o.Context.LocalConfigInfo.Exists()
-		err = HumanReadableOutput(os.Stdout, urls, componentName, isS2i)
+		err = HumanReadableOutput(os.Stdout, urls, componentName)
 		if err != nil {
 			return err
 		}
@@ -116,7 +115,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 }
 
 // HumanReadableOutput outputs the list of projects in a human readable format
-func HumanReadableOutput(w io.Writer, urls url.URLList, componentName string, isS2i bool) error {
+func HumanReadableOutput(w io.Writer, urls url.URLList, componentName string) error {
 	if len(urls.Items) == 0 {
 		return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
 	}
@@ -132,11 +131,11 @@ func HumanReadableOutput(w io.Writer, urls url.URLList, componentName string, is
 			if u.Status.State == url.StateTypeNotPushed {
 				urlStr = "<provided by cluster>"
 			} else {
-				urlStr = url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", isS2i)
+				urlStr = url.GetURLString(u.Spec.Protocol, u.Spec.Host, "")
 			}
 			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlStr, "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 		} else {
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host, false), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, "", u.Spec.Host), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
 		}
 	}
 	tabWriterURL.Flush()

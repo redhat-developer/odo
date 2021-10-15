@@ -27,7 +27,7 @@ var _ = Describe("Example of a clean test", func() {
 		// commands like odo push, might take a long time
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
 		project = helper.CreateRandProject()
 
 		// we will be testing components that are created from the current directory

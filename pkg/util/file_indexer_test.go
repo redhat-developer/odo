@@ -265,7 +265,7 @@ func createGitFolderAndFiles(tempDirectoryName string, fs filesystem.Filesystem)
 		return err
 	}
 
-	err = fs.MkdirAll(filepath.Join(tempDirectoryName, fileIndexDirectory), 0755)
+	err = fs.MkdirAll(filepath.Join(tempDirectoryName, DotOdoDirectory), 0755)
 	if err != nil {
 		return err
 	}

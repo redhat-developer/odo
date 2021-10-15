@@ -42,7 +42,7 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	lo.devfilePath = "devfile.yaml"
 	lo.devfilePath = filepath.Join(lo.componentContext, lo.devfilePath)
 
-	lo.ComponentOptions.Context, err = genericclioptions.NewDevfileContext(cmd)
+	lo.ComponentOptions.Context, err = genericclioptions.NewContext(cmd)
 	return err
 }
 

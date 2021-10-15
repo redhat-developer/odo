@@ -25,7 +25,6 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/openshift/odo/pkg/devfile"
 
-	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -46,8 +45,6 @@ type DescribeComponentOptions struct {
 	componentName string
 	// if devfile components with name that matches arg[0]
 	devfileComponents []catalog.DevfileComponentType
-	// if componentName is a classic/odov1 component
-	component string
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -62,25 +59,10 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	o.componentName = args[0]
 	tasks := util.NewConcurrentTasks(2)
 
-	o.Context, err = genericclioptions.NewContext(cmd, true)
+	o.Context, err = genericclioptions.NewOfflineContext(cmd)
 	if err != nil {
 		return err
 	}
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		catalogList, err := catalog.ListComponents(o.Client)
-		if err != nil {
-			// TODO:
-			// This MAY have to change in the future.. There is no good way to determine whether the user
-			// wants to list OpenShift or Kubernetes components. So we simply just warn in debug V(4) if
-			// we are unable to list anything from OpenShift.
-			klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-		}
-		for _, image := range catalogList.Items {
-			if image.Name == o.componentName {
-				o.component = image.Name
-			}
-		}
-	}})
 
 	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 		catalogDevfileList, err := catalog.ListDevfileComponents("")
@@ -98,7 +80,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 
 // Validate validates the DescribeComponentOptions based on completed values
 func (o *DescribeComponentOptions) Validate() (err error) {
-	if len(o.devfileComponents) == 0 && o.component == "" {
+	if len(o.devfileComponents) == 0 {
 		return errors.Wrapf(err, "No components with the name \"%s\" found", o.componentName)
 	}
 
@@ -156,11 +138,6 @@ func (o *DescribeComponentOptions) Run(cmd *cobra.Command) (err error) {
 		} else {
 			fmt.Fprintln(w, "There are no Odo devfile components with the name \""+o.componentName+"\"")
 		}
-		if o.component != "" {
-			fmt.Fprintln(w, "\nS2I Based Components:")
-			fmt.Fprintln(w, "-"+o.component)
-		}
-		fmt.Fprintln(w)
 	}
 
 	return nil
