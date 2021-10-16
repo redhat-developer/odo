@@ -763,18 +763,11 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 // UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
 func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
-	csvSupport, err := client.IsCSVSupported()
-	if err != nil {
-		return err
-	}
-
-	if !csvSupport {
-		return nil
-	}
-
+	var strCRD string
+	var err error
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		strCRD := c.Kubernetes.Inlined
+		strCRD = c.Kubernetes.Inlined
 		if c.Kubernetes.Uri != "" {
 			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
 			if err != nil {
@@ -814,7 +807,7 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sCompon
 		if found {
 			continue
 		}
-		u.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
+		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
 
 		err = client.UpdateDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName(), d)
 		if err != nil {
@@ -871,7 +864,7 @@ func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (stri
 }
 
 // ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
-func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Component) error {
+func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Component, context string) error {
 	if len(k8sComponents) == 0 {
 		return nil
 	}
@@ -879,11 +872,19 @@ func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Comp
 	var unsupportedResources []unstructured.Unstructured
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		strCRD := c.Kubernetes.Inlined
+		var strCRD string
+		var err error
+		strCRD = c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			if err != nil {
+				return err
+			}
+		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		u := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
+		err = yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return err
 		}

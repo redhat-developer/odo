@@ -186,7 +186,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	log.Infof("\nCreating Services for component %s", a.ComponentName)
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = service.ValidateResourcesExist(a.Client.GetKubeClient(), k8sComponents)
+	err = service.ValidateResourcesExist(a.Client.GetKubeClient(), k8sComponents, a.Context)
 	if err != nil {
 		return err
 	}
