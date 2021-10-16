@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/component"
-
 	scontext "github.com/openshift/odo/pkg/segment/context"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/openshift/odo/pkg/envinfo"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -195,6 +194,14 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return err
 	}
 
+	// set the telemetry data
+	cmdCtx := cmd.Context()
+	devfileMetadata := po.Devfile.Data.GetMetadata()
+	scontext.SetClusterType(cmdCtx, po.Client)
+	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
+	scontext.SetLanguage(cmdCtx, component.GetLanguageFromDevfileMetadata(devfileMetadata))
+	scontext.SetProjectType(cmdCtx, component.GetProjectTypeFromDevfileMetadata(devfileMetadata))
+
 	return nil
 }
 
@@ -205,13 +212,6 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
-	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetClusterType(cmd.Context(), po.Client)
-	}
-
-	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetComponentType(cmd.Context(), component.GetComponentTypeFromDevfileMetadata(po.Devfile.Data.GetMetadata()))
-	}
 	// Return Devfile push
 	return po.DevfilePush()
 }
