@@ -61,7 +61,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	// Validate existence of the project to be deleted
 	isValidProject, err := project.Exists(pdo.Context, pdo.projectName)
 	if !isValidProject {
-		return fmt.Errorf("The project %s does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
+		return fmt.Errorf("The project '%s' does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
 	return
 }
