@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"text/tabwriter"
 )
 
 type operatorBackend struct {
@@ -130,7 +131,8 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(svc)
 	} else {
-		HumanReadableOutput(os.Stdout, svc)
+
+		HumanReadableOutput(tabwriter.NewWriter(os.Stdout, 4, 8, 0, " ", tabwriter.FilterHTML), svc)
 	}
 	return nil
 }
@@ -149,19 +151,12 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 }
 
 func HumanReadableCRListOutput(w io.Writer, crsList *service.OperatorBackedServiceCRList) {
-
-	fmt.Fprintf(w, "NAME:		%s\n", crsList.Name)
+	fmt.Fprintf(w, "NAME:\t%s\n", crsList.Name)
 	descriptionLines := strings.ReplaceAll(crsList.Spec.Description, "\n", "\n\t")
 	fmt.Fprintf(w, "DESCRIPTION:\n\n\t%s\n\n", descriptionLines)
 	fmt.Fprintf(w, "CRDs:\nNAME\t\tDESCRIPTION\n")
 	for _, it := range crsList.Spec.CRDS {
-		var format string
-		if len(it.Kind) < 7 {
-			format = "%s\t\t%s\n"
-		} else {
-			format = "%s\t%s\n"
-		}
-		fmt.Fprintf(w, format, it.Kind, it.Description)
+		fmt.Fprintf(w, "%s\t%s\n\t", it.Kind, it.Description)
 	}
 }
 
