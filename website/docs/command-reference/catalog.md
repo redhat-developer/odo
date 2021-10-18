@@ -146,3 +146,28 @@ FIELDS:
 A service is represented in the cluster by a `CustomResourceDefinition` (commonly named `CRD`). This command will display the details about this CRD such as  `kind`, `version`, and the list of fields available to define an instance of this custom resource.
 
 The list of fields is extracted from the *OpenAPI schema* included in the `CRD`. This information is optional in a `CRD`, and if it is not present, it is extracted from the `ClusterServiceVersion` (`CSV`) representing the service instead.
+
+It is also possible to request description of operator backed service without providing crd type information. Let us say you want to describe redis operator on cluster without CRD, you can do
+
+```shell
+odo catalog describe service redis-operator.v0.8.0
+NAME:	redis-operator.v0.8.0
+DESCRIPTION:
+
+	A Golang based redis operator that will make/oversee Redis
+	standalone/cluster mode setup on top of the Kubernetes. It can create a
+	redis cluster setup with best practices on Cloud as well as the Bare metal
+	environment. Also, it provides an in-built monitoring capability using
+
+... (cut short for beverity)
+	
+	Logging Operator is licensed under [Apache License, Version
+	2.0](https://github.com/OT-CONTAINER-KIT/redis-operator/blob/master/LICENSE)
+	
+
+CRDs:
+	NAME           DESCRIPTION
+	RedisCluster   Redis Cluster
+	Redis          Redis
+
+```

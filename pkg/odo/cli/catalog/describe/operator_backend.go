@@ -3,12 +3,6 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-	"regexp"
-	"sort"
-	"strings"
-
 	"github.com/go-openapi/spec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -16,6 +10,13 @@ import (
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+	"io"
+	"k8s.io/klog"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+	"text/tabwriter"
 )
 
 type operatorBackend struct {
@@ -25,6 +26,7 @@ type operatorBackend struct {
 	CSV            olm.ClusterServiceVersion
 	CR             *olm.CRDDescription
 	CRDSpec        *spec.Schema
+	CRDList        *service.OperatorBackedServiceCRList
 }
 
 func NewOperatorBackend() *operatorBackend {
@@ -35,7 +37,9 @@ func (ohb *operatorBackend) CompleteDescribeService(dso *DescribeServiceOptions,
 	ohb.Name = args[0]
 	oprType, CR, err := service.SplitServiceKindName(ohb.Name)
 	if err != nil {
-		return err
+		klog.V(2).Infof("could not determine csv, falling back to describing all of them")
+		oprType = args[0]
+		CR = ""
 	}
 	// we check if the cluster supports ClusterServiceVersion or not.
 	isCSVSupported, err := service.IsCSVSupported()
@@ -54,8 +58,8 @@ func (ohb *operatorBackend) CompleteDescribeService(dso *DescribeServiceOptions,
 
 func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions) error {
 	var err error
-	if ohb.OperatorType == "" || ohb.CustomResource == "" {
-		return errors.New("invalid service name, use the format <operator-type>/<crd-name>")
+	if ohb.OperatorType == "" {
+		return errors.New("invalid service name provided. should either be <operator-type> or <operator-type>/<crd-name>")
 	}
 	// make sure that CSV of the specified OperatorType exists
 	ohb.CSV, err = dso.KClient.GetClusterServiceVersion(ohb.OperatorType)
@@ -65,23 +69,41 @@ func (ohb *operatorBackend) ValidateDescribeService(dso *DescribeServiceOptions)
 		return err
 	}
 
-	var hasCR bool
-	hasCR, ohb.CR = dso.KClient.CheckCustomResourceInCSV(ohb.CustomResource, &ohb.CSV)
-	if !hasCR {
-		return fmt.Errorf("the %q resource doesn't exist in specified %q operator", ohb.CustomResource, ohb.OperatorType)
-	}
+	//if both operator type and cr are known, validate that it exists
+	if ohb.OperatorType != "" && ohb.CustomResource != "" {
+		var hasCR bool
+		hasCR, ohb.CR = dso.KClient.CheckCustomResourceInCSV(ohb.CustomResource, &ohb.CSV)
+		if !hasCR {
+			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", ohb.CustomResource, ohb.OperatorType)
+		}
 
-	ohb.CRDSpec, err = dso.KClient.GetCRDSpec(ohb.CR, ohb.OperatorType, ohb.CustomResource)
-	if err != nil {
-		return err
+		ohb.CRDSpec, err = dso.KClient.GetCRDSpec(ohb.CR, ohb.OperatorType, ohb.CustomResource)
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
 
 }
 
 func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) error {
-
+	if ohb.OperatorType != "" && ohb.CustomResource == "" {
+		//we don't have cr so list all possible crds
+		ohb.CRDList = service.NewOperatorBackedCRList(ohb.OperatorType, ohb.CSV.Spec.DisplayName, ohb.CSV.Spec.Description)
+		crds := *dso.KClient.GetCustomResourcesFromCSV(&ohb.CSV)
+		for _, custRes := range crds {
+			ohb.CRDList.Spec.CRDS = append(ohb.CRDList.Spec.CRDS, service.OperatorServiceCRItem{
+				Kind:        custRes.Kind,
+				Description: custRes.Description,
+			})
+		}
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(ohb.CRDList)
+		} else {
+			HumanReadableCRListOutput(os.Stdout, ohb.CRDList)
+		}
+		return nil
+	}
 	if dso.isExample {
 		almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
 		if err != nil {
@@ -104,13 +126,12 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 
 			log.Info(string(yamlCR))
 		}
-		return nil
 	}
-
 	svc := service.NewOperatorBackedService(ohb.Name, ohb.CR.Kind, ohb.CR.Version, ohb.CR.Description, ohb.CR.DisplayName, ohb.CRDSpec)
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(svc)
 	} else {
+
 		HumanReadableOutput(os.Stdout, svc)
 	}
 	return nil
@@ -127,6 +148,19 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 	}
 	fmt.Fprintln(w, "\nFIELDS:")
 	displayProperties(w, service.Spec.Schema, "")
+}
+
+func HumanReadableCRListOutput(w io.Writer, crsList *service.OperatorBackedServiceCRList) {
+	fmt.Fprintf(w, "NAME:\t%s\n", crsList.Name)
+	descriptionLines := strings.ReplaceAll(crsList.Spec.Description, "\n", "\n\t")
+	fmt.Fprintf(w, "DESCRIPTION:\n\n\t%s\n\n", descriptionLines)
+	fmt.Fprintf(w, "CRDs:\n")
+	tw := tabwriter.NewWriter(w, 4, 4, 3, ' ', tabwriter.TabIndent)
+	defer tw.Flush()
+	fmt.Fprintf(tw, "\tNAME\tDESCRIPTION\n")
+	for _, it := range crsList.Spec.CRDS {
+		fmt.Fprintf(tw, "\t%s\t%s\n", it.Kind, it.Description)
+	}
 }
 
 // displayProperties displays the properties of an OpenAPI schema in a human readable form
