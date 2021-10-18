@@ -224,8 +224,7 @@ func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) strin
 	return componentType
 }
 
-// GetProjectTypeFromDevfileMetadata returns component type from the devfile metadata;
-// it could either be projectType or language, if neither of them are set, return 'Not available'
+// GetProjectTypeFromDevfileMetadata returns component type from the devfile metadata
 func GetProjectTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
 	var projectType string
 	if metadata.ProjectType != "" {
@@ -236,8 +235,7 @@ func GetProjectTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string 
 	return projectType
 }
 
-// GetLanguageFromDevfileMetadata returns component type from the devfile metadata;
-// it could either be projectType or language, if neither of them are set, return 'Not available'
+// GetLanguageFromDevfileMetadata returns component type from the devfile metadata
 func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
 	var language string
 	if metadata.Language != "" {
