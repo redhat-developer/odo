@@ -18,12 +18,12 @@ then
   exit 1
 fi
 
-MIRROR="https://mirror.openshift.com/pub/openshift-v4/clients/odo/$2/"
-INSTALLATION_GUIDE="https://docs.openshift.com/container-platform/latest/cli_reference/developer_cli_odo/installing-odo.html"
+MIRROR="https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/$2/"
+INSTALLATION_GUIDE="https://odo.dev/docs/getting-started/installation"
 
 echo -e "# Installation of $2
-To install odo, follow our installation guide at [docs.openshift.com]($INSTALLATION_GUIDE)
-After each release, binaries are synced to [mirror.openshift.com]($MIRROR)" > /tmp/base
+To install odo, follow our installation guide at [odo.dev]($INSTALLATION_GUIDE)
+After each release, binaries are synced to [developers.redhat.com]($MIRROR)" > /tmp/base
 
 
 
