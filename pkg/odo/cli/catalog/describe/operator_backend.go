@@ -154,10 +154,12 @@ func HumanReadableCRListOutput(w io.Writer, crsList *service.OperatorBackedServi
 	fmt.Fprintf(w, "NAME:\t%s\n", crsList.Name)
 	descriptionLines := strings.ReplaceAll(crsList.Spec.Description, "\n", "\n\t")
 	fmt.Fprintf(w, "DESCRIPTION:\n\n\t%s\n\n", descriptionLines)
-	fmt.Fprintf(w, "CRDs:\nNAME\t\tDESCRIPTION\n")
-	tw := tabwriter.NewWriter(w, 4, 4, 2, ' ', tabwriter.TabIndent)
+	fmt.Fprintf(w, "CRDs:\n")
+	tw := tabwriter.NewWriter(w, 4, 4, 3, ' ', tabwriter.TabIndent)
+	defer tw.Flush()
+	fmt.Fprintf(tw, "\tNAME\tDESCRIPTION\n")
 	for _, it := range crsList.Spec.CRDS {
-		fmt.Fprintf(tw, "%s\t%s\n\t", it.Kind, it.Description)
+		fmt.Fprintf(tw, "\t%s\t%s\n", it.Kind, it.Description)
 	}
 }
 
