@@ -16,6 +16,9 @@ import (
 const ComponentType = "componentType"
 const ClusterType = "clusterType"
 const TelemetryStatus = "isTelemetryEnabled"
+const DevfileName = "devfileName"
+const Language = "language"
+const ProjectType = "projectType"
 
 const NOTFOUND = "not-found"
 
@@ -88,6 +91,18 @@ func SetTelemetryStatus(ctx context.Context, isEnabled bool) {
 
 func SetSignal(ctx context.Context, signal os.Signal) {
 	setContextProperty(ctx, "receivedSignal", signal.String())
+}
+
+func SetDevfileName(ctx context.Context, devfileName string) {
+	setContextProperty(ctx, DevfileName, devfileName)
+}
+
+func SetLanguage(ctx context.Context, language string) {
+	setContextProperty(ctx, Language, language)
+}
+
+func SetProjectType(ctx context.Context, projectType string) {
+	setContextProperty(ctx, ProjectType, projectType)
 }
 
 // GetTelemetryStatus gets the telemetry status that is set before a command is run

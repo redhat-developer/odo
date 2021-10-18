@@ -41,6 +41,9 @@ type CreateOptions struct {
 	appName          string
 	interactive      bool
 	now              bool
+	// devfileName stores the "componentType" passed by user irrespective of it being a valid componentType
+	// we use it for telemetry
+	devfileName string
 	*PushOptions
 
 	devfileMetadata DevfileMetadata
@@ -340,6 +343,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		componentNamespace = co.Context.Project
 	}
+
+	// set devfileName to same value as componentType for telemetry
+	co.devfileName = componentType
+	scontext.SetDevfileName(cmd.Context(), co.devfileName)
 
 	// Set devfileMetadata struct
 	co.devfileMetadata.componentType = componentType

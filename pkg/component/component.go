@@ -224,6 +224,28 @@ func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) strin
 	return componentType
 }
 
+// GetProjectTypeFromDevfileMetadata returns component type from the devfile metadata
+func GetProjectTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
+	var projectType string
+	if metadata.ProjectType != "" {
+		projectType = metadata.ProjectType
+	} else {
+		projectType = NotAvailable
+	}
+	return projectType
+}
+
+// GetLanguageFromDevfileMetadata returns component type from the devfile metadata
+func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
+	var language string
+	if metadata.Language != "" {
+		language = metadata.Language
+	} else {
+		language = NotAvailable
+	}
+	return language
+}
+
 func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
 	if info.Exists() {
 		component := newComponentWithType(info.GetName(), componentType)
