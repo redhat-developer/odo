@@ -157,7 +157,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					helper.MatchAllInOutput(output, []string{fmt.Sprintf("name: %s", serviceName), "quay.io/opstree/redis:v6.2.5", "ClusterIP", "100m", "128Mi"})
 				})
 
-				When("creating a postgres operand with params", func() {
+				When("creating a Redis operand with params", func() {
 					var operandName string
 
 					BeforeEach(func() {

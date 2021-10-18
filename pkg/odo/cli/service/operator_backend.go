@@ -94,16 +94,33 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
+			// First check if service with provided name already exists
+			svcFullName := strings.Join([]string{b.kind, o.ServiceName}, "/")
+			exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+			if err != nil {
+				return err
+			}
+			if exists {
+				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
+			}
 			u.SetName(o.ServiceName)
 		} else {
 			o.ServiceName = u.GetName()
 		}
 
+		csvPtr, err := o.KClient.GetCSVWithCR(u.GetKind())
+		if err != nil {
+			// error only occurs when OperatorHub is not installed.
+			// k8s doesn't have it installed by default but OCP does
+			return err
+		}
+		csv = *csvPtr
+
 		// CRD is valid. We can use it further to create a service from it.
 		b.CustomResourceDefinition = u.Object
 
 		// Validate spec
-		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.kind, &csv)
 		if !hasCR {
 			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
 		}
@@ -113,7 +130,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
-		err = validate.AgainstSchema(crd, u.UnstructuredContent(), strfmt.Default)
+		err = validate.AgainstSchema(crd, u.Object["spec"], strfmt.Default)
 		if err != nil {
 			return err
 		}
@@ -123,7 +140,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		csv, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
 		if err != nil {
 			// error only occurs when OperatorHub is not installed.
-			// k8s does't have it installed by default but OCP does
+			// k8s doesn't have it installed by default but OCP does
 			return err
 		}
 		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
@@ -174,6 +191,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			}
 		}
 
+		u.SetName(o.ServiceName)
 		if u.GetName() == "" {
 			return ErrNoMetadataName
 		}
@@ -186,7 +204,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		}
 
 		// Validate spec
-		err = validate.AgainstSchema(crd, u.UnstructuredContent(), strfmt.Default)
+		err = validate.AgainstSchema(crd, u.Object["spec"], strfmt.Default)
 		if err != nil {
 			return err
 		}
