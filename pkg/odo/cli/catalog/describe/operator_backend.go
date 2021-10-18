@@ -132,7 +132,7 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		machineoutput.OutputSuccess(svc)
 	} else {
 
-		HumanReadableOutput(tabwriter.NewWriter(os.Stdout, 4, 8, 0, " ", tabwriter.FilterHTML), svc)
+		HumanReadableOutput(os.Stdout), svc)
 	}
 	return nil
 }
@@ -151,12 +151,13 @@ func HumanReadableOutput(w io.Writer, service service.OperatorBackedService) {
 }
 
 func HumanReadableCRListOutput(w io.Writer, crsList *service.OperatorBackedServiceCRList) {
-	fmt.Fprintf(w, "NAME:\t%s\n", crsList.Name)
+	tw := tabwriter.NewWriter(w, 4, 4, 2, ' ', tabwriter.TabIndent)
+	fmt.Fprintf(tw, "NAME:\t%s\n", crsList.Name)
 	descriptionLines := strings.ReplaceAll(crsList.Spec.Description, "\n", "\n\t")
-	fmt.Fprintf(w, "DESCRIPTION:\n\n\t%s\n\n", descriptionLines)
-	fmt.Fprintf(w, "CRDs:\nNAME\t\tDESCRIPTION\n")
+	fmt.Fprintf(tw, "DESCRIPTION:\n\n\t%s\n\n", descriptionLines)
+	fmt.Fprintf(tw, "CRDs:\nNAME\t\tDESCRIPTION\n")
 	for _, it := range crsList.Spec.CRDS {
-		fmt.Fprintf(w, "%s\t%s\n\t", it.Kind, it.Description)
+		fmt.Fprintf(tw, "%s\t%s\n\t", it.Kind, it.Description)
 	}
 }
 
