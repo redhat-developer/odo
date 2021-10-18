@@ -132,7 +132,7 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		machineoutput.OutputSuccess(svc)
 	} else {
 
-		HumanReadableOutput(os.Stdout), svc)
+		HumanReadableOutput(os.Stdout, svc)
 	}
 	return nil
 }
