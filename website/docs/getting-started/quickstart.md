@@ -17,7 +17,7 @@ At the end of the guide, you will be able to list, add and delete todo items fro
 ## Prerequisites
 
 * A [development Kubernetes](./cluster-setup/kubernetes.md) cluster.
-* Install [Crunchy's Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster. Again, assuming you have admin privileges on the development Kubernetes cluster, you can install it using below command:
+* Install the [Crunchy Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster. Again, assuming you have admin privileges on the development Kubernetes cluster, you can install it using below command:
   ```shell
   kubectl create -f https://operatorhub.io/install/postgresql.yaml
   ```   
