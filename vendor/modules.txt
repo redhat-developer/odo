@@ -494,7 +494,6 @@ github.com/openshift/client-go/route/clientset/versioned/typed/route/v1/fake
 github.com/openshift/client-go/user/clientset/versioned/scheme
 github.com/openshift/client-go/user/clientset/versioned/typed/user/v1
 # github.com/openshift/library-go v0.0.0-20210106214821-c4d0b9c8d55f
-## explicit
 github.com/openshift/library-go/pkg/oauth/oauthdiscovery
 # github.com/openshift/oc v0.0.0-alpha.0.0.20210325095525-2513fdbb36e2
 ## explicit
