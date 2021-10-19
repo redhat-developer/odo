@@ -37,9 +37,13 @@ func DisplayComponents(components []string) {
 func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	log.Info("Services available through Operators")
-	fmt.Fprintln(w, "NAME", "\t", "CRDs")
+	fmt.Fprintln(w, "NAME", "\t", "CRDs", "\t", "STATE")
 	for _, csv := range csvs.Items {
-		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", CsvOperators(csv.Spec.CustomResourceDefinitions))
+		var state = "Not Ready"
+		if csv.Status.Phase == "Succeeded" {
+			state = "Ready"
+		}
+		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", CsvOperators(csv.Spec.CustomResourceDefinitions), "\t", state)
 	}
 	w.Flush()
 }

@@ -266,7 +266,7 @@ func ListOperatorServices(client kclient.ClientInterface) (*olm.ClusterServiceVe
 	csvList.TypeMeta = allCsvs.TypeMeta
 	csvList.ListMeta = allCsvs.ListMeta
 	for _, csv := range allCsvs.Items {
-		if csv.Status.Phase == "Succeeded" {
+		if csv.Status.Phase != "Failed" {
 			csvList.Items = append(csvList.Items, csv)
 		}
 	}
