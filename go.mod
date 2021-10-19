@@ -1,6 +1,6 @@
 module github.com/openshift/odo
 
-go 1.15
+go 1.16
 
 require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
@@ -31,7 +31,6 @@ require (
 	github.com/onsi/gomega v1.14.0
 	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
 	github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
-	github.com/openshift/library-go v0.0.0-20210106214821-c4d0b9c8d55f
 	github.com/openshift/oc v0.0.0-alpha.0.0.20210325095525-2513fdbb36e2
 	github.com/operator-framework/api v0.3.20
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
