@@ -32,6 +32,23 @@ The cluster admin must install two Operators into the cluster:
 
 We will use [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) found on the [OperatorHub](https://operatorhub.io) to demonstrate a sample use case. This Operator will be installed in `my-postgresql-operator-dev4devs-com` namespace by default, if you want to use another namespace, make sure that you add your namespace to `.spec.targetNamespaces` list in the definition file before installing it. 
 
+<details>
+  <summary>In case of IBM Z & Power, please see below part to install PostgreSQL Operator</summary>
+
+#### Steps to install Dev4Devs PostgreSQL Operator on IBM Z and Power
+
+Note: Since operator [Dev4Devs PostgreSQL Operator](https://operatorhub.io/operator/postgresql-operator-dev4devs-com) is only supported on x86, this section will use operator-registry image and PostgreSQL Operator image which are published on `quay.io/ibm` by default. For Z, use [operator-registry-s390x image](https://quay.io/repository/ibm/operator-registry-s390x) and [postgresql-operator-s390x image](https://quay.io/repository/ibm/postgresql-operator-s390x). For Power, use [operator-registry-ppc64le image](https://quay.io/repository/ibm/operator-registry-ppc64le) and [postgresql-operator-ppc64le image](https://quay.io/repository/ibm/postgresql-operator-ppc64le).
+
+1. Create custom CatalogSource
+```shell  
+oc apply -f https://raw.githubusercontent.com/openshift/odo/main/website/manifests/catalog-source-$(uname -m).yaml
+```
+2. Install PostgreSQL Operator from custom CatalogSource
+```shell
+oc create -f https://raw.githubusercontent.com/openshift/odo/main/website/manifests/postgresql-operator-dev4devs-com-IBM-Z-P.yaml
+```
+</details>
+
 **Note**: We will use the `my-postgresql-operator-dev4devs-com` namespace for this guide.
 
 ## Application Developer
