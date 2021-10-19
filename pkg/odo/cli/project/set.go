@@ -1,9 +1,9 @@
 package project
 
 import (
-	"errors"
 	"fmt"
 
+	odoerrors "github.com/openshift/odo/pkg/errors"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
@@ -65,7 +65,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 
 	exists, err := project.Exists(pso.Context, pso.projectName)
 	if kerrors.IsForbidden(err) {
-		return errors.New(forbiddenErrMessage)
+		return &odoerrors.Unauthorized{}
 	}
 	if !exists {
 		return fmt.Errorf("The project %s does not exist", pso.projectName)

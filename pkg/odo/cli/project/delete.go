@@ -1,9 +1,9 @@
 package project
 
 import (
-	"errors"
 	"fmt"
 
+	odoerrors "github.com/openshift/odo/pkg/errors"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -63,7 +63,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	// Validate existence of the project to be deleted
 	isValidProject, err := project.Exists(pdo.Context, pdo.projectName)
 	if kerrors.IsForbidden(err) {
-		return errors.New(forbiddenErrMessage)
+		return &odoerrors.Unauthorized{}
 	}
 	if !isValidProject {
 		return fmt.Errorf("The project %q does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
