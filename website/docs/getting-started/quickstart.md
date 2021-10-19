@@ -21,7 +21,7 @@ At the end of the guide, you will be able to list, add and delete todo items fro
   ```shell
   kubectl create -f https://operatorhub.io/install/postgresql.yaml
   ```   
-* odo binary [installed](./installation.md) on your system.
+* Have the odo binary [installed](./installation.md) on your system.
 
 ## Create a project
 
