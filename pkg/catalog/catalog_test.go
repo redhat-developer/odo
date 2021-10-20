@@ -239,7 +239,7 @@ func TestListOperatorServices(t *testing.T) {
 			expectedErr:       false,
 		},
 		{
-			name:              "supported csv, return succeeded only",
+			name:              "supported csv, return non-failed only",
 			isCSVsupported:    true,
 			isCSVsupportedErr: nil,
 			list: &olm.ClusterServiceVersionList{
@@ -263,6 +263,11 @@ func TestListOperatorServices(t *testing.T) {
 							Phase: "other phase",
 						},
 					},
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "Failed",
+						},
+					},
 				},
 			},
 			expectedList: &olm.ClusterServiceVersionList{
@@ -274,6 +279,16 @@ func TestListOperatorServices(t *testing.T) {
 					{
 						Status: olm.ClusterServiceVersionStatus{
 							Phase: "Succeeded",
+						},
+					},
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "",
+						},
+					},
+					{
+						Status: olm.ClusterServiceVersionStatus{
+							Phase: "other phase",
 						},
 					},
 				},
