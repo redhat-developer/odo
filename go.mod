@@ -31,7 +31,6 @@ require (
 	github.com/onsi/gomega v1.14.0
 	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
 	github.com/openshift/client-go v0.0.0-20201214125552-e615e336eb49
-	github.com/openshift/library-go v0.0.0-20210106214821-c4d0b9c8d55f
 	github.com/openshift/oc v0.0.0-alpha.0.0.20210325095525-2513fdbb36e2
 	github.com/operator-framework/api v0.3.20
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
@@ -57,7 +56,7 @@ require (
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3
 	k8s.io/cli-runtime v0.20.1
-	k8s.io/client-go v1.5.2
+	k8s.io/client-go v0.21.3
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.8.0
 	k8s.io/kubectl v0.20.1
