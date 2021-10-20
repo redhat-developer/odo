@@ -44,6 +44,10 @@ module.exports = {
               label: 'Installation',
               to: 'docs/getting-started/installation'
             },
+            {
+              label: 'Quickstart',
+              to: 'docs/getting-started/quickstart'
+            },
           ]
         },
         {
