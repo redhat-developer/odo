@@ -7,7 +7,7 @@ toc::[]
 
 == Setting up
 
-Requires *Go 1.15*
+Requires *Go 1.16*
 
 Testing and release builds happen with the above version. Developers are advised to stick to this version if they can but it is not compulsory.
 
