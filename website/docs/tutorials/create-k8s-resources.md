@@ -6,7 +6,7 @@ sidebar_position: 2
 
 While odo is mainly focused on application developers who would like to care less about Kubernetes and more about getting their application running on top of it, it also tries to make things simple for application architects or devfile stack authors who are comfortable with Kubernetes. One such feature of odo that we will discuss in this guide is creation of Kubernetes resources like Pods, Deployments, Services (Kubernetes Services, not the Operator backed ones) and such using odo. Using this, if an advanced user would like to create some Kubernetes resources, they could edit the `devfile.yaml` and add it there. An `odo push` after the edit would create the resource on the cluster. A resource thus created would co-exist with an odo component. 
 
-In this guide, we will create an nginx Deployment using its Kubernetes manifest. We will write this manifest in the `devfile.yaml`. Upon doing `odo push`, you will be able to see a Deployment and its Pods on the Kubernetes cluster using `kubectl` commands.
+In this guide, we will create an nginx Deployment using its Kubernetes manifest. We will write this manifest in the `devfile.yaml`. Upon doing `odo push`, you will be able to see a Deployment and its Pods along with the component on the Kubernetes cluster using `kubectl` commands.
 
 ## Create an odo component
 
