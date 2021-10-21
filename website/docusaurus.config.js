@@ -87,6 +87,12 @@ module.exports = {
       theme: lightCodeTheme,
       darkTheme: darkCodeTheme,
     },
+    algolia: {
+      appId: 'BH4D9OD16A',
+      apiKey: 'e498f97159ee3094d356b8ed95dd405f',
+      indexName: 'odo',
+      debug: false
+    }
   },
   presets: [
     [
