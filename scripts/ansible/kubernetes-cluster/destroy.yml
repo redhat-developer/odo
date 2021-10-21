@@ -1,0 +1,209 @@
+---
+- name: Destroy OpenShift Cluster on IBM Cloud
+  hosts: localhost
+  collections:
+   - ibm.cloudcollection
+  tasks:
+
+    - name: Fetch the variables from var file
+      include_vars:
+        file: vars.yml
+
+    - name: Get the NFS IP details
+      ibm_is_floating_ip_info:
+        name: "{{ name_prefix }}-nfs-ip"
+      failed_when:
+         - nfsip_output.rc != 0
+         - '"No floatingIP found" not in nfsip_output.stderr'
+      register: nfsip_output
+
+    - name: set nfsip in fact
+      set_fact:
+        cacheable: True
+        nfsip: "{{ nfsip_output.resource }}"
+      when: nfsip_output.resource.id is defined
+
+    - name: Remove NFS IP
+      ibm_is_floating_ip:
+        id: "{{ nfsip.id }}"
+        state: absent
+      when:
+      - nfsip is defined
+
+
+    - name: Get the NFS server details
+      ibm_is_instance_info:
+        name: "{{ name_prefix }}-nfs"
+      failed_when:
+         - nfs_output.rc != 0
+         - '"No Instance found" not in nfs_output.stderr'
+      register: nfs_output
+
+    - name: set nfs in fact
+      set_fact:
+        cacheable: True
+        nfs: "{{ nfs_output.resource }}"
+      when: nfs_output.resource.id is defined
+
+    - name: Remove NFS server
+      ibm_is_instance:
+        id: "{{ nfs.id }}"
+        image: "{{ nfs.image }}"
+        resource_group: "{{ nfs.resource_group }}"
+        vpc: "{{ nfs.vpc }}"
+        profile: "{{ nfs.profile }}"
+        keys: "{{ nfs.keys }}"
+        primary_network_interface:
+        - subnet: "{{ nfs.primary_network_interface[0].subnet }}"
+        zone: "{{ nfs.zone }}"
+        state: absent
+      when:
+      - nfs is defined
+
+
+    - name: Get the vpc details
+      ibm_is_vpc_info:
+        name: "{{ name_prefix }}-vpc"
+      failed_when:
+         - vpc_output.rc != 0
+         - '"No VPC found" not in vpc_output.stderr'     
+      register: vpc_output
+
+    - name: set vpc in fact
+      set_fact:
+        cacheable: True
+        vpc: "{{ vpc_output.resource }}"
+      when: vpc_output.resource.id is defined
+
+
+    - name: Get the subnet details
+      ibm_is_subnet_info:
+        name: "{{ name_prefix }}-subnet"
+      failed_when:
+         - subnet_output.rc != 0
+         - '"No subnet found" not in subnet_output.stderr'
+      register: subnet_output
+
+    - name: set subnet in fact
+      set_fact:
+        cacheable: True
+        subnet: "{{ subnet_output.resource }}"
+      when: subnet_output.resource.id is defined
+
+
+    - name: Get the cluster details
+      ibm_container_vpc_cluster_info:
+        name: "{{ name_prefix }}-cluster"
+      failed_when:
+         - cluster_output.rc != 0
+         - '"cluster could not be found" not in cluster_output.stderr'
+      register: cluster_output
+
+    - name: set cluster in fact
+      set_fact:
+        cacheable: True
+        cluster: "{{ cluster_output.resource }}"
+      when: cluster_output.resource.id is defined
+
+    - name: Remove Cluster
+      ibm_container_vpc_cluster:
+        id: "{{ cluster.id }}"
+        state: absent
+        name: "{{ name_prefix }}-cluster"
+        flavor: "{{ cluster.worker_pools.0.flavor }}"
+        vpc_id: "{{ vpc.id }}"
+        zones: 
+        - {
+          subnet_id: "{{ subnet.id }}",
+          name: "{{ cluster.worker_pools.0.zones.0.zone }}"
+        }
+      when:
+      - vpc is defined
+      - subnet is defined
+      - cluster is defined
+
+
+    - name: Get the Resource group details
+      ibm_resource_group_info:
+        name: "{{ name_prefix }}-group"
+      failed_when:
+         - rg_output.rc != 0
+         - '"Given Resource Group is not found" not in rg_output.stderr'     
+      register: rg_output
+
+    - name: set Resource group in fact
+      set_fact:
+        cacheable: True
+        rg: "{{ rg_output.resource }}"
+      when: rg_output.resource.id is defined
+
+
+    - name: Get the Cloud Object Storage details
+      ibm_resource_instance_info:
+        name: "{{ name_prefix }}-cos"
+        resource_group_id: "{{ rg.id }}"
+      failed_when:
+         - cos_output.rc != 0
+         - '"No resource instance found" not in cos_output.stderr'
+      when: rg is defined
+      register: cos_output
+
+    - name: set Cloud Object Storage in fact
+      set_fact:
+        cacheable: True
+        cos: "{{ cos_output.resource }}"
+      when: cos_output.resource.id is defined
+
+
+    - name: Remove Cloud Object Storage
+      ibm_resource_instance:
+        id: "{{ cos.id }}"
+        name: "{{ name_prefix }}-cos"
+        service: "cloud-object-storage"
+        plan: "standard"
+        location: "global"
+        state: absent
+      when: cos is defined
+
+
+    - name: Remove VPC Subnet
+      ibm_is_subnet:
+        state: absent
+        id: "{{ subnet.id }}"
+      when: subnet is defined
+
+
+    - name: Get the Public Gateway details
+      ibm_is_public_gateway_info:
+        name: "{{ name_prefix }}-gw"
+      failed_when:
+         - gw_output.rc != 0
+         - '"No Public gateway found" not in gw_output.stderr'
+      register: gw_output
+
+    - name: set Public Gateway in fact
+      set_fact:
+        cacheable: True
+        gw: "{{ gw_output.resource }}"
+      when: gw_output.resource.id is defined
+
+
+    - name: Remove Public Gateway
+      ibm_is_public_gateway:
+        id: "{{ gw.id }}"
+        state: absent
+      when: gw is defined
+
+
+    - name: Remove VPC
+      ibm_is_vpc:
+        state: absent
+        id: "{{ vpc.id }}"
+      when: vpc is defined
+
+
+    - name: Remove Resource Group
+      ibm_resource_group:
+        state: absent
+        id: "{{ rg.id }}"
+      when: rg is defined
