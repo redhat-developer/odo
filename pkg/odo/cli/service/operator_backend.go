@@ -26,6 +26,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+var (
+	ErrNoMetadataName = errors.New("invalid \"metadata\" in the yaml; provide a valid \"metadata.name\"")
+)
+
 // CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
 func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
 	// since interactive mode is not supported for Operators yet, set it to false
@@ -59,7 +63,7 @@ func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Com
 }
 
 func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
-	d := svc.NewDynamicCRD()
+	u := unstructured.Unstructured{}
 	// if the user wants to create service from a file, we check for
 	// existence of file and validate if the requested operator and CR
 	// exist on the cluster
@@ -77,31 +81,21 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
-		err = yaml.Unmarshal(fileContents, &d.OriginalCRD)
+		err = yaml.Unmarshal(fileContents, &u.Object)
 		if err != nil {
 			return err
 		}
 
-		// Check if the operator and the CR exist on cluster
-		b.CustomResource, csv, err = svc.GetCSV(o.KClient, d.OriginalCRD)
-		if err != nil {
-			return err
-		}
+		gvk := u.GroupVersionKind()
+		b.group, b.version, b.kind = gvk.Group, gvk.Version, gvk.Kind
 
-		// all is well, let's populate the fields required for creating operator backed service
-		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
-		if err != nil {
-			return err
-		}
-
-		err = d.ValidateMetadataInCRD()
-		if err != nil {
-			return err
+		if u.GetName() == "" {
+			return ErrNoMetadataName
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
 			// First check if service with provided name already exists
-			svcFullName := strings.Join([]string{b.CustomResource, o.ServiceName}, "/")
+			svcFullName := strings.Join([]string{b.kind, o.ServiceName}, "/")
 			exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
 			if err != nil {
 				return err
@@ -109,20 +103,24 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			if exists {
 				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
 			}
-
-			d.SetServiceName(o.ServiceName)
+			u.SetName(o.ServiceName)
 		} else {
-			o.ServiceName, err = d.GetServiceNameFromCRD()
-			if err != nil {
-				return err
-			}
+			o.ServiceName = u.GetName()
 		}
 
+		csvPtr, err := o.KClient.GetCSVWithCR(u.GetKind())
+		if err != nil {
+			// error only occurs when OperatorHub is not installed.
+			// k8s doesn't have it installed by default but OCP does
+			return err
+		}
+		csv = *csvPtr
+
 		// CRD is valid. We can use it further to create a service from it.
-		b.CustomResourceDefinition = d.OriginalCRD
+		b.CustomResourceDefinition = u.Object
 
 		// Validate spec
-		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.CustomResource, &csv)
+		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.kind, &csv)
 		if !hasCR {
 			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
 		}
@@ -132,7 +130,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			return err
 		}
 
-		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		err = validate.AgainstSchema(crd, u.Object["spec"], strfmt.Default)
 		if err != nil {
 			return err
 		}
@@ -142,7 +140,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		csv, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
 		if err != nil {
 			// error only occurs when OperatorHub is not installed.
-			// k8s does't have it installed by default but OCP does
+			// k8s doesn't have it installed by default but OCP does
 			return err
 		}
 		b.group, b.version, b.resource, err = svc.GetGVRFromOperator(csv, b.CustomResource)
@@ -171,14 +169,14 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 
-			d.OriginalCRD = builtCRD
+			u.Object = builtCRD
 		} else {
 			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
 			if err != nil {
 				return err
 			}
 
-			d.OriginalCRD = almExample
+			u.Object = almExample
 		}
 
 		if o.ServiceName != "" && !o.DryRun {
@@ -193,25 +191,20 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			}
 		}
 
-		d.SetServiceName(o.ServiceName)
-
-		err = d.ValidateMetadataInCRD()
-		if err != nil {
-			return err
+		u.SetName(o.ServiceName)
+		if u.GetName() == "" {
+			return ErrNoMetadataName
 		}
 
 		// CRD is valid. We can use it further to create a service from it.
-		b.CustomResourceDefinition = d.OriginalCRD
+		b.CustomResourceDefinition = u.Object
 
 		if o.ServiceName == "" {
-			o.ServiceName, err = d.GetServiceNameFromCRD()
-			if err != nil {
-				return err
-			}
+			o.ServiceName = u.GetName()
 		}
 
 		// Validate spec
-		err = validate.AgainstSchema(crd, d.OriginalCRD["spec"], strfmt.Default)
+		err = validate.AgainstSchema(crd, u.Object["spec"], strfmt.Default)
 		if err != nil {
 			return err
 		}
@@ -326,7 +319,7 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 		}
 	}
 
-	devfileList, err := svc.ListDevfileServices(o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
+	devfileList, err := svc.ListDevfileServices(o.KClient, o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
 	if err != nil {
 		return err
 	}

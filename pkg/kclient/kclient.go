@@ -228,7 +228,7 @@ func (c *Client) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
 }
 
 func (c *Client) IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
-	klog.V(4).Infof("Checking if %q resource supported", resourceName)
+	klog.V(4).Infof("Checking if %q resource is supported", resourceName)
 
 	if c.supportedResources == nil {
 		c.supportedResources = make(map[string]bool, 7)

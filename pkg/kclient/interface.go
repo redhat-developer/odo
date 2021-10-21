@@ -3,6 +3,8 @@ package kclient
 import (
 	"io"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	"github.com/go-openapi/spec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/unions"
@@ -32,7 +34,7 @@ type ClientInterface interface {
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	DeleteDeployment(labels map[string]string) error
-	CreateDynamicResource(exampleCustomResource map[string]interface{}, ownerReferences []metav1.OwnerReference, group, version, resource string) error
+	CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error
 	ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error)
 	GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error)
 	UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error
@@ -87,6 +89,8 @@ type ClientInterface interface {
 	GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error)
 	GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error)
 	GetCRDSpec(cr *olm.CRDDescription, resourceType string, resourceName string) (*spec.Schema, error)
+	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
+	GetOperatorGVRList() ([]meta.RESTMapping, error)
 
 	// pods.go
 	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error)

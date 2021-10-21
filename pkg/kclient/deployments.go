@@ -7,6 +7,8 @@ import (
 	"sort"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -324,20 +326,16 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 }
 
 // CreateDynamicResource creates a dynamic custom resource
-func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, ownerReferences []metav1.OwnerReference, group, version, resource string) error {
-	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
-
+func (c *Client) CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error {
 	deployment := &unstructured.Unstructured{
-		Object: exampleCustomResource,
+		Object: exampleCustomResource.Object,
 	}
-
-	deployment.SetOwnerReferences(ownerReferences)
 
 	debugOut, _ := json.MarshalIndent(deployment, " ", " ")
 	klog.V(5).Infoln("Creating resource:")
 	klog.V(5).Infoln(string(debugOut))
 	// Create the dynamic resource based on the alm-example for the CRD
-	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{FieldManager: FieldManager})
+	_, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return err
 	}
@@ -363,8 +361,7 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 	return list, nil
 }
 
-// GetDynamicResource returns an unstructured instances of a Custom
-// Resource currently deployed in the active namespace of the cluster
+// GetDynamicResource returns an unstructured instance of a Custom Resource currently deployed in the active namespace
 func (c *Client) GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error) {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 

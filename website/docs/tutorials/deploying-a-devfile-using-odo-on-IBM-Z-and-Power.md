@@ -1,6 +1,6 @@
 ---
 title: Using odo on IBM-Z and Power
-sidebar_position: 2
+sidebar_position: 3
 ---
 [//]: # (Add prerequisite section)
 

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -45,36 +47,6 @@ const UriFolder = "kubernetes"
 
 const filePrefix = "odo-service-"
 
-// GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
-// It returns a CR (string representation) and CSV (Operator) upon successfully
-// able to find them, an error otherwise.
-func GetCSV(client kclient.ClientInterface, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
-	cr := crd["kind"].(string)
-	csvs, err := client.ListClusterServiceVersions()
-	if err != nil {
-		return cr, olm.ClusterServiceVersion{}, err
-	}
-
-	csv, err := doesCRExist(cr, csvs)
-	if err != nil {
-		return cr, olm.ClusterServiceVersion{},
-			fmt.Errorf("could not find specified service/custom resource: %s; please check the \"kind\" field in the yaml (it's case-sensitive)", cr)
-	}
-	return cr, csv, nil
-}
-
-// doesCRExist checks if the CR exists in the CSV
-func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterServiceVersion, error) {
-	for _, csv := range csvs.Items {
-		for _, operatorCR := range csv.Spec.CustomResourceDefinitions.Owned {
-			if kind == operatorCR.Kind {
-				return csv, nil
-			}
-		}
-	}
-	return olm.ClusterServiceVersion{}, errors.New("could not find the requested cluster resource")
-}
-
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563
@@ -104,10 +76,7 @@ func DeleteOperatorService(client kclient.ClientInterface, serviceName string) e
 		}
 	}
 
-	group, version, resource, err := GetGVRFromCR(cr)
-	if err != nil {
-		return err
-	}
+	group, version, resource := kclient.GetGVRFromCR(cr)
 
 	return client.DeleteDynamicResource(name, group, version, resource)
 }
@@ -119,7 +88,7 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 
 	// First let's get the list of all the operators in the namespace
 	csvs, err := client.ListClusterServiceVersions()
-	if err == kclient.ErrNoSuchOperator {
+	if err != nil {
 		return nil, nil, err
 	}
 
@@ -161,45 +130,17 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 	return allCRInstances, failedListingCR, nil
 }
 
-func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
-	version = cr.Version
-	kind = cr.Kind
+func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (string, string, string, error) {
+	var group, version, resource string
 
-	gr := strings.SplitN(cr.Name, ".", 2)
-	if len(gr) != 2 {
-		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
-		return
-	}
-	resource = gr[0]
-	group = gr[1]
-
-	return
-}
-
-func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, version, resource string, err error) {
 	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
 		custRes := customresource
 		if custRes.Kind == cr {
-			return GetGVRFromCR(&custRes)
+			group, version, resource = kclient.GetGVRFromCR(&custRes)
+			return group, version, resource, nil
 		}
 	}
 	return "", "", "", fmt.Errorf("couldn't parse group, version, resource from Operator %q", csv.Name)
-}
-
-// GetGVRFromCR parses and returns the values for group, version and resource
-// for a given Custom Resource (CR).
-func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
-	version = cr.Version
-
-	gr := strings.SplitN(cr.Name, ".", 2)
-	if len(gr) != 2 {
-		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
-		return
-	}
-	resource = gr[0]
-	group = gr[1]
-
-	return
 }
 
 func GetGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
@@ -263,10 +204,7 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	group, version, resource, err := GetGVRFromCR(customResource)
-	if err != nil {
-		return nil, err
-	}
+	group, version, resource := kclient.GetGVRFromCR(customResource)
 
 	instances, err := client.ListDynamicResource(group, version, resource)
 	if err != nil {
@@ -426,11 +364,11 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 }
 
 // ListDevfileServices returns the names of the services defined in a Devfile
-func ListDevfileServices(devfileObj parser.DevfileObj, componentContext string) (map[string]unstructured.Unstructured, error) {
-	return listDevfileServices(devfileObj, componentContext, devfilefs.DefaultFs{})
+func ListDevfileServices(client kclient.ClientInterface, devfileObj parser.DevfileObj, componentContext string) (map[string]unstructured.Unstructured, error) {
+	return listDevfileServices(client, devfileObj, componentContext, devfilefs.DefaultFs{})
 }
 
-func listDevfileServices(devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) (map[string]unstructured.Unstructured, error) {
+func listDevfileServices(client kclient.ClientInterface, devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) (map[string]unstructured.Unstructured, error) {
 	if devfileObj.Data == nil {
 		return nil, nil
 	}
@@ -440,6 +378,19 @@ func listDevfileServices(devfileObj parser.DevfileObj, componentContext string, 
 	if err != nil {
 		return nil, err
 	}
+
+	csvSupported, err := client.IsCSVSupported()
+	if err != nil {
+		return nil, err
+	}
+	var operatorGVRList []meta.RESTMapping
+	if csvSupported {
+		operatorGVRList, err = client.GetOperatorGVRList()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	services := map[string]unstructured.Unstructured{}
 	for _, c := range components {
 		inlined := c.Kubernetes.Inlined
@@ -454,8 +405,29 @@ func listDevfileServices(devfileObj parser.DevfileObj, componentContext string, 
 		if err != nil {
 			return nil, err
 		}
-		services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
+		restMapping, err := client.GetRestMappingFromUnstructured(u)
+		if err != nil {
+			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster
+			// this could be a case when an Operator backed service was added to devfile while working on a cluster
+			// that had the Operator installed but "odo service list" is run when that Operator is either no longer
+			// available or on a different cluster
+			services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
+			continue
+		}
+		var match bool
+		for _, i := range operatorGVRList {
+			if i.Resource == restMapping.Resource {
+				// if it's an Operator backed service, it will match; if it's Pod, Deployment, etc. it won't
+				match = true
+				break
+			}
+		}
+		if match {
+			services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
+		}
 	}
+	// final list of services includes Operator backed services both supported and unsupported by the underlying k8s cluster
+	// but it doesn't include things like Pod, Deployment, etc.
 	return services, nil
 }
 
@@ -618,96 +590,32 @@ func deleteKubernetesComponentFromDevfile(name string, devfileObj parser.Devfile
 	return devfileObj.WriteYamlDevfile()
 }
 
-// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
-// (when they use --from-file flag), and few other attributes that are likely
-// to be used to validate a CRD before creating a service from it
-type DynamicCRD struct {
-	// contains the CR as obtained from CSV or user
-	OriginalCRD map[string]interface{}
-}
-
-func NewDynamicCRD() *DynamicCRD {
-	return &DynamicCRD{}
-}
-
-// ValidateMetadataInCRD validates if the CRD has metadata.name field and returns an error
-func (d *DynamicCRD) ValidateMetadataInCRD() error {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
-	}
-
-	if _, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return nil
-	}
-	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
-// SetServiceName modifies the CRD to contain user provided name on the CLI
-// instead of using the default one in almExample
-func (d *DynamicCRD) SetServiceName(name string) {
-	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
-
-	for k := range metaMap {
-		if k == "name" {
-			metaMap[k] = name
-			return
-		}
-	}
-	metaMap["name"] = name
-}
-
-// GetServiceNameFromCRD fetches the service name from metadata.name field of the CRD
-func (d *DynamicCRD) GetServiceNameFromCRD() (string, error) {
-	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
-	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
-	}
-
-	if name, ok := metadata["name"].(string); ok {
-		// found the metadata.name; no error
-		return name, nil
-	}
-	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
-}
-
-// AddComponentLabelsToCRD appends odo labels to CRD if "labels" field already exists in metadata; else creates labels
-func (d *DynamicCRD) AddComponentLabelsToCRD(labels map[string]string) {
-	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
-
-	for k := range metaMap {
-		if k == "labels" {
-			metaLabels := metaMap["labels"].(map[string]interface{})
-			for i := range labels {
-				metaLabels[i] = labels[i]
-			}
-			return
-		}
-	}
-	// if metadata doesn't have 'labels' field, we set it up
-	metaMap["labels"] = labels
-}
-
 // PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, context string) error {
-
 	// check csv support before proceeding
 	csvSupported, err := IsCSVSupported()
 	if err != nil {
 		return err
 	}
 
-	deployed, err := ListDeployedServices(client, labels)
-	if err != nil {
-		return err
-	}
+	var operatorGVRList []meta.RESTMapping
+	var deployed map[string]DeployedInfo
 
-	for key, deployedResource := range deployed {
-		if deployedResource.isLinkResource {
-			delete(deployed, key)
+	if csvSupported {
+		operatorGVRList, err = client.GetOperatorGVRList()
+		if err != nil {
+			return err
+		}
+
+		deployed, err = ListDeployedServices(client, labels)
+		if err != nil {
+			return err
+		}
+
+		for key, deployedResource := range deployed {
+			if deployedResource.isLinkResource {
+				delete(deployed, key)
+			}
 		}
 	}
 
@@ -726,25 +634,46 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 		strCRD := inlined
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return err
 		}
 
-		if !csvSupported || (isLinkResource(d.OriginalCRD["kind"].(string))) {
-			// operator hub is not installed on the cluster
-			// or it's a service binding related resource
+		if isLinkResource(u.GetKind()) {
+			// it's a service binding related resource
 			continue
 		}
 
-		crdName, ok := getCRDName(d.OriginalCRD)
-		if !ok {
-			continue
+		crdName := u.GetName()
+
+		restMapping, err := client.GetRestMappingFromUnstructured(u)
+		if err != nil {
+			return err
 		}
 
-		cr, kind, err := createOperatorService(client, d, labels, []metav1.OwnerReference{})
-		delete(deployed, cr+"/"+crdName)
+		// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
+		// if yes, it is an Operator backed service, and we assign all labels to it in next step
+		// if no, it is likely a Kubernetes built-in resource, and we need not set all labels to it.
+		var match bool
+		for _, i := range operatorGVRList {
+			if i.Resource == restMapping.Resource {
+				match = true
+				break
+			}
+		}
+
+		// add labels to the CRD before creation
+		existingLabels := u.GetLabels()
+		if match {
+			u.SetLabels(mergeLabels(existingLabels, labels))
+		} else {
+			// Kubernetes built-in resource; only set managed-by label to it
+			u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
+		}
+
+		err = createOperatorService(client, u)
+		delete(deployed, u.GetKind()+"/"+crdName)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
@@ -755,8 +684,9 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 			}
 		}
 
-		name, _ := d.GetServiceNameFromCRD() // ignoring error because invalid yaml won't be inserted into devfile through odo
-		log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{kind, name}, "/"), "odo link -h")
+		if match {
+			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), crdName}, "/"), "odo link -h")
+		}
 		madeChange = true
 	}
 
@@ -781,6 +711,18 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 	return nil
 }
 
+func mergeLabels(labels ...map[string]string) map[string]string {
+	mergedLabels := map[string]string{}
+
+	for _, l := range labels {
+		for k, v := range l {
+			mergedLabels[k] = v
+		}
+	}
+
+	return mergedLabels
+}
+
 // DeployedInfo holds information about the services present on the cluster
 type DeployedInfo struct {
 	Kind           string
@@ -792,7 +734,7 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 	deployed := map[string]DeployedInfo{}
 
 	deployedServices, _, err := ListOperatorServices(client)
-	if err != nil && err != kclient.ErrNoSuchOperator {
+	if err != nil {
 		// We ignore ErrNoSuchOperator error as we can deduce Operator Services are not installed
 		return nil, err
 	}
@@ -815,18 +757,11 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 // UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
 func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
-	csvSupport, err := client.IsCSVSupported()
-	if err != nil {
-		return err
-	}
-
-	if !csvSupport {
-		return nil
-	}
-
+	var strCRD string
+	var err error
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		strCRD := c.Kubernetes.Inlined
+		strCRD = c.Kubernetes.Inlined
 		if c.Kubernetes.Uri != "" {
 			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
 			if err != nil {
@@ -835,45 +770,29 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sCompon
 		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		d := NewDynamicCRD()
-		err := yaml.Unmarshal([]byte(strCRD), &d.OriginalCRD)
+		u := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
 		if err != nil {
 			return err
 		}
 
-		if isLinkResource(d.OriginalCRD["kind"].(string)) {
+		if isLinkResource(u.GetKind()) {
 			// ignore service binding resources
 			continue
 		}
 
-		cr, csv, err := GetCSV(client, d.OriginalCRD)
+		restMapping, err := client.GetRestMappingFromUnstructured(u)
 		if err != nil {
 			return err
 		}
 
-		var group, version, resource string
-		for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-			if crd.Kind == cr {
-				group, version, _, resource, err = getGVKRFromCR(crd)
-				if err != nil {
-					return err
-				}
-				break
-			}
-		}
-
-		crdName, ok := getCRDName(d.OriginalCRD)
-		if !ok {
-			continue
-		}
-
-		u, err := client.GetDynamicResource(group, version, resource, crdName)
+		d, err := client.GetDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName())
 		if err != nil {
 			return err
 		}
 
 		found := false
-		for _, ownerRef := range u.GetOwnerReferences() {
+		for _, ownerRef := range d.GetOwnerReferences() {
 			if ownerRef.UID == ownerReference.UID {
 				found = true
 				break
@@ -882,26 +801,14 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sCompon
 		if found {
 			continue
 		}
-		u.SetOwnerReferences(append(u.GetOwnerReferences(), ownerReference))
+		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
 
-		err = client.UpdateDynamicResource(group, version, resource, crdName, u)
+		err = client.UpdateDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName(), d)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func getCRDName(crd map[string]interface{}) (string, bool) {
-	metadata, ok := crd["metadata"].(map[string]interface{})
-	if !ok {
-		return "", false
-	}
-	name, ok := metadata["name"].(string)
-	if !ok {
-		return "", false
-	}
-	return name, true
 }
 
 func isLinkResource(kind string) bool {
@@ -910,33 +817,18 @@ func isLinkResource(kind string) bool {
 
 // createOperatorService creates the given operator on the cluster
 // it returns the CR,Kind and errors
-func createOperatorService(client kclient.ClientInterface, d *DynamicCRD, labels map[string]string, ownerReferences []metav1.OwnerReference) (string, string, error) {
-	cr, csv, err := GetCSV(client, d.OriginalCRD)
+func createOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) error {
+	gvr, err := client.GetRestMappingFromUnstructured(u)
 	if err != nil {
-		return "", "", err
+		return err
 	}
-
-	var group, version, kind, resource string
-	for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-		if crd.Kind == cr {
-			group, version, kind, resource, err = getGVKRFromCR(crd)
-			if err != nil {
-				return cr, "", err
-			}
-			break
-		}
-	}
-
-	// add labels to the CRD before creation
-	d.AddComponentLabelsToCRD(labels)
 
 	// create the service on cluster
-	err = client.CreateDynamicResource(d.OriginalCRD, ownerReferences, group, version, resource)
+	err = client.CreateDynamicResource(u, gvr)
 	if err != nil {
-		// return the cr name for deletion from the push map in the push code
-		return cr, "", err
+		return err
 	}
-	return cr, kind, err
+	return err
 }
 
 // getDataFromURI gets the data from the given URI
@@ -963,4 +855,50 @@ func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (stri
 		}
 		return string(dataBytes), nil
 	}
+}
+
+// ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
+func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Component, context string) error {
+	if len(k8sComponents) == 0 {
+		return nil
+	}
+
+	var unsupportedResources []unstructured.Unstructured
+	for _, c := range k8sComponents {
+		// get the string representation of the YAML definition of a CRD
+		var strCRD string
+		var err error
+		strCRD = c.Kubernetes.Inlined
+		if c.Kubernetes.Uri != "" {
+			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			if err != nil {
+				return err
+			}
+		}
+
+		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
+		u := unstructured.Unstructured{}
+		err = yaml.Unmarshal([]byte(strCRD), &u.Object)
+		if err != nil {
+			return err
+		}
+
+		_, err = client.GetRestMappingFromUnstructured(u)
+		if err != nil && u.GetKind() != "ServiceBinding" {
+			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster;
+			// but if it's a "ServiceBinding" resource, we don't add it to unsupported list because odo can create links
+			// without having SBO installed
+			unsupportedResources = append(unsupportedResources, u)
+		}
+	}
+
+	if len(unsupportedResources) > 0 {
+		// tell the user about all the unsupported resources in one message
+		var unsupported []string
+		for _, u := range unsupportedResources {
+			unsupported = append(unsupported, u.GetKind())
+		}
+		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing \"odo push\": %s", strings.Join(unsupported, ", "))
+	}
+	return nil
 }
