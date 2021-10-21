@@ -1,0 +1,14 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+    name: operator-ibm-catalog
+    namespace: openshift-marketplace
+spec:
+    sourceType: grpc
+    image: quay.io/ibm/operator-registry-ppc64le:release-4.8
+    imagePullPolicy: IfNotPresent
+    displayName: Operator Catalog
+    publisher: IBM team
+    updateStrategy:
+        registryPoll:
+            interval: 30m
