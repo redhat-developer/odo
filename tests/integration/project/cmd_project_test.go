@@ -1,6 +1,7 @@
 package project
 
 import (
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -89,15 +90,26 @@ var _ = Describe("odo project command tests", func() {
 			output := helper.Cmd("odo", "project", "delete", projectName, "-f", "--wait").ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Waiting for project to be deleted"))
 		})
+	})
 
-		It("should show login message when setting project and not login", func() {
+	When("user is logged out", func() {
+		var token string
+		BeforeEach(func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("Openshift specific scenario.")
+			}
+			ocRunner := helper.NewOcRunner("oc")
+			token = ocRunner.GetToken()
 			helper.Cmd("odo", "logout").ShouldPass()
+		})
+		AfterEach(func() {
+			helper.Cmd("odo", "login", "--token", token).ShouldPass()
+		})
+		It("should show login message when setting project and not login", func() {
 			err := helper.Cmd("odo", "project", "set", "something").ShouldFail().Err()
 			Expect(err).To(ContainSubstring("Unauthorized to access the cluster"))
 		})
-
 		It("should show login message when deleting project and not login", func() {
-			helper.Cmd("odo", "logout").ShouldPass()
 			err := helper.Cmd("odo", "project", "delete", "something").ShouldFail().Err()
 			Expect(err).To(ContainSubstring("Unauthorized to access the cluster"))
 		})

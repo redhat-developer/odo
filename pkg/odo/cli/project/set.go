@@ -16,10 +16,6 @@ import (
 )
 
 const setRecommendedCommandName = "set"
-const forbiddenErrMessage = `Please login to your server: 
-
-odo login https://mycluster.mydomain.com
-`
 
 var (
 	setExample = ktemplates.Examples(`
