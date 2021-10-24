@@ -52,7 +52,7 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 		if err != nil {
 			var errFormat string
 			if kerrors.IsForbidden(err) {
-				errFormat = fmt.Sprintf("You are currently not logged in into the cluster. Use `odo login` first to perform any operation on cluster")
+				errFormat = "You are currently not logged in into the cluster. Use `odo login` first to perform any operation on cluster"
 			} else {
 				errFormat = fmt.Sprintf("You don't have permission to create or set namespace %q or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
 			}
