@@ -1599,19 +1599,17 @@ func TestIsValidProjectDir(t *testing.T) {
 			}
 			defer os.RemoveAll(tmpDir)
 
-			for _, file := range tt.filesToCreate {
-				file := filepath.Join(tmpDir, file)
-				_, err := os.Create(file)
-				if err != nil {
-					t.Errorf("Error creating file %s. Err: %s", file, err)
+			for _, f := range tt.filesToCreate {
+				file := filepath.Join(tmpDir, f)
+				if _, e := os.Create(file); e != nil {
+					t.Errorf("Error creating file %s. Err: %s", file, e)
 				}
 			}
 
-			for _, dir := range tt.dirToCreate {
-				dir := filepath.Join(tmpDir, dir)
-				err := os.Mkdir(dir, os.FileMode(644))
-				if err != nil {
-					t.Errorf("Error creating dir %s. Err: %s", dir, err)
+			for _, d := range tt.dirToCreate {
+				dir := filepath.Join(tmpDir, d)
+				if e := os.Mkdir(dir, os.FileMode(644)); e != nil {
+					t.Errorf("Error creating dir %s. Err: %s", dir, e)
 				}
 			}
 
