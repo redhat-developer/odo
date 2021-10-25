@@ -61,9 +61,9 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		devObj, err := devfile.ParseFromFile(lo.devfilePath)
-		if err != nil {
-			return err
+		devObj, parseErr := devfile.ParseFromFile(lo.devfilePath)
+		if parseErr != nil {
+			return parseErr
 		}
 		lo.componentType = component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 
@@ -113,7 +113,7 @@ func (lo *ListOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
+func (lo *ListOptions) Run(cmd *cobra.Command) error {
 	var otherComps []component.Component
 	// --path workflow
 
@@ -207,7 +207,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) (err error) {
 		HumanReadableOutput(os.Stdout, combinedComponents)
 	}
 
-	return
+	return nil
 }
 
 // NewCmdList implements the list odo command
