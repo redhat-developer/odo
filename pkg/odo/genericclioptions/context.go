@@ -57,11 +57,11 @@ type CreateParameters struct {
 }
 
 // New creates a context based on the given parameters
-func New(parameters CreateParameters) (context *Context, err error) {
+func New(parameters CreateParameters) (*Context, error) {
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
 	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
 	if isDevfile {
-		context, err = NewContext(parameters.Cmd)
+		context, err := NewContext(parameters.Cmd)
 		if err != nil {
 			return context, err
 		}
@@ -105,20 +105,20 @@ func New(parameters CreateParameters) (context *Context, err error) {
 		context.LocalConfigProvider = context.EnvSpecificInfo
 	} else {
 		if parameters.IsNow {
-			context, err = NewContextCreatingAppIfNeeded(parameters.Cmd)
+			context, err := NewContextCreatingAppIfNeeded(parameters.Cmd)
 			if err != nil {
 				return nil, err
 			}
 			context.ComponentContext = parameters.ComponentContext
 		} else {
-			context, err = NewContext(parameters.Cmd)
+			context, err := NewContext(parameters.Cmd)
 			if err != nil {
 				return nil, err
 			}
 			context.ComponentContext = parameters.ComponentContext
 		}
 	}
-	return context, nil
+	return nil, nil
 }
 
 //InitEnvInfoFromContext initializes envinfo from the context
@@ -167,7 +167,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// Create the internal context representation based on calculated values
-	internalCxt := internalCxt{
+	internalCtx := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
 	}
@@ -179,30 +179,30 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	}
 
 	// Create a new kubernetes client
-	internalCxt.KClient, err = kClient()
+	internalCtx.KClient, err = kClient()
 	if err != nil {
 		return nil, err
 	}
-	internalCxt.Client, err = ocClient()
+	internalCtx.Client, err = ocClient()
 	if err != nil {
 		return nil, err
 	}
 
 	// Gather env specific info
-	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.resolveApp(createAppIfNeeded, envInfo)
+	internalCtx.EnvSpecificInfo = envInfo
+	internalCtx.resolveApp(createAppIfNeeded, envInfo)
 
-	if err := internalCxt.resolveNamespace(envInfo); err != nil {
-		return nil, err
+	if e := internalCtx.resolveNamespace(envInfo); e != nil {
+		return nil, e
 	}
 
 	// resolve the component
-	if _, err = internalCxt.resolveAndSetComponent(command, envInfo); err != nil {
+	if _, err = internalCtx.resolveAndSetComponent(command, envInfo); err != nil {
 		return nil, err
 	}
 	// Create a context from the internal representation
 	context := &Context{
-		internalCxt: internalCxt,
+		internalCxt: internalCtx,
 	}
 	return context, nil
 }
@@ -213,7 +213,7 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// Create the internal context representation based on calculated values
-	internalCxt := internalCxt{
+	internalCtx := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
 	}
@@ -224,25 +224,25 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 		return nil, err
 	}
 
-	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.LocalConfigProvider = envInfo
-	internalCxt.resolveApp(false, envInfo)
+	internalCtx.EnvSpecificInfo = envInfo
+	internalCtx.LocalConfigProvider = envInfo
+	internalCtx.resolveApp(false, envInfo)
 
 	// resolve the component
-	_, err = internalCxt.resolveAndSetComponent(command, envInfo)
+	_, err = internalCtx.resolveAndSetComponent(command, envInfo)
 	if err != nil {
 		return nil, err
 	}
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if projectFlag != "" {
-		internalCxt.Project = projectFlag
+		internalCtx.Project = projectFlag
 	} else {
-		internalCxt.Project = envInfo.GetNamespace()
+		internalCtx.Project = envInfo.GetNamespace()
 	}
 
 	// Create a context from the internal representation
 	context := &Context{
-		internalCxt: internalCxt,
+		internalCxt: internalCtx,
 	}
 	return context, nil
 }
