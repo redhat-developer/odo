@@ -110,6 +110,30 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
+	err = po.setupEnvFile(envFileInfo, cmd, args)
+	if err != nil {
+		return err
+	}
+
+	po.EnvSpecificInfo = envFileInfo
+
+	po.Context, err = genericclioptions.NewContext(cmd)
+	if err != nil {
+		return err
+	}
+
+	// set the telemetry data
+	cmdCtx := cmd.Context()
+	devfileMetadata := po.Devfile.Data.GetMetadata()
+	scontext.SetClusterType(cmdCtx, po.Client)
+	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
+	scontext.SetLanguage(cmdCtx, component.GetLanguageFromDevfileMetadata(devfileMetadata))
+	scontext.SetProjectType(cmdCtx, component.GetProjectTypeFromDevfileMetadata(devfileMetadata))
+
+	return nil
+}
+
+func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *cobra.Command, args []string) error {
 	// If the file does not exist, we should populate the environment file with the correct env.yaml information
 	// such as name and namespace.
 	if !envFileInfo.Exists() {
@@ -125,7 +149,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		if err := checkDefaultProject(client, namespace); err != nil {
+		if err = checkDefaultProject(client, namespace); err != nil {
 			return err
 		}
 
@@ -163,7 +187,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			return err
 		}
 
-		if err := checkDefaultProject(client, namespace); err != nil {
+		if err = checkDefaultProject(client, namespace); err != nil {
 			return err
 		}
 
@@ -182,27 +206,11 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	}
 
 	if envFileInfo.GetApplication() == "" {
-		err = envFileInfo.SetConfiguration("app", "")
+		err := envFileInfo.SetConfiguration("app", "")
 		if err != nil {
 			return errors.Wrap(err, "failed to write the app to the env.yaml for devfile component")
 		}
 	}
-
-	po.EnvSpecificInfo = envFileInfo
-
-	po.Context, err = genericclioptions.NewContext(cmd)
-	if err != nil {
-		return err
-	}
-
-	// set the telemetry data
-	cmdCtx := cmd.Context()
-	devfileMetadata := po.Devfile.Data.GetMetadata()
-	scontext.SetClusterType(cmdCtx, po.Client)
-	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
-	scontext.SetLanguage(cmdCtx, component.GetLanguageFromDevfileMetadata(devfileMetadata))
-	scontext.SetProjectType(cmdCtx, component.GetProjectTypeFromDevfileMetadata(devfileMetadata))
-
 	return nil
 }
 
