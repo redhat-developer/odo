@@ -149,8 +149,8 @@ func newProxyEnvInfo() proxyEnvInfo {
 // SetConfiguration sets the environment specific info such as the Cluster Host, Name, etc.
 // we then **write** this data to the environment yaml file (see envInfoFileName const)
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
-		switch parameter {
+	if p, ok := asLocallySupportedParameter(parameter); ok {
+		switch p {
 		case "name":
 			val := value.(string)
 			esi.componentSettings.Name = val
@@ -237,14 +237,10 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 		}
 	}
 
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
-
-		switch parameter {
-		default:
-			if err := util.DeleteConfiguration(&esi.componentSettings, parameter); err != nil {
+	if p, ok := asLocallySupportedParameter(parameter); ok {
+			if err := util.DeleteConfiguration(&esi.componentSettings, p); err != nil {
 				return err
 			}
-		}
 		return esi.writeToFile()
 	}
 	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
