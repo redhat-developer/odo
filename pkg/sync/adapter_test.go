@@ -85,14 +85,14 @@ func TestSyncFiles(t *testing.T) {
 	testComponentName := "test"
 
 	// create a temp dir for the file indexer
-	directory, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", err)
+	directory, e := ioutil.TempDir("", "")
+	if e != nil {
+		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", e)
 	}
 
-	jsFile, err := os.Create(filepath.Join(directory, "red.js"))
-	if err != nil {
-		t.Errorf("TestSyncFiles error: error creating temporary file for the indexer: %v", err)
+	jsFile, e := os.Create(filepath.Join(directory, "red.js"))
+	if e != nil {
+		t.Errorf("TestSyncFiles error: error creating temporary file for the indexer: %v", e)
 	}
 
 	ctrl := gomock.NewController(t)
@@ -105,8 +105,8 @@ func TestSyncFiles(t *testing.T) {
 	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	errorSyncClient := mock.NewMockSyncClient(ctrl)
-	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
-	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
+	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tests := []struct {
 		name               string
@@ -223,7 +223,7 @@ func TestSyncFiles(t *testing.T) {
 		})
 	}
 
-	err = jsFile.Close()
+	err := jsFile.Close()
 	if err != nil {
 		t.Errorf("TestSyncFiles error: error deleting the temp dir %s, err: %v", directory, err)
 	}
@@ -239,9 +239,9 @@ func TestPushLocal(t *testing.T) {
 	testComponentName := "test"
 
 	// create a temp dir for the file indexer
-	directory, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf("TestPushLocal error: error creating temporary directory for the indexer: %v", err)
+	directory, e := ioutil.TempDir("", "")
+	if e != nil {
+		t.Errorf("TestPushLocal error: error creating temporary directory for the indexer: %v", e)
 	}
 
 	newFilePath := filepath.Join(directory, "foobar.txt")
@@ -259,8 +259,8 @@ func TestPushLocal(t *testing.T) {
 	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	errorSyncClient := mock.NewMockSyncClient(ctrl)
-	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
-	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(err).AnyTimes()
+	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tests := []struct {
 		name        string
@@ -377,7 +377,7 @@ func TestPushLocal(t *testing.T) {
 	}
 
 	// Remove the temp dir created for the file indexer
-	err = os.RemoveAll(directory)
+	err := os.RemoveAll(directory)
 	if err != nil {
 		t.Errorf("TestPushLocal error: error deleting the temp dir %s", directory)
 	}
