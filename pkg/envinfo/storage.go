@@ -103,8 +103,8 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 	// Add volumeMount to all containers if no container is specified else to specified container(s) in the devfile
 	for _, c := range containers {
 		if storage.Container == "" || (storage.Container != "" && c.Name == storage.Container) {
-			if err := ei.devfileObj.Data.AddVolumeMounts(c.Name, vm); err != nil {
-				return err
+			if e := ei.devfileObj.Data.AddVolumeMounts(c.Name, vm); e != nil {
+				return e
 			}
 		}
 	}
