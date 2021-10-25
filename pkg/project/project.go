@@ -34,13 +34,13 @@ func Create(context *genericclioptions.Context, projectName string, wait bool) e
 		return errors.Wrap(err, "unable to detect project support")
 	}
 	if projectSupport {
-		err := context.Client.CreateNewProject(projectName, wait)
+		err = context.Client.CreateNewProject(projectName, wait)
 		if err != nil {
 			return errors.Wrap(err, "unable to create new project")
 		}
 
 	} else {
-		_, err := context.KClient.CreateNamespace(projectName)
+		_, err = context.KClient.CreateNamespace(projectName)
 		if err != nil {
 			return errors.Wrap(err, "unable to create new project")
 		}
