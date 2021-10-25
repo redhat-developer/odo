@@ -99,7 +99,7 @@ func (o *SetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
+func (o *SetOptions) Run(cmd *cobra.Command)  error {
 	if o.envArray != nil {
 		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArray)
 		if err != nil {
@@ -126,7 +126,7 @@ func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
 		}
 	}
 
-	err = config.SetDevfileConfiguration(o.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName), o.paramValue)
+	err := config.SetDevfileConfiguration(o.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName), o.paramValue)
 	if err != nil {
 		return err
 	}
