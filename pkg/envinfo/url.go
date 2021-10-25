@@ -94,10 +94,8 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	url.Path = "/" + url.Path
 
 	// get the port if not provided
-	var ports []string
-	var err error
 	if url.Container == "" {
-		ports, err = ei.GetComponentPorts()
+		ports, err := ei.GetComponentPorts()
 		if err != nil {
 			return err
 		}
@@ -106,7 +104,7 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 			return err
 		}
 	} else {
-		ports, err = ei.GetContainerPorts(url.Container)
+		ports, err := ei.GetContainerPorts(url.Container)
 		if err != nil {
 			return err
 		}
