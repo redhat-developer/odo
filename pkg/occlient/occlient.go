@@ -207,8 +207,8 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 	}
 
 	// deleting token form the server
-	if err := client.OAuthAccessTokens().Delete(context.TODO(), conf.BearerToken, metav1.DeleteOptions{}); err != nil {
-		klog.V(1).Infof("%v", err)
+	if e := client.OAuthAccessTokens().Delete(context.TODO(), conf.BearerToken, metav1.DeleteOptions{}); e != nil {
+		klog.V(1).Infof("%v", e)
 	}
 
 	rawConfig, err := c.KubeConfig.RawConfig()
@@ -299,8 +299,8 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 		klog.V(3).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
 	} else {
 		var openShiftVersion version.Info
-		if err := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); err != nil {
-			return nil, errors.Wrapf(err, "unable to unmarshal OpenShift version %v", string(rawOpenShiftVersion))
+		if e := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); e != nil {
+			return nil, errors.Wrapf(e, "unable to unmarshal OpenShift version %v", string(rawOpenShiftVersion))
 		}
 		info.OpenShiftVersion = openShiftVersion.GitVersion
 	}
