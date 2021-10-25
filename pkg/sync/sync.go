@@ -191,7 +191,8 @@ func linearTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, fs 
 		}
 		hdr.Name = destFile
 
-		if err := tw.WriteHeader(hdr); err != nil {
+		err = tw.WriteHeader(hdr)
+		if err != nil {
 			return err
 		}
 
