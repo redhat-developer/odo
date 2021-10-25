@@ -469,10 +469,10 @@ func TestSetConfiguration(t *testing.T) {
 				switch tt.parameter {
 				case "updatenotification":
 				case "timeout":
-					typedval, err := strconv.Atoi(tt.value)
+					typedval, e := strconv.Atoi(tt.value)
 					// if err is found in cases other than value <0 or !ok
-					if !(typedval < 0 || err != nil) {
-						t.Error(err)
+					if !(typedval < 0 || e != nil) {
+						t.Error(e)
 					}
 				}
 			} else {
