@@ -56,11 +56,11 @@ func RunWithExponentialBackoff(fxn func() error, maxDelayInSeconds int, expireDu
 	expireTime := time.Now().Add(expireDuration)
 	delayInSeconds := 1
 
-	err := error(nil)
+	var err error
 
 	for {
 
-		err := fxn()
+		err = fxn()
 
 		if err == nil || time.Now().After(expireTime) {
 			break
