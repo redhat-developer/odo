@@ -443,15 +443,15 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 	}
 
 	if deploymentPatchProvider != nil {
-		patch, err := deploymentPatchProvider(deployment)
-		if err != nil {
-			return errors.Wrap(err, "Unable to create a patch for the Deployment")
+		patch, e := deploymentPatchProvider(deployment)
+		if e != nil {
+			return errors.Wrap(e, "Unable to create a patch for the Deployment")
 		}
 
 		// patch the Deployment with the secret
-		_, err = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
-		if err != nil {
-			return errors.Wrapf(err, "Deployment not patched %s", deployment.Name)
+		_, e = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
+		if e != nil {
+			return errors.Wrapf(e, "Deployment not patched %s", deployment.Name)
 		}
 	} else {
 		return errors.Wrapf(err, "deploymentPatch was not properly set")
