@@ -34,7 +34,7 @@ type Adapter struct {
 // otherwise, it checks which files have changed and syncs the delta
 // it returns a boolean execRequired and an error. execRequired tells us if files have
 // changed and devfile execution is required
-func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired bool, err error) {
+func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 
 	// Whether to write the indexer content to the index file path (resolvePath)
 	forceWrite := false
@@ -116,13 +116,14 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		// tree and resync all local files.
 		// If it is a new component, reset index to make sure any previously existing file is cleaned up
 		if syncParameters.PodChanged || !syncParameters.ComponentExists {
-			err = util.DeleteIndexFile(pushParameters.Path)
+			err := util.DeleteIndexFile(pushParameters.Path)
 			if err != nil {
 				return false, errors.Wrap(err, "unable to reset the index file")
 			}
 		}
 
 		// Run the indexer and find the modified/added/deleted/renamed files
+		var err error
 		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, syncParameters.Files)
 		s.End(true)
 
@@ -153,7 +154,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		}
 	}
 
-	err = a.pushLocal(pushParameters.Path,
+	err := a.pushLocal(pushParameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
