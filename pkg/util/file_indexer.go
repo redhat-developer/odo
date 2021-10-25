@@ -507,8 +507,8 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 					continue
 				}
 
-				pathOptions := recursiveCheckerPathOptions{pathOptions.directory, pathOptions.srcBase, filepath.Join(pathOptions.srcFile, f.Name()), pathOptions.destBase, filepath.Join(pathOptions.destFile, f.Name())}
-				innerRet, err := recursiveChecker(pathOptions, ignoreRules, remoteDirectories, existingFileIndex)
+				opts := recursiveCheckerPathOptions{pathOptions.directory, pathOptions.srcBase, filepath.Join(pathOptions.srcFile, f.Name()), pathOptions.destBase, filepath.Join(pathOptions.destFile, f.Name())}
+				innerRet, err := recursiveChecker(opts, ignoreRules, remoteDirectories, existingFileIndex)
 				if err != nil {
 					return IndexerRet{}, err
 				}
