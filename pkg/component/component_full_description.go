@@ -134,9 +134,9 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client *occlien
 	}
 	cfd.Status.State = state
 	if state == StateTypePushed {
-		componentDescFromCluster, err := getRemoteComponentMetadata(client, componentName, applicationName, false, false)
-		if err != nil {
-			return cfd, err
+		componentDescFromCluster, e := getRemoteComponentMetadata(client, componentName, applicationName, false, false)
+		if e != nil {
+			return cfd, e
 		}
 		cfd.Spec.Env = componentDescFromCluster.Spec.Env
 		cfd.Spec.Type = componentDescFromCluster.Spec.Type
