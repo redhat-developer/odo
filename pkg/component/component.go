@@ -15,6 +15,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -295,7 +296,7 @@ func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string)
 
 				// we just want to confirm if the devfile is correct
 				_, err = parser.ParseDevfile(parser.ParserArgs{
-					Path: filepath.Join(dir, "devfile.yaml"),
+					Path: location.DevfileLocation(dir),
 				})
 				if err != nil {
 					return err

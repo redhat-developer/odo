@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"fmt"
+
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -75,7 +75,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	} else {
 		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 			Cmd:              cmd,
-			DevfilePath:      component.DevfilePath,
+			DevfilePath:      location.DevfileFilenamesProvider(context),
 			ComponentContext: context,
 		})
 	}
