@@ -293,7 +293,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			It("should sync to the correct dir in container", func() {
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/nodeshift")
+				output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/nodeshift")
 				helper.MatchAllInOutput(output, []string{"package.json"})
 
 				// Verify the sync env variables are correct
@@ -311,7 +311,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 				// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
 				// multiple projects, so source code would sync to the first project /projects/webapp
-				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/webapp")
+				output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/webapp")
 				helper.MatchAllInOutput(output, []string{"package.json"})
 
 				// Verify the sync env variables are correct
@@ -327,7 +327,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should sync to the correct dir in container", func() {
 
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+				output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 				helper.MatchAllInOutput(output, []string{"package.json"})
 
 				// Verify the sync env variables are correct
@@ -592,7 +592,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-preStart.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldFail().Err()
+				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldFail().Err()
 				// This is expected to fail for now.
 				// see https://github.com/openshift/odo/issues/4187 for more info
 				helper.MatchAllInOutput(output, []string{"myprestart should either map to an apply command or a composite command with apply commands\n"})
@@ -652,7 +652,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 
 				// Need to force so build and run get triggered again with the component already created.
