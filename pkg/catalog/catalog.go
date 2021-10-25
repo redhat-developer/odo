@@ -100,57 +100,13 @@ func convertURL(URL string) (string, error) {
 const indexPath = "/devfiles/index.json"
 
 // getRegistryDevfiles retrieves the registry's index devfile entries
-func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponentType, err error) {
+func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	var devfileIndex []indexSchema.Schema
-
+	var err error
 	if strings.Contains(registry.URL, "github") {
-		// Github-based registry
-		URL, err := convertURL(registry.URL)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
-		}
-		registry.URL = URL
-		indexLink := registry.URL + indexPath
-		request := util.HTTPRequestParams{
-			URL: indexLink,
-		}
-		secure, err := registryUtil.IsSecure(registry.Name)
+		devfileIndex, err = getDevFilesFromGithub(registry)
 		if err != nil {
 			return nil, err
-		}
-		if secure {
-			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
-			if err != nil {
-				return nil, errors.Wrap(err, "unable to get secure registry credential from keyring")
-			}
-			request.Token = token
-		}
-
-		cfg, err := preference.New()
-		if err != nil {
-			return nil, err
-		}
-
-		jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
-		}
-
-		err = json.Unmarshal(jsonBytes, &devfileIndex)
-		if err != nil {
-			if err := util.CleanDefaultHTTPCacheDir(); err != nil {
-				log.Warning("Error while cleaning up cache dir.")
-			}
-			// we try once again
-			jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
-			}
-
-			err = json.Unmarshal(jsonBytes, &devfileIndex)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
-			}
 		}
 	} else {
 		// OCI-based registry
@@ -160,6 +116,7 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 		}
 	}
 
+	registryDevfiles := make([]DevfileComponentType, 0, len(devfileIndex))
 	for _, devfileIndexEntry := range devfileIndex {
 		stackDevfile := DevfileComponentType{
 			Name:        devfileIndexEntry.Name,
@@ -174,6 +131,60 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 	}
 
 	return registryDevfiles, nil
+}
+
+func getDevFilesFromGithub(registry Registry) ([]indexSchema.Schema, error) {
+	// Github-based registry
+	URL, err := convertURL(registry.URL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
+	}
+	registry.URL = URL
+	indexLink := registry.URL + indexPath
+	request := util.HTTPRequestParams{
+		URL: indexLink,
+	}
+	secure, err := registryUtil.IsSecure(registry.Name)
+	if err != nil {
+		return nil, err
+	}
+	if secure {
+		token, keyringErr := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
+		if keyringErr != nil {
+			return nil, errors.Wrap(keyringErr, "unable to get secure registry credential from keyring")
+		}
+		request.Token = token
+	}
+
+	cfg, err := preference.New()
+	if err != nil {
+		return nil, err
+	}
+
+	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+	}
+
+	var devfileIndex []indexSchema.Schema
+	err = json.Unmarshal(jsonBytes, &devfileIndex)
+	if err == nil {
+		return devfileIndex, nil
+	}
+	if e := util.CleanDefaultHTTPCacheDir(); e != nil {
+		log.Warning("Error while cleaning up cache dir.")
+	}
+	// we try once again
+	jsonBytes, err = util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+	}
+
+	err = json.Unmarshal(jsonBytes, &devfileIndex)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
+	}
+	return devfileIndex, nil
 }
 
 // ListDevfileComponents lists all the available devfile components
