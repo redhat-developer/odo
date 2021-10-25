@@ -112,13 +112,13 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 	// find storage to create
 	for storageName, storage := range storageConfigNames {
 		_, ok := storageClusterNames[storageName]
-		if !ok {
-			err := client.Create(storage)
-			if err != nil {
-				return err
-			}
-			log.Successf("Added storage %v to %v", storage.Name, configProvider.GetName())
+		if ok {
+			continue
 		}
+		if e := client.Create(storage); e != nil {
+			return e
+		}
+		log.Successf("Added storage %v to %v", storage.Name, configProvider.GetName())
 	}
 
 	return err
