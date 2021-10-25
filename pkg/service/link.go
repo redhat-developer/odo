@@ -73,9 +73,8 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		u := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
-		if err != nil {
-			return false, err
+		if e := yaml.Unmarshal([]byte(strCRD), &u.Object); e != nil {
+			return false, e
 		}
 
 		if !isLinkResource(u.GetKind()) {
@@ -163,9 +162,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		u := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
-		if err != nil {
-			return false, err
+		if e := yaml.Unmarshal([]byte(strCRD), &u.Object); e != nil {
+			return false, e
 		}
 
 		if !isLinkResource(u.GetKind()) {
@@ -237,9 +235,9 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		if _, ok := clusterLinksMap[linkName]; !ok {
 			if serviceCompMap == nil {
 				// prevent listing of services unless required
-				services, err := client.ListServices("")
-				if err != nil {
-					return false, err
+				services, e := client.ListServices("")
+				if e != nil {
+					return false, e
 				}
 
 				// get the services and get match them against the component
