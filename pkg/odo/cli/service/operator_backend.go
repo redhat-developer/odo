@@ -20,7 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -62,14 +61,11 @@ func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Com
 	return nil
 }
 
-func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
+func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 	u := unstructured.Unstructured{}
 	// if the user wants to create service from a file, we check for
 	// existence of file and validate if the requested operator and CR
 	// exist on the cluster
-
-	var csv olm.ClusterServiceVersion
-
 	if o.fromFile != "" {
 		if _, err := os.Stat(o.fromFile); err != nil {
 			return errors.Wrap(err, "unable to find specified file")
@@ -96,9 +92,9 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		if o.ServiceName != "" && !o.DryRun {
 			// First check if service with provided name already exists
 			svcFullName := strings.Join([]string{b.kind, o.ServiceName}, "/")
-			exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
-			if err != nil {
-				return err
+			exists, e := svc.OperatorSvcExists(o.KClient, svcFullName)
+			if e != nil {
+				return e
 			}
 			if exists {
 				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
@@ -114,7 +110,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 			// k8s doesn't have it installed by default but OCP does
 			return err
 		}
-		csv = *csvPtr
+		csv := *csvPtr
 
 		// CRD is valid. We can use it further to create a service from it.
 		b.CustomResourceDefinition = u.Object
@@ -137,7 +133,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 
 	} else if b.CustomResource != "" {
 		// make sure that CSV of the specified ServiceType exists
-		csv, err = o.KClient.GetClusterServiceVersion(o.ServiceType)
+		csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
 		if err != nil {
 			// error only occurs when OperatorHub is not installed.
 			// k8s doesn't have it installed by default but OCP does
@@ -164,16 +160,16 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		}
 
 		if len(o.parameters) != 0 {
-			builtCRD, err := svc.BuildCRDFromParams(o.ParametersMap, crd, b.group, b.version, b.CustomResource)
-			if err != nil {
-				return err
+			builtCRD, e := svc.BuildCRDFromParams(o.ParametersMap, crd, b.group, b.version, b.CustomResource)
+			if e != nil {
+				return e
 			}
 
 			u.Object = builtCRD
 		} else {
-			almExample, err := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
-			if err != nil {
-				return err
+			almExample, e := svc.GetAlmExample(csv, b.CustomResource, o.ServiceType)
+			if e != nil {
+				return e
 			}
 
 			u.Object = almExample
@@ -182,9 +178,9 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) (err error) {
 		if o.ServiceName != "" && !o.DryRun {
 			// First check if service with provided name already exists
 			svcFullName := strings.Join([]string{b.CustomResource, o.ServiceName}, "/")
-			exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
-			if err != nil {
-				return err
+			exists, e := svc.OperatorSvcExists(o.KClient, svcFullName)
+			if e != nil {
+				return e
 			}
 			if exists {
 				return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first", svcFullName)
