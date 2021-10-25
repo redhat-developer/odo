@@ -53,7 +53,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
-		DevfilePath:      devfile.DevfileFilenamesProvider(o.componentContext),
+		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
 	return err
