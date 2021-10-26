@@ -5,8 +5,8 @@ import (
 
 	"strings"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/preference"
 )
 
 const (
@@ -38,5 +38,5 @@ func IsGitBasedRegistry(url string) bool {
 }
 
 func PrintGitRegistryDeprecationWarning() {
-	log.Deprecate("Git based registries", "Please see https://github.com/openshift/odo/tree/main/docs/public/git-registry-deprecation.adoc")
+	log.Deprecate("Git based registries", "Please see https://github.com/openshift/odo/v2/tree/main/docs/public/git-registry-deprecation.adoc")
 }

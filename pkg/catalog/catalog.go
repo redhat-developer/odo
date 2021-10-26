@@ -7,18 +7,18 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/preference"
 	"github.com/zalando/go-keyring"
 
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/occlient"
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/util"
+	registryConsts "github.com/openshift/odo/v2/pkg/odo/cli/registry/consts"
+	registryUtil "github.com/openshift/odo/v2/pkg/odo/cli/registry/util"
+	"github.com/openshift/odo/v2/pkg/util"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 )

@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/restmapper"
 
 	"github.com/go-openapi/spec"
-	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/v2/pkg/log"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,7 +29,7 @@ const (
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
-	// Detection of SBO has been removed from issue https://github.com/openshift/odo/issues/5084
+	// Detection of SBO has been removed from issue https://github.com/openshift/odo/v2/issues/5084
 	return false, nil
 	//	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
 }

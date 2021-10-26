@@ -3,7 +3,7 @@ package validate
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
 
 	v2 "github.com/devfile/library/pkg/devfile/parser/data/v2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"

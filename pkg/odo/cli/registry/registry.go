@@ -9,7 +9,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/odo/util"
 )
 
 const (

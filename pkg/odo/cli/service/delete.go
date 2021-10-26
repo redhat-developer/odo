@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/service"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"

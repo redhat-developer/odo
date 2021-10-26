@@ -4,10 +4,10 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 )
 
 // decideAndDownloadStarterProject decides the starter project from the value passed by the user and

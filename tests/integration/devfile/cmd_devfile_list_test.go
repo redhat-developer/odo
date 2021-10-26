@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/tests/helper"
 	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"
@@ -114,7 +114,7 @@ var _ = Describe("odo list with devfile", func() {
 	})
 	Context("devfile has missing metadata", func() {
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
-		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/issues/4815
+		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/v2/issues/4815
 
 		var metadata devfilepkg.DevfileMetadata
 

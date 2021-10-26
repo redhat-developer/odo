@@ -2,7 +2,7 @@ package kclient
 
 import (
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
-	odoFake "github.com/openshift/odo/pkg/kclient/fake"
+	odoFake "github.com/openshift/odo/v2/pkg/kclient/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"

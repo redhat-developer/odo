@@ -3,15 +3,16 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/occlient"
+	adaptersCommon "github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/occlient"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -6,7 +6,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	common "github.com/openshift/odo/pkg/devfile/adapters/common"
+	common "github.com/openshift/odo/v2/pkg/devfile/adapters/common"
 	io "io"
 	reflect "reflect"
 )

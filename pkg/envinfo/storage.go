@@ -2,11 +2,12 @@ package envinfo
 
 import (
 	"fmt"
+
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog/v2"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
 )
 
 const (

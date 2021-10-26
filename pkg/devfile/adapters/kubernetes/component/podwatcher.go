@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

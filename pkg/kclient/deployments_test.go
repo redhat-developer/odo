@@ -10,8 +10,8 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
-	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
+	odoTestingUtil "github.com/openshift/odo/v2/pkg/testingutil"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	"github.com/pkg/errors"
 

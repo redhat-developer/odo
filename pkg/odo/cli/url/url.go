@@ -5,7 +5,7 @@ import (
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/v2/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 

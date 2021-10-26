@@ -1,7 +1,7 @@
 package machineoutput
 
 import (
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/preference"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

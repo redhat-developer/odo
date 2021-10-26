@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/odo/util"
-	odoutil "github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/devfile"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/devfile/validate"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/odo/util"
+	odoutil "github.com/openshift/odo/v2/pkg/util"
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/occlient"
 )
 
 const (

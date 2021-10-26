@@ -2,14 +2,15 @@ package kclient
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/log"
+	"strings"
+	"testing"
+	time "time"
+
+	"github.com/openshift/odo/v2/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
-	"strings"
-	"testing"
-	time "time"
 )
 
 func fakeEventStatus(podName string, eventWarningMessage string, count int32) *corev1.Event {

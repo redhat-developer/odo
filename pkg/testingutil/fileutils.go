@@ -2,10 +2,11 @@ package testingutil
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/openshift/odo/v2/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
 )

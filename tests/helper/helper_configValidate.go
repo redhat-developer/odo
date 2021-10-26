@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/envinfo"
 )
 
 const configFileDirectory = ".odo"

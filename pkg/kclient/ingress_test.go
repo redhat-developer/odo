@@ -2,8 +2,9 @@ package kclient
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/unions"
 	"testing"
+
+	"github.com/openshift/odo/v2/pkg/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"

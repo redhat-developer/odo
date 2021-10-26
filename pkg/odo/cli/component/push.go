@@ -4,25 +4,25 @@ import (
 	"fmt"
 	"path/filepath"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	scontext "github.com/openshift/odo/v2/pkg/segment/context"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/devfile/validate"
+	"github.com/openshift/odo/v2/pkg/envinfo"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/occlient"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/devfile"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	projectCmd "github.com/openshift/odo/v2/pkg/odo/cli/project"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/util/completion"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/openshift/odo/v2/pkg/odo/util"
 	"k8s.io/klog"
 )
 

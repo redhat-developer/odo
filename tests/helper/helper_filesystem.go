@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 // CreateNewContext create new empty temporary directory
@@ -22,7 +22,7 @@ func CreateNewContext() string {
 	return directory
 }
 
-// DeleteDir deletes the specified path; due to Windows behaviour (for example https://github.com/openshift/odo/issues/3371)
+// DeleteDir deletes the specified path; due to Windows behaviour (for example https://github.com/openshift/odo/v2/issues/3371)
 // where Windows temporarily holds a lock on files and folders, we keep trying to delete until the operation passes (or it expires)
 func DeleteDir(dir string) {
 	attempts := 0

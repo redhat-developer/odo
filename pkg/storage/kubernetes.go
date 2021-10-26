@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
-	storagelabels "github.com/openshift/odo/pkg/storage/labels"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	storagelabels "github.com/openshift/odo/v2/pkg/storage/labels"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

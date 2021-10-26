@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/tests/helper"
 )
 
 var _ = Describe("odo link command tests for OperatorHub", func() {
@@ -276,7 +276,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/bindings/redis-link/clusterIP").ShouldPass()
 			})
 
-			// Removed from issue https://github.com/openshift/odo/issues/5084
+			// Removed from issue https://github.com/openshift/odo/v2/issues/5084
 			XIt("should find owner references on link and service", func() {
 				if os.Getenv("KUBERNETES") == "true" {
 					Skip("This is a OpenShift specific scenario, skipping")
@@ -345,7 +345,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.DeleteDir(context1)
 			})
 
-			// Removed from issue https://github.com/openshift/odo/issues/5084
+			// Removed from issue https://github.com/openshift/odo/v2/issues/5084
 			XIt("should link the two components successfully with service binding operator", func() {
 
 				if os.Getenv("KUBERNETES") == "true" {

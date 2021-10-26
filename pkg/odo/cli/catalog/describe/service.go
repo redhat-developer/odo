@@ -3,7 +3,7 @@ package describe
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

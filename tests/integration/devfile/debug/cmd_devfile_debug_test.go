@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/testingutil"
+	"github.com/openshift/odo/v2/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

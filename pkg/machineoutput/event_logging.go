@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/v2/pkg/log"
 
 	"k8s.io/klog"
 )

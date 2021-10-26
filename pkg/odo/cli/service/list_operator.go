@@ -8,11 +8,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	cmplabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	svc "github.com/openshift/odo/pkg/service"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	cmplabels "github.com/openshift/odo/v2/pkg/component/labels"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	svc "github.com/openshift/odo/v2/pkg/service"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )

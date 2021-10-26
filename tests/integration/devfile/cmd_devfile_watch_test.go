@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/pkg/watch"
-	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
+	"github.com/openshift/odo/v2/pkg/util"
+	"github.com/openshift/odo/v2/pkg/watch"
+	"github.com/openshift/odo/v2/tests/helper"
+	"github.com/openshift/odo/v2/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo devfile watch command tests", func() {

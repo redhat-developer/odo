@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoversion "github.com/openshift/odo/pkg/version"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	odoversion "github.com/openshift/odo/v2/pkg/version"
 
-	"github.com/openshift/odo/pkg/notify"
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/notify"
+	"github.com/openshift/odo/v2/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -20,7 +20,7 @@ import (
 const RecommendedCommandName = "version"
 
 // OdoReleasesPage is the GitHub page where we do all our releases
-const OdoReleasesPage = "https://github.com/openshift/odo/releases"
+const OdoReleasesPage = "https://github.com/openshift/odo/v2/releases"
 
 var versionLongDesc = ktemplates.LongDesc("Print the client version information")
 

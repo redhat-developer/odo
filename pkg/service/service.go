@@ -14,18 +14,18 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/occlient"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
+	"github.com/openshift/odo/v2/pkg/occlient"
 	"github.com/pkg/errors"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -49,7 +49,7 @@ const filePrefix = "odo-service-"
 
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
-// https://github.com/openshift/odo/issues/3563
+// https://github.com/openshift/odo/v2/issues/3563
 func DeleteOperatorService(client kclient.ClientInterface, serviceName string) error {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
@@ -230,7 +230,7 @@ func IsOperatorServiceNameValid(name string) (string, string, error) {
 // exists or not. It takes 'serviceName' of the format
 // '<service-kind>/<service-name>'. For example: EtcdCluster/example.
 // It doesn't bother about application since
-// https://github.com/openshift/odo/issues/2801 is blocked
+// https://github.com/openshift/odo/v2/issues/2801 is blocked
 func OperatorSvcExists(client kclient.ClientInterface, serviceName string) (bool, error) {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
@@ -677,7 +677,7 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
-				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
+				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/v2/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
 				return err

@@ -8,15 +8,15 @@ import (
 	"text/tabwriter"
 
 	// Third-party packages
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
-	util "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/preference"
+	util "github.com/openshift/odo/v2/pkg/odo/cli/registry/util"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/preference"
 )
 
 const listCommandName = "list"

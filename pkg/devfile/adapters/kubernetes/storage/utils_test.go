@@ -9,7 +9,7 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/v2/pkg/testingutil"
 	v1 "k8s.io/api/core/v1"
 )
 

@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/preference"
 
-	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/v2/pkg/log"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
 	// api resource types
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"

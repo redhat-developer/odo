@@ -3,10 +3,10 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/occlient"
-	storagelabels "github.com/openshift/odo/pkg/storage/labels"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	storagelabels "github.com/openshift/odo/v2/pkg/storage/labels"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 

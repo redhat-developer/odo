@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

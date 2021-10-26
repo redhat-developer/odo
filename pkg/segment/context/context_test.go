@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	odoFake "github.com/openshift/odo/pkg/kclient/fake"
+	odoFake "github.com/openshift/odo/v2/pkg/kclient/fake"
 
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/occlient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

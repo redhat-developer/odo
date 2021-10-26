@@ -1,21 +1,22 @@
 package component
 
 import (
-	"github.com/openshift/odo/pkg/util"
 	"testing"
+
+	"github.com/openshift/odo/v2/pkg/util"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/envinfo"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
+	adaptersCommon "github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/occlient"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

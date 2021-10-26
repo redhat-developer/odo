@@ -1,14 +1,14 @@
 package application
 
 import (
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/kclient"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/util"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -12,18 +12,18 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/catalog"
+	"github.com/openshift/odo/v2/pkg/devfile/validate"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/v2/pkg/devfile"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

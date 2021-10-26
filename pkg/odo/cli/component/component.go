@@ -3,9 +3,9 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/v2/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 )
 

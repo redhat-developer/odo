@@ -34,7 +34,7 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/openshift/odo/v2/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

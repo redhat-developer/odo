@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"io/ioutil"
 	"os"
 	"path"
@@ -9,14 +8,16 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/devfile/library/pkg/devfile/parser/data"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/sync/mock"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/sync/mock"
+	"github.com/openshift/odo/v2/pkg/util"
+	"github.com/openshift/odo/v2/tests/helper"
 )
 
 func TestGetCmdToCreateSyncFolder(t *testing.T) {

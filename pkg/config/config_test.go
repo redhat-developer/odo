@@ -11,7 +11,7 @@ import (
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
-	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
+	odoTestingUtil "github.com/openshift/odo/v2/pkg/testingutil"
 )
 
 func TestSetDevfileConfiguration(t *testing.T) {

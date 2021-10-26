@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 

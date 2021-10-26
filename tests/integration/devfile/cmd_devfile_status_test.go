@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/tests/helper"
+	"github.com/openshift/odo/v2/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

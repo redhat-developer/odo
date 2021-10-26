@@ -1,8 +1,8 @@
 package testingutil
 
 import (
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

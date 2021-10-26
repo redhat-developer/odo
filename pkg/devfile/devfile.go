@@ -7,8 +7,8 @@ import (
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/v2/pkg/devfile/validate"
+	"github.com/openshift/odo/v2/pkg/log"
 )
 
 func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {

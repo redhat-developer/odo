@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	appCmd "github.com/openshift/odo/v2/pkg/odo/cli/application"
+	projectCmd "github.com/openshift/odo/v2/pkg/odo/cli/project"
 
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

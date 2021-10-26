@@ -5,20 +5,20 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/v2/pkg/devfile"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/pkg/errors"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/devfile/adapters"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/log"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/kubernetes"
+	"github.com/openshift/odo/v2/pkg/log"
 )
 
 // DevfilePush has the logic to perform the required actions for a given devfile

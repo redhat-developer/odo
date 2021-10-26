@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

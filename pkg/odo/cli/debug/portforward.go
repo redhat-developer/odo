@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/openshift/odo/pkg/debug"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/debug"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	"github.com/spf13/cobra"
 

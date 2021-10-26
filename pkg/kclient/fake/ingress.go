@@ -2,13 +2,14 @@ package fake
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/unions"
+
+	"github.com/openshift/odo/v2/pkg/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/url/labels"
-	"github.com/openshift/odo/pkg/version"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
+	"github.com/openshift/odo/v2/pkg/url/labels"
+	"github.com/openshift/odo/v2/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )

@@ -3,12 +3,12 @@ package component
 import (
 	"fmt"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/url"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/storage"
+	"github.com/openshift/odo/v2/pkg/url"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"

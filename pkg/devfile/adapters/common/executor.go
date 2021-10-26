@@ -2,7 +2,7 @@ package common
 
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 )
 
 // commandExecutor defines the interface adapters must implement to be able to execute commands in a generic way

@@ -1,7 +1,7 @@
 package completion
 
 import (
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"

@@ -3,15 +3,15 @@ package application
 import (
 	"fmt"
 
-	odoUtil "github.com/openshift/odo/pkg/odo/util"
+	odoUtil "github.com/openshift/odo/v2/pkg/odo/util"
 
-	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/application"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/cli/project"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/util/completion"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

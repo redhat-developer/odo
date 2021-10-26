@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 
-	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/log"
-	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/validation"
+	"github.com/openshift/odo/v2/pkg/config"
+	"github.com/openshift/odo/v2/pkg/log"
+	clicomponent "github.com/openshift/odo/v2/pkg/odo/cli/component"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/util/validation"
 	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"

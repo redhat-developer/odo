@@ -3,14 +3,14 @@ package application
 import (
 	"fmt"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/completion"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/v2/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/odo/util/completion"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/devfile/library/pkg/util"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/openshift/odo/v2/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"

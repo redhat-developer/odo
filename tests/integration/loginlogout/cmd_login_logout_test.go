@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/tests/helper"
 )
 
 var _ = Describe("odo login and logout command tests", func() {

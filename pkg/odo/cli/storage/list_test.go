@@ -3,8 +3,8 @@ package storage
 import (
 	"testing"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/storage"
 )
 
 func Test_isContainerDisplay(t *testing.T) {

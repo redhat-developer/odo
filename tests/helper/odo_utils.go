@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/v2/pkg/devfile"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

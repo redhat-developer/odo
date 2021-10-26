@@ -4,11 +4,11 @@ import (
 	"strconv"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/util"
+	adaptersCommon "github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/util"
 
-	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/v2/pkg/storage"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )

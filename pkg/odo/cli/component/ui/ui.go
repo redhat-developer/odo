@@ -4,9 +4,9 @@ import (
 	"sort"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/util/validation"
+	"github.com/openshift/odo/v2/pkg/catalog"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 

@@ -3,7 +3,8 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
-	util2 "github.com/openshift/odo/pkg/odo/cli/registry/util"
+
+	util2 "github.com/openshift/odo/v2/pkg/odo/cli/registry/util"
 
 	// Third-party packages
 	"github.com/pkg/errors"
@@ -12,10 +13,10 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 const addCommandName = "add"

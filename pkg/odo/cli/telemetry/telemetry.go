@@ -3,10 +3,10 @@ package telemetry
 import (
 	"encoding/json"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/segment"
+	"github.com/openshift/odo/v2/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/segment"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"

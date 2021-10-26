@@ -11,7 +11,7 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 var buildGroup = devfilev1.BuildCommandGroupKind

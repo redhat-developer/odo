@@ -6,7 +6,7 @@ import (
 	"time"
 
 	projectv1 "github.com/openshift/api/project/v1"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/kclient"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"

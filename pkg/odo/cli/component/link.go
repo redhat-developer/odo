@@ -6,10 +6,10 @@ import (
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	svc "github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/v2/pkg/odo/util"
+	svc "github.com/openshift/odo/v2/pkg/service"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

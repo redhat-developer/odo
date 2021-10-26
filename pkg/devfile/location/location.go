@@ -3,7 +3,7 @@ package location
 import (
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 //  possibleDevfileNames contains possivle devfile name that should be checked in the context dir.

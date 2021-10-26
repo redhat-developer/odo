@@ -8,7 +8,7 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/v2/pkg/log"
 	"github.com/pkg/errors"
 )
 

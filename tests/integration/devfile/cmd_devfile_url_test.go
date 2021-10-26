@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/tests/helper"
 	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"

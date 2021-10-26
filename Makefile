@@ -1,4 +1,4 @@
-PROJECT := github.com/openshift/odo
+PROJECT := github.com/openshift/odo/v2
 ifdef GITCOMMIT
         GITCOMMIT := $(GITCOMMIT)
 else

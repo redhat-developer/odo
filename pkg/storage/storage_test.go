@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	storageLabels "github.com/openshift/odo/pkg/storage/labels"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	storageLabels "github.com/openshift/odo/v2/pkg/storage/labels"
 )
 
 func getStorageLabels(storageName, componentName, applicationName string) map[string]string {

@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	svc "github.com/openshift/odo/pkg/service"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	svc "github.com/openshift/odo/v2/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

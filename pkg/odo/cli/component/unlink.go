@@ -3,11 +3,11 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 
-	svc "github.com/openshift/odo/pkg/service"
+	svc "github.com/openshift/odo/v2/pkg/service"
 
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"

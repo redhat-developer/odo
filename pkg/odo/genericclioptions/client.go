@@ -1,8 +1,8 @@
 package genericclioptions
 
 import (
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/occlient"
 )
 
 // Client returns an oc client with the kClient set

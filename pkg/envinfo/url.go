@@ -9,9 +9,9 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/odo/util/validation"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/odo/util/validation"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 

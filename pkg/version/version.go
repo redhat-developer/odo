@@ -15,7 +15,7 @@ var (
 	VERSION = "v2.4.1"
 
 	// GITCOMMIT is hash of the commit that will be displayed when running ./odo version
-	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/openshift/odo/cmd.GITCOMMIT=$(GITCOMMIT)"
+	// this will be overwritten when running  build like this: go build -ldflags="-X github.com/openshift/odo/v2/cmd.GITCOMMIT=$(GITCOMMIT)"
 	// HEAD is default indicating that this was not set during build
 	GITCOMMIT = "HEAD"
 )

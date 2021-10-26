@@ -14,11 +14,11 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/openshift/odo/v2/pkg/testingutil/filesystem"
 )
 
 func TestSetEnvInfo(t *testing.T) {

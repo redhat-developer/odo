@@ -6,15 +6,15 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/envinfo"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/storage"
-	urlPkg "github.com/openshift/odo/pkg/url"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/storage"
+	urlPkg "github.com/openshift/odo/v2/pkg/url"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

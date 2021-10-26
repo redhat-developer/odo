@@ -3,11 +3,11 @@ package project
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/project"
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/project"
+	scontext "github.com/openshift/odo/v2/pkg/segment/context"
 
 	"github.com/spf13/cobra"
 

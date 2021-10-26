@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 

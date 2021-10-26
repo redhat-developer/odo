@@ -1,7 +1,7 @@
 package labels
 
 import (
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
 )
 
 // URLLabel is the label key that is applied to all url resources

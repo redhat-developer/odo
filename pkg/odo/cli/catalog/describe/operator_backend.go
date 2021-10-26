@@ -3,20 +3,21 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-openapi/spec"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/service"
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"io"
-	"k8s.io/klog"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/go-openapi/spec"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/service"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+	"k8s.io/klog"
 )
 
 type operatorBackend struct {

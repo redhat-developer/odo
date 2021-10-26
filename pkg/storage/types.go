@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

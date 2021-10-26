@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/v2/pkg/kclient"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/golang/mock/gomock"
@@ -17,7 +17,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/v2/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/devfile/library/pkg/devfile/parser"

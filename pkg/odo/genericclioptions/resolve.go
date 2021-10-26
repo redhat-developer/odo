@@ -3,9 +3,10 @@ package genericclioptions
 import (
 	"context"
 	"fmt"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

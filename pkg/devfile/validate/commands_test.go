@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 var buildGroup = devfilev1.BuildCommandGroupKind

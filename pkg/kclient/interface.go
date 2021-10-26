@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/go-openapi/spec"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/unions"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/unions"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

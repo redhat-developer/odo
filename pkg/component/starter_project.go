@@ -12,10 +12,10 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/log"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/log"
+	registryUtil "github.com/openshift/odo/v2/pkg/odo/cli/registry/util"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	"github.com/pkg/errors"
 )

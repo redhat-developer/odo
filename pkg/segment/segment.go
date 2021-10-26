@@ -15,9 +15,9 @@ import (
 
 	"github.com/Xuanwo/go-locale"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	scontext "github.com/openshift/odo/v2/pkg/segment/context"
 
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/preference"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/term"

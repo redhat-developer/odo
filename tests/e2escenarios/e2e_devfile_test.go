@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 )

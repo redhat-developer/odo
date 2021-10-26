@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/preference"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -53,7 +53,7 @@ func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 	cfg, err := preference.New()
 
 	if err != nil {
-		return errors.Errorf("something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md")
+		return errors.Errorf("something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/v2/issues/new?template=Bug.md")
 	}
 
 	if !o.preferenceForceFlag {

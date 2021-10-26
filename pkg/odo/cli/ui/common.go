@@ -1,11 +1,12 @@
 package ui
 
 import (
-	"github.com/openshift/odo/pkg/odo/util/validation"
+	"os"
+
+	"github.com/openshift/odo/v2/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"k8s.io/klog"
-	"os"
 )
 
 // HandleError handles UI-related errors, in particular useful to gracefully handle ctrl-c interrupts gracefully

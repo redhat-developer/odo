@@ -12,9 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/odo/cli/ui"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 const (
@@ -434,7 +434,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md", parameter)
+		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/v2/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }
@@ -454,7 +454,7 @@ func (c *PreferenceInfo) DeleteConfiguration(parameter string) error {
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/issues/new?template=Bug.md", parameter)
+		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/openshift/odo/v2/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }

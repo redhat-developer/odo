@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/util"
 	"k8s.io/klog"
 
 	"github.com/pkg/errors"

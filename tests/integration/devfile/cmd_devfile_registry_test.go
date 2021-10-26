@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/v2/tests/helper"
 )
 
 var _ = Describe("odo devfile registry command tests", func() {
@@ -90,7 +90,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		var deprecated, docLink string
 		JustBeforeEach(func() {
 			deprecated = "Deprecated"
-			docLink = "https://github.com/openshift/odo/tree/main/docs/public/git-registry-deprecation.adoc"
+			docLink = "https://github.com/openshift/odo/v2/tree/main/docs/public/git-registry-deprecation.adoc"
 		})
 		It("should show deprecation warning when the git based registry is used", func() {
 

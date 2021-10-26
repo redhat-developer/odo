@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/v2/pkg/testingutil"
 
 	"github.com/pkg/errors"
 
@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 func TestCreatePVC(t *testing.T) {

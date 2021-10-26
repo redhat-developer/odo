@@ -3,8 +3,8 @@ package genericclioptions
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/component"
-	pkgUtil "github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/component"
+	pkgUtil "github.com/openshift/odo/v2/pkg/util"
 	"github.com/spf13/cobra"
 )
 

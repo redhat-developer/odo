@@ -3,7 +3,8 @@ package kclient
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/odo/pkg/unions"
+
+	"github.com/openshift/odo/v2/pkg/unions"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

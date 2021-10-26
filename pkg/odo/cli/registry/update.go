@@ -11,10 +11,10 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/util"
+	registryUtil "github.com/openshift/odo/v2/pkg/odo/cli/registry/util"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/preference"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 const updateCommandName = "update"

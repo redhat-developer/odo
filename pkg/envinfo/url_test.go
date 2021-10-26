@@ -12,9 +12,9 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/localConfigProvider"
+	odoTestingUtil "github.com/openshift/odo/v2/pkg/testingutil"
+	"github.com/openshift/odo/v2/pkg/util"
 )
 
 func TestEnvInfo_CompleteURL(t *testing.T) {

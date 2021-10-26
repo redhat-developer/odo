@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/component/labels"
+	applabels "github.com/openshift/odo/v2/pkg/application/labels"
+	"github.com/openshift/odo/v2/pkg/component/labels"
 )
 
 const (

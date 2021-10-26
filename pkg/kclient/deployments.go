@@ -9,8 +9,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/log"
+	"github.com/openshift/odo/v2/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	componentlabels "github.com/openshift/odo/v2/pkg/component/labels"
 	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
 )
 

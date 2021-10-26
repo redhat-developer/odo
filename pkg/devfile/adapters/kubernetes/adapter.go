@@ -4,11 +4,11 @@ import (
 	"io"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/kubernetes/component"
+	"github.com/openshift/odo/v2/pkg/occlient"
 	"github.com/pkg/errors"
 )
 

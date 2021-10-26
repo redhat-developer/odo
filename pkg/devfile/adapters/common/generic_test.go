@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"

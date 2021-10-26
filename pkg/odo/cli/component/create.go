@@ -12,24 +12,24 @@ import (
 	"github.com/zalando/go-keyring"
 
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/log"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	"github.com/openshift/odo/pkg/odo/cli/component/ui"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/preference"
-	scontext "github.com/openshift/odo/pkg/segment/context"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/v2/pkg/catalog"
+	"github.com/openshift/odo/v2/pkg/component"
+	"github.com/openshift/odo/v2/pkg/devfile"
+	"github.com/openshift/odo/v2/pkg/devfile/location"
+	"github.com/openshift/odo/v2/pkg/devfile/validate"
+	"github.com/openshift/odo/v2/pkg/envinfo"
+	"github.com/openshift/odo/v2/pkg/log"
+	appCmd "github.com/openshift/odo/v2/pkg/odo/cli/application"
+	"github.com/openshift/odo/v2/pkg/odo/cli/component/ui"
+	projectCmd "github.com/openshift/odo/v2/pkg/odo/cli/project"
+	registryConsts "github.com/openshift/odo/v2/pkg/odo/cli/registry/consts"
+	registryUtil "github.com/openshift/odo/v2/pkg/odo/cli/registry/util"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/v2/pkg/odo/util"
+	"github.com/openshift/odo/v2/pkg/odo/util/completion"
+	"github.com/openshift/odo/v2/pkg/preference"
+	scontext "github.com/openshift/odo/v2/pkg/segment/context"
+	"github.com/openshift/odo/v2/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -537,7 +537,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 			}
 		}
 	}
-	// TODO: this should be replaced with github.com/openshift/odo/pkg/devile.ParseFromFile(DevfilePath)
+	// TODO: this should be replaced with github.com/openshift/odo/v2/pkg/devile.ParseFromFile(DevfilePath)
 	// But this can be only after we deprecate support for "github based" registries.
 	// When we do that the above "if" will be deleted and parsing from []data won't be necessary
 	devObj, err := devfile.ParseFromData(devfileData)

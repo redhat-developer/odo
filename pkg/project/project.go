@@ -1,7 +1,7 @@
 package project
 
 import (
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/v2/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
 )
 

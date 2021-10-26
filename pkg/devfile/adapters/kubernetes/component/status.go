@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/v2/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/v2/pkg/machineoutput"
 )
 
 // KubernetesDeploymentStatus is a simplified representation of the component's cluster resources
