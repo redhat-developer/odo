@@ -17,7 +17,10 @@ At the end of the guide, you will be able to list, add and delete todo items fro
 ## Prerequisites
 
 * A [development Kubernetes](./cluster-setup/kubernetes.md) cluster with [Operator Lifecycle Manager](./cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) setup on it.
-* Install the [Crunchy Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster. Again, assuming you have admin privileges on the development Kubernetes cluster, you can install it using below command:
+  * This guide is written for minikube users, hence you will notice the usage of `minikube ip` command to get the IP address of the Kubernetes cluster.
+  * If you are using a Kubernetes cluster other than minikube, you will need to check with cluster administrator for the cluster IP to be used with `--host` flag.
+  * If you are using [Code Ready Containers (CRC)](https://github.com/code-ready/crc) or another form of OpenShift cluster, you can skip the part of `odo url create` because odo automatically creates URL for the component using [OpenShift Routes](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html). 
+* Install the [Crunchy Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster. Assuming you have admin privileges on the development Kubernetes cluster, you can install it using below command:
   ```shell
   kubectl create -f https://operatorhub.io/install/postgresql.yaml
   ```   
@@ -48,6 +51,8 @@ odo create java-springboot backend
 odo url create --port 8080 --host `minikube ip`.nip.io
 odo push
 ```
+
+The `minikube ip` command helps get the IP address of the minikube instance. It is required to create a URL accesible from the web browser of the host system on which minikube is running.
 
 ## Create the Postgres database
 
