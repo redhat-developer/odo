@@ -1,7 +1,9 @@
 ---
 title: Create Component
 sidebar_position: 1
+sidebar_label: Creating components
 ---
+
 # Creating components using odo
 
 [Component](../getting-started/basics#component) is the most basic unit of operation for odo. And the way to create one is using `odo create` (short for `odo component create`) command.
@@ -19,15 +21,15 @@ my-awesome-microservices-app
 └── frontend
     └── devfile.yaml
 ```
-In this guide, we are going to create a Spring Boot component to deploy the [Spring Boot petclinic](https://github.com/spring-projects/spring-petclinic) project to a Kubernetes cluster.
+In this guide, we are going to create a Spring Boot component and a Nodejs component to deploy parts of the [odo quickstart](https://github.com/dharmit/odo-quickstart) project to a Kubernetes cluster.
 
 Let's clone the project first:
 ```shell
-git clone https://github.com/spring-projects/spring-petclinic
-cd spring-petclinic
+git clone https://github.com/dharmit/odo-quickstart
+cd odo-quickstart
 ```
 
-Next, let's create a project <!-- add link to project command reference here --> on the Kubernetes cluster in which we will be creating our component:
+Next, create a project <!-- add link to project command reference here --> on the Kubernetes cluster in which we will be creating our component. This is to keep our Kubernetes cluster clean of the tasks we perform (this step is optional):
 ```shell
 odo project create myproject
 ```
@@ -41,15 +43,16 @@ Now, set the project in which you want to create the component:
 odo project set <project-name>
 ```
 
-odo supports interactive and non-interactive ways of creating a component.
+odo supports interactive and non-interactive ways of creating a component. We will create the Spring Boot component interactively and Nodejs component non-interactively. The Spring Boot component is in `backend` directory. It contains code for the REST API that our Nodejs component will be interacting with. This Nodejs component is in `frontend` directory.
 
 ## Creating a component interactively
 
-To interactively create a component, `cd` into the cloned petclinic project (already done if you copy-pasted the command above) and execute:
+To interactively create the Spring Boot component, `cd` into the cloned project (already done if you copy-pasted the command above), then `cd` into `backend` directory, and execute:
 ```shell
+cd backend
 odo create
 ```
-You will be prompted with a few questions one after the another. Let's go through each one of them to create a component.
+You will be prompted with a few questions one after the another. Go through each one of them to create a component.
 
 1. First question is about selecting the component type:
     ```shell
@@ -71,9 +74,9 @@ You will be prompted with a few questions one after the another. Let's go throug
     ```shell
     $ odo create                
     ? Which devfile component type do you wish to create java-springboot
-    ? What do you wish to name the new devfile component (java-springboot) petclinic
+    ? What do you wish to name the new devfile component (java-springboot) backend
     ```
-    Let's name it `petclinic`.
+    Name it `backend`.
 
 3. Next, odo asks you for the project in which you would like to create the component. Use the project `myproject` that we created earlier or the one you had set using `odo project set` command
    ```shell
@@ -82,8 +85,8 @@ You will be prompted with a few questions one after the another. Let's go throug
    ? What do you wish to name the new devfile component java-springboot
    ? What project do you want the devfile component to be created in myproject
    ```
-   Now you will have a `devfile.yaml` in your current working directory. But odo is just not done asking you questions yet.
-4. Lastly, odo asks you if you would like to download a "starter project". Since we already cloned the petclinic project, we answer in No by typing `n` and hitting the return key. We discuss starter projects later in [this document](#starter-projects):
+   Now you will have a `devfile.yaml` in your current working directory. But odo is not done asking you questions yet.
+4. Lastly, odo asks you if you would like to download a "starter project". Since we already cloned the odo-quickstart project, we answer in No by typing `n` and hitting the return key. We discuss starter projects later in [this document](#starter-projects):
    ```shell
    $ odo create
    ? Which devfile component type do you wish to create java-springboot
@@ -101,11 +104,13 @@ Your Spring Boot component is now ready for use.
 
 ## Creating a component non-interactively
 
-To non-interactively create the same component as we created in interactive mode, `cd` into the cloned petclinic project and execute:
+To non-interactively create the Nodejs component to deploy our frontend code, `cd` into the cloned `frontend` directory and execute:
 ```shell
-odo create java-springboot petclinic -n myproject
+# assuming you are in the odo-quickstart/backend directory
+cd ../frontend 
+odo create nodejs frontend -n myproject
 ```
-Here `java-springboot` is the type of the component, `petclinic` is the name of the component, and `-n myproject` tells odo to use the project `myproject` for the mentioned `odo create` operation.
+Here `nodejs` is the type of the component, `frontend` is the name of the component, and `-n myproject` tells odo to use the project `myproject` for the mentioned `odo create` operation.
 
 ## Starter projects
 
@@ -153,4 +158,7 @@ odo follows a "create & push" workflow for almost all the commands. Meaning, mos
 
 Among the various ways described above, irrespective of how you created the component, the next step to create the resources for our component on the cluster would be to run `odo push`.
 
-Note that first run of `odo push` could take a long time for the Spring Boot petclinic project. This is because of the dependencies being pulled by maven for Spring Boot framework. Subsequent `odo push` runs shouldn't take longer when working on the same Kubernetes cluster. 
+Execute below command from the component directory of both the `frontend` and `backend` components:
+```shell
+odo push
+```
