@@ -103,22 +103,22 @@ func New(parameters CreateParameters) (*Context, error) {
 			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
 		}
 		context.LocalConfigProvider = context.EnvSpecificInfo
-	} else {
-		if parameters.IsNow {
-			context, err := NewContextCreatingAppIfNeeded(parameters.Cmd)
-			if err != nil {
-				return nil, err
-			}
-			context.ComponentContext = parameters.ComponentContext
-		} else {
-			context, err := NewContext(parameters.Cmd)
-			if err != nil {
-				return nil, err
-			}
-			context.ComponentContext = parameters.ComponentContext
-		}
+		return context, nil
 	}
-	return nil, nil
+	if parameters.IsNow {
+		context, err := NewContextCreatingAppIfNeeded(parameters.Cmd)
+		if err != nil {
+			return nil, err
+		}
+		context.ComponentContext = parameters.ComponentContext
+		return context, nil
+	}
+	context, err := NewContext(parameters.Cmd)
+	if err != nil {
+		return nil, err
+	}
+	context.ComponentContext = parameters.ComponentContext
+	return context, nil
 }
 
 //InitEnvInfoFromContext initializes envinfo from the context
