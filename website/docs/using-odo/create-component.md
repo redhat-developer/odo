@@ -29,7 +29,7 @@ git clone https://github.com/dharmit/odo-quickstart
 cd odo-quickstart
 ```
 
-Next, create a project <!-- add link to project command reference here --> on the Kubernetes cluster in which we will be creating our component. This to keep our Kubernetes cluster clean of the tasks we perform (this step is optional):
+Next, create a project <!-- add link to project command reference here --> on the Kubernetes cluster in which we will be creating our component. This is to keep our Kubernetes cluster clean of the tasks we perform (this step is optional):
 ```shell
 odo project create myproject
 ```
