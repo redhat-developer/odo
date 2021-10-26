@@ -238,9 +238,9 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 	}
 
 	if p, ok := asLocallySupportedParameter(parameter); ok {
-			if err := util.DeleteConfiguration(&esi.componentSettings, p); err != nil {
-				return err
-			}
+		if err := util.DeleteConfiguration(&esi.componentSettings, p); err != nil {
+			return err
+		}
 		return esi.writeToFile()
 	}
 	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)

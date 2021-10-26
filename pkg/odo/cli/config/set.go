@@ -99,7 +99,7 @@ func (o *SetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *SetOptions) Run(cmd *cobra.Command)  error {
+func (o *SetOptions) Run(cmd *cobra.Command) error {
 	if o.envArray != nil {
 		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArray)
 		if err != nil {

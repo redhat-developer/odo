@@ -114,7 +114,7 @@ func copyAndFilter(w io.Writer, r io.Reader) ([]byte, error) {
 		if n > 0 {
 			d := buf[:n]
 			out = append(out, d...)
-			if 	_, e := w.Write(filteredInformation(d)); e != nil {
+			if _, e := w.Write(filteredInformation(d)); e != nil {
 				return out, e
 			}
 		}
