@@ -167,7 +167,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// Create the internal context representation based on calculated values
-	internalCtx := internalCxt{
+	ctx := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
 	}
@@ -179,30 +179,30 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	}
 
 	// Create a new kubernetes client
-	internalCtx.KClient, err = kClient()
+	ctx.KClient, err = kClient()
 	if err != nil {
 		return nil, err
 	}
-	internalCtx.Client, err = ocClient()
+	ctx.Client, err = ocClient()
 	if err != nil {
 		return nil, err
 	}
 
 	// Gather env specific info
-	internalCtx.EnvSpecificInfo = envInfo
-	internalCtx.resolveApp(createAppIfNeeded, envInfo)
+	ctx.EnvSpecificInfo = envInfo
+	ctx.resolveApp(createAppIfNeeded, envInfo)
 
-	if e := internalCtx.resolveNamespace(envInfo); e != nil {
+	if e := ctx.resolveNamespace(envInfo); e != nil {
 		return nil, e
 	}
 
 	// resolve the component
-	if _, err = internalCtx.resolveAndSetComponent(command, envInfo); err != nil {
+	if _, err = ctx.resolveAndSetComponent(command, envInfo); err != nil {
 		return nil, err
 	}
 	// Create a context from the internal representation
 	context := &Context{
-		internalCxt: internalCtx,
+		internalCxt: ctx,
 	}
 	return context, nil
 }
@@ -213,7 +213,7 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// Create the internal context representation based on calculated values
-	internalCtx := internalCxt{
+	ctx := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
 	}
@@ -224,25 +224,25 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 		return nil, err
 	}
 
-	internalCtx.EnvSpecificInfo = envInfo
-	internalCtx.LocalConfigProvider = envInfo
-	internalCtx.resolveApp(false, envInfo)
+	ctx.EnvSpecificInfo = envInfo
+	ctx.LocalConfigProvider = envInfo
+	ctx.resolveApp(false, envInfo)
 
 	// resolve the component
-	_, err = internalCtx.resolveAndSetComponent(command, envInfo)
+	_, err = ctx.resolveAndSetComponent(command, envInfo)
 	if err != nil {
 		return nil, err
 	}
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if projectFlag != "" {
-		internalCtx.Project = projectFlag
+		ctx.Project = projectFlag
 	} else {
-		internalCtx.Project = envInfo.GetNamespace()
+		ctx.Project = envInfo.GetNamespace()
 	}
 
 	// Create a context from the internal representation
 	context := &Context{
-		internalCxt: internalCtx,
+		internalCxt: ctx,
 	}
 	return context, nil
 }
