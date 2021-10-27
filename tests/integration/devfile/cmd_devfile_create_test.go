@@ -290,6 +290,22 @@ var _ = Describe("odo devfile create command tests", func() {
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
 			})
 		})
+		When("devfile contains parent URI", func() {
+			var originalDevfileContent string
+			BeforeEach(func() {
+				var err error
+				devfilePath = filepath.Join(commonVar.Context, devfile)
+				helper.CopyExampleDevFile("", devfilePath)
+				originalDevfileContent, err = helper.ReadFile(devfilePath)
+				Expect(err).To(BeNil())
+			})
+			It("should not replace the original devfile", func() {
+				helper.Cmd("odo", "create").ShouldPass()
+				devfileContent, err := helper.ReadFile(devfilePath)
+				Expect(err).To(BeNil())
+				Expect(devfileContent).To(BeIdenticalTo(originalDevfileContent))
+			})
+		})
 	})
 
 	When("devfile does not exist in the working directory and user specifies the devfile path via --devfile", func() {
@@ -326,6 +342,21 @@ var _ = Describe("odo devfile create command tests", func() {
 			By("using --registry flag", func() {
 				errOut := helper.Cmd("odo", "create", "nodejs", "--devfile", devfilePath, "--registry", "DefaultDevfileRegistry").ShouldFail().Err()
 				Expect(errOut).To(ContainSubstring("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile"))
+			})
+		})
+		When("devfile contains parent URI", func() {
+			var originalDevfileContent string
+			BeforeEach(func() {
+				var err error
+				helper.CopyExampleDevFile("", devfilePath)
+				originalDevfileContent, err = helper.ReadFile(devfilePath)
+				Expect(err).To(BeNil())
+			})
+			It("should not replace the original devfile", func() {
+				helper.Cmd("odo", "create", "--devfile", devfilePath).ShouldPass()
+				devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, devfile))
+				Expect(err).To(BeNil())
+				Expect(devfileContent).To(BeIdenticalTo(originalDevfileContent))
 			})
 		})
 	})
