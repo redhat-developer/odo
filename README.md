@@ -33,7 +33,7 @@ Learn more about core concepts of odo on [odo.dev](https://odo.dev/docs/getting-
 
 When odo is run the first time, you will be asked to opt-in to Red Hat's telemetry collection program.
 
-With your approval, odo will collect pseudonymized usage data and send it to Red Hat servers to help improve our products and services. Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection) to learn more about it. For the specific data being collected and to configure this data collection process, see [Usage data](USAGE_DATA.adoc).
+With your approval, odo will collect pseudonymized usage data and send it to Red Hat servers to help improve our products and services. Read our [privacy statement](https://developers.redhat.com/article/tool-data-collection) to learn more about it. For the specific data being collected and to configure this data collection process, see [Usage data](USAGE_DATA.md).
 
 ### Official documentation
 
