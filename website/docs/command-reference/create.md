@@ -39,7 +39,7 @@ odo create nodejs --app myapp --project backend
 
 ## Starter projects
 
-If you do not have existing source code but wish to get up and running quickly to experiment with devfiles and components, you could use the example projects to get started. To use a starter project, include the `--starter` flag in your `odo create` command.
+If you do not have existing source code but wish to get up and running quickly to experiment with devfiles and components, you could use the starter projects to get started. To use a starter project, include the `--starter` flag in your `odo create` command.
 
 To get a list of available starter projects for a component type, you can use the `odo catalog describe component` command. For example, to get all available starter projects for the nodejs component type, run: 
 
@@ -47,7 +47,7 @@ To get a list of available starter projects for a component type, you can use th
 odo catalog describe component nodejs
 ```
 
-Then specify the desire project with the `--starter` flag: 
+Then specify the desired project with the `--starter` flag: 
 
 ```
 odo create nodejs --starter nodejs-starter
