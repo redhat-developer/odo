@@ -18,3 +18,7 @@ mockgen -source=pkg/storage/storage.go \
 mockgen -source=pkg/url/url.go \
     -package url \
     -destination pkg/url/mock_Client.go
+
+mockgen -source=pkg/image/image.go \
+    -package image \
+    -destination pkg/image/mock_Backend.go

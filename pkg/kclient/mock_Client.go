@@ -555,21 +555,6 @@ func (mr *MockClientInterfaceMockRecorder) GetDeploymentByName(name interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentByName", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentByName), name)
 }
 
-// GetDeploymentConfigsFromSelector mocks base method.
-func (m *MockClientInterface) GetDeploymentConfigsFromSelector(selector string) ([]v1.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeploymentConfigsFromSelector", selector)
-	ret0, _ := ret[0].([]v1.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDeploymentConfigsFromSelector indicates an expected call of GetDeploymentConfigsFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetDeploymentConfigsFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentConfigsFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentConfigsFromSelector), selector)
-}
-
 // GetDeploymentFromSelector mocks base method.
 func (m *MockClientInterface) GetDeploymentFromSelector(selector string) ([]v1.Deployment, error) {
 	m.ctrl.T.Helper()

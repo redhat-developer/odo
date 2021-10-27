@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/odo/cli/build_images"
 	"github.com/openshift/odo/pkg/odo/cli/telemetry"
 
 	"github.com/openshift/odo/pkg/odo/cli/application"
@@ -206,6 +207,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
+		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands
