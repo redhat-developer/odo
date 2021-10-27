@@ -1,29 +1,13 @@
 ---
-# Layout settings, do not change
-layout: default
-keywords:
-comments: false
-micro_nav: true
-
-# Blog post information
 title: Odo 2.0.0 General Availability Release!
-description: odo has reached 2.0.0 and we're excited to show you what's new
-
-# You may set a date in the future. If so, it will NOT show until that time has elapsed
-# MUST be in this format
-date: 2020-09-24 01:02:03
-
-# Author information
-author:
-    title: About Author
-    title_url: '#'
-    name: Charlie Drage
-    img: "/img/charlie.jpg"
-    description: Charlie Drage is a Senior Software Engineer at Red Hat
-
+sidebar_position: -2
+author: Charlie Drage
+author_url: https://github.com/cdrage
+author_image_url: https://avatars.githubusercontent.com/u/6422176?v=4
 ---
 
-`2.0.0` of odo has been released! 
+
+`2.0.0` of odo has been released!
 
 # What's new
 
