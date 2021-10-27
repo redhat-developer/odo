@@ -3,10 +3,12 @@ package project
 import (
 	"fmt"
 
+	odoerrors "github.com/openshift/odo/pkg/errors"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/project"
 	scontext "github.com/openshift/odo/pkg/segment/context"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spf13/cobra"
 
@@ -58,7 +60,9 @@ func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []s
 func (pso *ProjectSetOptions) Validate() (err error) {
 
 	exists, err := project.Exists(pso.Context, pso.projectName)
-
+	if kerrors.IsForbidden(err) {
+		return &odoerrors.Unauthorized{}
+	}
 	if !exists {
 		return fmt.Errorf("The project %s does not exist", pso.projectName)
 	}
