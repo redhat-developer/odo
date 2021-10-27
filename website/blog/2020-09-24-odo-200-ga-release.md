@@ -1,37 +1,20 @@
 ---
-# Layout settings, do not change
-layout: default
-keywords:
-comments: false
-micro_nav: true
-
-# Blog post information
-title: Odo 2.0.0 General Availability Release!
-description: odo has reached 2.0.0 and we're excited to show you what's new
-
-# You may set a date in the future. If so, it will NOT show until that time has elapsed
-# MUST be in this format
-date: 2020-09-24 01:02:03
-
-# Author information
-author:
-    title: About Author
-    title_url: '#'
-    name: Charlie Drage
-    img: "/img/charlie.jpg"
-    description: Charlie Drage is a Senior Software Engineer at Red Hat
-
+title: odo 2.0.0 GA Release
+author: Charlie Drage
+author_url: https://github.com/cdrage
+author_image_url: https://avatars.githubusercontent.com/u/6422176?v=4
 ---
 
-`2.0.0` of odo has been released! 
 
-# What's new
+`2.0.0` of odo has been released!
+
+### What's new
 
 #### Changes to the default deployment method
 
-[Devfile](https://devfile.github.io/devfile/index.html) is a file format that is used as odo's new deployment engine. Starting from `2.0.0` onwards, Source-to-Image (S2I) is no longer the default deployment method. S2I is still supported and can now be accessed with the `--s2i` flag from the command-line.
+[Devfile](https://devfile.github.io/) is a file format that is used as odo's new deployment engine. Starting from `2.0.0` onwards, Source-to-Image (S2I) is no longer the default deployment method. S2I is still supported and can now be accessed with the `--s2i` flag from the command-line.
 
-Learn how to deploy your first devfile using devfiles from our [Devfile tutorial](https://odo.dev/docs/deploying-a-devfile-using-odo/).
+Learn how to deploy your first devfile using devfiles from our [Devfile tutorial](../docs/getting-started/quickstart.md).
 
 Example on how to download a starter project and deploy a devfile:
 
@@ -71,12 +54,11 @@ Pushing devfile component nodejs
  ✓  Changes successfully pushed to component
 ```
 
-
 #### Deploying a custom Kubernetes controller with odo
 
 With the release of `2.0.0` deploying operators is now out of experimental mode.
 
-Learn how to deploy your first Kubernetes custom controller from our [Operator documentation](https://odo.dev/docs/operator-hub/).
+Learn how to deploy your first Kubernetes custom controller from our [installation guide](../docs/getting-started/cluster-setup/kubernetes.md).
 
 Example on how to deploy your first Operator:
 
@@ -93,61 +75,9 @@ $ odo service create etcdoperator.v0.9.4/EtcdCluster
 
 The `odo debug` command is no longer in technical preview.
 
-[Learn how to debug your component via the CLI or VSCode](https://odo.dev/docs/debugging-using-devfile/).
+[Learn how to debug your component via the CLI or VSCode](#).
 
-# Installing odo
-
-## Installing odo on Linux
-
-### Binary installation
-
-    # curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-linux-amd64 -o /usr/local/bin/odo
-    # chmod +x /usr/local/bin/odo
-
-## Installing odo on macOS
-
-### Binary installation
-
-    # curl -L https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64 -o /usr/local/bin/odo
-    # chmod +x /usr/local/bin/odo
-
-## Installing odo on Windows
-
-### Binary installation
-
-1.  Download the latest  [`odo.exe`](https://mirror.openshift.com/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe)   file.
-
-2.  Add the location of your `odo.exe` to your `GOPATH/bin` directory.
-
-### Setting the `PATH` variable for Windows 10
-
-Edit `Environment Variables` using search:
-
-1.  Click **Search** and type `env` or `environment`.
-
-2.  Select **Edit environment variables for your account**.
-
-3.  Select **Path** from the **Variable** section and click **Edit**.
-
-4.  Click **New** and type `C:\go-bin` into the field or click    **Browse** and select the directory, and click **OK**.
-
-### Setting the `PATH` variable for Windows 7/8
-
-The following example demonstrates how to set up a path variable. Your binaries can be located in any location, but this example uses C:\\go-bin as the location.
-
-1.  Create a folder at `C:\go-bin`.
-
-2.  Right click **Start** and click **Control Panel**.
-
-3.  Select **System and Security** and then click **System**.
-
-4.  From the menu on the left, select the **Advanced systems settings**  and click the **Environment Variables** button at the bottom.
-
-5.  Select **Path** from the **Variable** section and click **Edit**.
-
-6.  Click **New** and type `C:\go-bin` into the field or click    **Browse** and select the directory, and click **OK**.
-
-# Full changelog
+### Full changelog
 
 **New features:**
 
