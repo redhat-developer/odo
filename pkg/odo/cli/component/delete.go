@@ -79,9 +79,9 @@ func NewDeleteOptions() *DeleteOptions {
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if do.componentContext == "" {
-		dir, err := os.Getwd()
-		if err != nil {
-			return err
+		dir, e := os.Getwd()
+		if e != nil {
+			return e
 		}
 
 		do.componentContext = dir

@@ -635,9 +635,8 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		u := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
-		if err != nil {
-			return err
+		if e := yaml.Unmarshal([]byte(strCRD), &u.Object); e != nil {
+			return e
 		}
 
 		if isLinkResource(u.GetKind()) {
@@ -647,9 +646,9 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 
 		crdName := u.GetName()
 
-		restMapping, err := client.GetRestMappingFromUnstructured(u)
-		if err != nil {
-			return err
+		restMapping, e := client.GetRestMappingFromUnstructured(u)
+		if e != nil {
+			return e
 		}
 
 		// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
@@ -672,15 +671,15 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 			u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
 		}
 
-		err = createOperatorService(client, u)
+		e = createOperatorService(client, u)
 		delete(deployed, u.GetKind()+"/"+crdName)
-		if err != nil {
-			if strings.Contains(err.Error(), "already exists") {
+		if e != nil {
+			if strings.Contains(e.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
 				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
-				return err
+				return e
 			}
 		}
 

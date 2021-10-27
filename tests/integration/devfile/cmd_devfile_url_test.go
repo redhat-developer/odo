@@ -43,28 +43,28 @@ var _ = Describe("odo devfile url command tests", func() {
 		})
 
 		It("should not allow creating an invalid host", func() {
-			stdout := helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--port", "3000", "--ingress").ShouldFail().Err()
+			stdout = helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdout).To(ContainSubstring("is not a valid host name"))
 		})
 
 		It("should not allow using tls secret if url is not secure", func() {
-			stdout := helper.Cmd("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
+			stdout = helper.Cmd("odo", "url", "create", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdout).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
 		})
 
 		It("should report multiple issues when it's the case", func() {
-			stdout := helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
+			stdout = helper.Cmd("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdout).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
 		})
 
 		It("should not allow creating under an invalid container", func() {
 			containerName := helper.RandString(5)
-			stdout := helper.Cmd("odo", "url", "create", "--host", "com", "--port", "3000", "--container", containerName, "--ingress").ShouldFail().Err()
+			stdout = helper.Cmd("odo", "url", "create", "--host", "com", "--port", "3000", "--container", containerName, "--ingress").ShouldFail().Err()
 			helper.MatchAllInOutput(stdout, []string{"container", containerName, "not exist"})
 		})
 
 		It("should not allow creating an endpoint with same name", func() {
-			stdout := helper.Cmd("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress").ShouldFail().Err()
+			stdout = helper.Cmd("odo", "url", "create", "3000-tcp", "--host", "com", "--port", "3000", "--ingress").ShouldFail().Err()
 			Expect(stdout).To(ContainSubstring("url 3000-tcp already exist in devfile endpoint entry"))
 		})
 
@@ -78,7 +78,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			})
 
 			It("should check state of url1 list", func() {
-				stdout := helper.Cmd("odo", "url", "list").ShouldPass().Out()
+				stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
 				helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "true", "ingress"})
 			})
 

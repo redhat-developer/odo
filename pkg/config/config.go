@@ -58,8 +58,8 @@ func SetDevfileConfiguration(d parser.DevfileObj, parameter string, value interf
 	// being passed. So consider this a shortcut, if you know its a string value use this strValue
 	// else parse it inside the switch case.
 	strValue, _ := value.(string)
-	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
-		switch parameter {
+	if param, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch param {
 		case "name":
 			return d.SetMetadataName(strValue)
 		case "ports":
@@ -76,8 +76,8 @@ func SetDevfileConfiguration(d parser.DevfileObj, parameter string, value interf
 
 // DeleteConfiguration allows deleting  the parameters that are configurable in a devfile
 func DeleteDevfileConfiguration(d parser.DevfileObj, parameter string) error {
-	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
-		switch parameter {
+	if param, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch param {
 		case "name":
 			return d.SetMetadataName("")
 		case "ports":
@@ -91,9 +91,8 @@ func DeleteDevfileConfiguration(d parser.DevfileObj, parameter string) error {
 
 // IsSet checks if a parameter is set in the devfile
 func IsSetInDevfile(d parser.DevfileObj, parameter string) bool {
-
-	if parameter, ok := AsDevfileSupportedParameter(parameter); ok {
-		switch parameter {
+	if p, ok := AsDevfileSupportedParameter(parameter); ok {
+		switch p {
 		case "name":
 			return d.GetMetadataName() != ""
 		case "ports":

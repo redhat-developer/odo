@@ -94,7 +94,7 @@ func (o *UnsetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
+func (o *UnsetOptions) Run(cmd *cobra.Command) error {
 	if o.envArray != nil {
 
 		if err := o.EnvSpecificInfo.GetDevfileObj().RemoveEnvVars(o.envArray); err != nil {
@@ -105,14 +105,14 @@ func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 			return o.DevfilePush()
 		}
 		log.Italic("\nRun `odo push` command to apply changes to the cluster")
-		return err
+		return nil
 	}
 	if isSet := config.IsSetInDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.paramName); isSet {
 		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
-		err = config.DeleteDevfileConfiguration(o.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName))
+		err := config.DeleteDevfileConfiguration(o.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName))
 		log.Success("Devfile was successfully updated.")
 		if o.now {
 			return o.DevfilePush()

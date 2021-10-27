@@ -1343,9 +1343,8 @@ func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 		return err
 	}
 	defer func() {
-		err := srcfd.Close()
-		if err != nil {
-			klog.V(4).Infof("err occurred while closing file: %v", err)
+		if e := srcfd.Close(); e != nil {
+			klog.V(4).Infof("err occurred while closing file: %v", e)
 		}
 	}()
 
@@ -1354,9 +1353,8 @@ func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 		return err
 	}
 	defer func() {
-		err := dstfd.Close()
-		if err != nil {
-			klog.V(4).Infof("err occurred while closing file: %v", err)
+		if e := dstfd.Close(); e != nil {
+			klog.V(4).Infof("err occurred while closing file: %v", e)
 		}
 	}()
 

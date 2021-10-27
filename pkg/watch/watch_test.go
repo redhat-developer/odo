@@ -779,8 +779,8 @@ func TestWatchAndPush(t *testing.T) {
 									fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
 								}
 
-								newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
-								if err != nil {
+								newFilePath, e := testingutil.SimulateFileModifications(basePath, fileModification)
+								if e != nil {
 									t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
 								}
 

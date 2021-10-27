@@ -212,7 +212,6 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 
 	// generate the owner reference
 	if k.deployment == nil {
-		var err error
 		k.deployment, err = k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
 		if err != nil {
 			return "", err
@@ -223,20 +222,20 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	if url.Spec.Secure {
 		if len(url.Spec.TLSSecret) != 0 {
 			// get the user given secret
-			_, err := k.client.GetKubeClient().GetSecret(url.Spec.TLSSecret, k.client.Namespace)
+			_, err = k.client.GetKubeClient().GetSecret(url.Spec.TLSSecret, k.client.Namespace)
 			if err != nil {
 				return "", errors.Wrap(err, "unable to get the provided secret: "+url.Spec.TLSSecret)
 			}
 		} else {
 			// get the default secret
 			defaultTLSSecretName := getDefaultTLSSecretName(k.componentName, k.appName)
-			_, err := k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)
+			_, err = k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)
 
 			// create tls secret if it does not exist
 			if kerrors.IsNotFound(err) {
-				selfSignedCert, err := kclient.GenerateSelfSignedCertificate(url.Spec.Host)
-				if err != nil {
-					return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+url.Spec.Host)
+				selfSignedCert, e := kclient.GenerateSelfSignedCertificate(url.Spec.Host)
+				if e != nil {
+					return "", errors.Wrap(e, "unable to generate self-signed certificate for clutser: "+url.Spec.Host)
 				}
 				// create tls secret
 				secretLabels := componentlabels.GetLabels(k.componentName, k.appName, true)
@@ -247,9 +246,9 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 						ownerReference,
 					},
 				}
-				secret, err := k.client.GetKubeClient().CreateTLSSecret(selfSignedCert.CertPem, selfSignedCert.KeyPem, objectMeta)
-				if err != nil {
-					return "", errors.Wrap(err, "unable to create tls secret")
+				secret, e := k.client.GetKubeClient().CreateTLSSecret(selfSignedCert.CertPem, selfSignedCert.KeyPem, objectMeta)
+				if e != nil {
+					return "", errors.Wrap(e, "unable to create tls secret")
 				}
 				url.Spec.TLSSecret = secret.Name
 			} else if err != nil {
@@ -303,7 +302,6 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	}
 
 	if k.deployment == nil {
-		var err error
 		k.deployment, err = k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
 		if err != nil {
 			return "", err

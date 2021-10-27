@@ -122,35 +122,34 @@ func NewCreateOptions() *CreateOptions {
 }
 
 func createDefaultComponentName(componentType string, sourcePath string) (string, error) {
-	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
-	var err error
-	var finalSourcePath string
-	// we only get absolute path for local source type
+	finalSourcePath, err := getComponentName(sourcePath)
+	if err != nil {
+		return "", err
+	}
 
+	return component.GetDefaultComponentName(
+		finalSourcePath,
+		componentType,
+		component.ComponentList{},
+	)
+}
+
+func getComponentName(sourcePath string) (string, error) {
+	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
+	// we only get absolute path for local source type
 	if sourcePath == "" {
 		wd, err := os.Getwd()
 		if err != nil {
 			return "", err
 		}
-		finalSourcePath = wd
-	} else {
-		finalSourcePath, err = filepath.Abs(sourcePath)
-		if err != nil {
-			return "", err
-		}
+		return wd, nil
 	}
-
-	componentName, err := component.GetDefaultComponentName(
-		finalSourcePath,
-		componentType,
-		component.ComponentList{},
-	)
-
+	finalSourcePath, err := filepath.Abs(sourcePath)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
+	return finalSourcePath, nil
 
-	return componentName, nil
 }
 
 // Complete completes create args
@@ -184,7 +183,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	if util.CheckPathExists(EnvFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
-		if err := util.DeletePath(EnvFilePath); err != nil {
+		if err = util.DeletePath(EnvFilePath); err != nil {
 			return err
 		}
 	}
@@ -223,9 +222,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 		}
 
-		registryList, err := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
-		if err != nil {
-			return errors.Wrap(err, "failed to get registry")
+		registryList, e := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
+		if e != nil {
+			return errors.Wrap(e, "failed to get registry")
 		}
 		if len(registryList) == 0 {
 			return errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
@@ -269,9 +268,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 			} else {
-				client, err := genericclioptions.Client()
+				client, e := genericclioptions.Client()
 				// if the user is logged in or if we have cluster information, display the default project
-				if err == nil {
+				if e == nil {
 					componentNamespace = ui.EnterDevfileComponentProject(client.GetCurrentProjectName())
 				}
 			}
@@ -293,14 +292,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			} else {
 				// If there is an existing devfile, and no component name is passed, parse it from the devfile,
 				// and assign the value if the metadata name is set
-				devfileObj, err := devfile.ParseFromFile(DevfilePath)
-				if err == nil && devfileObj.GetMetadataName() != "" {
+				devfileObj, e := devfile.ParseFromFile(DevfilePath)
+				if e == nil && devfileObj.GetMetadataName() != "" {
 					componentName = devfileObj.GetMetadataName()
 				} else {
 					// If the metadata name is not available, then assign the current directory name to component
-					currentDirPath, err := os.Getwd()
-					if err != nil {
-						return err
+					currentDirPath, wdErr := os.Getwd()
+					if wdErr != nil {
+						return wdErr
 					}
 					currentDirName := filepath.Base(currentDirPath)
 					componentName = currentDirName
@@ -318,7 +317,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if len(args) == 2 {
 				componentName = args[1]
 			} else {
-				var err error
 				componentName, err = createDefaultComponentName(
 					componentType,
 					co.componentContext,
@@ -495,9 +493,9 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 					URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 				}
 
-				secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
-				if err != nil {
-					return err
+				secure, e := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+				if e != nil {
+					return e
 				}
 
 				if secure {

@@ -294,7 +294,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 						It("should list the service", func() {
 							// now test listing of the service using odo
-							stdOut := helper.Cmd("odo", "service", "list").ShouldPass().Out()
+							stdOut = helper.Cmd("odo", "service", "list").ShouldPass().Out()
 							Expect(stdOut).To(ContainSubstring("Redis/redis"))
 						})
 
@@ -304,7 +304,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						When("a link is created with the service", func() {
-							var stdOut string
 							BeforeEach(func() {
 								stdOut = helper.Cmd("odo", "link", "Redis/redis").ShouldPass().Out()
 							})

@@ -364,7 +364,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, getUrls, getStorage bool) (component Component, err error) {
+func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
@@ -373,17 +373,17 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	// Component Type
 	componentType, err := fromCluster.GetType()
 	if err != nil {
-		return component, errors.Wrap(err, "unable to get source type")
+		return Component{}, errors.Wrap(err, "unable to get source type")
 	}
 
 	// init component
-	component = newComponentWithType(componentName, componentType)
+	component := newComponentWithType(componentName, componentType)
 
 	// URL
 	if getUrls {
-		urls, err := fromCluster.GetURLs()
-		if err != nil {
-			return Component{}, err
+		urls, e := fromCluster.GetURLs()
+		if e != nil {
+			return Component{}, e
 		}
 		component.Spec.URLSpec = urls
 		urlsNb := len(urls)
@@ -398,9 +398,9 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 
 	// Storage
 	if getStorage {
-		appStore, err := fromCluster.GetStorage()
-		if err != nil {
-			return Component{}, errors.Wrap(err, "unable to get storage list")
+		appStore, e := fromCluster.GetStorage()
+		if e != nil {
+			return Component{}, errors.Wrap(e, "unable to get storage list")
 		}
 
 		component.Spec.StorageSpec = appStore

@@ -248,15 +248,15 @@ var _ = Describe("odo devfile watch command tests", func() {
 			// 4) Wait for the new file to exist in the index
 			Eventually(func() bool {
 
-				newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
-				if err != nil {
-					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
+				newIndexAfterPush, readErr := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
+				if readErr != nil {
+					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", readErr)
 					return false
 				}
 
 				_, exists := newIndexAfterPush.Files[filepath.Base(fileAPath)]
 				if !exists {
-					fmt.Fprintln(GinkgoWriter, "path", fileAPath, "not found.", err)
+					fmt.Fprintln(GinkgoWriter, "path", fileAPath, "not found.", readErr)
 				}
 				return exists
 

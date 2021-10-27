@@ -129,9 +129,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
 	if componentExists {
-		pod, err := a.getPod(true)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		pod, podErr := a.getPod(true)
+		if podErr != nil {
+			return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
 		}
 		podName = pod.GetName()
 	}
@@ -162,8 +162,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	currentMode := envinfo.Run
 
 	if parameters.Debug {
-		pushDevfileDebugCommands, err := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
-		if err != nil {
+		pushDevfileDebugCommands, e := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
+		if e != nil {
 			return fmt.Errorf("debug command is not valid")
 		}
 		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
@@ -495,9 +495,9 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			continue
 		}
 
-		generatedVolumeName, err := storage.GenerateVolumeNameFromPVC(pvc.Name)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
+		generatedVolumeName, e := storage.GenerateVolumeNameFromPVC(pvc.Name)
+		if e != nil {
+			return errors.Wrapf(e, "Unable to generate volume name from pvc name")
 		}
 
 		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {
@@ -582,34 +582,9 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		oldSvc, err := a.Client.GetKubeClient().GetOneService(a.ComponentName, a.AppName)
-		ownerReference := generator.GetOwnerReference(a.deployment)
-		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
-		if err != nil {
-			// no old service was found, create a new one
-			if len(svc.Spec.Ports) > 0 {
-				_, err = a.Client.GetKubeClient().CreateService(*svc)
-				if err != nil {
-					return err
-				}
-				klog.V(2).Infof("Successfully created Service for component %s", componentName)
-			}
-		} else {
-			if len(svc.Spec.Ports) > 0 {
-				svc.Spec.ClusterIP = oldSvc.Spec.ClusterIP
-				svc.ResourceVersion = oldSvc.GetResourceVersion()
-				_, err = a.Client.GetKubeClient().UpdateService(*svc)
-				if err != nil {
-					return err
-				}
-				klog.V(2).Infof("Successfully update Service for component %s", componentName)
-			} else {
-				// delete the old existing service if the component currently doesn't expose any ports
-				err = a.Client.GetKubeClient().DeleteService(oldSvc.Name)
-				if err != nil {
-					return err
-				}
-			}
+		e := a.createOrUpdateServiceForComponent(svc, componentName)
+		if e != nil {
+			return e
 		}
 	} else {
 		if a.Client.GetKubeClient().IsSSASupported() {
@@ -635,6 +610,35 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	}
 
 	return nil
+}
+
+func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string) error {
+	oldSvc, err := a.Client.GetKubeClient().GetOneService(a.ComponentName, a.AppName)
+	ownerReference := generator.GetOwnerReference(a.deployment)
+	svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
+	if err != nil {
+		// no old service was found, create a new one
+		if len(svc.Spec.Ports) > 0 {
+			_, err = a.Client.GetKubeClient().CreateService(*svc)
+			if err != nil {
+				return err
+			}
+			klog.V(2).Infof("Successfully created Service for component %s", componentName)
+		}
+		return nil
+	}
+	if len(svc.Spec.Ports) > 0 {
+		svc.Spec.ClusterIP = oldSvc.Spec.ClusterIP
+		svc.ResourceVersion = oldSvc.GetResourceVersion()
+		_, err = a.Client.GetKubeClient().UpdateService(*svc)
+		if err != nil {
+			return err
+		}
+		klog.V(2).Infof("Successfully update Service for component %s", componentName)
+		return nil
+	}
+	// delete the old existing service if the component currently doesn't expose any ports
+	return a.Client.GetKubeClient().DeleteService(oldSvc.Name)
 }
 
 // generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name and labels

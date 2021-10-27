@@ -100,37 +100,54 @@ func convertURL(URL string) (string, error) {
 const indexPath = "/devfiles/index.json"
 
 // getRegistryDevfiles retrieves the registry's index devfile entries
-func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponentType, err error) {
+func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
+	if !strings.Contains(registry.URL, "github") {
+		// OCI-based registry
+		devfileIndex, err := registryLibrary.GetRegistryIndex(registry.URL, false, registryConsts.TelemetryClient, indexSchema.StackDevfileType)
+		if err != nil {
+			return nil, err
+		}
+		return createRegistryDevfiles(registry, devfileIndex)
+	}
+	// Github-based registry
+	URL, err := convertURL(registry.URL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
+	}
+	registry.URL = URL
+	indexLink := registry.URL + indexPath
+	request := util.HTTPRequestParams{
+		URL: indexLink,
+	}
+	secure, err := registryUtil.IsSecure(registry.Name)
+	if err != nil {
+		return nil, err
+	}
+	if secure {
+		token, e := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
+		if e != nil {
+			return nil, errors.Wrap(e, "unable to get secure registry credential from keyring")
+		}
+		request.Token = token
+	}
+
+	cfg, err := preference.New()
+	if err != nil {
+		return nil, err
+	}
+
+	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+	}
+
 	var devfileIndex []indexSchema.Schema
-
-	if strings.Contains(registry.URL, "github") {
-		// Github-based registry
-		URL, err := convertURL(registry.URL)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
+	err = json.Unmarshal(jsonBytes, &devfileIndex)
+	if err != nil {
+		if err := util.CleanDefaultHTTPCacheDir(); err != nil {
+			log.Warning("Error while cleaning up cache dir.")
 		}
-		registry.URL = URL
-		indexLink := registry.URL + indexPath
-		request := util.HTTPRequestParams{
-			URL: indexLink,
-		}
-		secure, err := registryUtil.IsSecure(registry.Name)
-		if err != nil {
-			return nil, err
-		}
-		if secure {
-			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
-			if err != nil {
-				return nil, errors.Wrap(err, "unable to get secure registry credential from keyring")
-			}
-			request.Token = token
-		}
-
-		cfg, err := preference.New()
-		if err != nil {
-			return nil, err
-		}
-
+		// we try once again
 		jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
@@ -138,28 +155,14 @@ func getRegistryDevfiles(registry Registry) (registryDevfiles []DevfileComponent
 
 		err = json.Unmarshal(jsonBytes, &devfileIndex)
 		if err != nil {
-			if err := util.CleanDefaultHTTPCacheDir(); err != nil {
-				log.Warning("Error while cleaning up cache dir.")
-			}
-			// we try once again
-			jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
-			}
-
-			err = json.Unmarshal(jsonBytes, &devfileIndex)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
-			}
-		}
-	} else {
-		// OCI-based registry
-		devfileIndex, err = registryLibrary.GetRegistryIndex(registry.URL, false, registryConsts.TelemetryClient, indexSchema.StackDevfileType)
-		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
 		}
 	}
+	return createRegistryDevfiles(registry, devfileIndex)
+}
 
+func createRegistryDevfiles(registry Registry, devfileIndex []indexSchema.Schema) ([]DevfileComponentType, error) {
+	registryDevfiles := make([]DevfileComponentType, 0, len(devfileIndex))
 	for _, devfileIndexEntry := range devfileIndex {
 		stackDevfile := DevfileComponentType{
 			Name:        devfileIndexEntry.Name,
