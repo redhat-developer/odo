@@ -1,9 +1,0 @@
-= Deprecation of git based Registries
-
-As we now have OCI based registries for devfiles, git based registries are being #deprecated#.
-
-You are hereby advised to move to OCI based registry at the earliest as support for git based will be dropped in future releases.
-
-OCI based registries can be setup on any kubernetes cluster using https://github.com/devfile/registry-operator[devfile registry operator].
-
-An example of a devfile registry can be seen in the new https://registry.devfile.io[default devfile registry].
