@@ -109,6 +109,9 @@ module.exports = {
           // Please change this to your repo.
           editUrl:
             'https://github.com/openshift/odo/edit/main/website/blog/',
+          blogSidebarTitle: 'All posts',
+          blogSidebarCount: 'ALL',
+          postsPerPage: 5,
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

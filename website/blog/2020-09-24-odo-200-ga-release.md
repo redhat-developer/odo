@@ -3,10 +3,13 @@ title: odo 2.0.0 GA Release
 author: Charlie Drage
 author_url: https://github.com/cdrage
 author_image_url: https://avatars.githubusercontent.com/u/6422176?v=4
+tags: ["release"]
+slug: odo-200-release
 ---
 
 
 `2.0.0` of odo has been released!
+<!--truncate-->
 
 ### What's new
 
@@ -14,7 +17,7 @@ author_image_url: https://avatars.githubusercontent.com/u/6422176?v=4
 
 [Devfile](https://devfile.github.io/) is a file format that is used as odo's new deployment engine. Starting from `2.0.0` onwards, Source-to-Image (S2I) is no longer the default deployment method. S2I is still supported and can now be accessed with the `--s2i` flag from the command-line.
 
-Learn how to deploy your first devfile using devfiles from our [Devfile tutorial](../docs/getting-started/quickstart.md).
+Learn how to deploy your first devfile using devfiles from our [Devfile tutorial](../docs/getting-started/quickstart).
 
 Example on how to download a starter project and deploy a devfile:
 
@@ -58,7 +61,7 @@ Pushing devfile component nodejs
 
 With the release of `2.0.0` deploying operators is now out of experimental mode.
 
-Learn how to deploy your first Kubernetes custom controller from our [installation guide](../docs/getting-started/cluster-setup/kubernetes.md).
+Learn how to deploy your first Kubernetes custom controller from our [installation guide](../docs/getting-started/cluster-setup/kubernetes).
 
 Example on how to deploy your first Operator:
 
