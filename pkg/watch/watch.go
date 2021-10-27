@@ -194,11 +194,10 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 					changeLock.Unlock()
 				}
 			case event := <-watcher.Events:
-				isIgnoreEvent := false
 				changeLock.Lock()
 				klog.V(4).Infof("filesystem watch event: %s", event)
 
-				isIgnoreEvent = shouldIgnoreEvent(event)
+				isIgnoreEvent := shouldIgnoreEvent(event)
 
 				// add file name to changedFiles only once
 				alreadyInChangedFiles := false
