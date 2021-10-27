@@ -57,7 +57,7 @@ Ask questions, inquire about odo or even discuss a new feature.
 
 #### Issues
 
-If you have an issue with `odo`, please [file it](https://github.com/openshift/odo/issues).
+If you find an issue with `odo`, please [file it here](https://github.com/openshift/odo/issues).
 
 
 #### Contributing
