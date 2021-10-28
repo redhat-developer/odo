@@ -1,8 +1,12 @@
 package image
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/klog"
@@ -18,19 +22,36 @@ func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
 }
 
 // Build an image, as defined in devfile, using a Docker compatible CLI
-func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent) error {
-	imageName := image.ImageName
-	dockerfile := image.Dockerfile.Uri
-	buildpath := image.Dockerfile.BuildContext
-	shell := fmt.Sprintf("%s build -t %s -f %s %s", o.name, imageName, dockerfile, buildpath)
-	klog.V(4).Infof("Running command: %s", shell)
+func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePath string) error {
+	if strings.HasPrefix(image.Dockerfile.Uri, "http") {
+		return errors.New("HTTP URL for uri is not supported")
+	}
+
+	shell := getShellCommand(o.name, image, devfilePath)
+
 	cmd := exec.Command("bash", "-c", shell)
+	cmd.Env = append(os.Environ(), "PROJECT_ROOT="+devfilePath)
+
 	output, err := cmd.CombinedOutput()
 	klog.V(4).Infoln(string(output))
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
 	return nil
+}
+
+func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) string {
+	imageName := image.ImageName
+	dockerfile := filepath.Join(devfilePath, image.Dockerfile.Uri)
+	buildpath := image.Dockerfile.BuildContext
+	args := image.Dockerfile.Args
+
+	shell := fmt.Sprintf(`%s build -t "%s" -f "%s" %s`, cmdName, imageName, dockerfile, buildpath)
+	if len(args) > 0 {
+		shell = shell + " " + strings.Join(args, " ")
+	}
+	klog.V(4).Infof("Running command: %s", shell)
+	return shell
 }
 
 // Push an image to its registry using a Docker compatible CLI

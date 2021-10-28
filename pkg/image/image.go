@@ -4,6 +4,7 @@ package image
 import (
 	"errors"
 	"os/exec"
+	"path/filepath"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -13,7 +14,7 @@ import (
 // Backend is in interface that must be implemented by container runtimes
 type Backend interface {
 	// Build the image as defined in the devfile
-	Build(image *devfile.ImageComponent) error
+	Build(image *devfile.ImageComponent, devfilePath string) error
 	// Push the image to its registry as defined in the devfile
 	Push(image string) error
 	// Return the name of the backend
@@ -39,8 +40,10 @@ func BuildPushImages(ctx *genericclioptions.Context, push bool) error {
 		return err
 	}
 
+	devfilePath := filepath.Dir(ctx.EnvSpecificInfo.GetDevfilePath())
+
 	for _, component := range components {
-		err = buildPushImage(backend, component.Image, push)
+		err = buildPushImage(backend, component.Image, devfilePath, push)
 		if err != nil {
 			return err
 		}
@@ -50,11 +53,11 @@ func BuildPushImages(ctx *genericclioptions.Context, push bool) error {
 
 // buildPushImage build an image using the provided backend
 // If push is true, also push the image to its registry
-func buildPushImage(backend Backend, image *devfile.ImageComponent, push bool) error {
+func buildPushImage(backend Backend, image *devfile.ImageComponent, devfilePath string, push bool) error {
 	if image == nil {
 		return errors.New("image should not be nil")
 	}
-	err := backend.Build(image)
+	err := backend.Build(image, devfilePath)
 	if err != nil {
 		return err
 	}
