@@ -121,7 +121,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 			return fmt.Errorf("the %q resource doesn't exist in specified %q operator", b.CustomResource, b.group)
 		}
 
-		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.CustomResource)
+		crd, err := o.KClient.GetCRDSpec(cr, b.group, b.kind)
 		if err != nil {
 			return err
 		}
