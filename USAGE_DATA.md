@@ -1,8 +1,5 @@
-[[usage-data]]
-= Usage Data
-:toc: macro
-:toc-title:
-:toclevels: 1
+Usage Data
+---
 
 If the user has consented to `odo` collecting usage data, the following data will be collected when a command is executed -
 
@@ -15,47 +12,26 @@ If the user has consented to `odo` collecting usage data, the following data wil
 
 Note that these commands do not include `--help` commands. We do not collect data about help commands.
 
----
-[[enable-disable]]
-== Enable/Disable preference
+###  Enable/Disable preference
 
-Enable::
+#### Enable
 `odo preference set ConsentTelemetry true`
 
-Disable::
+#### Disable
 `odo preference set ConsentTelemetry false`
 
 Alternatively you can _disable_ telemetry by setting `ODO_DISABLE_TELEMETRY` environment variable to `true`.
 This environment variable will override the `ConsentTelemetry` value set by `odo preference`.
 
----
-Table 1. The following table describes the additional information collected by odo commands.
+The following table describes the additional information collected by odo commands.
 
-|===
 |Event                  | Data                         | Type
-
-|*Component Create*
-| Component Type
-| Devfile component type
-
-|*Component Push*
-| Component Type
-| Devfile component type
-|
-|*Cluster Type*
-| Openshift 4/ Openshift 3/ Kubernetes
-
-|*Project Create*
-| Cluster Type
-|Openshift 4/ Openshift 3/ Kubernetes
-
-|*Project Set*
-| Cluster Type
-|Openshift 4/ Openshift 3/ Kubernetes
-
-|*Preference Change*
-| Preference Key
-| UpdateNotification/NamePrefix/Timeout/BuildTimeout/PushTimeout/Ephemeral/ConsentTelemetry
-|===
+| :-: | :-: | :-- |
+|**Component Create** | Component Type | Devfile component type |
+|**Component Push**| Component Type| Devfile component type|
+| | **Cluster Type** | Openshift 4 / Kubernetes |
+|**Project Create**| Cluster Type |Openshift 4 / Kubernetes |
+|**Project Set**| Cluster Type |Openshift 4 / Kubernetes |
+|**Preference Change** | Preference Key| UpdateNotification/NamePrefix/Timeout/BuildTimeout/PushTimeout/Ephemeral/ConsentTelemetry |
 
 
