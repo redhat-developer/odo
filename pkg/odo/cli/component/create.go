@@ -586,7 +586,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 
 	// set user provided component name in the devfile
 	if co.devfileMetadata.componentName != "" {
-		devObj, err = devfile.ParseFromFile(co.DevfilePath)
+		devObj, err = devfile.DevfileParseFromFile(co.DevfilePath, false)
 		if err != nil {
 			return fmt.Errorf("failed to create devfile component: %w", err)
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 )
 
+// parseDevfile parses and validates the devfile with both devfile and odo validators
 func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 	devObj, varWarnings, err := devfile.ParseDevfileAndValidate(args)
 	if err != nil {
@@ -18,6 +19,7 @@ func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 	}
 
 	// odo specific validations
+	// TODO: move this to a separate function and only call it when a change is made to the devfile.
 	err = validate.ValidateDevfileData(devObj.Data)
 	if err != nil {
 		return parser.DevfileObj{}, err
@@ -44,6 +46,16 @@ func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 // if there are warning it logs them on stdout
 func ParseFromFile(devfilePath string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{Path: devfilePath})
+}
+
+// DevfileParseFromFile reads, parses and validates a devfile from a file without flattening it
+func DevfileParseFromFile(devfilePath string, flattened bool) (parser.DevfileObj, error) {
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: &flattened})
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+
+	return devObj, nil
 }
 
 // ParseFromData parses devfile from []byte and does all the validation

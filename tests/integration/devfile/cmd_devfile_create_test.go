@@ -263,7 +263,9 @@ var _ = Describe("odo devfile create command tests", func() {
 			devfilePath = filepath.Join(commonVar.Context, devfile)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
 		})
-
+		AfterEach(func() {
+			helper.Cmd("odo", "delete", "-af").ShouldPass()
+		})
 		It("should successfully create the devfile component", func() {
 			helper.Cmd("odo", "create", "nodejs").ShouldPass()
 		})
@@ -295,7 +297,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			BeforeEach(func() {
 				var err error
 				devfilePath = filepath.Join(commonVar.Context, devfile)
-				helper.CopyExampleDevFile("", devfilePath)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), devfilePath)
 				originalDevfileContent, err = helper.ReadFile(devfilePath)
 				Expect(err).To(BeNil())
 			})
@@ -303,7 +305,7 @@ var _ = Describe("odo devfile create command tests", func() {
 				helper.Cmd("odo", "create").ShouldPass()
 				devfileContent, err := helper.ReadFile(devfilePath)
 				Expect(err).To(BeNil())
-				Expect(devfileContent).To(BeIdenticalTo(originalDevfileContent))
+				Expect(len(devfileContent)).To(BeEquivalentTo(len(originalDevfileContent)))
 			})
 		})
 	})
@@ -348,15 +350,15 @@ var _ = Describe("odo devfile create command tests", func() {
 			var originalDevfileContent string
 			BeforeEach(func() {
 				var err error
-				helper.CopyExampleDevFile("", devfilePath)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), devfilePath)
 				originalDevfileContent, err = helper.ReadFile(devfilePath)
 				Expect(err).To(BeNil())
 			})
 			It("should not replace the original devfile", func() {
-				helper.Cmd("odo", "create", "--devfile", devfilePath).ShouldPass()
+				helper.Cmd("odo", "create", "mycomp", "--devfile", devfilePath).ShouldPass()
 				devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, devfile))
 				Expect(err).To(BeNil())
-				Expect(devfileContent).To(BeIdenticalTo(originalDevfileContent))
+				Expect(len(devfileContent)).To(BeEquivalentTo(len(originalDevfileContent)))
 			})
 		})
 	})
