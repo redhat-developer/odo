@@ -32,6 +32,6 @@ The following table describes the additional information collected by odo comman
 | | **Cluster Type** | Openshift 4 / Kubernetes |
 |**Project Create**| Cluster Type |Openshift 4 / Kubernetes |
 |**Project Set**| Cluster Type |Openshift 4 / Kubernetes |
-|*Preference Change* | Preference Key| UpdateNotification/NamePrefix/Timeout/BuildTimeout/PushTimeout/Ephemeral/ConsentTelemetry |
+|**Preference Change** | Preference Key| UpdateNotification/NamePrefix/Timeout/BuildTimeout/PushTimeout/Ephemeral/ConsentTelemetry |
 
 
