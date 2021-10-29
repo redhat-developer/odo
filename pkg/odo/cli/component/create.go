@@ -61,7 +61,7 @@ type DevfileMetadata struct {
 	componentType      string
 	componentName      string
 	componentNamespace string
-	devfileSupport     bool
+	devfileSupport     bool // remove this
 	devfileLink        string
 	devfileRegistry    catalog.Registry
 	devfilePath        devfilePath
