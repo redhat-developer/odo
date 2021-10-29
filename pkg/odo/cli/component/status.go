@@ -89,7 +89,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		Namespace: so.namespace,
 	}
 
-	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.Application, devObj, platformContext)
+	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.GetApplication(), devObj, platformContext)
 
 	return err
 }

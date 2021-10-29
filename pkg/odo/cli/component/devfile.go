@@ -76,7 +76,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	}
 	platformContext = kc
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.sourcePath, po.Application, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.sourcePath, po.GetApplication(), devObj, platformContext)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 	}
 	platformContext = kc
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.Application, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.GetApplication(), devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	}
 
 	labels := componentlabels.GetLabels(componentName, do.EnvSpecificInfo.GetApplication(), false)
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.Application, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.GetApplication(), devObj, kc)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (to *TestOptions) RunTestCommand() error {
 	}
 	platformContext = kc
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.Application, to.devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.GetApplication(), to.devObj, platformContext)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 		Namespace: eo.namespace,
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.Application, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.GetApplication(), devObj, kc)
 	if err != nil {
 		return err
 	}

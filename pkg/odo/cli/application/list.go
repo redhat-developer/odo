@@ -45,7 +45,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() (err error) {
 	// list doesn't need the app name
-	if o.Context.Project == "" {
+	if o.Context.GetProject() == "" {
 		return util.ThrowContextError()
 	}
 	return util.CheckOutputFlag(o.outputFormat)
@@ -63,7 +63,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		if log.IsJSON() {
 			var appList []application.App
 			for _, app := range apps {
-				appDef := application.GetMachineReadableFormat(o.Client, app, o.Project)
+				appDef := application.GetMachineReadableFormat(o.Client, app, o.GetProject())
 				appList = append(appList, appDef)
 			}
 
@@ -71,7 +71,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 			machineoutput.OutputSuccess(appListDef)
 
 		} else {
-			log.Infof("The project '%v' has the following applications:", o.Project)
+			log.Infof("The project '%v' has the following applications:", o.GetProject())
 			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			_, err := fmt.Fprintln(tabWriter, "NAME")
 			if err != nil {
@@ -90,7 +90,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 			apps := application.GetMachineReadableFormatForList([]application.App{})
 			machineoutput.OutputSuccess(apps)
 		} else {
-			log.Infof("There are no applications deployed in the project '%v'", o.Project)
+			log.Infof("There are no applications deployed in the project '%v'", o.GetProject())
 		}
 	}
 	return

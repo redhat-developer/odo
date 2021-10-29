@@ -102,7 +102,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		Namespace: wo.namespace,
 	}
 
-	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
+	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.GetApplication(), devObj, platformContext)
 
 	return err
 }
@@ -122,7 +122,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
 		return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
 	}
-	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName, wo.Application)
+	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName, wo.GetApplication())
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (wo *WatchOptions) Run(cmd *cobra.Command) (err error) {
 		os.Stdout,
 		watch.WatchParameters{
 			ComponentName:       wo.componentName,
-			ApplicationName:     wo.Context.Application,
+			ApplicationName:     wo.Context.GetApplication(),
 			Path:                wo.sourcePath,
 			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
 			PushDiffDelay:       wo.delay,

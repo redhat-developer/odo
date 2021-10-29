@@ -61,7 +61,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return err
 	}
 	if gotStorage == nil {
-		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
+		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.GetApplication(), err)
 	}
 
 	return

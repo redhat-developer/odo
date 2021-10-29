@@ -114,13 +114,13 @@ func (o *commonLinkOptions) run() (err error) {
 	var component string
 	if o.Context.EnvSpecificInfo != nil {
 		component = o.EnvSpecificInfo.GetName()
-		err = o.operation(o.secretName, component, o.Application)
+		err = o.operation(o.secretName, component, o.GetApplication())
 	} else {
 		component, err = o.Component()
 		if err != nil {
 			return err
 		}
-		err = o.operation(o.secretName, component, o.Application)
+		err = o.operation(o.secretName, component, o.GetApplication())
 	}
 
 	if err != nil {
@@ -136,7 +136,7 @@ func (o *commonLinkOptions) run() (err error) {
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
+	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.GetProject())
 	if err != nil {
 		return err
 	}

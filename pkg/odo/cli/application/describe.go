@@ -42,7 +42,7 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 	if err != nil {
 		return err
 	}
-	o.appName = o.Application
+	o.appName = o.GetApplication()
 	if len(args) == 1 {
 		o.appName = args[0]
 	}
@@ -51,7 +51,7 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 
 // Validate validates the DescribeOptions based on completed values
 func (o *DescribeOptions) Validate() (err error) {
-	if o.Context.Project == "" || o.appName == "" {
+	if o.Context.GetProject() == "" || o.appName == "" {
 		return util.ThrowContextError()
 	}
 	err = util.CheckOutputFlag(o.outputFormat)
@@ -59,7 +59,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return err
 	}
 	if o.appName == "" {
-		return fmt.Errorf("There's no active application in project: %v", o.Project)
+		return fmt.Errorf("There's no active application in project: %v", o.GetProject())
 	}
 
 	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())
@@ -72,7 +72,7 @@ func (o *DescribeOptions) Validate() (err error) {
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
-		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.Project)
+		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)
 	} else {
 		var selector string
@@ -91,7 +91,7 @@ func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 				o.appName, len(componentList.Items))
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
-					err := util.PrintComponentInfo(o.Client, currentComponent.Name, currentComponent, o.appName, o.Project)
+					err := util.PrintComponentInfo(o.Client, currentComponent.Name, currentComponent, o.appName, o.GetProject())
 					if err != nil {
 						return err
 					}

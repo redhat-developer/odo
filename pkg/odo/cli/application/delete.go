@@ -41,7 +41,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	if err != nil {
 		return err
 	}
-	o.appName = o.Application
+	o.appName = o.GetApplication()
 	if len(args) == 1 {
 		// If app name passed, consider it for deletion
 		o.appName = args[0]
@@ -52,7 +52,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	if o.Context.Project == "" || o.appName == "" {
+	if o.Context.GetProject() == "" || o.appName == "" {
 		return odoUtil.ThrowContextError()
 	}
 	if !util.CheckOutputFlag(o.OutputFlag) {
@@ -77,17 +77,17 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Print App Information which will be deleted
-	err = printAppInfo(o.Client, o.KClient, o.appName, o.Project)
+	err = printAppInfo(o.Client, o.KClient, o.appName, o.GetProject())
 	if err != nil {
 		return err
 	}
 
-	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.Project)) {
+	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.GetProject())) {
 		err = application.Delete(o.Client.GetKubeClient(), o.appName)
 		if err != nil {
 			return err
 		}
-		log.Infof("Deleted application: %s from project: %v", o.appName, o.Project)
+		log.Infof("Deleted application: %s from project: %v", o.appName, o.GetProject())
 	} else {
 		log.Infof("Aborting deletion of application: %v", o.appName)
 	}

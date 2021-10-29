@@ -39,7 +39,7 @@ type internalCxt struct {
 	Client              *occlient.Client
 	command             *cobra.Command
 	project             string
-	Application         string
+	application         string
 	cmp                 string
 	OutputFlag          string
 	KClient             kclient.ClientInterface
@@ -276,4 +276,8 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 
 func (o *Context) GetProject() string {
 	return o.project
+}
+
+func (o *Context) GetApplication() string {
+	return o.application
 }

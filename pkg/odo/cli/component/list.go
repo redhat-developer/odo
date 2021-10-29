@@ -86,12 +86,12 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
 
-	if len(lo.Application) != 0 && lo.allAppsFlag {
+	if len(lo.GetApplication()) != 0 && lo.allAppsFlag {
 		klog.V(4).Infof("either --app and --all-apps both provided or provided --all-apps in a folder has app, use --all-apps anyway")
 	}
 
 	if util.CheckPathExists(lo.devfilePath) {
-		if lo.Application == "" && lo.KClient.GetCurrentNamespace() == "" {
+		if lo.GetApplication() == "" && lo.KClient.GetCurrentNamespace() == "" {
 			return odoutil.ThrowContextError()
 		}
 		return nil
@@ -102,8 +102,8 @@ func (lo *ListOptions) Validate() (err error) {
 		project = lo.EnvSpecificInfo.GetNamespace()
 		app = lo.EnvSpecificInfo.GetApplication()
 	} else {
-		project = lo.Context.Project
-		app = lo.Application
+		project = lo.Context.GetProject()
+		app = lo.GetApplication()
 	}
 	if !lo.allAppsFlag && lo.pathFlag == "" && (project == "" || app == "") {
 		return odoutil.ThrowContextError()
@@ -151,7 +151,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) error {
 	if lo.allAppsFlag {
 		selector = project.GetSelector()
 	} else {
-		selector = applabels.GetSelector(lo.Application)
+		selector = applabels.GetSelector(lo.GetApplication())
 	}
 
 	currentComponentState := component.StateTypeNotPushed
@@ -177,7 +177,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) error {
 	// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
 	if lo.EnvSpecificInfo != nil {
 		envinfo := lo.EnvSpecificInfo.EnvInfo
-		if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == component.StateTypeNotPushed {
+		if (envinfo.GetApplication() == lo.GetApplication() || lo.allAppsFlag) && currentComponentState == component.StateTypeNotPushed {
 			comp := component.NewComponent(envinfo.GetName())
 			comp.Status.State = component.StateTypeNotPushed
 			comp.Namespace = envinfo.GetNamespace()
@@ -191,7 +191,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) error {
 	if lo.allAppsFlag {
 		selector = project.GetNonOdoSelector()
 	} else {
-		selector = applabels.GetNonOdoSelector(lo.Application)
+		selector = applabels.GetNonOdoSelector(lo.GetApplication())
 	}
 
 	otherComponents, err := component.List(lo.Client, selector)

@@ -88,7 +88,7 @@ func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration loca
 			}
 		}
 	}
-	o.Application = app
+	o.application = app
 }
 
 // resolveComponent resolves component
