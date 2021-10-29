@@ -60,6 +60,7 @@ install -p -m 755 dist/release/odo-linux-arm64 %{buildroot}%{_datadir}/%{name}-r
 install -p -m 755 dist/release/odo-linux-ppc64le %{buildroot}%{_datadir}/%{name}-redistributable/odo-linux-ppc64le
 install -p -m 755 dist/release/odo-linux-s390x %{buildroot}%{_datadir}/%{name}-redistributable/odo-linux-s390x
 install -p -m 755 dist/release/odo-darwin-amd64 %{buildroot}%{_datadir}/%{name}-redistributable/odo-darwin-amd64
+install -p -m 755 dist/release/odo-darwin-arm64 %{buildroot}%{_datadir}/%{name}-redistributable/odo-darwin-arm64
 install -p -m 755 dist/release/odo-windows-amd64.exe %{buildroot}%{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 cp -avrf dist/release/odo*.tar.gz %{buildroot}%{_datadir}/%{name}-redistributable
 cp -avrf dist/release/odo*.zip %{buildroot}%{_datadir}/%{name}-redistributable
@@ -93,6 +94,8 @@ Obsoletes:      %{package_name}-redistributable <= %{odo_version}
 %{_datadir}/%{name}-redistributable/odo-linux-s390x.tar.gz
 %{_datadir}/%{name}-redistributable/odo-darwin-amd64
 %{_datadir}/%{name}-redistributable/odo-darwin-amd64.tar.gz
+%{_datadir}/%{name}-redistributable/odo-darwin-arm64
+%{_datadir}/%{name}-redistributable/odo-darwin-arm64.tar.gz
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe
 %{_datadir}/%{name}-redistributable/odo-windows-amd64.exe.zip
 %{_datadir}/%{name}-redistributable/SHA256_SUM
