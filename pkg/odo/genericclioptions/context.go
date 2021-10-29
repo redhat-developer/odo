@@ -35,9 +35,8 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	ComponentContext    string
+	componentContext    string
 	Client              *occlient.Client
-	command             *cobra.Command
 	project             string
 	application         string
 	component           string
@@ -65,7 +64,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return context, err
 		}
-		context.ComponentContext = parameters.ComponentContext
+		context.componentContext = parameters.ComponentContext
 
 		err = context.InitEnvInfoFromContext()
 		if err != nil {
@@ -90,7 +89,7 @@ func New(parameters CreateParameters) (*Context, error) {
 			return nil, err
 		}
 
-		err = context.resolveNamespace(context.EnvSpecificInfo)
+		err = context.resolveNamespace(parameters.Cmd, context.EnvSpecificInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -110,20 +109,20 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		context.ComponentContext = parameters.ComponentContext
+		context.componentContext = parameters.ComponentContext
 		return context, nil
 	}
 	context, err := NewContext(parameters.Cmd)
 	if err != nil {
 		return nil, err
 	}
-	context.ComponentContext = parameters.ComponentContext
+	context.componentContext = parameters.ComponentContext
 	return context, nil
 }
 
 //InitEnvInfoFromContext initializes envinfo from the context
 func (o *Context) InitEnvInfoFromContext() (err error) {
-	o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.ComponentContext)
+	o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	if err != nil {
 		return err
 	}
@@ -169,7 +168,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	// Create the internal context representation based on calculated values
 	ctx := internalCxt{
 		outputFlag: outputFlag,
-		command:    command,
 	}
 
 	// Get valid env information
@@ -190,9 +188,9 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 
 	// Gather env specific info
 	ctx.EnvSpecificInfo = envInfo
-	ctx.resolveApp(createAppIfNeeded, envInfo)
+	ctx.resolveApp(command, createAppIfNeeded, envInfo)
 
-	if e := ctx.resolveNamespace(envInfo); e != nil {
+	if e := ctx.resolveNamespace(command, envInfo); e != nil {
 		return nil, e
 	}
 
@@ -215,7 +213,6 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 	// Create the internal context representation based on calculated values
 	ctx := internalCxt{
 		outputFlag: outputFlag,
-		command:    command,
 	}
 
 	// Get valid env information
@@ -226,7 +223,7 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 
 	ctx.EnvSpecificInfo = envInfo
 	ctx.LocalConfigProvider = envInfo
-	ctx.resolveApp(false, envInfo)
+	ctx.resolveApp(command, false, envInfo)
 
 	// resolve the component
 	err = ctx.resolveAndSetComponent(command, envInfo)
@@ -284,4 +281,8 @@ func (o *Context) GetApplication() string {
 
 func (o *Context) GetOutputFlag() string {
 	return o.outputFlag
+}
+
+func (o *Context) GetComponentContext() string {
+	return o.componentContext
 }

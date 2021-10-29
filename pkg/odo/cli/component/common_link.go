@@ -276,7 +276,7 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 	}
 
 	if o.operationName == unlink {
-		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
+		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 		if err != nil {
 			return err
 		}
@@ -351,7 +351,7 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 		return err
 	}
 
-	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
+	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 	if err != nil {
 		return err
 	}
@@ -365,7 +365,7 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 			return err
 		}
 	} else {
-		err = svc.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.ComponentContext, o.EnvSpecificInfo.GetDevfileObj())
+		err = svc.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.GetComponentContext(), o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -380,12 +380,12 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 func (o *commonLinkOptions) unlinkOperator() (err error) {
 
 	// We already tested `found` in `validateForOperator`
-	name, _, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
+	name, _, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 	if err != nil {
 		return err
 	}
 
-	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.ComponentContext)
+	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.GetComponentContext())
 	if err != nil {
 		return err
 	}

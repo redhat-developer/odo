@@ -21,9 +21,8 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveNamespace resolves namespace for devfile component
-func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalConfigProvider) error {
+func (o *internalCxt) resolveNamespace(command *cobra.Command, configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string
-	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
@@ -74,9 +73,8 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 }
 
 // resolveApp resolves the app
-func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration localConfigProvider.LocalConfigProvider) {
+func (o *internalCxt) resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration localConfigProvider.LocalConfigProvider) {
 	var app string
-	command := o.command
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
 		app = appFlag
