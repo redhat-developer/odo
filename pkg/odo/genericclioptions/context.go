@@ -38,7 +38,7 @@ type internalCxt struct {
 	ComponentContext    string
 	Client              *occlient.Client
 	command             *cobra.Command
-	Project             string
+	project             string
 	Application         string
 	cmp                 string
 	OutputFlag          string
@@ -235,9 +235,9 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 	}
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if projectFlag != "" {
-		ctx.Project = projectFlag
+		ctx.project = projectFlag
 	} else {
-		ctx.Project = envInfo.GetNamespace()
+		ctx.project = envInfo.GetNamespace()
 	}
 
 	// Create a context from the internal representation
@@ -272,4 +272,8 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	}
 
 	return o.cmp, nil
+}
+
+func (o *Context) GetProject() string {
+	return o.project
 }

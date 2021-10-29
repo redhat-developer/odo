@@ -3,6 +3,7 @@ package genericclioptions
 import (
 	"context"
 	"fmt"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/openshift/odo/pkg/localConfigProvider"
@@ -67,7 +68,7 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 	o.Client.Namespace = namespace
 	o.Client.GetKubeClient().Namespace = namespace
 	o.KClient.SetNamespace(namespace)
-	o.Project = namespace
+	o.project = namespace
 
 	return nil
 }

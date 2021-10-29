@@ -75,7 +75,7 @@ func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetClusterType(cmd.Context(), pso.Client)
 	}
-	current := pso.Project
+	current := pso.GetProject()
 	err = project.SetCurrent(pso.Context, pso.projectName)
 	if err != nil {
 		return err
