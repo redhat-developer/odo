@@ -73,7 +73,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Get the component name
 	so.componentName = so.EnvSpecificInfo.GetName()
 
-	devObj, err := devfile.ParseFromFile(so.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(so.devfilePath)
 	if err != nil {
 		return err
 	}

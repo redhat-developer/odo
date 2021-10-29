@@ -90,7 +90,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 	wo.componentName = wo.EnvSpecificInfo.GetName()
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseFromFile(wo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(wo.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameter
 func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseFromFile(wo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(wo.devfilePath)
 	if err != nil {
 		return nil, err
 	}

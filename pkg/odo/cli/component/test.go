@@ -58,7 +58,7 @@ func (to *TestOptions) Validate() (err error) {
 		return fmt.Errorf("unable to find devfile, odo test command is only supported by devfile components")
 	}
 
-	devObj, err := devfile.ParseFromFile(to.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(to.devfilePath)
 	if err != nil {
 		return err
 	}

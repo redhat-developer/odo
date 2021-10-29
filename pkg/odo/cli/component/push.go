@@ -95,7 +95,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return fmt.Errorf("the current direcotry doesn't contain a devfile")
 	}
 
-	po.Devfile, err = devfile.ParseFromFile(po.DevfilePath)
+	po.Devfile, err = devfile.ParseAndValidateFromFile(po.DevfilePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse devfile")
 	}

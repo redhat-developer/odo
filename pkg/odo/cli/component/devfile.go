@@ -52,7 +52,7 @@ func (po *PushOptions) DevfilePush() error {
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {
-	devObj, err := devfile.ParseFromFile(po.DevfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
-	devObj, err := devfile.ParseFromFile(lo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(lo.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
-	devObj, err := devfile.ParseFromFile(do.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(do.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (to *TestOptions) RunTestCommand() error {
 
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
-	devObj, err := devfile.ParseFromFile(eo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(eo.devfilePath)
 	if err != nil {
 		return err
 	}

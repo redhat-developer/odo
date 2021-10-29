@@ -79,12 +79,9 @@ const CreateRecommendedCommandName = "create"
 const LocalDirectoryDefaultLocation = "./"
 
 var (
-	envFile = filepath.Join(".odo", "env", "env.yaml")
-	envDir  = filepath.Join(".odo", "env")
+	EnvYAMLFilePath = filepath.Join(".odo", "env", "env.yaml")
+	EnvDirectory    = filepath.Join(".odo", "env")
 )
-
-// EnvFilePath is the path of env file for devfile component
-var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.`)
 
@@ -153,7 +150,7 @@ func getComponentName(sourcePath string) (string, error) {
 }
 
 // Complete completes create args
-func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (co *CreateOptions) Complete1(name string, cmd *cobra.Command, args []string) (err error) {
 
 	if co.now {
 		// this populates the EnvInfo as well
@@ -169,21 +166,22 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	DevfilePath := location.DevfileLocation("")
+	envFilePath := ""
 	// Configure the context
 	if co.componentContext != "" {
 		DevfilePath = location.DevfileLocation(co.componentContext)
-		EnvFilePath = filepath.Join(co.componentContext, envFile)
+		envFilePath = filepath.Join(co.componentContext, EnvYAMLFilePath)
 		co.PushOptions.componentContext = co.componentContext
 	}
 	co.DevfilePath = DevfilePath
 
-	if util.CheckPathExists(EnvFilePath) && util.CheckPathExists(co.DevfilePath) {
+	if util.CheckPathExists(envFilePath) && util.CheckPathExists(co.DevfilePath) {
 		return errors.New("this directory already contains a component")
 	}
 
-	if util.CheckPathExists(EnvFilePath) && !util.CheckPathExists(co.DevfilePath) {
+	if util.CheckPathExists(envFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
-		if err = util.DeletePath(EnvFilePath); err != nil {
+		if err = util.DeletePath(envFilePath); err != nil {
 			return err
 		}
 	}
@@ -292,7 +290,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			} else {
 				// If there is an existing devfile, and no component name is passed, parse it from the devfile,
 				// and assign the value if the metadata name is set
-				devfileObj, e := devfile.ParseFromFile(DevfilePath)
+				devfileObj, e := devfile.ParseAndValidateFromFile(DevfilePath)
 				if e == nil && devfileObj.GetMetadataName() != "" {
 					componentName = devfileObj.GetMetadataName()
 				} else {
@@ -383,6 +381,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return nil
 	}
 
+	// TODO: Put this inside GetDevfileFromRegistry
 	if isDevfileRegistryPresent {
 		// Categorize the sections
 
@@ -435,7 +434,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 }
 
 // Validate validates the create parameters
-func (co *CreateOptions) Validate() (err error) {
+func (co *CreateOptions) Validate1() (err error) {
 
 	log.Info("Validation")
 
@@ -535,10 +534,10 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 			}
 		}
 	}
-	// TODO: this should be replaced with github.com/openshift/odo/pkg/devile.ParseFromFile(DevfilePath)
+	// TODO: this should be replaced with github.com/openshift/odo/pkg/devile.ParseAndValidateFromFile(DevfilePath)
 	// But this can be only after we deprecate support for "github based" registries.
 	// When we do that the above "if" will be deleted and parsing from []data won't be necessary
-	devObj, err := devfile.ParseFromData(devfileData)
+	devObj, err := devfile.ParseAndValidateFromData(devfileData)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse devfile")
 	}
@@ -586,7 +585,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 
 	// set user provided component name in the devfile
 	if co.devfileMetadata.componentName != "" {
-		devObj, err = devfile.ParseFromFile(co.DevfilePath)
+		devObj, err = devfile.ParseAndValidateFromFile(co.DevfilePath)
 		if err != nil {
 			return fmt.Errorf("failed to create devfile component: %w", err)
 		}
@@ -613,12 +612,12 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 		return errors.Wrap(err, "unable to get source path")
 	}
 
-	ignoreFile, err := util.CheckGitIgnoreFile(sourcePath)
+	ignoreFile, err := util.TouchGitIgnoreFile(sourcePath)
 	if err != nil {
 		return err
 	}
 
-	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, envDir))
+	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, EnvDirectory))
 	if err != nil {
 		return err
 	}
@@ -635,7 +634,7 @@ func (co *CreateOptions) devfileRun(cmd *cobra.Command) (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (co *CreateOptions) Run1(cmd *cobra.Command) (err error) {
 
 	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)

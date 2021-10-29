@@ -127,7 +127,7 @@ func DeleteProject(projectName string) {
 
 // GetMetadataFromDevfile retrieves the metadata from devfile
 func GetMetadataFromDevfile(devfilePath string) devfilepkg.DevfileMetadata {
-	devObj, err := devfile.ParseFromFile(devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(devfilePath)
 	Expect(err).ToNot(HaveOccurred())
 	return devObj.Data.GetMetadata()
 }
