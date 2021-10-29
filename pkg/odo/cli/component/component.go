@@ -20,9 +20,12 @@ type ComponentOptions struct {
 
 // Complete completes component options
 func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	co.Context, err = genericclioptions.NewContext(cmd)
+	co.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 	if err != nil {
-		co.Context, err = genericclioptions.NewOfflineContext(cmd)
+		co.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+			Cmd:     cmd,
+			Offline: true,
+		})
 		if err != nil {
 			return err
 		}

@@ -50,7 +50,7 @@ type LocalContainer struct {
 }
 
 // LocalConfigProvider is an interface which all local config providers need to implement
-// currently for openshift there is localConfigInfo and for devfile its EnvInfo + devfile.yaml
+// currently implemented by EnvInfo
 type LocalConfigProvider interface {
 	GetApplication() string
 	GetName() string

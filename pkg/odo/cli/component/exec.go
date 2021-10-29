@@ -59,7 +59,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 	}
 	eo.devfilePath = location.DevfileLocation(eo.componentContext)
 
-	eo.componentOptions.Context, err = genericclioptions.NewContext(cmd)
+	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 	if err != nil {
 		return err
 	}

@@ -49,7 +49,7 @@ func NewInfoOptions() *InfoOptions {
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	devfile := location.DevfileFilenamesProvider(o.contextDir)
 	if util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
-		o.Context, err = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 		if err != nil {
 			return err
 		}

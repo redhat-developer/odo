@@ -41,7 +41,7 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 	lo.devfilePath = location.DevfileLocation(lo.componentContext)
 
-	lo.ComponentOptions.Context, err = genericclioptions.NewContext(cmd)
+	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 	return err
 }
 

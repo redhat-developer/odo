@@ -38,7 +38,7 @@ func NewListOptions() *ListOptions {
 
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.NewContext(cmd)
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 	return
 }
 

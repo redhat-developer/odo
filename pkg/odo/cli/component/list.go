@@ -57,7 +57,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	if util.CheckPathExists(lo.devfilePath) {
 
-		lo.Context, err = genericclioptions.NewContext(cmd)
+		lo.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		// as odo list should work in a non-component directory too
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
-			lo.Context, err = genericclioptions.NewContext(cmd)
+			lo.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 			if err != nil {
 				return err
 			}

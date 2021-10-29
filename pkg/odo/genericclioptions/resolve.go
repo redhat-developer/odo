@@ -80,10 +80,8 @@ func (o *internalCxt) resolveApp(command *cobra.Command, createAppIfNeeded bool,
 		app = appFlag
 	} else {
 		app = localConfiguration.GetApplication()
-		if app == "" {
-			if createAppIfNeeded {
-				app = DefaultAppName
-			}
+		if app == "" && createAppIfNeeded {
+			app = DefaultAppName
 		}
 	}
 	o.application = app

@@ -59,7 +59,10 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	o.componentName = args[0]
 	tasks := util.NewConcurrentTasks(2)
 
-	o.Context, err = genericclioptions.NewOfflineContext(cmd)
+	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+		Cmd:     cmd,
+		Offline: true,
+	})
 	if err != nil {
 		return err
 	}

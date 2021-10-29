@@ -36,7 +36,7 @@ func NewListComponentsOptions() *ListComponentsOptions {
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if err = util.CheckKubeConfigPath(); err == nil {
-		o.Context, err = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 		if err != nil {
 			return err
 		}

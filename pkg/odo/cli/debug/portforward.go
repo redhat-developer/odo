@@ -77,7 +77,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	var remotePort int
 
 	if util.CheckPathExists(o.devfilePath) {
-		o.Context, err = genericclioptions.NewContext(cmd)
+		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 		if err != nil {
 			return err
 		}

@@ -58,22 +58,24 @@ type CreateParameters struct {
 	Cmd                    *cobra.Command
 	DevfilePath            string
 	ComponentContext       string
-	IsNow                  bool
 	CheckRouteAvailability bool
+	Devfile                bool
+	Offline                bool
+	CreateAppIfNeeded      bool
 }
 
 // New creates a context based on the given parameters
 func New(parameters CreateParameters) (*Context, error) {
+
+	context, err := newContext(parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
 	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
-	if isDevfile {
-		context, err := NewContext(parameters.Cmd)
-		if err != nil {
-			return context, err
-		}
-		context.componentContext = parameters.ComponentContext
-
-		err = context.InitEnvInfoFromContext()
+	if parameters.Devfile && isDevfile {
+		context.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(context.componentContext)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +85,6 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
-
 		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
 			return context, err
@@ -109,31 +110,62 @@ func New(parameters CreateParameters) (*Context, error) {
 			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
 		}
 		context.LocalConfigProvider = context.EnvSpecificInfo
-		return context, nil
 	}
-	if parameters.IsNow {
-		context, err := NewContextCreatingAppIfNeeded(parameters.Cmd)
-		if err != nil {
-			return nil, err
-		}
-		context.componentContext = parameters.ComponentContext
-		return context, nil
-	}
-	context, err := NewContext(parameters.Cmd)
-	if err != nil {
-		return nil, err
-	}
-	context.componentContext = parameters.ComponentContext
 	return context, nil
 }
 
-//InitEnvInfoFromContext initializes envinfo from the context
-func (o *Context) InitEnvInfoFromContext() (err error) {
-	o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
+// newContext creates a new context based on command flags for devfile components
+func newContext(parameters CreateParameters) (*Context, error) {
+
+	// Resolve output flag
+	outputFlag := FlagValueIfSet(parameters.Cmd, OutputFlagName)
+
+	// Get valid env information
+	envInfo, err := getValidEnvInfo(parameters.Cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	// Create the internal context representation based on calculated values
+	ctx := internalCxt{
+		outputFlag:       outputFlag,
+		EnvSpecificInfo:  envInfo,
+		componentContext: parameters.ComponentContext,
+	}
+
+	if parameters.Offline {
+		ctx.LocalConfigProvider = envInfo
+		projectFlag := FlagValueIfSet(parameters.Cmd, ProjectFlagName)
+		if projectFlag != "" {
+			ctx.project = projectFlag
+		} else {
+			ctx.project = envInfo.GetNamespace()
+		}
+	} else {
+		ctx.KClient, err = kclient.New()
+		if err != nil {
+			return nil, err
+		}
+		ctx.Client, err = occlient.New()
+		if err != nil {
+			return nil, err
+		}
+		if e := ctx.resolveNamespace(parameters.Cmd, envInfo); e != nil {
+			return nil, e
+		}
+	}
+
+	ctx.resolveApp(parameters.Cmd, parameters.CreateAppIfNeeded, envInfo)
+
+	if err = ctx.resolveAndSetComponent(parameters.Cmd, envInfo); err != nil {
+		return nil, err
+	}
+
+	// Create a context from the internal representation
+	context := &Context{
+		internalCxt: ctx,
+	}
+	return context, nil
 }
 
 // completeDevfilePath completes the devfile path from context
@@ -145,110 +177,14 @@ func completeDevfilePath(componentContext, devfilePath string) string {
 	}
 }
 
-// NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command) (*Context, error) {
-	return newContext(command, false)
-}
-
-// NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
-// provided command, creating the application if none already exists
-func NewContextCreatingAppIfNeeded(command *cobra.Command) (*Context, error) {
-	return newContext(command, true)
-}
-
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := newContext(command, false)
+	ctx, err := newContext(CreateParameters{Cmd: command})
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
 	return ctx
-}
-
-// newContext creates a new context based on command flags for devfile components
-func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error) {
-
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	// Create the internal context representation based on calculated values
-	ctx := internalCxt{
-		outputFlag: outputFlag,
-	}
-
-	// Get valid env information
-	envInfo, err := getValidEnvInfo(command)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new kubernetes client
-	ctx.KClient, err = kclient.New()
-	if err != nil {
-		return nil, err
-	}
-	ctx.Client, err = occlient.New()
-	if err != nil {
-		return nil, err
-	}
-
-	// Gather env specific info
-	ctx.EnvSpecificInfo = envInfo
-	ctx.resolveApp(command, createAppIfNeeded, envInfo)
-
-	if e := ctx.resolveNamespace(command, envInfo); e != nil {
-		return nil, e
-	}
-
-	// resolve the component
-	if err = ctx.resolveAndSetComponent(command, envInfo); err != nil {
-		return nil, err
-	}
-	// Create a context from the internal representation
-	context := &Context{
-		internalCxt: ctx,
-	}
-	return context, nil
-}
-
-// NewOfflineContext initializes a context for devfile components without any cluster calls
-func NewOfflineContext(command *cobra.Command) (*Context, error) {
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	// Create the internal context representation based on calculated values
-	ctx := internalCxt{
-		outputFlag: outputFlag,
-	}
-
-	// Get valid env information
-	envInfo, err := getValidEnvInfo(command)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx.EnvSpecificInfo = envInfo
-	ctx.LocalConfigProvider = envInfo
-	ctx.resolveApp(command, false, envInfo)
-
-	// resolve the component
-	err = ctx.resolveAndSetComponent(command, envInfo)
-	if err != nil {
-		return nil, err
-	}
-	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	if projectFlag != "" {
-		ctx.project = projectFlag
-	} else {
-		ctx.project = envInfo.GetNamespace()
-	}
-
-	// Create a context from the internal representation
-	context := &Context{
-		internalCxt: ctx,
-	}
-	return context, nil
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, returns

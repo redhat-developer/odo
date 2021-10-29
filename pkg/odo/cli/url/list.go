@@ -45,6 +45,7 @@ func NewURLListOptions() *ListOptions {
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
+		Devfile:          true,
 		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})

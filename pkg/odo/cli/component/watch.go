@@ -70,7 +70,7 @@ func NewWatchOptions() *WatchOptions {
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	wo.devfilePath = location.DevfileLocation(wo.componentContext)
 
-	wo.Context, err = genericclioptions.NewContext(cmd)
+	wo.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
 	if err != nil {
 		return err
 	}

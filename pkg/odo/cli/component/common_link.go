@@ -71,10 +71,14 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	if err != nil {
 		// error means that we can't create a devfile context for the command
 		// and must create s2i context instead
-		o.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
+			Cmd:               cmd,
+			CreateAppIfNeeded: true,
+		})
 	} else {
 		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 			Cmd:              cmd,
+			Devfile:          true,
 			DevfilePath:      location.DevfileFilenamesProvider(context),
 			ComponentContext: context,
 		})

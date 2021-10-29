@@ -42,6 +42,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 	} else if o.csvSupport {
 		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 			Cmd:              cmd,
+			Devfile:          true,
 			DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 			ComponentContext: o.componentContext,
 		})
@@ -53,6 +54,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
+		Devfile:          true,
 		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
