@@ -35,13 +35,20 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	componentContext    string
+	// project used for the command, either passed with the `--project` flag, or the current one by default
+	project string
+	// application used for the command, either passed with the `--app` flag, or the current one by default
+	application string
+	// component used for the command, either passed with the `--component` flag, or the current one by default
+	component string
+	// componentContext is the value passed with the `--context` flag
+	componentContext string
+	// outputFlag is the value passed with the `--output` flag
+	outputFlag string
+	// Kclient can be used to access Kubernetes resources
+	KClient kclient.ClientInterface
+	// Client can be used to access OpenShift resources
 	Client              *occlient.Client
-	project             string
-	application         string
-	component           string
-	outputFlag          string
-	KClient             kclient.ClientInterface
 	EnvSpecificInfo     *envinfo.EnvSpecificInfo
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
@@ -177,11 +184,11 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	}
 
 	// Create a new kubernetes client
-	ctx.KClient, err = kClient()
+	ctx.KClient, err = kclient.New()
 	if err != nil {
 		return nil, err
 	}
-	ctx.Client, err = ocClient()
+	ctx.Client, err = occlient.New()
 	if err != nil {
 		return nil, err
 	}
