@@ -12,7 +12,7 @@ func NewFakeContext(project, application, component string, client *occlient.Cli
 			KClient:     kclient,
 			project:     project,
 			application: application,
-			cmp:         component,
+			component:   component,
 		},
 	}
 }

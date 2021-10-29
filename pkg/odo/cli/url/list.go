@@ -68,7 +68,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() (err error) {
-	return odoutil.CheckOutputFlag(o.OutputFlag)
+	return odoutil.CheckOutputFlag(o.GetOutputFlag())
 }
 
 // Run contains the logic for the odo url list command

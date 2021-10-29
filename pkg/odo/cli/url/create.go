@@ -128,8 +128,8 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 
 // Validate validates the CreateOptions based on completed values
 func (o *CreateOptions) Validate() (err error) {
-	if !util.CheckOutputFlag(o.OutputFlag) {
-		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	if !util.CheckOutputFlag(o.GetOutputFlag()) {
+		return fmt.Errorf("given output format %s is not supported", o.GetOutputFlag())
 	}
 
 	errorList := make([]string, 0)

@@ -92,20 +92,18 @@ func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration loca
 }
 
 // resolveComponent resolves component
-func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) (string, error) {
-	var cmp string
+func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) error {
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
 	if len(cmpFlag) == 0 {
 		// retrieve the current component if it exists if we didn't set the component flag
-		cmp = localConfiguration.GetName()
-	} else {
-		// if flag is set, check that the specified component exists
-		err := o.checkComponentExistsOrFail(cmpFlag)
-		if err != nil {
-			return "", err
-		}
-		cmp = cmpFlag
+		o.component = localConfiguration.GetName()
+		return nil
 	}
-	o.cmp = cmp
-	return cmp, nil
+	// if flag is set, check that the specified component exists
+	err := o.checkComponentExistsOrFail(cmpFlag)
+	if err != nil {
+		return err
+	}
+	o.component = cmpFlag
+	return nil
 }

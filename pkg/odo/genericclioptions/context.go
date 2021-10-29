@@ -40,8 +40,8 @@ type internalCxt struct {
 	command             *cobra.Command
 	project             string
 	application         string
-	cmp                 string
-	OutputFlag          string
+	component           string
+	outputFlag          string
 	KClient             kclient.ClientInterface
 	EnvSpecificInfo     *envinfo.EnvSpecificInfo
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
@@ -168,7 +168,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 
 	// Create the internal context representation based on calculated values
 	ctx := internalCxt{
-		OutputFlag: outputFlag,
+		outputFlag: outputFlag,
 		command:    command,
 	}
 
@@ -197,7 +197,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error
 	}
 
 	// resolve the component
-	if _, err = ctx.resolveAndSetComponent(command, envInfo); err != nil {
+	if err = ctx.resolveAndSetComponent(command, envInfo); err != nil {
 		return nil, err
 	}
 	// Create a context from the internal representation
@@ -214,7 +214,7 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 
 	// Create the internal context representation based on calculated values
 	ctx := internalCxt{
-		OutputFlag: outputFlag,
+		outputFlag: outputFlag,
 		command:    command,
 	}
 
@@ -229,7 +229,7 @@ func NewOfflineContext(command *cobra.Command) (*Context, error) {
 	ctx.resolveApp(false, envInfo)
 
 	// resolve the component
-	_, err = ctx.resolveAndSetComponent(command, envInfo)
+	err = ctx.resolveAndSetComponent(command, envInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -260,18 +260,18 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	case 0:
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we return an error
-		if !allowEmpty && len(o.cmp) == 0 {
+		if !allowEmpty && len(o.component) == 0 {
 			return "", fmt.Errorf("No component is set")
 		}
 	case 1:
 		cmp := optionalComponent[0]
-		o.cmp = cmp
+		o.component = cmp
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
 		return "", fmt.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
 	}
 
-	return o.cmp, nil
+	return o.component, nil
 }
 
 func (o *Context) GetProject() string {
@@ -280,4 +280,8 @@ func (o *Context) GetProject() string {
 
 func (o *Context) GetApplication() string {
 	return o.application
+}
+
+func (o *Context) GetOutputFlag() string {
+	return o.outputFlag
 }
