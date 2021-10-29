@@ -4,7 +4,7 @@ sidebar_position: 2
 sidebar_label: Create URL
 ---
 
-In the [previous section](./create-component) we created two components — a Spring Boot application (`backend`) listening on port 8080 and a Nodejs application (`frontend`) listening on port 3000 — and pushed them to the Kubernetes cluster. In this guide, we will create URLs to access these components from the host system.
+In the [previous section](./create-component) we created two components — a Spring Boot application (`backend`) listening on port 8080 and a Nodejs application (`frontend`) listening on port 3000 — and pushed them to the Kubernetes cluster. These are also the respective default ports (8080 for Spring Boot and 3000 for Nodejs) for Spring Boot and Nodejs component types. In this guide, we will create URLs to access these components from the host system.
 
 Note that the URLs we create in this section will only help you access the components in web browser; the application itself won't be usable till we create some services and links which we will cover in the next section.
 
