@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"k8s.io/klog"
+
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
 	"github.com/openshift/odo/pkg/preference"
@@ -36,8 +38,10 @@ import (
 
 type CreateMethod interface {
 	FetchDevfile() (bool, error)
-	Rollback() error
+	//Rollback() error
 }
+
+type InteractiveCreateMethod struct{}
 
 func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
 	if now {
@@ -76,6 +80,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if co.componentContext != "" {
 		envFilePath = filepath.Join(co.componentContext, EnvYAMLFilePath)
 	}
+	// This is required so that .odo is created in the correct context
+	co.PushOptions.componentContext = co.componentContext
 
 	// Use Interactive mode if: 1) no args are passed || 2) the devfile exists || 3) --devfile is used
 	if len(args) == 0 && !util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value == "" {
@@ -103,6 +109,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Check if both --devfile and --registry flag are used, in which case raise an error
 	if co.devfileMetadata.devfileRegistry.Name != "" && co.devfileMetadata.devfilePath.value != "" {
 		return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
+	}
+	// More than one arguments should not be allowed when a devfile exists or --devfile is used
+	if len(args) > 1 && (co.devfileMetadata.userCreatedDevfile || co.devfileMetadata.devfilePath.value != "") {
+		return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
 	}
 
 	// Initialize envinfo
@@ -209,20 +219,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	//Interactive Mode
 	if co.interactive {
-		// Get available devfile components for checking devfile compatibility
-		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+		catalogDevfileList, err := fetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
 		}
-
-		if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
-			return errors.Errorf("can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
-		}
-
-		if len(catalogDevfileList.DevfileRegistries) == 0 {
-			return errors.New("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
-		}
-
 		// Component type: We provide devfile component list to let user choose
 		componentType := ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
@@ -249,82 +249,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentName = componentName
 		co.devfileMetadata.componentNamespace = componentNamespace
 
-		// Validate if the component type is available
-		hasComponent := false
-		var devfileExistSpinner *log.Status
-		log.Info("Devfile Object Validation")
-		devfileExistSpinner = log.Spinner("Checking if the devfile type exists")
-		defer devfileExistSpinner.End(false)
-
-		for _, devfileComponent := range catalogDevfileList.Items {
-			if co.devfileMetadata.componentType == devfileComponent.Name {
-				hasComponent = true
-				co.devfileMetadata.devfileLink = devfileComponent.Link
-				co.devfileMetadata.devfileRegistry = devfileComponent.Registry
-				break
-			}
+		err = fetchDevfile(co, catalogDevfileList)
+		if err != nil {
+			return err
 		}
-		if hasComponent {
-			devfileExistSpinner.End(true)
-		} else {
-			devfileExistSpinner.End(false)
-			return fmt.Errorf("devfile component type %q is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-
-		}
-
-		registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
-		if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
-			registryUtil.PrintGitRegistryDeprecationWarning()
-		}
-
-		// Download devfile from registry
-		var params util.HTTPRequestParams
-		// For GitHub based registries
-		if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
-			params = util.HTTPRequestParams{
-				URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
-			}
-
-			secure, e := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
-			if e != nil {
-				return e
-			}
-
-			if secure {
-				var token string
-				token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
-				if err != nil {
-					return errors.Wrap(err, "unable to get secure registry credential from keyring")
-				}
-				params.Token = token
-			}
-
-			cfg, err := preference.New()
-			if err != nil {
-				return err
-			}
-			devfileData, err := util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
-			if err != nil {
-				return err
-			}
-
-			err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
-			if err != nil {
-				return err
-			}
-			// if the function fails, remove this newly created devfile
-			defer func() {
-				if err != nil {
-					os.Remove(co.DevfilePath)
-				}
-			}()
-		}
-		registrySpinner.End(true)
 		return nil
 	}
 	//Normal Mode
@@ -334,24 +262,71 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	co.devfileMetadata.componentType = componentType
 	co.devfileName = componentType
 
-	// Get available devfile components for checking devfile compatibility
-	catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+	catalogDevfileList, err := fetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
 	}
+	err = fetchDevfile(co, catalogDevfileList)
+	if err != nil {
+		return err
+	}
+	var componentName string
+	if len(args) == 2 {
+		componentName = args[1]
+	} else {
+		componentName, err = createDefaultComponentName(
+			componentType,
+			co.componentContext,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	co.devfileMetadata.componentName = componentName
 
-	if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
-		return errors.Errorf("can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
+	return nil
+}
+
+func fetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
+	// Validate if the component type is available
+	if registryName != "" {
+		registryExistSpinner := log.Spinnerf("Checking if the registry %q exists", registryName)
+		defer registryExistSpinner.End(false)
+		registryList, e := catalog.GetDevfileRegistries(registryName)
+		if e != nil {
+			return catalog.DevfileComponentTypeList{}, errors.Wrap(e, "failed to get registry")
+		}
+		if len(registryList) == 0 {
+			return catalog.DevfileComponentTypeList{}, errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
+		}
+		registryExistSpinner.End(true)
+	}
+
+	klog.V(4).Infof("Fetching the available devfile components")
+	// Get available devfile components for checking devfile compatibility
+	catalogDevfileList, err := catalog.ListDevfileComponents(registryName)
+	if err != nil {
+		return catalog.DevfileComponentTypeList{}, err
+	}
+
+	if registryName != "" && catalogDevfileList.Items == nil {
+		return catalog.DevfileComponentTypeList{}, errors.Errorf("can't create devfile component from registry %s", registryName)
 	}
 
 	if len(catalogDevfileList.DevfileRegistries) == 0 {
-		return errors.New("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
+		return catalog.DevfileComponentTypeList{}, errors.New("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 	}
-	// Validate if the component type is available
+	return catalogDevfileList, nil
+}
+
+func fetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	hasComponent := false
 	var devfileExistSpinner *log.Status
-	log.Info("Devfile Object Validation")
-	devfileExistSpinner = log.Spinner("Checking if the devfile type exists")
+	if co.devfileMetadata.devfileRegistry.Name != "" {
+		devfileExistSpinner = log.Spinnerf("Checking if the devfile for %q exists on registry %q", co.devfileMetadata.componentType, co.devfileMetadata.devfileRegistry.Name)
+	} else {
+		devfileExistSpinner = log.Spinnerf("Checking if the devfile for %q exists on available registries", co.devfileMetadata.componentType)
+	}
 	defer devfileExistSpinner.End(false)
 
 	for _, devfileComponent := range catalogDevfileList.Items {
@@ -370,7 +345,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	}
 
-	registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
+	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", co.devfileMetadata.devfileRegistry.Name)
 	if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
 		registryUtil.PrintGitRegistryDeprecationWarning()
 	}
@@ -390,7 +365,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if secure {
 			var token string
-			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 			if err != nil {
 				return errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
@@ -411,7 +386,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 	} else {
-		err = registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
+		err := registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
 		if err != nil {
 			return err
 		}
@@ -423,20 +398,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}()
 	}
 	registrySpinner.End(true)
-	var componentName string
-	if len(args) == 2 {
-		componentName = args[1]
-	} else {
-		componentName, err = createDefaultComponentName(
-			componentType,
-			co.componentContext,
-		)
-		if err != nil {
-			return err
-		}
-	}
-	co.devfileMetadata.componentName = componentName
-
 	return nil
 }
 
@@ -514,7 +475,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	// If user provided a custom name, re-write the devfile
 	// ENSURE: co.devfileMetadata.componentName != ""
 	if co.devfileMetadata.componentName != devObj.GetMetadataName() {
-		spinner := log.Spinnerf("Updating the devfile with component name: %v", co.devfileMetadata.componentName)
+		spinner := log.Spinnerf("Updating the devfile with component name %q", co.devfileMetadata.componentName)
 		defer spinner.End(false)
 
 		err := devObj.SetMetadataName(co.devfileMetadata.componentName)
@@ -558,5 +519,10 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	} else {
 		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
 	}
+
+	if log.IsJSON() {
+		return co.DevfileJSON()
+	}
+
 	return nil
 }
