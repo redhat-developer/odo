@@ -52,39 +52,68 @@ type internalCxt struct {
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
 
-// CreateParameters defines the options which can be provided while creating the context
-type CreateParameters struct {
-	Cmd                    *cobra.Command
-	ComponentContext       string
-	CheckRouteAvailability bool
-	Devfile                bool
-	Offline                bool
-	CreateAppIfNeeded      bool
+// createParameters defines the options which can be provided while creating the context
+type createParameters struct {
+	cmd               *cobra.Command
+	componentContext  string
+	routeAvailability bool
+	devfile           bool
+	offline           bool
+	appIfNeeded       bool
+}
+
+func NewCreateParameters(cmd *cobra.Command) createParameters {
+	return createParameters{cmd: cmd}
+}
+
+func (o createParameters) SetComponentContext(ctx string) createParameters {
+	o.componentContext = ctx
+	return o
+}
+
+func (o createParameters) CheckRouteAvailability() createParameters {
+	o.routeAvailability = true
+	return o
+}
+
+func (o createParameters) NeedDevfile() createParameters {
+	o.devfile = true
+	return o
+}
+
+func (o createParameters) IsOffline() createParameters {
+	o.offline = true
+	return o
+}
+
+func (o createParameters) CreateAppIfNeeded() createParameters {
+	o.appIfNeeded = true
+	return o
 }
 
 // New creates a context based on the given parameters
-func New(parameters CreateParameters) (*Context, error) {
+func New(parameters createParameters) (*Context, error) {
 
 	ctx := internalCxt{}
 	var err error
 
-	ctx.EnvSpecificInfo, err = getValidEnvInfo(parameters.Cmd)
+	ctx.EnvSpecificInfo, err = getValidEnvInfo(parameters.cmd)
 	if err != nil {
 		return nil, err
 	}
 	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-	ctx.project = resolveProject(parameters.Cmd, ctx.EnvSpecificInfo)
+	ctx.project = resolveProject(parameters.cmd, ctx.EnvSpecificInfo)
 
-	ctx.application = resolveApp(parameters.Cmd, ctx.EnvSpecificInfo, parameters.CreateAppIfNeeded)
+	ctx.application = resolveApp(parameters.cmd, ctx.EnvSpecificInfo, parameters.appIfNeeded)
 
-	ctx.component = resolveComponent(parameters.Cmd, ctx.EnvSpecificInfo)
+	ctx.component = resolveComponent(parameters.cmd, ctx.EnvSpecificInfo)
 
-	ctx.componentContext = parameters.ComponentContext
+	ctx.componentContext = parameters.componentContext
 
-	ctx.outputFlag = FlagValueIfSet(parameters.Cmd, OutputFlagName)
+	ctx.outputFlag = FlagValueIfSet(parameters.cmd, OutputFlagName)
 
-	if !parameters.Offline {
+	if !parameters.offline {
 		ctx.KClient, err = kclient.New()
 		if err != nil {
 			return nil, err
@@ -93,17 +122,17 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		if e := ctx.resolveNamespace(parameters.Cmd, ctx.EnvSpecificInfo); e != nil {
+		if e := ctx.resolveNamespace(parameters.cmd, ctx.EnvSpecificInfo); e != nil {
 			return nil, e
 		}
 
-		if FlagValueIfSet(parameters.Cmd, ComponentFlagName) != "" {
+		if FlagValueIfSet(parameters.cmd, ComponentFlagName) != "" {
 			if err = ctx.checkComponentExistsOrFail(); err != nil {
 				return nil, err
 			}
 		}
 
-		if parameters.CheckRouteAvailability {
+		if parameters.routeAvailability {
 			isRouteSupported, err := ctx.Client.IsRouteSupported()
 			if err != nil {
 				return nil, err
@@ -112,9 +141,9 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 	}
 
-	devfilePath := completeDevfilePath(parameters.ComponentContext)
+	devfilePath := completeDevfilePath(parameters.componentContext)
 	isDevfile := odoutil.CheckPathExists(devfilePath)
-	if parameters.Devfile && isDevfile {
+	if parameters.devfile && isDevfile {
 		// Parse devfile and validate
 		devObj, err := devfile.ParseFromFile(devfilePath)
 		if err != nil {
@@ -140,7 +169,7 @@ func completeDevfilePath(componentContext string) string {
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := New(CreateParameters{Cmd: command})
+	ctx, err := New(createParameters{cmd: command})
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}

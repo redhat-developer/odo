@@ -53,23 +53,18 @@ func NewSetOptions() *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	checkRouteAvailability := false
+	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.GetComponentContext())
 	if o.now {
-		checkRouteAvailability = true
+		params.CreateAppIfNeeded().CheckRouteAvailability()
 	}
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:                    cmd,
-		Devfile:                true,
-		ComponentContext:       o.GetComponentContext(),
-		CreateAppIfNeeded:      o.now,
-		CheckRouteAvailability: checkRouteAvailability,
-	})
+	o.Context, err = genericclioptions.New(params)
 	if err != nil {
 		if err1 := util.IsInvalidKubeConfigError(err); err1 != nil {
 			return err1
 		}
 		return err
 	}
+
 	o.DevfilePath = o.Context.EnvSpecificInfo.GetDevfilePath()
 	o.EnvSpecificInfo = o.Context.EnvSpecificInfo
 

@@ -38,7 +38,7 @@ func NewDescribeOptions() *DescribeOptions {
 
 // Complete completes DescribeOptions after they've been created
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	if err != nil {
 		return err
 	}

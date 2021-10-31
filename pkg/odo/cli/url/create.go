@@ -73,14 +73,11 @@ func NewURLCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:                    cmd,
-		Devfile:                true,
-		ComponentContext:       o.GetComponentContext(),
-		CreateAppIfNeeded:      o.now,
-		CheckRouteAvailability: true,
-	})
-
+	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.GetComponentContext()).CheckRouteAvailability()
+	if o.now {
+		params.CreateAppIfNeeded()
+	}
+	o.Context, err = genericclioptions.New(params)
 	if err != nil {
 		return err
 	}

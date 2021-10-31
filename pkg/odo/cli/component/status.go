@@ -66,7 +66,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
-	so.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
+	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	if err != nil {
 		return err
 	}

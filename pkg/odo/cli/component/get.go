@@ -34,7 +34,7 @@ func NewGetOptions() *GetOptions {
 
 // Complete completes get args
 func (gto *GetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	gto.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
+	gto.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	if err != nil {
 		return err
 	}

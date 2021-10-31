@@ -29,7 +29,7 @@ func NewLogoutOptions() *LogoutOptions {
 
 // Complete completes LogoutOptions after they've been created
 func (o *LogoutOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{Cmd: cmd})
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	return
 }
 

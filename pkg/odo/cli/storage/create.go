@@ -43,12 +43,7 @@ func NewStorageCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been created
 func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		Devfile:          true,
-		ComponentContext: o.componentContext,
-	})
-
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.componentContext))
 	if err != nil {
 		return err
 	}
