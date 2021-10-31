@@ -6,6 +6,7 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,38 +69,55 @@ func (o *internalCxt) resolveNamespace(command *cobra.Command, configProvider lo
 	o.Client.GetKubeClient().Namespace = namespace
 	o.KClient.SetNamespace(namespace)
 	o.project = namespace
-
 	return nil
 }
 
 // resolveApp resolves the app
-func (o *internalCxt) resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration localConfigProvider.LocalConfigProvider) {
-	var app string
+// If `--app` flag is used, return its value
+// Or If app is set in envfile, return its value
+// Or if createAppIfNeeded, returns the default app name
+func resolveApp(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
-		app = appFlag
-	} else {
-		app = localConfiguration.GetApplication()
-		if app == "" && createAppIfNeeded {
-			app = DefaultAppName
-		}
+		return appFlag
 	}
-	o.application = app
+
+	app := localConfiguration.GetApplication()
+	if app == "" && createAppIfNeeded {
+		app = DefaultAppName
+	}
+	return app
 }
 
 // resolveComponent resolves component
-func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) error {
+// If `--component` flag is used, return its value
+// Or Return the value in envfile
+func resolveComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
-	if len(cmpFlag) == 0 {
-		// retrieve the current component if it exists if we didn't set the component flag
-		o.component = localConfiguration.GetName()
-		return nil
+	if len(cmpFlag) > 0 {
+		return cmpFlag
 	}
-	// if flag is set, check that the specified component exists
-	err := o.checkComponentExistsOrFail(cmpFlag)
+
+	return localConfiguration.GetName()
+}
+
+func resolveProject(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
+	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	if projectFlag != "" {
+		return projectFlag
+	}
+	return localConfiguration.GetNamespace()
+}
+
+// checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
+// KClient, component and application should have been set before to call this method
+func (o *internalCxt) checkComponentExistsOrFail() error {
+	exists, err := component.Exists(o.KClient, o.component, o.application)
 	if err != nil {
 		return err
 	}
-	o.component = cmpFlag
+	if !exists {
+		return fmt.Errorf("Component %v does not exist in application %s", o.component, o.application)
+	}
 	return nil
 }

@@ -67,105 +67,71 @@ type CreateParameters struct {
 // New creates a context based on the given parameters
 func New(parameters CreateParameters) (*Context, error) {
 
-	context, err := newContext(parameters)
+	ctx := internalCxt{}
+	var err error
+
+	ctx.EnvSpecificInfo, err = getValidEnvInfo(parameters.Cmd)
 	if err != nil {
 		return nil, err
+	}
+	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
+
+	ctx.project = resolveProject(parameters.Cmd, ctx.EnvSpecificInfo)
+
+	ctx.application = resolveApp(parameters.Cmd, ctx.EnvSpecificInfo, parameters.CreateAppIfNeeded)
+
+	ctx.component = resolveComponent(parameters.Cmd, ctx.EnvSpecificInfo)
+
+	ctx.componentContext = parameters.ComponentContext
+
+	ctx.outputFlag = FlagValueIfSet(parameters.Cmd, OutputFlagName)
+
+	if !parameters.Offline {
+		ctx.KClient, err = kclient.New()
+		if err != nil {
+			return nil, err
+		}
+		ctx.Client, err = Client()
+		if err != nil {
+			return nil, err
+		}
+		if e := ctx.resolveNamespace(parameters.Cmd, ctx.EnvSpecificInfo); e != nil {
+			return nil, e
+		}
+
+		if FlagValueIfSet(parameters.Cmd, ComponentFlagName) != "" {
+			if err = ctx.checkComponentExistsOrFail(); err != nil {
+				return nil, err
+			}
+		}
+
+		if parameters.CheckRouteAvailability {
+			isRouteSupported, err := ctx.Client.IsRouteSupported()
+			if err != nil {
+				return nil, err
+			}
+			ctx.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
+		}
 	}
 
 	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
 	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
 	if parameters.Devfile && isDevfile {
-		context.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(context.componentContext)
-		if err != nil {
-			return nil, err
-		}
-
 		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidateFromFile(parameters.DevfilePath)
+		devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
 		if err != nil {
-			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
+			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
 		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
-			return context, err
-		}
-
-		context.EnvSpecificInfo.SetDevfileObj(devObj)
-
-		context.Client, err = Client()
-		if err != nil {
 			return nil, err
 		}
-
-		err = context.resolveNamespace(parameters.Cmd, context.EnvSpecificInfo)
-		if err != nil {
-			return nil, err
-		}
-
-		if parameters.CheckRouteAvailability {
-			isRouteSupported, err := context.Client.IsRouteSupported()
-			if err != nil {
-				return nil, err
-			}
-			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
-		}
-		context.LocalConfigProvider = context.EnvSpecificInfo
-	}
-	return context, nil
-}
-
-// newContext creates a new context based on command flags for devfile components
-func newContext(parameters CreateParameters) (*Context, error) {
-
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(parameters.Cmd, OutputFlagName)
-
-	// Get valid env information
-	envInfo, err := getValidEnvInfo(parameters.Cmd)
-	if err != nil {
-		return nil, err
+		ctx.EnvSpecificInfo.SetDevfileObj(devObj)
 	}
 
-	// Create the internal context representation based on calculated values
-	ctx := internalCxt{
-		outputFlag:       outputFlag,
-		EnvSpecificInfo:  envInfo,
-		componentContext: parameters.ComponentContext,
-	}
-
-	if parameters.Offline {
-		ctx.LocalConfigProvider = envInfo
-		projectFlag := FlagValueIfSet(parameters.Cmd, ProjectFlagName)
-		if projectFlag != "" {
-			ctx.project = projectFlag
-		} else {
-			ctx.project = envInfo.GetNamespace()
-		}
-	} else {
-		ctx.KClient, err = kclient.New()
-		if err != nil {
-			return nil, err
-		}
-		ctx.Client, err = occlient.New()
-		if err != nil {
-			return nil, err
-		}
-		if e := ctx.resolveNamespace(parameters.Cmd, envInfo); e != nil {
-			return nil, e
-		}
-	}
-
-	ctx.resolveApp(parameters.Cmd, parameters.CreateAppIfNeeded, envInfo)
-
-	if err = ctx.resolveAndSetComponent(parameters.Cmd, envInfo); err != nil {
-		return nil, err
-	}
-
-	// Create a context from the internal representation
-	context := &Context{
+	return &Context{
 		internalCxt: ctx,
-	}
-	return context, nil
+	}, nil
 }
 
 // completeDevfilePath completes the devfile path from context
@@ -180,7 +146,7 @@ func completeDevfilePath(componentContext, devfilePath string) string {
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := newContext(CreateParameters{Cmd: command})
+	ctx, err := New(CreateParameters{Cmd: command})
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}

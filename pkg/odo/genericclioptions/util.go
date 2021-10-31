@@ -3,7 +3,6 @@ package genericclioptions
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/component"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -45,18 +44,6 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command *cobra.Comman
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "push" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		return fmt.Errorf(errFormatForCommand)
-	}
-	return nil
-}
-
-// checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
-func (o *internalCxt) checkComponentExistsOrFail(cmp string) error {
-	exists, err := component.Exists(o.KClient, cmp, o.application)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("Component %v does not exist in application %s", cmp, o.application)
 	}
 	return nil
 }
