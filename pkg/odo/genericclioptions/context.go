@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	// DefaultAppName is the default name of the application when an application name is not provided
-	DefaultAppName = "app"
+	// defaultAppName is the default name of the application when an application name is not provided
+	defaultAppName = "app"
 
 	// gitDirName is the git dir name in a project
 	gitDirName = ".git"

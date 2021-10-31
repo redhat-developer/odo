@@ -18,7 +18,7 @@ func ResolveAppFlag(command *cobra.Command) string {
 	if len(appFlag) > 0 {
 		return appFlag
 	}
-	return DefaultAppName
+	return defaultAppName
 }
 
 // resolveNamespace resolves namespace for devfile component
@@ -84,7 +84,7 @@ func resolveApp(command *cobra.Command, localConfiguration localConfigProvider.L
 
 	app := localConfiguration.GetApplication()
 	if app == "" && createAppIfNeeded {
-		app = DefaultAppName
+		app = defaultAppName
 	}
 	return app
 }
