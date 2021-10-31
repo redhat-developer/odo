@@ -2,7 +2,6 @@ package genericclioptions
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/location"
@@ -56,7 +55,6 @@ type internalCxt struct {
 // CreateParameters defines the options which can be provided while creating the context
 type CreateParameters struct {
 	Cmd                    *cobra.Command
-	DevfilePath            string
 	ComponentContext       string
 	CheckRouteAvailability bool
 	Devfile                bool
@@ -114,13 +112,13 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 	}
 
-	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
-	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
+	devfilePath := completeDevfilePath(parameters.ComponentContext)
+	isDevfile := odoutil.CheckPathExists(devfilePath)
 	if parameters.Devfile && isDevfile {
 		// Parse devfile and validate
-		devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
+		devObj, err := devfile.ParseFromFile(devfilePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
+			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", devfilePath, err)
 		}
 		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
@@ -135,12 +133,8 @@ func New(parameters CreateParameters) (*Context, error) {
 }
 
 // completeDevfilePath completes the devfile path from context
-func completeDevfilePath(componentContext, devfilePath string) string {
-	if len(devfilePath) > 0 {
-		return filepath.Join(componentContext, devfilePath)
-	} else {
-		return location.DevfileLocation(componentContext)
-	}
+func completeDevfilePath(componentContext string) string {
+	return location.DevfileLocation(componentContext)
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we

@@ -6,7 +6,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
@@ -46,7 +45,6 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:              cmd,
 		Devfile:          true,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
 		ComponentContext: o.componentContext,
 	})
 

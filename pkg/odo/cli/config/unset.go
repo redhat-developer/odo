@@ -56,7 +56,6 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
 		Cmd:                    cmd,
 		Devfile:                true,
-		DevfilePath:            "",
 		ComponentContext:       o.GetComponentContext(),
 		CreateAppIfNeeded:      o.now,
 		CheckRouteAvailability: checkRouteAvailability,
