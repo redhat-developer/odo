@@ -43,9 +43,9 @@ import (
 
 type CreateMethod interface {
 	SetMetadata(co *CreateOptions, cmd *cobra.Command, catalogDevfileList catalog.DevfileComponentTypeList, args []string) error
-	CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error)
+	//CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error)
 	FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error
-	Rollback(devfilePath string)
+	//Rollback(devfilePath string)
 }
 
 type InteractiveCreateMethod struct{}
@@ -77,21 +77,12 @@ func (icm *InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Co
 	co.devfileName = componentType
 	co.devfileMetadata.componentName = componentName
 	co.devfileMetadata.componentNamespace = componentNamespace
-	return err
-}
 
-func (icm *InteractiveCreateMethod) CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
-	return fetchRegistry(registryName)
+	return err
 }
 
 func (icm *InteractiveCreateMethod) FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return fetchDevfile(co, catalogDevfileList)
-}
-
-func (icm *InteractiveCreateMethod) Rollback(devfilePath string) {
-	if util.CheckPathExists(devfilePath) {
-		os.Remove(devfilePath)
-	}
 }
 
 type DirectCreateMethod struct{}
@@ -119,42 +110,51 @@ func (dcm *DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command
 
 }
 
-func (dcm *DirectCreateMethod) CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
-	return fetchRegistry(registryName)
-}
-
 func (dcm *DirectCreateMethod) FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return fetchDevfile(co, catalogDevfileList)
 }
 
-func (dcm *DirectCreateMethod) Rollback(devfilePath string) {
-	if util.CheckPathExists(devfilePath) {
-		os.Remove(devfilePath)
-	}
-}
+type HTTPCreateMethod struct{}
 
-func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
-	if now {
-		return genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-	}
-	return genericclioptions.NewOfflineContext(cmd)
-}
+func (hcm HTTPCreateMethod) FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", co.devfileMetadata.devfilePath.value)
+	defer devfileSpinner.End(false)
 
-func getEnvFilePath(componentContext string) string {
-	if componentContext != "" {
-		return filepath.Join(componentContext, EnvYAMLFilePath)
+	params := util.HTTPRequestParams{
+		URL:   co.devfileMetadata.devfilePath.value,
+		Token: co.devfileMetadata.token,
 	}
-	return filepath.Join(LocalDirectoryDefaultLocation, EnvYAMLFilePath)
-}
-
-// DevfileParseFromFile reads, parses and validates a devfile from a file without flattening it
-func devfileParseFromFile(devfilePath string, resolved bool) (parser.DevfileObj, error) {
-	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: &resolved})
+	devfileData, err := util.DownloadFileInMemory(params)
 	if err != nil {
-		return parser.DevfileObj{}, err
+		return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 	}
+	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
+	if err != nil {
+		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
+	}
+	devfileSpinner.End(true)
+	return nil
+}
 
-	return devObj, nil
+type FileCreateMethod struct{}
+
+func (fcm FileCreateMethod) FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+	devfileAbsolutePath, err := filepath.Abs(co.devfileMetadata.devfilePath.value)
+	if err != nil {
+		return err
+	}
+	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
+	defer devfileSpinner.End(false)
+	devfileData, err := ioutil.ReadFile(co.devfileMetadata.devfilePath.value)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read devfile from %s", co.devfileMetadata.devfilePath)
+	}
+	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
+	if err != nil {
+		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
+	}
+	devfileSpinner.End(true)
+	return nil
 }
 
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
@@ -233,6 +233,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	log.Info("Devfile Object Creation")
+	switch {
+	case co.devfileMetadata.userCreatedDevfile:
+	case co.devfileMetadata.devfilePath.value != "":
+	case co.interactive:
+	default:
+
+	}
 	//--------------------------------------------------------------------------------------------------------------------------------------------
 	//	Existing devfile Mode; co.devfileName = ""
 	if co.devfileMetadata.userCreatedDevfile {
@@ -256,6 +263,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		return nil
 	}
+
 	//--------------------------------------------------------------------------------------------------------------------------------------------
 	//--devfile Mode; co.devfileName = ""
 	if co.devfileMetadata.devfilePath.value != "" {
@@ -265,48 +273,31 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return errors.Errorf("the devfile path you specify is invalid with either file error %q or url error %q", fileErr, urlErr)
 		} else if fileErr == nil {
 			co.devfileMetadata.devfilePath.protocol = "file"
-		} else if urlErr == nil {
-			co.devfileMetadata.devfilePath.protocol = "http(s)"
-		}
-
-		var devfileAbsolutePath string
-		var devfileData []byte
-		if co.devfileMetadata.devfilePath.protocol == "file" {
-			devfileAbsolutePath, err = filepath.Abs(co.devfileMetadata.devfilePath.value)
+			var fcm = FileCreateMethod{}
+			err = fcm.FetchDevfile(co, catalog.DevfileComponentTypeList{})
 			if err != nil {
+				rollback(co.DevfilePath)
 				return err
 			}
-
-			devfileData, err = ioutil.ReadFile(co.devfileMetadata.devfilePath.value)
+		} else if urlErr == nil {
+			co.devfileMetadata.devfilePath.protocol = "http(s)"
+			var hcm = HTTPCreateMethod{}
+			err = hcm.FetchDevfile(co, catalog.DevfileComponentTypeList{})
 			if err != nil {
-				return errors.Wrapf(err, "failed to read devfile from %s", co.devfileMetadata.devfilePath)
-			}
-
-		} else if co.devfileMetadata.devfilePath.protocol == "http(s)" {
-			devfileAbsolutePath = co.devfileMetadata.devfilePath.value
-			params := util.HTTPRequestParams{
-				URL:   co.devfileMetadata.devfilePath.value,
-				Token: co.devfileMetadata.token,
-			}
-			devfileData, err = util.DownloadFileInMemory(params)
-			if err != nil {
-				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
+				rollback(co.DevfilePath)
+				return err
 			}
 		}
-		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
-		if err != nil {
-			return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
-		}
-		devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
-		defer devfileSpinner.End(true)
 
 		// get the custom component name
 		co.devfileMetadata.componentName, err = getComponentNameForExistingDevfile(co.DevfilePath, args)
 		if err != nil {
+			rollback(co.DevfilePath)
 			return err
 		}
 		co.devfileMetadata.componentType, err = getComponentType(co.DevfilePath)
 		if err != nil {
+			rollback(co.DevfilePath)
 			return err
 		}
 		return nil
@@ -314,8 +305,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	//Interactive Mode
 	if co.interactive {
-		var icm InteractiveCreateMethod
-		catalogDevfileList, err := icm.CheckAndValidateRegistry(co.devfileMetadata.devfileRegistry.Name)
+		var icm = InteractiveCreateMethod{}
+		catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
 		}
@@ -325,30 +316,134 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		err = icm.FetchDevfile(co, catalogDevfileList)
 		if err != nil {
-			icm.Rollback(co.DevfilePath)
+			rollback(co.DevfilePath)
 			return err
 		}
 		return nil
 	}
 	//Normal Mode
 	// Component type: Get from full command's first argument (mandatory in direct mode)
-	var dcm DirectCreateMethod
-	dcm.SetMetadata(co, cmd, catalog.DevfileComponentTypeList{}, args)
+	var dcm = DirectCreateMethod{}
+	err = dcm.SetMetadata(co, cmd, catalog.DevfileComponentTypeList{}, args)
+	if err != nil {
+		return err
+	}
 
-	catalogDevfileList, err := dcm.CheckAndValidateRegistry(co.devfileMetadata.devfileRegistry.Name)
+	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
 	}
 	err = dcm.FetchDevfile(co, catalogDevfileList)
 	if err != nil {
-		dcm.Rollback(co.DevfilePath)
+		rollback(co.DevfilePath)
 		return err
+	}
+	return nil
+}
+
+func (co *CreateOptions) Validate() (err error) {
+	log.Info("Validation")
+	// Validate if the devfile component name that user wants to create adheres to the k8s naming convention
+	spinner := log.Spinner("Validating if devfile name is correct")
+	defer spinner.End(false)
+
+	err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+	if err != nil {
+		return err
+	}
+	spinner.End(true)
+
+	// Validate if the devfile is compatible with odo; this checks the resolved/flattened version of devfile
+	spinner = log.Spinner("Validating the devfile for odo")
+	defer spinner.End(false)
+
+	_, err = odoDevfile.ParseAndValidateFromFile(co.DevfilePath)
+	if err != nil {
+		return err
+	}
+	spinner.End(true)
+
+	return nil
+}
+
+func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+	devObj, err := devfileParseFromFile(co.DevfilePath, false)
+	if err != nil {
+		return errors.New("Failed to parse the devfile")
+	}
+
+	devfileData, err := ioutil.ReadFile(co.DevfilePath)
+	if err != nil {
+		return err
+	}
+	// WARN: Starter Project uses go-git that overrides the directory content, there by deleting the existing devfile.
+	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "failed to download project for devfile component")
+	}
+
+	// TODO: We should not have to rewrite to the file. Fix the starter project.
+	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
+	if err != nil {
+		return err
+	}
+
+	// If user provided a custom name, re-write the devfile
+	// ENSURE: co.devfileMetadata.componentName != ""
+	if co.devfileMetadata.componentName != devObj.GetMetadataName() {
+		spinner := log.Spinnerf("Updating the devfile with component name %q", co.devfileMetadata.componentName)
+		defer spinner.End(false)
+
+		err := devObj.SetMetadataName(co.devfileMetadata.componentName)
+		if err != nil {
+			return errors.New("Failed to update the devfile")
+		}
+		spinner.End(true)
+	}
+
+	// Generate env file
+	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
+		Name:               co.devfileMetadata.componentName,
+		Project:            co.devfileMetadata.componentNamespace,
+		AppName:            co.appName,
+		UserCreatedDevfile: co.devfileMetadata.userCreatedDevfile,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to create env file for devfile component")
+	}
+
+	sourcePath, err := util.GetAbsPath(co.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get source path")
+	}
+
+	ignoreFile, err := util.TouchGitIgnoreFile(sourcePath)
+	if err != nil {
+		return err
+	}
+
+	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, EnvDirectory))
+	if err != nil {
+		return err
+	}
+
+	if co.now {
+		err = co.DevfilePush()
+		if err != nil {
+			return fmt.Errorf("failed to push changes: %w", err)
+		}
+	} else {
+		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+	}
+
+	if log.IsJSON() {
+		return co.DevfileJSON()
 	}
 
 	return nil
 }
 
-func fetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
+func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
 	// Validate if the component type is available
 	if registryName != "" {
 		registryExistSpinner := log.Spinnerf("Checking if the registry %q exists", registryName)
@@ -486,104 +581,33 @@ func getComponentType(devfilePath string) (string, error) {
 	return component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()), nil
 }
 
-func (co *CreateOptions) Validate() (err error) {
-	log.Info("Validation")
-	// Validate if the devfile component name that user wants to create adheres to the k8s naming convention
-	spinner := log.Spinner("Validating if devfile name is correct")
-	defer spinner.End(false)
-
-	err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
-	if err != nil {
-		return err
+// Rollback in case a devfile was manually created.
+func rollback(devfilePath string) {
+	if util.CheckPathExists(devfilePath) {
+		os.Remove(devfilePath)
 	}
-	spinner.End(true)
-
-	// Validate if the devfile is compatible with odo; this checks the resolved/flattened version of devfile
-	spinner = log.Spinner("Validating the devfile for odo")
-	defer spinner.End(false)
-
-	_, err = odoDevfile.ParseAndValidateFromFile(co.DevfilePath)
-	if err != nil {
-		return err
-	}
-	spinner.End(true)
-
-	return nil
 }
 
-func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
-	devObj, err := devfileParseFromFile(co.DevfilePath, false)
+func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
+	if now {
+		return genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	}
+	return genericclioptions.NewOfflineContext(cmd)
+}
+
+func getEnvFilePath(componentContext string) string {
+	if componentContext != "" {
+		return filepath.Join(componentContext, EnvYAMLFilePath)
+	}
+	return filepath.Join(LocalDirectoryDefaultLocation, EnvYAMLFilePath)
+}
+
+// DevfileParseFromFile reads, parses and validates a devfile from a file without flattening it
+func devfileParseFromFile(devfilePath string, resolved bool) (parser.DevfileObj, error) {
+	devObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: &resolved})
 	if err != nil {
-		return errors.New("Failed to parse the devfile")
+		return parser.DevfileObj{}, err
 	}
 
-	devfileData, err := ioutil.ReadFile(co.DevfilePath)
-	if err != nil {
-		return err
-	}
-	// WARN: Starter Project uses go-git that overrides the directory content, there by deleting the existing devfile.
-	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "failed to download project for devfile component")
-	}
-
-	// TODO: We should not have to rewrite to the file. Fix the starter project.
-	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
-	if err != nil {
-		return err
-	}
-
-	// If user provided a custom name, re-write the devfile
-	// ENSURE: co.devfileMetadata.componentName != ""
-	if co.devfileMetadata.componentName != devObj.GetMetadataName() {
-		spinner := log.Spinnerf("Updating the devfile with component name %q", co.devfileMetadata.componentName)
-		defer spinner.End(false)
-
-		err := devObj.SetMetadataName(co.devfileMetadata.componentName)
-		if err != nil {
-			return errors.New("Failed to update the devfile")
-		}
-		spinner.End(true)
-	}
-
-	// Generate env file
-	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
-		Name:               co.devfileMetadata.componentName,
-		Project:            co.devfileMetadata.componentNamespace,
-		AppName:            co.appName,
-		UserCreatedDevfile: co.devfileMetadata.userCreatedDevfile,
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to create env file for devfile component")
-	}
-
-	sourcePath, err := util.GetAbsPath(co.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get source path")
-	}
-
-	ignoreFile, err := util.TouchGitIgnoreFile(sourcePath)
-	if err != nil {
-		return err
-	}
-
-	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, EnvDirectory))
-	if err != nil {
-		return err
-	}
-
-	if co.now {
-		err = co.DevfilePush()
-		if err != nil {
-			return fmt.Errorf("failed to push changes: %w", err)
-		}
-	} else {
-		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
-	}
-
-	if log.IsJSON() {
-		return co.DevfileJSON()
-	}
-
-	return nil
+	return devObj, nil
 }
