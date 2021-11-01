@@ -44,6 +44,8 @@ type internalCxt struct {
 	componentContext string
 	// outputFlag is the value passed with the `--output` flag
 	outputFlag string
+	// The path of the detected devfile
+	devfilePath string
 	// Kclient can be used to access Kubernetes resources
 	KClient kclient.ClientInterface
 	// Client can be used to access OpenShift resources
@@ -94,6 +96,9 @@ func (o createParameters) CreateAppIfNeeded() createParameters {
 // New creates a context based on the given parameters
 func New(parameters createParameters) (*Context, error) {
 
+	// TODO check parameters is OK:
+	// - setcomponentContext called when needDevfile is called
+
 	ctx := internalCxt{}
 	var err error
 
@@ -141,13 +146,13 @@ func New(parameters createParameters) (*Context, error) {
 		}
 	}
 
-	devfilePath := completeDevfilePath(parameters.componentContext)
-	isDevfile := odoutil.CheckPathExists(devfilePath)
+	ctx.devfilePath = location.DevfileLocation(parameters.componentContext)
+	isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
 	if parameters.devfile && isDevfile {
 		// Parse devfile and validate
-		devObj, err := devfile.ParseFromFile(devfilePath)
+		devObj, err := devfile.ParseFromFile(ctx.devfilePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", devfilePath, err)
+			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
 		}
 		err = validate.ValidateDevfileData(devObj.Data)
 		if err != nil {
@@ -159,11 +164,6 @@ func New(parameters createParameters) (*Context, error) {
 	return &Context{
 		internalCxt: ctx,
 	}, nil
-}
-
-// completeDevfilePath completes the devfile path from context
-func completeDevfilePath(componentContext string) string {
-	return location.DevfileLocation(componentContext)
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
@@ -217,4 +217,8 @@ func (o *Context) GetOutputFlag() string {
 
 func (o *Context) GetComponentContext() string {
 	return o.componentContext
+}
+
+func (o *Context) GetDevfilePath() string {
+	return o.devfilePath
 }

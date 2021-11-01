@@ -116,7 +116,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
-	devObj, err := devfile.ParseAndValidateFromFile(lo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(lo.GetDevfilePath())
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
-	devObj, err := devfile.ParseAndValidateFromFile(do.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	componentName := do.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
-		Namespace: do.namespace,
+		Namespace: do.KClient.GetCurrentNamespace(),
 	}
 
 	labels := componentlabels.GetLabels(componentName, do.EnvSpecificInfo.GetApplication(), false)
@@ -207,7 +207,7 @@ func (to *TestOptions) RunTestCommand() error {
 
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
-	devObj, err := devfile.ParseAndValidateFromFile(eo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(eo.componentOptions.GetDevfilePath())
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	componentName := eo.componentOptions.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
-		Namespace: eo.namespace,
+		Namespace: eo.componentOptions.KClient.GetCurrentNamespace(),
 	}
 
 	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.GetApplication(), devObj, kc)

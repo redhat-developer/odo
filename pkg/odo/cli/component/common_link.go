@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -57,11 +56,8 @@ func (o *commonLinkOptions) getLinkType() string {
 // Complete completes LinkOptions after they've been created
 func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string, context string) (err error) {
 	o.csvSupport, _ = svc.IsCSVSupported()
-
 	o.operationName = name
-
-	suppliedName := args[0]
-	o.suppliedName = suppliedName
+	o.suppliedName = args[0]
 
 	// we need to support both devfile based component and s2i components.
 	// Let's first check if creating a devfile context is possible for the
@@ -74,18 +70,8 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	} else {
 		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(context))
 	}
-
 	if err != nil {
 		return err
-	}
-
-	o.Client, err = occlient.New()
-	if err != nil {
-		return err
-	}
-
-	if o.Context.EnvSpecificInfo == nil {
-		return fmt.Errorf("failed to find environment info")
 	}
 
 	return o.completeForOperator()

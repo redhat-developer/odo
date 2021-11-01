@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -57,25 +56,22 @@ func NewDescribeComponentOptions() *DescribeComponentOptions {
 // Complete completes DescribeComponentOptions after they've been created
 func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.componentName = args[0]
-	tasks := util.NewConcurrentTasks(2)
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).IsOffline())
 	if err != nil {
 		return err
 	}
 
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-		catalogDevfileList, err := catalog.ListDevfileComponents("")
-		if catalogDevfileList.DevfileRegistries == nil {
-			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-		}
-		if err != nil {
-			errChannel <- err
-		}
-		o.GetDevfileComponentsByName(catalogDevfileList)
-	}})
+	catalogDevfileList, err := catalog.ListDevfileComponents("")
+	if catalogDevfileList.DevfileRegistries == nil {
+		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+	}
+	if err != nil {
+		return err
+	}
 
-	return tasks.Run()
+	o.GetDevfileComponentsByName(catalogDevfileList)
+	return nil
 }
 
 // Validate validates the DescribeComponentOptions based on completed values

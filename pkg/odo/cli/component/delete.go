@@ -12,7 +12,6 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -56,9 +55,7 @@ type DeleteOptions struct {
 	*ComponentOptions
 
 	// devfile path
-	devfilePath string
-	namespace   string
-	show        bool
+	show bool
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
@@ -70,32 +67,14 @@ func NewDeleteOptions() *DeleteOptions {
 		componentContext:         "",
 		isCmpExists:              false,
 		ComponentOptions:         &ComponentOptions{},
-		devfilePath:              "",
-		namespace:                "",
 		show:                     false,
 	}
 }
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if do.componentContext == "" {
-		dir, e := os.Getwd()
-		if e != nil {
-			return e
-		}
-
-		do.componentContext = dir
-	}
-	do.devfilePath = location.DevfileLocation(do.componentContext)
-
-	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	if err != nil {
-		return err
-	}
-	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-	do.namespace = do.KClient.GetCurrentNamespace()
-
-	return nil
+	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(do.componentContext))
+	return err
 }
 
 // Validate validates the list parameters
@@ -124,7 +103,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			if !do.EnvSpecificInfo.Exists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}
-			if err = util.DeleteIndexFile(filepath.Dir(do.devfilePath)); err != nil {
+			if err = util.DeleteIndexFile(filepath.Dir(do.GetDevfilePath())); err != nil {
 				return err
 			}
 
@@ -146,13 +125,13 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 		}
 
 		if do.componentForceDeleteFlag {
-			if !util.CheckPathExists(do.devfilePath) {
+			if !util.CheckPathExists(do.GetDevfilePath()) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
 			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
 
 				// first remove the uri based files mentioned in the devfile
-				devfileObj, err := devfile.ParseAndValidateFromFile(do.devfilePath)
+				devfileObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
 				if err != nil {
 					return err
 				}
@@ -174,7 +153,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 					}
 				}
 
-				err = util.DeletePath(do.devfilePath)
+				err = util.DeletePath(do.GetDevfilePath())
 				if err != nil {
 					return err
 				}
@@ -186,12 +165,12 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			}
 
 		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
-			if !util.CheckPathExists(do.devfilePath) {
+			if !util.CheckPathExists(do.GetDevfilePath()) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
 
 			// first remove the uri based files mentioned in the devfile
-			devfileObj, err := devfile.ParseAndValidateFromFile(do.devfilePath)
+			devfileObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
 			if err != nil {
 				return err
 			}
@@ -213,7 +192,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 				}
 			}
 
-			err = util.DeletePath(do.devfilePath)
+			err = util.DeletePath(do.GetDevfilePath())
 			if err != nil {
 				return err
 			}

@@ -36,14 +36,11 @@ func NewServiceListOptions() *ServiceListOptions {
 
 // Complete completes ServiceListOptions after they've been created
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.csvSupport, err = svc.IsCSVSupported(); err != nil {
+	o.csvSupport, err = svc.IsCSVSupported()
+	if err != nil {
 		return err
-	} else if o.csvSupport {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.componentContext))
-		if err != nil {
-			return err
-		}
-	} else {
+	}
+	if !o.csvSupport {
 		return fmt.Errorf("failed to list Operator backed services, make sure you have installed the Operators on the cluster")
 	}
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.componentContext))

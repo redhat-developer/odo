@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -28,20 +27,21 @@ type LogOptions struct {
 	debug            bool
 	componentContext string
 	*ComponentOptions
-	devfilePath string
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
-	return &LogOptions{false, false, "", &ComponentOptions{}, ""}
+	return &LogOptions{
+		logFollow:        false,
+		debug:            false,
+		componentContext: "",
+		ComponentOptions: &ComponentOptions{},
+	}
 }
 
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
-	lo.devfilePath = location.DevfileLocation(lo.componentContext)
-
-	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(lo.componentContext))
 	return err
 }
 

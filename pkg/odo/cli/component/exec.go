@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -25,10 +24,7 @@ var execExample = ktemplates.Examples(`  # Executes a command inside the compone
 type ExecOptions struct {
 	componentContext string
 	componentOptions *ComponentOptions
-	devfilePath      string
-	namespace        string
-
-	command []string
+	command          []string
 }
 
 // NewExecOptions returns new instance of ExecOptions
@@ -57,17 +53,9 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 	if len(eo.command) != len(args) {
 		return fmt.Errorf("no parameter is expected for the command")
 	}
-	eo.devfilePath = location.DevfileLocation(eo.componentContext)
 
-	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	if err != nil {
-		return err
-	}
-
-	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-	eo.namespace = eo.componentOptions.KClient.GetCurrentNamespace()
-
-	return nil
+	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(eo.componentContext))
+	return err
 }
 
 // Validate validates the exec parameters
