@@ -36,18 +36,115 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Get Metadata
+// If the devfile does not exist, then check and Validate Registry
+// Fetch Devfile
+// If devfile was manually created, rollback
+
 type CreateMethod interface {
-	FetchDevfile() (bool, error)
-	//Rollback() error
+	SetMetadata(co *CreateOptions, cmd *cobra.Command, catalogDevfileList catalog.DevfileComponentTypeList, args []string) error
+	CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error)
+	FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error
+	Rollback(devfilePath string)
 }
 
 type InteractiveCreateMethod struct{}
+
+func (icm *InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, catalogDevfileList catalog.DevfileComponentTypeList, args []string) error {
+	var err error
+	// Component type: We provide devfile component list to let user choose
+	componentType := ui.SelectDevfileComponentType(catalogDevfileList.Items)
+
+	// Component name: User needs to specify the component name, by default it is component type that user chooses
+	componentName := ui.EnterDevfileComponentName(componentType)
+
+	// Component namespace: User needs to specify component namespace, by default it is the current active namespace
+	var componentNamespace string
+	if cmd.Flags().Changed("project") {
+		componentNamespace, err = cmd.Flags().GetString("project")
+		if err != nil {
+			return err
+		}
+	} else {
+		client, e := genericclioptions.Client()
+		// if the user is logged in or if we have cluster information, display the default project
+		if e == nil {
+			componentNamespace = ui.EnterDevfileComponentProject(client.GetCurrentProjectName())
+		}
+	}
+
+	co.devfileMetadata.componentType = componentType
+	co.devfileName = componentType
+	co.devfileMetadata.componentName = componentName
+	co.devfileMetadata.componentNamespace = componentNamespace
+	return err
+}
+
+func (icm *InteractiveCreateMethod) CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
+	return fetchRegistry(registryName)
+}
+
+func (icm *InteractiveCreateMethod) FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+	return fetchDevfile(co, catalogDevfileList)
+}
+
+func (icm *InteractiveCreateMethod) Rollback(devfilePath string) {
+	if util.CheckPathExists(devfilePath) {
+		os.Remove(devfilePath)
+	}
+}
+
+type DirectCreateMethod struct{}
+
+func (dcm *DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, catalogDevfileList catalog.DevfileComponentTypeList, args []string) error {
+	var err error
+	componentType := args[0]
+
+	co.devfileMetadata.componentType = componentType
+	co.devfileName = componentType
+	var componentName string
+	if len(args) == 2 {
+		componentName = args[1]
+	} else {
+		componentName, err = createDefaultComponentName(
+			componentType,
+			co.componentContext,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	co.devfileMetadata.componentName = componentName
+	return err
+
+}
+
+func (dcm *DirectCreateMethod) CheckAndValidateRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
+	return fetchRegistry(registryName)
+}
+
+func (dcm *DirectCreateMethod) FetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+	return fetchDevfile(co, catalogDevfileList)
+}
+
+func (dcm *DirectCreateMethod) Rollback(devfilePath string) {
+	if util.CheckPathExists(devfilePath) {
+		os.Remove(devfilePath)
+	}
+}
 
 func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
 	if now {
 		return genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	}
 	return genericclioptions.NewOfflineContext(cmd)
+}
+
+func getEnvFilePath(componentContext string) string {
+	if componentContext != "" {
+		return filepath.Join(componentContext, EnvYAMLFilePath)
+	}
+	return filepath.Join(LocalDirectoryDefaultLocation, EnvYAMLFilePath)
 }
 
 // DevfileParseFromFile reads, parses and validates a devfile from a file without flattening it
@@ -59,6 +156,7 @@ func devfileParseFromFile(devfilePath string, resolved bool) (parser.DevfileObj,
 
 	return devObj, nil
 }
+
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	// GETTERS
 	// Get context
@@ -76,10 +174,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	co.devfileMetadata.userCreatedDevfile = util.CheckPathExists(co.DevfilePath)
 
 	// EnvFilePath is the path of env file for devfile component
-	envFilePath := filepath.Join(LocalDirectoryDefaultLocation, EnvYAMLFilePath)
-	if co.componentContext != "" {
-		envFilePath = filepath.Join(co.componentContext, EnvYAMLFilePath)
-	}
+	envFilePath := getEnvFilePath(co.componentContext)
 	// This is required so that .odo is created in the correct context
 	co.PushOptions.componentContext = co.componentContext
 
@@ -219,70 +314,36 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	//Interactive Mode
 	if co.interactive {
-		catalogDevfileList, err := fetchRegistry(co.devfileMetadata.devfileRegistry.Name)
+		var icm InteractiveCreateMethod
+		catalogDevfileList, err := icm.CheckAndValidateRegistry(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
 		}
-		// Component type: We provide devfile component list to let user choose
-		componentType := ui.SelectDevfileComponentType(catalogDevfileList.Items)
-
-		// Component name: User needs to specify the component name, by default it is component type that user chooses
-		componentName := ui.EnterDevfileComponentName(componentType)
-
-		// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-		var componentNamespace string
-		if cmd.Flags().Changed("project") {
-			componentNamespace, err = cmd.Flags().GetString("project")
-			if err != nil {
-				return err
-			}
-		} else {
-			client, e := genericclioptions.Client()
-			// if the user is logged in or if we have cluster information, display the default project
-			if e == nil {
-				componentNamespace = ui.EnterDevfileComponentProject(client.GetCurrentProjectName())
-			}
-		}
-
-		co.devfileMetadata.componentType = componentType
-		co.devfileName = componentType
-		co.devfileMetadata.componentName = componentName
-		co.devfileMetadata.componentNamespace = componentNamespace
-
-		err = fetchDevfile(co, catalogDevfileList)
+		err = icm.SetMetadata(co, cmd, catalogDevfileList, args)
 		if err != nil {
+			return err
+		}
+		err = icm.FetchDevfile(co, catalogDevfileList)
+		if err != nil {
+			icm.Rollback(co.DevfilePath)
 			return err
 		}
 		return nil
 	}
 	//Normal Mode
 	// Component type: Get from full command's first argument (mandatory in direct mode)
-	componentType := args[0]
+	var dcm DirectCreateMethod
+	dcm.SetMetadata(co, cmd, catalog.DevfileComponentTypeList{}, args)
 
-	co.devfileMetadata.componentType = componentType
-	co.devfileName = componentType
-
-	catalogDevfileList, err := fetchRegistry(co.devfileMetadata.devfileRegistry.Name)
+	catalogDevfileList, err := dcm.CheckAndValidateRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
 	}
-	err = fetchDevfile(co, catalogDevfileList)
+	err = dcm.FetchDevfile(co, catalogDevfileList)
 	if err != nil {
+		dcm.Rollback(co.DevfilePath)
 		return err
 	}
-	var componentName string
-	if len(args) == 2 {
-		componentName = args[1]
-	} else {
-		componentName, err = createDefaultComponentName(
-			componentType,
-			co.componentContext,
-		)
-		if err != nil {
-			return err
-		}
-	}
-	co.devfileMetadata.componentName = componentName
 
 	return nil
 }
@@ -381,7 +442,7 @@ func fetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponent
 			return err
 		}
 
-		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644)
+		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 		if err != nil {
 			return err
 		}
@@ -467,7 +528,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// TODO: We should not have to rewrite to the file. Fix the starter project.
-	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644)
+	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
 		return err
 	}
