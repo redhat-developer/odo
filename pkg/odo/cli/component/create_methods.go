@@ -65,9 +65,7 @@ func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOp
 func (ucdm UserCreatedDevfileMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return setMetadataForExistingDevfile(co, args)
 }
-func (ucdm UserCreatedDevfileMethod) Rollback(devfilePath string) {
-	return
-}
+func (ucdm UserCreatedDevfileMethod) Rollback(devfilePath string) {}
 
 func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return fetchDevfileFromRegistry(co, catalogDevfileList)
@@ -106,7 +104,6 @@ func (icm InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Com
 }
 func (icm InteractiveCreateMethod) Rollback(devfilePath string) {
 	rollbackDevfile(devfilePath)
-	return
 }
 
 func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
@@ -135,7 +132,6 @@ func (dcm DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command,
 }
 func (dcm DirectCreateMethod) Rollback(devfilePath string) {
 	rollbackDevfile(devfilePath)
-	return
 }
 
 func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
@@ -162,7 +158,6 @@ func (hcm HTTPCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, a
 }
 func (hcm HTTPCreateMethod) Rollback(devfilePath string) {
 	rollbackDevfile(devfilePath)
-	return
 }
 
 func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
@@ -187,10 +182,7 @@ func (fcm FileCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, a
 	return setMetadataForExistingDevfile(co, args)
 }
 func (fcm FileCreateMethod) Rollback(devfilePath string) {
-	if util.CheckPathExists(devfilePath) {
-		_ = os.Remove(devfilePath)
-	}
-	return
+	rollbackDevfile(devfilePath)
 }
 
 // validateAndFetchRegistry validates if the provided registryName is exists and returns the devfile listed in the registy;
@@ -318,7 +310,7 @@ func setMetadataForExistingDevfile(co *CreateOptions, args []string) error {
 	// Set component name
 	if len(args) > 0 {
 		// user provided name: `odo create mynode`
-		componentName = args[1]
+		componentName = args[0]
 	} else {
 		if devObj.GetMetadataName() != "" {
 			// devfile provided name: `.metadata.name`
