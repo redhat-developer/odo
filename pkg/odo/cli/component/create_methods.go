@@ -335,3 +335,34 @@ func rollbackDevfile(devfilePath string) {
 	}
 	return
 }
+
+func createDefaultComponentName(componentType string, sourcePath string) (string, error) {
+	finalSourcePath, err := getComponentName(sourcePath)
+	if err != nil {
+		return "", err
+	}
+
+	return component.GetDefaultComponentName(
+		finalSourcePath,
+		componentType,
+		component.ComponentList{},
+	)
+}
+
+func getComponentName(sourcePath string) (string, error) {
+	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
+	// we only get absolute path for local source type
+	if sourcePath == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		return wd, nil
+	}
+	finalSourcePath, err := filepath.Abs(sourcePath)
+	if err != nil {
+		return "", err
+	}
+	return finalSourcePath, nil
+
+}
