@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	scontext "github.com/openshift/odo/pkg/segment/context"
@@ -43,12 +42,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	co.DevfilePath = location.DevfileLocation(co.componentContext)
 	//Check whether the directory already contains a devfile, this check should happen early
 	co.devfileMetadata.userCreatedDevfile = util.CheckPathExists(co.DevfilePath)
-
 	// EnvFilePath is the path of env file for devfile component
 	envFilePath := getEnvFilePath(co.componentContext)
 	// This is required so that .odo is created in the correct context
 	co.PushOptions.componentContext = co.componentContext
-
 	// Use Interactive mode if: 1) no args are passed || 2) the devfile exists || 3) --devfile is used
 	if len(args) == 0 && !util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value == "" {
 		co.interactive = true
@@ -63,7 +60,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if util.CheckPathExists(envFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
 		// Note: if the IF condition seems to have a side-effect, it is better to do the condition check separately, like below
-		err := util.DeletePath(envFilePath)
+		err = util.DeletePath(envFilePath)
 		if err != nil {
 			return err
 		}
@@ -89,7 +86,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// Set the starter project token if required
 	if co.devfileMetadata.starter != "" {
-		secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+		var secure bool
+		secure, err = registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
 		}
@@ -106,15 +104,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	log.Info("Devfile Object Creation")
 	var catalogDevfileList catalog.DevfileComponentTypeList
 	var createMethod CreateMethod
-	switch {
-	case co.devfileMetadata.userCreatedDevfile:
-		createMethod = UserCreatedDevfileMethod{}
-		err = createMethod.SetMetadata(co, cmd, args, catalogDevfileList)
-		if err != nil {
-			return err
-		}
-	case co.devfileMetadata.devfilePath.value != "":
-		//--devfile Mode; co.devfileName = ""
+	if co.devfileMetadata.devfilePath.value != "" {
 		fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 		urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 		if fileErr != nil && urlErr != nil {
@@ -127,15 +117,18 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.devfileMetadata.devfilePath.protocol = "http(s)"
 			createMethod = HTTPCreateMethod{}
 		}
-
+	}
+	switch {
+	case co.devfileMetadata.devfilePath.value != "" || co.devfileMetadata.userCreatedDevfile:
+		//co.devfileName = "" for user provided devfile
 		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
 		if err != nil {
-			rollback(co.DevfilePath)
+			createMethod.Rollback(co.DevfilePath)
 			return err
 		}
 		err = createMethod.SetMetadata(co, cmd, args, catalogDevfileList)
 		if err != nil {
-			rollback(co.DevfilePath)
+			createMethod.Rollback(co.DevfilePath)
 			return err
 		}
 	default:
@@ -155,7 +148,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
 		if err != nil {
-			rollback(co.DevfilePath)
+			createMethod.Rollback(co.DevfilePath)
 			return err
 		}
 	}
@@ -221,7 +214,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		spinner := log.Spinnerf("Updating the devfile with component name %q", co.devfileMetadata.componentName)
 		defer spinner.End(false)
 
-		err := devObj.SetMetadataName(co.devfileMetadata.componentName)
+		err = devObj.SetMetadataName(co.devfileMetadata.componentName)
 		if err != nil {
 			return errors.New("Failed to update the devfile")
 		}
@@ -268,13 +261,6 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	return nil
-}
-
-// Rollback in case a devfile was manually created.
-func rollback(devfilePath string) {
-	if util.CheckPathExists(devfilePath) {
-		os.Remove(devfilePath)
-	}
 }
 
 func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {

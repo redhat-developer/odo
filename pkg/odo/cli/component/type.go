@@ -26,13 +26,14 @@ import (
 // Get Metadata
 // If the devfile does not exist, then check and Validate Registry
 // Fetch Devfile
-// If devfile was manually created, rollback
+// If devfile was manually created, rollbackDevfile
 
 type CreateMethod interface {
 	// FetchDevfileAndCreateComponent fetches devfile from registry, or a remote location, or a local file system, and create a component
 	FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error
 	// SetMetadata sets the necessary metadata, mainly component name and component type
 	SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error
+	Rollback(devfilePath string)
 }
 
 // UserCreateDevfileMethod is used when a devfile is present in the context directory
@@ -64,10 +65,15 @@ func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOp
 func (ucdm UserCreatedDevfileMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return setMetadataForExistingDevfile(co, args)
 }
+func (ucdm UserCreatedDevfileMethod) Rollback(devfilePath string) {
+	return
+}
 
 func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return fetchDevfile(co, catalogDevfileList)
+	return fetchDevfileFromRegistry(co, catalogDevfileList)
 }
+
+// SetMetadata asks user for metadata and sets it to CreateOption
 func (icm InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	var err error
 	// Component type: We provide devfile component list to let user choose
@@ -98,9 +104,13 @@ func (icm InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Com
 
 	return err
 }
+func (icm InteractiveCreateMethod) Rollback(devfilePath string) {
+	rollbackDevfile(devfilePath)
+	return
+}
 
 func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return fetchDevfile(co, catalogDevfileList)
+	return fetchDevfileFromRegistry(co, catalogDevfileList)
 }
 func (dcm DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	var err error
@@ -122,6 +132,10 @@ func (dcm DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command,
 	}
 	co.devfileMetadata.componentName = componentName
 	return err
+}
+func (dcm DirectCreateMethod) Rollback(devfilePath string) {
+	rollbackDevfile(devfilePath)
+	return
 }
 
 func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
@@ -146,6 +160,10 @@ func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, ca
 func (hcm HTTPCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return setMetadataForExistingDevfile(co, args)
 }
+func (hcm HTTPCreateMethod) Rollback(devfilePath string) {
+	rollbackDevfile(devfilePath)
+	return
+}
 
 func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	devfileAbsolutePath, err := filepath.Abs(co.devfileMetadata.devfilePath.value)
@@ -168,7 +186,15 @@ func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, ca
 func (fcm FileCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return setMetadataForExistingDevfile(co, args)
 }
+func (fcm FileCreateMethod) Rollback(devfilePath string) {
+	if util.CheckPathExists(devfilePath) {
+		_ = os.Remove(devfilePath)
+	}
+	return
+}
 
+// validateAndFetchRegistry validates if the provided registryName is exists and returns the devfile listed in the registy;
+// if the registryName is "", it returns the devfiles of all the available registries
 func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
 	// Validate if the component type is available
 	if registryName != "" {
@@ -201,7 +227,8 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 	return catalogDevfileList, nil
 }
 
-func fetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+// fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
+func fetchDevfileFromRegistry(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	hasComponent := false
 	var devfileExistSpinner *log.Status
 	if co.devfileMetadata.devfileRegistry.Name != "" {
@@ -278,6 +305,7 @@ func fetchDevfile(co *CreateOptions, catalogDevfileList catalog.DevfileComponent
 	return nil
 }
 
+// setMetadataForExistingDevfile sets metadata for a user provided devfile; UserCreatedDevfileCreateMethod, HTTPCreateMethod, and FileCreateMethod
 func setMetadataForExistingDevfile(co *CreateOptions, args []string) error {
 	var err error
 	var componentName string
@@ -306,4 +334,12 @@ func setMetadataForExistingDevfile(co *CreateOptions, args []string) error {
 	}
 	co.devfileMetadata.componentName = componentName
 	return nil
+}
+
+// rollbackDevfile deletes a devfile that was not created by user
+func rollbackDevfile(devfilePath string) {
+	if util.CheckPathExists(devfilePath) {
+		_ = os.Remove(devfilePath)
+	}
+	return
 }

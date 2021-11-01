@@ -215,7 +215,6 @@ func (co *CreateOptions) Complete1(name string, cmd *cobra.Command, args []strin
 
 	// Validate user specify registry
 	if co.devfileMetadata.devfileRegistry.Name != "" {
-
 		if co.devfileMetadata.devfilePath.value != "" {
 			return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 		}
