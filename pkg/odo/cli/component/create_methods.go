@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/openshift/odo/pkg/catalog"
@@ -65,7 +64,9 @@ func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOp
 func (ucdm UserCreatedDevfileMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return setMetadataForExistingDevfile(co, args)
 }
-func (ucdm UserCreatedDevfileMethod) Rollback(devfilePath string) {}
+func (ucdm UserCreatedDevfileMethod) Rollback(devfilePath string) {
+	//	User provided devfiles should not be deleted if something fails, hence this method is empty
+}
 
 func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
 	return fetchDevfileFromRegistry(co, catalogDevfileList)
@@ -221,53 +222,46 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 
 // fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
 func fetchDevfileFromRegistry(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	hasComponent := false
-	var devfileExistSpinner *log.Status
+	devfileExistSpinner := log.Spinnerf("Checking if the devfile for %q exists on available registries", co.devfileMetadata.componentType)
+	defer devfileExistSpinner.End(false)
 	if co.devfileMetadata.devfileRegistry.Name != "" {
 		devfileExistSpinner = log.Spinnerf("Checking if the devfile for %q exists on registry %q", co.devfileMetadata.componentType, co.devfileMetadata.devfileRegistry.Name)
-	} else {
-		devfileExistSpinner = log.Spinnerf("Checking if the devfile for %q exists on available registries", co.devfileMetadata.componentType)
 	}
-	defer devfileExistSpinner.End(false)
 
+	// Find the request devfile from the registry
+	var devfileFound bool
 	for _, devfileComponent := range catalogDevfileList.Items {
 		if co.devfileMetadata.componentType == devfileComponent.Name {
-			hasComponent = true
+			devfileFound = true
 			co.devfileMetadata.devfileLink = devfileComponent.Link
 			co.devfileMetadata.devfileRegistry = devfileComponent.Registry
 			break
 		}
 	}
-	if hasComponent {
-		devfileExistSpinner.End(true)
-	} else {
-		devfileExistSpinner.End(false)
+	if !devfileFound {
 		return fmt.Errorf("devfile component type %q is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-
 	}
-
-	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", co.devfileMetadata.devfileRegistry.Name)
-	defer registrySpinner.End(false)
-	if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
-		registryUtil.PrintGitRegistryDeprecationWarning()
-	}
+	devfileExistSpinner.End(true)
 
 	// Download devfile from registry
-	var params util.HTTPRequestParams
+	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", co.devfileMetadata.devfileRegistry.Name)
+	defer registrySpinner.End(false)
 	// For GitHub based registries
-	if strings.Contains(co.devfileMetadata.devfileRegistry.URL, "github") {
-		params = util.HTTPRequestParams{
+	if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
+		registryUtil.PrintGitRegistryDeprecationWarning()
+
+		params := util.HTTPRequestParams{
 			URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
 		}
 
-		secure, e := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
-		if e != nil {
-			return e
+		secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+		if err != nil {
+			return err
 		}
 
 		if secure {
 			var token string
-			token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 			if err != nil {
 				return errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
@@ -333,7 +327,6 @@ func rollbackDevfile(devfilePath string) {
 	if util.CheckPathExists(devfilePath) {
 		_ = os.Remove(devfilePath)
 	}
-	return
 }
 
 func createDefaultComponentName(componentType string, sourcePath string) (string, error) {

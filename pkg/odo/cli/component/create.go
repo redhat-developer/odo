@@ -56,7 +56,6 @@ type DevfileMetadata struct {
 	componentType      string
 	componentName      string
 	componentNamespace string
-	devfileSupport     bool // remove this
 	devfileLink        string
 	devfileRegistry    catalog.Registry
 	devfilePath        devfilePath
@@ -190,7 +189,21 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	log.Info("Devfile Object Creation")
 	var catalogDevfileList catalog.DevfileComponentTypeList
 	var createMethod CreateMethod
-	if co.devfileMetadata.devfilePath.value != "" {
+	switch {
+	case co.devfileMetadata.userCreatedDevfile:
+		createMethod = UserCreatedDevfileMethod{}
+		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
+		if err != nil {
+			createMethod.Rollback(co.DevfilePath)
+			return err
+		}
+		err = createMethod.SetMetadata(co, cmd, args, catalogDevfileList)
+		if err != nil {
+			createMethod.Rollback(co.DevfilePath)
+			return err
+		}
+	case co.devfileMetadata.devfilePath.value != "":
+		//co.devfileName = "" for user provided devfile
 		fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 		urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 		if fileErr != nil && urlErr != nil {
@@ -203,10 +216,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.devfileMetadata.devfilePath.protocol = "http(s)"
 			createMethod = HTTPCreateMethod{}
 		}
-	}
-	switch {
-	case co.devfileMetadata.devfilePath.value != "" || co.devfileMetadata.userCreatedDevfile:
-		//co.devfileName = "" for user provided devfile
 		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
 		if err != nil {
 			createMethod.Rollback(co.DevfilePath)
@@ -269,7 +278,7 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
-func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (co *CreateOptions) Run(cmd *cobra.Command) error {
 	// Adding component type to telemetry data
 	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 
@@ -300,6 +309,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		spinner := log.Spinnerf("Updating the devfile with component name %q", co.devfileMetadata.componentName)
 		defer spinner.End(false)
 
+		// WARN: SetMetadataName will rewrite to the devfile
 		err = devObj.SetMetadataName(co.devfileMetadata.componentName)
 		if err != nil {
 			return errors.New("Failed to update the devfile")
@@ -318,6 +328,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		return errors.Wrap(err, "failed to create env file for devfile component")
 	}
 
+	// Prepare .gitignore file
 	sourcePath, err := util.GetAbsPath(co.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
