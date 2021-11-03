@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -58,6 +59,9 @@ func CreateConfig(namespace, userName string, clientCfg *restclient.Config) (*cl
 
 	credentials := clientcmdapi.NewAuthInfo()
 	credentials.Token = clientCfg.BearerToken
+	credentials.TokenFile = clientCfg.BearerTokenFile
+	credentials.AuthProvider = clientCfg.AuthProvider
+	credentials.Exec = clientCfg.ExecProvider
 	credentials.ClientCertificate = clientCfg.TLSClientConfig.CertFile
 	if len(credentials.ClientCertificate) == 0 {
 		credentials.ClientCertificateData = clientCfg.TLSClientConfig.CertData
@@ -70,6 +74,21 @@ func CreateConfig(namespace, userName string, clientCfg *restclient.Config) (*cl
 
 	cluster := clientcmdapi.NewCluster()
 	cluster.Server = clientCfg.Host
+
+	if clientCfg.Proxy != nil {
+		req, err := http.NewRequest("", clientCfg.Host, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create proxy URL request for execProvider: %w", err)
+		}
+		proxyURL, err := clientCfg.Proxy(req)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get proxy URL for execProvider: %w", err)
+		}
+		if proxyURL != nil {
+			cluster.ProxyURL = proxyURL.String()
+		}
+	}
+
 	cluster.CertificateAuthority = clientCfg.CAFile
 	if len(cluster.CertificateAuthority) == 0 {
 		cluster.CertificateAuthorityData = clientCfg.CAData

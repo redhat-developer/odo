@@ -22,7 +22,7 @@ import (
 
 var (
 	loginLong = templates.LongDesc(`
-		Log in to your server and save login for subsequent use
+		Log in to your server and save login for subsequent use.
 
 		First-time users of the client should run this command to connect to a server,
 		establish an authenticated session, and save connection to the configuration file. The
