@@ -38,7 +38,7 @@ var _ = Describe("odo devfile build-images command tests", func() {
 
 		It("should run odo build-images --push", func() {
 			stderr := helper.Cmd("odo", "build-images", "--push").ShouldFail().Err()
-			Expect(stderr).To(MatchRegexp("unauthorized: authentication required"))
+			Expect(stderr).To(MatchRegexp("unauthorized"))
 		})
 	})
 
