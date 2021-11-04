@@ -31,9 +31,9 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 
 	cmd := exec.Command("bash", "-c", shell)
 	cmd.Env = append(os.Environ(), "PROJECT_ROOT="+devfilePath)
-
-	output, err := cmd.CombinedOutput()
-	klog.V(4).Infoln(string(output))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
@@ -58,8 +58,9 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 func (o *DockerCompatibleBackend) Push(image string) error {
 	klog.V(4).Infof("Running command: %s push %s", o.name, image)
 	cmd := exec.Command(o.name, "push", image)
-	output, err := cmd.CombinedOutput()
-	klog.V(4).Infoln(string(output))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
