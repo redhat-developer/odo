@@ -1,6 +1,7 @@
 package image
 
 import (
+	"path/filepath"
 	"testing"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -32,8 +33,8 @@ func TestGetShellCommand(t *testing.T) {
 					},
 				},
 			},
-			devfilePath: "/home/user/project1",
-			want:        `cli build -t "registry.io/myimagename:tag" -f "/home/user/project1/Dockerfile" ${PROJECT_ROOT}`,
+			devfilePath: filepath.Join("home", "user", "project1"),
+			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECT_ROOT}`,
 		},
 		{
 			name:    "test 2",
@@ -53,8 +54,8 @@ func TestGetShellCommand(t *testing.T) {
 					},
 				},
 			},
-			devfilePath: "/home/user/project1",
-			want:        `cli build -t "registry.io/myimagename:tag" -f "/home/user/project1/Dockerfile" ${PROJECT_ROOT}`,
+			devfilePath: filepath.Join("home", "user", "project1"),
+			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECT_ROOT}`,
 		},
 		{
 			name:    "test with args",
@@ -75,8 +76,8 @@ func TestGetShellCommand(t *testing.T) {
 					},
 				},
 			},
-			devfilePath: "/home/user/project1",
-			want:        `cli build -t "registry.io/myimagename:tag" -f "/home/user/project1/Dockerfile" ${PROJECT_ROOT} --flag value`,
+			devfilePath: filepath.Join("home", "user", "project1"),
+			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECT_ROOT} --flag value`,
 		},
 	}
 
