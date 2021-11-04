@@ -31,14 +31,15 @@ var _ = Describe("odo devfile build-images command tests", func() {
 			helper.Cmd("odo", "create").ShouldPass()
 
 		})
-		It("should run odo build-images with push", func() {
-			stdout := helper.Cmd("odo", "build-images").ShouldPass().Out()
-			Expect(stdout).To(ContainSubstring("Successfully tagged quay.io/unknown-account/myimage:latest"))
+		It("should run odo build-images without push", func() {
+			stdout := helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + commonVar.Context + "/Dockerfile " + commonVar.Context))
 		})
 
 		It("should run odo build-images --push", func() {
-			stderr := helper.Cmd("odo", "build-images", "--push").ShouldFail().Err()
-			Expect(stderr).To(MatchRegexp("unauthorized: authentication required"))
+			stdout := helper.Cmd("odo", "build-images", "--push").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + commonVar.Context + "/Dockerfile " + commonVar.Context))
+			Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 		})
 	})
 
@@ -50,8 +51,8 @@ var _ = Describe("odo devfile build-images command tests", func() {
 		})
 
 		It("should use args to build image when running odo build-images", func() {
-			stderr := helper.Cmd("odo", "build-images").ShouldFail().Err()
-			Expect(stderr).To(ContainSubstring("unknown flag: --unknown-flag"))
+			stdout := helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			Expect(stdout).To(ContainSubstring("--unknown-flag value"))
 		})
 
 	})

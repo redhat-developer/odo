@@ -3,6 +3,7 @@ package image
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -75,11 +76,20 @@ func buildPushImage(backend Backend, image *devfile.ImageComponent, devfilePath 
 // or return an error if none are present locally
 func selectBackend() (Backend, error) {
 
-	if _, err := lookPathCmd("podman"); err == nil {
-		return NewDockerCompatibleBackend("podman"), nil
+	podmanCmd := os.Getenv("PODMAN_CMD")
+	if podmanCmd == "" {
+		podmanCmd = "podman"
 	}
-	if _, err := lookPathCmd("docker"); err == nil {
-		return NewDockerCompatibleBackend("docker"), nil
+	if _, err := lookPathCmd(podmanCmd); err == nil {
+		return NewDockerCompatibleBackend(podmanCmd), nil
+	}
+
+	dockerCmd := os.Getenv("DOCKER_CMD")
+	if dockerCmd == "" {
+		dockerCmd = "docker"
+	}
+	if _, err := lookPathCmd(dockerCmd); err == nil {
+		return NewDockerCompatibleBackend(dockerCmd), nil
 	}
 	return nil, errors.New("no backend found")
 }
