@@ -3,8 +3,8 @@ package build_images
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/devfile/image"
 	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/image"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
