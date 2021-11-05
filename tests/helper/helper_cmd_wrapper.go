@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -125,6 +126,11 @@ func (cw *CmdWrapper) WithTimeout(timeoutAfter time.Duration) *CmdWrapper {
 
 func (cw *CmdWrapper) WithEnv(args ...string) *CmdWrapper {
 	cw.Cmd.Env = args
+	return cw
+}
+
+func (cw *CmdWrapper) AddEnv(args ...string) *CmdWrapper {
+	cw.Cmd.Env = append(os.Environ(), args...)
 	return cw
 }
 
