@@ -721,3 +721,155 @@ func Test_addKubernetesComponent(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAlmExample(t *testing.T) {
+	tests := []struct {
+		name     string
+		examples []map[string]interface{}
+		crd      string
+		want     map[string]interface{}
+		wantErr  bool
+	}{
+		{
+			name: "rhoas-operator.0.9.0",
+			crd:  "CloudServiceAccountRequest",
+			examples: []map[string]interface{}{
+				{
+					"apiVersion": "rhoas.redhat.com/v1alpha1",
+					"kind":       "ServiceRegistryConnection",
+					"metadata": map[string]interface{}{
+						"name":      "example",
+						"namespace": "example-namespace",
+						"labels": map[string]interface{}{
+							"app.kubernetes.io/component":  "external-service",
+							"app.kubernetes.io/managed-by": "rhoas",
+						},
+					},
+					"spec": map[string]interface{}{
+						"accessTokenSecretName": "rh-managed-services-api-accesstoken",
+						"serviceRegistryId":     "exampleId",
+						"credentials": map[string]interface{}{
+							"serviceAccountSecretName": "service-account-secret",
+						},
+					},
+				},
+				{
+					"apiVersion": "rhoas.redhat.com/v1alpha1",
+					"kind":       "CloudServiceAccountRequest",
+					"metadata": map[string]interface{}{
+						"name":      "example",
+						"namespace": "example-namespace",
+					},
+					"spec": map[string]interface{}{
+						"serviceAccountName":        "rhoas-sa",
+						"serviceAccountDescription": "Operator created service account",
+						"serviceAccountSecretName":  "service-account-credentials",
+						"accessTokenSecretName":     "rh-managed-services-api-accesstoken",
+					},
+				},
+				{
+					"apiVersion": "rhoas.redhat.com/v1alpha1",
+					"kind":       "CloudServicesRequest",
+					"metadata": map[string]interface{}{
+						"name":      "example",
+						"namespace": "example-namespace",
+						"labels": map[string]interface{}{
+							"app.kubernetes.io/component":  "external-service",
+							"app.kubernetes.io/managed-by": "rhoas",
+						},
+					},
+					"spec": map[string]interface{}{
+						"accessTokenSecretName": "rh-cloud-services-api-accesstoken",
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"apiVersion": "rhoas.redhat.com/v1alpha1",
+				"kind":       "CloudServiceAccountRequest",
+				"metadata": map[string]interface{}{
+					"name": "example",
+				},
+				"spec": map[string]interface{}{
+					"serviceAccountName":        "rhoas-sa",
+					"serviceAccountDescription": "Operator created service account",
+					"serviceAccountSecretName":  "service-account-credentials",
+					"accessTokenSecretName":     "rh-managed-services-api-accesstoken",
+				},
+			},
+		},
+		{
+			name: "postgresoperator.v5.0.3",
+			crd:  "PostgresCluster",
+			examples: []map[string]interface{}{
+				{
+					"apiVersion": "postgres-operator.crunchydata.com/v1beta1",
+					"kind":       "PostgresCluster",
+					"metadata": map[string]interface{}{
+						"name": "example",
+					},
+					"spec": map[string]interface{}{
+						"instances": []map[string]interface{}{
+							{
+								"dataVolumeClaimSpec": map[string]interface{}{
+									"accessModes": []string{
+										"ReadWriteOnce",
+									},
+									"resources": map[string]interface{}{
+										"requests": map[string]interface{}{
+											"storage": "1Gi",
+										},
+									},
+								},
+								"replicas": 1,
+							},
+						},
+						"postgresVersion": 13,
+					},
+				},
+			},
+			want: map[string]interface{}{
+				"apiVersion": "postgres-operator.crunchydata.com/v1beta1",
+				"kind":       "PostgresCluster",
+				"metadata": map[string]interface{}{
+					"name": "example",
+				},
+				"spec": map[string]interface{}{
+					"instances": []map[string]interface{}{
+						{
+							"dataVolumeClaimSpec": map[string]interface{}{
+								"accessModes": []string{
+									"ReadWriteOnce",
+								},
+								"resources": map[string]interface{}{
+									"requests": map[string]interface{}{
+										"storage": "1Gi",
+									},
+								},
+							},
+							"replicas": 1,
+						},
+					},
+					"postgresVersion": 13,
+				},
+			},
+		},
+		{
+			name:     "crd not found",
+			crd:      "unknown",
+			examples: []map[string]interface{}{},
+			want:     nil,
+			wantErr:  true,
+		}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := getAlmExample(tt.examples, tt.crd, "an operator")
+			if err != nil != tt.wantErr {
+				t.Errorf("Expected error %v but got %q\n", tt.wantErr, err)
+			}
+			if !reflect.DeepEqual(result, tt.want) {
+				t.Errorf("\nExpected: %+v\n     Got: %+v\n", tt.want, result)
+			}
+		})
+	}
+}
