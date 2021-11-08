@@ -73,7 +73,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(do.componentContext))
+	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(do.componentContext))
 	return err
 }
 

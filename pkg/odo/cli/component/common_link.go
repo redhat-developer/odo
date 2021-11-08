@@ -68,7 +68,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		// and must create s2i context instead
 		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).CreateAppIfNeeded())
 	} else {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(context))
+		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(context))
 	}
 	if err != nil {
 		return err

@@ -37,7 +37,7 @@ func NewURLDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been Deleted
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.GetComponentContext()))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()))
 	if err != nil {
 		return err
 	}

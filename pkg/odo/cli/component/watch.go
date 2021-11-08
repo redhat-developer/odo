@@ -63,7 +63,7 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(wo.componentContext))
+	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(wo.componentContext))
 	if err != nil {
 		return err
 	}

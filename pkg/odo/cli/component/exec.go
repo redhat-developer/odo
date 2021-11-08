@@ -54,7 +54,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		return fmt.Errorf("no parameter is expected for the command")
 	}
 
-	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(eo.componentContext))
+	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(eo.componentContext))
 	return err
 }
 

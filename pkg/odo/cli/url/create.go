@@ -73,7 +73,7 @@ func NewURLCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.GetComponentContext()).CheckRouteAvailability()
+	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()).CheckRouteAvailability()
 	if o.now {
 		params.CreateAppIfNeeded()
 	}

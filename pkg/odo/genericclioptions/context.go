@@ -68,18 +68,14 @@ func NewCreateParameters(cmd *cobra.Command) CreateParameters {
 	return CreateParameters{cmd: cmd}
 }
 
-func (o CreateParameters) SetComponentContext(ctx string) CreateParameters {
-	o.componentContext = ctx
-	return o
-}
-
 func (o CreateParameters) CheckRouteAvailability() CreateParameters {
 	o.routeAvailability = true
 	return o
 }
 
-func (o CreateParameters) NeedDevfile() CreateParameters {
+func (o CreateParameters) NeedDevfile(ctx string) CreateParameters {
 	o.devfile = true
+	o.componentContext = ctx
 	return o
 }
 
@@ -95,10 +91,6 @@ func (o CreateParameters) CreateAppIfNeeded() CreateParameters {
 
 // New creates a context based on the given parameters
 func New(parameters CreateParameters) (*Context, error) {
-
-	// TODO check parameters is OK:
-	// - setcomponentContext called when needDevfile is called
-
 	ctx := internalCxt{}
 	var err error
 

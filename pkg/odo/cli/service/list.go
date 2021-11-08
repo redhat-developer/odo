@@ -43,7 +43,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 	if !o.csvSupport {
 		return fmt.Errorf("failed to list Operator backed services, make sure you have installed the Operators on the cluster")
 	}
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	return err
 }
 

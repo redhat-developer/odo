@@ -49,7 +49,7 @@ func NewStatusOptions() *StatusOptions {
 
 // Complete completes status args
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(so.componentContext))
+	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(so.componentContext))
 	if err != nil {
 		return err
 	}

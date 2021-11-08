@@ -41,7 +41,7 @@ func NewLogOptions() *LogOptions {
 
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(lo.componentContext))
+	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(lo.componentContext))
 	return err
 }
 

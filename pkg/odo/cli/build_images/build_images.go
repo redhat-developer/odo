@@ -35,7 +35,7 @@ func NewBuildImagesOptions() *BuildImagesOptions {
 
 // Complete completes LoginOptions after they've been created
 func (o *BuildImagesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.componentContext).IsOffline())
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext).IsOffline())
 	if err != nil {
 		return err
 	}
