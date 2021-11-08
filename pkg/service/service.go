@@ -193,6 +193,10 @@ func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almEx
 func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (map[string]interface{}, error) {
 	for _, example := range almExamples {
 		if example["kind"].(string) == crd {
+			// Remove metadata.namespace from example
+			if metadata, ok := example["metadata"].(map[string]interface{}); ok {
+				delete(metadata, "namespace")
+			}
 			return example, nil
 		}
 	}
