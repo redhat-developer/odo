@@ -42,6 +42,10 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 	return nil
 }
 
+func (k Adapter) Deploy() error {
+	return k.componentAdapter.Deploy()
+}
+
 // CheckSupervisordCommandStatus calls the component adapter's CheckSupervisordCommandStatus
 func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
 	err := k.componentAdapter.CheckSupervisordCommandStatus(command)
@@ -106,4 +110,8 @@ func (k Adapter) StartContainerStatusWatch() {
 // StartSupervisordCtlStatusWatch outputs supervisord program status changes to the console, as used by the status command
 func (k Adapter) StartSupervisordCtlStatusWatch() {
 	k.componentAdapter.StartSupervisordCtlStatusWatch()
+}
+
+func (k Adapter) ApplyComponent(component string) error {
+	return k.componentAdapter.ApplyComponent(component)
 }

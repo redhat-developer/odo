@@ -6,14 +6,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/cli/build_images"
-	"github.com/openshift/odo/pkg/odo/cli/telemetry"
-
 	"github.com/openshift/odo/pkg/odo/cli/application"
+	"github.com/openshift/odo/pkg/odo/cli/build_images"
 	"github.com/openshift/odo/pkg/odo/cli/catalog"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/config"
 	"github.com/openshift/odo/pkg/odo/cli/debug"
+	"github.com/openshift/odo/pkg/odo/cli/deploy"
 	"github.com/openshift/odo/pkg/odo/cli/env"
 	"github.com/openshift/odo/pkg/odo/cli/login"
 	"github.com/openshift/odo/pkg/odo/cli/logout"
@@ -23,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/registry"
 	"github.com/openshift/odo/pkg/odo/cli/service"
 	"github.com/openshift/odo/pkg/odo/cli/storage"
+	"github.com/openshift/odo/pkg/odo/cli/telemetry"
 	"github.com/openshift/odo/pkg/odo/cli/url"
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
@@ -208,6 +208,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
+		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands

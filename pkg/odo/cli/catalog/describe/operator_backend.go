@@ -43,7 +43,7 @@ func (ohb *operatorBackend) CompleteDescribeService(dso *DescribeServiceOptions,
 		CR = ""
 	}
 	// we check if the cluster supports ClusterServiceVersion or not.
-	isCSVSupported, err := service.IsCSVSupported()
+	isCSVSupported, err := dso.Client.GetKubeClient().IsCSVSupported()
 	if err != nil {
 		// if there is an error checking it, we return the error.
 		return err

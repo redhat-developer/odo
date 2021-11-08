@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// simpleCommand is a command implementation for non-composite commands
-type simpleCommand struct {
+// execCommand is a command implementation for non-composite commands
+type execCommand struct {
 	info        ComponentInfo
 	adapter     commandExecutor
 	cmd         []string // cmd represents the effective command that will be run in the container
@@ -22,9 +22,9 @@ type simpleCommand struct {
 	msg         string
 }
 
-// newSimpleCommand creates a new simpleCommand instance, adapting the devfile-defined command to run in the target component's
+// newExecCommand creates a new execCommand instance, adapting the devfile-defined command to run in the target component's
 // container, modifying it to add environment variables or adapting the path as needed.
-func newSimpleCommand(command devfilev1.Command, executor commandExecutor) (command, error) {
+func newExecCommand(command devfilev1.Command, executor commandExecutor) (command, error) {
 	exe := command.Exec
 
 	// deal with environment variables
@@ -46,15 +46,15 @@ func newSimpleCommand(command devfilev1.Command, executor commandExecutor) (comm
 		cmd = []string{ShellExecutable, "-c", cmdLine}
 	}
 
-	return newOverriddenSimpleCommand(command, executor, cmd)
+	return newOverriddenExecCommand(command, executor, cmd)
 }
 
-// newOverriddenSimpleCommand creates a new simpleCommand albeit overriding the command specified in the devfile with the specified one
+// newOverriddenExecCommand creates a new execCommand albeit overriding the command specified in the devfile with the specified one
 // returning a pointer to the newly created instance so that clients can further modify it if needed.
 // Note that the specified command will be run as-is in the target component's container so needs to be set accordingly as
-// opposed to the implementation provided by newSimpleCommand which will take the devfile's command definition and adapt it to
+// opposed to the implementation provided by newExecCommand which will take the devfile's command definition and adapt it to
 // run in the container.
-func newOverriddenSimpleCommand(command devfilev1.Command, executor commandExecutor, cmd []string) (*simpleCommand, error) {
+func newOverriddenExecCommand(command devfilev1.Command, executor commandExecutor, cmd []string) (*execCommand, error) {
 	// create the component info associated with the command
 	info, err := executor.ComponentInfo(command)
 	if err != nil {
@@ -62,7 +62,7 @@ func newOverriddenSimpleCommand(command devfilev1.Command, executor commandExecu
 	}
 
 	originalCmd := command.Exec.CommandLine
-	return &simpleCommand{
+	return &execCommand{
 		info:        info,
 		adapter:     executor,
 		cmd:         cmd,
@@ -74,7 +74,7 @@ func newOverriddenSimpleCommand(command devfilev1.Command, executor commandExecu
 	}, nil
 }
 
-func (s simpleCommand) Execute(show bool) error {
+func (s execCommand) Execute(show bool) error {
 	var spinner *log.Status
 	showSpinner := len(s.msg) > 0
 	if showSpinner {

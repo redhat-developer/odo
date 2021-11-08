@@ -39,8 +39,10 @@ func New(devfile devfilev1.Command, knowCommands map[string]devfilev1.Command, e
 			return newParallelCompositeCommand(components...), nil
 		}
 		return newCompositeCommand(components...), nil
+	} else if devfile.Exec != nil {
+		return newExecCommand(devfile, executor)
 	} else {
-		return newSimpleCommand(devfile, executor)
+		return newApplyCommand(devfile, executor)
 	}
 }
 

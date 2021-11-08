@@ -5,8 +5,6 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
-	svc "github.com/openshift/odo/pkg/service"
-
 	"github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -51,13 +49,7 @@ func NewUnlinkOptions() *UnlinkOptions {
 
 // Complete completes UnlinkOptions after they've been created
 func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 	err = o.complete(name, cmd, args, o.componentContext)
-	if err != nil {
-		return err
-	}
-
-	o.csvSupport, err = o.Client.GetKubeClient().IsCSVSupported()
 	if err != nil {
 		return err
 	}
