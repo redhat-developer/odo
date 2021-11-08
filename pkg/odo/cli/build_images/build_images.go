@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/devfile/image"
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -36,11 +35,7 @@ func NewBuildImagesOptions() *BuildImagesOptions {
 
 // Complete completes LoginOptions after they've been created
 func (o *BuildImagesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
-		ComponentContext: o.componentContext,
-	})
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile().SetComponentContext(o.componentContext).IsOffline())
 	if err != nil {
 		return err
 	}
