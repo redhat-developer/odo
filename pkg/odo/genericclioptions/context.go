@@ -54,8 +54,8 @@ type internalCxt struct {
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
 
-// createParameters defines the options which can be provided while creating the context
-type createParameters struct {
+// CreateParameters defines the options which can be provided while creating the context
+type CreateParameters struct {
 	cmd               *cobra.Command
 	componentContext  string
 	routeAvailability bool
@@ -64,37 +64,37 @@ type createParameters struct {
 	appIfNeeded       bool
 }
 
-func NewCreateParameters(cmd *cobra.Command) createParameters {
-	return createParameters{cmd: cmd}
+func NewCreateParameters(cmd *cobra.Command) CreateParameters {
+	return CreateParameters{cmd: cmd}
 }
 
-func (o createParameters) SetComponentContext(ctx string) createParameters {
+func (o CreateParameters) SetComponentContext(ctx string) CreateParameters {
 	o.componentContext = ctx
 	return o
 }
 
-func (o createParameters) CheckRouteAvailability() createParameters {
+func (o CreateParameters) CheckRouteAvailability() CreateParameters {
 	o.routeAvailability = true
 	return o
 }
 
-func (o createParameters) NeedDevfile() createParameters {
+func (o CreateParameters) NeedDevfile() CreateParameters {
 	o.devfile = true
 	return o
 }
 
-func (o createParameters) IsOffline() createParameters {
+func (o CreateParameters) IsOffline() CreateParameters {
 	o.offline = true
 	return o
 }
 
-func (o createParameters) CreateAppIfNeeded() createParameters {
+func (o CreateParameters) CreateAppIfNeeded() CreateParameters {
 	o.appIfNeeded = true
 	return o
 }
 
 // New creates a context based on the given parameters
-func New(parameters createParameters) (*Context, error) {
+func New(parameters CreateParameters) (*Context, error) {
 
 	// TODO check parameters is OK:
 	// - setcomponentContext called when needDevfile is called
@@ -169,7 +169,7 @@ func New(parameters createParameters) (*Context, error) {
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := New(createParameters{cmd: command})
+	ctx, err := New(CreateParameters{cmd: command})
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
