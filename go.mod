@@ -6,7 +6,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
 	github.com/Xuanwo/go-locale v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/devfile/api/v2 v2.0.0-20210917193329-089a48011460
+	github.com/devfile/api/v2 v2.0.0-20211116183836-dfec9a4d3b63
 	github.com/devfile/library v1.2.0
 	github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0
 	github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca
