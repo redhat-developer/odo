@@ -6,14 +6,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/odo/pkg/odo/cli/component/ui"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
+
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -22,59 +23,23 @@ import (
 	"k8s.io/klog"
 )
 
-// Get Metadata
-// If the devfile does not exist, then check and Validate Registry
-// Fetch Devfile
-// If devfile was manually created, rollbackDevfile
-
 type CreateMethod interface {
-	// FetchDevfileAndCreateComponent fetches devfile from registry, or a remote location, or a local file system, and create a component
-	FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error
-	// SetMetadata sets the necessary metadata, mainly component name and component type
-	SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error
-	Rollback(devfilePath string)
+	// FetchDevfileAndCreateComponent fetches devfile from registry, or a remote location, or a local file system, and creates a component
+	FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error
+	// Rollback cleans the component context of any files that were created by odo
+	Rollback(componentContext string)
 }
-
-// UserCreateDevfileMethod is used when a devfile is present in the context directory
-type UserCreatedDevfileMethod struct{}
 
 // InteractiveCreateMethod is used while creating a component interactively
 type InteractiveCreateMethod struct{}
 
-// DirectCreateMethod is used with the basic odo create; `odo create nodejs mynode`
-type DirectCreateMethod struct{}
-
-// HTTPCreateMethod is used when --devfile flag is used with a remote file; `odo create --devfile https://example.com/devfile.yaml`
-type HTTPCreateMethod struct{}
-
-// FileCreateMethod is used when --devfile flag is used with a local file; `odo create --devfile /tmp/comp/devfile.yaml`
-type FileCreateMethod struct{}
-
-func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	//	Existing devfile Mode; co.devfileName = ""
-	devfileAbsolutePath, err := filepath.Abs(co.DevfilePath)
+func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
 	}
-	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path %s", devfileAbsolutePath)
-	defer devfileSpinner.End(true)
 
-	return nil
-}
-func (ucdm UserCreatedDevfileMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return setMetadataForExistingDevfile(co, args)
-}
-func (ucdm UserCreatedDevfileMethod) Rollback(devfilePath string) {
-	//	User provided devfiles should not be deleted if something fails, hence this method is empty
-}
-
-func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return fetchDevfileFromRegistry(co, catalogDevfileList)
-}
-
-// SetMetadata asks user for metadata and sets it to CreateOption
-func (icm InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	var err error
+	//SET METADATA
 	// Component type: We provide devfile component list to let user choose
 	componentType := ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
@@ -101,27 +66,38 @@ func (icm InteractiveCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Com
 	co.devfileMetadata.componentName = componentName
 	co.devfileMetadata.componentNamespace = componentNamespace
 
-	return err
-}
-func (icm InteractiveCreateMethod) Rollback(devfilePath string) {
-	rollbackDevfile(devfilePath)
+	co.devfileMetadata.devfileLink, co.devfileMetadata.devfileRegistry, err = findDevfileFromRegistry(catalogDevfileList, co.devfileMetadata.devfileRegistry.Name, co.devfileMetadata.componentType)
+	if err != nil {
+		return err
+	}
+	return fetchDevfileFromRegistry(co)
 }
 
-func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return fetchDevfileFromRegistry(co, catalogDevfileList)
+func (icm InteractiveCreateMethod) Rollback(componentContext string) {
+	os.RemoveAll(componentContext)
 }
-func (dcm DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	var err error
-	componentType := args[0]
 
-	co.devfileMetadata.componentType = componentType
-	co.devfileName = componentType
+// DirectCreateMethod is used with the basic odo create; `odo create nodejs mynode`
+type DirectCreateMethod struct{}
+
+func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
+	if err != nil {
+		return err
+	}
+	// SET METADATA
+	// The first argument passed will always be considered as component type
+	co.devfileMetadata.componentType = args[0]
+	co.devfileName = args[0]
+
 	var componentName string
 	if len(args) == 2 {
+		// If more than one argument is passed, then the second one will be considered as component name
 		componentName = args[1]
 	} else {
+		// If only component type is passed, then the component name will be created by odo
 		componentName, err = createDefaultComponentName(
-			componentType,
+			co.devfileMetadata.componentType,
 			co.componentContext,
 		)
 		if err != nil {
@@ -129,13 +105,40 @@ func (dcm DirectCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command,
 		}
 	}
 	co.devfileMetadata.componentName = componentName
-	return err
-}
-func (dcm DirectCreateMethod) Rollback(devfilePath string) {
-	rollbackDevfile(devfilePath)
+	co.devfileMetadata.devfileLink, co.devfileMetadata.devfileRegistry, err = findDevfileFromRegistry(catalogDevfileList, co.devfileMetadata.devfileRegistry.Name, co.devfileMetadata.componentType)
+	if err != nil {
+		return err
+	}
+	return fetchDevfileFromRegistry(co)
 }
 
-func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+func (dcm DirectCreateMethod) Rollback(componentContext string) {
+	os.RemoveAll(componentContext)
+}
+
+// UserCreatedDevfileMethod is used when a devfile is present in the context directory
+type UserCreatedDevfileMethod struct{}
+
+func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+	//	Existing devfile Mode; co.devfileName = ""
+	devfileAbsolutePath, err := filepath.Abs(co.DevfilePath)
+	if err != nil {
+		return err
+	}
+	devfileSpinner := log.Spinnerf("odo will create a devfile component from the existing devfile: %s", devfileAbsolutePath)
+	defer devfileSpinner.End(true)
+	co.devfileMetadata.componentName, co.devfileMetadata.componentType, err = getMetadataForExistingDevfile(co, args)
+	return err
+}
+
+func (ucdm UserCreatedDevfileMethod) Rollback(componentContext string) {
+	//	User provided devfiles should not be deleted if something fails, hence this method is empty
+}
+
+// HTTPCreateMethod is used when --devfile flag is used with a remote file; `odo create --devfile https://example.com/devfile.yaml`
+type HTTPCreateMethod struct{}
+
+func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
 	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", co.devfileMetadata.devfilePath.value)
 	defer devfileSpinner.End(false)
 
@@ -152,16 +155,21 @@ func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, ca
 		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
 	}
 	devfileSpinner.End(true)
-	return nil
-}
-func (hcm HTTPCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return setMetadataForExistingDevfile(co, args)
-}
-func (hcm HTTPCreateMethod) Rollback(devfilePath string) {
-	rollbackDevfile(devfilePath)
+
+	// SET METADATA
+	co.devfileMetadata.devfilePath.protocol = "http(s)"
+	co.devfileMetadata.componentName, co.devfileMetadata.componentType, err = getMetadataForExistingDevfile(co, args)
+	return err
 }
 
-func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
+func (hcm HTTPCreateMethod) Rollback(componentContext string) {
+	os.RemoveAll(componentContext)
+}
+
+// FileCreateMethod is used when --devfile flag is used with a local file; `odo create --devfile /tmp/comp/devfile.yaml`
+type FileCreateMethod struct{}
+
+func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
 	devfileAbsolutePath, err := filepath.Abs(co.devfileMetadata.devfilePath.value)
 	if err != nil {
 		return err
@@ -177,17 +185,19 @@ func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, ca
 		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
 	}
 	devfileSpinner.End(true)
-	return nil
+
+	//	SET METADATA
+	co.devfileMetadata.devfilePath.protocol = "file"
+	co.devfileMetadata.componentName, co.devfileMetadata.componentType, err = getMetadataForExistingDevfile(co, args)
+	return err
 }
-func (fcm FileCreateMethod) SetMetadata(co *CreateOptions, cmd *cobra.Command, args []string, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	return setMetadataForExistingDevfile(co, args)
-}
-func (fcm FileCreateMethod) Rollback(devfilePath string) {
-	rollbackDevfile(devfilePath)
+
+func (fcm FileCreateMethod) Rollback(componentContext string) {
+	os.RemoveAll(componentContext)
 }
 
 // validateAndFetchRegistry validates if the provided registryName is exists and returns the devfile listed in the registy;
-// if the registryName is "", it returns the devfiles of all the available registries
+// if the registryName is "", then it returns devfiles of all the available registries
 func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
 	// Validate if the component type is available
 	if registryName != "" {
@@ -220,32 +230,30 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 	return catalogDevfileList, nil
 }
 
-// fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
-func fetchDevfileFromRegistry(co *CreateOptions, catalogDevfileList catalog.DevfileComponentTypeList) error {
-	devfileExistSpinner := log.Spinnerf("Checking if the devfile for %q exists on available registries", co.devfileMetadata.componentType)
+// findDevfileFromRegistry finds the devfile and returns necessary information related to it
+func findDevfileFromRegistry(catalogDevfileList catalog.DevfileComponentTypeList, registryName, componentType string) (devfileLink string, devfileRegistry catalog.Registry, err error) {
+	devfileExistSpinner := log.Spinnerf("Checking if the devfile for %q exists on available registries", componentType)
 	defer devfileExistSpinner.End(false)
-	if co.devfileMetadata.devfileRegistry.Name != "" {
-		devfileExistSpinner = log.Spinnerf("Checking if the devfile for %q exists on registry %q", co.devfileMetadata.componentType, co.devfileMetadata.devfileRegistry.Name)
+	if registryName != "" {
+		devfileExistSpinner = log.Spinnerf("Checking if the devfile for %q exists on registry %q", componentType, registryName)
 	}
 
 	// Find the request devfile from the registry
-	var devfileFound bool
 	for _, devfileComponent := range catalogDevfileList.Items {
-		if co.devfileMetadata.componentType == devfileComponent.Name {
-			devfileFound = true
-			co.devfileMetadata.devfileLink = devfileComponent.Link
-			co.devfileMetadata.devfileRegistry = devfileComponent.Registry
-			break
+		if componentType == devfileComponent.Name {
+			devfileExistSpinner.End(true)
+			return devfileComponent.Link, devfileComponent.Registry, nil
 		}
 	}
-	if !devfileFound {
-		return fmt.Errorf("devfile component type %q is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-	}
-	devfileExistSpinner.End(true)
+	return "", catalog.Registry{}, fmt.Errorf("devfile component type %q is not supported, please run `odo catalog list components` for a list of supported devfile component types", componentType)
+}
 
+// fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
+func fetchDevfileFromRegistry(co *CreateOptions) (err error) {
 	// Download devfile from registry
 	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", co.devfileMetadata.devfileRegistry.Name)
 	defer registrySpinner.End(false)
+
 	// For GitHub based registries
 	if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
 		registryUtil.PrintGitRegistryDeprecationWarning()
@@ -291,15 +299,13 @@ func fetchDevfileFromRegistry(co *CreateOptions, catalogDevfileList catalog.Devf
 	return nil
 }
 
-// setMetadataForExistingDevfile sets metadata for a user provided devfile; UserCreatedDevfileCreateMethod, HTTPCreateMethod, and FileCreateMethod
-func setMetadataForExistingDevfile(co *CreateOptions, args []string) error {
-	var err error
-	var componentName string
+// getMetadataForExistingDevfile sets metadata for a user provided devfile; UserCreatedDevfileCreateMethod, HTTPCreateMethod, and FileCreateMethod
+func getMetadataForExistingDevfile(co *CreateOptions, args []string) (componentName, componentType string, err error) {
 	devObj, err := devfileParseFromFile(co.DevfilePath, false)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-	co.devfileMetadata.componentType = component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
+	componentType = component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 
 	// Set component name
 	if len(args) > 0 {
@@ -311,26 +317,25 @@ func setMetadataForExistingDevfile(co *CreateOptions, args []string) error {
 			componentName = devObj.GetMetadataName()
 		} else {
 			// default name
-			currentDirPath, err := os.Getwd()
+			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.componentContext)
 			if err != nil {
-				return err
+				return "", "", err
 			}
-			componentName = filepath.Base(currentDirPath)
 		}
 	}
-	co.devfileMetadata.componentName = componentName
-	return nil
+
+	return
 }
 
-// rollbackDevfile deletes a devfile that was not created by user
-func rollbackDevfile(devfilePath string) {
-	if util.CheckPathExists(devfilePath) {
-		_ = os.Remove(devfilePath)
-	}
-}
-
+// createDefaultComponentName creates a default unique component name with the help of component context
 func createDefaultComponentName(componentType string, sourcePath string) (string, error) {
-	finalSourcePath, err := getComponentName(sourcePath)
+	var finalSourcePath string
+	var err error
+	if sourcePath != "" {
+		finalSourcePath, err = filepath.Abs(sourcePath)
+	} else {
+		finalSourcePath, err = os.Getwd()
+	}
 	if err != nil {
 		return "", err
 	}
@@ -340,22 +345,4 @@ func createDefaultComponentName(componentType string, sourcePath string) (string
 		componentType,
 		component.ComponentList{},
 	)
-}
-
-func getComponentName(sourcePath string) (string, error) {
-	// Retrieve the componentName, if the componentName isn't specified, we will use the default image name
-	// we only get absolute path for local source type
-	if sourcePath == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			return "", err
-		}
-		return wd, nil
-	}
-	finalSourcePath, err := filepath.Abs(sourcePath)
-	if err != nil {
-		return "", err
-	}
-	return finalSourcePath, nil
-
 }

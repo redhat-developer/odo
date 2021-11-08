@@ -42,6 +42,7 @@ type CreateOptions struct {
 	devfileName string
 	*PushOptions
 
+	createMethod    CreateMethod
 	devfileMetadata DevfileMetadata
 }
 
@@ -187,21 +188,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	log.Info("Devfile Object Creation")
-	var catalogDevfileList catalog.DevfileComponentTypeList
-	var createMethod CreateMethod
 	switch {
 	case co.devfileMetadata.userCreatedDevfile:
-		createMethod = UserCreatedDevfileMethod{}
-		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
-		if err != nil {
-			createMethod.Rollback(co.DevfilePath)
-			return err
-		}
-		err = createMethod.SetMetadata(co, cmd, args, catalogDevfileList)
-		if err != nil {
-			createMethod.Rollback(co.DevfilePath)
-			return err
-		}
+		co.createMethod = UserCreatedDevfileMethod{}
 	case co.devfileMetadata.devfilePath.value != "":
 		//co.devfileName = "" for user provided devfile
 		fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
@@ -209,51 +198,32 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if fileErr != nil && urlErr != nil {
 			return errors.Errorf("the devfile path you specify is invalid with either file error %q or url error %q", fileErr, urlErr)
 		} else if fileErr == nil {
-			co.devfileMetadata.devfilePath.protocol = "file"
-			createMethod = FileCreateMethod{}
-
+			co.createMethod = FileCreateMethod{}
 		} else if urlErr == nil {
-			co.devfileMetadata.devfilePath.protocol = "http(s)"
-			createMethod = HTTPCreateMethod{}
+			co.createMethod = HTTPCreateMethod{}
 		}
-		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
-		if err != nil {
-			createMethod.Rollback(co.DevfilePath)
-			return err
-		}
-		err = createMethod.SetMetadata(co, cmd, args, catalogDevfileList)
-		if err != nil {
-			createMethod.Rollback(co.DevfilePath)
-			return err
-		}
+	case co.interactive:
+		co.createMethod = InteractiveCreateMethod{}
 	default:
-		if co.interactive {
-			createMethod = InteractiveCreateMethod{}
-		} else {
-			createMethod = DirectCreateMethod{}
-		}
-
-		catalogDevfileList, err = validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
-		if err != nil {
-			return err
-		}
-		err = createMethod.SetMetadata(co, cmd, args, catalogDevfileList)
-		if err != nil {
-			return err
-		}
-		err = createMethod.FetchDevfileAndCreateComponent(co, catalogDevfileList)
-		if err != nil {
-			createMethod.Rollback(co.DevfilePath)
-			return err
-		}
+		co.createMethod = DirectCreateMethod{}
 	}
-	// Adding user provided devfile name to telemetry data
+	err = co.createMethod.FetchDevfileAndCreateComponent(co, args, cmd)
+	if err != nil {
+		co.createMethod.Rollback(co.componentContext)
+		return err
+	}
+
 	scontext.SetDevfileName(cmd.Context(), co.devfileName)
 
 	return nil
 }
 
 func (co *CreateOptions) Validate() (err error) {
+	defer func() {
+		if err != nil {
+			co.createMethod.Rollback(co.componentContext)
+		}
+	}()
 	log.Info("Validation")
 	// Validate if the devfile component name that user wants to create adheres to the k8s naming convention
 	spinner := log.Spinner("Validating if devfile name is correct")
@@ -278,7 +248,12 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
-func (co *CreateOptions) Run(cmd *cobra.Command) error {
+func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+	defer func() {
+		if err != nil {
+			co.createMethod.Rollback(co.componentContext)
+		}
+	}()
 	// Adding component type to telemetry data
 	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 
