@@ -94,6 +94,16 @@ module.exports = {
       debug: false
     }
   },
+  scripts: [
+     '/scripts/segment.js',
+  ],
+  // plugins: [
+  //   ['docusaurus-plugin-segment',
+  //   {
+  //     apiKey: 'seYXMF0tyHs5WcPsaNXtSEmQk3FqzTz0',
+  //     // Add other options here.
+  //   }],
+  // ],
   presets: [
     [
       '@docusaurus/preset-classic',
