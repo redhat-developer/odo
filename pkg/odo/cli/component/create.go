@@ -6,24 +6,24 @@ import (
 	"path/filepath"
 	"strings"
 
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
+	"github.com/zalando/go-keyring"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/catalog"
 	odoDevfile "github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	scontext "github.com/openshift/odo/pkg/segment/context"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
-	"github.com/zalando/go-keyring"
-
-	"github.com/openshift/odo/pkg/catalog"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	scontext "github.com/openshift/odo/pkg/segment/context"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -155,14 +155,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 	}
-	// Check if both --devfile and --registry flag are used, in which case raise an error
-	if co.devfileMetadata.devfileRegistry.Name != "" && co.devfileMetadata.devfilePath.value != "" {
-		return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
-	}
-	// More than one arguments should not be allowed when a devfile exists or --devfile is used
-	if len(args) > 1 && (co.devfileMetadata.userCreatedDevfile || co.devfileMetadata.devfilePath.value != "") {
-		return errors.Errorf("accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
-	}
 
 	// Initialize envinfo
 	err = co.InitEnvInfoFromContext()
@@ -170,23 +162,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return err
 	}
 
-	// Set the starter project token if required
-	if co.devfileMetadata.starter != "" {
-		var secure bool
-		secure, err = registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
-		if err != nil {
-			return err
-		}
-		if co.devfileMetadata.starterToken == "" && secure {
-			var token string
-			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
-			if err != nil {
-				return errors.Wrap(err, "unable to get secure registry credential from keyring")
-			}
-			co.devfileMetadata.starterToken = token
-		}
-	}
-
+	// Fetch the necessary devfile and create the component
 	log.Info("Devfile Object Creation")
 	switch {
 	case co.devfileMetadata.userCreatedDevfile:
@@ -207,10 +183,37 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	default:
 		co.createMethod = DirectCreateMethod{}
 	}
-	err = co.createMethod.FetchDevfileAndCreateComponent(co, args, cmd)
+	err = co.createMethod.CheckConflicts(co, args)
+	if err != nil {
+		return err
+	}
+	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmd, args)
 	if err != nil {
 		co.createMethod.Rollback(co.componentContext)
 		return err
+	}
+
+	// From this point forward, rollback should be triggered if an error is encountered; rollback should delete all the files that were created by odo
+	defer func() {
+		if err != nil {
+			co.createMethod.Rollback(co.componentContext)
+		}
+	}()
+	// Set the starter project token if required
+	if co.devfileMetadata.starter != "" {
+		var secure bool
+		secure, err = registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+		if err != nil {
+			return err
+		}
+		if co.devfileMetadata.starterToken == "" && secure {
+			var token string
+			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+			if err != nil {
+				return errors.Wrap(err, "unable to get secure registry credential from keyring")
+			}
+			co.devfileMetadata.starterToken = token
+		}
 	}
 
 	scontext.SetDevfileName(cmd.Context(), co.devfileName)

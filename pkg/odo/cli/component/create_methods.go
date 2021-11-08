@@ -24,8 +24,11 @@ import (
 )
 
 type CreateMethod interface {
+	// CheckConflicts checks for conflicts specific to a create method
+	CheckConflicts(co *CreateOptions, args []string) error
 	// FetchDevfileAndCreateComponent fetches devfile from registry, or a remote location, or a local file system, and creates a component
-	FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error
+	// This method also updates the CreateOptions structure with co.devfileMetadata
+	FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error
 	// Rollback cleans the component context of any files that were created by odo
 	Rollback(componentContext string)
 }
@@ -33,7 +36,11 @@ type CreateMethod interface {
 // InteractiveCreateMethod is used while creating a component interactively
 type InteractiveCreateMethod struct{}
 
-func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+func (icm InteractiveCreateMethod) CheckConflicts(co *CreateOptions, args []string) error {
+	return nil
+}
+
+func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
 	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
@@ -70,7 +77,7 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.componentContext)
 }
 
 func (icm InteractiveCreateMethod) Rollback(componentContext string) {
@@ -80,7 +87,11 @@ func (icm InteractiveCreateMethod) Rollback(componentContext string) {
 // DirectCreateMethod is used with the basic odo create; `odo create nodejs mynode`
 type DirectCreateMethod struct{}
 
-func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+func (dcm DirectCreateMethod) CheckConflicts(co *CreateOptions, args []string) error {
+	return nil
+}
+
+func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
 	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
@@ -109,7 +120,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.componentContext)
 }
 
 func (dcm DirectCreateMethod) Rollback(componentContext string) {
@@ -119,7 +130,20 @@ func (dcm DirectCreateMethod) Rollback(componentContext string) {
 // UserCreatedDevfileMethod is used when a devfile is present in the context directory
 type UserCreatedDevfileMethod struct{}
 
-func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+func (ucdm UserCreatedDevfileMethod) CheckConflicts(co *CreateOptions, args []string) error {
+	// More than one arguments should not be allowed when a devfile exists
+	if len(args) > 1 {
+		return &DevfileExistsExtraArgsError{len(args)}
+	}
+	//Check if the directory already contains a devfile when --devfile flag is passed
+	if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+		return &DevfileExistsDevfileFlagError{}
+	}
+	return nil
+}
+
+func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
+
 	//	Existing devfile Mode; co.devfileName = ""
 	devfileAbsolutePath, err := filepath.Abs(co.DevfilePath)
 	if err != nil {
@@ -138,7 +162,11 @@ func (ucdm UserCreatedDevfileMethod) Rollback(componentContext string) {
 // HTTPCreateMethod is used when --devfile flag is used with a remote file; `odo create --devfile https://example.com/devfile.yaml`
 type HTTPCreateMethod struct{}
 
-func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+func (hcm HTTPCreateMethod) CheckConflicts(co *CreateOptions, args []string) error {
+	return conflictCheckForDevfileFlag(args, co.devfileMetadata.devfileRegistry.Name)
+}
+
+func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
 	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", co.devfileMetadata.devfilePath.value)
 	defer devfileSpinner.End(false)
 
@@ -169,7 +197,11 @@ func (hcm HTTPCreateMethod) Rollback(componentContext string) {
 // FileCreateMethod is used when --devfile flag is used with a local file; `odo create --devfile /tmp/comp/devfile.yaml`
 type FileCreateMethod struct{}
 
-func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, args []string, cmd *cobra.Command) error {
+func (fcm FileCreateMethod) CheckConflicts(co *CreateOptions, args []string) error {
+	return conflictCheckForDevfileFlag(args, co.devfileMetadata.devfileRegistry.Name)
+}
+
+func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
 	devfileAbsolutePath, err := filepath.Abs(co.devfileMetadata.devfilePath.value)
 	if err != nil {
 		return err
@@ -196,7 +228,20 @@ func (fcm FileCreateMethod) Rollback(componentContext string) {
 	os.RemoveAll(componentContext)
 }
 
-// validateAndFetchRegistry validates if the provided registryName is exists and returns the devfile listed in the registy;
+// conflictCheckForDevfileFlag checks for the common conflicts while using --devfile flag
+func conflictCheckForDevfileFlag(args []string, registryName string) error {
+	// More than one arguments should not be allowed when --devfile is used
+	if len(args) > 1 {
+		return &DevfileExistsExtraArgsError{len(args)}
+	}
+	// Check if both --devfile and --registry flag are used, in which case raise an error
+	if registryName != "" {
+		return &DevfileFlagWithRegistryFlagError{}
+	}
+	return nil
+}
+
+// validateAndFetchRegistry validates if the provided registryName exists and returns the devfile listed in the registy;
 // if the registryName is "", then it returns devfiles of all the available registries
 func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
 	// Validate if the component type is available
@@ -249,27 +294,27 @@ func findDevfileFromRegistry(catalogDevfileList catalog.DevfileComponentTypeList
 }
 
 // fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
-func fetchDevfileFromRegistry(co *CreateOptions) (err error) {
+func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePath, componentType, componentContext string) (err error) {
 	// Download devfile from registry
-	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", co.devfileMetadata.devfileRegistry.Name)
+	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", registry.Name)
 	defer registrySpinner.End(false)
 
 	// For GitHub based registries
-	if registryUtil.IsGitBasedRegistry(co.devfileMetadata.devfileRegistry.URL) {
+	if registryUtil.IsGitBasedRegistry(registry.URL) {
 		registryUtil.PrintGitRegistryDeprecationWarning()
 
 		params := util.HTTPRequestParams{
-			URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+			URL: registry.URL + devfileLink,
 		}
 
-		secure, err := registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
+		secure, err := registryUtil.IsSecure(registry.Name)
 		if err != nil {
 			return err
 		}
 
 		if secure {
 			var token string
-			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 			if err != nil {
 				return errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
@@ -285,12 +330,12 @@ func fetchDevfileFromRegistry(co *CreateOptions) (err error) {
 			return err
 		}
 
-		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
+		err = ioutil.WriteFile(devfilePath, devfileData, 0644) // #nosec G306
 		if err != nil {
 			return err
 		}
 	} else {
-		err := registryLibrary.PullStackFromRegistry(co.devfileMetadata.devfileRegistry.URL, co.devfileMetadata.componentType, co.componentContext, false, registryConsts.TelemetryClient)
+		err := registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, false, registryConsts.TelemetryClient)
 		if err != nil {
 			return err
 		}
