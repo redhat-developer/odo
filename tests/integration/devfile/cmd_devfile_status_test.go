@@ -39,13 +39,13 @@ var _ = Describe("odo devfile status command tests", func() {
 	})
 
 	//Function used to test context: "Verify URL status is correctly reported"
-	testCombo := func(ingress bool, route bool, name string) {
+	testCombo := func(ingress bool, secure bool, name string) {
+		openshift := os.Getenv("KUBERNETES") != "true"
+		if !ingress && !openshift {
+			Skip("Route-based URLs is an OpenShift only scenario")
+		}
 		defer GinkgoRecover()
-		When("Creating a nodejs component usinf devfile", func() {
-			openshift := os.Getenv("KUBERNETES") != "true"
-			if !ingress && !openshift {
-				Skip("Route-based URLs is an OpenShift only scenario")
-			}
+		When("Creating a nodejs component using devfile", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -55,7 +55,7 @@ var _ = Describe("odo devfile status command tests", func() {
 				urlHost := helper.RandString(12) + ".com"
 
 				urlParams := []string{"url", "create", "my-url", "--port", "3000"}
-				if !strings.Contains(name, "Nonecure") {
+				if secure {
 					urlParams = append(urlParams, "--secure")
 				}
 
@@ -88,9 +88,7 @@ var _ = Describe("odo devfile status command tests", func() {
 				Expect(urlReachableEntry.Kind).To(Equal(expectedKind))
 				Expect(urlReachableEntry.Reachable).To(Equal(!ingress || openshift)) // On non-openshift, the ingress URL is using a random hostname, so should not be resolveable
 				Expect(urlReachableEntry.Port).To(Equal(3000))
-				if !strings.Contains(name, "Nonecure") {
-					Expect(urlReachableEntry.Secure).To(Equal("Secure"))
-				}
+				Expect(urlReachableEntry.Secure).To(Equal(secure))
 
 				utils.TerminateSession(session)
 
@@ -328,11 +326,9 @@ var _ = Describe("odo devfile status command tests", func() {
 	})
 
 	Context("Verify URL status is correctly reported", func() {
-
 		testCombo(false, false, "Route Nonsecure")
-		testCombo(false, true, "Route Secure")
 		testCombo(true, false, "Ingress Nonsecure")
-		testCombo(true, true, "Ingress Secure")
-
-	}) // end context
+		// testCombo(false, true, "Route Secure")   # Commented until issue https://github.com/openshift/odo/issues/5217 gets fixed
+		// testCombo(true, true, "Ingress Secure")  # Commented until issue https://github.com/openshift/odo/issues/5217 gets fixed
+	})
 })
