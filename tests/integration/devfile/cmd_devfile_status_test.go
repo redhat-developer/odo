@@ -38,6 +38,67 @@ var _ = Describe("odo devfile status command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
+	//Function used to test context: "Verify URL status is correctly reported"
+	testCombo := func(ingress bool, route bool, name string) {
+		defer GinkgoRecover()
+		When("Creating a nodejs component usinf devfile", func() {
+			openshift := os.Getenv("KUBERNETES") != "true"
+			if !ingress && !openshift {
+				Skip("Route-based URLs is an OpenShift only scenario")
+			}
+			BeforeEach(func() {
+				helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			})
+			It("Verify that odo component status detects the URL status: "+name, func() {
+
+				urlHost := helper.RandString(12) + ".com"
+
+				urlParams := []string{"url", "create", "my-url", "--port", "3000"}
+				if !strings.Contains(name, "Nonecure") {
+					urlParams = append(urlParams, "--secure")
+				}
+
+				if ingress {
+					urlParams = append(urlParams, "--ingress")
+					urlParams = append(urlParams, "--host", urlHost)
+				}
+
+				helper.Cmd("odo", urlParams...).ShouldPass()
+
+				helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
+
+				session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
+
+				helper.WaitForOutputToContain("urlReachable", 180, 10, session)
+
+				stdoutContents := string(session.Out.Contents())
+
+				entries, err := utils.ParseMachineEventJSONLines(stdoutContents)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Verify url status is present and correct
+				urlReachableEntry := utils.GetMostRecentEventOfType(machineoutput.TypeURLReachable, entries, true).(*machineoutput.URLReachable)
+
+				expectedKind := "ingress"
+				if !ingress || openshift {
+					expectedKind = "route"
+				}
+
+				Expect(urlReachableEntry.Kind).To(Equal(expectedKind))
+				Expect(urlReachableEntry.Reachable).To(Equal(!ingress || openshift)) // On non-openshift, the ingress URL is using a random hostname, so should not be resolveable
+				Expect(urlReachableEntry.Port).To(Equal(3000))
+				if !strings.Contains(name, "Nonecure") {
+					Expect(urlReachableEntry.Secure).To(Equal("Secure"))
+				}
+
+				utils.TerminateSession(session)
+
+			})
+		})
+
+	}
+
 	When("Creating nodejs component using devfile, and", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
@@ -268,89 +329,10 @@ var _ = Describe("odo devfile status command tests", func() {
 
 	Context("Verify URL status is correctly reported", func() {
 
-		openshift := os.Getenv("KUBERNETES") != "true"
+		testCombo(false, false, "Route Nonsecure")
+		testCombo(false, true, "Route Secure")
+		testCombo(true, false, "Ingress Nonsecure")
+		testCombo(true, true, "Ingress Secure")
 
-		// Test all 4 combos of secure/insecure and ingress/route (where supported)
-		combos := [][]bool{}
-		for x := 0; x < 2; x++ {
-			for y := 0; y < 2; y++ {
-				combos = append(combos, []bool{x == 1, y == 1})
-			}
-		}
-		for _, combo := range combos {
-
-			ingress := combo[0]
-			secure := combo[1]
-
-			// secure = true
-
-			name := ""
-			if ingress {
-				name += "Ingress "
-			} else {
-				name += "Route "
-			}
-
-			if secure {
-				name += "Secure"
-			} else {
-				name += "Nonsecure"
-			}
-
-			// Generate a parameterized test for each combination
-
-			When("Creating a nodejs component usinf devfile", func() {
-				if !ingress && !openshift {
-					Skip("Route-based URLs is an OpenShift only scenario")
-				}
-				BeforeEach(func() {
-					helper.Cmd("odo", "create", "--project", namespace, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-				})
-				It("Verify that odo component status detects the URL status: "+name, func() {
-
-					urlHost := helper.RandString(12) + ".com"
-
-					urlParams := []string{"url", "create", "my-url", "--port", "3000"}
-					// if secure {
-					// 	urlParams = append(urlParams, "--secure")
-					// }
-
-					if ingress {
-						urlParams = append(urlParams, "--ingress")
-						urlParams = append(urlParams, "--host", urlHost)
-					}
-
-					helper.Cmd("odo", urlParams...).ShouldPass()
-
-					helper.Cmd("odo", "push", "-o", "json", "--project", namespace).ShouldPass()
-
-					session := helper.CmdRunner("odo", "component", "status", "-o", "json", "--project", namespace, "--follow")
-
-					helper.WaitForOutputToContain("urlReachable", 180, 10, session)
-
-					stdoutContents := string(session.Out.Contents())
-
-					entries, err := utils.ParseMachineEventJSONLines(stdoutContents)
-					Expect(err).NotTo(HaveOccurred())
-
-					// Verify url status is present and correct
-					urlReachableEntry := utils.GetMostRecentEventOfType(machineoutput.TypeURLReachable, entries, true).(*machineoutput.URLReachable)
-
-					expectedKind := "ingress"
-					if !ingress || openshift {
-						expectedKind = "route"
-					}
-
-					Expect(urlReachableEntry.Kind).To(Equal(expectedKind))
-					Expect(urlReachableEntry.Reachable).To(Equal(!ingress || openshift)) // On non-openshift, the ingress URL is using a random hostname, so should not be resolveable
-					Expect(urlReachableEntry.Port).To(Equal(3000))
-					// Expect(urlReachableEntry.Secure).To(Equal(secure))
-
-					utils.TerminateSession(session)
-
-				})
-			})
-		}
 	}) // end context
 })
