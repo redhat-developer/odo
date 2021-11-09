@@ -152,7 +152,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
 
 				// first remove the uri based files mentioned in the devfile
-				devfileObj, err := devfile.ParseFromFile(do.devfilePath)
+				devfileObj, err := devfile.ParseAndValidateFromFile(do.devfilePath)
 				if err != nil {
 					return err
 				}
@@ -191,7 +191,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			}
 
 			// first remove the uri based files mentioned in the devfile
-			devfileObj, err := devfile.ParseFromFile(do.devfilePath)
+			devfileObj, err := devfile.ParseAndValidateFromFile(do.devfilePath)
 			if err != nil {
 				return err
 			}

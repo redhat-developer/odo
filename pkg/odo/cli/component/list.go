@@ -61,7 +61,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
-		devObj, parseErr := devfile.ParseFromFile(lo.devfilePath)
+		devObj, parseErr := devfile.ParseAndValidateFromFile(lo.devfilePath)
 		if parseErr != nil {
 			return parseErr
 		}

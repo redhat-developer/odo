@@ -60,14 +60,14 @@ func TestCheckGitIgnoreFile(t *testing.T) {
 
 		t.Run(tt.testName, func(t *testing.T) {
 
-			gitIgnoreFilePath, err := checkGitIgnoreFile(tt.directory, fs)
+			gitIgnoreFilePath, err := touchGitIgnoreFile(tt.directory, fs)
 
 			if tt.want != gitIgnoreFilePath {
-				t.Errorf("checkGitIgnoreFile unexpected error %v, while creating .gitignore file", err)
+				t.Errorf("touchGitIgnoreFile unexpected error %v, while creating .gitignore file", err)
 			}
 
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("checkGitIgnoreFile unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("touchGitIgnoreFile unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

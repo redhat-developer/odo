@@ -40,22 +40,22 @@ func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 	return devObj, nil
 }
 
-// ParseFromFile reads, parses and validates  devfile from a file
+// ParseAndValidateFromFile reads, parses and validates  devfile from a file
 // if there are warning it logs them on stdout
-func ParseFromFile(devfilePath string) (parser.DevfileObj, error) {
+func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{Path: devfilePath})
 }
 
-// ParseFromData parses devfile from []byte and does all the validation
+// ParseAndValidateFromData parses devfile from []byte and does all the validation
 // if there are warning it logs them on stdout
-func ParseFromData(data []byte) (parser.DevfileObj, error) {
+func ParseAndValidateFromData(data []byte) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{Data: data})
 
 }
 
-// ParseFromURL parses devfile from given url and does all the validation
+// ParseAndValidateFromURL parses devfile from given url and does all the validation
 // if there are warning it logs them on stdout
-func ParseFromURL(url string) (parser.DevfileObj, error) {
+func ParseAndValidateFromURL(url string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{URL: url})
 }
 

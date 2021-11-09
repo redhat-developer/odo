@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/tidwall/gjson"
+	"gopkg.in/yaml.v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -263,7 +265,9 @@ var _ = Describe("odo devfile create command tests", func() {
 			devfilePath = filepath.Join(commonVar.Context, devfile)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
 		})
-
+		AfterEach(func() {
+			helper.Cmd("odo", "delete", "-af").ShouldPass()
+		})
 		It("should successfully create the devfile component", func() {
 			helper.Cmd("odo", "create", "nodejs").ShouldPass()
 		})
@@ -288,6 +292,30 @@ var _ = Describe("odo devfile create command tests", func() {
 				helper.Cmd("odo", "create", "nodejs").ShouldPass()
 				output := helper.Cmd("odo", "create", "nodejs").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("this directory already contains a component"))
+			})
+		})
+		When("devfile contains parent URI", func() {
+			var originalKeyList []string
+			var content map[string]interface{}
+			BeforeEach(func() {
+				var err error
+				devfilePath = filepath.Join(commonVar.Context, devfile)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), devfilePath)
+				originalDevfileContent, err := ioutil.ReadFile(devfilePath)
+				Expect(err).To(BeNil())
+				Expect(yaml.Unmarshal(originalDevfileContent, &content)).To(BeNil())
+				for k := range content {
+					originalKeyList = append(originalKeyList, k)
+				}
+			})
+			It("should not replace the original devfile", func() {
+				helper.Cmd("odo", "create").ShouldPass()
+				devfileContent, err := ioutil.ReadFile(devfilePath)
+				Expect(err).To(BeNil())
+				Expect(yaml.Unmarshal(devfileContent, &content)).To(BeNil())
+				for k := range content {
+					Expect(k).To(BeElementOf(originalKeyList))
+				}
 			})
 		})
 	})
@@ -328,6 +356,32 @@ var _ = Describe("odo devfile create command tests", func() {
 				Expect(errOut).To(ContainSubstring("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile"))
 			})
 		})
+		When("devfile contains parent URI", func() {
+			var originalKeyList []string
+			var content map[string]interface{}
+			BeforeEach(func() {
+				var err error
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), devfilePath)
+				originalDevfileContent, err := ioutil.ReadFile(devfilePath)
+				Expect(err).To(BeNil())
+				err = yaml.Unmarshal(originalDevfileContent, &content)
+				Expect(err).To(BeNil())
+				for k := range content {
+					originalKeyList = append(originalKeyList, k)
+				}
+			})
+			It("should not replace the original devfile", func() {
+				helper.Cmd("odo", "create", "mycomp", "--devfile", devfilePath).ShouldPass()
+				devfileContent, err := ioutil.ReadFile(filepath.Join(commonVar.Context, devfile))
+				Expect(err).To(BeNil())
+				var content map[string]interface{}
+				err = yaml.Unmarshal(devfileContent, &content)
+				Expect(err).To(BeNil())
+				for k := range content {
+					Expect(k).To(BeElementOf(originalKeyList))
+				}
+			})
+		})
 	})
 
 	When("a dangling env file exists in the working directory", func() {
@@ -345,7 +399,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 	When("creating a component using .devfile.yaml", func() {
-		stdout := ""
+		var stdout string
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
 			stdout = helper.Cmd("odo", "create", cmpName, "--project", commonVar.Project).ShouldPass().Out()

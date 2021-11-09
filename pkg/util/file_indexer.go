@@ -103,12 +103,12 @@ func addOdoFileIndex(gitIgnoreFile string, fs filesystem.Filesystem) error {
 	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(DotOdoDirectory, fileIndexName), fs)
 }
 
-// CheckGitIgnoreFile checks .gitignore file exists or not, if not then create it
-func CheckGitIgnoreFile(directory string) (string, error) {
-	return checkGitIgnoreFile(directory, filesystem.DefaultFs{})
+// TouchGitIgnoreFile checks .gitignore file exists or not, if not then create it
+func TouchGitIgnoreFile(directory string) (string, error) {
+	return touchGitIgnoreFile(directory, filesystem.DefaultFs{})
 }
 
-func checkGitIgnoreFile(directory string, fs filesystem.Filesystem) (string, error) {
+func touchGitIgnoreFile(directory string, fs filesystem.Filesystem) (string, error) {
 
 	_, err := fs.Stat(directory)
 	if err != nil {
@@ -215,7 +215,7 @@ func RunIndexerWithRemote(directory string, ignoreRules []string, remoteDirector
 	}
 
 	// check for .gitignore file and add odo-file-index.json to .gitignore
-	gitIgnoreFile, err := CheckGitIgnoreFile(directory)
+	gitIgnoreFile, err := TouchGitIgnoreFile(directory)
 	if err != nil {
 		return ret, err
 	}

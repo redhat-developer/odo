@@ -1,15 +1,11 @@
-schemaVersion: 2.0.0
+
+schemaVersion: 2.1.0
 metadata:
-  name: nodejs
-  version: 1.0.0
+  name: new-ol-version
+  description: Child devfile to test OL image updating
 parent:
-  uri: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml
-commands:
-  - id: devbuild
-    exec:
-      component: runtime
-      commandLine: touch blah.js
-      workingDir: ${PROJECTS_ROOT}
-      group:
-        kind: build
-        isDefault: false
+  uri: https://github.com/OpenLiberty/application-stack/releases/download/maven-0.7.0/devfile.yaml
+  components:
+    - name: dev
+      container:
+        image: maven:3.6-adoptopenjdk-11-openj9

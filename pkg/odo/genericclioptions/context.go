@@ -73,7 +73,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 
 		// Parse devfile and validate
-		devObj, err := devfile.ParseFromFile(parameters.DevfilePath)
+		devObj, err := devfile.ParseAndValidateFromFile(parameters.DevfilePath)
 		if err != nil {
 			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
 		}
