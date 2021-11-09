@@ -123,7 +123,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// Get the app name
 	co.appName = genericclioptions.ResolveAppFlag(cmd)
 	// Get the project name
-	co.devfileMetadata.componentNamespace = co.Context.Project
+	co.devfileMetadata.componentNamespace = co.Context.GetProject()
 	// Get DevfilePath
 	co.DevfilePath = location.DevfileLocation(co.componentContext)
 	//Check whether the directory already contains a devfile, this check should happen early
@@ -384,10 +384,13 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 }
 
 func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
+	params := genericclioptions.NewCreateParameters(cmd)
 	if now {
-		return genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		params = params.CreateAppIfNeeded()
+	} else {
+		params = params.IsOffline()
 	}
-	return genericclioptions.NewOfflineContext(cmd)
+	return genericclioptions.New(params)
 }
 
 func getEnvFilePath(componentContext string) string {

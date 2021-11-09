@@ -142,7 +142,7 @@ func New(parameters CreateParameters) (*Context, error) {
 	isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
 	if parameters.devfile && isDevfile {
 		// Parse devfile and validate
-		devObj, err := devfile.ParseFromFile(ctx.devfilePath)
+		devObj, err := devfile.ParseAndValidateFromFile(ctx.devfilePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
 		}
