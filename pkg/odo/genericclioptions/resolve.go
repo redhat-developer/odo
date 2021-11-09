@@ -21,8 +21,8 @@ func ResolveAppFlag(command *cobra.Command) string {
 	return defaultAppName
 }
 
-// resolveNamespace resolves namespace for devfile component
-func (o *internalCxt) resolveNamespace(command *cobra.Command, configProvider localConfigProvider.LocalConfigProvider) error {
+// resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
+func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {

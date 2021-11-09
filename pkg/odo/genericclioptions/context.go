@@ -119,7 +119,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		if e := ctx.resolveNamespace(parameters.cmd, ctx.EnvSpecificInfo); e != nil {
+		if e := ctx.resolveProjectAndNamespace(parameters.cmd, ctx.EnvSpecificInfo); e != nil {
 			return nil, e
 		}
 
