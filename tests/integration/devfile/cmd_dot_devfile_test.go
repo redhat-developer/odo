@@ -17,7 +17,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 	var cmpName string
 	var commonVar helper.CommonVar
 
-	var _ = BeforeEach(func() {
+	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
@@ -31,12 +31,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 		}
 	})
 
-	BeforeEach(func() {
-		// wait till odo can see that all operators installed by setup script in the namespace
-
-	})
-
-	var _ = AfterEach(func() {
+	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
@@ -48,14 +43,12 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 		})
 		When("creating a service", func() {
 			var redisOperator string
-			//var redisCluster string
 			var operandName string
 
 			BeforeEach(func() {
 				commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
-				//redisCluster = fmt.Sprintf("%s/Redis", redisOperator)
 				operandName = helper.RandString(10)
 				helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), operandName,
 					"-p", "kubernetesConfig.image=quay.io/opstree/redis:v6.2.5",
