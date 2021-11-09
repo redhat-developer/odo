@@ -29,8 +29,8 @@ type CreateMethod interface {
 	// FetchDevfileAndCreateComponent fetches devfile from registry, or a remote location, or a local file system, and creates a component
 	// This method also updates the CreateOptions structure with co.devfileMetadata
 	FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error
-	// Rollback cleans the component context of any files that were created by odo
-	Rollback(componentContext string)
+	// Rollback cleans the component context of any files that were created by odo (devfile.yaml, .odo e.g.)
+	Rollback(devfile, componentContext string)
 }
 
 // InteractiveCreateMethod is used while creating a component interactively
@@ -80,8 +80,9 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.componentContext)
 }
 
-func (icm InteractiveCreateMethod) Rollback(componentContext string) {
-	os.RemoveAll(componentContext)
+func (icm InteractiveCreateMethod) Rollback(devfile, componentContext string) {
+	deleteDevfile(devfile)
+	deleteOdoDir(componentContext)
 }
 
 // DirectCreateMethod is used with the basic odo create; `odo create nodejs mynode`
@@ -123,8 +124,9 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.componentContext)
 }
 
-func (dcm DirectCreateMethod) Rollback(componentContext string) {
-	os.RemoveAll(componentContext)
+func (dcm DirectCreateMethod) Rollback(devfile, componentContext string) {
+	deleteDevfile(devfile)
+	deleteOdoDir(componentContext)
 }
 
 // UserCreatedDevfileMethod is used when a devfile is present in the context directory
@@ -155,8 +157,8 @@ func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOp
 	return err
 }
 
-func (ucdm UserCreatedDevfileMethod) Rollback(componentContext string) {
-	//	User provided devfiles should not be deleted if something fails, hence this method is empty
+func (ucdm UserCreatedDevfileMethod) Rollback(devfile, componentContext string) {
+	deleteOdoDir(componentContext)
 }
 
 // HTTPCreateMethod is used when --devfile flag is used with a remote file; `odo create --devfile https://example.com/devfile.yaml`
@@ -190,8 +192,9 @@ func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	return err
 }
 
-func (hcm HTTPCreateMethod) Rollback(componentContext string) {
-	os.RemoveAll(componentContext)
+func (hcm HTTPCreateMethod) Rollback(devfile, componentContext string) {
+	deleteDevfile(devfile)
+	deleteOdoDir(componentContext)
 }
 
 // FileCreateMethod is used when --devfile flag is used with a local file; `odo create --devfile /tmp/comp/devfile.yaml`
@@ -224,8 +227,9 @@ func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	return err
 }
 
-func (fcm FileCreateMethod) Rollback(componentContext string) {
-	os.RemoveAll(componentContext)
+func (fcm FileCreateMethod) Rollback(devfile, componentContext string) {
+	deleteDevfile(devfile)
+	deleteOdoDir(componentContext)
 }
 
 // conflictCheckForDevfileFlag checks for the common conflicts while using --devfile flag
@@ -390,4 +394,19 @@ func createDefaultComponentName(componentType string, sourcePath string) (string
 		componentType,
 		component.ComponentList{},
 	)
+}
+
+// deleteDevfile deletes the devfile if it exists in case of rollback
+func deleteDevfile(devfile string) {
+	if util.CheckPathExists(devfile) {
+		_ = os.Remove(devfile)
+	}
+}
+
+//deleteOdoDir deletes the .odo directory in case of rollback
+func deleteOdoDir(componentContext string) {
+	odoDir := filepath.Join(componentContext, ".odo")
+	if util.CheckPathExists(odoDir) {
+		_ = util.DeletePath(odoDir)
+	}
 }

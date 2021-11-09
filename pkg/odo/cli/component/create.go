@@ -136,7 +136,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if len(args) == 0 && !util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value == "" {
 		co.interactive = true
 	}
-
 	// CONFLICT CHECK
 	// Check if a component exists
 	if util.CheckPathExists(envFilePath) && util.CheckPathExists(co.DevfilePath) {
@@ -189,14 +188,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmd, args)
 	if err != nil {
-		co.createMethod.Rollback(co.componentContext)
+		co.createMethod.Rollback(co.DevfilePath, co.componentContext)
 		return err
 	}
 
 	// From this point forward, rollback should be triggered if an error is encountered; rollback should delete all the files that were created by odo
 	defer func() {
 		if err != nil {
-			co.createMethod.Rollback(co.componentContext)
+			co.createMethod.Rollback(co.DevfilePath, co.componentContext)
 		}
 	}()
 	// Set the starter project token if required
@@ -224,7 +223,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 func (co *CreateOptions) Validate() (err error) {
 	defer func() {
 		if err != nil {
-			co.createMethod.Rollback(co.componentContext)
+			co.createMethod.Rollback(co.DevfilePath, co.componentContext)
 		}
 	}()
 	log.Info("Validation")
@@ -254,7 +253,7 @@ func (co *CreateOptions) Validate() (err error) {
 func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	defer func() {
 		if err != nil {
-			co.createMethod.Rollback(co.componentContext)
+			co.createMethod.Rollback(co.DevfilePath, co.componentContext)
 		}
 	}()
 	// Adding component type to telemetry data
