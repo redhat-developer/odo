@@ -31,14 +31,14 @@ var _ = Describe("odo devfile watch command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("Running help for watch command", func() {
+	When("running help for watch command", func() {
 		It("should display the help", func() {
 			appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()
 			helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
 		})
 	})
 
-	When("Executing watch without pushing a devfile component", func() {
+	When("executing watch without pushing a devfile component", func() {
 		BeforeEach(func() {
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
 			helper.Cmd("odo", "create", "--project", commonVar.Project, "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
@@ -52,7 +52,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 		})
 	})
 
-	When("When executing odo watch", func() {
+	When("executing odo watch", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -198,7 +198,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	})
 
-	When("When executing odo watch", func() {
+	When("executing odo watch", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -227,7 +227,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 		})
 	})
 
-	When("Executing odo watch after odo push with debug flag", func() {
+	When("executing odo watch after odo push with debug flag", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "create", cmpName, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
