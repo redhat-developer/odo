@@ -3,6 +3,13 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/go-openapi/spec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -10,13 +17,7 @@ import (
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"io"
 	"k8s.io/klog"
-	"os"
-	"regexp"
-	"sort"
-	"strings"
-	"text/tabwriter"
 )
 
 type operatorBackend struct {
@@ -210,6 +211,8 @@ func displayProperties(w io.Writer, schema *spec.Schema, prefix string) {
 		}
 		if property.Type.Contains("object") {
 			displayProperties(w, &property, prefix+key+".")
+		} else if property.Type.Contains("array") && property.Items.Schema.Type.Contains("object") {
+			displayProperties(w, property.Items.Schema, prefix+key+".*.")
 		}
 	}
 }
