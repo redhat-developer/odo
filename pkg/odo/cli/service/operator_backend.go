@@ -199,12 +199,13 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 			o.ServiceName = u.GetName()
 		}
 
-		// Validate spec
-		err = validate.AgainstSchema(crd, u.Object["spec"], strfmt.Default)
-		if err != nil {
-			return err
+		// Validate spec if not dry run
+		if !o.DryRun {
+			err = validate.AgainstSchema(crd, u.Object["spec"], strfmt.Default)
+			if err != nil {
+				return err
+			}
 		}
-
 	} else {
 		// This block is executed only when user has neither provided a
 		// file nor a valid `odo service create <operator-name>` to start
