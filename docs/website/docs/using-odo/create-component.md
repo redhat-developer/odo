@@ -149,7 +149,7 @@ Please use `odo push` command to create the component with source deployed
 To non-interactively create a Java Spring Boot component using the starter project, you can follow the below steps:
 ```shell
 mkdir myOdoComponent && cd myOdoComponent
-odo create java-springboot myFirstComponent --starter
+odo create java-springboot myFirstComponent --starter springbootproject
 ```
 
 ## Push the component to Kubernetes
