@@ -39,45 +39,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 		var _ = BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
-		})
-		When("creating a service", func() {
-			var redisOperator string
-			var operandName string
-
-			BeforeEach(func() {
-				commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
-				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
-				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
-				operandName = helper.RandString(10)
-				helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), operandName,
-					"-p", "kubernetesConfig.image=quay.io/opstree/redis:v6.2.5",
-					"-p", "redisExporter.image=quay.io/opstree/redis-exporter:1.0",
-					"-p", "kubernetesConfig.serviceType=ClusterIP",
-					"-p", "kubernetesConfig.resources.requests.cpu=100m",
-					"-p", "kubernetesConfig.resources.requests.memory=128Mi",
-					"--context", commonVar.Context).ShouldPass().Out()
-			})
-
-			AfterEach(func() {
-				helper.Cmd("odo", "service", "delete", fmt.Sprintf("Redis/%s", operandName), "-f", "--context", commonVar.Context).ShouldPass().Out()
-				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-			})
-
-			When("odo push is executed", func() {
-				BeforeEach(func() {
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-				})
-
-				It("should create pods in running state", func() {
-					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, fmt.Sprintf(`%s-0`, operandName))
-				})
-
-				It("should list the service", func() {
-					stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context).ShouldPass().Out()
-					Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Redis/%s", operandName)))
-				})
-			})
+			helper.Cmd("mv", "devfile.yaml", ".devfile.yaml").ShouldPass()
 		})
 
 		When("Creating url and doing odo push", func() {
@@ -147,62 +109,53 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 		})
 	})
 
-	Context("Operators are installed in the cluster", func() {
-
-		var redisOperator string
-		var redisCluster string
-
-		BeforeEach(func() {
-			// wait till odo can see that all operators installed by setup script in the namespace
-			odoArgs := []string{"catalog", "list", "services"}
-			operators := []string{"redis-operator"}
-			for _, operator := range operators {
-				helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
-					return strings.Contains(output, operator)
-				})
-			}
-
-			commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
-			list := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
-			redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(list)
-			redisCluster = fmt.Sprintf("%s/Redis", redisOperator)
+	When("Creating a nodejs component and replace devfile.yaml with .devfile.yaml", func() {
+		var _ = BeforeEach(func() {
+			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("mv", "devfile.yaml", ".devfile.yaml").ShouldPass()
 		})
-
-		When("a component and a service are deployed", func() {
-
-			var componentName string
-			var svcFullName string
+		When("creating a service", func() {
+			var redisOperator string
+			var operandName string
 
 			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				componentName = "cmp-" + helper.RandString(6)
-				helper.Cmd("odo", "create", componentName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
-				helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", commonVar.Context).ShouldPass()
-
-				serviceName := "service-" + helper.RandString(6)
-				svcFullName = strings.Join([]string{"Redis", serviceName}, "/")
-				helper.Cmd("odo", "service", "create", redisCluster, serviceName, "--context", commonVar.Context).ShouldPass()
-
-				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-				name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-				Expect(name).To(Not(BeEmpty()))
+				commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
+				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
+				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
+				operandName = helper.RandString(10)
+				helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), operandName, "--context", commonVar.Context).ShouldPass()
 			})
 
-			It("should find files in component container", func() {
-				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+			AfterEach(func() {
+				helper.Cmd("odo", "service", "delete", fmt.Sprintf("Redis/%s", operandName), "-f", "--context", commonVar.Context).ShouldPass().Out()
+				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 			})
 
-			When("a storage is added and deployed", func() {
+			When("odo push is executed", func() {
 				BeforeEach(func() {
-					helper.Cmd("odo", "storage", "create", "--context", commonVar.Context).ShouldPass()
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+					name := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					Expect(name).To(Not(BeEmpty()))
+				})
+
+				It("should find files in component container", func() {
+					helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+				})
+
+				It("should create pods in running state", func() {
+					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, fmt.Sprintf(`%s-0`, operandName))
+				})
+
+				It("should list the service", func() {
+					stdOut := helper.Cmd("odo", "service", "list", "--context", commonVar.Context).ShouldPass().Out()
+					Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Redis/%s", operandName)))
 				})
 
 				When("a link between the component and the service is created", func() {
 
 					BeforeEach(func() {
-						helper.Cmd("odo", "link", svcFullName, "--context", commonVar.Context).ShouldPass()
+						helper.Cmd("odo", "link", fmt.Sprintf("Redis/%s", operandName), "--context", commonVar.Context).ShouldPass()
 					})
 
 					It("should run odo push successfully", func() {
