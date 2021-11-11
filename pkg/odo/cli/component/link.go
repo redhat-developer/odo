@@ -49,8 +49,8 @@ Let us say we have created a nodejs application called 'frontend' which we link 
 odo link backend --component frontend
 
 The frontend has 2 ENV variables it can use:
-COMPONENT_BACKEND_HOST=backend-app
-COMPONENT_BACKEND_PORT=8080 
+SERVICE_BACKEND_IP=10.217.4.194
+SERVICE_BACKEND_PORT_PORT-8080=8080
 
 Using the '--bind-as-files' flag, secrets will be accessible as files instead of environment variables.
 The value of the '--name' flag indicates the name of the directory under '/bindings/' containing the secrets files.
