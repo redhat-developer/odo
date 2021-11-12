@@ -21,14 +21,6 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
-
-		odoArgs := []string{"catalog", "list", "services"}
-		operators := []string{"redis-operator"}
-		for _, operator := range operators {
-			helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
-				return strings.Contains(output, operator)
-			})
-		}
 	})
 
 	AfterEach(func() {
@@ -69,7 +61,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 			})
 		})
 
-		When("should list the storage with the proper states and container names", func() {
+		When("creating a storage", func() {
 			var storageName, pathName, size, stdOut string
 			BeforeEach(func() {
 				storageName = helper.RandString(5)
@@ -100,7 +92,8 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 			projectDir = filepath.Join(commonVar.Context, "projectDir")
 			helper.CopyExample(filepath.Join("source", "web-nodejs-sample"), projectDir)
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--context", projectDir, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
+			helper.Cmd("pwd").ShouldPass()
+			helper.Cmd("mv", fmt.Sprint(projectDir, "/devfile.yaml"), fmt.Sprint(projectDir, "/.devfile.yaml")).ShouldPass()
 			helper.Cmd("odo", "push", "--debug", "--context", projectDir).ShouldPass()
 		})
 		It("should log debug command output", func() {
@@ -118,8 +111,16 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 		When("creating a service", func() {
 			var redisOperator string
 			var operandName string
-
+			var odoArgs []string
+			var operators []string
 			BeforeEach(func() {
+				odoArgs = []string{"catalog", "list", "services"}
+				operators = []string{"redis-operator"}
+				for _, operator := range operators {
+					helper.WaitForCmdOut("odo", odoArgs, 5, true, func(output string) bool {
+						return strings.Contains(output, operator)
+					})
+				}
 				commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
 				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
 				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
