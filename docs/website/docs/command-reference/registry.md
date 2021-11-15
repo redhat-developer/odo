@@ -1,6 +1,6 @@
 ---
 title: odo registry
-sidebar_position: 4
+sidebar_position: 5
 ---
 # odo registry
 
