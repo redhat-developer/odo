@@ -6,7 +6,6 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -34,11 +33,7 @@ func NewDeployOptions() *DeployOptions {
 
 // Complete completes LoginOptions after they've been created
 func (o *DeployOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
-		ComponentContext: o.componentContext,
-	})
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	if err != nil {
 		return err
 	}
@@ -56,7 +51,7 @@ func (o *DeployOptions) Run(cmd *cobra.Command) error {
 		Namespace: o.KClient.GetCurrentNamespace(),
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(o.EnvSpecificInfo.GetName(), filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()), o.Application, o.EnvSpecificInfo.GetDevfileObj(), platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(o.EnvSpecificInfo.GetName(), filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()), o.GetApplication(), o.EnvSpecificInfo.GetDevfileObj(), platformContext)
 	if err != nil {
 		return err
 	}
