@@ -9,230 +9,24 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/kclient"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 )
-
-type inlinedComponent struct {
-	name    string
-	inlined string
-}
-
-type uriComponent struct {
-	name string
-	uri  string
-}
-
-func getDevfileData(t *testing.T, inlined []inlinedComponent, uriComp []uriComponent) data.DevfileData {
-	devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-	if err != nil {
-		t.Error(err)
-	}
-	for _, component := range inlined {
-		err = devfileData.AddComponents([]v1alpha2.Component{{
-			Name: component.name,
-			ComponentUnion: devfile.ComponentUnion{
-				Kubernetes: &devfile.KubernetesComponent{
-					K8sLikeComponent: devfile.K8sLikeComponent{
-						BaseComponent: devfile.BaseComponent{},
-						K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-							Inlined: component.inlined,
-						},
-					},
-				},
-			},
-		},
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	for _, component := range uriComp {
-		err = devfileData.AddComponents([]v1alpha2.Component{{
-			Name: component.name,
-			ComponentUnion: devfile.ComponentUnion{
-				Kubernetes: &devfile.KubernetesComponent{
-					K8sLikeComponent: devfile.K8sLikeComponent{
-						BaseComponent: devfile.BaseComponent{},
-						K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-							Uri: component.uri,
-						},
-					},
-				},
-			},
-		},
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	return devfileData
-}
-
-func TestAddKubernetesComponentToDevfile(t *testing.T) {
-	fs := devfileFileSystem.NewFakeFs()
-
-	type args struct {
-		crd        string
-		name       string
-		devfileObj parser.DevfileObj
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		want    []v1alpha2.Component
-	}{
-		{
-			name: "Case 1: Add service CRD to devfile.yaml",
-			args: args{
-				crd:  "test CRD",
-				name: "testName",
-				devfileObj: parser.DevfileObj{
-					Data: getDevfileData(t, nil, nil),
-					Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				},
-			},
-			wantErr: false,
-			want: []v1alpha2.Component{{
-				Name: "testName",
-				ComponentUnion: devfile.ComponentUnion{
-					Kubernetes: &devfile.KubernetesComponent{
-						K8sLikeComponent: devfile.K8sLikeComponent{
-							BaseComponent: devfile.BaseComponent{},
-							K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-								Inlined: "test CRD",
-							},
-						},
-					},
-				},
-			},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := AddKubernetesComponentToDevfile(tt.args.crd, tt.args.name, tt.args.devfileObj); (err != nil) != tt.wantErr {
-				t.Errorf("AddKubernetesComponentToDevfile() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			got, err := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
-			if err != nil {
-				t.Error(err)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetComponents() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
-	fs := devfileFileSystem.NewFakeFs()
-
-	testFolderName := "someFolder"
-	testFileName, err := setup(testFolderName, fs)
-	if err != nil {
-		t.Errorf("unexpected error : %v", err)
-		return
-	}
-
-	type args struct {
-		name       string
-		devfileObj parser.DevfileObj
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		want    []v1alpha2.Component
-	}{
-		{
-			name: "Case 1: Remove a CRD from devfile.yaml",
-			args: args{
-				name: "testName",
-				devfileObj: parser.DevfileObj{
-					Data: getDevfileData(t, []inlinedComponent{
-						{
-							name:    "testName",
-							inlined: "test CRD",
-						},
-					}, nil),
-					Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				},
-			},
-			wantErr: false,
-			want:    []v1alpha2.Component{},
-		},
-		{
-			name: "Case 2: Remove a uri based component from devfile.yaml",
-			args: args{
-				name: "testName",
-				devfileObj: parser.DevfileObj{
-					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-						if err != nil {
-							t.Error(err)
-						}
-						err = devfileData.AddComponents([]v1alpha2.Component{{
-							Name: "testName",
-							ComponentUnion: devfile.ComponentUnion{
-								Kubernetes: &devfile.KubernetesComponent{
-									K8sLikeComponent: devfile.K8sLikeComponent{
-										BaseComponent: devfile.BaseComponent{},
-										K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-											Uri: filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
-										},
-									},
-								},
-							},
-						},
-						})
-						if err != nil {
-							t.Error(err)
-						}
-						return devfileData
-					}(),
-					Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				},
-			},
-			wantErr: false,
-			want:    []v1alpha2.Component{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := deleteKubernetesComponentFromDevfile(tt.args.name, tt.args.devfileObj, testFolderName, fs); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteKubernetesComponentFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			got, err := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
-			if err != nil {
-				t.Error(err)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetComponents() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestListDevfileServices(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := setup(testFolderName, fs)
+	testFileName, err := devfile.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -269,7 +63,7 @@ spec:
 		{
 			name: "No service in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: getDevfileData(t, nil, nil),
+				Data: devfile.GetDevfileData(t, nil, nil),
 				Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 			},
 			wantKeys:         []string{},
@@ -286,10 +80,10 @@ spec:
 		{
 			name: "Services including service bindings in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: getDevfileData(t, []inlinedComponent{
+				Data: devfile.GetDevfileData(t, []devfile.InlinedComponent{
 					{
-						name: "link1",
-						inlined: `
+						Name: "link1",
+						Inlined: `
 apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -341,10 +135,10 @@ spec:
 		{
 			name: "URI reference in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: getDevfileData(t, nil, []uriComponent{
+				Data: devfile.GetDevfileData(t, nil, []devfile.URIComponent{
 					{
-						name: "service1",
-						uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
+						Name: "service1",
+						URI:  filepath.Join(devfile.UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 			},
@@ -400,7 +194,7 @@ func TestListDevfileLinks(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := setup(testFolderName, fs)
+	testFileName, err := devfile.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -429,7 +223,7 @@ spec:
 		{
 			name: "No service in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: getDevfileData(t, nil, nil),
+				Data: devfile.GetDevfileData(t, nil, nil),
 				Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 			},
 			want:    nil,
@@ -438,10 +232,10 @@ spec:
 		{
 			name: "Services including service bindings in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: getDevfileData(t, []inlinedComponent{
+				Data: devfile.GetDevfileData(t, []devfile.InlinedComponent{
 					{
-						name: "link1",
-						inlined: `
+						Name: "link1",
+						Inlined: `
 apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -461,8 +255,8 @@ spec:
    version: v1beta1`,
 					},
 					{
-						name: "link2",
-						inlined: `
+						Name: "link2",
+						Inlined: `
 apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -481,10 +275,10 @@ spec:
    name: other
    version: v1beta1`,
 					},
-				}, []uriComponent{
+				}, []devfile.URIComponent{
 					{
-						name: "service1",
-						uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
+						Name: "service1",
+						URI:  filepath.Join(devfile.UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
@@ -511,7 +305,7 @@ func TestFindDevfileServiceBinding(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := setup(testFolderName, fs)
+	testFileName, err := devfile.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -532,10 +326,10 @@ spec:
 	}
 
 	devfileObj := parser.DevfileObj{
-		Data: getDevfileData(t, []inlinedComponent{
+		Data: devfile.GetDevfileData(t, []devfile.InlinedComponent{
 			{
-				name: "link1",
-				inlined: `
+				Name: "link1",
+				Inlined: `
 apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -555,8 +349,8 @@ spec:
    version: v1beta1`,
 			},
 			{
-				name: "link2",
-				inlined: `
+				Name: "link2",
+				Inlined: `
 apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -575,10 +369,10 @@ spec:
      name: other
      version: v1beta1`,
 			},
-		}, []uriComponent{
+		}, []devfile.URIComponent{
 			{
-				name: "service1",
-				uri:  filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
+				Name: "service1",
+				URI:  filepath.Join(devfile.UriFolder, filepath.Base(testFileName.Name())),
 			},
 		}),
 		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
@@ -628,95 +422,6 @@ spec:
 			}
 			if gotErr != tt.wantErr {
 				t.Errorf("%s: got %v, expect %v", t.Name(), gotErr, tt.wantErr)
-			}
-		})
-	}
-}
-
-func setup(testFolderName string, fs devfileFileSystem.Filesystem) (devfileFileSystem.File, error) {
-	err := fs.MkdirAll(testFolderName, os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	err = fs.MkdirAll(filepath.Join(testFolderName, UriFolder), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	testFileName, err := fs.Create(filepath.Join(testFolderName, UriFolder, "example.yaml"))
-	if err != nil {
-		return nil, err
-	}
-	return testFileName, nil
-}
-
-func Test_addKubernetesComponent(t *testing.T) {
-
-	type args struct {
-		crd               string
-		name              string
-		componentContext  string
-		devfileObj        parser.DevfileObj
-		fs                devfileFileSystem.Filesystem
-		uriFolderExists   bool
-		fileAlreadyExists bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "case 1: the uri folder doesn't exist",
-			args: args{
-				crd:              "example",
-				name:             "redis-service",
-				componentContext: "/",
-			},
-		},
-		{
-			name: "case 2: the uri folder exist",
-			args: args{
-				crd:             "example",
-				name:            "redis-service",
-				uriFolderExists: true,
-			},
-		},
-		{
-			name: "case 3: the file already exists",
-			args: args{
-				crd:               "example",
-				name:              "redis-service",
-				uriFolderExists:   true,
-				fileAlreadyExists: true,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fs := devfileFileSystem.NewFakeFs()
-			tt.args.devfileObj = testingutil.GetTestDevfileObj(fs)
-			tt.args.fs = fs
-
-			if tt.args.uriFolderExists || tt.args.fileAlreadyExists {
-				err := fs.MkdirAll(UriFolder, os.ModePerm)
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				defer os.RemoveAll(UriFolder)
-			}
-
-			if tt.args.fileAlreadyExists {
-				testFileName, err := fs.Create(filepath.Join(UriFolder, filePrefix+tt.args.name+".yaml"))
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-
-				defer os.RemoveAll(testFileName.Name())
-			}
-
-			if err := addKubernetesComponent(tt.args.crd, tt.args.name, tt.args.componentContext, tt.args.devfileObj, tt.args.fs); (err != nil) != tt.wantErr {
-				t.Errorf("addKubernetesComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

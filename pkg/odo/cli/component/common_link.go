@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -346,12 +347,12 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 	}
 
 	if o.inlined {
-		err = svc.AddKubernetesComponentToDevfile(string(yamlDesc), o.serviceBinding.Name, o.EnvSpecificInfo.GetDevfileObj())
+		err = devfile.AddKubernetesComponentToDevfile(string(yamlDesc), o.serviceBinding.Name, o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
 	} else {
-		err = svc.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.GetComponentContext(), o.EnvSpecificInfo.GetDevfileObj())
+		err = devfile.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.GetComponentContext(), o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -371,7 +372,7 @@ func (o *commonLinkOptions) unlinkOperator() (err error) {
 		return err
 	}
 
-	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.GetComponentContext())
+	err = devfile.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.GetComponentContext())
 	if err != nil {
 		return err
 	}

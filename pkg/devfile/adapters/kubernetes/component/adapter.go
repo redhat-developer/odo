@@ -10,6 +10,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
@@ -176,9 +177,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
-	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
-	})
+	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
 	if err != nil {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}

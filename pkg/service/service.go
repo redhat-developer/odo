@@ -4,33 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-
-	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
+
+	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/pkg/errors"
-
-	"github.com/devfile/library/pkg/devfile/parser"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-
 	"github.com/ghodss/yaml"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/pkg/errors"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 )
 
 // LinkLabel is the name of the name of the link in the devfile
@@ -41,10 +38,6 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
-
-const UriFolder = "kubernetes"
-
-const filePrefix = "odo-service-"
 
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
@@ -287,20 +280,6 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	return kind, name, nil
 }
 
-// IsDefined checks if a service with the given name is defined in a DevFile
-func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return false, err
-	}
-	for _, c := range components {
-		if c.Name == name {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // ListDevfileLinks returns the names of the links defined in a Devfile
 func ListDevfileLinks(devfileObj parser.DevfileObj, context string) ([]string, error) {
 	return listDevfileLinks(devfileObj, context, devfilefs.DefaultFs{})
@@ -450,116 +429,6 @@ func findDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, 
 		}
 	}
 	return "", false, nil
-}
-
-// AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component
-func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
-	err := devfileObj.Data.AddComponents([]devfile.Component{{
-		Name: name,
-		ComponentUnion: devfile.ComponentUnion{
-			Kubernetes: &devfile.KubernetesComponent{
-				K8sLikeComponent: devfile.K8sLikeComponent{
-					BaseComponent: devfile.BaseComponent{},
-					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-						Inlined: crd,
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func AddKubernetesComponent(crd, name, componentContext string, devfile parser.DevfileObj) error {
-	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{})
-}
-
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem) error {
-	filePath := filepath.Join(componentContext, UriFolder, filePrefix+name+".yaml")
-	if _, err := fs.Stat(filepath.Join(componentContext, UriFolder)); os.IsNotExist(err) {
-		err = fs.MkdirAll(filepath.Join(componentContext, UriFolder), os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := fs.Stat(filePath); !os.IsNotExist(err) {
-		return fmt.Errorf("the file %q already exists", filePath)
-	}
-
-	err := fs.WriteFile(filePath, []byte(crd), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = devfileObj.Data.AddComponents([]devfile.Component{{
-		Name: name,
-		ComponentUnion: devfile.ComponentUnion{
-			Kubernetes: &devfile.KubernetesComponent{
-				K8sLikeComponent: devfile.K8sLikeComponent{
-					BaseComponent: devfile.BaseComponent{},
-					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-						Uri: filepath.Join(UriFolder, filePrefix+name+".yaml"),
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
-// DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string) error {
-	return deleteKubernetesComponentFromDevfile(name, devfileObj, componentContext, devfilefs.DefaultFs{})
-}
-
-// deleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func deleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) error {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	found := false
-	for _, c := range components {
-		if c.Name == name {
-			err = devfileObj.Data.DeleteComponent(c.Name)
-			if err != nil {
-				return err
-			}
-
-			if c.Kubernetes.Uri != "" {
-				parsedURL, err := url.Parse(c.Kubernetes.Uri)
-				if err != nil {
-					return err
-				}
-				if len(parsedURL.Host) == 0 || len(parsedURL.Scheme) == 0 {
-					err := fs.Remove(filepath.Join(componentContext, c.Kubernetes.Uri))
-					if err != nil {
-						return err
-					}
-				}
-			}
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return fmt.Errorf("could not find the service %q in devfile", name)
-	}
-
-	return devfileObj.WriteYamlDevfile()
 }
 
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
