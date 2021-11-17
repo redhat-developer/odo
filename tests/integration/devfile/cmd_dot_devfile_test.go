@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -114,6 +115,10 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 			var odoArgs []string
 			var operators []string
 			BeforeEach(func() {
+				if os.Getenv("KUBERNETES") == "true" {
+					Skip("This is a OpenShift specific scenario, skipping")
+				}
+
 				odoArgs = []string{"catalog", "list", "services"}
 				operators = []string{"redis-operator"}
 				for _, operator := range operators {
