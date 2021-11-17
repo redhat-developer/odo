@@ -68,7 +68,7 @@ func NewCreateParameters(cmd *cobra.Command) CreateParameters {
 	return CreateParameters{cmd: cmd}
 }
 
-func (o CreateParameters) CheckRouteAvailability() CreateParameters {
+func (o CreateParameters) RequireRouteAvailability() CreateParameters {
 	o.routeAvailability = true
 	return o
 }

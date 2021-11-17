@@ -55,7 +55,7 @@ func NewSetOptions() *SetOptions {
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
 	if o.now {
-		params.CreateAppIfNeeded().CheckRouteAvailability()
+		params.CreateAppIfNeeded().RequireRouteAvailability()
 	}
 	o.Context, err = genericclioptions.New(params)
 	if err != nil {
