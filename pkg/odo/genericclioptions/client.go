@@ -7,33 +7,14 @@ import (
 
 // Client returns an oc client with the kClient set
 func Client() (*occlient.Client, error) {
-	ocClient, err := ocClient()
+	ocClient, err := occlient.New()
 	if err != nil {
 		return nil, err
 	}
-	kClient, err := kClient()
+	kClient, err := kclient.New()
 	if err != nil {
 		return nil, err
 	}
 	ocClient.SetKubeClient(kClient)
 	return ocClient, nil
-}
-
-// ocClient creates an oc client
-func ocClient() (*occlient.Client, error) {
-	client, err := occlient.New()
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
-// kClient creates an kclient
-func kClient() (*kclient.Client, error) {
-	kClient, err := kclient.New()
-	if err != nil {
-		return nil, err
-	}
-	return kClient, nil
 }

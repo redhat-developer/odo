@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/envinfo"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -45,10 +44,6 @@ type WatchOptions struct {
 	sourcePath       string
 	componentContext string
 
-	componentName string
-	devfilePath   string
-	namespace     string
-
 	// initialDevfileHandler is only used to do initial validation on the devfile.
 	// All subsequent uses of the devfile adapter are generated in regenerateAdapterAndPush.
 	initialDevfileHandler common.ComponentAdapter
@@ -68,9 +63,7 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.devfilePath = location.DevfileLocation(wo.componentContext)
-
-	wo.Context, err = genericclioptions.NewContext(cmd)
+	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(wo.componentContext))
 	if err != nil {
 		return err
 	}
@@ -86,23 +79,12 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
-	// Get the component name
-	wo.componentName = wo.EnvSpecificInfo.GetName()
-
-	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidateFromFile(wo.devfilePath)
-	if err != nil {
-		return err
-	}
-
-	var platformContext interface{}
 	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-	wo.namespace = wo.KClient.GetCurrentNamespace()
-	platformContext = kubernetes.KubernetesContext{
-		Namespace: wo.namespace,
+	platformContext := kubernetes.KubernetesContext{
+		Namespace: wo.KClient.GetCurrentNamespace(),
 	}
 
-	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
+	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.EnvSpecificInfo.GetName(), wo.componentContext, wo.GetApplication(), wo.EnvSpecificInfo.GetDevfileObj(), platformContext)
 
 	return err
 }
@@ -122,7 +104,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
 		return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
 	}
-	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName, wo.Application)
+	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.EnvSpecificInfo.GetName(), wo.GetApplication())
 	if err != nil {
 		return err
 	}
@@ -137,8 +119,8 @@ func (wo *WatchOptions) Run(cmd *cobra.Command) (err error) {
 	err = watch.DevfileWatchAndPush(
 		os.Stdout,
 		watch.WatchParameters{
-			ComponentName:       wo.componentName,
-			ApplicationName:     wo.Context.Application,
+			ComponentName:       wo.EnvSpecificInfo.GetName(),
+			ApplicationName:     wo.Context.GetApplication(),
 			Path:                wo.sourcePath,
 			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
 			PushDiffDelay:       wo.delay,
@@ -224,13 +206,13 @@ func (wo *WatchOptions) regenerateAdapterAndPush(pushParams common.PushParameter
 func (wo *WatchOptions) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate
-	devObj, err := devfile.ParseAndValidateFromFile(wo.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(wo.GetDevfilePath())
 	if err != nil {
 		return nil, err
 	}
 
 	platformContext := kubernetes.KubernetesContext{
-		Namespace: wo.namespace,
+		Namespace: wo.KClient.GetCurrentNamespace(),
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)

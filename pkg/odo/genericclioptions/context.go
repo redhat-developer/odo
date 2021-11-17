@@ -2,7 +2,6 @@ package genericclioptions
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/location"
@@ -19,8 +18,8 @@ import (
 )
 
 const (
-	// DefaultAppName is the default name of the application when an application name is not provided
-	DefaultAppName = "app"
+	// defaultAppName is the default name of the application when an application name is not provided
+	defaultAppName = "app"
 
 	// gitDirName is the git dir name in a project
 	gitDirName = ".git"
@@ -35,216 +34,138 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	ComponentContext    string
+	// project used for the command, either passed with the `--project` flag, or the current one by default
+	project string
+	// application used for the command, either passed with the `--app` flag, or the current one by default
+	application string
+	// component used for the command, either passed with the `--component` flag, or the current one by default
+	component string
+	// componentContext is the value passed with the `--context` flag
+	componentContext string
+	// outputFlag is the value passed with the `--output` flag
+	outputFlag string
+	// The path of the detected devfile
+	devfilePath string
+	// Kclient can be used to access Kubernetes resources
+	KClient kclient.ClientInterface
+	// Client can be used to access OpenShift resources
 	Client              *occlient.Client
-	command             *cobra.Command
-	Project             string
-	Application         string
-	cmp                 string
-	OutputFlag          string
-	KClient             kclient.ClientInterface
 	EnvSpecificInfo     *envinfo.EnvSpecificInfo
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
 
 // CreateParameters defines the options which can be provided while creating the context
 type CreateParameters struct {
-	Cmd                    *cobra.Command
-	DevfilePath            string
-	ComponentContext       string
-	IsNow                  bool
-	CheckRouteAvailability bool
+	cmd               *cobra.Command
+	componentContext  string
+	routeAvailability bool
+	devfile           bool
+	offline           bool
+	appIfNeeded       bool
+}
+
+func NewCreateParameters(cmd *cobra.Command) CreateParameters {
+	return CreateParameters{cmd: cmd}
+}
+
+func (o CreateParameters) RequireRouteAvailability() CreateParameters {
+	o.routeAvailability = true
+	return o
+}
+
+func (o CreateParameters) NeedDevfile(ctx string) CreateParameters {
+	o.devfile = true
+	o.componentContext = ctx
+	return o
+}
+
+func (o CreateParameters) IsOffline() CreateParameters {
+	o.offline = true
+	return o
+}
+
+func (o CreateParameters) CreateAppIfNeeded() CreateParameters {
+	o.appIfNeeded = true
+	return o
 }
 
 // New creates a context based on the given parameters
 func New(parameters CreateParameters) (*Context, error) {
-	parameters.DevfilePath = completeDevfilePath(parameters.ComponentContext, parameters.DevfilePath)
-	isDevfile := odoutil.CheckPathExists(parameters.DevfilePath)
-	if isDevfile {
-		context, err := NewContext(parameters.Cmd)
-		if err != nil {
-			return context, err
-		}
-		context.ComponentContext = parameters.ComponentContext
+	ctx := internalCxt{}
+	var err error
 
-		err = context.InitEnvInfoFromContext()
-		if err != nil {
-			return nil, err
-		}
-
-		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidateFromFile(parameters.DevfilePath)
-		if err != nil {
-			return context, fmt.Errorf("failed to parse the devfile %s, with error: %s", parameters.DevfilePath, err)
-		}
-
-		err = validate.ValidateDevfileData(devObj.Data)
-		if err != nil {
-			return context, err
-		}
-
-		context.EnvSpecificInfo.SetDevfileObj(devObj)
-
-		context.Client, err = Client()
-		if err != nil {
-			return nil, err
-		}
-
-		err = context.resolveNamespace(context.EnvSpecificInfo)
-		if err != nil {
-			return nil, err
-		}
-
-		if parameters.CheckRouteAvailability {
-			isRouteSupported, err := context.Client.IsRouteSupported()
-			if err != nil {
-				return nil, err
-			}
-			context.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
-		}
-		context.LocalConfigProvider = context.EnvSpecificInfo
-		return context, nil
-	}
-	if parameters.IsNow {
-		context, err := NewContextCreatingAppIfNeeded(parameters.Cmd)
-		if err != nil {
-			return nil, err
-		}
-		context.ComponentContext = parameters.ComponentContext
-		return context, nil
-	}
-	context, err := NewContext(parameters.Cmd)
+	ctx.EnvSpecificInfo, err = getValidEnvInfo(parameters.cmd)
 	if err != nil {
 		return nil, err
 	}
-	context.ComponentContext = parameters.ComponentContext
-	return context, nil
-}
+	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-//InitEnvInfoFromContext initializes envinfo from the context
-func (o *Context) InitEnvInfoFromContext() (err error) {
-	o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.ComponentContext)
-	if err != nil {
-		return err
+	ctx.project = resolveProject(parameters.cmd, ctx.EnvSpecificInfo)
+
+	ctx.application = resolveApp(parameters.cmd, ctx.EnvSpecificInfo, parameters.appIfNeeded)
+
+	ctx.component = resolveComponent(parameters.cmd, ctx.EnvSpecificInfo)
+
+	ctx.componentContext = parameters.componentContext
+
+	ctx.outputFlag = FlagValueIfSet(parameters.cmd, OutputFlagName)
+
+	if !parameters.offline {
+		ctx.KClient, err = kclient.New()
+		if err != nil {
+			return nil, err
+		}
+		ctx.Client, err = Client()
+		if err != nil {
+			return nil, err
+		}
+		if e := ctx.resolveProjectAndNamespace(parameters.cmd, ctx.EnvSpecificInfo); e != nil {
+			return nil, e
+		}
+
+		if FlagValueIfSet(parameters.cmd, ComponentFlagName) != "" {
+			if err = ctx.checkComponentExistsOrFail(); err != nil {
+				return nil, err
+			}
+		}
+
+		if parameters.routeAvailability {
+			isRouteSupported, err := ctx.Client.IsRouteSupported()
+			if err != nil {
+				return nil, err
+			}
+			ctx.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
+		}
 	}
-	return nil
-}
 
-// completeDevfilePath completes the devfile path from context
-func completeDevfilePath(componentContext, devfilePath string) string {
-	if len(devfilePath) > 0 {
-		return filepath.Join(componentContext, devfilePath)
-	} else {
-		return location.DevfileLocation(componentContext)
+	ctx.devfilePath = location.DevfileLocation(parameters.componentContext)
+	isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
+	if parameters.devfile && isDevfile {
+		// Parse devfile and validate
+		devObj, err := devfile.ParseAndValidateFromFile(ctx.devfilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
+		}
+		err = validate.ValidateDevfileData(devObj.Data)
+		if err != nil {
+			return nil, err
+		}
+		ctx.EnvSpecificInfo.SetDevfileObj(devObj)
 	}
-}
 
-// NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command) (*Context, error) {
-	return newContext(command, false)
-}
-
-// NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
-// provided command, creating the application if none already exists
-func NewContextCreatingAppIfNeeded(command *cobra.Command) (*Context, error) {
-	return newContext(command, true)
+	return &Context{
+		internalCxt: ctx,
+	}, nil
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := newContext(command, false)
+	ctx, err := New(CreateParameters{cmd: command})
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
 	return ctx
-}
-
-// newContext creates a new context based on command flags for devfile components
-func newContext(command *cobra.Command, createAppIfNeeded bool) (*Context, error) {
-
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	// Create the internal context representation based on calculated values
-	ctx := internalCxt{
-		OutputFlag: outputFlag,
-		command:    command,
-	}
-
-	// Get valid env information
-	envInfo, err := getValidEnvInfo(command)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a new kubernetes client
-	ctx.KClient, err = kClient()
-	if err != nil {
-		return nil, err
-	}
-	ctx.Client, err = ocClient()
-	if err != nil {
-		return nil, err
-	}
-
-	// Gather env specific info
-	ctx.EnvSpecificInfo = envInfo
-	ctx.resolveApp(createAppIfNeeded, envInfo)
-
-	if e := ctx.resolveNamespace(envInfo); e != nil {
-		return nil, e
-	}
-
-	// resolve the component
-	if _, err = ctx.resolveAndSetComponent(command, envInfo); err != nil {
-		return nil, err
-	}
-	// Create a context from the internal representation
-	context := &Context{
-		internalCxt: ctx,
-	}
-	return context, nil
-}
-
-// NewOfflineContext initializes a context for devfile components without any cluster calls
-func NewOfflineContext(command *cobra.Command) (*Context, error) {
-	// Resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	// Create the internal context representation based on calculated values
-	ctx := internalCxt{
-		OutputFlag: outputFlag,
-		command:    command,
-	}
-
-	// Get valid env information
-	envInfo, err := getValidEnvInfo(command)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx.EnvSpecificInfo = envInfo
-	ctx.LocalConfigProvider = envInfo
-	ctx.resolveApp(false, envInfo)
-
-	// resolve the component
-	_, err = ctx.resolveAndSetComponent(command, envInfo)
-	if err != nil {
-		return nil, err
-	}
-	projectFlag := FlagValueIfSet(command, ProjectFlagName)
-	if projectFlag != "" {
-		ctx.Project = projectFlag
-	} else {
-		ctx.Project = envInfo.GetNamespace()
-	}
-
-	// Create a context from the internal representation
-	context := &Context{
-		internalCxt: ctx,
-	}
-	return context, nil
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, returns
@@ -260,16 +181,36 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 	case 0:
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we return an error
-		if !allowEmpty && len(o.cmp) == 0 {
+		if !allowEmpty && len(o.component) == 0 {
 			return "", fmt.Errorf("No component is set")
 		}
 	case 1:
 		cmp := optionalComponent[0]
-		o.cmp = cmp
+		o.component = cmp
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
 		return "", fmt.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
 	}
 
-	return o.cmp, nil
+	return o.component, nil
+}
+
+func (o *Context) GetProject() string {
+	return o.project
+}
+
+func (o *Context) GetApplication() string {
+	return o.application
+}
+
+func (o *Context) GetOutputFlag() string {
+	return o.outputFlag
+}
+
+func (o *Context) GetComponentContext() string {
+	return o.componentContext
+}
+
+func (o *Context) GetDevfilePath() string {
+	return o.devfilePath
 }

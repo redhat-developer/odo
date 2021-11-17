@@ -6,7 +6,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
@@ -43,12 +42,7 @@ func NewURLListOptions() *ListOptions {
 
 // Complete completes ListOptions after they've been Listed
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
-		ComponentContext: o.componentContext,
-	})
-
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	if err != nil {
 		return err
 	}
@@ -68,7 +62,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() (err error) {
-	return odoutil.CheckOutputFlag(o.OutputFlag)
+	return odoutil.CheckOutputFlag(o.GetOutputFlag())
 }
 
 // Run contains the logic for the odo url list command

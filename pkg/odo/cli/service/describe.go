@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/service"
 	svc "github.com/openshift/odo/pkg/service"
@@ -38,11 +37,7 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
-		ComponentContext: o.componentContext,
-	})
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	if err != nil {
 		return err
 	}
@@ -82,7 +77,7 @@ func (o *DescribeOptions) Validate() error {
 
 // Run contains the logic for the odo service describe command
 func (o *DescribeOptions) Run(cmd *cobra.Command) error {
-	err := o.Backend.DescribeService(o, o.serviceName, o.Application)
+	err := o.Backend.DescribeService(o, o.serviceName, o.GetApplication())
 	return err
 }
 

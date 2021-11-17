@@ -73,14 +73,11 @@ func NewURLCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:                    cmd,
-		DevfilePath:            o.DevfilePath,
-		ComponentContext:       o.GetComponentContext(),
-		IsNow:                  o.now,
-		CheckRouteAvailability: true,
-	})
-
+	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
+	if o.now {
+		params.CreateAppIfNeeded()
+	}
+	o.Context, err = genericclioptions.New(params)
 	if err != nil {
 		return err
 	}
@@ -128,8 +125,8 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 
 // Validate validates the CreateOptions based on completed values
 func (o *CreateOptions) Validate() (err error) {
-	if !util.CheckOutputFlag(o.OutputFlag) {
-		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
+	if !util.CheckOutputFlag(o.GetOutputFlag()) {
+		return fmt.Errorf("given output format %s is not supported", o.GetOutputFlag())
 	}
 
 	errorList := make([]string, 0)

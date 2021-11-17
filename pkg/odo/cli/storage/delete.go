@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -40,12 +39,7 @@ func NewStorageDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
-		ComponentContext: o.componentContext,
-	})
-
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	if err != nil {
 		return err
 	}
@@ -61,7 +55,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return err
 	}
 	if gotStorage == nil {
-		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
+		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.GetApplication(), err)
 	}
 
 	return

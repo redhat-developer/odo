@@ -50,7 +50,7 @@ func NewProjectSetOptions() *ProjectSetOptions {
 
 // Complete completes ProjectSetOptions after they've been created
 func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	pso.Context, err = genericclioptions.NewContext(cmd)
+	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	pso.projectName = args[0]
 
 	return
@@ -75,7 +75,7 @@ func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 	if scontext.GetTelemetryStatus(cmd.Context()) {
 		scontext.SetClusterType(cmd.Context(), pso.Client)
 	}
-	current := pso.Project
+	current := pso.GetProject()
 	err = project.SetCurrent(pso.Context, pso.projectName)
 	if err != nil {
 		return err

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/location"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/util"
 
@@ -24,7 +23,6 @@ const TestRecommendedCommandName = "test"
 type TestOptions struct {
 	commandName      string
 	componentContext string
-	devfilePath      string
 	show             bool
 	devObj           devfileParser.DevfileObj
 	*genericclioptions.Context
@@ -46,19 +44,18 @@ func NewTestOptions() *TestOptions {
 
 // Complete completes TestOptions after they've been created
 func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	to.devfilePath = location.DevfileLocation(to.componentContext)
-	to.Context, err = genericclioptions.NewContext(cmd)
+	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(to.componentContext))
 	return
 }
 
 // Validate validates the TestOptions based on completed values
 func (to *TestOptions) Validate() (err error) {
 
-	if !util.CheckPathExists(to.devfilePath) {
+	if !util.CheckPathExists(to.Context.GetDevfilePath()) {
 		return fmt.Errorf("unable to find devfile, odo test command is only supported by devfile components")
 	}
 
-	devObj, err := devfile.ParseAndValidateFromFile(to.devfilePath)
+	devObj, err := devfile.ParseAndValidateFromFile(to.Context.GetDevfilePath())
 	if err != nil {
 		return err
 	}

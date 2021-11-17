@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	svc "github.com/openshift/odo/pkg/service"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -58,11 +56,8 @@ func (o *commonLinkOptions) getLinkType() string {
 // Complete completes LinkOptions after they've been created
 func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string, context string) (err error) {
 	o.csvSupport, _ = svc.IsCSVSupported()
-
 	o.operationName = name
-
-	suppliedName := args[0]
-	o.suppliedName = suppliedName
+	o.suppliedName = args[0]
 
 	// we need to support both devfile based component and s2i components.
 	// Let's first check if creating a devfile context is possible for the
@@ -71,26 +66,12 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	if err != nil {
 		// error means that we can't create a devfile context for the command
 		// and must create s2i context instead
-		o.Context, err = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).CreateAppIfNeeded())
 	} else {
-		o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-			Cmd:              cmd,
-			DevfilePath:      location.DevfileFilenamesProvider(context),
-			ComponentContext: context,
-		})
+		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(context))
 	}
-
 	if err != nil {
 		return err
-	}
-
-	o.Client, err = occlient.New()
-	if err != nil {
-		return err
-	}
-
-	if o.Context.EnvSpecificInfo == nil {
-		return fmt.Errorf("failed to find environment info")
 	}
 
 	return o.completeForOperator()
@@ -114,13 +95,13 @@ func (o *commonLinkOptions) run() (err error) {
 	var component string
 	if o.Context.EnvSpecificInfo != nil {
 		component = o.EnvSpecificInfo.GetName()
-		err = o.operation(o.secretName, component, o.Application)
+		err = o.operation(o.secretName, component, o.GetApplication())
 	} else {
 		component, err = o.Component()
 		if err != nil {
 			return err
 		}
-		err = o.operation(o.secretName, component, o.Application)
+		err = o.operation(o.secretName, component, o.GetApplication())
 	}
 
 	if err != nil {
@@ -136,7 +117,7 @@ func (o *commonLinkOptions) run() (err error) {
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.Project)
+	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.GetProject())
 	if err != nil {
 		return err
 	}
@@ -276,7 +257,7 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 	}
 
 	if o.operationName == unlink {
-		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
+		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 		if err != nil {
 			return err
 		}
@@ -351,7 +332,7 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 		return err
 	}
 
-	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
+	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 	if err != nil {
 		return err
 	}
@@ -365,7 +346,7 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 			return err
 		}
 	} else {
-		err = svc.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.ComponentContext, o.EnvSpecificInfo.GetDevfileObj())
+		err = svc.AddKubernetesComponent(string(yamlDesc), o.serviceBinding.Name, o.GetComponentContext(), o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -380,12 +361,12 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 func (o *commonLinkOptions) unlinkOperator() (err error) {
 
 	// We already tested `found` in `validateForOperator`
-	name, _, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.ComponentContext)
+	name, _, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 	if err != nil {
 		return err
 	}
 
-	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.ComponentContext)
+	err = svc.DeleteKubernetesComponentFromDevfile(name, o.EnvSpecificInfo.GetDevfileObj(), o.GetComponentContext())
 	if err != nil {
 		return err
 	}

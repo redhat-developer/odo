@@ -4,14 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
@@ -41,15 +36,9 @@ type StatusOptions struct {
 	componentContext string
 
 	componentName  string
-	devfilePath    string
-	namespace      string
 	devfileHandler common.ComponentAdapter
 
-	devObj parser.DevfileObj
-
-	logFollow           bool
-	EnvSpecificInfo     *envinfo.EnvSpecificInfo
-	localConfigProvider localConfigProvider.LocalConfigProvider
+	logFollow bool
 	*genericclioptions.Context
 }
 
@@ -60,37 +49,19 @@ func NewStatusOptions() *StatusOptions {
 
 // Complete completes status args
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	so.devfilePath = location.DevfileLocation(so.componentContext)
-
-	so.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(so.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
-	}
-	so.Context, err = genericclioptions.NewContext(cmd)
+	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(so.componentContext))
 	if err != nil {
 		return err
 	}
+
 	// Get the component name
 	so.componentName = so.EnvSpecificInfo.GetName()
 
-	devObj, err := devfile.ParseAndValidateFromFile(so.devfilePath)
-	if err != nil {
-		return err
-	}
-	so.devObj = devObj
-	so.EnvSpecificInfo.SetDevfileObj(so.devObj)
-
-	so.localConfigProvider = so.EnvSpecificInfo
-
-	var platformContext interface{}
-	// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initializing the context
-	so.namespace = so.KClient.GetCurrentNamespace()
-	platformContext = kubernetes.KubernetesContext{
-		Namespace: so.namespace,
+	platformContext := kubernetes.KubernetesContext{
+		Namespace: so.KClient.GetCurrentNamespace(),
 	}
 
-	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.Application, devObj, platformContext)
-
+	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.GetApplication(), so.EnvSpecificInfo.GetDevfileObj(), platformContext)
 	return err
 }
 
@@ -123,7 +94,7 @@ func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
 		oclient.Namespace = so.KClient.GetCurrentNamespace()
 	}
 
-	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.localConfigProvider, loggingClient)
+	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.LocalConfigProvider, loggingClient)
 
 	// You can call Run() any time you like, but you can never leave.
 	for {

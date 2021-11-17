@@ -105,8 +105,8 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 	var selector string
-	if context.Application != "" {
-		selector = applabels.GetSelector(context.Application)
+	if context.GetApplication() != "" {
+		selector = applabels.GetSelector(context.GetApplication())
 	}
 	components, err := component.List(context.Client, selector)
 

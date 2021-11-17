@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/service"
 
 	"github.com/openshift/odo/pkg/log"
@@ -44,11 +43,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.CreateParameters{
-		Cmd:              cmd,
-		DevfilePath:      location.DevfileFilenamesProvider(o.componentContext),
-		ComponentContext: o.componentContext,
-	})
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	if err != nil {
 		return err
 	}
@@ -84,7 +79,7 @@ func (o *DeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo service delete command
 func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
-		err = o.Backend.DeleteService(o, o.serviceName, o.Application)
+		err = o.Backend.DeleteService(o, o.serviceName, o.GetApplication())
 		if err != nil {
 			return err
 		}

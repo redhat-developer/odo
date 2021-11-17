@@ -10,9 +10,9 @@ func NewFakeContext(project, application, component string, client *occlient.Cli
 		internalCxt{
 			Client:      client,
 			KClient:     kclient,
-			Project:     project,
-			Application: application,
-			cmp:         component,
+			project:     project,
+			application: application,
+			component:   component,
 		},
 	}
 }

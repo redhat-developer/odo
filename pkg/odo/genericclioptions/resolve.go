@@ -3,8 +3,10 @@ package genericclioptions
 import (
 	"context"
 	"fmt"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/localConfigProvider"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,13 +18,12 @@ func ResolveAppFlag(command *cobra.Command) string {
 	if len(appFlag) > 0 {
 		return appFlag
 	}
-	return DefaultAppName
+	return defaultAppName
 }
 
-// resolveNamespace resolves namespace for devfile component
-func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalConfigProvider) error {
+// resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
+func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string
-	command := o.command
 	projectFlag := FlagValueIfSet(command, ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
@@ -67,44 +68,56 @@ func (o *internalCxt) resolveNamespace(configProvider localConfigProvider.LocalC
 	o.Client.Namespace = namespace
 	o.Client.GetKubeClient().Namespace = namespace
 	o.KClient.SetNamespace(namespace)
-	o.Project = namespace
-
+	o.project = namespace
 	return nil
 }
 
 // resolveApp resolves the app
-func (o *internalCxt) resolveApp(createAppIfNeeded bool, localConfiguration localConfigProvider.LocalConfigProvider) {
-	var app string
-	command := o.command
+// If `--app` flag is used, return its value
+// Or If app is set in envfile, return its value
+// Or if createAppIfNeeded, returns the default app name
+func resolveApp(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
-		app = appFlag
-	} else {
-		app = localConfiguration.GetApplication()
-		if app == "" {
-			if createAppIfNeeded {
-				app = DefaultAppName
-			}
-		}
+		return appFlag
 	}
-	o.Application = app
+
+	app := localConfiguration.GetApplication()
+	if app == "" && createAppIfNeeded {
+		app = defaultAppName
+	}
+	return app
 }
 
 // resolveComponent resolves component
-func (o *internalCxt) resolveAndSetComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) (string, error) {
-	var cmp string
+// If `--component` flag is used, return its value
+// Or Return the value in envfile
+func resolveComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
 	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
-	if len(cmpFlag) == 0 {
-		// retrieve the current component if it exists if we didn't set the component flag
-		cmp = localConfiguration.GetName()
-	} else {
-		// if flag is set, check that the specified component exists
-		err := o.checkComponentExistsOrFail(cmpFlag)
-		if err != nil {
-			return "", err
-		}
-		cmp = cmpFlag
+	if len(cmpFlag) > 0 {
+		return cmpFlag
 	}
-	o.cmp = cmp
-	return cmp, nil
+
+	return localConfiguration.GetName()
+}
+
+func resolveProject(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
+	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	if projectFlag != "" {
+		return projectFlag
+	}
+	return localConfiguration.GetNamespace()
+}
+
+// checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
+// KClient, component and application should have been set before to call this method
+func (o *internalCxt) checkComponentExistsOrFail() error {
+	exists, err := component.Exists(o.KClient, o.component, o.application)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("Component %v does not exist in application %s", o.component, o.application)
+	}
+	return nil
 }
