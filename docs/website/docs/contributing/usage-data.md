@@ -1,10 +1,10 @@
-== Usage Data Collection
-With user approval, we collect pseudonymized user data that will help us improve odo.
+### Usage Data Collection
+With user approval, we collect [pseudonymized](https://en.wikipedia.org/wiki/Pseudonymization) user data that will help us improve odo.
 
 To learn more about what data is being collected and how to configure this collection, see link:{https://github.com/redhat-developer/odo/blob/main/USAGE_DATA.adoc}[USAGE_DATA.adoc].
 
 
-== Data Collection Process
+### Data Collection Process
 
 Considering the user has approved to data collection, everytime a command is executed, it triggers a background process that sends the data to our servers.
 
@@ -48,6 +48,6 @@ If the command, for example `odo create xyz` is unsuccessful, the following data
 
 Before sending the data to the server, error message is sanitized of any PII(Personally Identifiable Information) data which includes username, file paths, URLs, and pod exec commands executed via odo commands.
 
-Note that these commands do not include --help commands. We do not collect data about help commands.
+Note that these commands do not include `--help` commands. We do not collect data about help commands.
 
-We use link:{https://segment.io}[Segment] as our data platform and link:{https://www.woopra.com}[Woopra] as our analytics tool.
+We use [Segment](https://segment.io) as our data platform and [Woopra](https://www.woopra.com) as our analytics tool.
