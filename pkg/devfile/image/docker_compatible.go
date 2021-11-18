@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/log"
 	"k8s.io/klog"
 )
 
@@ -26,6 +27,8 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	if strings.HasPrefix(image.Dockerfile.Uri, "http") {
 		return errors.New("HTTP URL for uri is not supported")
 	}
+
+	log.Infof("\nBuilding image %s", image.ImageName)
 
 	shell := getShellCommand(o.name, image, devfilePath)
 
@@ -56,6 +59,7 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 
 // Push an image to its registry using a Docker compatible CLI
 func (o *DockerCompatibleBackend) Push(image string) error {
+	log.Infof("\nPushing image %s", image)
 	klog.V(4).Infof("Running command: %s push %s", o.name, image)
 	cmd := exec.Command(o.name, "push", image)
 	cmd.Stdout = os.Stdout

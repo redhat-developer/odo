@@ -43,6 +43,8 @@ func (o componentKubernetes) Apply(devfileObj parser.DevfileObj, devfilePath str
 	if err != nil {
 		return err
 	}
+
+	log.Infof("\nDeploying Kubernetes %s: %s", u.GetKind(), u.GetName())
 	isOperatorBackedService, err := service.PushKubernetesResource(o.client.GetKubeClient(), u, labels)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
