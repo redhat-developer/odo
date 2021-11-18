@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"text/tabwriter"
@@ -53,6 +54,9 @@ func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 // Validate validates the ViewOptions based on completed values
 func (o *ViewOptions) Validate() (err error) {
+	if !o.IsDevfile {
+		return errors.New("the directory doesn't contain a component. Use 'odo create' to create a component")
+	}
 	return
 }
 
