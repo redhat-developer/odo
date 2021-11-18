@@ -44,7 +44,7 @@ We will use the official [nodejs](https://github.com/odo-devfiles/registry/tree/
   ```shell
   odo create nodejs --starter nodejs-starter
   ```
-  Example:
+  For example:
   ```shell
   $ odo create nodejs --starter nodejs-starter
   Validation
@@ -63,7 +63,7 @@ We will use the official [nodejs](https://github.com/odo-devfiles/registry/tree/
   ```shell
   odo push --debug
   ```
-  Example:
+  For example:
   ```shell
   $ odo push --debug
   
@@ -94,7 +94,7 @@ We will use the official [nodejs](https://github.com/odo-devfiles/registry/tree/
   ```shell
   odo debug port-forward
   ```
-  Example:
+  For example:
   ```shell
   $ odo debug port-forward
   Started port forwarding at ports - 5858:5858
@@ -107,7 +107,7 @@ We will use the official [nodejs](https://github.com/odo-devfiles/registry/tree/
   odo debug info
   ```
   
-  Example:
+  For example:
   ```shell
   $ odo debug info
   Debug is running for the component on the local port : 5858

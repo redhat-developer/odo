@@ -2,8 +2,6 @@
 title: Using the odo.dev.push.path related attribute
 sidebar_position: 4
 ---
-### Using the odo.dev.push.path related attributes
-
 `odo` uses the `odo.dev.push.path` related attribute from the devfile's run commands to push only the specified files and folders to the component.
 
 The format of the attribute is `"odo.dev.push.path:<local_relative_path>": "<remote_relative_path>"`. We can mention multiple such attributes in the run command's `attributes` section.
