@@ -1,6 +1,6 @@
 ---
 title: Using the odo.dev.push.path related attribute
-sidebar_position: 3
+sidebar_position: 4
 ---
 ### Using the odo.dev.push.path related attributes
 
