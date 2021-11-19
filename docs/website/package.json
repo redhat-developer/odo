@@ -22,6 +22,7 @@
     "browserslist": "^4.16.5",
     "clsx": "^1.1.1",
     "css-what": "^5.0.1",
+    "docusaurus-odo-plugin-segment": "file:docusaurus-odo-plugin-segment",
     "file-loader": "^6.2.0",
     "glob-parent": "^5.1.2",
     "prism-react-renderer": "^1.2.1",

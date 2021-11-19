@@ -1,5 +1,6 @@
 const lightCodeTheme = require('prism-react-renderer/themes/github');
 const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const path = require('path');
 
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
@@ -12,6 +13,7 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'openshift', // Usually your GitHub org/user name.
   projectName: 'odo', // Usually your repo name.
+  plugins: [path.resolve(__dirname, 'docusaurus-odo-plugin-segment')],
   themeConfig: {
     navbar: {
       title: 'odo',
