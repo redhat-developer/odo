@@ -62,7 +62,7 @@ var _ = Describe("odo preference and config command tests", func() {
 
 		It("should fail if devfile not present in current dir", func() {
 			err := helper.Cmd("odo", "config", "view").ShouldFail().Err()
-			Expect(err).To(ContainSubstring("the directory doesn't contain a component"))
+			Expect(err).To(ContainSubstring("the current directory does not represent an odo component."))
 		})
 	})
 
