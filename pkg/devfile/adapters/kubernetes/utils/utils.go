@@ -222,6 +222,6 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 // overrideContainerArgs overrides the container's entrypoint with supervisord
 func overrideContainerArgs(container *corev1.Container) {
 	klog.V(2).Infof("Updating container %v entrypoint with supervisord", container.Name)
-	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
-	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+	container.Command = append(container.Command, "/opt/odo/bin/go-init")
+	container.Args = append(container.Args, "-main", adaptersCommon.SupervisordBinaryPath+" -c "+adaptersCommon.SupervisordConfFile)
 }
