@@ -1,6 +1,6 @@
 ---
 title: Getting involved in the Community
-sidebar_position: 3
+sidebar_position: 0
 ---
 ### Events
 

@@ -1,6 +1,6 @@
 ---
 title:  Validation Architecture
-sidebar_position: 9
+sidebar_position: 10
 ---
 
 User-specified input needs to be validated as early as possible, i.e. before being sent to the remote server so that the user can benefit from fast feedback. odo therefore defines an input validation architecture in order to validate user-specified values.

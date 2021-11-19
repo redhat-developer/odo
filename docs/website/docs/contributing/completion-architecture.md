@@ -1,6 +1,6 @@
 ---
 title:  Completion Architecture
-sidebar_position: 8
+sidebar_position: 9
 ---
 
 odo provides smart completion of command names, arguments and flags when typing commands. The completion architecture allows for completion handlers (i.e. pieces of code that provide the suggestions to the shell running the command) to be written entirely in go. This document describes the architecture, how to develop new completion handlers and how to activate/deactivate completions for odo.

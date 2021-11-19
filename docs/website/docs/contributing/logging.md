@@ -1,6 +1,6 @@
 ---
 title: Logging in odo
-sidebar_position: 3
+sidebar_position: 6
 ---
 odo uses [Klog](https://github.com/kubernetes/klog) for V style logging.
 

@@ -1,6 +1,6 @@
 ---
 title: Documentation
-sidebar_position: 3
+sidebar_position: 1
 ---
 Below steps should help you get started with contributing to this website. Note that angular brackets (`<`, `>`) indicate placeholder data; you are not supposed to use them, but replace the brackets and text inside it with relevant information:
 * Fork the [odo repo](https://github.com/redhat-developer/odo/) on GitHub under your namespace.

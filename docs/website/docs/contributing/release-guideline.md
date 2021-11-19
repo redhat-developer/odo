@@ -1,6 +1,6 @@
 ---
 title: Release Guideline
-sidebar_position: 4
+sidebar_position: 8
 ---
 
 ### Releasing a new version

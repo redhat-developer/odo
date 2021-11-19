@@ -1,6 +1,6 @@
 ---
 title:  CI Reference
-sidebar_position: 8
+sidebar_position: 7
 ---
 
 ### Running PR test job on PSI

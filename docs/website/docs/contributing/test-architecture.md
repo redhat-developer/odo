@@ -1,6 +1,6 @@
 ---
 title:  Test Guide
-sidebar_position: 3
+sidebar_position: 5
 ---
 
 ### Setting up test environment

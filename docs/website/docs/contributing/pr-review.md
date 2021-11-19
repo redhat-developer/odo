@@ -1,6 +1,6 @@
 ---
 title: Pull Request Review
-sidebar_position: 5
+sidebar_position: 4
 ---
 
 Each PR requires *one* code review (lgtm label) and *one* approve (approved label).

@@ -1,6 +1,6 @@
 ---
 title: Usage Data Collection
-sidebar_position: 4
+sidebar_position: 11
 ---
 With user approval, we collect [pseudonymized](https://en.wikipedia.org/wiki/Pseudonymization) user data that will help us improve odo.
 
