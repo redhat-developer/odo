@@ -300,7 +300,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 						stdOut := helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "cat", "/bindings/"+componentName+"-redis-"+serviceName+"/image").ShouldPass().Out()
 						Expect(stdOut).To(ContainSubstring(imageMappingValue))
 						stdOut = helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "cat", "/bindings/"+componentName+"-redis-"+serviceName+"/key").ShouldPass().Out()
-						Expect(stdOut).To(Equal("value"))
+						Expect(stdOut).To(ContainSubstring("value"))
 					})
 				})
 			})
