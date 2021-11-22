@@ -25,7 +25,6 @@ var viewExample = ktemplates.Examples(`# For viewing the current configuration f
 type ViewOptions struct {
 	contextDir string
 	*genericclioptions.Context
-	//*clicomponent.PushOptions
 }
 
 // NewViewOptions creates a new ViewOptions instance
