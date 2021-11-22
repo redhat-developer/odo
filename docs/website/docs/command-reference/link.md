@@ -178,6 +178,17 @@ PostgresCluster/database     Yes (backend)      Pushed     2h5m43s
 $ odo link PostgresCluster/hippo --map pgVersion='{{ .database.spec.postgresVersion }}'
 ```
 
+After a link operation, do `odo push` as usual. Upon successful completion of push operation, you can run below command from your backend component directory to validate if custom mapping got injected properly:
+
+```shell
+odo exec -- env | grep pgVersion
+```
+Example output:
+```shell
+$ odo exec -- env | grep pgVersion
+pgVersion=13
+```
+
 ### To inline or not?
 
 You can stick to the default behaviour wherein `odo link` will generate a manifest file for the link under `kubernetes/` directory, or you could use `--inlined` flag if you prefer to store everything in a single `devfile.yaml` file. It doesn't matter what you use for this functionality of adding custom mappings.
