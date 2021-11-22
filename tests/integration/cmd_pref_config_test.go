@@ -51,6 +51,21 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
+	When("running odo config view", func() {
+		It("should pass if devfile is present in current dir", func() {
+			helper.Chdir(commonVar.Context)
+			cmpName := helper.RandString(6)
+			helper.Cmd("odo", "create", cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			out := helper.Cmd("odo", "config", "view").ShouldPass().Out()
+			helper.MatchAllInOutput(out, []string{"runtime", "Memory: 1024Mi"})
+		})
+
+		It("should fail if devfile not present in current dir", func() {
+			err := helper.Cmd("odo", "config", "view").ShouldFail().Err()
+			Expect(err).To(ContainSubstring("the current directory does not represent an odo component."))
+		})
+	})
+
 	Context("When viewing global config", func() {
 		var newContext string
 		// ConsentTelemetry is set to false in helper.CommonBeforeEach so that it does not prompt to set a value

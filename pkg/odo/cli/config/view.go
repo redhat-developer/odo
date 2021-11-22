@@ -5,13 +5,10 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 	"sigs.k8s.io/yaml"
@@ -26,10 +23,8 @@ var viewExample = ktemplates.Examples(`# For viewing the current configuration f
 
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
-	contextDir  string
-	devfilePath string
-	devfileObj  parser.DevfileObj
-	IsDevfile   bool
+	contextDir string
+	*genericclioptions.Context
 }
 
 // NewViewOptions creates a new ViewOptions instance
@@ -39,15 +34,8 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	devfilePath := location.DevfileLocation(o.contextDir)
-	if util.CheckPathExists(devfilePath) {
-		o.devfilePath = devfilePath
-		o.IsDevfile = true
-		o.devfileObj, err = parser.Parse(o.devfilePath)
-		if err != nil {
-			return err
-		}
-	}
+	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextDir)
+	o.Context, err = genericclioptions.New(params)
 	return
 }
 
@@ -59,7 +47,7 @@ func (o *ViewOptions) Validate() (err error) {
 // Run contains the logic for the command
 func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	repr, err := component.ToDevfileRepresentation(o.devfileObj)
+	repr, err := component.ToDevfileRepresentation(o.Context.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}
