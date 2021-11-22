@@ -16,6 +16,7 @@ import (
 var _ = Describe("odo link command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
+	var redisServiceName = "redis"
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
@@ -50,6 +51,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 			var componentName string
 			var svcFullName string
+			var serviceName string
 
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
@@ -57,7 +59,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "create", componentName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 				helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", commonVar.Context).ShouldPass()
 
-				serviceName := "service-" + helper.RandString(6)
+				serviceName = "service" + helper.RandString(6)
 				svcFullName = strings.Join([]string{"Redis", serviceName}, "/")
 				helper.Cmd("odo", "service", "create", redisCluster, serviceName, "--context", commonVar.Context).ShouldPass()
 
@@ -253,6 +255,55 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					})
 				})
 			})
+
+			When("a link is created and custom binding data is being injected with --map", func() {
+				var imageMapping string
+				var imageMappingValue = "image=quay.io/opstree/redis:v6.2.5"
+
+				BeforeEach(func() {
+					imageMapping = fmt.Sprintf("image={{ .%s.spec.kubernetesConfig.image }}", serviceName)
+				})
+
+				When("no additional flag other than --map is passed to odo link", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "link", svcFullName, "--context", commonVar.Context, "--map", "key=value", "--map", imageMapping).ShouldPass()
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+					})
+
+					It("should have created the mappings correctly", func() {
+						stdOut := helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "env").ShouldPass().Out()
+						helper.MatchAllInOutput(stdOut, []string{"key=value", imageMappingValue})
+					})
+				})
+
+				When("--inlined flag is passed to odo link", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "link", svcFullName, "--inlined", "--context", commonVar.Context, "--map", "key=value", "--map", imageMapping).ShouldPass()
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+					})
+
+					It("should have created the mappings correctly", func() {
+						stdOut := helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "env").ShouldPass().Out()
+						helper.MatchAllInOutput(stdOut, []string{"key=value", imageMappingValue})
+					})
+				})
+
+				When("--bind-as-files flag is used along with --map", func() {
+					BeforeEach(func() {
+						helper.Cmd("odo", "link", svcFullName, "--bind-as-files", "--context", commonVar.Context, "--map", "key=value", "--map", imageMapping).ShouldPass()
+						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+						// change the imageMappingValue variable here because we're going to "cat" the file (named after our key) content (contains our value as content)
+						imageMappingValue = "quay.io/opstree/redis:v6.2.5"
+					})
+
+					It("should have created the mappings correctly", func() {
+						stdOut := helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "cat", "/bindings/"+componentName+"-redis-"+serviceName+"/image").ShouldPass().Out()
+						Expect(stdOut).To(ContainSubstring(imageMappingValue))
+						stdOut = helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "cat", "/bindings/"+componentName+"-redis-"+serviceName+"/key").ShouldPass().Out()
+						Expect(stdOut).To(Equal("value"))
+					})
+				})
+			})
 		})
 
 		When("getting sources, a devfile defining a component, a service and a link, and executing odo push", func() {
@@ -322,7 +373,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 		It("should fail if the component doesn't exist and the service name doesn't adhere to the <service-type>/<service-name> format", func() {
 			helper.Cmd("odo", "link", "Redis").ShouldFail()
 			helper.Cmd("odo", "link", "Redis/").ShouldFail()
-			helper.Cmd("odo", "link", "/redis-standalone").ShouldFail()
+			helper.Cmd("odo", "link", fmt.Sprintf("/%s", redisServiceName)).ShouldFail()
 		})
 
 		When("another component is deployed", func() {

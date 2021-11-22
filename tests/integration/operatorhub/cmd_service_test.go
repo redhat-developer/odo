@@ -18,6 +18,7 @@ import (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	var commonVar helper.CommonVar
+	var redisServiceName = "redis"
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
@@ -200,8 +201,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 
 					It("should fail if the provided service doesn't exist in the namespace", func() {
-						stdOut := helper.Cmd("odo", "link", "Redis/redis-standalone").ShouldFail().Err()
-						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", "Redis/redis-standalone"))
+						stdOut := helper.Cmd("odo", "link", fmt.Sprintf("Redis/%s", redisServiceName)).ShouldFail().Err()
+						Expect(stdOut).To(ContainSubstring("couldn't find service named %q", fmt.Sprintf("Redis/%s", redisServiceName)))
 					})
 				})
 
@@ -226,7 +227,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						})
 
 						AfterEach(func() {
-							helper.Cmd("odo", "service", "delete", "Redis/redis-standalone", "-f").ShouldPass()
+							helper.Cmd("odo", "service", "delete", fmt.Sprintf("Redis/%s", redisServiceName), "-f").ShouldPass()
 							helper.Cmd("odo", "push").ShouldPass()
 						})
 

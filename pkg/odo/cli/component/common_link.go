@@ -10,6 +10,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	svc "github.com/redhat-developer/odo/pkg/service"
+
+	"github.com/pkg/errors"
+
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -40,6 +43,10 @@ type commonLinkOptions struct {
 	csvSupport bool
 
 	inlined bool
+	// mappings is an array of custom binding data that user wants to inject into the component
+	mappings []string
+	// MappingsMap is a map of mappings to be used in the ServiceBinding we create for an "odo link"
+	MappingsMap []servicebinding.Mapping
 }
 
 func newCommonLinkOptions() *commonLinkOptions {
@@ -198,6 +205,19 @@ func (o *commonLinkOptions) completeForOperator() (err error) {
 		return err
 	}
 
+	for _, kv := range o.mappings {
+		kvSlice := strings.Split(kv, "=")
+		// key value not provided in format of key=value
+		if len(kvSlice) != 2 {
+			return errors.New("mappings not provided in key=value format")
+		}
+		mapping := servicebinding.Mapping{
+			Name:  kvSlice[0],
+			Value: kvSlice[1],
+		}
+		o.MappingsMap = append(o.MappingsMap, mapping)
+	}
+
 	o.serviceBinding = &servicebinding.ServiceBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"),
@@ -309,7 +329,10 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 			},
 		}
 	}
+
+	service.Id = &o.serviceName // Id field is helpful if user wants to inject mappings (custom binding data)
 	o.serviceBinding.Spec.Services = []servicebinding.Service{service}
+	o.serviceBinding.Spec.Mappings = o.MappingsMap
 
 	return nil
 }
@@ -338,6 +361,7 @@ func (o *commonLinkOptions) linkOperator() (err error) {
 		return err
 	}
 
+	// check if the component is already linked to the requested component/service
 	_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
 	if err != nil {
 		return err
