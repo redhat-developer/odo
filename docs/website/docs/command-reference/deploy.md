@@ -3,8 +3,6 @@ title: odo deploy
 sidebar_position: 4
 ---
 
-# odo deploy
-
 odo can be used to deploy components in a similar manner they would be deployed by a CI/CD system, 
 by first building the images of the containers to deploy, then by deploying the Kubernetes resources
 necessary to deploy the components.

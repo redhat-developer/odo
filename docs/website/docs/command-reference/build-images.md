@@ -3,8 +3,6 @@ title: odo build-images
 sidebar_position: 1
 ---
 
-# odo build-images
-
 odo can build container images based on Dockerfiles, and push these images to their registries.
 
 When running the command `odo build-images`, odo searches for all components in the `devfile.yaml` with the `image` type, for example:

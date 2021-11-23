@@ -2,7 +2,6 @@
 title: odo service
 sidebar_position: 6
 ---
-# odo service
 
 odo can deploy *services* with the help of *operators*.
 

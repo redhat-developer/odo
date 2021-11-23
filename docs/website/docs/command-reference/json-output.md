@@ -2,7 +2,6 @@
 title: JSON Output
 sidebar_position: 100
 ---
-# JSON Output
 
 The `odo` commands that output some content generally accept a `-o json` flag to output this content in a JSON format, suitable for other programs to parse this output more easily.
 
