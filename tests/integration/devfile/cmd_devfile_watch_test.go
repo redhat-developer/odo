@@ -31,19 +31,19 @@ var _ = Describe("odo devfile watch command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("running executing odo watch with -h", func() {
-		It("should display the help for watch", func() {
+	When("running help for watch command", func() {
+		It("should display the help", func() {
 			appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()
 			helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
 		})
 	})
 
-	When("creating a component", func() {
+	When("executing watch without pushing a devfile component", func() {
 		BeforeEach(func() {
 			helper.Chdir(commonVar.OriginalWorkingDirectory)
 			helper.Cmd("odo", "create", "--project", commonVar.Project, "--context", commonVar.Context, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 		})
-		It("should fail if pushing without a devfile component", func() {
+		It("should fail", func() {
 			output := helper.Cmd("odo", "watch", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
@@ -52,7 +52,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 		})
 	})
 
-	When("a component is created and pushed", func() {
+	When("executing odo watch", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
