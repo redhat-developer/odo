@@ -326,16 +326,17 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 }
 
 // CreateDynamicResource creates a dynamic custom resource
-func (c *Client) CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error {
-	deployment := &unstructured.Unstructured{
-		Object: exampleCustomResource.Object,
+func (c *Client) CreateDynamicResource(resource unstructured.Unstructured, gvr *meta.RESTMapping) error {
+	klog.V(5).Infoln("Applying resource via server-side apply:")
+	klog.V(5).Infoln(resourceAsJson(resource.Object))
+
+	data, err := json.Marshal(resource.Object)
+	if err != nil {
+		return errors.Wrapf(err, "unable to marshal resource")
 	}
 
-	debugOut, _ := json.MarshalIndent(deployment, " ", " ")
-	klog.V(5).Infoln("Creating resource:")
-	klog.V(5).Infoln(string(debugOut))
-	// Create the dynamic resource based on the alm-example for the CRD
-	_, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Create(context.TODO(), deployment, metav1.CreateOptions{FieldManager: FieldManager})
+	// Patch the dynamic resource
+	_, err = c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), resource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
 		return err
 	}

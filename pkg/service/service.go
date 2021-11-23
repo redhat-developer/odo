@@ -521,17 +521,8 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 		u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
 	}
 
-	e := createOperatorService(client, u)
-	if e != nil {
-		if strings.Contains(e.Error(), "already exists") {
-			// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
-			// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
-			return isOp, nil // this ensures that services slice is not updated
-		} else {
-			return isOp, e
-		}
-	}
-	return isOp, nil
+	err = createOperatorService(client, u)
+	return isOp, err
 }
 
 func isOperatorBackedService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
