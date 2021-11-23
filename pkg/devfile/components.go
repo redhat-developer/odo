@@ -5,98 +5,21 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"testing"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/openshift/odo/pkg/devfile/consts"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 )
 
 const (
-	UriFolder  = "kubernetes"
 	filePrefix = "odo-service-"
 )
 
-type InlinedComponent struct {
-	Name    string
-	Inlined string
-}
-
-type URIComponent struct {
-	Name string
-	URI  string
-}
-
-// SetupTestFolder for testing
-func SetupTestFolder(testFolderName string, fs devfileFileSystem.Filesystem) (devfileFileSystem.File, error) {
-	err := fs.MkdirAll(testFolderName, os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	err = fs.MkdirAll(filepath.Join(testFolderName, UriFolder), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	testFileName, err := fs.Create(filepath.Join(testFolderName, UriFolder, "example.yaml"))
-	if err != nil {
-		return nil, err
-	}
-	return testFileName, nil
-}
-
-// GetDevfileData can be used to build a devfile structure for tests
-func GetDevfileData(t *testing.T, inlined []InlinedComponent, uriComp []URIComponent) data.DevfileData {
-	devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-	if err != nil {
-		t.Error(err)
-	}
-	for _, component := range inlined {
-		err = devfileData.AddComponents([]v1alpha2.Component{{
-			Name: component.Name,
-			ComponentUnion: devfilev1.ComponentUnion{
-				Kubernetes: &devfilev1.KubernetesComponent{
-					K8sLikeComponent: devfilev1.K8sLikeComponent{
-						BaseComponent: devfilev1.BaseComponent{},
-						K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-							Inlined: component.Inlined,
-						},
-					},
-				},
-			},
-		},
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	for _, component := range uriComp {
-		err = devfileData.AddComponents([]v1alpha2.Component{{
-			Name: component.Name,
-			ComponentUnion: devfilev1.ComponentUnion{
-				Kubernetes: &devfilev1.KubernetesComponent{
-					K8sLikeComponent: devfilev1.K8sLikeComponent{
-						BaseComponent: devfilev1.BaseComponent{},
-						K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-							Uri: component.URI,
-						},
-					},
-				},
-			},
-		},
-		})
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	return devfileData
-}
-
-// GetComponentsToPush returns the list of Kubernetes components to push,
+// GetKubernetesComponentsToPush returns the list of Kubernetes components to push,
 // by getting the list of Kubernetes components and removing the ones
 // referenced from a command in the devfile
 func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj) ([]devfilev1.Component, error) {
@@ -154,7 +77,7 @@ func IsComponentDefined(name string, devfileObj parser.DevfileObj) (bool, error)
 	return false, nil
 }
 
-// AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component
+// AddKubernetesComponentToDevfile adds a resource definition to devfile as an inlined Kubernetes component
 func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
 	err := devfileObj.Data.AddComponents([]devfilev1.Component{{
 		Name: name,
@@ -181,11 +104,11 @@ func AddKubernetesComponent(crd, name, componentContext string, devfile parser.D
 	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{})
 }
 
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
+// addKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
 func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem) error {
-	filePath := filepath.Join(componentContext, UriFolder, filePrefix+name+".yaml")
-	if _, err := fs.Stat(filepath.Join(componentContext, UriFolder)); os.IsNotExist(err) {
-		err = fs.MkdirAll(filepath.Join(componentContext, UriFolder), os.ModePerm)
+	filePath := filepath.Join(componentContext, consts.UriFolder, filePrefix+name+".yaml")
+	if _, err := fs.Stat(filepath.Join(componentContext, consts.UriFolder)); os.IsNotExist(err) {
+		err = fs.MkdirAll(filepath.Join(componentContext, consts.UriFolder), os.ModePerm)
 		if err != nil {
 			return err
 		}
@@ -207,7 +130,7 @@ func addKubernetesComponent(crd, name, componentContext string, devfileObj parse
 				K8sLikeComponent: devfilev1.K8sLikeComponent{
 					BaseComponent: devfilev1.BaseComponent{},
 					K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-						Uri: filepath.Join(UriFolder, filePrefix+name+".yaml"),
+						Uri: filepath.Join(consts.UriFolder, filePrefix+name+".yaml"),
 					},
 				},
 			},

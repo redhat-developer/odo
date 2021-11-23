@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openshift/odo/pkg/devfile/consts"
+	devfiletesting "github.com/openshift/odo/pkg/devfile/testing"
 	"github.com/openshift/odo/pkg/testingutil"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -22,7 +24,7 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 
 	getDevfileWithoutApplyCommand := func() parser.DevfileObj {
 		devfileObj := parser.DevfileObj{
-			Data: GetDevfileData(t, []InlinedComponent{
+			Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 				{
 					Name:    "component1",
 					Inlined: "Component 1",
@@ -35,7 +37,7 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 
 	getDevfileWithApplyCommand := func(applyComponentName string) parser.DevfileObj {
 		devfileObj := parser.DevfileObj{
-			Data: GetDevfileData(t, []InlinedComponent{
+			Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 				{
 					Name:    "component1",
 					Inlined: "Component 1",
@@ -63,7 +65,7 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 		{
 			name: "empty devfile",
 			devfileObj: parser.DevfileObj{
-				Data: GetDevfileData(t, nil, nil),
+				Data: devfiletesting.GetDevfileData(t, nil, nil),
 				Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 			},
 			want:    []devfilev1.Component{},
@@ -151,7 +153,7 @@ func TestAddKubernetesComponentToDevfile(t *testing.T) {
 				crd:  "test CRD",
 				name: "testName",
 				devfileObj: parser.DevfileObj{
-					Data: GetDevfileData(t, nil, nil),
+					Data: devfiletesting.GetDevfileData(t, nil, nil),
 					Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 				},
 			},
@@ -238,15 +240,15 @@ func Test_addKubernetesComponent(t *testing.T) {
 			tt.args.fs = fs
 
 			if tt.args.uriFolderExists || tt.args.fileAlreadyExists {
-				err := fs.MkdirAll(UriFolder, os.ModePerm)
+				err := fs.MkdirAll(consts.UriFolder, os.ModePerm)
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				defer os.RemoveAll(UriFolder)
+				defer os.RemoveAll(consts.UriFolder)
 			}
 
 			if tt.args.fileAlreadyExists {
-				testFileName, err := fs.Create(filepath.Join(UriFolder, filePrefix+tt.args.name+".yaml"))
+				testFileName, err := fs.Create(filepath.Join(consts.UriFolder, filePrefix+tt.args.name+".yaml"))
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
@@ -265,7 +267,7 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := SetupTestFolder(testFolderName, fs)
+	testFileName, err := devfiletesting.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -286,7 +288,7 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 			args: args{
 				name: "testName",
 				devfileObj: parser.DevfileObj{
-					Data: GetDevfileData(t, []InlinedComponent{
+					Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 						{
 							Name:    "testName",
 							Inlined: "test CRD",
@@ -315,7 +317,7 @@ func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
 									K8sLikeComponent: devfilev1.K8sLikeComponent{
 										BaseComponent: devfilev1.BaseComponent{},
 										K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-											Uri: filepath.Join(UriFolder, filepath.Base(testFileName.Name())),
+											Uri: filepath.Join(consts.UriFolder, filepath.Base(testFileName.Name())),
 										},
 									},
 								},

@@ -15,7 +15,7 @@ import (
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "deploy"
 
-// LoginOptions encapsulates the options for the odo command
+// DeployOptions encapsulates the options for the odo command
 type DeployOptions struct {
 	*genericclioptions.Context
 	componentContext string
@@ -26,12 +26,12 @@ var deployExample = templates.Examples(`
   %[1]s
 `)
 
-// NewLoginOptions creates a new LoginOptions instance
+// NewDeployOptions creates a new DeployOptions instance
 func NewDeployOptions() *DeployOptions {
 	return &DeployOptions{}
 }
 
-// Complete completes LoginOptions after they've been created
+// Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
 	if err != nil {
@@ -40,7 +40,7 @@ func (o *DeployOptions) Complete(name string, cmd *cobra.Command, args []string)
 	return
 }
 
-// Validate validates the LoginOptions based on completed values
+// Validate validates the DeployOptions based on completed values
 func (o *DeployOptions) Validate() (err error) {
 	return
 }

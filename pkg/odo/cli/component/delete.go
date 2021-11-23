@@ -5,13 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/util"
-
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/consts"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -19,6 +17,9 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/util"
+
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -140,13 +141,13 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 					return err
 				}
 
-				empty, err := util.IsEmpty(filepath.Join(do.componentContext, devfile.UriFolder))
+				empty, err := util.IsEmpty(filepath.Join(do.componentContext, consts.UriFolder))
 				if err != nil && !os.IsNotExist(err) {
 					return err
 				}
 
 				if !os.IsNotExist(err) && empty {
-					err = os.RemoveAll(filepath.Join(do.componentContext, devfile.UriFolder))
+					err = os.RemoveAll(filepath.Join(do.componentContext, consts.UriFolder))
 					if err != nil {
 						return err
 					}
@@ -179,13 +180,13 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 				return err
 			}
 
-			empty, err := util.IsEmpty(filepath.Join(do.componentContext, devfile.UriFolder))
+			empty, err := util.IsEmpty(filepath.Join(do.componentContext, consts.UriFolder))
 			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
 
 			if !os.IsNotExist(err) && empty {
-				err = os.RemoveAll(filepath.Join(do.componentContext, devfile.UriFolder))
+				err = os.RemoveAll(filepath.Join(do.componentContext, consts.UriFolder))
 				if err != nil {
 					return err
 				}

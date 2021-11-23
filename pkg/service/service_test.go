@@ -9,24 +9,25 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/kclient"
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/golang/mock/gomock"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/openshift/odo/pkg/devfile/consts"
+	devfiletesting "github.com/openshift/odo/pkg/devfile/testing"
+	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestListDevfileServices(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := devfile.SetupTestFolder(testFolderName, fs)
+	testFileName, err := devfiletesting.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -63,7 +64,7 @@ spec:
 		{
 			name: "No service in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: devfile.GetDevfileData(t, nil, nil),
+				Data: devfiletesting.GetDevfileData(t, nil, nil),
 				Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 			},
 			wantKeys:         []string{},
@@ -80,7 +81,7 @@ spec:
 		{
 			name: "Services including service bindings in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: devfile.GetDevfileData(t, []devfile.InlinedComponent{
+				Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 					{
 						Name: "link1",
 						Inlined: `
@@ -135,10 +136,10 @@ spec:
 		{
 			name: "URI reference in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: devfile.GetDevfileData(t, nil, []devfile.URIComponent{
+				Data: devfiletesting.GetDevfileData(t, nil, []devfiletesting.URIComponent{
 					{
 						Name: "service1",
-						URI:  filepath.Join(devfile.UriFolder, filepath.Base(testFileName.Name())),
+						URI:  filepath.Join(consts.UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 			},
@@ -194,7 +195,7 @@ func TestListDevfileLinks(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := devfile.SetupTestFolder(testFolderName, fs)
+	testFileName, err := devfiletesting.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -223,7 +224,7 @@ spec:
 		{
 			name: "No service in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: devfile.GetDevfileData(t, nil, nil),
+				Data: devfiletesting.GetDevfileData(t, nil, nil),
 				Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 			},
 			want:    nil,
@@ -232,7 +233,7 @@ spec:
 		{
 			name: "Services including service bindings in devfile",
 			devfileObj: parser.DevfileObj{
-				Data: devfile.GetDevfileData(t, []devfile.InlinedComponent{
+				Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 					{
 						Name: "link1",
 						Inlined: `
@@ -275,10 +276,10 @@ spec:
    name: other
    version: v1beta1`,
 					},
-				}, []devfile.URIComponent{
+				}, []devfiletesting.URIComponent{
 					{
 						Name: "service1",
-						URI:  filepath.Join(devfile.UriFolder, filepath.Base(testFileName.Name())),
+						URI:  filepath.Join(consts.UriFolder, filepath.Base(testFileName.Name())),
 					},
 				}),
 				Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
@@ -305,7 +306,7 @@ func TestFindDevfileServiceBinding(t *testing.T) {
 	fs := devfileFileSystem.NewFakeFs()
 
 	testFolderName := "someFolder"
-	testFileName, err := devfile.SetupTestFolder(testFolderName, fs)
+	testFileName, err := devfiletesting.SetupTestFolder(testFolderName, fs)
 	if err != nil {
 		t.Errorf("unexpected error : %v", err)
 		return
@@ -326,7 +327,7 @@ spec:
 	}
 
 	devfileObj := parser.DevfileObj{
-		Data: devfile.GetDevfileData(t, []devfile.InlinedComponent{
+		Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
 			{
 				Name: "link1",
 				Inlined: `
@@ -369,10 +370,10 @@ spec:
      name: other
      version: v1beta1`,
 			},
-		}, []devfile.URIComponent{
+		}, []devfiletesting.URIComponent{
 			{
 				Name: "service1",
-				URI:  filepath.Join(devfile.UriFolder, filepath.Base(testFileName.Name())),
+				URI:  filepath.Join(consts.UriFolder, filepath.Base(testFileName.Name())),
 			},
 		}),
 		Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
