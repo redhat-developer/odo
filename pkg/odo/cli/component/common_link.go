@@ -44,8 +44,6 @@ type commonLinkOptions struct {
 	inlined bool
 	// mappings is an array of strings representing the custom binding data that user wants to inject into the component
 	mappings []string
-	// MappingsMap is a map of mappings to be used in the ServiceBinding we create for an "odo link"
-	MappingsMap []servicebinding.Mapping
 }
 
 func newCommonLinkOptions() *commonLinkOptions {
@@ -80,20 +78,167 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return err
 	}
 
-	o.csvSupport, _ = o.Client.GetKubeClient().IsCSVSupported()
-
-	if o.Context.EnvSpecificInfo == nil {
-		return fmt.Errorf("failed to find environment info")
+	o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(o.suppliedName)
+	if err != nil {
+		o.serviceName = o.suppliedName
+		o.isTargetAService = false
+		o.serviceType = "Service" // Kubernetes Service
+	} else {
+		o.isTargetAService = true
 	}
 
-	return o.completeForOperator()
+	if o.operationName == unlink {
+		// rest of the code is specific to link operation
+		return nil
+	}
+
+	componentName := o.EnvSpecificInfo.GetName()
+
+	deployment, err := o.KClient.GetOneDeployment(componentName, o.EnvSpecificInfo.GetApplication())
+	if err != nil {
+		return err
+	}
+
+	deploymentGVR, err := o.KClient.GetDeploymentAPIVersion()
+	if err != nil {
+		return err
+	}
+
+	paramsMap, err := util.MapFromParameters(o.mappings)
+	if err != nil {
+		return err
+	}
+
+	// MappingsMap is a map of mappings to be used in the ServiceBinding we create for an "odo link"
+	var mappingsMap []servicebinding.Mapping
+	for kv := range paramsMap {
+		mapping := servicebinding.Mapping{
+			Name:  kv,
+			Value: paramsMap[kv],
+		}
+		mappingsMap = append(mappingsMap, mapping)
+	}
+
+	var service servicebinding.Service
+	if o.isTargetAService {
+		// since the service exists, let's get more info to populate service binding request
+		// first get the CR itself
+		cr, err := o.KClient.GetCustomResource(o.serviceType)
+		if err != nil {
+			return err
+		}
+
+		// now get the group, version, kind information from CR
+		group, version, kind, err := svc.GetGVKFromCR(cr)
+		if err != nil {
+			return err
+		}
+
+		service = servicebinding.Service{
+			Id: &o.serviceName, // Id field is helpful if user wants to inject mappings (custom binding data)
+			NamespacedRef: servicebinding.NamespacedRef{
+				Ref: servicebinding.Ref{
+					Group:   group,
+					Version: version,
+					Kind:    kind,
+					Name:    o.serviceName,
+				},
+			},
+		}
+	} else {
+		service = servicebinding.Service{
+			Id: &o.serviceName, // Id field is helpful if user wants to inject mappings (custom binding data)
+			NamespacedRef: servicebinding.NamespacedRef{
+				Ref: servicebinding.Ref{
+					Version: "v1",
+					Kind:    "Service",
+					Name:    o.serviceName,
+				},
+			},
+		}
+	}
+
+	o.serviceBinding = &servicebinding.ServiceBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"),
+			Kind:       kclient.ServiceBindingKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: o.getServiceBindingName(componentName),
+		},
+		Spec: servicebinding.ServiceBindingSpec{
+			DetectBindingResources: true,
+			BindAsFiles:            o.bindAsFiles,
+			Application: servicebinding.Application{
+				Ref: servicebinding.Ref{
+					Name:     deployment.Name,
+					Group:    deploymentGVR.Group,
+					Version:  deploymentGVR.Version,
+					Resource: deploymentGVR.Resource,
+				},
+			},
+			Mappings: mappingsMap,
+			Services: []servicebinding.Service{service},
+		},
+	}
+
+	return nil
 }
 
 func (o *commonLinkOptions) validate() (err error) {
 	if o.EnvSpecificInfo == nil {
 		return fmt.Errorf("failed to find environment info to validate")
 	}
-	return o.validateForOperator()
+
+	var svcFullName string
+
+	if o.isTargetAService {
+		if !o.csvSupport {
+			return fmt.Errorf("operator hub is required for linking to services")
+		}
+		// let's validate if the service exists
+		svcFullName = strings.Join([]string{o.serviceType, o.serviceName}, "/")
+		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+		if err != nil {
+			return err
+		}
+		if !svcExists {
+			return fmt.Errorf("couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
+		}
+	} else {
+		svcFullName = o.serviceName
+		if o.suppliedName == o.EnvSpecificInfo.GetName() {
+			if o.operationName == unlink {
+				return fmt.Errorf("the component %q cannot be unlinked from itself", o.suppliedName)
+			} else {
+				return fmt.Errorf("the component %q cannot be linked with itself", o.suppliedName)
+			}
+		}
+
+		// TODO find the service using an app name to link components in other apps
+		// requires modification of the app flag or finding some other way
+		service, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
+		if kerrors.IsNotFound(err) {
+			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
+		}
+		if err != nil {
+			return err
+		}
+		o.serviceName = service.Name
+	}
+
+	if o.operationName == unlink {
+		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
+		if err != nil {
+			return err
+		}
+		if !found {
+			return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", o.getLinkType(), svcFullName, o.getLinkType())
+		}
+		return nil
+	}
+
+	return nil
 }
 
 func (o *commonLinkOptions) run() (err error) {
@@ -175,168 +320,6 @@ func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
 		return strings.Join([]string{componentName, o.serviceName}, "-")
 	}
 	return strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
-}
-
-// completeForOperator completes the options when svc is supported
-func (o *commonLinkOptions) completeForOperator() (err error) {
-	o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(o.suppliedName)
-	if err != nil {
-		o.serviceName = o.suppliedName
-		o.isTargetAService = false
-	} else {
-		o.isTargetAService = true
-	}
-
-	if o.operationName == unlink {
-		// rest of the code is specific to link operation
-		return nil
-	}
-
-	componentName := o.EnvSpecificInfo.GetName()
-
-	deployment, err := o.KClient.GetOneDeployment(componentName, o.EnvSpecificInfo.GetApplication())
-	if err != nil {
-		return err
-	}
-
-	deploymentGVR, err := o.KClient.GetDeploymentAPIVersion()
-	if err != nil {
-		return err
-	}
-
-	mappingsMap, err := util.MapFromParameters(o.mappings)
-	if err != nil {
-		return err
-	}
-
-	for kv := range mappingsMap {
-		mapping := servicebinding.Mapping{
-			Name:  kv,
-			Value: mappingsMap[kv],
-		}
-		o.MappingsMap = append(o.MappingsMap, mapping)
-	}
-
-	o.serviceBinding = &servicebinding.ServiceBinding{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"),
-			Kind:       kclient.ServiceBindingKind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: o.getServiceBindingName(componentName),
-		},
-		Spec: servicebinding.ServiceBindingSpec{
-			DetectBindingResources: true,
-			BindAsFiles:            o.bindAsFiles,
-			Application: servicebinding.Application{
-				Ref: servicebinding.Ref{
-					Name:     deployment.Name,
-					Group:    deploymentGVR.Group,
-					Version:  deploymentGVR.Version,
-					Resource: deploymentGVR.Resource,
-				},
-			},
-		},
-	}
-	return nil
-}
-
-// validateForOperator validates the options when svc is supported
-func (o *commonLinkOptions) validateForOperator() (err error) {
-	var svcFullName string
-
-	if o.isTargetAService {
-		if !o.csvSupport {
-			return fmt.Errorf("operator hub is required for linking to services")
-		}
-		// let's validate if the service exists
-		svcFullName = strings.Join([]string{o.serviceType, o.serviceName}, "/")
-		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
-		if err != nil {
-			return err
-		}
-		if !svcExists {
-			return fmt.Errorf("couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
-		}
-	} else {
-		o.serviceType = "Service"
-		svcFullName = o.serviceName
-		if o.suppliedName == o.EnvSpecificInfo.GetName() {
-			if o.operationName == unlink {
-				return fmt.Errorf("the component %q cannot be unlinked from itself", o.suppliedName)
-			} else {
-				return fmt.Errorf("the component %q cannot be linked with itself", o.suppliedName)
-			}
-		}
-
-		// TODO find the service using an app name to link components in other apps
-		// requires modification of the app flag or finding some other way
-		service, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
-		if kerrors.IsNotFound(err) {
-			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
-		}
-		if err != nil {
-			return err
-		}
-		o.serviceName = service.Name
-	}
-
-	if o.operationName == unlink {
-		_, found, err := svc.FindDevfileServiceBinding(o.EnvSpecificInfo.GetDevfileObj(), o.serviceType, o.serviceName, o.GetComponentContext())
-		if err != nil {
-			return err
-		}
-		if !found {
-			return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", o.getLinkType(), svcFullName, o.getLinkType())
-		}
-		return nil
-	}
-
-	var service servicebinding.Service
-	if o.isTargetAService {
-		// since the service exists, let's get more info to populate service binding request
-		// first get the CR itself
-		cr, err := o.KClient.GetCustomResource(o.serviceType)
-		if err != nil {
-			return err
-		}
-
-		// now get the group, version, kind information from CR
-		group, version, kind, err := svc.GetGVKFromCR(cr)
-		if err != nil {
-			return err
-		}
-
-		service = servicebinding.Service{
-			NamespacedRef: servicebinding.NamespacedRef{
-				Ref: servicebinding.Ref{
-					Group:   group,
-					Version: version,
-					Kind:    kind,
-					Name:    o.serviceName,
-				},
-			},
-		}
-	} else {
-		service = servicebinding.Service{
-			NamespacedRef: servicebinding.NamespacedRef{
-				Ref: servicebinding.Ref{
-					Version: "v1",
-					Kind:    "Service",
-					Name:    o.serviceName,
-				},
-			},
-		}
-	}
-
-	bindingFromParams(service, o)
-	return nil
-}
-
-func bindingFromParams(service servicebinding.Service, o *commonLinkOptions) {
-	service.Id = &o.serviceName // Id field is helpful if user wants to inject mappings (custom binding data)
-	o.serviceBinding.Spec.Services = []servicebinding.Service{service}
-	o.serviceBinding.Spec.Mappings = o.MappingsMap
 }
 
 // linkOperator creates a service binding resource and links
