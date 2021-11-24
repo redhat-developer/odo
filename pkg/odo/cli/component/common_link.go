@@ -9,9 +9,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
-
-	"github.com/pkg/errors"
 
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
@@ -43,7 +42,7 @@ type commonLinkOptions struct {
 	csvSupport bool
 
 	inlined bool
-	// mappings is an array of custom binding data that user wants to inject into the component
+	// mappings is an array of strings representing the custom binding data that user wants to inject into the component
 	mappings []string
 	// MappingsMap is a map of mappings to be used in the ServiceBinding we create for an "odo link"
 	MappingsMap []servicebinding.Mapping
@@ -205,15 +204,15 @@ func (o *commonLinkOptions) completeForOperator() (err error) {
 		return err
 	}
 
-	for _, kv := range o.mappings {
-		kvSlice := strings.Split(kv, "=")
-		// key value not provided in format of key=value
-		if len(kvSlice) != 2 {
-			return errors.New("mappings not provided in key=value format")
-		}
+	mappingsMap, err := util.MapFromParameters(o.mappings)
+	if err != nil {
+		return err
+	}
+
+	for kv := range mappingsMap {
 		mapping := servicebinding.Mapping{
-			Name:  kvSlice[0],
-			Value: kvSlice[1],
+			Name:  kv,
+			Value: mappingsMap[kv],
 		}
 		o.MappingsMap = append(o.MappingsMap, mapping)
 	}
@@ -330,11 +329,14 @@ func (o *commonLinkOptions) validateForOperator() (err error) {
 		}
 	}
 
+	bindingFromParams(service, o)
+	return nil
+}
+
+func bindingFromParams(service servicebinding.Service, o *commonLinkOptions) {
 	service.Id = &o.serviceName // Id field is helpful if user wants to inject mappings (custom binding data)
 	o.serviceBinding.Spec.Services = []servicebinding.Service{service}
 	o.serviceBinding.Spec.Mappings = o.MappingsMap
-
-	return nil
 }
 
 // linkOperator creates a service binding resource and links
