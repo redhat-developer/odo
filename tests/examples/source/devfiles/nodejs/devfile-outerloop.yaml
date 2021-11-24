@@ -45,7 +45,7 @@ components:
     imageName: quay.io/unknown-account/myimage
     dockerfile:
       uri: ./Dockerfile
-      buildContext: ${PROJECT_ROOT}
+      buildContext: ${PROJECTS_ROOT}
       rootRequired: false
   name: deployed
 metadata:

@@ -13,13 +13,13 @@ components:
     imageName: quay.io/myusername/myimage
     dockerfile:
       uri: ./Dockerfile
-      buildContext: ${PROJECT_ROOT}
+      buildContext: ${PROJECTS_ROOT}
   name: component-built-from-dockerfile
 ```
 
 The `uri` field indicates the relative path of the Dockerfile to use, relative to the directory containing the `devfile.yaml`. The devfile specification indicates that `uri` could also be an HTTP URL, but this case is not supported by odo yet.
 
-The `buildContext` indicates the directory used as build context. The default value is `${PROJECT_ROOT}`.
+The `buildContext` indicates the directory used as build context. The default value is `${PROJECTS_ROOT}`.
 
 For each image component, odo executes either `podman` or `docker` (the first one found, in this order), to build the image with the specified Dockerfile, build context and arguments.
 

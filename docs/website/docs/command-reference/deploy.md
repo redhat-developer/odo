@@ -43,7 +43,7 @@ components:
       imageName: "{{CONTAINER_IMAGE}}"
       dockerfile:
         uri: ./Dockerfile
-        buildContext: ${PROJECT_ROOT}
+        buildContext: ${PROJECTS_ROOT}
   - name: outerloop-deploy
     kubernetes:
       inlined: |

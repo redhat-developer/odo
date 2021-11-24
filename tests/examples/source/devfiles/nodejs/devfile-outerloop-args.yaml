@@ -45,7 +45,7 @@ components:
     imageName: myimage
     dockerfile:
       uri: ./Dockerfile
-      buildContext: ${PROJECT_ROOT}
+      buildContext: ${PROJECTS_ROOT}
       rootRequired: false
       args:
       - --unknown-flag

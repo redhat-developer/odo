@@ -27,14 +27,14 @@ func TestGetShellCommand(t *testing.T) {
 								Uri: "./Dockerfile",
 							},
 							Dockerfile: devfile.Dockerfile{
-								BuildContext: "${PROJECT_ROOT}",
+								BuildContext: "${PROJECTS_ROOT}",
 							},
 						},
 					},
 				},
 			},
 			devfilePath: filepath.Join("home", "user", "project1"),
-			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECT_ROOT}`,
+			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECTS_ROOT}`,
 		},
 		{
 			name:    "test 2",
@@ -48,14 +48,14 @@ func TestGetShellCommand(t *testing.T) {
 								Uri: "Dockerfile",
 							},
 							Dockerfile: devfile.Dockerfile{
-								BuildContext: "${PROJECT_ROOT}",
+								BuildContext: "${PROJECTS_ROOT}",
 							},
 						},
 					},
 				},
 			},
 			devfilePath: filepath.Join("home", "user", "project1"),
-			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECT_ROOT}`,
+			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECTS_ROOT}`,
 		},
 		{
 			name:    "test with args",
@@ -69,7 +69,7 @@ func TestGetShellCommand(t *testing.T) {
 								Uri: "Dockerfile",
 							},
 							Dockerfile: devfile.Dockerfile{
-								BuildContext: "${PROJECT_ROOT}",
+								BuildContext: "${PROJECTS_ROOT}",
 								Args:         []string{"--flag", "value"},
 							},
 						},
@@ -77,7 +77,7 @@ func TestGetShellCommand(t *testing.T) {
 				},
 			},
 			devfilePath: filepath.Join("home", "user", "project1"),
-			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECT_ROOT} --flag value`,
+			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECTS_ROOT} --flag value`,
 		},
 	}
 
