@@ -161,6 +161,36 @@ func (e *InvalidProjectCheckoutRemoteError) Error() string {
 	return fmt.Sprintf("unable to find the checkout remote %s in the remotes for %s %s", e.checkoutRemote, e.objectType, e.objectName)
 }
 
+type ResourceRequirementType string
+
+const (
+	MemoryLimit   ResourceRequirementType = "memoryLimit"
+	CpuLimit      ResourceRequirementType = "cpuLimit"
+	MemoryRequest ResourceRequirementType = "memoryRequest"
+	CpuRequest    ResourceRequirementType = "cpuRequest"
+)
+
+//ParsingResourceRequirementError returns an error if failed to parse a resource requirement
+type ParsingResourceRequirementError struct {
+	resource ResourceRequirementType
+	cmpName  string
+	errMsg   string
+}
+
+func (e *ParsingResourceRequirementError) Error() string {
+	return fmt.Sprintf("error parsing %s requirement for component %s: %s", e.resource, e.cmpName, e.errMsg)
+}
+
+//InvalidResourceRequestError returns an error if resource limit < resource requested
+type InvalidResourceRequestError struct {
+	cmpName string
+	errMsg  string
+}
+
+func (e *InvalidResourceRequestError) Error() string {
+	return fmt.Sprintf("invalid resource request for component %s: %s", e.cmpName, e.errMsg)
+}
+
 type AnnotationType string
 
 const (

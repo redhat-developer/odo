@@ -60,6 +60,70 @@ func ValidateComponents(components []v1alpha2.Component) (returnedErr error) {
 					returnedErr = multierror.Append(returnedErr, reservedEnvErr)
 				}
 			}
+			var memoryLimit, cpuLimit, memoryRequest, cpuRequest resource.Quantity
+			if component.Container.MemoryLimit != "" {
+				memoryLimit, err = resource.ParseQuantity(component.Container.MemoryLimit)
+				if err != nil {
+					parseQuantityErr := &ParsingResourceRequirementError{resource: MemoryLimit, cmpName: component.Name, errMsg: err.Error()}
+					returnedErr = multierror.Append(returnedErr, parseQuantityErr)
+				}
+			}
+			if component.Container.CpuLimit != "" {
+				cpuLimit, err = resource.ParseQuantity(component.Container.CpuLimit)
+				if err != nil {
+					parseQuantityErr := &ParsingResourceRequirementError{resource: CpuLimit, cmpName: component.Name, errMsg: err.Error()}
+					returnedErr = multierror.Append(returnedErr, parseQuantityErr)
+				}
+			}
+			if component.Container.MemoryRequest != "" {
+				memoryRequest, err = resource.ParseQuantity(component.Container.MemoryRequest)
+				if err != nil {
+					parseQuantityErr := &ParsingResourceRequirementError{resource: MemoryRequest, cmpName: component.Name, errMsg: err.Error()}
+					returnedErr = multierror.Append(returnedErr, parseQuantityErr)
+				} else if !memoryLimit.IsZero() && memoryRequest.Cmp(memoryLimit) > 0 {
+					invalidResourceRequest := &InvalidResourceRequestError{cmpName: component.Name, errMsg: fmt.Sprintf("memoryRequest is greater than memoryLimit.")}
+					returnedErr = multierror.Append(returnedErr, invalidResourceRequest)
+				}
+			}
+			if component.Container.CpuRequest != "" {
+				cpuRequest, err = resource.ParseQuantity(component.Container.CpuRequest)
+				if err != nil {
+					parseQuantityErr := &ParsingResourceRequirementError{resource: CpuRequest, cmpName: component.Name, errMsg: err.Error()}
+					returnedErr = multierror.Append(returnedErr, parseQuantityErr)
+				} else if !cpuLimit.IsZero() && cpuRequest.Cmp(cpuLimit) > 0 {
+					invalidResourceRequest := &InvalidResourceRequestError{cmpName: component.Name, errMsg: fmt.Sprintf("cpuRequest is greater than cpuLimit.")}
+					returnedErr = multierror.Append(returnedErr, invalidResourceRequest)
+				}
+			}
+
+			// if annotation is not empty and dedicatedPod is false
+			if component.Container.Annotation != nil && component.Container.DedicatedPod != nil && !(*component.Container.DedicatedPod) {
+				for key, value := range component.Container.Annotation.Deployment {
+					if processedVal, exist := processedDeploymentAnnotations[key]; exist && processedVal != value {
+						// only append the error for a single key once
+						if _, exist := deploymentAnnotationDuplication[key]; !exist {
+							annotationConflictErr := &AnnotationConflictError{annotationName: key, annotationType: DeploymentAnnotation}
+							returnedErr = multierror.Append(returnedErr, annotationConflictErr)
+							deploymentAnnotationDuplication[key] = true
+						}
+					} else {
+						processedDeploymentAnnotations[key] = value
+					}
+				}
+
+				for key, value := range component.Container.Annotation.Service {
+					if processedVal, exist := processedServiceAnnotations[key]; exist && processedVal != value {
+						// only append the error for a single key once
+						if _, exist := serviceAnnotationDuplication[key]; !exist {
+							annotationConflictErr := &AnnotationConflictError{annotationName: key, annotationType: ServiceAnnotation}
+							returnedErr = multierror.Append(returnedErr, annotationConflictErr)
+							serviceAnnotationDuplication[key] = true
+						}
+					} else {
+						processedServiceAnnotations[key] = value
+					}
+				}
+			}
 
 			// if annotation is not empty and dedicatedPod is false
 			if component.Container.Annotation != nil && component.Container.DedicatedPod != nil && !(*component.Container.DedicatedPod) {

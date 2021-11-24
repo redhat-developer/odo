@@ -110,7 +110,14 @@ func ParseDevfile(args ParserArgs) (d DevfileObj, err error) {
 		flattenedDevfile = *args.FlattenedDevfile
 	}
 
-	return populateAndParseDevfile(d, &resolutionContextTree{}, tool, flattenedDevfile)
+	d, err = populateAndParseDevfile(d, &resolutionContextTree{}, tool, flattenedDevfile)
+
+	//set defaults only if we are flattening parent and parsing succeeded
+	if flattenedDevfile && err == nil {
+		setDefaults(d)
+	}
+
+	return d, err
 }
 
 // resolverTools contains required structs and data for resolving remote components of a devfile (plugins and parents)
@@ -427,4 +434,105 @@ func convertDevWorskapceTemplateToDevObj(dwTemplate v1.DevWorkspaceTemplate) (d 
 
 	return d, nil
 
+}
+
+//setDefaults sets the default values for nil boolean properties after the merging of devWorkspaceTemplateSpec is complete
+func setDefaults(d DevfileObj) (err error) {
+	commands, err := d.Data.GetCommands(common.DevfileOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	//set defaults on the commands
+	var cmdGroup *v1.CommandGroup
+	for i := range commands {
+		command := commands[i]
+		cmdGroup = nil
+
+		if command.Exec != nil {
+			exec := command.Exec
+			val := exec.GetHotReloadCapable()
+			exec.HotReloadCapable = &val
+			cmdGroup = exec.Group
+
+		} else if command.Composite != nil {
+			composite := command.Composite
+			val := composite.GetParallel()
+			composite.Parallel = &val
+			cmdGroup = composite.Group
+
+		} else if command.Apply != nil {
+			cmdGroup = command.Apply.Group
+		}
+
+		if cmdGroup != nil {
+			setIsDefault(cmdGroup)
+		}
+
+	}
+
+	//set defaults on the components
+
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	var endpoints []v1.Endpoint
+	for i := range components {
+		component := components[i]
+		endpoints = nil
+
+		if component.Container != nil {
+			container := component.Container
+			val := container.GetDedicatedPod()
+			container.DedicatedPod = &val
+
+			val = container.GetMountSources()
+			container.MountSources = &val
+
+			endpoints = container.Endpoints
+
+		} else if component.Kubernetes != nil {
+			endpoints = component.Kubernetes.Endpoints
+
+		} else if component.Openshift != nil {
+
+			endpoints = component.Openshift.Endpoints
+
+		} else if component.Volume != nil {
+			volume := component.Volume
+			val := volume.GetEphemeral()
+			volume.Ephemeral = &val
+
+		} else if component.Image != nil {
+			dockerImage := component.Image.Dockerfile
+			if dockerImage != nil {
+				val := dockerImage.GetRootRequired()
+				dockerImage.RootRequired = &val
+			}
+		}
+
+		if endpoints != nil {
+			setEndpoints(endpoints)
+		}
+	}
+
+	return nil
+}
+
+///setIsDefault sets the default value of CommandGroup.IsDefault if nil
+func setIsDefault(cmdGroup *v1.CommandGroup) {
+	val := cmdGroup.GetIsDefault()
+	cmdGroup.IsDefault = &val
+}
+
+//setEndpoints sets the default value of Endpoint.Secure if nil
+func setEndpoints(endpoints []v1.Endpoint) {
+	for i := range endpoints {
+		val := endpoints[i].GetSecure()
+		endpoints[i].Secure = &val
+	}
 }
