@@ -31,14 +31,12 @@ var _ = Describe("odo devfile watch command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("running help for watch command", func() {
-		BeforeEach(func ()  {
-			appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()			
-		})
-		It("should display the help", func() {
-			helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
-		})
+
+	It("should display the help when using -h flag", func() {
+		appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()			
+		helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
 	})
+
 
 	When("a component is created and not pushed", func() {
 		BeforeEach(func() {
