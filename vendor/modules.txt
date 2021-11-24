@@ -93,7 +93,7 @@ github.com/deislabs/oras/pkg/artifact
 github.com/deislabs/oras/pkg/content
 github.com/deislabs/oras/pkg/context
 github.com/deislabs/oras/pkg/oras
-# github.com/devfile/api/v2 v2.0.0-20210917193329-089a48011460
+# github.com/devfile/api/v2 v2.0.0-20211116183836-dfec9a4d3b63
 ## explicit
 github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/v2/pkg/attributes

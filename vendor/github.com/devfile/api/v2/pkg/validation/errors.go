@@ -161,6 +161,23 @@ func (e *InvalidProjectCheckoutRemoteError) Error() string {
 	return fmt.Sprintf("unable to find the checkout remote %s in the remotes for %s %s", e.checkoutRemote, e.objectType, e.objectName)
 }
 
+type AnnotationType string
+
+const (
+	DeploymentAnnotation AnnotationType = "deployment"
+	ServiceAnnotation    AnnotationType = "service"
+)
+
+//AnnotationConflictError returns an error if an annotation has been declared with conflict values
+type AnnotationConflictError struct {
+	annotationName string
+	annotationType AnnotationType
+}
+
+func (e *AnnotationConflictError) Error() string {
+	return fmt.Sprintf("%v annotation: %v has been declared multiple times and with different values", e.annotationType, e.annotationName)
+}
+
 // resolveErrorMessageWithImportAttributes returns an updated error message
 // with detailed information on the imported and overriden resource.
 // example:

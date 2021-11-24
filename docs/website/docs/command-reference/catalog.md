@@ -2,7 +2,6 @@
 title: odo catalog
 sidebar_position: 2
 ---
-# odo catalog
 
 odo uses different *catalogs* to deploy *components* and *services*.
 

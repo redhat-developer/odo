@@ -1,8 +1,6 @@
 package v1alpha2
 
-import (
-	attributes "github.com/devfile/api/v2/pkg/attributes"
-)
+import "github.com/devfile/api/v2/pkg/attributes"
 
 // EndpointProtocol defines the application and transport protocols of the traffic that will go through this endpoint.
 // Only one of the following protocols may be specified: http, ws, tcp, udp.
@@ -46,6 +44,7 @@ const (
 	NoneEndpointExposure EndpointExposure = "none"
 )
 
+// +devfile:getter:generate
 type Endpoint struct {
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
 	// +kubebuilder:validation:MaxLength=63
@@ -94,6 +93,7 @@ type Endpoint struct {
 	// Describes whether the endpoint should be secured and protected by some
 	// authentication process. This requires a protocol of `https` or `wss`.
 	// +optional
+	// +devfile:default:value=false
 	Secure *bool `json:"secure,omitempty"`
 
 	// Path of the endpoint URL
@@ -112,4 +112,8 @@ type Endpoint struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
 	Attributes attributes.Attributes `json:"attributes,omitempty"`
+
+	// +optional
+	// Annotations to be added to Kubernetes Ingress or Openshift Route
+	Annotations map[string]string `json:"annotation,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }

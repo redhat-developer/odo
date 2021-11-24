@@ -41,6 +41,7 @@ type DockerfileSrc struct {
 	Git *DockerfileGitProjectSource `json:"git,omitempty"`
 }
 
+// +devfile:getter:generate
 type Dockerfile struct {
 	// Path of source directory to establish build context. Defaults to ${PROJECT_ROOT} in the container
 	// +optional
@@ -54,6 +55,7 @@ type Dockerfile struct {
 	//
 	// Default value is `false`
 	// +optional
+	// +devfile:default:value=false
 	RootRequired *bool `json:"rootRequired,omitempty"`
 }
 

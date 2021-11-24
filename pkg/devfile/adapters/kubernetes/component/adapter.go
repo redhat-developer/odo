@@ -10,6 +10,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
@@ -176,9 +177,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
-	k8sComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
-	})
+	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
 	if err != nil {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
@@ -192,7 +191,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushServices(a.Client.GetKubeClient(), k8sComponents, labels, a.Context)
+	err = service.PushKubernetesResources(a.Client.GetKubeClient(), k8sComponents, labels, a.Context)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}
@@ -784,4 +783,68 @@ func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []st
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
 func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.Client.GetKubeClient().ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
+}
+
+// Deploy executes the 'deploy' command defined in a devfile
+func (a Adapter) Deploy() error {
+	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
+		CommandOptions: parsercommon.CommandOptions{
+			CommandGroupKind: devfilev1.DeployCommandGroupKind,
+		},
+	})
+	if err != nil {
+		return nil
+	}
+
+	if len(commands) == 0 {
+		return errors.New("error deploying, no default deploy command found in devfile")
+	}
+
+	if len(commands) > 1 {
+		return errors.New("more than one default deploy command found in devfile, should not happen")
+	}
+
+	deployCmd := commands[0]
+
+	return a.ExecuteDevfileCommand(deployCmd, true)
+}
+
+// ExecuteDevfileCommand executes the devfile command
+func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
+	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	c, err := common.New(command, common.GetCommandsMap(commands), &a)
+	if err != nil {
+		return err
+	}
+	return c.Execute(show)
+}
+
+// ApplyComponent 'applies' a devfile component
+func (a Adapter) ApplyComponent(componentName string) error {
+	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	var component devfilev1.Component
+	var found bool
+	for _, component = range components {
+		if component.Name == componentName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("component %q not found", componentName)
+	}
+
+	cmp, err := createComponent(a, component)
+	if err != nil {
+		return err
+	}
+
+	return cmp.Apply(a.Devfile, a.Context)
 }

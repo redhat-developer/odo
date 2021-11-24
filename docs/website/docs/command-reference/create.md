@@ -3,8 +3,6 @@ title: odo create
 sidebar_position: 3
 ---
 
-# odo create
-
 odo uses the (_devfile_)[https://devfile.io] to store the configuration of and describe the resources like storage, services, etc. of a component. The _odo create_ command allows you to generate this file.
 
 ## Creating a component

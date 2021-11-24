@@ -23,8 +23,9 @@ Since network is shared in the same pod, endpoint ports should be unique across 
     - Should not reference itself via a subcommand
     - Should not indirectly reference itself via a subcommand which is a composite command
     - Should reference a valid devfile command
-3. exec and apply command should: map to a valid container component
-4. `{build, run, test, debug}`, each kind of group can only have one default command associated with it. If there are multiple commands of the same kind without a default, a warning will be displayed.
+3. exec command should: map to a valid container component
+4. apply command should: map to a valid container/kubernetes/openshift/image component
+5. `{build, run, test, debug, deploy}`, each kind of group can only have one default command associated with it. If there are multiple commands of the same kind without a default, a warning will be displayed.
 
 ### Components:
 Common rules for all components types:
@@ -33,6 +34,7 @@ Common rules for all components types:
 #### Container component 
 1. the container components must reference a valid volume component if it uses volume mounts, and the volume components are unique
 2. `PROJECT_SOURCE` or `PROJECTS_ROOT` are reserved environment variables defined under env, cannot be defined again in `env`
+3. the annotations should not have conflict values for same key, except deployment annotations and service annotations set for a container with `dedicatedPod=true`
 
 #### Plugin Component
 - Commands in plugins components share the same commands validation rules as listed above. Validation occurs after overriding and merging, in flattened devfile

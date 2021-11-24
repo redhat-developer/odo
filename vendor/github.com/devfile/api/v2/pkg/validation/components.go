@@ -30,6 +30,10 @@ func ValidateComponents(components []v1alpha2.Component) (returnedErr error) {
 	processedEndPointName := make(map[string]bool)
 	processedEndPointPort := make(map[int]bool)
 	processedComponentWithVolumeMounts := make(map[string]v1alpha2.Component)
+	processedDeploymentAnnotations := make(map[string]string)
+	processedServiceAnnotations := make(map[string]string)
+	deploymentAnnotationDuplication := make(map[string]bool)
+	serviceAnnotationDuplication := make(map[string]bool)
 
 	err := v1alpha2.CheckDuplicateKeys(components)
 	if err != nil {
@@ -54,6 +58,35 @@ func ValidateComponents(components []v1alpha2.Component) (returnedErr error) {
 				} else if env.Name == EnvProjectsRoot {
 					reservedEnvErr := &ReservedEnvError{envName: EnvProjectsRoot, componentName: component.Name}
 					returnedErr = multierror.Append(returnedErr, reservedEnvErr)
+				}
+			}
+
+			// if annotation is not empty and dedicatedPod is false
+			if component.Container.Annotation != nil && component.Container.DedicatedPod != nil && !(*component.Container.DedicatedPod) {
+				for key, value := range component.Container.Annotation.Deployment {
+					if processedVal, exist := processedDeploymentAnnotations[key]; exist && processedVal != value {
+						// only append the error for a single key once
+						if _, exist := deploymentAnnotationDuplication[key]; !exist {
+							annotationConflictErr := &AnnotationConflictError{annotationName: key, annotationType: DeploymentAnnotation}
+							returnedErr = multierror.Append(returnedErr, annotationConflictErr)
+							deploymentAnnotationDuplication[key] = true
+						}
+					} else {
+						processedDeploymentAnnotations[key] = value
+					}
+				}
+
+				for key, value := range component.Container.Annotation.Service {
+					if processedVal, exist := processedServiceAnnotations[key]; exist && processedVal != value {
+						// only append the error for a single key once
+						if _, exist := serviceAnnotationDuplication[key]; !exist {
+							annotationConflictErr := &AnnotationConflictError{annotationName: key, annotationType: ServiceAnnotation}
+							returnedErr = multierror.Append(returnedErr, annotationConflictErr)
+							serviceAnnotationDuplication[key] = true
+						}
+					} else {
+						processedServiceAnnotations[key] = value
+					}
 				}
 			}
 

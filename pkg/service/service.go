@@ -4,34 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-
-	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
+
+	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/pkg/errors"
-
-	"github.com/devfile/library/pkg/devfile/parser"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-
 	"github.com/ghodss/yaml"
+	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/pkg/errors"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 )
 
 // LinkLabel is the name of the name of the link in the devfile
@@ -42,10 +38,6 @@ const ServiceLabel = "app.kubernetes.io/service-name"
 
 // ServiceKind is the kind of the service in the service binding object
 const ServiceKind = "app.kubernetes.io/service-kind"
-
-const UriFolder = "kubernetes"
-
-const filePrefix = "odo-service-"
 
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
@@ -288,30 +280,6 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	return kind, name, nil
 }
 
-// IsCSVSupported checks if the cluster supports resources of type ClusterServiceVersion
-func IsCSVSupported() (bool, error) {
-	client, err := occlient.New()
-	if err != nil {
-		return false, err
-	}
-
-	return client.GetKubeClient().IsCSVSupported()
-}
-
-// IsDefined checks if a service with the given name is defined in a DevFile
-func IsDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return false, err
-	}
-	for _, c := range components {
-		if c.Name == name {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // ListDevfileLinks returns the names of the links defined in a Devfile
 func ListDevfileLinks(devfileObj parser.DevfileObj, context string) ([]string, error) {
 	return listDevfileLinks(devfileObj, context, devfilefs.DefaultFs{})
@@ -329,15 +297,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 	}
 	var services []string
 	for _, c := range components {
-		inlined := c.Kubernetes.Inlined
-		if c.Kubernetes.Uri != "" {
-			inlined, err = getDataFromURI(c.Kubernetes.Uri, context, fs)
-			if err != nil {
-				return []string{}, err
-			}
-		}
-		var u unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(inlined), &u)
+		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, context, fs)
 		if err != nil {
 			return nil, err
 		}
@@ -397,15 +357,7 @@ func listDevfileServices(client kclient.ClientInterface, devfileObj parser.Devfi
 
 	services := map[string]unstructured.Unstructured{}
 	for _, c := range components {
-		inlined := c.Kubernetes.Inlined
-		if c.Kubernetes.Uri != "" {
-			inlined, err = getDataFromURI(c.Kubernetes.Uri, componentContext, fs)
-			if err != nil {
-				return nil, err
-			}
-		}
-		var u unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(inlined), &u)
+		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, componentContext, fs)
 		if err != nil {
 			return nil, err
 		}
@@ -452,22 +404,17 @@ func findDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, 
 	}
 
 	for _, c := range components {
-		inlined := c.Kubernetes.Inlined
-		if c.Kubernetes.Uri != "" {
-			inlined, err = getDataFromURI(c.Kubernetes.Uri, context, fs)
-			if err != nil {
-				return "", false, err
-			}
-		}
-		var u unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(inlined), &u)
+		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, context, fs)
 		if err != nil {
 			return "", false, err
 		}
-
 		if isLinkResource(u.GetKind()) {
 			var sbr servicebinding.ServiceBinding
-			err = yaml.Unmarshal([]byte(inlined), &sbr)
+			js, err := u.MarshalJSON()
+			if err != nil {
+				return "", false, err
+			}
+			err = json.Unmarshal(js, &sbr)
 			if err != nil {
 				return "", false, err
 			}
@@ -484,133 +431,17 @@ func findDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, 
 	return "", false, nil
 }
 
-// AddKubernetesComponentToDevfile adds service definition to devfile as an inlined Kubernetes component
-func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
-	err := devfileObj.Data.AddComponents([]devfile.Component{{
-		Name: name,
-		ComponentUnion: devfile.ComponentUnion{
-			Kubernetes: &devfile.KubernetesComponent{
-				K8sLikeComponent: devfile.K8sLikeComponent{
-					BaseComponent: devfile.BaseComponent{},
-					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-						Inlined: crd,
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func AddKubernetesComponent(crd, name, componentContext string, devfile parser.DevfileObj) error {
-	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{})
-}
-
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem) error {
-	filePath := filepath.Join(componentContext, UriFolder, filePrefix+name+".yaml")
-	if _, err := fs.Stat(filepath.Join(componentContext, UriFolder)); os.IsNotExist(err) {
-		err = fs.MkdirAll(filepath.Join(componentContext, UriFolder), os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := fs.Stat(filePath); !os.IsNotExist(err) {
-		return fmt.Errorf("the file %q already exists", filePath)
-	}
-
-	err := fs.WriteFile(filePath, []byte(crd), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = devfileObj.Data.AddComponents([]devfile.Component{{
-		Name: name,
-		ComponentUnion: devfile.ComponentUnion{
-			Kubernetes: &devfile.KubernetesComponent{
-				K8sLikeComponent: devfile.K8sLikeComponent{
-					BaseComponent: devfile.BaseComponent{},
-					K8sLikeComponentLocation: devfile.K8sLikeComponentLocation{
-						Uri: filepath.Join(UriFolder, filePrefix+name+".yaml"),
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
-// DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string) error {
-	return deleteKubernetesComponentFromDevfile(name, devfileObj, componentContext, devfilefs.DefaultFs{})
-}
-
-// deleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func deleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) error {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	found := false
-	for _, c := range components {
-		if c.Name == name {
-			err = devfileObj.Data.DeleteComponent(c.Name)
-			if err != nil {
-				return err
-			}
-
-			if c.Kubernetes.Uri != "" {
-				parsedURL, err := url.Parse(c.Kubernetes.Uri)
-				if err != nil {
-					return err
-				}
-				if len(parsedURL.Host) == 0 || len(parsedURL.Scheme) == 0 {
-					err := fs.Remove(filepath.Join(componentContext, c.Kubernetes.Uri))
-					if err != nil {
-						return err
-					}
-				}
-			}
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return fmt.Errorf("could not find the service %q in devfile", name)
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
-// PushServices updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, context string) error {
+// PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
+func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, context string) error {
 	// check csv support before proceeding
-	csvSupported, err := IsCSVSupported()
+	csvSupported, err := client.IsCSVSupported()
 	if err != nil {
 		return err
 	}
 
-	var operatorGVRList []meta.RESTMapping
 	var deployed map[string]DeployedInfo
 
 	if csvSupported {
-		operatorGVRList, err = client.GetOperatorGVRList()
-		if err != nil {
-			return err
-		}
-
 		deployed, err = ListDeployedServices(client, labels)
 		if err != nil {
 			return err
@@ -627,84 +458,38 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
-		inlined := c.Kubernetes.Inlined
-		if c.Kubernetes.Uri != "" {
-			inlined, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
-			if err != nil {
-				return err
-			}
-		}
-		// get the string representation of the YAML definition of a CRD
-		strCRD := inlined
-
-		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		u := unstructured.Unstructured{}
-		if e := yaml.Unmarshal([]byte(strCRD), &u.Object); e != nil {
-			return e
+		u, er := GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
+		if er != nil {
+			return er
 		}
 
-		if isLinkResource(u.GetKind()) {
-			// it's a service binding related resource
-			continue
+		isOperatorBackedService, er := PushKubernetesResource(client, u, labels)
+		if er != nil {
+			return er
 		}
-
-		crdName := u.GetName()
-
-		restMapping, e := client.GetRestMappingFromUnstructured(u)
-		if e != nil {
-			return e
+		if csvSupported {
+			delete(deployed, u.GetKind()+"/"+u.GetName())
 		}
-
-		// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
-		// if yes, it is an Operator backed service, and we assign all labels to it in next step
-		// if no, it is likely a Kubernetes built-in resource, and we need not set all labels to it.
-		var match bool
-		for _, i := range operatorGVRList {
-			if i.Resource == restMapping.Resource {
-				match = true
-				break
-			}
-		}
-
-		// add labels to the CRD before creation
-		existingLabels := u.GetLabels()
-		if match {
-			u.SetLabels(mergeLabels(existingLabels, labels))
-		} else {
-			// Kubernetes built-in resource; only set managed-by label to it
-			u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
-		}
-
-		e = createOperatorService(client, u)
-		delete(deployed, u.GetKind()+"/"+crdName)
-		if e != nil {
-			if strings.Contains(e.Error(), "already exists") {
-				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
-				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
-				continue // this ensures that services slice is not updated
-			} else {
-				return e
-			}
-		}
-
-		if match {
-			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), crdName}, "/"), "odo link -h")
+		if isOperatorBackedService {
+			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
 		}
 		madeChange = true
 	}
 
-	for key, val := range deployed {
-		if !csvSupported || (isLinkResource(val.Kind)) {
-			continue
-		}
-		err = DeleteOperatorService(client, key)
-		if err != nil {
-			return err
+	if csvSupported {
+		for key, val := range deployed {
+			if isLinkResource(val.Kind) {
+				continue
+			}
+			err = DeleteOperatorService(client, key)
+			if err != nil {
+				return err
 
-		}
+			}
 
-		log.Successf("Deleted service %q from the cluster", key)
-		madeChange = true
+			log.Successf("Deleted service %q from the cluster", key)
+			madeChange = true
+		}
 	}
 
 	if !madeChange {
@@ -712,6 +497,71 @@ func PushServices(client kclient.ClientInterface, k8sComponents []devfile.Compon
 	}
 
 	return nil
+}
+
+// PushKubernetesResource pushes a Kubernetes resource (u) to the cluster using client
+// adding labels to the resource
+func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string) (bool, error) {
+	if isLinkResource(u.GetKind()) {
+		// it's a service binding related resource
+		return false, nil
+	}
+
+	isOp, err := isOperatorBackedService(client, u)
+	if err != nil {
+		return false, err
+	}
+
+	// add labels to the CRD before creation
+	existingLabels := u.GetLabels()
+	if isOp {
+		u.SetLabels(mergeLabels(existingLabels, labels))
+	} else {
+		// Kubernetes built-in resource; only set managed-by label to it
+		u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
+	}
+
+	err = createOperatorService(client, u)
+	return isOp, err
+}
+
+func isOperatorBackedService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
+	restMapping, err := client.GetRestMappingFromUnstructured(u)
+	if err != nil {
+		return false, err
+	}
+	// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
+	// if yes, it is an Operator backed service.
+	// if no, it is likely a Kubernetes built-in resource.
+	operatorGVRList, err := client.GetOperatorGVRList()
+	if err != nil {
+		return false, err
+	}
+
+	for _, i := range operatorGVRList {
+		if i.Resource == restMapping.Resource {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func GetK8sComponentAsUnstructured(component *devfile.KubernetesComponent, context string, fs devfilefs.Filesystem) (unstructured.Unstructured, error) {
+	strCRD := component.Inlined
+	var err error
+	if component.Uri != "" {
+		strCRD, err = getDataFromURI(component.Uri, context, fs)
+		if err != nil {
+			return unstructured.Unstructured{}, err
+		}
+	}
+
+	// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
+	u := unstructured.Unstructured{}
+	if err = yaml.Unmarshal([]byte(strCRD), &u.Object); err != nil {
+		return unstructured.Unstructured{}, err
+	}
+	return u, nil
 }
 
 func mergeLabels(labels ...map[string]string) map[string]string {
@@ -760,21 +610,9 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 // UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
 func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
-	var strCRD string
-	var err error
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		strCRD = c.Kubernetes.Inlined
-		if c.Kubernetes.Uri != "" {
-			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
-			if err != nil {
-				return err
-			}
-		}
-
-		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		u := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(strCRD), &u.Object)
+		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return err
 		}
@@ -866,42 +704,38 @@ func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Comp
 		return nil
 	}
 
-	var unsupportedResources []unstructured.Unstructured
+	var unsupportedResources []string
 	for _, c := range k8sComponents {
-		// get the string representation of the YAML definition of a CRD
-		var strCRD string
-		var err error
-		strCRD = c.Kubernetes.Inlined
-		if c.Kubernetes.Uri != "" {
-			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
-			if err != nil {
+		kindErr, err := ValidateResourceExist(client, c, context)
+		if err != nil {
+			if kindErr != "" {
+				unsupportedResources = append(unsupportedResources, kindErr)
+			} else {
 				return err
 			}
-		}
-
-		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-		u := unstructured.Unstructured{}
-		err = yaml.Unmarshal([]byte(strCRD), &u.Object)
-		if err != nil {
-			return err
-		}
-
-		_, err = client.GetRestMappingFromUnstructured(u)
-		if err != nil && u.GetKind() != "ServiceBinding" {
-			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster;
-			// but if it's a "ServiceBinding" resource, we don't add it to unsupported list because odo can create links
-			// without having SBO installed
-			unsupportedResources = append(unsupportedResources, u)
 		}
 	}
 
 	if len(unsupportedResources) > 0 {
 		// tell the user about all the unsupported resources in one message
-		var unsupported []string
-		for _, u := range unsupportedResources {
-			unsupported = append(unsupported, u.GetKind())
-		}
-		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing \"odo push\": %s", strings.Join(unsupported, ", "))
+		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing \"odo push\": %s", strings.Join(unsupportedResources, ", "))
 	}
 	return nil
+}
+
+func ValidateResourceExist(client *kclient.Client, k8sComponent devfile.Component, context string) (kindErr string, err error) {
+	// get the string representation of the YAML definition of a CRD
+	u, err := GetK8sComponentAsUnstructured(k8sComponent.Kubernetes, context, devfilefs.DefaultFs{})
+	if err != nil {
+		return "", err
+	}
+
+	_, err = client.GetRestMappingFromUnstructured(u)
+	if err != nil && u.GetKind() != "ServiceBinding" {
+		// getting a RestMapping would fail if there are no matches for the Kind field on the cluster;
+		// but if it's a "ServiceBinding" resource, we don't add it to unsupported list because odo can create links
+		// without having SBO installed
+		return u.GetKind(), errors.New("resource not supported")
+	}
+	return "", nil
 }

@@ -18,4 +18,5 @@ type ComponentAdapter interface {
 	StartSupervisordCtlStatusWatch()
 	Log(follow bool, command devfilev1.Command) (io.ReadCloser, error)
 	Exec(command []string) error
+	Deploy() error
 }

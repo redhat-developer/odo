@@ -224,3 +224,7 @@ func (a GenericAdapter) ExecDevfileEvent(events []string, eventType DevfileEvent
 	}
 	return nil
 }
+
+func (a GenericAdapter) ApplyComponent(component string) error {
+	return nil
+}

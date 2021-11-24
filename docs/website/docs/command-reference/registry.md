@@ -1,8 +1,7 @@
 ---
 title: odo registry
-sidebar_position: 4
+sidebar_position: 5
 ---
-# odo registry
 
 odo uses the portable *devfile* format to describe the components. odo can connect to various devfile registries to download devfiles for different languages and frameworks.
 

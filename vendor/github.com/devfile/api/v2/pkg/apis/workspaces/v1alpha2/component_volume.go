@@ -7,6 +7,7 @@ type VolumeComponent struct {
 }
 
 // Volume that should be mounted to a component container
+// +devfile:getter:generate
 type Volume struct {
 	// +optional
 	// Size of the volume
@@ -15,5 +16,6 @@ type Volume struct {
 	// +optional
 	// Ephemeral volumes are not stored persistently across restarts. Defaults
 	// to false
+	// +devfile:default:value=false
 	Ephemeral *bool `json:"ephemeral,omitempty"`
 }

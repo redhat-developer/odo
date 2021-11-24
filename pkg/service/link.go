@@ -129,7 +129,7 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
 
 	// check csv support before proceeding
-	csvSupport, err := IsCSVSupported()
+	csvSupport, err := client.IsCSVSupported()
 	if err != nil {
 		return false, err
 	}

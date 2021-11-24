@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/location"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	svc "github.com/openshift/odo/pkg/service"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -75,7 +74,6 @@ func NewLinkOptions() *LinkOptions {
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.commonLinkOptions.devfilePath = location.DevfileLocation(o.componentContext)
-	o.commonLinkOptions.csvSupport, _ = svc.IsCSVSupported()
 
 	err = o.complete(name, cmd, args, o.componentContext)
 	if err != nil {

@@ -16,6 +16,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/validate"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -247,7 +248,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 
-			err = svc.AddKubernetesComponentToDevfile(string(crdYaml), o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
+			err = devfile.AddKubernetesComponentToDevfile(string(crdYaml), o.ServiceName, o.EnvSpecificInfo.GetDevfileObj())
 			if err != nil {
 				return err
 			}
@@ -258,7 +259,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 
-			err = svc.AddKubernetesComponent(string(crdYaml), o.ServiceName, o.componentContext, o.EnvSpecificInfo.GetDevfileObj())
+			err = devfile.AddKubernetesComponent(string(crdYaml), o.ServiceName, o.componentContext, o.EnvSpecificInfo.GetDevfileObj())
 			if err != nil {
 				return err
 			}
@@ -282,7 +283,7 @@ func (b *OperatorBackend) ServiceDefined(ctx *genericclioptions.Context, name st
 	if err != nil {
 		return false, err
 	}
-	return svc.IsDefined(instanceName, ctx.EnvSpecificInfo.GetDevfileObj())
+	return devfile.IsComponentDefined(instanceName, ctx.EnvSpecificInfo.GetDevfileObj())
 }
 
 func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, application string) error {
@@ -292,7 +293,7 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 		return err
 	}
 
-	err = svc.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
+	err = devfile.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete service from the devfile")
 	}
