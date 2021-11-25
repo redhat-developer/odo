@@ -37,12 +37,12 @@ func (o *DeployOptions) Complete(name string, cmd *cobra.Command, args []string)
 	if err != nil {
 		return err
 	}
-	return
+	return nil
 }
 
 // Validate validates the DeployOptions based on completed values
-func (o *DeployOptions) Validate() (err error) {
-	return
+func (o *DeployOptions) Validate() error {
+	return nil
 }
 
 // Run contains the logic for the odo command

@@ -48,12 +48,12 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.registryName = args[0]
 	o.registryURL = ""
 	o.user = "default"
-	return
+	return nil
 }
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for "odo registry delete" command

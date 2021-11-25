@@ -38,12 +38,12 @@ func NewProjectListOptions() *ProjectListOptions {
 // Complete completes ProjectListOptions after they've been created
 func (plo *ProjectListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return
+	return err
 }
 
 // Validate validates the ProjectListOptions based on completed values
 func (plo *ProjectListOptions) Validate() (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for the odo project list command

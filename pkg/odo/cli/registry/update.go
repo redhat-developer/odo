@@ -49,7 +49,7 @@ func (o *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.registryName = args[0]
 	o.registryURL = args[1]
 	o.user = "default"
-	return
+	return nil
 }
 
 // Validate validates the UpdateOptions based on completed values
@@ -61,7 +61,7 @@ func (o *UpdateOptions) Validate() (err error) {
 	if registryUtil.IsGitBasedRegistry(o.registryURL) {
 		registryUtil.PrintGitRegistryDeprecationWarning()
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for "odo registry update" command

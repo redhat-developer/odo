@@ -53,7 +53,7 @@ func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []s
 	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	pso.projectName = args[0]
 
-	return
+	return err
 }
 
 // Validate validates the parameters of the ProjectSetOptions
@@ -67,7 +67,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 		return fmt.Errorf("The project %s does not exist", pso.projectName)
 	}
 
-	return
+	return nil
 }
 
 // Run runs the project set command
@@ -89,7 +89,7 @@ func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 			log.Infof("Switched to project : %v", pso.projectName)
 		}
 	}
-	return
+	return nil
 }
 
 // NewCmdProjectSet creates the project set command

@@ -3,6 +3,7 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
+
 	util2 "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 
 	// Third-party packages
@@ -52,7 +53,7 @@ func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	o.registryName = args[0]
 	o.registryURL = args[1]
 	o.user = "default"
-	return
+	return nil
 }
 
 // Validate validates the AddOptions based on completed values
@@ -64,7 +65,7 @@ func (o *AddOptions) Validate() (err error) {
 	if util2.IsGitBasedRegistry(o.registryURL) {
 		util2.PrintGitRegistryDeprecationWarning()
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for "odo registry add" command

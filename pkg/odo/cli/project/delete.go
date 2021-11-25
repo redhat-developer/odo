@@ -55,11 +55,11 @@ func NewProjectDeleteOptions() *ProjectDeleteOptions {
 func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pdo.projectName = args[0]
 	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return
+	return err
 }
 
 // Validate validates the parameters of the ProjectDeleteOptions
-func (pdo *ProjectDeleteOptions) Validate() (err error) {
+func (pdo *ProjectDeleteOptions) Validate() error {
 	// Validate existence of the project to be deleted
 	isValidProject, err := project.Exists(pdo.Context, pdo.projectName)
 	if kerrors.IsForbidden(err) {
@@ -68,7 +68,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	if !isValidProject {
 		return fmt.Errorf("The project %q does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
-	return
+	return nil
 }
 
 // Run the project delete command
@@ -80,7 +80,7 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 	// This to set the project in the file and runtime
 	err = project.SetCurrent(pdo.Context, pdo.projectName)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Prints out what will be deleted

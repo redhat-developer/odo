@@ -48,12 +48,12 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 func (pco *ProjectCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pco.projectName = args[0]
 	pco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return
+	return err
 }
 
 // Validate validates the parameters of the ProjectCreateOptions
-func (pco *ProjectCreateOptions) Validate() (err error) {
-	return
+func (pco *ProjectCreateOptions) Validate() error {
+	return nil
 }
 
 // Run runs the project create command
@@ -95,7 +95,7 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 		machineoutput.OutputSuccess(prj)
 	}
 
-	return
+	return nil
 }
 
 // NewCmdProjectCreate creates the project create command
