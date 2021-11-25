@@ -63,7 +63,7 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	o.Context.LocalConfigProvider.CompleteStorage(&o.storage)
 
-	return
+	return nil
 }
 
 // Validate validates the CreateOptions based on completed values
@@ -87,7 +87,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 
 		log.Italic("\nPlease use `odo push` command to make the storage accessible to the component")
 	}
-	return
+	return nil
 }
 
 // NewCmdStorageCreate implements the odo storage create command.

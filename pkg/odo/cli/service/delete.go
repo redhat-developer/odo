@@ -60,7 +60,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 	o.Backend = NewOperatorBackend()
 
-	return
+	return nil
 }
 
 // Validate validates the DeleteOptions based on completed values
@@ -73,7 +73,7 @@ func (o *DeleteOptions) Validate() (err error) {
 	if !svcDefined {
 		return fmt.Errorf("couldn't find service named %q. Refer %q to see list of defined services", o.serviceName, "odo service list")
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the odo service delete command
@@ -87,7 +87,7 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	} else {
 		log.Errorf("Aborting deletion of service: %v", o.serviceName)
 	}
-	return
+	return nil
 }
 
 // NewCmdServiceDelete implements the odo service delete command.

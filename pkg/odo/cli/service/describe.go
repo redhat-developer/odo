@@ -54,7 +54,7 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 	}
 	o.Backend = NewOperatorBackend()
 
-	return
+	return nil
 }
 
 // Validate validates the DescribeOptions based on completed values
@@ -77,8 +77,7 @@ func (o *DescribeOptions) Validate() error {
 
 // Run contains the logic for the odo service describe command
 func (o *DescribeOptions) Run(cmd *cobra.Command) error {
-	err := o.Backend.DescribeService(o, o.serviceName, o.GetApplication())
-	return err
+	return o.Backend.DescribeService(o, o.serviceName, o.GetApplication())
 }
 
 // NewCmdDescribe implements the describe odo command

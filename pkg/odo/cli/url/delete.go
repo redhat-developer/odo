@@ -53,8 +53,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 	}
 
-	return
-
+	return nil
 }
 
 // Validate validates the DeleteOptions based on completed values
@@ -66,7 +65,7 @@ func (o *DeleteOptions) Validate() (err error) {
 	if url == nil {
 		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.LocalConfigProvider.GetName())
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the odo url delete command

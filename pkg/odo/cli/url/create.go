@@ -120,7 +120,7 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 		}
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the CreateOptions based on completed values
@@ -147,7 +147,7 @@ func (o *CreateOptions) Validate() (err error) {
 		}
 		return fmt.Errorf("URL creation failed:\n%s", strings.Join(errorList, "\n"))
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the odo url create command
@@ -180,7 +180,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		}
 		machineoutput.OutputSuccess(u)
 	}
-	return
+	return nil
 }
 
 // NewCmdURLCreate implements the odo url create command.

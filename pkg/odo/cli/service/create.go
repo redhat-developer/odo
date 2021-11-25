@@ -114,7 +114,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		log.Info("Successfully added service to the configuration; do 'odo push' to create service on the cluster")
 	}
 
-	return
+	return nil
 }
 
 // NewCmdServiceCreate implements the odo service create command.

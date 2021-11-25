@@ -52,7 +52,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		OCClient:            *o.Context.Client,
 	})
 
-	return
+	return nil
 }
 
 // Validate validates the ListOptions based on completed values
@@ -80,7 +80,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		}
 	}
 
-	return
+	return nil
 }
 
 // printStorage prints the given storageList

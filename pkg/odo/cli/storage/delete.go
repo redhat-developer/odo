@@ -45,7 +45,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 
 	o.storageName = args[0]
-	return
+	return nil
 }
 
 // Validate validates the DeleteOptions based on completed values
@@ -58,7 +58,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.GetApplication(), err)
 	}
 
-	return
+	return nil
 }
 
 // Run contains the logic for the odo storage delete command
@@ -88,7 +88,7 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)
 	}
 
-	return
+	return nil
 }
 
 // NewCmdStorageDelete implements the odo storage delete command.

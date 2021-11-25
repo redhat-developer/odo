@@ -57,7 +57,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		OCClient:            *o.Context.Client,
 		IsRouteSupported:    routeSupported,
 	})
-	return
+	return nil
 }
 
 // Validate validates the ListOptions based on completed values
@@ -85,7 +85,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		}
 	}
 
-	return
+	return nil
 }
 
 // NewCmdURLList implements the odo url list command.

@@ -54,7 +54,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 
 // Validate validates the ServiceListOptions based on completed values
 func (o *ServiceListOptions) Validate() (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for the odo service list command
