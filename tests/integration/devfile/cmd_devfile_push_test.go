@@ -925,6 +925,65 @@ var _ = Describe("odo devfile push command tests", func() {
 		Context("odo push (without -f) is executed", func() {
 			ensureFilesSyncedTest(commonVar.Project, false)
 		})
+
+		When("node-js application is created and pushed", func() {
+			var output string
+			BeforeEach(func() {
+				helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+			})
+
+			It("should push the component successfully", func() {
+				Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+			})
+			It("should check for cpuLimit", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").ShouldPass().Out()
+				Expect(output).To(ContainSubstring("1"))
+			})
+			It("should check for cpuRequests", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").ShouldPass().Out()
+				Expect(output).To(ContainSubstring("200m"))
+			})
+			It("should check for memoryRequests", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").ShouldPass().Out()
+				Expect(output).To(ContainSubstring("512Mi"))
+			})
+			When("Update the devfile.yaml, do odo push", func() {
+
+				BeforeEach(func() {
+					helper.ReplaceString("devfile.yaml", "cpuLimit: \"1\"", "cpuLimit: 700m")
+					helper.ReplaceString("devfile.yaml", "cpuRequest: 200m", "cpuRequest: 250m")
+					helper.ReplaceString("devfile.yaml", "memoryRequest: 512Mi", "memoryRequest: 550Mi")
+					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+				})
+
+				It("should push the component successfully", func() {
+					Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+				})
+
+				It("should check for cpuLimit", func() {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").ShouldPass().Out()
+					Expect(output).To(ContainSubstring("700m"))
+				})
+
+				It("should check for cpuRequests", func() {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").ShouldPass().Out()
+					Expect(output).To(ContainSubstring("250m"))
+				})
+
+				It("should check for memoryRequests", func() {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").ShouldPass().Out()
+					Expect(output).To(ContainSubstring("550Mi"))
+				})
+			})
+		})
 	})
 
 	When("creating nodejs component, doing odo push and run command has dev.odo.push.path attribute", func() {
