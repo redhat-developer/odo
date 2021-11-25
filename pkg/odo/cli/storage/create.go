@@ -26,14 +26,19 @@ var (
 )
 
 type CreateOptions struct {
-	storageName      string
-	storageSize      string
-	storagePath      string
-	componentContext string
-
-	container string // container to which this storage belongs
-	storage   localConfigProvider.LocalStorage
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	storageName string
+
+	// Flags
+	sizeFlag      string
+	pathFlag      string
+	contextFlag   string
+	containerFlag string
+
+	storage localConfigProvider.LocalStorage
 }
 
 // NewStorageCreateOptions creates a new CreateOptions instance
@@ -43,7 +48,7 @@ func NewStorageCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been created
 func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -56,9 +61,9 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	o.storage = localConfigProvider.LocalStorage{
 		Name:      o.storageName,
-		Size:      o.storageSize,
-		Path:      o.storagePath,
-		Container: o.container,
+		Size:      o.sizeFlag,
+		Path:      o.pathFlag,
+		Container: o.containerFlag,
 	}
 
 	o.Context.LocalConfigProvider.CompleteStorage(&o.storage)
@@ -105,11 +110,11 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
-	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
-	storageCreateCmd.Flags().StringVar(&o.container, "container", "", "Name of container to attach the storage to in devfile")
+	storageCreateCmd.Flags().StringVar(&o.sizeFlag, "size", "", "Size of storage to add")
+	storageCreateCmd.Flags().StringVar(&o.pathFlag, "path", "", "Path to mount the storage on")
+	storageCreateCmd.Flags().StringVar(&o.containerFlag, "container", "", "Name of container to attach the storage to in devfile")
 
-	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(storageCreateCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)
 
 	return storageCreateCmd

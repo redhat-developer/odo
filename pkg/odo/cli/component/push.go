@@ -47,21 +47,27 @@ const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
+	// Push context
 	*CommonPushOptions
-	ignores    []string
+
+	// Flags
+	ignoreFlag     []string
+	forceBuildFlag bool
+	debugFlag      bool
+
+	// devfile commands flags
+	initCommandFlag  string
+	buildCommandFlag string
+	runCommandflag   string
+	debugCommandFlag string
+
 	sourcePath string
-	forceBuild bool
 
 	// devfile path
 	DevfilePath string
-	Devfile     parser.DevfileObj
 
-	// devfile commands
-	devfileInitCommand  string
-	devfileBuildCommand string
-	devfileRunCommand   string
-	devfileDebugCommand string
-	debugRun            bool
+	// Devfile content
+	Devfile parser.DevfileObj
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -242,17 +248,17 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	}
 
 	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
-	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
-	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
-	pushCmd.Flags().BoolVar(&po.pushConfig, "config", false, "Use config flag to only apply config on to cluster")
-	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
-	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to re-sync the entire source code and re-build the component")
+	pushCmd.Flags().BoolVar(&po.showFlag, "show-log", false, "If enabled, logs will be shown when built")
+	pushCmd.Flags().StringSliceVar(&po.ignoreFlag, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
+	pushCmd.Flags().BoolVar(&po.configFlag, "config", false, "Use config flag to only apply config on to cluster")
+	pushCmd.Flags().BoolVar(&po.sourceFlag, "source", false, "Use source flag to only push latest source on to cluster")
+	pushCmd.Flags().BoolVarP(&po.forceBuildFlag, "force-build", "f", false, "Use force-build flag to re-sync the entire source code and re-build the component")
 
-	pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
-	pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
-	pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
-	pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
-	pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
+	pushCmd.Flags().StringVar(&po.initCommandFlag, "init-command", "", "Devfile Init Command to execute")
+	pushCmd.Flags().StringVar(&po.buildCommandFlag, "build-command", "", "Devfile Build Command to execute")
+	pushCmd.Flags().StringVar(&po.runCommandflag, "run-command", "", "Devfile Run Command to execute")
+	pushCmd.Flags().BoolVar(&po.debugFlag, "debug", false, "Runs the component in debug mode")
+	pushCmd.Flags().StringVar(&po.debugCommandFlag, "debug-command", "", "Devfile Debug Command to execute")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(pushCmd)

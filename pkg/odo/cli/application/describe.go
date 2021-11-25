@@ -26,8 +26,11 @@ var (
 
 // DescribeOptions encapsulates the options for the odo command
 type DescribeOptions struct {
-	appName string
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	appName string
 }
 
 // NewDescribeOptions creates a new DescribeOptions instance

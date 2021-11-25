@@ -23,8 +23,11 @@ var viewExample = ktemplates.Examples(`# For viewing the current configuration f
 
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
-	contextDir string
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	contextFlag string
 }
 
 // NewViewOptions creates a new ViewOptions instance
@@ -34,7 +37,7 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextDir)
+	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag)
 	o.Context, err = genericclioptions.New(params)
 	return err
 }
@@ -79,7 +82,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(configurationViewCmd, &o.contextDir)
+	genericclioptions.AddContextFlag(configurationViewCmd, &o.contextFlag)
 
 	return configurationViewCmd
 }

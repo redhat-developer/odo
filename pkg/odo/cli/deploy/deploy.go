@@ -17,8 +17,11 @@ const RecommendedCommandName = "deploy"
 
 // DeployOptions encapsulates the options for the odo command
 type DeployOptions struct {
+	// Context
 	*genericclioptions.Context
-	componentContext string
+
+	// Flags
+	contextFlag string
 }
 
 var deployExample = templates.Examples(`
@@ -33,11 +36,8 @@ func NewDeployOptions() *DeployOptions {
 
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
-	if err != nil {
-		return err
-	}
-	return nil
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+	return err
 }
 
 // Validate validates the DeployOptions based on completed values
@@ -76,6 +76,6 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	deployCmd.Annotations = map[string]string{"command": "utility"}
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	genericclioptions.AddContextFlag(deployCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(deployCmd, &o.contextFlag)
 	return deployCmd
 }

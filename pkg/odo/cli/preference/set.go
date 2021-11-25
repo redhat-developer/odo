@@ -27,9 +27,12 @@ var (
 
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
-	paramName       string
-	paramValue      string
-	configForceFlag bool
+	// Flags
+	forceFlag bool
+
+	// Parameters
+	paramName  string
+	paramValue string
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -58,7 +61,7 @@ func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
 		return errors.Errorf("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 
-	if !o.configForceFlag {
+	if !o.forceFlag {
 		if isSet := cfg.IsSet(o.paramName); isSet {
 			// TODO: could add a logic to check if the new value set by the user is not same as the current value
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
@@ -109,6 +112,6 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	preferenceSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the preference directly")
+	preferenceSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the preference directly")
 	return preferenceSetCmd
 }

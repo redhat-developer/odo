@@ -31,8 +31,9 @@ var versionExample = ktemplates.Examples(`
 
 // VersionOptions encapsulates all options for odo version command
 type VersionOptions struct {
-	// clientFlag indicates if the user only wants client information
+	// Flags
 	clientFlag bool
+
 	// serverInfo contains the remote server information if the user asked for it, nil otherwise
 	serverInfo *occlient.ServerInfo
 }

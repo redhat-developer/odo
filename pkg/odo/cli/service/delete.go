@@ -27,11 +27,16 @@ var (
 
 // DeleteOptions encapsulates the options for the odo service delete command
 type DeleteOptions struct {
-	serviceForceDeleteFlag bool
-	serviceName            string
+	// Context
 	*genericclioptions.Context
-	// Context to use when listing service. This will use app and project values from the context
-	componentContext string
+
+	// Parameters
+	serviceName string
+
+	// Flags
+	forceFlag   bool
+	contextFlag string
+
 	// Backend is the service provider backend that was used to create the service
 	Backend ServiceProviderBackend
 }
@@ -43,12 +48,12 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
 
-	err = validDevfileDirectory(o.componentContext)
+	err = validDevfileDirectory(o.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -78,7 +83,7 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service delete command
 func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
-	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
+	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
 		err = o.Backend.DeleteService(o, o.serviceName, o.GetApplication())
 		if err != nil {
 			return err
@@ -104,7 +109,7 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	serviceDeleteCmd.Flags().BoolVarP(&o.serviceForceDeleteFlag, "force", "f", false, "Delete service without prompting")
-	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.componentContext)
+	serviceDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete service without prompting")
+	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.contextFlag)
 	return serviceDeleteCmd
 }

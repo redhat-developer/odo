@@ -21,11 +21,16 @@ const TestRecommendedCommandName = "test"
 
 // TestOptions encapsulates the options for the odo command
 type TestOptions struct {
-	commandName      string
-	componentContext string
-	show             bool
-	devObj           devfileParser.DevfileObj
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	testCommandFlag string
+	contextFlag     string
+	showLogFlag     bool
+
+	// devfile content
+	devObj devfileParser.DevfileObj
 }
 
 var testExample = templates.Examples(`
@@ -44,7 +49,7 @@ func NewTestOptions() *TestOptions {
 
 // Complete completes TestOptions after they've been created
 func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(to.componentContext))
+	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(to.contextFlag))
 	return
 }
 
@@ -85,10 +90,10 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	testCmd.Annotations = map[string]string{"command": "main"}
 	testCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	testCmd.Flags().StringVar(&to.commandName, "test-command", "", "Devfile Test Command to execute")
-	testCmd.Flags().BoolVar(&to.show, "show-log", false, "If enabled, logs will be shown when running the test command")
+	testCmd.Flags().StringVar(&to.testCommandFlag, "test-command", "", "Devfile Test Command to execute")
+	testCmd.Flags().BoolVar(&to.showLogFlag, "show-log", false, "If enabled, logs will be shown when running the test command")
 	//Adding `--context` flag
-	genericclioptions.AddContextFlag(testCmd, &to.componentContext)
+	genericclioptions.AddContextFlag(testCmd, &to.contextFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(testCmd)
 	// Adding `--app` flag

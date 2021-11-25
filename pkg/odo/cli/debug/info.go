@@ -14,8 +14,13 @@ import (
 
 // InfoOptions contains all the options for running the info cli command.
 type InfoOptions struct {
+	// Context
 	*genericclioptions.Context
-	contextDir    string
+
+	// Flags
+	contextFlag string
+
+	// Port forwarder backend
 	PortForwarder *debug.DefaultPortForwarder
 }
 
@@ -84,7 +89,7 @@ func NewCmdInfo(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(opts, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
+	genericclioptions.AddContextFlag(cmd, &opts.contextFlag)
 
 	return cmd
 }

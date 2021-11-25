@@ -30,11 +30,15 @@ var (
 
 // DeleteOptions encapsulates the options for the "odo registry delete" command
 type DeleteOptions struct {
-	operation    string
+	// Parameters
 	registryName string
-	registryURL  string
-	user         string
-	forceFlag    bool
+
+	// Flags
+	forceFlag bool
+
+	operation   string
+	registryURL string
+	user        string
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance

@@ -23,10 +23,15 @@ var (
 
 // DescribeOptions encapsulates the options for the odo service describe command
 type DescribeOptions struct {
-	serviceName string
+	// Context
 	*genericclioptions.Context
-	// Context to use when describing the service. This will use app and project values from the context
-	componentContext string
+
+	// Parameters
+	serviceName string
+
+	// Flags
+	contextFlag string
+
 	// Backend is the service provider backend that was used to create the service
 	Backend ServiceProviderBackend
 }
@@ -37,12 +42,12 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
 
-	err = validDevfileDirectory(o.componentContext)
+	err = validDevfileDirectory(o.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -96,6 +101,6 @@ func NewCmdServiceDescribe(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(describeCmd, &do.componentContext)
+	genericclioptions.AddContextFlag(describeCmd, &do.contextFlag)
 	return describeCmd
 }

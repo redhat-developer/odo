@@ -22,10 +22,11 @@ var servicesExample = `  # Get the supported services
 
 // ServiceOptions encapsulates the options for the odo catalog list services command
 type ServiceOptions struct {
+	// Context
+	*genericclioptions.Context
+
 	// list of clusterserviceversions (installed by Operators)
 	csvs *olm.ClusterServiceVersionList
-	// generic context options common to all commands
-	*genericclioptions.Context
 }
 
 // NewServiceOptions creates a new ListServicesOptions instance

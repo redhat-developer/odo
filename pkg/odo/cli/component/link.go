@@ -58,9 +58,11 @@ The value of the '--name' flag indicates the name of the directory under '/bindi
 
 // LinkOptions encapsulates the options for the odo link command
 type LinkOptions struct {
-	componentContext string
-
+	// Common link/unlink context
 	*commonLinkOptions
+
+	// Flags
+	contextFlag string
 }
 
 // NewLinkOptions creates a new LinkOptions instance
@@ -73,9 +75,9 @@ func NewLinkOptions() *LinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.commonLinkOptions.devfilePath = location.DevfileLocation(o.componentContext)
+	o.commonLinkOptions.devfilePath = location.DevfileLocation(o.contextFlag)
 
-	err = o.complete(name, cmd, args, o.componentContext)
+	err = o.complete(name, cmd, args, o.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -122,7 +124,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	AddComponentFlag(linkCmd)
 
 	//Adding context flag
-	genericclioptions.AddContextFlag(linkCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(linkCmd, &o.contextFlag)
 
 	return linkCmd
 }

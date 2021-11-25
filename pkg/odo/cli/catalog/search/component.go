@@ -17,10 +17,14 @@ var componentExample = `  # Search for a component
 
 // SearchComponentOptions encapsulates the options for the odo catalog describe service command
 type SearchComponentOptions struct {
-	searchTerm string
-	components []string
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	searchTerm string
+
+	// components matching the search query
+	components []string
 }
 
 // NewSearchComponentOptions creates a new SearchComponentOptions instance

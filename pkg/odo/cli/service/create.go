@@ -38,8 +38,17 @@ For a full list of service types, use: 'odo catalog list services'`)
 
 // CreateOptions encapsulates the options for the odo service create command
 type CreateOptions struct {
-	// parameters hold the user-provided values for service class parameters via flags (populated by cobra)
-	parameters []string
+	// Context
+	*genericclioptions.Context
+
+	// Flags
+	parametersFlag []string
+	waitFlag       bool
+	contextFlag    string
+	DryRunFlag     bool
+	fromFileFlag   string
+	inlinedFlag    bool
+
 	// ServiceType corresponds to the service class name
 	ServiceType string
 	// ServiceName is how the service will be named and known by odo
@@ -50,20 +59,8 @@ type CreateOptions struct {
 	interactive bool
 	// CmdFullName records the command's full name
 	CmdFullName string
-	// whether or not to wait for the service to be ready
-	wait bool
-	// generic context options common to all commands
-	*genericclioptions.Context
-	// Context to use when creating service. This will use app and project values from the context
-	componentContext string
-	// If set to true, DryRun prints the yaml that will create the service
-	DryRun bool
-	// Location of the file in which yaml specification of CR is stored.
-	fromFile string
 	// Backend is the service provider backend providing the service requested by the user
 	Backend ServiceProviderBackend
-
-	inlined bool
 }
 
 // NewCreateOptions creates a new CreateOptions instance
@@ -73,23 +70,23 @@ func NewCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been created
 func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
 	// we convert the param list provided in the format of key=value list
 	// to a map
-	o.ParametersMap, err = util.MapFromParameters(o.parameters)
+	o.ParametersMap, err = util.MapFromParameters(o.parametersFlag)
 	if err != nil {
 		return err
 	}
 
-	err = validDevfileDirectory(o.componentContext)
+	err = validDevfileDirectory(o.contextFlag)
 	if err != nil {
 		return err
 	}
 	//if no args are provided and if request is not from file, user wants interactive mode
-	if o.fromFile == "" && len(args) == 0 {
+	if o.fromFileFlag == "" && len(args) == 0 {
 		return fmt.Errorf("odo doesn't support interactive mode for creating Operator backed service")
 	}
 	o.Backend = NewOperatorBackend()
@@ -110,7 +107,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Information on what to do next; don't do this if "--dry-run" was requested as it gets appended to the file
-	if !o.DryRun {
+	if !o.DryRunFlag {
 		log.Info("Successfully added service to the configuration; do 'odo push' to create service on the cluster")
 	}
 
@@ -133,13 +130,13 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	serviceCreateCmd.Flags().BoolVar(&o.inlined, "inlined", false, "Puts the service definition in the devfile instead of a separate file")
-	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the operator backed service")
+	serviceCreateCmd.Flags().BoolVar(&o.inlinedFlag, "inlined", false, "Puts the service definition in the devfile instead of a separate file")
+	serviceCreateCmd.Flags().BoolVar(&o.DryRunFlag, "dry-run", false, "Print the yaml specificiation that will be used to create the operator backed service")
 	// remove this feature after enabling service create interactive mode for operator backed services
-	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
+	serviceCreateCmd.Flags().StringVar(&o.fromFileFlag, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
 
-	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters to be used to create Operator backed service where a parameter is expressed as <key>=<value")
-	serviceCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the service is ready")
-	genericclioptions.AddContextFlag(serviceCreateCmd, &o.componentContext)
+	serviceCreateCmd.Flags().StringArrayVarP(&o.parametersFlag, "parameters", "p", []string{}, "Parameters to be used to create Operator backed service where a parameter is expressed as <key>=<value")
+	serviceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the service is ready")
+	genericclioptions.AddContextFlag(serviceCreateCmd, &o.contextFlag)
 	return serviceCreateCmd
 }

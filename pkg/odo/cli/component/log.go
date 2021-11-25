@@ -23,25 +23,25 @@ var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
 
 // LogOptions contains log options
 type LogOptions struct {
-	logFollow        bool
-	debug            bool
-	componentContext string
+	// Component context
 	*ComponentOptions
+
+	// Flags
+	followFlag  bool
+	debugFlag   bool
+	contextFlag string
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
 	return &LogOptions{
-		logFollow:        false,
-		debug:            false,
-		componentContext: "",
 		ComponentOptions: &ComponentOptions{},
 	}
 }
 
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(lo.componentContext))
+	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(lo.contextFlag))
 	return err
 }
 
@@ -72,13 +72,13 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 		},
 	}
 
-	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
-	logCmd.Flags().BoolVar(&o.debug, "debug", false, "Show logs for debug command")
+	logCmd.Flags().BoolVarP(&o.followFlag, "follow", "f", false, "Follow logs")
+	logCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Show logs for debug command")
 
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
 	// Adding `--context` flag
-	genericclioptions.AddContextFlag(logCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(logCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(logCmd)

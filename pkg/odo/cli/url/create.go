@@ -52,18 +52,24 @@ var (
 
 // CreateOptions encapsulates the options for the odo url create command
 type CreateOptions struct {
+	// Push context
 	*clicomponent.PushOptions
-	urlName     string
-	urlPort     int
-	secureURL   bool
-	now         bool
-	host        string // host of the URL
-	tlsSecret   string // tlsSecret is the secret to te used by the URL
-	path        string // path of the URL
-	protocol    string // protocol of the URL
-	container   string // container to which the URL belongs
-	wantIngress bool
-	url         localConfigProvider.LocalURL
+
+	// Parameters
+	urlName string
+
+	// Flags
+	portFlag      int
+	secureFlag    bool
+	nowFlag       bool
+	hostFlag      string // host of the URL
+	tlsSecretFlag string // tlsSecret is the secret to te used by the URL
+	pathFlag      string // path of the URL
+	protocolFlag  string // protocol of the URL
+	containerFlag string // container to which the URL belongs
+	ingressFlag   bool
+
+	url localConfigProvider.LocalURL
 }
 
 // NewURLCreateOptions creates a new CreateOptions instance
@@ -74,7 +80,7 @@ func NewURLCreateOptions() *CreateOptions {
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
-	if o.now {
+	if o.nowFlag {
 		params.CreateAppIfNeeded()
 	}
 	o.Context, err = genericclioptions.New(params)
@@ -83,7 +89,7 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 	}
 
 	var urlType localConfigProvider.URLKind
-	if o.wantIngress {
+	if o.ingressFlag {
 		urlType = localConfigProvider.INGRESS
 	}
 
@@ -95,14 +101,14 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 	// create the localURL
 	o.url = localConfigProvider.LocalURL{
 		Name:      o.urlName,
-		Port:      o.urlPort,
-		Secure:    o.secureURL,
-		Host:      o.host,
-		TLSSecret: o.tlsSecret,
+		Port:      o.portFlag,
+		Secure:    o.secureFlag,
+		Host:      o.hostFlag,
+		TLSSecret: o.tlsSecretFlag,
 		Kind:      urlType,
-		Container: o.container,
-		Protocol:  o.protocol,
-		Path:      o.path,
+		Container: o.containerFlag,
+		Protocol:  o.protocolFlag,
+		Path:      o.pathFlag,
 	}
 
 	// complete the URL
@@ -111,7 +117,7 @@ func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (e
 		return err
 	}
 
-	if o.now {
+	if o.nowFlag {
 		prjName := o.Context.LocalConfigProvider.GetNamespace()
 		o.ResolveSrcAndConfigFlags()
 		err = o.ResolveProject(prjName)
@@ -160,7 +166,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 	log.Successf("URL %s created for component: %v", o.url.Name, o.LocalConfigProvider.GetName())
 
-	if o.now {
+	if o.nowFlag {
 		// if the now flag is specified, push the changes
 		o.CompleteDevfilePath()
 		o.EnvSpecificInfo = o.Context.EnvSpecificInfo
@@ -175,7 +181,7 @@ func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		u := url.NewURLFromLocalURL(o.url)
 		u.Status.State = url.StateTypeNotPushed
-		if o.now {
+		if o.nowFlag {
 			u.Status.State = url.StateTypePushed
 		}
 		machineoutput.OutputSuccess(u)
@@ -197,16 +203,16 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "Port number for the url of the component, required in case of components which expose more than one service port")
-	urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
-	urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster IP for this URL")
-	urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
-	urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "Create a secure HTTPS URL")
-	urlCreateCmd.Flags().StringVarP(&o.path, "path", "", "", "path for this URL")
-	urlCreateCmd.Flags().StringVarP(&o.protocol, "protocol", "", string(devfilev1.HTTPEndpointProtocol), "protocol for this URL")
-	urlCreateCmd.Flags().StringVarP(&o.container, "container", "", "", "container of the endpoint in devfile")
+	urlCreateCmd.Flags().IntVarP(&o.portFlag, "port", "", -1, "Port number for the url of the component, required in case of components which expose more than one service port")
+	urlCreateCmd.Flags().StringVar(&o.tlsSecretFlag, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
+	urlCreateCmd.Flags().StringVarP(&o.hostFlag, "host", "", "", "Cluster IP for this URL")
+	urlCreateCmd.Flags().BoolVar(&o.ingressFlag, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
+	urlCreateCmd.Flags().BoolVarP(&o.secureFlag, "secure", "", false, "Create a secure HTTPS URL")
+	urlCreateCmd.Flags().StringVarP(&o.pathFlag, "path", "", "", "path for this URL")
+	urlCreateCmd.Flags().StringVarP(&o.protocolFlag, "protocol", "", string(devfilev1.HTTPEndpointProtocol), "protocol for this URL")
+	urlCreateCmd.Flags().StringVarP(&o.containerFlag, "container", "", "", "container of the endpoint in devfile")
 
-	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
+	genericclioptions.AddNowFlag(urlCreateCmd, &o.nowFlag)
 	o.AddContextFlag(urlCreateCmd)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 

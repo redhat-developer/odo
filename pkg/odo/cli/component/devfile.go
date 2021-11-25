@@ -44,7 +44,7 @@ func (po *PushOptions) DevfilePush() error {
 
 	// push is successful, save the runMode used
 	runMode := envinfo.Run
-	if po.debugRun {
+	if po.debugFlag {
 		runMode = envinfo.Debug
 	}
 
@@ -65,7 +65,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	}
 
 	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
+	err = genericclioptions.ApplyIgnore(&po.ignoreFlag, po.sourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
@@ -83,14 +83,14 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 	pushParams := common.PushParameters{
 		Path:            po.sourcePath,
-		IgnoredFiles:    po.ignores,
-		ForceBuild:      po.forceBuild,
-		Show:            po.show,
+		IgnoredFiles:    po.ignoreFlag,
+		ForceBuild:      po.forceBuildFlag,
+		Show:            po.showFlag,
 		EnvSpecificInfo: *po.EnvSpecificInfo,
-		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
-		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
-		DevfileDebugCmd: strings.ToLower(po.devfileDebugCommand),
-		Debug:           po.debugRun,
+		DevfileBuildCmd: strings.ToLower(po.buildCommandFlag),
+		DevfileRunCmd:   strings.ToLower(po.runCommandflag),
+		DevfileDebugCmd: strings.ToLower(po.debugCommandFlag),
+		Debug:           po.debugFlag,
 		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
@@ -129,14 +129,14 @@ func (lo LogOptions) DevfileComponentLog() error {
 	}
 	platformContext = kc
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.GetApplication(), devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.contextFlag, lo.GetApplication(), devObj, platformContext)
 
 	if err != nil {
 		return err
 	}
 
 	var command devfilev1.Command
-	if lo.debug {
+	if lo.debugFlag {
 		command, err = common.GetDebugCommand(devObj.Data, "")
 		if err != nil {
 			return err
@@ -153,7 +153,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 	}
 
 	// Start or update the component
-	rd, err := devfileHandler.Log(lo.logFollow, command)
+	rd, err := devfileHandler.Log(lo.followFlag, command)
 	if err != nil {
 		log.Errorf(
 			"Failed to log component with name %s.\nError: %v",
@@ -163,7 +163,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 		return err
 	}
 
-	return util.DisplayLog(lo.logFollow, rd, os.Stdout, componentName, -1)
+	return util.DisplayLog(lo.followFlag, rd, os.Stdout, componentName, -1)
 }
 
 // DevfileComponentDelete deletes the devfile component
@@ -180,12 +180,12 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	}
 
 	labels := componentlabels.GetLabels(componentName, do.EnvSpecificInfo.GetApplication(), false)
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.GetApplication(), devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.contextFlag, do.GetApplication(), devObj, kc)
 	if err != nil {
 		return err
 	}
 
-	return devfileHandler.Delete(labels, do.show, do.componentDeleteWaitFlag)
+	return devfileHandler.Delete(labels, do.showLogFlag, do.waitFlag)
 }
 
 // RunTestCommand runs the specific test command in devfile
@@ -198,11 +198,11 @@ func (to *TestOptions) RunTestCommand() error {
 	}
 	platformContext = kc
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.GetApplication(), to.devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.contextFlag, to.GetApplication(), to.devObj, platformContext)
 	if err != nil {
 		return err
 	}
-	return devfileHandler.Test(to.commandName, to.show)
+	return devfileHandler.Test(to.testCommandFlag, to.showLogFlag)
 }
 
 // DevfileComponentExec executes the given user command inside the component
@@ -218,7 +218,7 @@ func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 		Namespace: eo.componentOptions.KClient.GetCurrentNamespace(),
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.GetApplication(), devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.contextFlag, eo.componentOptions.GetApplication(), devObj, kc)
 	if err != nil {
 		return err
 	}

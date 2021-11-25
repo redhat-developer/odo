@@ -15,9 +15,12 @@ const RecommendedCommandName = "build-images"
 
 // LoginOptions encapsulates the options for the odo command
 type BuildImagesOptions struct {
-	push bool
+	// Context
 	*genericclioptions.Context
-	componentContext string
+
+	// Flags
+	pushFlag    bool
+	contextFlag string
 }
 
 var buildImagesExample = templates.Examples(`
@@ -35,7 +38,7 @@ func NewBuildImagesOptions() *BuildImagesOptions {
 
 // Complete completes LoginOptions after they've been created
 func (o *BuildImagesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext).IsOffline())
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag).IsOffline())
 	if err != nil {
 		return err
 	}
@@ -49,7 +52,7 @@ func (o *BuildImagesOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run(cmd *cobra.Command) (err error) {
-	return image.BuildPushImages(o.Context, o.push)
+	return image.BuildPushImages(o.Context, o.pushFlag)
 }
 
 // NewCmdLogin implements the odo command
@@ -69,7 +72,7 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	buildImagesCmd.Annotations = map[string]string{"command": "utility"}
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	buildImagesCmd.Flags().BoolVar(&o.push, "push", false, "If true, build and push the images")
-	genericclioptions.AddContextFlag(buildImagesCmd, &o.componentContext)
+	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
+	genericclioptions.AddContextFlag(buildImagesCmd, &o.contextFlag)
 	return buildImagesCmd
 }

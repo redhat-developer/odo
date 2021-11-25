@@ -47,7 +47,7 @@ func (co *CreateOptions) DevfileJSON() error {
 		co.Client = client
 	}
 
-	envInfo, err := envinfo.NewEnvSpecificInfo(co.componentContext)
+	envInfo, err := envinfo.NewEnvSpecificInfo(co.contextFlag)
 	if err != nil {
 		return err
 	}

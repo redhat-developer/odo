@@ -30,12 +30,16 @@ var (
 
 // UpdateOptions encapsulates the options for the "odo registry update" command
 type UpdateOptions struct {
-	operation    string
+	// Parameters
 	registryName string
 	registryURL  string
-	user         string
-	token        string
-	forceFlag    bool
+
+	// Flags
+	tokenFlag string
+	forceFlag bool
+
+	operation string
+	user      string
 }
 
 // NewUpdateOptions creates a new UpdateOptions instance
@@ -78,7 +82,7 @@ func (o *UpdateOptions) Run(cmd *cobra.Command) (err error) {
 		secureBeforeUpdate = true
 	}
 
-	if o.token != "" {
+	if o.tokenFlag != "" {
 		secureAfterUpdate = true
 	}
 
@@ -92,7 +96,7 @@ func (o *UpdateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	if secureAfterUpdate {
-		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
+		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
 		if err != nil {
 			return errors.Wrap(err, "unable to store registry credential to keyring")
 		}
@@ -120,7 +124,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	registryUpdateCmd.Flags().StringVar(&o.token, "token", "", "Token to be used to access secure registry")
+	registryUpdateCmd.Flags().StringVar(&o.tokenFlag, "token", "", "Token to be used to access secure registry")
 	registryUpdateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, update the registry directly")
 
 	return registryUpdateCmd

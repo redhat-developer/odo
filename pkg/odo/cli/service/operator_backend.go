@@ -36,12 +36,12 @@ func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Com
 	o.interactive = false
 
 	// if user has just used "odo service create", simply return
-	if o.fromFile == "" && len(args) == 0 {
+	if o.fromFileFlag == "" && len(args) == 0 {
 		return
 	}
 
 	// if user wants to create service from file and use a name given on CLI
-	if o.fromFile != "" {
+	if o.fromFileFlag != "" {
 		if len(args) == 1 {
 			o.ServiceName = args[0]
 		}
@@ -67,13 +67,13 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 	// if the user wants to create service from a file, we check for
 	// existence of file and validate if the requested operator and CR
 	// exist on the cluster
-	if o.fromFile != "" {
-		if _, err := os.Stat(o.fromFile); err != nil {
+	if o.fromFileFlag != "" {
+		if _, err := os.Stat(o.fromFileFlag); err != nil {
 			return errors.Wrap(err, "unable to find specified file")
 		}
 
 		// Parse the file to find Operator and CR info
-		fileContents, err := ioutil.ReadFile(o.fromFile)
+		fileContents, err := ioutil.ReadFile(o.fromFileFlag)
 		if err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 			return ErrNoMetadataName
 		}
 
-		if o.ServiceName != "" && !o.DryRun {
+		if o.ServiceName != "" && !o.DryRunFlag {
 			// First check if service with provided name already exists
 			svcFullName := strings.Join([]string{b.kind, o.ServiceName}, "/")
 			exists, e := svc.OperatorSvcExists(o.KClient, svcFullName)
@@ -160,7 +160,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 			return err
 		}
 
-		if len(o.parameters) != 0 {
+		if len(o.parametersFlag) != 0 {
 			builtCRD, e := svc.BuildCRDFromParams(o.ParametersMap, crd, b.group, b.version, b.CustomResource)
 			if e != nil {
 				return e
@@ -176,7 +176,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 			u.Object = almExample
 		}
 
-		if o.ServiceName != "" && !o.DryRun {
+		if o.ServiceName != "" && !o.DryRunFlag {
 			// First check if service with provided name already exists
 			svcFullName := strings.Join([]string{b.CustomResource, o.ServiceName}, "/")
 			exists, e := svc.OperatorSvcExists(o.KClient, svcFullName)
@@ -224,7 +224,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 
 	// if cluster has resources of type CSV and o.CustomResource is not
 	// empty, we're expected to create an Operator backed service
-	if o.DryRun {
+	if o.DryRunFlag {
 		// if it's dry run, only print the alm-example (o.CustomResourceDefinition) and exit
 		jsonCR, err := json.MarshalIndent(b.CustomResourceDefinition, "", "  ")
 		if err != nil {
@@ -242,7 +242,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 		return nil
 	} else {
 
-		if o.inlined {
+		if o.inlinedFlag {
 			crdYaml, err := yaml.Marshal(b.CustomResourceDefinition)
 			if err != nil {
 				return err
@@ -259,7 +259,7 @@ func (b *OperatorBackend) RunServiceCreate(o *CreateOptions) (err error) {
 				return err
 			}
 
-			err = devfile.AddKubernetesComponent(string(crdYaml), o.ServiceName, o.componentContext, o.EnvSpecificInfo.GetDevfileObj())
+			err = devfile.AddKubernetesComponent(string(crdYaml), o.ServiceName, o.contextFlag, o.EnvSpecificInfo.GetDevfileObj())
 			if err != nil {
 				return err
 			}
@@ -293,7 +293,7 @@ func (b *OperatorBackend) DeleteService(o *DeleteOptions, name string, applicati
 		return err
 	}
 
-	err = devfile.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
+	err = devfile.DeleteKubernetesComponentFromDevfile(instanceName, o.EnvSpecificInfo.GetDevfileObj(), o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete service from the devfile")
 	}
@@ -316,7 +316,7 @@ func (b *OperatorBackend) DescribeService(o *DescribeOptions, serviceName, app s
 		}
 	}
 
-	devfileList, err := svc.ListDevfileServices(o.KClient, o.EnvSpecificInfo.GetDevfileObj(), o.componentContext)
+	devfileList, err := svc.ListDevfileServices(o.KClient, o.EnvSpecificInfo.GetDevfileObj(), o.contextFlag)
 	if err != nil {
 		return err
 	}

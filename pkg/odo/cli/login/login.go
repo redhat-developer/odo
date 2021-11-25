@@ -15,12 +15,15 @@ const RecommendedCommandName = "login"
 
 // LoginOptions encapsulates the options for the odo command
 type LoginOptions struct {
-	userName string
-	password string
-	token    string
-	caAuth   string
-	skipTLS  bool
-	server   string
+	// Parameters
+	server string
+
+	// Flags
+	userNameFlag string
+	passwordFlag string
+	tokenFlag    string
+	caAuthFlag   string
+	skipTlsFlag  bool
 }
 
 var loginExample = templates.Examples(`
@@ -57,7 +60,7 @@ func (o *LoginOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *LoginOptions) Run(cmd *cobra.Command) (err error) {
-	return auth.Login(o.server, o.userName, o.password, o.token, o.caAuth, o.skipTLS)
+	return auth.Login(o.server, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 
 // NewCmdLogin implements the odo command
@@ -77,10 +80,10 @@ func NewCmdLogin(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	loginCmd.Annotations = map[string]string{"command": "utility"}
 	loginCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	loginCmd.Flags().StringVarP(&o.userName, "username", "u", "", "username, will prompt if not provided")
-	loginCmd.Flags().StringVarP(&o.password, "password", "p", "", "password, will prompt if not provided")
-	loginCmd.Flags().StringVarP(&o.token, "token", "t", "", "token, will prompt if not provided")
-	loginCmd.Flags().BoolVar(&o.skipTLS, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
-	loginCmd.Flags().StringVar(&o.caAuth, "certificate-authority", "", "Path to a cert file for the certificate authority")
+	loginCmd.Flags().StringVarP(&o.userNameFlag, "username", "u", "", "username, will prompt if not provided")
+	loginCmd.Flags().StringVarP(&o.passwordFlag, "password", "p", "", "password, will prompt if not provided")
+	loginCmd.Flags().StringVarP(&o.tokenFlag, "token", "t", "", "token, will prompt if not provided")
+	loginCmd.Flags().BoolVar(&o.skipTlsFlag, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
+	loginCmd.Flags().StringVar(&o.caAuthFlag, "certificate-authority", "", "Path to a cert file for the certificate authority")
 	return loginCmd
 }

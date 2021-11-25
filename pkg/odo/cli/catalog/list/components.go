@@ -22,6 +22,8 @@ var componentsExample = `  # Get the supported components
 
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
+	// No context needed
+
 	// list of known devfiles
 	catalogDevfileList catalog.DevfileComponentTypeList
 }

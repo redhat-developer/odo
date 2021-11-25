@@ -27,6 +27,7 @@ var (
 
 // ListOptions encapsulates the options for the odo command
 type ListOptions struct {
+	// Context
 	*genericclioptions.Context
 }
 

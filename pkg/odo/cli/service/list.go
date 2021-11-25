@@ -21,9 +21,12 @@ List all services in the current application
 
 // ServiceListOptions encapsulates the options for the odo service list command
 type ServiceListOptions struct {
+	// Context
 	*genericclioptions.Context
-	// Context to use when listing service. This will use app and project values from the context
-	componentContext string
+
+	// Flags
+	contextFlag string
+
 	// If true, Operator Hub is installed on the cluster
 	csvSupport bool
 }
@@ -35,7 +38,7 @@ func NewServiceListOptions() *ServiceListOptions {
 
 // Complete completes ServiceListOptions after they've been created
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -76,6 +79,6 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(serviceListCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(serviceListCmd, &o.contextFlag)
 	return serviceListCmd
 }

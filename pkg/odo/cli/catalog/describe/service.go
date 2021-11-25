@@ -23,10 +23,14 @@ var (
 
 // DescribeServiceOptions encapsulates the options for the odo catalog describe service command
 type DescribeServiceOptions struct {
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
-	backend   CatalogProviderBackend
-	isExample bool
+
+	// Flags
+	exampleFlag bool
+
+	// Service backend
+	backend CatalogProviderBackend
 }
 
 // NewDescribeServiceOptions creates a new DescribeServiceOptions instance
@@ -73,7 +77,7 @@ func NewCmdCatalogDescribeService(name, fullName string) *cobra.Command {
 		},
 	}
 
-	command.Flags().BoolVarP(&o.isExample, "example", "e", false, "Show an example of the service")
+	command.Flags().BoolVarP(&o.exampleFlag, "example", "e", false, "Show an example of the service")
 
 	return command
 }

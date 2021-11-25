@@ -25,11 +25,15 @@ var (
 )
 
 type DeleteOptions struct {
-	storageName            string
-	storageForceDeleteFlag bool
-	componentContext       string
-
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	storageName string
+
+	// Flags
+	forceFlag   bool
+	contextFlag string
 }
 
 // NewStorageDeleteOptions creates a new DeleteOptions instance
@@ -39,7 +43,7 @@ func NewStorageDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -70,7 +74,7 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 
 	deleteMsg := fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.Context.LocalConfigProvider.GetName())
 
-	if log.IsJSON() || o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
+	if log.IsJSON() || o.forceFlag || ui.Proceed(deleteMsg) {
 		err := o.Context.LocalConfigProvider.DeleteStorage(o.storageName)
 		if err != nil {
 			return fmt.Errorf("failed to delete storage, cause %v", err)
@@ -106,10 +110,10 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 		},
 	}
 
-	storageDeleteCmd.Flags().BoolVarP(&o.storageForceDeleteFlag, "force", "f", false, "Delete storage without prompting")
+	storageDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete storage without prompting")
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
 
-	genericclioptions.AddContextFlag(storageDeleteCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(storageDeleteCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageDeleteCmd, "context", completion.FileCompletionHandler)
 
 	return storageDeleteCmd

@@ -40,12 +40,14 @@ This describes the component and its associated starter projects.
 
 // DescribeComponentOptions encapsulates the options for the odo catalog describe component command
 type DescribeComponentOptions struct {
-	// name of the component to describe, from command arguments
-	componentName string
-	// if devfile components with name that matches arg[0]
-	devfileComponents []catalog.DevfileComponentType
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	componentName string
+
+	// devfile components with name that matches componentName
+	devfileComponents []catalog.DevfileComponentType
 }
 
 // NewDescribeComponentOptions creates a new DescribeComponentOptions instance

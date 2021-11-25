@@ -40,11 +40,16 @@ var (
 
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
-	context    string
-	cfg        *envinfo.EnvSpecificInfo
+	// Env context
+	cfg *envinfo.EnvSpecificInfo
+
+	// Parameters
 	paramName  string
 	paramValue string
-	forceFlag  bool
+
+	// Flags
+	contextFlag string
+	forceFlag   bool
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -54,7 +59,7 @@ func NewSetOptions() *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.cfg, err = envinfo.NewEnvSpecificInfo(o.context)
+	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")
 	}
@@ -126,7 +131,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	}
 
 	envSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the environment directly")
-	envSetCmd.Flags().StringVar(&o.context, "context", "", "Use given context directory as a source for component settings")
+	envSetCmd.Flags().StringVar(&o.contextFlag, "context", "", "Use given context directory as a source for component settings")
 
 	return envSetCmd
 }

@@ -37,9 +37,7 @@ type ListOptions struct {
 
 // NewListOptions creates a new ListOptions instance
 func NewListOptions() *ListOptions {
-	return &ListOptions{
-		printGitRegistryDeprecationWarning: false,
-	}
+	return &ListOptions{}
 }
 
 // Complete completes ListOptions after they've been created

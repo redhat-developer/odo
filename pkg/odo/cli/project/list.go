@@ -27,6 +27,7 @@ var (
 
 // ProjectListOptions encapsulates the options for the odo project list command
 type ProjectListOptions struct {
+	// Context
 	*genericclioptions.Context
 }
 
