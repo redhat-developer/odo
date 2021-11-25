@@ -36,12 +36,12 @@ func NewViewOptions() *ViewOptions {
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextDir)
 	o.Context, err = genericclioptions.New(params)
-	return
+	return err
 }
 
 // Validate validates the ViewOptions based on completed values
-func (o *ViewOptions) Validate() (err error) {
-	return
+func (o *ViewOptions) Validate() error {
+	return nil
 }
 
 // Run contains the logic for the command
@@ -53,14 +53,15 @@ func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
 	}
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(component.WrapFromJSONOutput(repr))
-		return
+		return nil
 	}
 	representation, err := yaml.Marshal(repr)
 	if err != nil {
 		return err
 	}
+
 	fmt.Fprintln(w, string(representation))
-	return err
+	return nil
 }
 
 // NewCmdView implements the config view odo command

@@ -46,20 +46,20 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	if err != nil {
 		return err
 	}
+
 	if o.catalogDevfileList.DevfileRegistries == nil {
 		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the ListComponentsOptions based on completed values
-func (o *ListComponentsOptions) Validate() (err error) {
+func (o *ListComponentsOptions) Validate() error {
 	if len(o.catalogDevfileList.Items) == 0 {
 		return fmt.Errorf("no deployable components found")
 	}
-
-	return err
+	return nil
 }
 
 type catalogList struct {

@@ -76,15 +76,15 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the UnsetOptions based on completed values
-func (o *UnsetOptions) Validate() (err error) {
+func (o *UnsetOptions) Validate() error {
 	if !o.Context.LocalConfigProvider.Exists() {
 		return fmt.Errorf("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the command

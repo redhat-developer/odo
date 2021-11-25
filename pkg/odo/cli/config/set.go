@@ -82,15 +82,15 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		}
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the SetOptions based on completed values
-func (o *SetOptions) Validate() (err error) {
+func (o *SetOptions) Validate() error {
 	if !o.Context.LocalConfigProvider.Exists() {
 		return fmt.Errorf("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the command

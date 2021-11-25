@@ -39,37 +39,34 @@ func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string
 	if err != nil {
 		return err
 	}
+
 	o.csvs, err = catalog.ListOperatorServices(o.KClient)
-	if err != nil {
-		if strings.Contains(err.Error(), "could not find specified operator") {
-			err = nil
-		} else {
-			return err
-		}
+	if err != nil && !strings.Contains(err.Error(), "could not find specified operator") {
+		return err
 	}
-	return
+	return nil
 }
 
 // Validate validates the ListServicesOptions based on completed values
-func (o *ServiceOptions) Validate() (err error) {
-	return
+func (o *ServiceOptions) Validate() error {
+	return nil
 }
 
 // Run contains the logic for the command associated with ListServicesOptions
-func (o *ServiceOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ServiceOptions) Run(cmd *cobra.Command) error {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(newCatalogListOutput(o.csvs))
 	} else {
 		if len(o.csvs.Items) == 0 {
 			log.Info("no deployable operators found")
-			return
+			return nil
 		}
 
 		if len(o.csvs.Items) > 0 {
 			util.DisplayClusterServiceVersions(o.csvs)
 		}
 	}
-	return
+	return nil
 }
 
 // NewCmdCatalogListServices implements the odo catalog list services command
