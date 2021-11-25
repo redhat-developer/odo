@@ -70,7 +70,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		return err
 	}
 
-	o.GetDevfileComponentsByName(catalogDevfileList)
+	o.devfileComponents = getDevfileComponentsByName(catalogDevfileList, o.componentName)
 	return nil
 }
 
@@ -157,13 +157,15 @@ func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
 	return command
 }
 
-// GetDevfileComponentsByName gets all the devfiles that have the same name as the specified components
-func (o *DescribeComponentOptions) GetDevfileComponentsByName(catalogDevfileList catalog.DevfileComponentTypeList) {
+// getDevfileComponentsByName gets all the devfiles that have the same name as the specified component
+func getDevfileComponentsByName(catalogDevfileList catalog.DevfileComponentTypeList, componentName string) []catalog.DevfileComponentType {
+	var components []catalog.DevfileComponentType
 	for _, devfileComponent := range catalogDevfileList.Items {
-		if devfileComponent.Name == o.componentName {
-			o.devfileComponents = append(o.devfileComponents, devfileComponent)
+		if devfileComponent.Name == componentName {
+			components = append(components, devfileComponent)
 		}
 	}
+	return components
 }
 
 // GetDevfile downloads the devfile in memory and return the devfile object
