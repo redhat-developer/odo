@@ -11,7 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -54,9 +53,6 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 func (o *DeleteOptions) Validate() (err error) {
 	if o.Context.GetProject() == "" || o.appName == "" {
 		return odoUtil.ThrowContextError()
-	}
-	if !util.CheckOutputFlag(o.GetOutputFlag()) {
-		return fmt.Errorf("given output format %s is not supported", o.GetOutputFlag())
 	}
 
 	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())

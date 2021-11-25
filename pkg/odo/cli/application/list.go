@@ -27,7 +27,6 @@ var (
 
 // ListOptions encapsulates the options for the odo command
 type ListOptions struct {
-	outputFormat string
 	*genericclioptions.Context
 }
 
@@ -48,7 +47,7 @@ func (o *ListOptions) Validate() (err error) {
 	if o.Context.GetProject() == "" {
 		return util.ThrowContextError()
 	}
-	return util.CheckOutputFlag(o.outputFormat)
+	return nil
 }
 
 // Run contains the logic for the odo command

@@ -26,8 +26,7 @@ var (
 
 // DescribeOptions encapsulates the options for the odo command
 type DescribeOptions struct {
-	appName      string
-	outputFormat string
+	appName string
 	*genericclioptions.Context
 }
 
@@ -53,10 +52,6 @@ func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []strin
 func (o *DescribeOptions) Validate() (err error) {
 	if o.Context.GetProject() == "" || o.appName == "" {
 		return util.ThrowContextError()
-	}
-	err = util.CheckOutputFlag(o.outputFormat)
-	if err != nil {
-		return err
 	}
 	if o.appName == "" {
 		return fmt.Errorf("There's no active application in project: %v", o.GetProject())
