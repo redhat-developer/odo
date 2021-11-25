@@ -2,14 +2,11 @@ package debug
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/debug"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -17,12 +14,9 @@ import (
 
 // InfoOptions contains all the options for running the info cli command.
 type InfoOptions struct {
-	componentName   string
-	applicationName string
-	Namespace       string
-	PortForwarder   *debug.DefaultPortForwarder
 	*genericclioptions.Context
-	contextDir string
+	contextDir    string
+	PortForwarder *debug.DefaultPortForwarder
 }
 
 var (
@@ -47,24 +41,14 @@ func NewInfoOptions() *InfoOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	devfile := location.DevfileFilenamesProvider(o.contextDir)
-	if util.CheckPathExists(filepath.Join(o.contextDir, devfile)) {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-		if err != nil {
-			return err
-		}
-
-		// a small shortcut
-		env := o.Context.EnvSpecificInfo
-
-		o.componentName = env.GetName()
-		o.Namespace = env.GetNamespace()
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	if err != nil {
+		return err
 	}
 
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
-
-	return err
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.EnvSpecificInfo.GetName(), o.Context.GetApplication(), o.Context.EnvSpecificInfo.GetNamespace(), o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
+	return nil
 }
 
 // Validate validates all the required options for port-forward cmd.
@@ -81,7 +65,7 @@ func (o InfoOptions) Run(cmd *cobra.Command) error {
 			log.Infof("Debug is running for the component on the local port : %v", debugInfo.Spec.LocalPort)
 		}
 	} else {
-		return fmt.Errorf("debug is not running for the component %v", o.componentName)
+		return fmt.Errorf("debug is not running for the component %v", o.Context.EnvSpecificInfo.GetName())
 	}
 	return nil
 }
