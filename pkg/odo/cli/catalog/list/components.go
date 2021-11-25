@@ -24,8 +24,6 @@ var componentsExample = `  # Get the supported components
 type ListComponentsOptions struct {
 	// list of known devfiles
 	catalogDevfileList catalog.DevfileComponentTypeList
-	// generic context options common to all commands
-	*genericclioptions.Context
 }
 
 // NewListComponentsOptions creates a new ListComponentsOptions instance
@@ -35,12 +33,6 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if err = util.CheckKubeConfigPath(); err == nil {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-		if err != nil {
-			return err
-		}
-	}
 
 	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 	if err != nil {
