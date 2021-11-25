@@ -102,7 +102,7 @@ github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
-# github.com/devfile/library v1.2.1-0.20211122191653-de02f7816082
+# github.com/devfile/library v1.2.1-0.20211124174607-5a5cbcc0ef21
 ## explicit
 github.com/devfile/library/pkg/devfile
 github.com/devfile/library/pkg/devfile/generator
@@ -300,6 +300,8 @@ github.com/gregjones/httpcache/diskcache
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.1
 github.com/hashicorp/go-multierror
+# github.com/hashicorp/go-version v1.3.0
+github.com/hashicorp/go-version
 # github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 ## explicit
 github.com/hinshun/vt10x

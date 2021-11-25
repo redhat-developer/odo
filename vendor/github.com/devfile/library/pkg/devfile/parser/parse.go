@@ -22,6 +22,7 @@ import (
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	apiOverride "github.com/devfile/api/v2/pkg/utils/overriding"
 	"github.com/devfile/api/v2/pkg/validation"
+	versionpkg "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 )
 
@@ -192,6 +193,18 @@ func ParseFromData(data []byte) (d DevfileObj, err error) {
 
 func parseParentAndPlugin(d DevfileObj, resolveCtx *resolutionContextTree, tool resolverTools) (err error) {
 	flattenedParent := &v1.DevWorkspaceTemplateSpecContent{}
+	var mainDevfileVersion, parentDevfileVerson, pluginDevfileVerson *versionpkg.Version
+	var devfileVersion string
+	if devfileVersion = d.Ctx.GetApiVersion(); devfileVersion == "" {
+		devfileVersion = d.Data.GetSchemaVersion()
+	}
+
+	if devfileVersion != "" {
+		mainDevfileVersion, err = versionpkg.NewVersion(devfileVersion)
+		if err != nil {
+			return fmt.Errorf("fail to parse version of the main devfile")
+		}
+	}
 	parent := d.Data.GetParent()
 	if parent != nil {
 		if !reflect.DeepEqual(parent, &v1.Parent{}) {
@@ -210,7 +223,20 @@ func parseParentAndPlugin(d DevfileObj, resolveCtx *resolutionContextTree, tool 
 			if err != nil {
 				return err
 			}
+			var devfileVersion string
+			if devfileVersion = parentDevfileObj.Ctx.GetApiVersion(); devfileVersion == "" {
+				devfileVersion = parentDevfileObj.Data.GetSchemaVersion()
+			}
 
+			if devfileVersion != "" {
+				parentDevfileVerson, err = versionpkg.NewVersion(devfileVersion)
+				if err != nil {
+					return fmt.Errorf("fail to parse version of parent devfile from: %v", resolveImportReference(parent.ImportReference))
+				}
+				if parentDevfileVerson.GreaterThan(mainDevfileVersion) {
+					return fmt.Errorf("the parent devfile version from %v is greater than the child devfile version from %v", resolveImportReference(parent.ImportReference), resolveImportReference(resolveCtx.importReference))
+				}
+			}
 			parentWorkspaceContent := parentDevfileObj.Data.GetDevfileWorkspaceSpecContent()
 			// add attribute to parent elements
 			err = addSourceAttributesForOverrideAndMerge(parent.ImportReference, parentWorkspaceContent)
@@ -257,6 +283,20 @@ func parseParentAndPlugin(d DevfileObj, resolveCtx *resolutionContextTree, tool 
 			}
 			if err != nil {
 				return err
+			}
+			var devfileVersion string
+			if devfileVersion = pluginDevfileObj.Ctx.GetApiVersion(); devfileVersion == "" {
+				devfileVersion = pluginDevfileObj.Data.GetSchemaVersion()
+			}
+
+			if devfileVersion != "" {
+				pluginDevfileVerson, err = versionpkg.NewVersion(devfileVersion)
+				if err != nil {
+					return fmt.Errorf("fail to parse version of plugin devfile from: %v", resolveImportReference(component.Plugin.ImportReference))
+				}
+				if pluginDevfileVerson.GreaterThan(mainDevfileVersion) {
+					return fmt.Errorf("the plugin devfile version from %v is greater than the child devfile version from %v", resolveImportReference(component.Plugin.ImportReference), resolveImportReference(resolveCtx.importReference))
+				}
 			}
 			pluginWorkspaceContent := pluginDevfileObj.Data.GetDevfileWorkspaceSpecContent()
 			// add attribute to plugin elements
