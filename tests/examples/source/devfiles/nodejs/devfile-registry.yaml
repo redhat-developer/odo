@@ -53,7 +53,7 @@ metadata:
   - Express
   - ubi8
   version: 1.0.1
-schemaVersion: 2.0.0
+schemaVersion: 2.2.0
 starterProjects:
 - git:
     remotes:
