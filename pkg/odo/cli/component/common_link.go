@@ -63,26 +63,31 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	o.operationName = name
 	o.suppliedName = args[0]
 
-	// we need to support both devfile based component and s2i components.
-	// Let's first check if creating a devfile context is possible for the
-	// command provided by the user
-	_, err = genericclioptions.GetValidEnvInfo(cmd)
-	if err != nil {
-		// error means that we can't create a devfile context for the command
-		// and must create s2i context instead
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).CreateAppIfNeeded())
-	} else {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(context))
-	}
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(context))
 	if err != nil {
 		return err
 	}
 
+	o.csvSupport, _ = o.Client.GetKubeClient().IsCSVSupported()
+
 	o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(o.suppliedName)
 	if err != nil {
+		// error indicates the service name provided by user doesn't adhere to <crd-name>/<instance-name>
+		// so it's another odo component that they want to link/unlink to/from
 		o.serviceName = o.suppliedName
 		o.isTargetAService = false
 		o.serviceType = "Service" // Kubernetes Service
+
+		// TODO find the service using an app name to link components in other apps
+		// requires modification of the app flag or finding some other way
+		s, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
+		if kerrors.IsNotFound(err) {
+			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
+		}
+		if err != nil {
+			return err
+		}
+		o.serviceName = s.Name
 	} else {
 		o.isTargetAService = true
 	}
