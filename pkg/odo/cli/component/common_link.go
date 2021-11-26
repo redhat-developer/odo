@@ -11,11 +11,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -146,6 +146,17 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 			},
 		}
 	} else {
+		// TODO find the service using an app name to link components in other apps
+		// requires modification of the app flag or finding some other way
+		s, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
+		if kerrors.IsNotFound(err) {
+			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
+		}
+		if err != nil {
+			return err
+		}
+		o.serviceName = s.Name
+
 		service = servicebinding.Service{
 			Id: &o.serviceName, // Id field is helpful if user wants to inject mappings (custom binding data)
 			NamespacedRef: servicebinding.NamespacedRef{
@@ -211,17 +222,6 @@ func (o *commonLinkOptions) validate() (err error) {
 				return fmt.Errorf("the component %q cannot be linked with itself", o.suppliedName)
 			}
 		}
-
-		// TODO find the service using an app name to link components in other apps
-		// requires modification of the app flag or finding some other way
-		service, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
-		if kerrors.IsNotFound(err) {
-			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
-		}
-		if err != nil {
-			return err
-		}
-		o.serviceName = service.Name
 	}
 
 	if o.operationName == unlink {
