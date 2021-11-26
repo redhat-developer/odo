@@ -151,17 +151,6 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 			},
 		}
 	} else {
-		// TODO find the service using an app name to link components in other apps
-		// requires modification of the app flag or finding some other way
-		s, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
-		if kerrors.IsNotFound(err) {
-			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
-		}
-		if err != nil {
-			return err
-		}
-		o.serviceName = s.Name
-
 		service = servicebinding.Service{
 			Id: &o.serviceName, // Id field is helpful if user wants to inject mappings (custom binding data)
 			NamespacedRef: servicebinding.NamespacedRef{
@@ -319,7 +308,10 @@ func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
 		return o.name
 	}
 	if !o.isTargetAService {
-		return strings.Join([]string{componentName, o.serviceName}, "-")
+		// TODO: ugly way to split o.serviceName of the format <component-name>-<app-name>
+		// This is a result of refactoring which helped improve bunch of complete and validate functions
+		serviceName := strings.Split(o.serviceName, "-")[0]
+		return strings.Join([]string{componentName, serviceName}, "-")
 	}
 	return strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
 }
