@@ -38,6 +38,10 @@ type HasResource interface {
 	Resource() *unstructured.Unstructured
 }
 
+type Bindable interface {
+	IsBindable() (bool, error)
+}
+
 // Service to be bound
 type Service interface {
 
@@ -60,6 +64,8 @@ type Service interface {
 
 	// Optional service id
 	Id() *string
+
+	Bindable
 }
 
 // Application to be bound to service(s)
@@ -80,14 +86,18 @@ type Application interface {
 	BindableContainers() ([]map[string]interface{}, error)
 }
 
+type CRDDescription olmv1alpha1.CRDDescription
+
 // Custom Resource Definition
 type CRD interface {
 
 	// CRD resource
 	HasResource
 
+	Bindable
+
 	// optional Descriptor attached to ClusterServiceVersion resource
-	Descriptor() (*olmv1alpha1.CRDDescription, error)
+	Descriptor() (*CRDDescription, error)
 }
 
 // Pipeline context passed to each handler
@@ -109,9 +119,6 @@ type Context interface {
 
 	// Return true if bindings should be projected as files inside application containers
 	BindAsFiles() bool
-
-	// Path where bindings should be mounted inside application containers
-	MountPath() string
 
 	// Template that should be applied on collected binding names, prior projection
 	NamingTemplate() string

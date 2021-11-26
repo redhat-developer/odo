@@ -2,8 +2,9 @@ package binding
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/pkg/errors"
 )
@@ -26,12 +27,14 @@ var _ DefinitionBuilder = (*annotationBackedDefinitionBuilder)(nil)
 type modelKey string
 
 const (
-	pathModelKey        modelKey = "path"
-	objectTypeModelKey  modelKey = "objectType"
-	sourceKeyModelKey   modelKey = "sourceKey"
-	sourceValueModelKey modelKey = "sourceValue"
-	elementTypeModelKey modelKey = "elementType"
-	AnnotationPrefix             = "service.binding"
+	pathModelKey                    modelKey = "path"
+	objectTypeModelKey              modelKey = "objectType"
+	sourceKeyModelKey               modelKey = "sourceKey"
+	sourceValueModelKey             modelKey = "sourceValue"
+	elementTypeModelKey             modelKey = "elementType"
+	AnnotationPrefix                         = "service.binding"
+	ProvisionedServiceAnnotationKey          = "servicebinding.io/provisioned-service"
+	TypeKey                                  = AnnotationPrefix + "/type"
 )
 
 func NewDefinitionBuilder(annotationName string, annotationValue string, configMapReader UnstructuredResourceReader, secretReader UnstructuredResourceReader) *annotationBackedDefinitionBuilder {
@@ -45,25 +48,47 @@ func NewDefinitionBuilder(annotationName string, annotationValue string, configM
 	}
 }
 
-func (m *annotationBackedDefinitionBuilder) outputName() (string, error) {
-	// bail out in the case the annotation name doesn't start with "service.binding"
-	if m.name != AnnotationPrefix && !strings.HasPrefix(m.name, AnnotationPrefix+"/") {
-		return "", fmt.Errorf("can't process annotation with name %q", m.name)
+func IsServiceBindingAnnotation(annotationKey string) (bool, error) {
+	if annotationKey == ProvisionedServiceAnnotationKey {
+		return false, nil
 	}
 
-	if p := strings.SplitN(m.name, "/", 2); len(p) > 1 && len(p[1]) > 0 {
-		return p[1], nil
+	if annotationKey == AnnotationPrefix {
+		return true, nil
+	} else if strings.HasPrefix(annotationKey, AnnotationPrefix) {
+		if strings.HasPrefix(annotationKey, AnnotationPrefix+"/") {
+			return true, nil
+		}
+
+		// it starts with AnnotationPrefix, but has extra text at the end not
+		// separated by a /, so treat it as an error
+		return false, fmt.Errorf("can't process annotation with name %q", annotationKey)
 	}
 
-	return "", nil
+	// bail out when the annotation name doesn't start with "service.binding"
+	return false, nil
+}
+
+func (m *annotationBackedDefinitionBuilder) isServiceBindingAnnotation() (bool, error) {
+	return IsServiceBindingAnnotation(m.name)
+}
+
+func (m *annotationBackedDefinitionBuilder) outputName() string {
+
+	if p := strings.SplitN(m.name, "/", 2); len(p) == 2 && len(p[1]) > 0 {
+		return p[1]
+	}
+
+	return ""
 }
 
 func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 
-	outputName, err := m.outputName()
-	if err != nil {
+	if valid, err := m.isServiceBindingAnnotation(); !valid || err != nil {
 		return nil, err
 	}
+
+	outputName := m.outputName()
 
 	mod, err := newModel(m.value)
 	if err != nil {
@@ -71,9 +96,10 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 	}
 
 	switch {
-	case mod.isStringElementType() && mod.isStringObjectType():
+	case (mod.isStringElementType() && mod.isStringObjectType()) || mod.value != "":
 		return &stringDefinition{
 			outputName: outputName,
+			value:      mod.value,
 			definition: definition{
 				path: mod.path,
 			},
@@ -128,6 +154,5 @@ func (m *annotationBackedDefinitionBuilder) Build() (Definition, error) {
 			sourceValue: mod.sourceValue,
 		}, nil
 	}
-
-	panic(fmt.Sprintf("Annotation %s=%s not implemented!", m.name, m.value))
+	return nil, fmt.Errorf("Annotation %s: %s not implemented!", m.name, m.value)
 }

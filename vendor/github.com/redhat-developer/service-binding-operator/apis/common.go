@@ -1,13 +1,21 @@
 package apis
 
 import (
+	"encoding/json"
 	"errors"
+	"k8s.io/api/authentication/v1"
+	authv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"reflect"
 )
 
-const finalizerName = "finalizer.servicebinding.openshift.io"
+const (
+	finalizerName          = "finalizer.servicebinding.openshift.io"
+	requesterAnnotationKey = "servicebinding.io/requester"
+)
 
 func MaybeAddFinalizer(obj Object) bool {
 	finalizers := obj.GetFinalizers()
@@ -37,15 +45,37 @@ type Object interface {
 	SetFinalizers([]string)
 	HasDeletionTimestamp() bool
 	StatusConditions() []metav1.Condition
+	GetSpec() interface{}
 }
 
-func CanUpdateBinding(obj Object) error {
-	if obj.HasDeletionTimestamp() {
-		return nil
-	}
-	if meta.IsStatusConditionTrue(obj.StatusConditions(), BindingReady) {
+func CanUpdateBinding(obj Object, oldObj Object) error {
+	if meta.IsStatusConditionTrue(obj.StatusConditions(), BindingReady) && !reflect.DeepEqual(obj.GetSpec(), oldObj.GetSpec()) {
 		return errors.New("cannot update Service Binding if 'Ready' condition is True. If you want to rebind to another service/application, remove this binding and create a new one.")
 	}
 
+	return nil
+}
+
+func SetRequester(obj *unstructured.Unstructured, userInfo v1.UserInfo) {
+	jsonContent, _ := json.Marshal(userInfo)
+	anns := obj.GetAnnotations()
+	if anns == nil {
+		anns = make(map[string]string)
+	}
+	anns[requesterAnnotationKey] = string(jsonContent)
+	obj.SetAnnotations(anns)
+}
+
+// Return username of requester who submitted the service binding
+func Requester(objMeta metav1.ObjectMeta) *authv1.UserInfo {
+	req, found := objMeta.Annotations[requesterAnnotationKey]
+	if found {
+		userInfo := &authv1.UserInfo{}
+		err := json.Unmarshal([]byte(req), userInfo)
+		if err != nil {
+			return nil
+		}
+		return userInfo
+	}
 	return nil
 }

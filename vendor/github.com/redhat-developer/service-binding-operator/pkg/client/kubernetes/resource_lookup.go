@@ -1,7 +1,6 @@
-package context
+package kubernetes
 
 import (
-	"github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -9,7 +8,7 @@ import (
 //go:generate mockgen -destination=mocks/mocks.go -package=mocks . K8STypeLookup
 
 type K8STypeLookup interface {
-	ResourceForReferable(obj kubernetes.Referable) (*schema.GroupVersionResource, error)
+	ResourceForReferable(obj Referable) (*schema.GroupVersionResource, error)
 	ResourceForKind(gvk schema.GroupVersionKind) (*schema.GroupVersionResource, error)
 	KindForResource(gvr schema.GroupVersionResource) (*schema.GroupVersionKind, error)
 }
@@ -24,7 +23,7 @@ func ResourceLookup(restMapper meta.RESTMapper) K8STypeLookup {
 	}
 }
 
-func (i *resourceLookup) ResourceForReferable(obj kubernetes.Referable) (*schema.GroupVersionResource, error) {
+func (i *resourceLookup) ResourceForReferable(obj Referable) (*schema.GroupVersionResource, error) {
 	gvr, err := obj.GroupVersionResource()
 	if err == nil {
 		return gvr, nil

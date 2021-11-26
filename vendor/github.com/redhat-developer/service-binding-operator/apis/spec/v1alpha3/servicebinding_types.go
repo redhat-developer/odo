@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package v1alpha3
 
 import (
 	"errors"
@@ -22,8 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// ServiceBindingApplicationReference defines a subset of corev1.ObjectReference with extensions
-type ServiceBindingApplicationReference struct {
+// ServiceBindingWorkloadReference defines a subset of corev1.ObjectReference with extensions
+type ServiceBindingWorkloadReference struct {
 	// API version of the referent.
 	APIVersion string `json:"apiVersion"`
 	// Kind of the referent.
@@ -32,8 +32,8 @@ type ServiceBindingApplicationReference struct {
 	// Name of the referent.
 	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 	Name string `json:"name,omitempty"`
-	// Selector is a query that selects the application or applications to bind the service to
-	Selector metav1.LabelSelector `json:"selector,omitempty"`
+	// Selector is a query that selects the workload or workloads to bind the service to
+	Selector *metav1.LabelSelector `json:"selector,omitempty"`
 	// Containers describes which containers in a Pod should be bound to
 	Containers []string `json:"containers,omitempty"`
 }
@@ -67,16 +67,16 @@ type EnvMapping struct {
 
 // ServiceBindingSpec defines the desired state of ServiceBinding
 type ServiceBindingSpec struct {
-	// Name is the name of the service as projected into the application container.  Defaults to .metadata.name.
+	// Name is the name of the service as projected into the workload container.  Defaults to .metadata.name.
 	// +kubebuilder:validation:Pattern=`^[a-z0-9\-\.]*$`
 	// +kubebuilder:validation:MaxLength=253
 	Name string `json:"name,omitempty"`
-	// Type is the type of the service as projected into the application container
+	// Type is the type of the service as projected into the workload container
 	Type string `json:"type,omitempty"`
-	// Provider is the provider of the service as projected into the application container
+	// Provider is the provider of the service as projected into the workload container
 	Provider string `json:"provider,omitempty"`
-	// Application is a reference to an object
-	Application ServiceBindingApplicationReference `json:"application"`
+	// Workload is a reference to an object
+	Workload ServiceBindingWorkloadReference `json:"workload"`
 	// Service is a reference to an object that fulfills the ProvisionedService duck type
 	Service ServiceBindingServiceReference `json:"service"`
 	// Env is the collection of mappings from Secret entries to environment variables
@@ -96,13 +96,13 @@ type ServiceBindingStatus struct {
 	Binding *ServiceBindingSecretReference `json:"binding,omitempty"`
 }
 
-// +operator-sdk:gen-csv:customresourcedefinitions.displayName="Service Binding (spec API)"
 // +kubebuilder:object:root=true
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+
 // ServiceBinding is the Schema for the servicebindings API
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -136,11 +136,11 @@ func (ref *ServiceBindingServiceReference) GroupVersionKind() (*schema.GroupVers
 	return &gvk, nil
 }
 
-func (ref *ServiceBindingApplicationReference) GroupVersionResource() (*schema.GroupVersionResource, error) {
+func (ref *ServiceBindingWorkloadReference) GroupVersionResource() (*schema.GroupVersionResource, error) {
 	return nil, errors.New("Resource undefined")
 }
 
-func (ref *ServiceBindingApplicationReference) GroupVersionKind() (*schema.GroupVersionKind, error) {
+func (ref *ServiceBindingWorkloadReference) GroupVersionKind() (*schema.GroupVersionKind, error) {
 	typeMeta := &metav1.TypeMeta{Kind: ref.Kind, APIVersion: ref.APIVersion}
 	gvk := typeMeta.GroupVersionKind()
 	return &gvk, nil
@@ -163,4 +163,8 @@ func (sb *ServiceBinding) HasDeletionTimestamp() bool {
 
 func (r *ServiceBinding) StatusConditions() []metav1.Condition {
 	return r.Status.Conditions
+}
+
+func (sb *ServiceBinding) GetSpec() interface{} {
+	return &sb.Spec
 }
