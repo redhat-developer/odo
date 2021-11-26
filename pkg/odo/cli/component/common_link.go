@@ -193,9 +193,6 @@ func (o *commonLinkOptions) validate() (err error) {
 	var svcFullName string
 
 	if o.isTargetAService {
-		if !o.csvSupport {
-			return fmt.Errorf("operator hub is required for linking to services")
-		}
 		// let's validate if the service exists
 		svcFullName = strings.Join([]string{o.serviceType, o.serviceName}, "/")
 		svcExists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
