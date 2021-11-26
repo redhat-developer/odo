@@ -26,6 +26,9 @@ const (
 	// ApplicationNotFoundReason is used when the application is not found.
 	ServiceNotFoundReason = "ServiceNotFound"
 
+	// NoBindingDataReason is used when no binding data is collected for binding.
+	NoBindingDataReason = "NoBindingData"
+
 	// ServiceNotFoundReason is used when the service is not found.
 	BindingInjectedReason = "BindingInjected"
 
