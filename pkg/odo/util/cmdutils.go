@@ -305,7 +305,7 @@ func MapFromParameters(params []string) (map[string]string, error) {
 	paramsMap := make(map[string]string)
 
 	for _, kv := range params {
-		kvSlice := strings.Split(kv, "=")
+		kvSlice := strings.SplitN(kv, "=", 2)
 		// key value not provided in format of key=value
 		if len(kvSlice) != 2 {
 			return nil, errors.New("parameters not provided in key=value format")
