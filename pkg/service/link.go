@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
@@ -15,15 +13,20 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
-	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	authv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	sboKubernetes "github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
+	sboPipeline "github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
+	sboContext "github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context"
 )
 
 // PushLinks updates Link(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
@@ -36,6 +39,7 @@ func PushLinks(client kclient.ClientInterface, k8sComponents []devfile.Component
 	}
 
 	if !serviceBindingSupport {
+		klog.V(4).Info("Service Binding Operator is not installed on cluster. Service Binding will be created by odo using SB library.")
 		return pushLinksWithoutOperator(client, k8sComponents, labels, deployment, context)
 	}
 
@@ -173,7 +177,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		localLinksMap[c.Name] = strCRD
 	}
 
-	var processingPipeline pipeline.Pipeline
+	var processingPipeline sboPipeline.Pipeline
 
 	deploymentGVR, err := client.GetDeploymentAPIVersion()
 	if err != nil {
@@ -187,11 +191,11 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		if _, ok := localLinksMap[linkName]; !ok {
 
 			// recreate parts of the service binding request for deletion
-			var newServiceBinding servicebinding.ServiceBinding
+			var newServiceBinding sboApi.ServiceBinding
 			newServiceBinding.Name = linkName
 			newServiceBinding.Namespace = client.GetCurrentNamespace()
-			newServiceBinding.Spec.Application = servicebinding.Application{
-				Ref: servicebinding.Ref{
+			newServiceBinding.Spec.Application = sboApi.Application{
+				Ref: sboApi.Ref{
 					Name:     deployment.Name,
 					Group:    deploymentGVR.Group,
 					Version:  deploymentGVR.Version,
@@ -248,7 +252,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 			}
 
 			// get the string representation of the YAML definition of a CRD
-			var serviceBinding servicebinding.ServiceBinding
+			var serviceBinding sboApi.ServiceBinding
 			err = yaml.Unmarshal([]byte(strCRD), &serviceBinding)
 			if err != nil {
 				return false, err
@@ -331,7 +335,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 }
 
 // getPipeline gets the pipeline to process service binding requests
-func getPipeline(client kclient.ClientInterface) (pipeline.Pipeline, error) {
+func getPipeline(client kclient.ClientInterface) (sboPipeline.Pipeline, error) {
 	mgr, err := ctrl.NewManager(client.GetClientConfig(), ctrl.Options{
 		Scheme: runtime.NewScheme(),
 		// disable the health probes to prevent binding to them
@@ -342,5 +346,17 @@ func getPipeline(client kclient.ClientInterface) (pipeline.Pipeline, error) {
 	if err != nil {
 		return nil, err
 	}
-	return OdoDefaultBuilder.WithContextProvider(context.Provider(client.GetDynamicClient(), context.ResourceLookup(mgr.GetRESTMapper()))).Build(), nil
+
+	authClient, err := authv1.NewForConfig(client.GetClientConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	return OdoDefaultBuilder.WithContextProvider(
+		sboContext.Provider(
+			client.GetDynamicClient(),
+			authClient.SubjectAccessReviews(),
+			sboKubernetes.ResourceLookup(mgr.GetRESTMapper()),
+		),
+	).Build(), nil
 }
