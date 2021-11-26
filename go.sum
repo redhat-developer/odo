@@ -1011,8 +1011,8 @@ github.com/redhat-developer/alizer/go v0.0.0-20220204121940-dec463ed3af3 h1:PFDk
 github.com/redhat-developer/alizer/go v0.0.0-20220204121940-dec463ed3af3/go.mod h1:18H8Trq+vkpxqek82e7SimdNTdFfOGGjN7gAUGDO3jU=
 github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae h1:N2wsIYtziHQ51GNcJY5YcB0YldpR5BwPoTvby+l0vy8=
 github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae/go.mod h1:EKkrP0Am7Xt/yg3dF8uH1SSoOcaZmBom8Iy6CJPPDok=
-github.com/redhat-developer/service-binding-operator v0.9.0 h1:CS+eEtzu/PtWuyvYQFQpZXd6ukSuFtN+U0EKKtTsvlA=
-github.com/redhat-developer/service-binding-operator v0.9.0/go.mod h1:D415gZQiz5Q8zyRbmrNrlieb6Xp73oFtCb+nCuTL6GA=
+github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3 h1:hj+Y8vIzfQzzGx0az0MbIqDcW0+MZMc2rht8LuKt8uA=
+github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3/go.mod h1:pODWh91lgIyjf2n9ZqWYb1EBrLTmvKnjusKw0eG4vcE=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=

@@ -36,7 +36,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.1
 	github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae
-	github.com/redhat-developer/service-binding-operator v0.9.0
+	github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
 	github.com/securego/gosec/v2 v2.8.0
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.2.2
