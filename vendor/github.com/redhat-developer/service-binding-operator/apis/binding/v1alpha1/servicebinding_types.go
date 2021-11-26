@@ -28,73 +28,75 @@ var templates = map[string]string{
 	"lowercase": "{{ .name | lower }}",
 }
 
-// ServiceBindingSpec defines the desired state of ServiceBinding
+// ServiceBindingSpec defines the desired state of ServiceBinding.
 type ServiceBindingSpec struct {
-	// MountPath is the path inside app container where bindings will be mounted
-	// If `SERVICE_BINDING_ROOT` env var is present, mountPath is ignored.
-	// If `SERVICE_BINDING_ROOT` is absent and mountPath is present, set `SERVICE_BINDING_ROOT` as mountPath value
-	// If `SERVICE_BINDING_ROOT` is absent but mounthPath is absent, set   SERVICE_BINDING_ROOT as `/bindings`
-	// When mountPath is used, the file will be mounted directly under that directory
-	// Otherwise it will be under `SERVICE_BINDING_ROOT`/<SERVICE-BINDING-NAME>
+	// Name is the name of the service as projected into the workload container.  Defaults to .metadata.name.
+	// +kubebuilder:validation:Pattern=`^[a-z0-9\-\.]*$`
+	// +kubebuilder:validation:MaxLength=253
 	// +optional
-	MountPath string `json:"mountPath,omitempty"`
-
-	// NamingStrategy defines custom string template for preparing binding names.
-	// It can be pre-defined strategies(i.e none,uppercase), in case strategy provided in this field isn't defined
-	// we are going to treat the value as a custom template and prepare binding names accordingly.
+	Name string `json:"name,omitempty"`
+	// NamingStrategy defines custom string template for preparing binding
+	// names.  It can be set to pre-defined strategies: `none`,
+	// `lowercase`, or `uppercase`.  Otherwise, it is treated as a custom
+	// go template, and it is handled accordingly.
 	// +optional
 	NamingStrategy string `json:"namingStrategy,omitempty"`
 
-	// Custom mappings
+	// Mappings specifies custom mappings.
 	// +optional
 	Mappings []Mapping `json:"mappings,omitempty"`
 
-	// Services is used to identify multiple backing services.
+	// Services indicates the backing services to be connected to by an
+	// application.  At least one service must be specified.
 	// +kubebuilder:validation:MinItems:=1
 	Services []Service `json:"services"`
 
-	// Application is used to identify the application connecting to the
-	// backing service operator.
+	// Application identifies the application connecting to the backing
+	// service.
 	Application Application `json:"application"`
 
-	// DetectBindingResources is flag used to bind all non-bindable variables from
-	// different subresources owned by backing operator CR.
+	// DetectBindingResources is a flag that, when set to true, will cause
+	// SBO to search for binding information in the owned resources of the
+	// specified services.  If this binding information exists, then the
+	// application is bound to these subresources.
 	// +optional
 	DetectBindingResources bool `json:"detectBindingResources,omitempty"`
 
-	// BindAsFiles makes available the binding values as files in the application's container
-	// See MountPath attribute description for more details.
+	// BindAsFiles makes the binding values available as files in the
+	// application's container.  By default, values are mounted under the path
+	// "/bindings"; this can be changed by setting the SERVICE_BINDING_ROOT
+	// environment variable.
 	// +optional
 	// +kubebuilder:default:=true
 	BindAsFiles bool `json:"bindAsFiles"`
 }
 
-// ServiceBindingMapping defines a new binding from set of existing bindings
+// ServiceBindingMapping defines a new binding from a set of existing bindings.
 type Mapping struct {
-	// Name is the name of new binding
+	// Name is the name of new binding.
 	Name string `json:"name"`
-	// Value is a template which will be rendered and ibjected into the application
+
+	// Value specificies a go template that will be rendered and injected
+	// into the application.
 	Value string `json:"value"`
 }
 
-// ServiceBindingStatus defines the observed state of ServiceBinding
+// ServiceBindingStatus defines the observed state of ServiceBinding.
 // +k8s:openapi-gen=true
 type ServiceBindingStatus struct {
-	// Conditions describes the state of the operator's reconciliation functionality.
+	// Conditions describes the state of the operator's reconciliation
+	// functionality.
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
-	// Secret is the name of the intermediate secret
-	Secret string `json:"secret"`
 
-	// Application defines the application workloads to which the binding secret has
-	// injected
-	Applications []Ref `json:"applications,omitempty"`
+	// Secret indicates the name of the binding secret.
+	Secret string `json:"secret"`
 }
 
-// Object reference in the same namespace
+// Ref identifies an object reference in the same namespace.
 // +mapType=atomic
 type Ref struct {
 
@@ -116,62 +118,66 @@ type Ref struct {
 	Name string `json:"name,omitempty"`
 }
 
-// Object reference in some namespace
+// NamespacedRef is an object reference in some namespace.
 type NamespacedRef struct {
 	Ref `json:",inline"`
 
-	// Namespace of the referent.
-	// if empty assumes the same namespace as ServiceBinding
+	// Namespace of the referent.  If unspecified, assumes the same namespace as
+	// ServiceBinding.
 	// +optional
 	Namespace *string `json:"namespace,omitempty"`
 }
 
-// Service defines the selector based on resource name, version, and resource kind
+// Service defines the selector based on resource name, version, and resource kind.
 type Service struct {
 	NamespacedRef `json:",inline"`
 
 	Id *string `json:"id,omitempty"`
 }
 
-// Application defines the selector based on labels and GVR
+// Application defines the selector based on labels and group version resource.
 type Application struct {
 	Ref `json:",inline"`
+
 	// +optional
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
 
 	// BindingPath refers to the paths in the application workload's schema
-	// where the binding workload would be referenced.
-	// If BindingPath is not specified the default path locations is going to
-	// be used.  The default location for ContainersPath is
-	// going to be: "spec.template.spec.containers" and if SecretPath
-	// is not specified, the name of the secret object is not going
-	// to be specified.
+	// where the binding workload would be referenced.  If BindingPath is
+	// not specified, then the default path locations are used.  The
+	// default location for ContainersPath is
+	// "spec.template.spec.containers".  If SecretPath is not specified,
+	// then the name of the secret object does not need to be specified.
 	// +optional
 	BindingPath *BindingPath `json:"bindingPath,omitempty"`
 }
 
 // BindingPath defines the path to the field where the binding would be
-// embedded in the workload
+// embedded in the workload.
 type BindingPath struct {
-	// ContainersPath defines the path to the corev1.Containers reference
+	// ContainersPath defines the path to the corev1.Containers reference.
 	// If BindingPath is not specified, the default location is
-	// going to be: "spec.template.spec.containers"
+	// "spec.template.spec.containers".
 	// +optional
 	ContainersPath string `json:"containersPath"`
 
-	// SecretPath defines the path to a string field where
-	// the name of the secret object is going to be assigned.
-	// Note: The name of the secret object is same as that of the name of SBR CR (metadata.name)
+	// SecretPath defines the path to a string field where the name of the
+	// secret object is going to be assigned.  Note: The name of the secret
+	// object is same as that of the name of service binding custom resource
+	// (metadata.name).
 	// +optional
 	SecretPath string `json:"secretPath"`
 }
 
-// ServiceBinding expresses intent to bind an operator-backed service with
-// an application workload.
+// ServiceBinding expresses intent to bind a service with an application
+// workload.
 // +kubebuilder:subresource:status
-// +operator-sdk:gen-csv:customresourcedefinitions.displayName="Service Binding"
 // +kubebuilder:resource:path=servicebindings,shortName=sbr;sbrs
 // +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].reason`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -182,7 +188,7 @@ type ServiceBinding struct {
 
 // +kubebuilder:object:root=true
 
-// ServiceBindingList contains a list of ServiceBinding
+// ServiceBindingList contains a list of ServiceBinding.
 type ServiceBindingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -221,6 +227,10 @@ func (spec *ServiceBindingSpec) NamingTemplate() string {
 
 func (sb *ServiceBinding) HasDeletionTimestamp() bool {
 	return !sb.DeletionTimestamp.IsZero()
+}
+
+func (sb *ServiceBinding) GetSpec() interface{} {
+	return &sb.Spec
 }
 
 // Returns GVR of reference if available, otherwise error

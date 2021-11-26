@@ -7,6 +7,11 @@ import (
 	"fmt"
 	"github.com/redhat-developer/service-binding-operator/apis"
 	"github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	"github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
+	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context/service"
+	authv1 "k8s.io/api/authentication/v1"
+	v1 "k8s.io/api/authorization/v1"
+	clientauthzv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"sort"
 
 	"github.com/redhat-developer/service-binding-operator/pkg/converter"
@@ -27,10 +32,12 @@ var _ pipeline.Context = &bindingImpl{}
 type impl struct {
 	client dynamic.Interface
 
-	typeLookup K8STypeLookup
+	subjectAccessReviewClient clientauthzv1.SubjectAccessReviewInterface
+
+	typeLookup kubernetes.K8STypeLookup
 
 	//nolint
-	services []*service
+	services []pipeline.Service
 
 	applications []*application
 
@@ -55,6 +62,10 @@ type impl struct {
 	ownerReference func() metav1.OwnerReference
 
 	groupVersionResource func() schema.GroupVersionResource
+
+	requester func() *authv1.UserInfo
+
+	serviceBuilder service.Builder
 }
 
 type bindingImpl struct {
@@ -68,7 +79,7 @@ func (i *impl) UnbindRequested() bool {
 
 type provider struct {
 	client     dynamic.Interface
-	typeLookup K8STypeLookup
+	typeLookup kubernetes.K8STypeLookup
 	get        func(binding interface{}) (pipeline.Context, error)
 }
 
@@ -76,7 +87,7 @@ func (p *provider) Get(binding interface{}) (pipeline.Context, error) {
 	return p.get(binding)
 }
 
-var Provider = func(client dynamic.Interface, typeLookup K8STypeLookup) pipeline.ContextProvider {
+var Provider = func(client dynamic.Interface, subjectAccessReviewClient clientauthzv1.SubjectAccessReviewInterface, typeLookup kubernetes.K8STypeLookup) pipeline.ContextProvider {
 	return &provider{
 		client:     client,
 		typeLookup: typeLookup,
@@ -85,10 +96,11 @@ var Provider = func(client dynamic.Interface, typeLookup K8STypeLookup) pipeline
 			case *v1alpha1.ServiceBinding:
 				return &bindingImpl{
 					impl: impl{
-						conditions:  make(map[string]*metav1.Condition),
-						client:      client,
-						typeLookup:  typeLookup,
-						bindingMeta: &sb.ObjectMeta,
+						conditions:                make(map[string]*metav1.Condition),
+						client:                    client,
+						subjectAccessReviewClient: subjectAccessReviewClient,
+						typeLookup:                typeLookup,
+						bindingMeta:               &sb.ObjectMeta,
 						statusSecretName: func() string {
 							return sb.Status.Secret
 						},
@@ -107,6 +119,10 @@ var Provider = func(client dynamic.Interface, typeLookup K8STypeLookup) pipeline
 						groupVersionResource: func() schema.GroupVersionResource {
 							return v1alpha1.GroupVersionResource
 						},
+						requester: func() *authv1.UserInfo {
+							return apis.Requester(sb.ObjectMeta)
+						},
+						serviceBuilder: service.NewBuilder(typeLookup).WithClient(client).LookOwnedResources(sb.Spec.DetectBindingResources),
 					},
 					serviceBinding: sb,
 				}, nil
@@ -117,15 +133,14 @@ var Provider = func(client dynamic.Interface, typeLookup K8STypeLookup) pipeline
 }
 
 func (i *bindingImpl) BindingName() string {
+	if i.serviceBinding.Spec.Name != "" {
+		return i.serviceBinding.Spec.Name
+	}
 	return i.bindingMeta.GetName()
 }
 
 func (i *bindingImpl) EnvBindings() []*pipeline.EnvBinding {
 	return make([]*pipeline.EnvBinding, 0)
-}
-
-func (i *bindingImpl) MountPath() string {
-	return i.serviceBinding.Spec.MountPath
 }
 
 func (i *bindingImpl) Mappings() map[string]string {
@@ -136,6 +151,31 @@ func (i *bindingImpl) Mappings() map[string]string {
 	return result
 }
 
+func (i *impl) canPerform(gvr *schema.GroupVersionResource, name string, namespace string, verb string) bool {
+	userInfo := i.requester()
+	if userInfo == nil {
+		return true
+	}
+	sar, err := i.subjectAccessReviewClient.Create(context.Background(), &v1.SubjectAccessReview{
+		Spec: v1.SubjectAccessReviewSpec{
+			ResourceAttributes: &v1.ResourceAttributes{
+				Namespace: namespace,
+				Verb:      verb,
+				Resource:  gvr.Resource,
+				Group:     gvr.Group,
+				Version:   gvr.Version,
+				Name:      name,
+			},
+			User:   userInfo.Username,
+			Groups: userInfo.Groups,
+			//Extra: userInfo.Extra,
+		},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		return false
+	}
+	return sar.Status.Allowed
+}
 func (i *bindingImpl) Services() ([]pipeline.Service, error) {
 	if i.services == nil {
 		serviceRefs := i.serviceBinding.Spec.Services
@@ -148,11 +188,24 @@ func (i *bindingImpl) Services() ([]pipeline.Service, error) {
 			if serviceRef.Namespace == nil {
 				serviceRef.Namespace = &i.serviceBinding.Namespace
 			}
+
+			if !i.canPerform(gvr, serviceRef.Name, *serviceRef.Namespace, "get") {
+				return nil, fmt.Errorf("cannot read service %s in namespace %s", serviceRef.Name, *serviceRef.Namespace)
+			}
 			u, err := i.client.Resource(*gvr).Namespace(*serviceRef.Namespace).Get(context.Background(), serviceRef.Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, err
 			}
-			i.services = append(i.services, &service{client: i.client, resource: u, groupVersionResource: gvr, namespace: *serviceRef.Namespace, id: serviceRef.Id, lookForOwnedResources: i.serviceBinding.Spec.DetectBindingResources})
+			var s pipeline.Service
+			if serviceRef.Id != nil {
+				s, err = i.serviceBuilder.Build(u, service.Id(*serviceRef.Id))
+			} else {
+				s, err = i.serviceBuilder.Build(u)
+			}
+			if err != nil {
+				return nil, err
+			}
+			i.services = append(i.services, s)
 		}
 	}
 	services := make([]pipeline.Service, len(i.services))
@@ -172,6 +225,12 @@ func (i *bindingImpl) Applications() ([]pipeline.Application, error) {
 			return nil, err
 		}
 		if i.serviceBinding.Spec.Application.Name != "" {
+			if !i.canPerform(gvr, ref.Name, i.serviceBinding.Namespace, "get") {
+				return nil, fmt.Errorf("cannot read application %s in namespace %s", ref.Name, i.serviceBinding.Namespace)
+			}
+			if !i.canPerform(gvr, ref.Name, i.serviceBinding.Namespace, "update") {
+				return nil, fmt.Errorf("cannot update application resource %s in namespace %s", ref.Name, i.serviceBinding.Namespace)
+			}
 			u, err := i.client.Resource(*gvr).Namespace(i.serviceBinding.Namespace).Get(context.Background(), ref.Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, emptyApplicationsErr{err}
@@ -182,6 +241,9 @@ func (i *bindingImpl) Applications() ([]pipeline.Application, error) {
 			matchLabels := i.serviceBinding.Spec.Application.LabelSelector.MatchLabels
 			opts := metav1.ListOptions{
 				LabelSelector: labels.Set(matchLabels).String(),
+			}
+			if !i.canPerform(gvr, "", i.serviceBinding.Namespace, "list") {
+				return nil, fmt.Errorf("cannot read application in namespace %s", i.serviceBinding.Namespace)
 			}
 
 			objList, err := i.client.Resource(*gvr).Namespace(i.serviceBinding.Namespace).List(context.Background(), opts)
@@ -194,6 +256,11 @@ func (i *bindingImpl) Applications() ([]pipeline.Application, error) {
 			}
 
 			for index := range objList.Items {
+				name := objList.Items[index].GetName()
+				if !i.canPerform(gvr, name, i.serviceBinding.Namespace, "update") {
+					return nil, fmt.Errorf("cannot update application resource %s in namespace %s", name, i.serviceBinding.Namespace)
+				}
+
 				i.applications = append(i.applications, &application{gvr: gvr, persistedResource: &(objList.Items[index]), bindingPath: i.serviceBinding.Spec.Application.BindingPath})
 			}
 		}
@@ -375,11 +442,19 @@ func (i *impl) SetCondition(condition *metav1.Condition) {
 }
 
 func (i *impl) ReadConfigMap(namespace string, name string) (*unstructured.Unstructured, error) {
-	return i.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
+	if !i.canPerform(&gvr, name, namespace, "get") {
+		return nil, fmt.Errorf("cannot read configmap %s in namespace %s", name, namespace)
+	}
+	return i.client.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func (i *impl) ReadSecret(namespace string, name string) (*unstructured.Unstructured, error) {
-	return i.client.Resource(schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"}).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"}
+	if !i.canPerform(&gvr, name, namespace, "get") {
+		return nil, fmt.Errorf("cannot read secret %s in namespace %s", name, namespace)
+	}
+	return i.client.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
 
 func (i *impl) AddBindings(bindings pipeline.Bindings) {
