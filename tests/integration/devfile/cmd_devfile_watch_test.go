@@ -31,12 +31,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-
 	It("should display the help when using -h flag", func() {
-		appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()			
+		appHelp := helper.Cmd("odo", "watch", "-h").ShouldPass().Out()
 		helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
 	})
-
 
 	When("a component is created and not pushed", func() {
 		BeforeEach(func() {
@@ -198,7 +196,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	})
 
-	When("a component is created and pushed", func() {
+	When("a component is created and pushed using build-command and run-command flags", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
