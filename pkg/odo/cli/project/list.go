@@ -39,8 +39,7 @@ func NewProjectListOptions() *ProjectListOptions {
 
 // Complete completes ProjectListOptions after they've been created
 func (plo *ProjectListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 

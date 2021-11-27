@@ -47,8 +47,7 @@ func NewStorageListOptions() *ListOptions {
 
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}

@@ -125,7 +125,7 @@ func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []str
 
 	po.EnvSpecificInfo = envFileInfo
 
-	po.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	po.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}

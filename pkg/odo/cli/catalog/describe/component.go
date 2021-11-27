@@ -58,10 +58,9 @@ func NewDescribeComponentOptions() *DescribeComponentOptions {
 
 // Complete completes DescribeComponentOptions after they've been created
 func (o *DescribeComponentOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 	o.componentName = args[0]
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).IsOffline())
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).IsOffline())
 	if err != nil {
 		return err
 	}

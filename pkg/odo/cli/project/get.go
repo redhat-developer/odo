@@ -42,8 +42,7 @@ func NewProjectGetOptions() *ProjectGetOptions {
 
 // Complete completes ProjectGetOptions after they've been created
 func (pgo *ProjectGetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	pgo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	pgo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 

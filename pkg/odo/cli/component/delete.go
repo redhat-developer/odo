@@ -68,8 +68,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(do.contextFlag))
+	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(do.contextFlag))
 	return err
 }
 

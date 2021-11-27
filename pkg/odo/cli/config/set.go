@@ -59,8 +59,7 @@ func NewSetOptions() *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext())
 	if o.nowFlag {
 		params.CreateAppIfNeeded().RequireRouteAvailability()
 	}

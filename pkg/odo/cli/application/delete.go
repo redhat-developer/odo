@@ -42,8 +42,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes DeleteOptions after they've been created
 func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
