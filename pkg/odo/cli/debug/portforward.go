@@ -73,7 +73,6 @@ func NewPortForwardOptions() *PortForwardOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
@@ -86,8 +85,7 @@ func (o *PortForwardOptions) Complete(name string, cmdline cmdline.Cmdline, args
 	listener, err := net.Listen("tcp", addressLook)
 	if err != nil {
 		// if the local-port flag is set by the user, return the error and stop execution
-		flag := cmd.Flags().Lookup("local-port")
-		if flag != nil && flag.Changed {
+		if cmdline.IsFlagSet("local-port") {
 			return err
 		}
 		// else display a error message and auto select a new free port

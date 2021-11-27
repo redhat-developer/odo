@@ -2,13 +2,12 @@ package service
 
 import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/spf13/cobra"
 )
 
 // ServiceProviderBackend is implemented by the backends supported by odo
 // It is used in "odo service create" and "odo service delete"
 type ServiceProviderBackend interface {
-	CompleteServiceCreate(options *CreateOptions, cmd *cobra.Command, args []string) error
+	CompleteServiceCreate(options *CreateOptions, args []string) error
 	ValidateServiceCreate(options *CreateOptions) error
 	RunServiceCreate(options *CreateOptions) error
 

@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/segment"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/pkg/errors"
@@ -18,7 +19,6 @@ import (
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 	"k8s.io/klog"
 )
@@ -28,7 +28,7 @@ type CreateMethod interface {
 	CheckConflicts(co *CreateOptions, args []string) error
 	// FetchDevfileAndCreateComponent fetches devfile from registry, or a remote location, or a local file system, and creates a component
 	// This method also updates the CreateOptions structure with co.devfileMetadata
-	FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error
+	FetchDevfileAndCreateComponent(co *CreateOptions, cmdline cmdline.Cmdline, args []string) error
 	// Rollback cleans the component context of any files that were created by odo (devfile.yaml, .odo e.g.)
 	Rollback(devfile, componentContext string)
 }
@@ -40,7 +40,7 @@ func (icm InteractiveCreateMethod) CheckConflicts(co *CreateOptions, args []stri
 	return nil
 }
 
-func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
+func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmdline cmdline.Cmdline, args []string) error {
 	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
@@ -55,8 +55,8 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 
 	// Component namespace: User needs to specify component namespace, by default it is the current active namespace
 	var componentNamespace string
-	if cmd.Flags().Changed("project") {
-		componentNamespace, err = cmd.Flags().GetString("project")
+	if cmdline.IsFlagSet("project") {
+		componentNamespace, err = cmdline.FlagValue("project")
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (dcm DirectCreateMethod) CheckConflicts(co *CreateOptions, args []string) e
 	return nil
 }
 
-func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
+func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmdline cmdline.Cmdline, args []string) error {
 	catalogDevfileList, err := validateAndFetchRegistry(co.devfileMetadata.devfileRegistry.Name)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func (ucdm UserCreatedDevfileMethod) CheckConflicts(co *CreateOptions, args []st
 	return nil
 }
 
-func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
+func (ucdm UserCreatedDevfileMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmdline cmdline.Cmdline, args []string) error {
 
 	//	Existing devfile Mode; co.devfileName = ""
 	devfileAbsolutePath, err := filepath.Abs(co.DevfilePath)
@@ -165,7 +165,7 @@ func (hcm HTTPCreateMethod) CheckConflicts(co *CreateOptions, args []string) err
 	return conflictCheckForDevfileFlag(args, co.devfileMetadata.devfileRegistry.Name)
 }
 
-func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
+func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmdline cmdline.Cmdline, args []string) error {
 	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", co.devfileMetadata.devfilePath.value)
 	defer devfileSpinner.End(false)
 
@@ -201,7 +201,7 @@ func (fcm FileCreateMethod) CheckConflicts(co *CreateOptions, args []string) err
 	return conflictCheckForDevfileFlag(args, co.devfileMetadata.devfileRegistry.Name)
 }
 
-func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmd *cobra.Command, args []string) error {
+func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cmdline cmdline.Cmdline, args []string) error {
 	devfileAbsolutePath, err := filepath.Abs(co.devfileMetadata.devfilePath.value)
 	if err != nil {
 		return err
