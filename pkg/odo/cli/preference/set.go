@@ -54,7 +54,7 @@ func (o *SetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
+func (o *SetOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 

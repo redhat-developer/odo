@@ -78,7 +78,7 @@ func (o *UnsetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
+func (o *UnsetOptions) Run() (err error) {
 	if !o.forceFlag {
 		if isSet := o.cfg.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the environment", o.paramName)) {

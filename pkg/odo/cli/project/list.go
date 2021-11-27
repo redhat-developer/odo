@@ -49,7 +49,7 @@ func (plo *ProjectListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo project list command
-func (plo *ProjectListOptions) Run(cmd *cobra.Command) error {
+func (plo *ProjectListOptions) Run() error {
 	projects, err := project.List(plo.Context.KClient)
 	if err != nil {
 		return err

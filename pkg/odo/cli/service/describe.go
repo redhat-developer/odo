@@ -82,7 +82,7 @@ func (o *DescribeOptions) Validate() error {
 }
 
 // Run contains the logic for the odo service describe command
-func (o *DescribeOptions) Run(cmd *cobra.Command) error {
+func (o *DescribeOptions) Run() error {
 	return o.Backend.DescribeService(o, o.serviceName, o.GetApplication())
 }
 

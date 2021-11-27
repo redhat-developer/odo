@@ -55,7 +55,7 @@ func (o *SearchComponentOptions) Validate() error {
 }
 
 // Run contains the logic for the command associated with SearchComponentOptions
-func (o *SearchComponentOptions) Run(cmd *cobra.Command) error {
+func (o *SearchComponentOptions) Run() error {
 	util.DisplayComponents(o.components)
 	return nil
 }

@@ -95,7 +95,7 @@ func (o *LinkOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo link command
-func (o *LinkOptions) Run(cmd *cobra.Command) (err error) {
+func (o *LinkOptions) Run() (err error) {
 	return o.run()
 }
 

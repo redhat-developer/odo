@@ -50,7 +50,7 @@ func (o *DeployOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *DeployOptions) Run(cmd *cobra.Command) error {
+func (o *DeployOptions) Run() error {
 	platformContext := kubernetes.KubernetesContext{
 		Namespace: o.KClient.GetCurrentNamespace(),
 	}

@@ -73,7 +73,7 @@ func (o *AddOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry add" command
-func (o *AddOptions) Run(cmd *cobra.Command) (err error) {
+func (o *AddOptions) Run() (err error) {
 	isSecure := false
 	if o.tokenFlag != "" {
 		isSecure = true

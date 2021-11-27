@@ -62,7 +62,7 @@ func (o *VersionOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service create command
-func (o *VersionOptions) Run(cmd *cobra.Command) (err error) {
+func (o *VersionOptions) Run() (err error) {
 	// If verbose mode is enabled, dump all KUBECLT_* env variables
 	// this is usefull for debuging oc plugin integration
 	for _, v := range os.Environ() {

@@ -123,7 +123,7 @@ func (o PortForwardOptions) Validate() error {
 }
 
 // Run implements all the necessary functionality for port-forward cmd.
-func (o PortForwardOptions) Run(cmd *cobra.Command) error {
+func (o PortForwardOptions) Run() error {
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt,

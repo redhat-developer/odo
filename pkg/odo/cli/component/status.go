@@ -79,7 +79,7 @@ func (so *StatusOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
+func (so *StatusOptions) Run() (err error) {
 	if !log.IsJSON() {
 		return errors.New("this command only supports the '-o json' output format")
 	}

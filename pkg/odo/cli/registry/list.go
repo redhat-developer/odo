@@ -52,7 +52,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry list" command
-func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ListOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
 		return err

@@ -59,7 +59,7 @@ func (o *DescribeServiceOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command associated with DescribeServiceOptions
-func (o *DescribeServiceOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DescribeServiceOptions) Run() (err error) {
 	return o.backend.RunDescribeService(o)
 }
 

@@ -52,7 +52,7 @@ func (o *BuildImagesOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *BuildImagesOptions) Run(cmd *cobra.Command) (err error) {
+func (o *BuildImagesOptions) Run() (err error) {
 	return image.BuildPushImages(o.Context, o.pushFlag)
 }
 

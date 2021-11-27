@@ -118,7 +118,7 @@ func (wo *WatchOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (wo *WatchOptions) Run(cmd *cobra.Command) (err error) {
+func (wo *WatchOptions) Run() (err error) {
 	err = watch.DevfileWatchAndPush(
 		os.Stdout,
 		watch.WatchParameters{

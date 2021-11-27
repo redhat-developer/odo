@@ -118,7 +118,7 @@ func (lo *ListOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *ListOptions) Run(cmd *cobra.Command) error {
+func (lo *ListOptions) Run() error {
 	var otherComps []component.Component
 	// --path workflow
 

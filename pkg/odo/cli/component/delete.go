@@ -78,7 +78,7 @@ func (do *DeleteOptions) Validate() error {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {

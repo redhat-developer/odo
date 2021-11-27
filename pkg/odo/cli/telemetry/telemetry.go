@@ -32,7 +32,7 @@ func (o *TelemetryOptions) Validate() (err error) {
 	return err
 }
 
-func (o *TelemetryOptions) Run(cmd *cobra.Command) (err error) {
+func (o *TelemetryOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrapf(err, "unable to upload telemetry data")

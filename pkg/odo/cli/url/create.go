@@ -158,7 +158,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url create command
-func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (o *CreateOptions) Run() (err error) {
 
 	// create the URL and write it to the local config
 	err = o.Context.LocalConfigProvider.CreateURL(o.url)

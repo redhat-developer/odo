@@ -61,7 +61,7 @@ func (o *ViewOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ViewOptions) Run() (err error) {
 	info := envinfo.NewInfo(o.cfg.GetComponentSettings())
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(info)

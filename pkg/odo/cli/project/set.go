@@ -8,7 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spf13/cobra"
@@ -51,7 +50,7 @@ func NewProjectSetOptions() *ProjectSetOptions {
 // Complete completes ProjectSetOptions after they've been created
 func (pso *ProjectSetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	pso.projectName = args[0]
-	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 
@@ -70,10 +69,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 }
 
 // Run runs the project set command
-func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
-	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetClusterType(cmd.Context(), pso.KClient)
-	}
+func (pso *ProjectSetOptions) Run() (err error) {
 	current := pso.GetProject()
 	err = project.SetCurrent(pso.Context.KClient, pso.projectName)
 	if err != nil {

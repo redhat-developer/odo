@@ -56,7 +56,7 @@ func (gto *GetOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (gto *GetOptions) Run(cmd *cobra.Command) (err error) {
+func (gto *GetOptions) Run() (err error) {
 	klog.V(4).Infof("component get called")
 
 	if gto.shortFlag {

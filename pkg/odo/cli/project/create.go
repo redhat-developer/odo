@@ -8,7 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/spf13/cobra"
 
@@ -60,11 +59,7 @@ func (pco *ProjectCreateOptions) Validate() error {
 }
 
 // Run runs the project create command
-func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
-	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetClusterType(cmd.Context(), pco.KClient)
-	}
-
+func (pco *ProjectCreateOptions) Run() (err error) {
 	// Create the "spinner"
 	s := &log.Status{}
 

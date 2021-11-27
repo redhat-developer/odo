@@ -94,7 +94,7 @@ func (o *UnsetOptions) Validate() error {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run(cmd *cobra.Command) error {
+func (o *UnsetOptions) Run() error {
 	if o.envArrayFlag != nil {
 
 		if err := o.EnvSpecificInfo.GetDevfileObj().RemoveEnvVars(o.envArrayFlag); err != nil {
