@@ -81,6 +81,11 @@ func (o *Cobra) GetWorkingDirectory() (string, error) {
 }
 
 // FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
+func (o *Cobra) FlagValue(flagName string) (string, error) {
+	return o.cmd.Flags().GetString(flagName)
+}
+
+// FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
 func (o *Cobra) FlagValueIfSet(flagName string) string {
 	flag, _ := o.cmd.Flags().GetString(flagName)
 	return flag

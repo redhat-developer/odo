@@ -1,17 +1,19 @@
 // cmdline package provides an abstration of a cmdline utility
+// and an implementation with the corba library
 package cmdline
 
 import (
 	"context"
-
-	"github.com/spf13/cobra"
 )
 
 type Cmdline interface {
 	// GetWorkingdirectory returns tehe directory on which the command should execute
 	GetWorkingDirectory() (string, error)
 
-	// FlagValueIfSet returns the value for a flag
+	// FlagValue returns the value for a flag
+	FlagValue(flagName string) (string, error)
+
+	// FlagValueIfSet returns the value for a flag, or an empty string if not set
 	FlagValueIfSet(flagName string) string
 
 	// IsFlagSet returns true if the flag is explicitely set
@@ -27,13 +29,12 @@ type Cmdline interface {
 	// returns an error if no args were passed after --
 	GetArgsAfterDashes(args []string) ([]string, error)
 
-	// GetParentName returns an empty string is there is no parent of the name of the parent
+	// GetParentName returns the name of the parent command or an empty string is there is no parent
 	GetParentName() string
 
+	// GetRootName returns the name of the root command
 	GetRootName() string
 
+	// GetName returns the name of the command
 	GetName() string
-
-	// TODO temporary, to be removed
-	GetCmd() *cobra.Command
 }

@@ -95,7 +95,6 @@ func (po *PushOptions) GetComponentContext() string {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 	po.CompleteDevfilePath()
 	devfileExists := util.CheckPathExists(po.DevfilePath)
 
@@ -118,7 +117,7 @@ func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []str
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
-	err = po.setupEnvFile(envFileInfo, cmd, args)
+	err = po.setupEnvFile(envFileInfo, cmdline, args)
 	if err != nil {
 		return err
 	}
@@ -131,7 +130,7 @@ func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []str
 	}
 
 	// set the telemetry data
-	cmdCtx := cmd.Context()
+	cmdCtx := cmdline.Context()
 	devfileMetadata := po.Devfile.Data.GetMetadata()
 	scontext.SetClusterType(cmdCtx, po.KClient)
 	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
@@ -141,7 +140,7 @@ func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []str
 	return nil
 }
 
-func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *cobra.Command, args []string) error {
+func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdline cmdline.Cmdline, args []string) error {
 	// TODO(feloy) use a global client?
 	kc, err := kclient.New()
 	if err != nil {
@@ -155,7 +154,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 
 		// Since the environment file does not exist, we will retrieve a correct namespace from
 		// either cmd commands or the current default kubernetes namespace
-		namespace, err := retrieveCmdNamespace(cmd)
+		namespace, err := retrieveCmdNamespace(cmdline)
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for the component")
 		}
@@ -189,7 +188,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 		// Since the project name doesn't exist in the environment file, we will retrieve a correct namespace from
 		// either cmd commands or the current default kubernetes namespace
 		// and write it to the env.yaml
-		namespace, err := retrieveCmdNamespace(cmd)
+		namespace, err := retrieveCmdNamespace(cmdline)
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for devfile")
 		}

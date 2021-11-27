@@ -22,7 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	svc "github.com/redhat-developer/odo/pkg/service"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -31,7 +30,7 @@ var (
 )
 
 // CompleteServiceCreate contains logic to complete the "odo service create" call for the case of Operator backend
-func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, cmd *cobra.Command, args []string) (err error) {
+func (b *OperatorBackend) CompleteServiceCreate(o *CreateOptions, args []string) (err error) {
 	// since interactive mode is not supported for Operators yet, set it to false
 	o.interactive = false
 

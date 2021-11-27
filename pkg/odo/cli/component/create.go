@@ -120,7 +120,6 @@ func NewCreateOptions() *CreateOptions {
 }
 
 func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 	// GETTERS
 	// Get context
 	co.Context, err = getContext(co.nowFlag, cmdline)
@@ -193,7 +192,7 @@ func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []s
 	if err != nil {
 		return err
 	}
-	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmd, args)
+	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmdline, args)
 	if err != nil {
 		co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		return err

@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -89,10 +90,10 @@ func retrieveKubernetesDefaultNamespace() (string, error) {
 
 // retrieveCmdNamespace retrieves the namespace from project flag, if unset
 // we revert to the default namespace available from Kubernetes
-func retrieveCmdNamespace(cmd *cobra.Command) (componentNamespace string, err error) {
+func retrieveCmdNamespace(cmdline cmdline.Cmdline) (componentNamespace string, err error) {
 	// For "odo create" check to see if --project has been passed.
-	if cmd.Flags().Changed("project") {
-		componentNamespace, err = cmd.Flags().GetString("project")
+	if cmdline.IsFlagSet("project") {
+		componentNamespace, err = cmdline.FlagValue("project")
 		if err != nil {
 			return "", err
 		}
