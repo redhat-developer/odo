@@ -22,3 +22,7 @@ mockgen -source=pkg/url/url.go \
 mockgen -source=pkg/devfile/image/image.go \
     -package image \
     -destination pkg/devfile/image/mock_Backend.go
+
+mockgen -source=pkg/odo/cmdline/cmdline.go \
+    -package cmdline \
+    -destination pkg/odo/cmdline/mock.go
