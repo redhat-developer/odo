@@ -12,6 +12,7 @@ import (
 
 	// odo packages
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -47,7 +48,7 @@ func NewDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been created
-func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "delete"
 	o.registryName = args[0]
 	o.registryURL = ""

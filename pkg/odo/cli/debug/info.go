@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/debug"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
@@ -45,7 +46,8 @@ func NewInfoOptions() *InfoOptions {
 }
 
 // Complete completes all the required options for port-forward cmd.
-func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *InfoOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	if err != nil {
 		return err

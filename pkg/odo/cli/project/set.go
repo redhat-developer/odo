@@ -5,6 +5,7 @@ import (
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
@@ -48,7 +49,7 @@ func NewProjectSetOptions() *ProjectSetOptions {
 }
 
 // Complete completes ProjectSetOptions after they've been created
-func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (pso *ProjectSetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	pso.projectName = args[0]
 	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	return err

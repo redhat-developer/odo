@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/url"
@@ -78,7 +79,8 @@ func NewURLCreateOptions() *CreateOptions {
 }
 
 // Complete completes CreateOptions after they've been Created
-func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
+func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
 	if o.nowFlag {
 		params.CreateAppIfNeeded()

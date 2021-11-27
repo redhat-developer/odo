@@ -21,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -55,7 +56,8 @@ func NewListOptions() *ListOptions {
 }
 
 // Complete completes log args
-func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (lo *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 
 	lo.devfilePath = location.DevfileLocation(lo.contextFlag)
 

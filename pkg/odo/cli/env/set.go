@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 
@@ -58,7 +59,7 @@ func NewSetOptions() *SetOptions {
 }
 
 // Complete completes SetOptions after they've been created
-func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *SetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")

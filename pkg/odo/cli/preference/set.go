@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -41,7 +42,7 @@ func NewSetOptions() *SetOptions {
 }
 
 // Complete completes SetOptions after they've been created
-func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *SetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = args[0]
 	o.paramValue = args[1]
 	return

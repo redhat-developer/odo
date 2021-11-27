@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -52,7 +53,8 @@ func NewUnsetOptions() *UnsetOptions {
 }
 
 // Complete completes UnsetOptions after they've been created
-func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *UnsetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
 	if o.nowFlag {
 		params.CreateAppIfNeeded().RequireRouteAvailability()

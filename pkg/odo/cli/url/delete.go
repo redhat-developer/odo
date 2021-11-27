@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
@@ -41,7 +42,8 @@ func NewURLDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been Deleted
-func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()))
 	if err != nil {
 		return err
