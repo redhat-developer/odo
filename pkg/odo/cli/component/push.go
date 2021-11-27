@@ -222,7 +222,7 @@ func (po *PushOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
+func (po *PushOptions) Run() (err error) {
 	// Return Devfile push
 	return po.DevfilePush()
 }

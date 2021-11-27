@@ -94,7 +94,7 @@ type DevfileComponentDescription struct {
 }
 
 // Run contains the logic for the command associated with DescribeComponentOptions
-func (o *DescribeComponentOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DescribeComponentOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	if log.IsJSON() {
 		if len(o.devfileComponents) > 0 {

@@ -63,7 +63,7 @@ type catalogList struct {
 }
 
 // Run contains the logic for the command associated with ListComponentsOptions
-func (o *ListComponentsOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ListComponentsOptions) Run() (err error) {
 	if log.IsJSON() {
 		combinedList := catalogList{
 			TypeMeta: metav1.TypeMeta{

@@ -83,7 +83,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service delete command
-func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DeleteOptions) Run() (err error) {
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
 		err = o.Backend.DeleteService(o, o.serviceName, o.GetApplication())
 		if err != nil {

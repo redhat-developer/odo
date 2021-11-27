@@ -58,7 +58,7 @@ func (o *SearchServiceOptions) Validate() error {
 }
 
 // Run contains the logic for the command associated with SearchServiceOptions
-func (o *SearchServiceOptions) Run(cmd *cobra.Command) error {
+func (o *SearchServiceOptions) Run() error {
 	if len(o.csvs.Items) > 0 {
 		util.DisplayClusterServiceVersions(o.csvs)
 	}

@@ -69,7 +69,7 @@ func (o *DescribeOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		appDef := application.GetMachineReadableFormat(o.KClient, o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)

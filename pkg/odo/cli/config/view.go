@@ -49,7 +49,7 @@ func (o *ViewOptions) Validate() error {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ViewOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	repr, err := component.ToDevfileRepresentation(o.Context.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {

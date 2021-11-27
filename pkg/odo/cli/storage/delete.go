@@ -67,7 +67,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage delete command
-func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DeleteOptions) Run() (err error) {
 	mPath, err := o.Context.LocalConfigProvider.GetStorageMountPath(o.storageName)
 	if err != nil {
 		return err

@@ -40,7 +40,7 @@ func (o *ViewOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ViewOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 

@@ -52,7 +52,7 @@ func (lo *LogOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *LogOptions) Run(cmd *cobra.Command) (err error) {
+func (lo *LogOptions) Run() (err error) {
 	err = lo.DevfileComponentLog()
 	return
 }

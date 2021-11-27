@@ -70,7 +70,7 @@ func (pdo *ProjectDeleteOptions) Validate() error {
 }
 
 // Run the project delete command
-func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (pdo *ProjectDeleteOptions) Run() (err error) {
 
 	// Create the "spinner"
 	s := &log.Status{}

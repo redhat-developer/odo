@@ -70,7 +70,7 @@ func (o *UnlinkOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo link command
-func (o *UnlinkOptions) Run(cmd *cobra.Command) (err error) {
+func (o *UnlinkOptions) Run() (err error) {
 	return o.run()
 }
 

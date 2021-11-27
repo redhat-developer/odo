@@ -85,7 +85,7 @@ func (o *SetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *SetOptions) Run(cmd *cobra.Command) (err error) {
+func (o *SetOptions) Run() (err error) {
 	if !o.forceFlag {
 		if isSet := o.cfg.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the environment", o.paramName)) {

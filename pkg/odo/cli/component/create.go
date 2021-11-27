@@ -223,6 +223,8 @@ func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []s
 	}
 
 	scontext.SetDevfileName(cmdline.Context(), co.devfileName)
+	// Adding component type to telemetry data
+	scontext.SetComponentType(cmdline.Context(), co.devfileMetadata.componentType)
 
 	return nil
 }
@@ -257,14 +259,12 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
-func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (co *CreateOptions) Run() (err error) {
 	defer func() {
 		if err != nil {
 			co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		}
 	}()
-	// Adding component type to telemetry data
-	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 
 	devObj, err := devfileParseFromFile(co.DevfilePath, false)
 	if err != nil {

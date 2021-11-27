@@ -79,7 +79,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage create command
-func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (o *CreateOptions) Run() (err error) {
 	err = o.Context.LocalConfigProvider.CreateStorage(o.storage)
 	if err != nil {
 		return err

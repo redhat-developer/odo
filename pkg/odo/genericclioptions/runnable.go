@@ -35,7 +35,7 @@ import (
 type Runnable interface {
 	Complete(name string, cmdline cmdline.Cmdline, args []string) error
 	Validate() error
-	Run(cmd *cobra.Command) error
+	Run() error
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
@@ -95,7 +95,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Run(cmd)
+	err = o.Run()
 	startTelemetry(cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }

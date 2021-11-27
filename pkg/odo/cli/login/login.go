@@ -60,8 +60,8 @@ func (o *LoginOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *LoginOptions) Run(cmd *cobra.Command) (err error) {
-	return auth.Login(o.server, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
+func (o *LoginOptions) Run() (err error) {
+	return auth.Login(o.server, o.userNameFlag, o.userNameFlag, o.userNameFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 
 // NewCmdLogin implements the odo command

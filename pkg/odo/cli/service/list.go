@@ -62,7 +62,7 @@ func (o *ServiceListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service list command
-func (o *ServiceListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ServiceListOptions) Run() (err error) {
 	return o.listOperatorServices()
 }
 
