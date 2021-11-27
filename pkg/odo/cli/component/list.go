@@ -57,13 +57,12 @@ func NewListOptions() *ListOptions {
 
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 
 	lo.devfilePath = location.DevfileLocation(lo.contextFlag)
 
 	if util.CheckPathExists(lo.devfilePath) {
 
-		lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+		lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 		if err != nil {
 			return err
 		}
@@ -78,7 +77,7 @@ func (lo *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []str
 		// as odo list should work in a non-component directory too
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
-			lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+			lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 			if err != nil {
 				return err
 			}

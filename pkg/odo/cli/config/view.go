@@ -38,8 +38,7 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag)
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag)
 	o.Context, err = genericclioptions.New(params)
 	return err
 }

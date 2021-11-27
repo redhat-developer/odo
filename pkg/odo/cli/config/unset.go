@@ -54,8 +54,7 @@ func NewUnsetOptions() *UnsetOptions {
 
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext())
 	if o.nowFlag {
 		params.CreateAppIfNeeded().RequireRouteAvailability()
 	}

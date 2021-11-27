@@ -51,9 +51,8 @@ func NewProjectDeleteOptions() *ProjectDeleteOptions {
 
 // Complete completes ProjectDeleteOptions after they've been created
 func (pdo *ProjectDeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 	pdo.projectName = args[0]
-	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 

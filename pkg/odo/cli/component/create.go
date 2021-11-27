@@ -123,12 +123,12 @@ func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []s
 	cmd := cmdline.GetCmd()
 	// GETTERS
 	// Get context
-	co.Context, err = getContext(co.nowFlag, cmd)
+	co.Context, err = getContext(co.nowFlag, cmdline)
 	if err != nil {
 		return err
 	}
 	// Get the app name
-	co.appFlag = genericclioptions.ResolveAppFlag(cmd)
+	co.appFlag = genericclioptions.ResolveAppFlag(cmdline)
 	// Get the project name
 	co.devfileMetadata.componentNamespace = co.Context.GetProject()
 	// Get DevfilePath
@@ -222,7 +222,7 @@ func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []s
 		}
 	}
 
-	scontext.SetDevfileName(cmd.Context(), co.devfileName)
+	scontext.SetDevfileName(cmdline.Context(), co.devfileName)
 
 	return nil
 }
@@ -390,8 +390,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	return componentCreateCmd
 }
 
-func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
-	params := genericclioptions.NewCreateParameters(cmd)
+func getContext(now bool, cmdline cmdline.Cmdline) (*genericclioptions.Context, error) {
+	params := genericclioptions.NewCreateParameters(cmdline)
 	if now {
 		params = params.CreateAppIfNeeded()
 	} else {

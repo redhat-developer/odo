@@ -50,8 +50,7 @@ func NewTestOptions() *TestOptions {
 
 // Complete completes TestOptions after they've been created
 func (to *TestOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(to.contextFlag))
+	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(to.contextFlag))
 	return
 }
 

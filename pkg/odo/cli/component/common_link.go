@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
@@ -17,7 +18,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -62,11 +62,11 @@ func (o *commonLinkOptions) getLinkType() string {
 }
 
 // Complete completes LinkOptions after they've been created
-func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []string, context string) (err error) {
+func (o *commonLinkOptions) complete(name string, cmdline cmdline.Cmdline, args []string, context string) (err error) {
 	o.operationName = name
 	o.suppliedName = args[0]
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(context))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(context))
 	if err != nil {
 		return err
 	}

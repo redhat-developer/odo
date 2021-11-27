@@ -80,8 +80,7 @@ func NewURLCreateOptions() *CreateOptions {
 
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
 	if o.nowFlag {
 		params.CreateAppIfNeeded()
 	}

@@ -4,18 +4,12 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/spf13/cobra"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 )
 
-// GetValidEnvInfo is just a wrapper for getValidEnvInfo
-func GetValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
-	return getValidEnvInfo(command)
-}
-
-// getValidEnvInfo accesses the environment file
-func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
-
-	componentContext, err := GetContextFlagValue(command)
+// GetValidEnvInfo accesses the environment file
+func GetValidEnvInfo(cmdline cmdline.Cmdline) (*envinfo.EnvSpecificInfo, error) {
+	componentContext, err := cmdline.GetWorkingDirectory()
 
 	if err != nil {
 		return nil, err
@@ -29,7 +23,7 @@ func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 
 	// Now we check to see if we can skip gathering the information.
 	// Return if we can skip gathering configuration information
-	canWeSkip, err := checkIfConfigurationNeeded(command)
+	canWeSkip, err := cmdline.CheckIfConfigurationNeeded()
 	if err != nil {
 		return nil, err
 	}

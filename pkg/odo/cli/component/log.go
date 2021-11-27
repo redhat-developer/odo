@@ -42,8 +42,7 @@ func NewLogOptions() *LogOptions {
 
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
-	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(lo.contextFlag))
+	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(lo.contextFlag))
 	return err
 }
 

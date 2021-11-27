@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -19,10 +20,10 @@ type ComponentOptions struct {
 }
 
 // Complete completes component options
-func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (co *ComponentOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
-		co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).IsOffline())
+		co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).IsOffline())
 		if err != nil {
 			return err
 		}

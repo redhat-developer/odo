@@ -8,13 +8,13 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/spf13/cobra"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ResolveAppFlag resolves the app from the flag
-func ResolveAppFlag(command *cobra.Command) string {
-	appFlag := FlagValueIfSet(command, ApplicationFlagName)
+func ResolveAppFlag(cmdline cmdline.Cmdline) string {
+	appFlag := cmdline.FlagValueIfSet(ApplicationFlagName)
 	if len(appFlag) > 0 {
 		return appFlag
 	}
@@ -22,15 +22,15 @@ func ResolveAppFlag(command *cobra.Command) string {
 }
 
 // resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
-func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configProvider localConfigProvider.LocalConfigProvider) error {
+func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string
-	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+	projectFlag := cmdline.FlagValueIfSet(ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := o.KClient.GetClient().CoreV1().Namespaces().Get(context.TODO(), projectFlag, metav1.GetOptions{})
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
-			if err != nil {
+		if err != nil {
+			if cmdline.GetParentName() != "project" && !(cmdline.GetName() == "delete" && cmdline.IsFlagSet("all")) {
 				return err
 			}
 		}
@@ -41,7 +41,7 @@ func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configP
 			namespace = o.KClient.GetCurrentNamespace()
 			if len(namespace) <= 0 {
 				errFormat := "Could not get current namespace. Please create or set a namespace\n"
-				err := checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+				err := checkProjectCreateOrDeleteOnlyOnInvalidNamespace(cmdline, errFormat)
 				if err != nil {
 					return err
 				}
@@ -59,7 +59,7 @@ func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configP
 			}
 
 			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
-			err = checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(command, errFormat)
+			err = checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(cmdline, errFormat)
 			if err != nil {
 				return err
 			}
@@ -74,8 +74,8 @@ func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configP
 // If `--app` flag is used, return its value
 // Or If app is set in envfile, return its value
 // Or if createAppIfNeeded, returns the default app name
-func resolveApp(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
-	appFlag := FlagValueIfSet(command, ApplicationFlagName)
+func resolveApp(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
+	appFlag := cmdline.FlagValueIfSet(ApplicationFlagName)
 	if len(appFlag) > 0 {
 		return appFlag
 	}
@@ -90,8 +90,8 @@ func resolveApp(command *cobra.Command, localConfiguration localConfigProvider.L
 // resolveComponent resolves component
 // If `--component` flag is used, return its value
 // Or Return the value in envfile
-func resolveComponent(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
-	cmpFlag := FlagValueIfSet(command, ComponentFlagName)
+func resolveComponent(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
+	cmpFlag := cmdline.FlagValueIfSet(ComponentFlagName)
 	if len(cmpFlag) > 0 {
 		return cmpFlag
 	}
@@ -99,8 +99,8 @@ func resolveComponent(command *cobra.Command, localConfiguration localConfigProv
 	return localConfiguration.GetName()
 }
 
-func resolveProject(command *cobra.Command, localConfiguration localConfigProvider.LocalConfigProvider) string {
-	projectFlag := FlagValueIfSet(command, ProjectFlagName)
+func resolveProject(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
+	projectFlag := cmdline.FlagValueIfSet(ProjectFlagName)
 	if projectFlag != "" {
 		return projectFlag
 	}

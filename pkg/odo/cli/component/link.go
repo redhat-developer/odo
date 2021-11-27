@@ -76,10 +76,9 @@ func NewLinkOptions() *LinkOptions {
 
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	cmd := cmdline.GetCmd()
 	o.commonLinkOptions.devfilePath = location.DevfileLocation(o.contextFlag)
 
-	err = o.complete(name, cmd, args, o.contextFlag)
+	err = o.complete(name, cmdline, args, o.contextFlag)
 	if err != nil {
 		return err
 	}
