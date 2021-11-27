@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -47,7 +48,8 @@ func NewDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been created
-func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err

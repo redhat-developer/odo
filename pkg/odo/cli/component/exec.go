@@ -5,6 +5,7 @@ import (
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -40,7 +41,8 @@ func NewExecOptions() *ExecOptions {
 }
 
 // Complete completes exec args
-func (eo *ExecOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (eo *ExecOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	if cmd.ArgsLenAtDash() <= -1 {
 		return fmt.Errorf(`no command was given for the exec command
 Please provide a command to execute, odo exec -- <command to be execute>`)

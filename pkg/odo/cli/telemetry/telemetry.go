@@ -3,6 +3,7 @@ package telemetry
 import (
 	"encoding/json"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/pkg/errors"
@@ -22,7 +23,7 @@ func NewTelemetryOptions() *TelemetryOptions {
 	return &TelemetryOptions{}
 }
 
-func (o *TelemetryOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *TelemetryOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	err = json.Unmarshal([]byte(args[0]), &o.telemetryData)
 	return err
 }

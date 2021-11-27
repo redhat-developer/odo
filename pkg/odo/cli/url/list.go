@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -46,7 +47,8 @@ func NewURLListOptions() *ListOptions {
 }
 
 // Complete completes ListOptions after they've been Listed
-func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err

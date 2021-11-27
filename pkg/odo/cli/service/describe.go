@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/service"
 	svc "github.com/redhat-developer/odo/pkg/service"
@@ -41,7 +42,8 @@ func NewDescribeOptions() *DescribeOptions {
 	return &DescribeOptions{}
 }
 
-func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err

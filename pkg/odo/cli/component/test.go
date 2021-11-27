@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -48,7 +49,8 @@ func NewTestOptions() *TestOptions {
 }
 
 // Complete completes TestOptions after they've been created
-func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (to *TestOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(to.contextFlag))
 	return
 }

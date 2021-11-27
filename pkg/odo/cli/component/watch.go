@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -64,7 +65,8 @@ func NewWatchOptions() *WatchOptions {
 }
 
 // Complete completes watch args
-func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (wo *WatchOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(wo.contextFlag))
 	if err != nil {
 		return err

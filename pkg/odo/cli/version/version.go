@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
@@ -44,7 +45,7 @@ func NewVersionOptions() *VersionOptions {
 }
 
 // Complete completes VersionOptions after they have been created
-func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) error {
+func (o *VersionOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	if !o.clientFlag {
 		// Let's fetch the info about the server, ignoring errors
 		client, err := kclient.New()

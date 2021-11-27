@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	util2 "github.com/redhat-developer/odo/pkg/util"
@@ -73,7 +74,7 @@ func NewTerminalOptions() *TerminalOptions {
 }
 
 // Complete completes TerminalOptions after they've been created
-func (o *TerminalOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *TerminalOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.shellType = args[0]
 	return
 }

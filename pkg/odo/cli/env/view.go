@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -41,7 +42,7 @@ func NewViewOptions() *ViewOptions {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *ViewOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")

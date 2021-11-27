@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -39,7 +40,8 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 // Complete completes DescribeOptions after they've been created
-func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	if err != nil {
 		return err

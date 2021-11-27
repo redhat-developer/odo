@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/zalando/go-keyring"
 
 	"github.com/devfile/library/pkg/devfile"
@@ -118,7 +119,8 @@ func NewCreateOptions() *CreateOptions {
 	}
 }
 
-func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	// GETTERS
 	// Get context
 	co.Context, err = getContext(co.nowFlag, cmd)

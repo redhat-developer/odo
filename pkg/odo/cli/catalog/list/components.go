@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -34,8 +35,7 @@ func NewListComponentsOptions() *ListComponentsOptions {
 }
 
 // Complete completes ListComponentsOptions after they've been created
-func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
+func (o *ListComponentsOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 	if err != nil {
 		return err

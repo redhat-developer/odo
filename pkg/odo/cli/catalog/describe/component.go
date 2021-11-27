@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -56,7 +57,8 @@ func NewDescribeComponentOptions() *DescribeComponentOptions {
 }
 
 // Complete completes DescribeComponentOptions after they've been created
-func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *DescribeComponentOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	o.componentName = args[0]
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).IsOffline())

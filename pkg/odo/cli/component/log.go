@@ -5,6 +5,7 @@ import (
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -40,7 +41,8 @@ func NewLogOptions() *LogOptions {
 }
 
 // Complete completes log args
-func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (lo *LogOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(lo.contextFlag))
 	return err
 }

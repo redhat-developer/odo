@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -49,7 +50,8 @@ func NewProjectDeleteOptions() *ProjectDeleteOptions {
 }
 
 // Complete completes ProjectDeleteOptions after they've been created
-func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (pdo *ProjectDeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	cmd := cmdline.GetCmd()
 	pdo.projectName = args[0]
 	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	return err
