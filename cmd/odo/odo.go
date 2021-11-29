@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/openshift/odo/pkg/log"
@@ -19,6 +20,7 @@ import (
 )
 
 func main() {
+	fmt.Printf("go")
 	// create the complete command
 	klog.InitFlags(nil)
 

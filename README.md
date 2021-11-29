@@ -71,3 +71,4 @@ If you find an issue with `odo`, please [file it here](https://github.com/opensh
 All our calls are open to public. You are welcome to join any of our calls.
 
 You can find the exact dates of all scheduled odo calls together with sprint dates in the [odo calendar](https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com) ([iCal format](https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics)).
+
