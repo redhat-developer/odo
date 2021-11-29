@@ -718,6 +718,21 @@ func (mr *MockClientInterfaceMockRecorder) GetNamespace(name interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetNamespace), name)
 }
 
+// GetNamespaceNormal mocks base method.
+func (m *MockClientInterface) GetNamespaceNormal(name string) (*v10.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespaceNormal", name)
+	ret0, _ := ret[0].(*v10.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNamespaceNormal indicates an expected call of GetNamespaceNormal.
+func (mr *MockClientInterfaceMockRecorder) GetNamespaceNormal(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceNormal", reflect.TypeOf((*MockClientInterface)(nil).GetNamespaceNormal), name)
+}
+
 // GetNamespaces mocks base method.
 func (m *MockClientInterface) GetNamespaces() ([]string, error) {
 	m.ctrl.T.Helper()

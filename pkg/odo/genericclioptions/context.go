@@ -109,7 +109,7 @@ func New(parameters CreateParameters) (*Context, error) {
 	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(OutputFlagName)
 
 	if !parameters.offline {
-		ctx.KClient, err = kclient.New()
+		ctx.KClient, err = parameters.cmdline.GetKubeClient()
 		if err != nil {
 			return nil, err
 		}

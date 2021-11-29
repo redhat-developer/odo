@@ -476,7 +476,7 @@ func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max str
 
 // CheckPathExists checks if a path exists or not
 func CheckPathExists(path string) bool {
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
+	if _, err := filesystem.Get().Stat(path); !os.IsNotExist(err) {
 		// path to file does exist
 		return true
 	}

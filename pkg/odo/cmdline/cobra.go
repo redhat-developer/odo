@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -178,4 +179,8 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 		}
 	}
 	return nil
+}
+
+func (o *Cobra) GetKubeClient() (kclient.ClientInterface, error) {
+	return kclient.New()
 }

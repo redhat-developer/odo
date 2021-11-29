@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	kclient "github.com/redhat-developer/odo/pkg/kclient"
 )
 
 // MockCmdline is a mock of Cmdline interface.
@@ -105,6 +106,21 @@ func (m *MockCmdline) GetArgsAfterDashes(args []string) ([]string, error) {
 func (mr *MockCmdlineMockRecorder) GetArgsAfterDashes(args interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArgsAfterDashes", reflect.TypeOf((*MockCmdline)(nil).GetArgsAfterDashes), args)
+}
+
+// GetKubeClient mocks base method.
+func (m *MockCmdline) GetKubeClient() (kclient.ClientInterface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetKubeClient")
+	ret0, _ := ret[0].(kclient.ClientInterface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetKubeClient indicates an expected call of GetKubeClient.
+func (mr *MockCmdlineMockRecorder) GetKubeClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetKubeClient", reflect.TypeOf((*MockCmdline)(nil).GetKubeClient))
 }
 
 // GetName mocks base method.
