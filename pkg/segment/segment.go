@@ -61,9 +61,8 @@ type Client struct {
 
 // NewClient returns a Client created with the default args
 func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
-	homeDir, _ := os.UserHomeDir()
 	return newCustomClient(preference,
-		filepath.Join(homeDir, ".redhat", "anonymousId"),
+		GetTelemetryFilePath(),
 		analytics.DefaultEndpoint,
 	)
 }
@@ -173,6 +172,12 @@ func addConfigTraits() analytics.Traits {
 		traits.Set("locale", tag.String())
 	}
 	return traits
+}
+
+//GetTelemetryFilePath returns the default file path where the generated anonymous ID is stored
+func GetTelemetryFilePath() string {
+	homeDir, _ := os.UserHomeDir()
+	return filepath.Join(homeDir, ".redhat", "anonymousId")
 }
 
 // getUserIdentity returns the anonymous ID if it exists, else creates a new one and sends the data to Segment

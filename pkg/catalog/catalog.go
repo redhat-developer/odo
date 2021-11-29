@@ -3,6 +3,7 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/odo/pkg/segment"
 	"net/url"
 	"strings"
 	"sync"
@@ -16,7 +17,6 @@ import (
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -103,7 +103,7 @@ const indexPath = "/devfiles/index.json"
 func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	if !strings.Contains(registry.URL, "github") {
 		// OCI-based registry
-		devfileIndex, err := registryLibrary.GetRegistryIndex(registry.URL, false, registryConsts.TelemetryClient, indexSchema.StackDevfileType)
+		devfileIndex, err := registryLibrary.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
 		if err != nil {
 			return nil, err
 		}

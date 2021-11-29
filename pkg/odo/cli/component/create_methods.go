@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/segment"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
-	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -339,7 +339,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			return err
 		}
 	} else {
-		err := registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, false, registryConsts.TelemetryClient)
+		err = registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, segment.GetRegistryOptions())
 		if err != nil {
 			return err
 		}
