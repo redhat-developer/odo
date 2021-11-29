@@ -11,6 +11,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	svc "github.com/redhat-developer/odo/pkg/service"
+
+	v1 "k8s.io/api/core/v1"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -80,7 +83,8 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 		// TODO find the service using an app name to link components in other apps
 		// requires modification of the app flag or finding some other way
-		s, err := o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
+		var s *v1.Service
+		s, err = o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
 		if kerrors.IsNotFound(err) {
 			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
 		}
