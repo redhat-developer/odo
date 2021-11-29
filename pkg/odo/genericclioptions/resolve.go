@@ -1,7 +1,6 @@
 package genericclioptions
 
 import (
-	"context"
 	"fmt"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -9,7 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ResolveAppFlag resolves the app from the flag
@@ -27,7 +25,8 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 	projectFlag := cmdline.FlagValueIfSet(ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := o.KClient.GetClient().CoreV1().Namespaces().Get(context.TODO(), projectFlag, metav1.GetOptions{})
+		_, err := o.KClient.GetNamespaceNormal(projectFlag)
+
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 		if err != nil {
 			if cmdline.GetParentName() != "project" && !(cmdline.GetName() == "delete" && cmdline.IsFlagSet("all")) {
@@ -49,7 +48,7 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 		}
 
 		// check that the specified namespace exists
-		_, err := o.KClient.GetClient().CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+		_, err := o.KClient.GetNamespaceNormal(namespace)
 		if err != nil {
 			var errFormat string
 			if kerrors.IsForbidden(err) {

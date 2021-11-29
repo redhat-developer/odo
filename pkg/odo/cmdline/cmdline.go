@@ -4,6 +4,8 @@ package cmdline
 
 import (
 	"context"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
 type Cmdline interface {
@@ -37,4 +39,6 @@ type Cmdline interface {
 
 	// GetName returns the name of the command
 	GetName() string
+
+	GetKubeClient() (kclient.ClientInterface, error)
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,7 +37,7 @@ func CreateIfNotExists(configFile string) error {
 
 // GetFromFile unmarshals a struct from a odo config file
 func GetFromFile(c interface{}, filename string) error {
-	configData, err := ioutil.ReadFile(filename)
+	configData, err := filesystem.Get().ReadFile(filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to read file %v", filename)
 	}
