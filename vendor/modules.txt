@@ -118,10 +118,10 @@ github.com/devfile/library/pkg/devfile/validate
 github.com/devfile/library/pkg/testingutil
 github.com/devfile/library/pkg/testingutil/filesystem
 github.com/devfile/library/pkg/util
-# github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0
+# github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f
 ## explicit
 github.com/devfile/registry-support/index/generator/schema
-# github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca
+# github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2
 ## explicit
 github.com/devfile/registry-support/registry-library/library
 # github.com/docker/docker v20.10.3+incompatible => github.com/docker/docker v1.4.2-0.20191121165722-d1d5f6476656

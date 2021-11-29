@@ -8,8 +8,8 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/devfile/api/v2 v2.0.0-20211116183836-dfec9a4d3b63
 	github.com/devfile/library v1.2.0
-	github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0
-	github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca
+	github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f
+	github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2
 	github.com/fatih/color v1.10.0
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.4.9
