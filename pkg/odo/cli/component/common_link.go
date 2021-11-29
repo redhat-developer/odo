@@ -224,7 +224,10 @@ func (o *commonLinkOptions) validate() (err error) {
 			return err
 		}
 		if !found {
-			return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", o.getLinkType(), svcFullName, o.getLinkType())
+			if o.getLinkType() == "service" {
+				return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", o.getLinkType(), svcFullName, o.getLinkType())
+			}
+			return fmt.Errorf("failed to unlink the %s %q since no link was found in the configuration referring this %s", o.getLinkType(), o.suppliedName, o.getLinkType())
 		}
 		return nil
 	}
@@ -308,10 +311,7 @@ func (o *commonLinkOptions) getServiceBindingName(componentName string) string {
 		return o.name
 	}
 	if !o.isTargetAService {
-		// TODO: ugly way to split o.serviceName of the format <component-name>-<app-name>
-		// This is a result of refactoring which helped improve bunch of complete and validate functions
-		serviceName := strings.Split(o.serviceName, "-")[0]
-		return strings.Join([]string{componentName, serviceName}, "-")
+		return strings.Join([]string{componentName, o.serviceName}, "-")
 	}
 	return strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
 }
