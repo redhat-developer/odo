@@ -339,7 +339,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			return err
 		}
 	} else {
-		err = registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, segment.GetRegistryOptions())
+		err := registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, segment.GetRegistryOptions())
 		if err != nil {
 			return err
 		}
