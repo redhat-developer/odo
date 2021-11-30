@@ -37,7 +37,7 @@ func NewGeneratedKubernetesIngress() *KubernetesIngress {
 func NewKubernetesIngressFromParams(ingressParams generator.IngressParams) *KubernetesIngress {
 	ki := NewGeneratedKubernetesIngress()
 	ki.NetworkingV1Ingress = odogenerator.GetNetworkingV1Ingress(ingressParams)
-	ki.ExtensionV1Beta1Ingress = generator.GetIngress(v1alpha2.Endpoint{}, ingressParams)
+	ki.ExtensionV1Beta1Ingress = generator.GetIngress(ingressParams)
 	return ki
 }
 

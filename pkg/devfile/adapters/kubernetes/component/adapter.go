@@ -536,10 +536,8 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		PodSelectorLabels: selectorLabels,
 	}
 
-	deployment, err := generator.GetDeployment(a.Devfile, deployParams)
-	if err != nil {
-		return err
-	}
+	deployment := generator.GetDeployment(deployParams)
+
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
 	}

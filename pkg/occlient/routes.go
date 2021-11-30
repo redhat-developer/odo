@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -41,7 +40,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 		},
 	}
 
-	route := generator.GetRoute(v1.Endpoint{}, routeParams)
+	route := generator.GetRoute(routeParams)
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 

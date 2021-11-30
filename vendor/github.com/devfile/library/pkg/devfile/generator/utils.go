@@ -526,16 +526,6 @@ func getPVC(volumeName, pvcName string) corev1.Volume {
 	}
 }
 
-// getEmptyDirVol gets a volume with emptyDir
-func getEmptyDirVol(volumeName string) corev1.Volume {
-	return corev1.Volume{
-		Name: volumeName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		},
-	}
-}
-
 // addVolumeMountToContainers adds the Volume Mounts in containerNameToMountPaths to the containers for a given volumeName.
 // containerNameToMountPaths is a map of a container name to an array of its Mount Paths.
 func addVolumeMountToContainers(containers []corev1.Container, volumeName string, containerNameToMountPaths map[string][]string) {
@@ -601,40 +591,4 @@ func getAllContainers(devfileObj parser.DevfileObj, options common.DevfileOption
 		containers = append(containers, *container)
 	}
 	return containers, nil
-}
-
-// getContainerAnnotations iterates through container components and returns all annotations
-func getContainerAnnotations(devfileObj parser.DevfileObj, options common.DevfileOptions) (v1.Annotation, error) {
-	options.ComponentOptions = common.ComponentOptions{
-		ComponentType: v1.ContainerComponentType,
-	}
-	containerComponents, err := devfileObj.Data.GetComponents(options)
-	if err != nil {
-		return v1.Annotation{}, err
-	}
-	var annotations v1.Annotation
-	annotations.Service = make(map[string]string)
-	annotations.Deployment = make(map[string]string)
-	for _, comp := range containerComponents {
-		// ToDo: dedicatedPod support: https://github.com/devfile/api/issues/670
-		if comp.Container.DedicatedPod != nil && *comp.Container.DedicatedPod {
-			continue
-		}
-		if comp.Container.Annotation != nil {
-			mergeMaps(annotations.Service, comp.Container.Annotation.Service)
-			mergeMaps(annotations.Deployment, comp.Container.Annotation.Deployment)
-		}
-	}
-
-	return annotations, nil
-}
-
-func mergeMaps(dest map[string]string, src map[string]string) map[string]string {
-	if dest == nil {
-		dest = make(map[string]string)
-	}
-	for k, v := range src {
-		dest[k] = v
-	}
-	return dest
 }

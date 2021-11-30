@@ -161,7 +161,7 @@ type DeploymentParams struct {
 }
 
 // GetDeployment gets a deployment object
-func GetDeployment(devfileObj parser.DevfileObj, deployParams DeploymentParams) (*appsv1.Deployment, error) {
+func GetDeployment(deployParams DeploymentParams) *appsv1.Deployment {
 
 	podTemplateSpecParams := podTemplateSpecParams{
 		ObjectMeta:     deployParams.ObjectMeta,
@@ -175,19 +175,13 @@ func GetDeployment(devfileObj parser.DevfileObj, deployParams DeploymentParams) 
 		PodSelectorLabels: deployParams.PodSelectorLabels,
 	}
 
-	containerAnnotations, err := getContainerAnnotations(devfileObj, common.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-	deployParams.ObjectMeta.Annotations = mergeMaps(deployParams.ObjectMeta.Annotations, containerAnnotations.Deployment)
-
 	deployment := &appsv1.Deployment{
 		TypeMeta:   deployParams.TypeMeta,
 		ObjectMeta: deployParams.ObjectMeta,
 		Spec:       *getDeploymentSpec(deploySpecParams),
 	}
 
-	return deployment, nil
+	return deployment
 }
 
 // PVCParams is a struct to create PVC
@@ -224,11 +218,7 @@ func GetService(devfileObj parser.DevfileObj, serviceParams ServiceParams, optio
 	if err != nil {
 		return nil, err
 	}
-	containerAnnotations, err := getContainerAnnotations(devfileObj, options)
-	if err != nil {
-		return nil, err
-	}
-	serviceParams.ObjectMeta.Annotations = mergeMaps(serviceParams.ObjectMeta.Annotations, containerAnnotations.Service)
+
 	service := &corev1.Service{
 		TypeMeta:   serviceParams.TypeMeta,
 		ObjectMeta: serviceParams.ObjectMeta,
@@ -246,9 +236,9 @@ type IngressParams struct {
 }
 
 // GetIngress gets an ingress
-func GetIngress(endpoint v1.Endpoint, ingressParams IngressParams) *extensionsv1.Ingress {
+func GetIngress(ingressParams IngressParams) *extensionsv1.Ingress {
+
 	ingressSpec := getIngressSpec(ingressParams.IngressSpecParams)
-	ingressParams.ObjectMeta.Annotations = mergeMaps(ingressParams.ObjectMeta.Annotations, endpoint.Annotations)
 
 	ingress := &extensionsv1.Ingress{
 		TypeMeta:   ingressParams.TypeMeta,
@@ -260,9 +250,8 @@ func GetIngress(endpoint v1.Endpoint, ingressParams IngressParams) *extensionsv1
 }
 
 // GetNetworkingV1Ingress gets a networking v1 ingress
-func GetNetworkingV1Ingress(endpoint v1.Endpoint, ingressParams IngressParams) *networkingv1.Ingress {
+func GetNetworkingV1Ingress(ingressParams IngressParams) *networkingv1.Ingress {
 	ingressSpec := getNetworkingV1IngressSpec(ingressParams.IngressSpecParams)
-	ingressParams.ObjectMeta.Annotations = mergeMaps(ingressParams.ObjectMeta.Annotations, endpoint.Annotations)
 
 	ingress := &networkingv1.Ingress{
 		TypeMeta:   ingressParams.TypeMeta,
@@ -281,10 +270,9 @@ type RouteParams struct {
 }
 
 // GetRoute gets a route
-func GetRoute(endpoint v1.Endpoint, routeParams RouteParams) *routev1.Route {
+func GetRoute(routeParams RouteParams) *routev1.Route {
 
 	routeSpec := getRouteSpec(routeParams.RouteSpecParams)
-	routeParams.ObjectMeta.Annotations = mergeMaps(routeParams.ObjectMeta.Annotations, endpoint.Annotations)
 
 	route := &routev1.Route{
 		TypeMeta:   routeParams.TypeMeta,
@@ -396,30 +384,9 @@ func GetVolumesAndVolumeMounts(devfileObj parser.DevfileObj, volumeParams Volume
 		return nil, err
 	}
 
-	options.ComponentOptions = common.ComponentOptions{
-		ComponentType: v1.VolumeComponentType,
-	}
-	volumeComponent, err := devfileObj.Data.GetComponents(options)
-	if err != nil {
-		return nil, err
-	}
-
 	var pvcVols []corev1.Volume
 	for volName, volInfo := range volumeParams.VolumeNameToVolumeInfo {
-		emptyDirVolume := false
-		for _, volumeComp := range volumeComponent {
-			if volumeComp.Name == volName && *volumeComp.Volume.Ephemeral {
-				emptyDirVolume = true
-				break
-			}
-		}
-
-		// if `ephemeral=true`, a volume with emptyDir should be created
-		if emptyDirVolume {
-			pvcVols = append(pvcVols, getEmptyDirVol(volInfo.VolumeName))
-		} else {
-			pvcVols = append(pvcVols, getPVC(volInfo.VolumeName, volInfo.PVCName))
-		}
+		pvcVols = append(pvcVols, getPVC(volInfo.VolumeName, volInfo.PVCName))
 
 		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
 		containerNameToMountPaths := make(map[string][]string)
