@@ -42,6 +42,9 @@ func TestGetRegistryOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			cfg, err := preference.NewPreferenceInfo()
+			if err != nil {
+				t.Error(err)
+			}
 			err = cfg.SetConfiguration(preference.ConsentTelemetrySetting, tt.consent)
 			if err != nil {
 				t.Error(err)
@@ -58,7 +61,7 @@ func TestGetRegistryOptions(t *testing.T) {
 
 func verifyRegistryOptions(isSet bool, ro library.RegistryOptions) error {
 	if ro.SkipTLSVerify {
-		return errors.New(fmt.Sprintf("SkipTLSVerify should be set to false by default"))
+		return errors.New("SkipTLSVerify should be set to false by default")
 	}
 
 	return verifyTelemetryData(isSet, ro.Telemetry)
@@ -70,7 +73,7 @@ func verifyTelemetryData(isSet bool, data library.TelemetryData) error {
 			return nil
 		}
 
-		return errors.New(fmt.Sprintf("Locale %s and User %s should be unset when telemetry is not enabled ", data.Locale, data.User))
+		return fmt.Errorf("Locale %s and User %s should be unset when telemetry is not enabled ", data.Locale, data.User)
 
 	} else {
 		//we don't care what value locale and user have been set to.  We just want to make sure they are not empty
@@ -78,6 +81,6 @@ func verifyTelemetryData(isSet bool, data library.TelemetryData) error {
 			return nil
 		}
 
-		return errors.New(fmt.Sprintf("Locale %s and User %s should be set when telemetry is enabled ", data.Locale, data.User))
+		return fmt.Errorf("Locale %s and User %s should be set when telemetry is enabled ", data.Locale, data.User)
 	}
 }
