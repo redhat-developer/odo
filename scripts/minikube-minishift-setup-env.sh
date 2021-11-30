@@ -6,23 +6,8 @@ shout() {
   set -x
 }
 
-# Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
-export HOME=`pwd`/home
-export GOPATH="`pwd`/home/go"
-export GOBIN="$GOPATH/bin"
-mkdir -p $GOBIN
 # This si one of the variables injected by ci-firewall. Its purpose is to allow scripts to handle uniqueness as needed
 SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
-
-# Add GOBIN which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
-export PATH=$PATH:$GOBIN
-
-# Prep for integration/e2e
-shout "Building odo binaries"
-make bin
-
-# copy built odo to GOBIN
-cp -avrf ./odo $GOBIN/
 
 setup_kubeconfig() {
     export KUBECONFIG=$HOME/.kube/config
@@ -97,11 +82,6 @@ EOF
 }
 
 case ${1} in
-    minishift)
-        export MINISHIFT_ENABLE_EXPERIMENTAL=y 
-        export PATH="$PATH:/usr/local/go/bin/"
-        sh .scripts/minishift-start-if-required.sh
-        ;;
     minikube)
         mkStatus=$(minikube status)
         shout "| Checking if Minikube needs to be started..."
@@ -149,3 +129,20 @@ case ${1} in
         exit 1
         ;;
 esac
+
+# Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
+export HOME=`pwd`/home
+export GOPATH="`pwd`/home/go"
+export GOBIN="$GOPATH/bin"
+mkdir -p $GOBIN
+
+
+# Add GOBIN which is the bin dir we created earlier to PATH so any binaries there are automatically available in PATH
+export PATH=$PATH:$GOBIN
+
+# Prep for integration/e2e
+shout "Building odo binaries"
+make bin
+
+# copy built odo to GOBIN
+cp -avrf ./odo $GOBIN/
