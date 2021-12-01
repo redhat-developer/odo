@@ -40,7 +40,7 @@ SSHNodeFile
 
 === Running integration tests on Prow
 
-Prow is the Kubernetes or OpenShift way of managing workflow, including tests. Odo integration and periodic test targets are passed through the script scripts/openshiftci-presubmit-all-tests.sh and scripts/openshiftci-periodic-tests.sh respectively available in the https://github.com/redhat-developer/odo/tree/main/scripts[odo] repository. Prow uses the script through the command attribute of the odo job configuration file in https://github.com/openshift/release/tree/master/ci-operator/config/openshift/odo[openshift/release] repository.
+Prow is the Kubernetes or OpenShift way of managing workflow, including tests. Odo integration and periodic test targets are passed through the script scripts/openshiftci-presubmit-all-tests.sh and scripts/openshiftci-periodic-tests.sh respectively available in the https://github.com/redhat-developer/odo/tree/main/scripts[odo] repository. Prow uses the script through the command attribute of the odo job configuration file in https://github.com/openshift/release/tree/master/ci-operator/config/redhat-developer/odo[openshift/release] repository.
 
 For running integration test on 4.x cluster, job configuration file will be
 [source,sh]

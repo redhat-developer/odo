@@ -41,11 +41,11 @@ Note: Since operator [Dev4Devs PostgreSQL Operator](https://operatorhub.io/opera
 
 1. Create custom CatalogSource
 ```shell  
-oc apply -f https://raw.githubusercontent.com/openshift/odo/main/website/manifests/catalog-source-$(uname -m).yaml
+oc apply -f https://raw.githubusercontent.com/redhat-developer/odo/main/website/manifests/catalog-source-$(uname -m).yaml
 ```
 2. Install PostgreSQL Operator from custom CatalogSource
 ```shell
-oc create -f https://raw.githubusercontent.com/openshift/odo/main/website/manifests/postgresql-operator-dev4devs-com-IBM-Z-P.yaml
+oc create -f https://raw.githubusercontent.com/redhat-developer/odo/main/website/manifests/postgresql-operator-dev4devs-com-IBM-Z-P.yaml
 ```
 </details>
 

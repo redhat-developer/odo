@@ -21,7 +21,7 @@ if [ $KUBERNETES == "true" ]; then
   install_redis_operator kubectl operators operatorhubio-catalog olm
 elif [ $(uname -m) == "s390x" ]; then
   # create "operator-ibm-catalog" CatalogSource for s390x
-  oc apply -f https://raw.githubusercontent.com/openshift/odo/main/website/manifests/catalog-source-$(uname -m).yaml
+  oc apply -f https://raw.githubusercontent.com/redhat-developer/odo/main/website/manifests/catalog-source-$(uname -m).yaml
   # install "redis-oprator" using "oc" in "openshift-operators" namespace; use "operator-ibm-catalog" catalog source from "openshift-marketplace" namespace
   install_redis_operator oc openshift-operators operator-ibm-catalog openshift-marketplace
 else
