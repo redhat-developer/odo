@@ -11,10 +11,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -92,7 +92,7 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
-				// TODO: better way to handle this might be introduced by https://github.com/openshift/odo/issues/4553
+				// TODO: better way to handle this might be introduced by https://github.com/redhat-developer/odo/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
 				return false, err

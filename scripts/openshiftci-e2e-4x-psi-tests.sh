@@ -20,7 +20,7 @@ export TIMEOUT=${TIMEOUT:-"4h00m"}
 set -x
 
 export JOB_NAME=${JOB_NAME:-"odo-pr-build"}
-export REPO_URL="https://github.com/openshift/odo"
+export REPO_URL="https://github.com/redhat-developer/odo"
 # Extract PR NUMBER from prow job spec, which is injected by prow.
 export TARGET="$(jq .refs.pulls[0].number <<< $(echo $JOB_SPEC))"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR

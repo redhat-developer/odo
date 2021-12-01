@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/odo/cli/component"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // validDevfileDirectory returns an error if the "odo service" command is executed from a directory not containing devfile.yaml

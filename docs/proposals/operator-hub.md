@@ -63,7 +63,7 @@ of linking services to components without using the Operator.
 
 ## List the services/operators
 Taking this from [Tomas’s
-comment](https://github.com/openshift/odo/issues/2461#issuecomment-566577064)
+comment](https://github.com/redhat-developer/odo/issues/2461#issuecomment-566577064)
 on the issue. Added column for available plans. But do Operators have “PLANS”?
 We should prune the PLANS column and let that piece be handled by `odo catalog
 describe service <service-name>`.
@@ -118,7 +118,7 @@ $ odo service create <operator-name> <service-name> --crd <crd-name> -p paramete
 ```
 
 ## Link components with operands
-[GitHub issue](https://github.com/openshift/odo/issues/2463)
+[GitHub issue](https://github.com/redhat-developer/odo/issues/2463)
 
 In its current form, linking a component with another component/service
 involves making the Secrets (environment variables) of the component/service
@@ -132,7 +132,7 @@ the two without adding the dependency on this operator. This should help us be
 agnostic of backend cluster being OpenShift or Kubernetes.
 
 ## Listing the services
-[GitHub issue](https://github.com/openshift/odo/issues/2479)
+[GitHub issue](https://github.com/redhat-developer/odo/issues/2479)
 
 At the moment, we use `odo service list --app <app-name> --project
 <project-name>` to list the services in a given application and project. We
@@ -152,7 +152,7 @@ For Operator Hub instances, `TYPE` column could indicate the CRD used to spin
 up the CR/service.
 
 ## Describe deployed services
-[GitHub issue](https://github.com/openshift/odo/issues/2480)
+[GitHub issue](https://github.com/redhat-developer/odo/issues/2480)
 
 At the moment there’s no command in odo that describes a deployed service. We
 have  a command to describe a service in the Service Catalog: `odo catalog
@@ -167,7 +167,7 @@ something that would help them.
 4. Implement the command for both ServiceCatalog and OperatorHub
 
 ## Delete the service
-[GitHub issue](https://github.com/openshift/odo/issues/2481)
+[GitHub issue](https://github.com/redhat-developer/odo/issues/2481)
 
 At the moment, we use `odo service delete <service-name>` to delete the service
 deployed in OpenShift cluster. We should be able to delete the service
@@ -195,15 +195,15 @@ our existing CI?
 ## GitHub issues related to this task
 
 1. [Validating the cluster for operator and service catalog capability and odo
-   service list](https://github.com/openshift/odo/issues/2461)
+   service list](https://github.com/redhat-developer/odo/issues/2461)
 2. [odo service describe for operators +
-   services](https://github.com/openshift/odo/issues/2480)
+   services](https://github.com/redhat-developer/odo/issues/2480)
 3. [Instantiating operators using
-   CRDs](https://github.com/openshift/odo/issues/2462)
-4. [Status command for operators](https://github.com/openshift/odo/issues/2479)
+   CRDs](https://github.com/redhat-developer/odo/issues/2462)
+4. [Status command for operators](https://github.com/redhat-developer/odo/issues/2479)
 5. [Use the service binding operator to link operator and a
-   component](https://github.com/openshift/odo/issues/2463)
+   component](https://github.com/redhat-developer/odo/issues/2463)
 6. [Provide admin commands to install operators and one-off
-   setup](https://github.com/openshift/odo/issues/2464)
+   setup](https://github.com/redhat-developer/odo/issues/2464)
 7. [Enhance the odo service delete command to allow deletion of
-   operators](https://github.com/openshift/odo/issues/2481)
+   operators](https://github.com/redhat-developer/odo/issues/2481)

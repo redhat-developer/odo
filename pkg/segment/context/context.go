@@ -5,12 +5,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 const ComponentType = "componentType"

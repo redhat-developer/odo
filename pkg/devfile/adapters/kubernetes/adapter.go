@@ -4,12 +4,12 @@ import (
 	"io"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 // Adapter maps Devfiles to Kubernetes resources and actions

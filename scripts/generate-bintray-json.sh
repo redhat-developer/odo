@@ -40,9 +40,9 @@ cat > "./.bintray.json" <<EOF
         "repo": "odo",
         "subject": "odo",
         "desc": "OpenShift Command line for Developers",
-        "website_url": "https://github.com/openshift/odo",
-        "issue_tracker_url": "https://github.com/openshift/odo/issues",
-        "vcs_url": "https://github.com/openshift/odo.git",
+        "website_url": "https://github.com/redhat-developer/odo",
+        "issue_tracker_url": "https://github.com/redhat-developer/odo/issues",
+        "vcs_url": "https://github.com/redhat-developer/odo.git",
         "licenses": ["Apache-2.0"],
         "public_download_numbers": false,
         "public_stats": false

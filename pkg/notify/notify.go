@@ -4,13 +4,13 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 const (
 	// VersionFetchURL is the URL to fetch latest version number
-	VersionFetchURL = "https://raw.githubusercontent.com/openshift/odo/master/build/VERSION"
+	VersionFetchURL = "https://raw.githubusercontent.com/redhat-developer/odo/master/build/VERSION"
 )
 
 // getLatestReleaseTag polls odo's upstream GitHub repository to get the

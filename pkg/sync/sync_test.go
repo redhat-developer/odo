@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func Test_linearTar(t *testing.T) {

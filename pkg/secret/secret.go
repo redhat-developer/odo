@@ -2,16 +2,16 @@ package secret
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"strings"
 
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 	corev1 "k8s.io/api/core/v1"
 )
 import (
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 )
 
 // DetermineSecretName resolves the name of the secret that corresponds to the supplied component name and port

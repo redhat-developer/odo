@@ -6,15 +6,15 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/kclient"
-	odoTestingUtil "github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
+	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	appsv1 "k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"

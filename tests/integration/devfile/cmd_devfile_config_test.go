@@ -2,7 +2,7 @@ package devfile
 
 import (
 	. "github.com/onsi/ginkgo"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile config command tests", func() {

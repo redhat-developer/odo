@@ -14,13 +14,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/tests/helper/reporter"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/tests/helper/reporter"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/tidwall/gjson"
 )
 

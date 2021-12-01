@@ -3,7 +3,7 @@ package e2escenarios
 import (
 	"testing"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 func TestE2eScenarios(t *testing.T) {

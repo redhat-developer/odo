@@ -13,10 +13,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/sync/mock"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/sync/mock"
+	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 func TestGetCmdToCreateSyncFolder(t *testing.T) {

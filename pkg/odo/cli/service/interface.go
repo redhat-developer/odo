@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
 

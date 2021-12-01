@@ -24,7 +24,7 @@ If you are adding any features that require a higher version of golang, than the
 
 First setup your fork of the odo project, following the steps below
 
- . link:https://help.github.com/en/articles/fork-a-repo[Fork] the link:https://github.com/openshift/odo[`odo`] repository.
+ . link:https://help.github.com/en/articles/fork-a-repo[Fork] the link:https://github.com/redhat-developer/odo[`odo`] repository.
 
  . Clone your fork:
 +
@@ -33,9 +33,9 @@ we would be cloning it under `$GOPATH`
 +
 
 ----
-$ git clone https://github.com/<YOUR_GITHUB_USERNAME>/odo.git $GOPATH/src/github.com/openshift/odo
-$ cd $GOPATH/src/github.com/openshift/odo
-$ git remote add upstream 'https://github.com/openshift/odo'
+$ git clone https://github.com/<YOUR_GITHUB_USERNAME>/odo.git $GOPATH/src/github.com/redhat-developer/odo
+$ cd $GOPATH/src/github.com/redhat-developer/odo
+$ git remote add upstream 'https://github.com/redhat-developer/odo'
 ----
 +
 When cloning `odo`, the Windows terminal such as PowerShell or CMD may throw a *Filename too long* error. To avoid such an error, set your Git configuration as follows:
@@ -183,9 +183,9 @@ $ ./scripts/changelog-script.sh ${PREVIOUS_VERSION} ${NEW_VERSION}
 .. Create a PR to update `:tag` and `:revision` in the https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb[`odo.rb`] file
 in https://github.com/kadel/homebrew-odo[`kadel/homebrew-odo`].
 . Create a PR and update the file `build/VERSION` with the  latest version number.
-. Create a blog post! Follow the https://github.com/openshift/odo/tree/main/docs/blog[template.md] file and push it to the website (a tutorial is located on the https://github.com/openshift/odo/tree/gh-pages[gh-pages] branch of odo
-. After the blog post, ideally the CHANGELOG in the release should be the same as the blog post. This is an example of a good release changelog: https://github.com/openshift/odo/releases/tag/v2.0.0
-. Add the built site (including the blog post) to the release with `site.tar.gz` using the  https://github.com/openshift/odo/tree/gh-pages#bundling-the-site-for-releases[bundling the site for releases] guide.
+. Create a blog post! Follow the https://github.com/redhat-developer/odo/tree/main/docs/blog[template.md] file and push it to the website (a tutorial is located on the https://github.com/redhat-developer/odo/tree/gh-pages[gh-pages] branch of odo
+. After the blog post, ideally the CHANGELOG in the release should be the same as the blog post. This is an example of a good release changelog: https://github.com/redhat-developer/odo/releases/tag/v2.0.0
+. Add the built site (including the blog post) to the release with `site.tar.gz` using the  https://github.com/redhat-developer/odo/tree/gh-pages#bundling-the-site-for-releases[bundling the site for releases] guide.
 
 == Writing machine readable output code
 
@@ -251,7 +251,7 @@ personal access token.
 
 == Licenses
 
-`odo` uses link:https://github.com/frapposelli/wwhrd[wwhrd] to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in link:https://github.com/openshift/odo/blob/main/.wwhrd.yml[`.wwhrd.yml`].
+`odo` uses link:https://github.com/frapposelli/wwhrd[wwhrd] to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in link:https://github.com/redhat-developer/odo/blob/main/.wwhrd.yml[`.wwhrd.yml`].
 
 The `whitelist` section is for licenses that are always allowed. The `blacklist` section is for licenses that are never allowed and will always fail a build. Any licenses that are not explicitly mentioned come under the `exceptions` section and need to be explicitly allowed by adding the import path to the exceptions.
 

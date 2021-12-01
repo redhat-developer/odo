@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"k8s.io/klog"
 )

@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/util"
 
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"

@@ -1,7 +1,7 @@
 == Usage Data Collection
 With user approval, we collect pseudonymized user data that will help us improve odo.
 
-To learn more about what data is being collected and how to configure this collection, see link:{https://github.com/openshift/odo/blob/main/USAGE_DATA.adoc}[USAGE_DATA.adoc].
+To learn more about what data is being collected and how to configure this collection, see link:{https://github.com/redhat-developer/odo/blob/main/USAGE_DATA.adoc}[USAGE_DATA.adoc].
 
 
 == Data Collection Process

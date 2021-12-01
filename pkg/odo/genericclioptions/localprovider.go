@@ -3,7 +3,7 @@ package genericclioptions
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/spf13/cobra"
 )
 

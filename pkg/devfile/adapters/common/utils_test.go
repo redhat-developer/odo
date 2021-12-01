@@ -13,8 +13,8 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
-	odotestingutil "github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
+	odotestingutil "github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func TestIsEnvPresent(t *testing.T) {

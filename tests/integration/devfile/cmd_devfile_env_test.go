@@ -3,7 +3,7 @@ package devfile
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/tidwall/gjson"
 )
 

@@ -11,22 +11,22 @@ import (
 	"syscall"
 	"time"
 
-	commonutil "github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	commonutil "github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
-	"github.com/openshift/odo/pkg/version"
+	"github.com/redhat-developer/odo/pkg/version"
 
-	"github.com/openshift/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"gopkg.in/AlecAivazis/survey.v1"
 
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/segment"
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

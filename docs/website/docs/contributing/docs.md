@@ -3,7 +3,7 @@ title: Documentation
 sidebar_position: 3
 ---
 Below steps should help you get started with contributing to this website. Note that angular brackets (`<`, `>`) indicate placeholder data; you are not supposed to use them, but replace the brackets and text inside it with relevant information:
-* Fork the [odo repo](https://github.com/openshift/odo/) on GitHub under your namespace.
+* Fork the [odo repo](https://github.com/redhat-developer/odo/) on GitHub under your namespace.
 * Clone the forked repository on your system:
   ```shell
   $ git clone https://github.com/<your-namespace>/odo/
@@ -39,4 +39,4 @@ Below steps should help you get started with contributing to this website. Note 
   $ git commit --message "<brief-explanation-of-changes>"
   $ git push origin <branch-name> # use the <branch-name> from earlier step
   ```
-* Open a pull request by visiting the [odo repository on GitHub](https://github.com/openshift/odo/).
+* Open a pull request by visiting the [odo repository on GitHub](https://github.com/redhat-developer/odo/).

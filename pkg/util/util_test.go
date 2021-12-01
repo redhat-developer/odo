@@ -20,8 +20,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -2618,7 +2618,7 @@ func TestGetGitOriginPath(t *testing.T) {
 
 	_, err = repoWithOrigin.CreateRemote(&config.RemoteConfig{
 		Name: "origin",
-		URLs: []string{"git@github.com:openshift/odo.git"},
+		URLs: []string{"git@github.com:redhat-developer/odo.git"},
 	})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
@@ -2638,7 +2638,7 @@ func TestGetGitOriginPath(t *testing.T) {
 
 	_, err = repoWithoutOrigin.CreateRemote(&config.RemoteConfig{
 		Name: "upstream",
-		URLs: []string{"git@github.com:openshift/odo.git"},
+		URLs: []string{"git@github.com:redhat-developer/odo.git"},
 	})
 	if err != nil {
 		t.Errorf("unexpected error %v", err)
@@ -2657,7 +2657,7 @@ func TestGetGitOriginPath(t *testing.T) {
 			args: args{
 				path: tempGitDirWithOrigin,
 			},
-			want: "git@github.com:openshift/odo.git",
+			want: "git@github.com:redhat-developer/odo.git",
 		},
 		{
 			name: "case 2: remote named origin doesn't exists",

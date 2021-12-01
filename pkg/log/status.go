@@ -32,7 +32,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
-	"github.com/openshift/odo/pkg/log/fidget"
+	"github.com/redhat-developer/odo/pkg/log/fidget"
 	"github.com/spf13/pflag"
 	"golang.org/x/term"
 )

@@ -11,10 +11,10 @@ Devfiles support commands that can be triggered based on development lifecycle e
 ## User Stories
 Each lifecycle event would be suited to individual user stories. We propose that at least one issue is made for each of them for tracking and implementation purposes.
 
-- Add support for `preStart` commands: [preStart lifecycle event support](https://github.com/openshift/odo/issues/3565)
-- Add support for `postStart` commands: [container initialization support](https://github.com/openshift/odo/issues/2936)
-- Add support for `preStop` commands:  [preStop lifecycle event support](https://github.com/openshift/odo/issues/3566)
-- Add support for `postStop` commands: [postStop lifecycle event support](https://github.com/openshift/odo/issues/3577)
+- Add support for `preStart` commands: [preStart lifecycle event support](https://github.com/redhat-developer/odo/issues/3565)
+- Add support for `postStart` commands: [container initialization support](https://github.com/redhat-developer/odo/issues/2936)
+- Add support for `preStop` commands:  [preStop lifecycle event support](https://github.com/redhat-developer/odo/issues/3566)
+- Add support for `postStop` commands: [postStop lifecycle event support](https://github.com/redhat-developer/odo/issues/3577)
 
 ## Design overview
 Some of the events might not be useful for `odo` to adopt. We should only support the ones that have a clear use-case, and then add more as other use-cases emerge.

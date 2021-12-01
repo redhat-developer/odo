@@ -30,7 +30,7 @@ The tests are written in golang using the https://golang.org/pkg/testing/[pkg/te
 . Initialize the fake client along with the relevant client sets.
 The following example explains the initialization of fake clients and the creation of fake objects.
 +
-The function `GetImageStreams` in https://github.com/openshift/odo/blob/main/pkg/occlient/occlient.go[`pkg/occlient.go`] fetches imagestream objects through the API:
+The function `GetImageStreams` in https://github.com/redhat-developer/odo/blob/main/pkg/occlient/occlient.go[`pkg/occlient.go`] fetches imagestream objects through the API:
 +
 [source,go]
 ----
@@ -81,7 +81,7 @@ func (c *FakeImageStreams) List(opts v1.ListOptions) (result *image_v1.ImageStre
 The `List` function internally calls `NewListAction` defined in link:https://github.com/kubernetes/client-go/blob/master/testing/actions.go[`k8s.io/client-go/testing/actions.go`].
 From these functions, we see that the `resource` and `verb` to be passed into the `PrependReactor` interface are `imagestreams` and `list` respectively.
 +
-You can see the entire test function `TestGetImageStream` in link:https://github.com/openshift/odo/blob/main/pkg/occlient/occlient_test.go[`pkg/occlient/occlient_test.go`].
+You can see the entire test function `TestGetImageStream` in link:https://github.com/redhat-developer/odo/blob/main/pkg/occlient/occlient_test.go[`pkg/occlient/occlient_test.go`].
 +
 NOTE: You can use environment variable `CUSTOM_HOMEDIR` to specify a custom home directory. It can be used in environments where a user and home directory are not resolvable.
 
@@ -134,7 +134,7 @@ If you are running `operatorhub` tests then you need to install certain operator
 - Service Binding operator
 - Postgres operator
 
-Etcd and Service Binding operator can be installed by running link:https://github.com/openshift/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh[setup-operator.sh]. To install Postgres operator you can run the following commands
+Etcd and Service Binding operator can be installed by running link:https://github.com/redhat-developer/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh[setup-operator.sh]. To install Postgres operator you can run the following commands
 
 ----
   oc new-project odo-operator-test
@@ -176,11 +176,11 @@ E2e (End to end) uses the same library as integration test. E2e tests and test s
 
 *How to write:*
 
-Refer to the odo clean test link:https://github.com/openshift/odo/blob/main/tests/template/template_cleantest_test.go[`template`].
+Refer to the odo clean test link:https://github.com/redhat-developer/odo/blob/main/tests/template/template_cleantest_test.go[`template`].
 
 *Test guidelines:*
 
-Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/openshift/odo/tree/main/tests[`odo tests`]. For better understanding of writing test please refer Ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation] and Ginkgo's preferred matcher library Gomega link:http://onsi.github.io/gomega/[documentation].
+Please follow certain protocol before contributing to odo tests. This helps in how to contribute in link:https://github.com/redhat-developer/odo/tree/main/tests[`odo tests`]. For better understanding of writing test please refer Ginkgo link:https://onsi.github.io/ginkgo/#getting-ginkgo[documentation] and Ginkgo's preferred matcher library Gomega link:http://onsi.github.io/gomega/[documentation].
 
 * Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 +
@@ -289,7 +289,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 * If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. Avoid unnecessary function implementation within test files. Check to see if there is a helper function already implemented.
 +
 
-* If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the link:https://github.com/openshift/odo/tree/main/tests/helper[`helper package`] for more such reference.
+* If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the link:https://github.com/redhat-developer/odo/tree/main/tests/helper[`helper package`] for more such reference.
 +
 
 ----
@@ -355,7 +355,7 @@ NOTE: To see the number of available integration test file for validation, press
 
 *Running integration tests on Kubernetes:*
 
-By default, the link:https://github.com/openshift/odo/tree/main/tests/integration/devfile[`integration tests`] for the devfile feature run against a `kubernetes` cluster.
+By default, the link:https://github.com/redhat-developer/odo/tree/main/tests/integration/devfile[`integration tests`] for the devfile feature run against a `kubernetes` cluster.
 
 The tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two ways (parallel and sequential). To control the parallel run use environment variable `TEST_EXEC_NODES`. For example, the devfile tests can be run
 

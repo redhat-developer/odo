@@ -1,7 +1,7 @@
 package genericclioptions
 
 import (
-	pkgUtil "github.com/openshift/odo/pkg/util"
+	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 

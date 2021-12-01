@@ -8,8 +8,8 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/log"
 )
 
 // ExecClient  is a wrapper around ExecCMDInContainer which executes a command in a specific container of a pod.

@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	localConfigProvider "github.com/openshift/odo/pkg/localConfigProvider"
+	localConfigProvider "github.com/redhat-developer/odo/pkg/localConfigProvider"
 )
 
 // MockClient is a mock of Client interface.

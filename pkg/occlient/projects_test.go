@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	projectv1 "github.com/openshift/api/project/v1"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"

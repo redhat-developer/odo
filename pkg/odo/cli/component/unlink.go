@@ -3,9 +3,9 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"

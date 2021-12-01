@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 )
 
 // supervisorCommand encapsulates a supervisor-specific command
