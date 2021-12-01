@@ -931,17 +931,17 @@ var _ = Describe("odo devfile push command tests", func() {
 				It("should push the component successfully and check cpuLimit,cpuRequests,memoryRequests", func() {
 					By("check for cpuLimit", func() {
 						podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-						output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").ShouldPass().Out()
+						output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").ShouldPass().Out()
 						Expect(output).To(ContainSubstring(cpulimit))
 					})
 					By("check for cpuRequests", func() {
 						podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-						output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").ShouldPass().Out()
+						output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").ShouldPass().Out()
 						Expect(output).To(ContainSubstring(cpurequest))
 					})
 					By("check for memoryRequests", func() {
 						podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-						output = helper.Cmd("oc", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").ShouldPass().Out()
+						output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").ShouldPass().Out()
 						Expect(output).To(ContainSubstring(memoryrequest))
 					})
 				})
