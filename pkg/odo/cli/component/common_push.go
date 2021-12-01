@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/project"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )

@@ -3,7 +3,7 @@ package unions
 import (
 	"fmt"
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/openshift/odo/pkg/odogenerator"
+	"github.com/redhat-developer/odo/pkg/odogenerator"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/api/networking/v1"
 )

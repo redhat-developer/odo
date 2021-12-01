@@ -3,10 +3,10 @@ package catalog
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/cli/catalog/describe"
-	"github.com/openshift/odo/pkg/odo/cli/catalog/list"
-	"github.com/openshift/odo/pkg/odo/cli/catalog/search"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/describe"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/list"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/search"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/spf13/cobra"
 )

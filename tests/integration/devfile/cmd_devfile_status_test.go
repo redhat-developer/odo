@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -96,8 +96,8 @@ var _ = Describe("odo devfile status command tests", func() {
 		})
 		testCombo(false, false, "Route Nonsecure")
 		testCombo(true, false, "Ingress Nonsecure")
-		// testCombo(false, true, "Route Secure")   # Commented until issue https://github.com/openshift/odo/issues/5217 gets fixed
-		// testCombo(true, true, "Ingress Secure")  # Commented until issue https://github.com/openshift/odo/issues/5217 gets fixed
+		// testCombo(false, true, "Route Secure")   # Commented until issue https://github.com/redhat-developer/odo/issues/5217 gets fixed
+		// testCombo(true, true, "Ingress Secure")  # Commented until issue https://github.com/redhat-developer/odo/issues/5217 gets fixed
 
 		When("doing odo push", func() {
 			BeforeEach(func() {

@@ -3,7 +3,7 @@ package debug
 import (
 	"testing"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 func TestDebug(t *testing.T) {

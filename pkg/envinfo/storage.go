@@ -6,7 +6,7 @@ import (
 	"k8s.io/klog/v2"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 )
 
 const (

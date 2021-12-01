@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 const (

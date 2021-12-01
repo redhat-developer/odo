@@ -4,18 +4,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/unions"
+	"github.com/redhat-developer/odo/pkg/unions"
 
 	"github.com/golang/mock/gomock"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kclient_fake "github.com/openshift/odo/pkg/kclient/fake"
+	kclient_fake "github.com/redhat-developer/odo/pkg/kclient/fake"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery/fake"

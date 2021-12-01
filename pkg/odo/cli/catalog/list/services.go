@@ -6,12 +6,12 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
 

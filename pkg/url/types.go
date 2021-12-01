@@ -5,10 +5,10 @@ import (
 	"reflect"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/unions"
-	urlLabels "github.com/openshift/odo/pkg/url/labels"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/unions"
+	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

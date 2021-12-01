@@ -3,11 +3,11 @@ package project
 import (
 	"fmt"
 
-	odoerrors "github.com/openshift/odo/pkg/errors"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/project"
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	odoerrors "github.com/redhat-developer/odo/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/project"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spf13/cobra"

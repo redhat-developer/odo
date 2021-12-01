@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 const (

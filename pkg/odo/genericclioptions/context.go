@@ -3,18 +3,18 @@ package genericclioptions
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/odo/util"
-	odoutil "github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/devfile/validate"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/spf13/cobra"
 
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openshift/odo/pkg/version"
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 func TestGetLabels(t *testing.T) {

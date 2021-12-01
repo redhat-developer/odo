@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/devfile/adapters"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )

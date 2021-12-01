@@ -3,7 +3,7 @@ package devfile
 import (
 	"path/filepath"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,7 +38,7 @@ var _ = Describe("odo devfile log command tests", func() {
 			helper.Cmd("odo", "log", "--debug").ShouldFail()
 
 			/*
-				Flaky Test odo log -f, see issue https://github.com/openshift/odo/issues/3809
+				Flaky Test odo log -f, see issue https://github.com/redhat-developer/odo/issues/3809
 				match, err := helper.RunCmdWithMatchOutputFromBuffer(30*time.Second, "program=devrun", "odo", "log", "-f")
 				Expect(err).To(BeNil())
 				Expect(match).To(BeTrue())
@@ -61,7 +61,7 @@ var _ = Describe("odo devfile log command tests", func() {
 			Expect(output).To(ContainSubstring("ODO_COMMAND_DEBUG"))
 
 			/*
-				Flaky Test odo log -f, see issue https://github.com/openshift/odo/issues/3809
+				Flaky Test odo log -f, see issue https://github.com/redhat-developer/odo/issues/3809
 				match, err := helper.RunCmdWithMatchOutputFromBuffer(30*time.Second, "program=debugrun", "odo", "log", "-f")
 				Expect(err).To(BeNil())
 				Expect(match).To(BeTrue())

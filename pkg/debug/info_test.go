@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

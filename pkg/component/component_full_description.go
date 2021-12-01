@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/service"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/storage"
-	urlpkg "github.com/openshift/odo/pkg/url"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/storage"
+	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

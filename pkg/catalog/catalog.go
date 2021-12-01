@@ -7,20 +7,20 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/zalando/go-keyring"
 
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-	"github.com/openshift/odo/pkg/util"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
+	registryConsts "github.com/redhat-developer/odo/pkg/odo/cli/registry/consts"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // GetDevfileRegistries gets devfile registries from preference file,

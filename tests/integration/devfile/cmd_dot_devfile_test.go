@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	//We continued iterating on bracket pair guides. Horizontal lines now outline the scope of a bracket pair. Also, vertical lines now depend on the indentation of the code that is surrounded by the bracket pair.. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {

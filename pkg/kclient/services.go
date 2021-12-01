@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/pkg/errors"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

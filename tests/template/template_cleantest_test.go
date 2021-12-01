@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 // following command will run tests in Describe section below in parallel (in 2 nodes)

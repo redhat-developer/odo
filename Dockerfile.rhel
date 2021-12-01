@@ -3,8 +3,8 @@
 
 FROM registry.svc.ci.openshift.org/openshift/release:golang-1.16 AS builder
 
-COPY . /go/src/github.com/openshift/odo
-WORKDIR /go/src/github.com/openshift/odo
+COPY . /go/src/github.com/redhat-developer/odo
+WORKDIR /go/src/github.com/redhat-developer/odo
 RUN make cross
 
 FROM registry.access.redhat.com/ubi7/ubi
@@ -18,6 +18,6 @@ LABEL com.redhat.component=atomic-openshift-odo-cli-artifacts-container \
 # Change version as needed. Note no "-" is allowed
 LABEL version=2.4.3
 
-COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/darwin-amd64/odo /usr/share/openshift/odo/mac/odo
-COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/windows-amd64/odo.exe /usr/share/openshift/odo/windows/odo.exe
-COPY --from=builder /go/src/github.com/openshift/odo/dist/bin/linux-amd64/odo /usr/share/openshift/odo/linux/odo
+COPY --from=builder /go/src/github.com/redhat-developer/odo/dist/bin/darwin-amd64/odo /usr/share/openshift/odo/mac/odo
+COPY --from=builder /go/src/github.com/redhat-developer/odo/dist/bin/windows-amd64/odo.exe /usr/share/openshift/odo/windows/odo.exe
+COPY --from=builder /go/src/github.com/redhat-developer/odo/dist/bin/linux-amd64/odo /usr/share/openshift/odo/linux/odo

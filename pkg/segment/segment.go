@@ -15,11 +15,11 @@ import (
 
 	"github.com/Xuanwo/go-locale"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"github.com/openshift/odo/pkg/preference"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"k8s.io/klog"

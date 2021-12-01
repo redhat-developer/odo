@@ -36,4 +36,4 @@ We are working on some exciting features like:
 * Create `odo deploy` command to transition from inner loop to outer loop.
 * Support for Knative eventing.
 
-For a quick high level summary of the features we are planning to add, take a look at odo's [milestones on GitHub](https://github.com/openshift/odo/milestones).
+For a quick high level summary of the features we are planning to add, take a look at odo's [milestones on GitHub](https://github.com/redhat-developer/odo/milestones).

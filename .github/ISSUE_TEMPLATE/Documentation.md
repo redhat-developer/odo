@@ -9,7 +9,7 @@ about: Report mistakes or request for documentation
 
 Welcome! - We kindly ask you to:
 
-  1. Check the documents under https://github.com/openshift/odo/tree/main/docs
+  1. Check the documents under https://github.com/redhat-developer/odo/tree/main/docs
   2. Use the Google group if you have a question/doubt rather than a documentat mistake or request.
 
 The group is at: https://groups.google.com/forum/#!forum/odo-users

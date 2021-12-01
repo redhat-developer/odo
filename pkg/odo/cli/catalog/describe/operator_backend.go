@@ -11,11 +11,11 @@ import (
 	"text/tabwriter"
 
 	"github.com/go-openapi/spec"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/service"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/service"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog"
 )

@@ -15,7 +15,7 @@ fi
 
 for d in $(go list ./... | grep -v vendor | grep -v tests); do
     # For watch related tests, race check causes issue so disabling them here as race is already tested in other tests when used with `-coverprofile=profile.out`
-    if [ "$d" = "github.com/openshift/odo/pkg/component" ]; then
+    if [ "$d" = "github.com/redhat-developer/odo/pkg/component" ]; then
         go test -coverprofile=profile.out -covermode=atomic $d
     elif [ "${ARCH}" == "s390x" ]; then
         # The race detector is currently not supported on s390x .

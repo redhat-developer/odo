@@ -6,9 +6,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/log"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/log"
 )
 
 // DisplayServices displays the specified services

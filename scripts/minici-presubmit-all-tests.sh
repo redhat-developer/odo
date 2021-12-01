@@ -38,7 +38,7 @@ case $1 in
         ;;
 esac
 
-export REPO_URL="https://github.com/openshift/odo"
+export REPO_URL="https://github.com/redhat-developer/odo"
 # Extract PR NUMBER from prow job spec, which is injected by prow.
 export TARGET="$(jq .refs.pulls[0].number <<< $(echo $JOB_SPEC))"
 ##### ci-firewall parameters end

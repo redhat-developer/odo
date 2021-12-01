@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"

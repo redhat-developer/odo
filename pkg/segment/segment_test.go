@@ -15,14 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/preference"
-	scontext "github.com/openshift/odo/pkg/segment/context"
-	"github.com/openshift/odo/pkg/version"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/preference"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 type segmentResponse struct {

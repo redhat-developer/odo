@@ -10,7 +10,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 )
 
 func TestGetVolumeMountPath(t *testing.T) {

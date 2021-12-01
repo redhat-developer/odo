@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/openshift/odo/pkg/odo/cli"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/consts"
-	devfiletesting "github.com/openshift/odo/pkg/devfile/testing"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/devfile/consts"
+	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"

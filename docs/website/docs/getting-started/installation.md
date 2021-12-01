@@ -50,7 +50,7 @@ The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?item
 ## Installing from source
 1. Clone the repository and cd into it.
    ```shell
-   git clone https://github.com/openshift/odo.git
+   git clone https://github.com/redhat-developer/odo.git
    cd odo
    ```
 2. Install tools used by the build and test system.

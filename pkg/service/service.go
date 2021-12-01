@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -41,7 +41,7 @@ const ServiceKind = "app.kubernetes.io/service-kind"
 
 // DeleteOperatorService deletes an Operator backed service
 // TODO: make it unlink the service from component as a part of
-// https://github.com/openshift/odo/issues/3563
+// https://github.com/redhat-developer/odo/issues/3563
 func DeleteOperatorService(client kclient.ClientInterface, serviceName string) error {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
@@ -226,7 +226,7 @@ func IsOperatorServiceNameValid(name string) (string, string, error) {
 // exists or not. It takes 'serviceName' of the format
 // '<service-kind>/<service-name>'. For example: EtcdCluster/example.
 // It doesn't bother about application since
-// https://github.com/openshift/odo/issues/2801 is blocked
+// https://github.com/redhat-developer/odo/issues/2801 is blocked
 func OperatorSvcExists(client kclient.ClientInterface, serviceName string) (bool, error) {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {

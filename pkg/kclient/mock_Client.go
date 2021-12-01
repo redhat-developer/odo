@@ -10,9 +10,9 @@ import (
 
 	spec "github.com/go-openapi/spec"
 	gomock "github.com/golang/mock/gomock"
-	log "github.com/openshift/odo/pkg/log"
-	unions "github.com/openshift/odo/pkg/unions"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	log "github.com/redhat-developer/odo/pkg/log"
+	unions "github.com/redhat-developer/odo/pkg/unions"
 	v1 "k8s.io/api/apps/v1"
 	v10 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"

@@ -6,12 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
+	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
 
 	"os"
 	"path/filepath"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile delete command tests", func() {
@@ -175,7 +175,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 						},
 					})
 
-					// Dependent resources should be marked to be deleted (see https://github.com/openshift/odo/issues/4593)
+					// Dependent resources should be marked to be deleted (see https://github.com/redhat-developer/odo/issues/4593)
 					helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
 						{
 							ResourceType: helper.ResourceTypeIngress,

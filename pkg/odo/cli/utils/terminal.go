@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
-	util2 "github.com/openshift/odo/pkg/util"
+	util2 "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

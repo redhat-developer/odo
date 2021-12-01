@@ -1,10 +1,10 @@
 = test-architecture-ppc64le
 For all tests on ppc64le arch, the openshift cluster version is 4.3 or newer.
-The prerequisites, please refer to default https://github.com/openshift/odo/blob/main/docs/dev/test-architecture.adoc[test-architecture]!
+The prerequisites, please refer to default https://github.com/redhat-developer/odo/blob/main/docs/dev/test-architecture.adoc[test-architecture]!
 
 == Running integration and e2e tests locally
 
-Odo CI for ppc64le is running locally now.The scripts/configure-installer-tests-cluster-ppc64le.sh is available in the https://github.com/openshift/odo/tree/main/scripts[odo] repository to help configure the test environment and the scripts/openshiftci-presubmit-all-tests.sh is available in the https://github.com/openshift/odo/tree/main/scripts[odo] repository to run integration and e2e tests covered on ppc64le arch.  
+Odo CI for ppc64le is running locally now.The scripts/configure-installer-tests-cluster-ppc64le.sh is available in the https://github.com/redhat-developer/odo/tree/main/scripts[odo] repository to help configure the test environment and the scripts/openshiftci-presubmit-all-tests.sh is available in the https://github.com/redhat-developer/odo/tree/main/scripts[odo] repository to run integration and e2e tests covered on ppc64le arch.  
 For running all covered integration and e2e tests on 4.x cluster, you can run:
 ----
 	./scripts/openshiftci-presubmit-all-tests.sh

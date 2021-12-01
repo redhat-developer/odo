@@ -1,3 +1,4 @@
+//go:build !osx
 // +build !osx
 
 package watch
@@ -14,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // setUpF8AnalyticsComponentSrc sets up a mock analytics component source base for observing changes to source files.

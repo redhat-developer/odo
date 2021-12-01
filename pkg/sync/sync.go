@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
 )

@@ -11,9 +11,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/preference"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	// api clientsets
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"

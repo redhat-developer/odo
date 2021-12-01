@@ -16,7 +16,7 @@ import (
 	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"

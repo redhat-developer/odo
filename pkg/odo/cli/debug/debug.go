@@ -3,7 +3,7 @@ package debug
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

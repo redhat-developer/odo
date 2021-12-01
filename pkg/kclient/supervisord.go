@@ -1,7 +1,7 @@
 package kclient
 
 import (
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 
 	corev1 "k8s.io/api/core/v1"
 )

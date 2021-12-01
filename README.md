@@ -1,7 +1,7 @@
 `odo` - Developer-focused CLI for Kubernetes and OpenShift
 ---
 
-[![GitHub release](https://img.shields.io/github/v/release/openshift/odo?style=for-the-badge)](https://github.com/openshift/odo/releases/latest)
+[![GitHub release](https://img.shields.io/github/v/release/openshift/odo?style=for-the-badge)](https://github.com/redhat-developer/odo/releases/latest)
 ![License](https://img.shields.io/github/license/openshift/odo?style=for-the-badge)
 [![Godoc](https://img.shields.io/badge/godoc-reference-007d9c?logo=go&logoColor=white&style=for-the-badge)](https://odo.dev/godoc)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/e07867b0-56a4-4905-92a9-a152ceab5f0d/deploy-status)](https://app.netlify.com/sites/odo-docusaurus-preview/deploys)
@@ -58,7 +58,7 @@ Ask questions, inquire about odo or even discuss a new feature.
 
 #### Issues
 
-If you find an issue with `odo`, please [file it here](https://github.com/openshift/odo/issues).
+If you find an issue with `odo`, please [file it here](https://github.com/redhat-developer/odo/issues).
 
 
 #### Contributing

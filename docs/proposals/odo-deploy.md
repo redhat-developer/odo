@@ -36,7 +36,7 @@ User flow:
 
 ## User stories
 
-### Initial build and deploy support to odo - https://github.com/openshift/odo/issues/3300
+### Initial build and deploy support to odo - https://github.com/redhat-developer/odo/issues/3300
 
 ## Design overview
 `odo deploy` could provide developers with a way to build a container image for their application and deploy it on a target Kubernetes deployment using the build/deploy guidance provided by the devfile.

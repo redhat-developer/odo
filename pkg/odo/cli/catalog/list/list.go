@@ -2,7 +2,7 @@ package list
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 

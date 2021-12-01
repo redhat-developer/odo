@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/go-openapi/spec"
-	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

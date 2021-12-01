@@ -5,20 +5,20 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/util"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/devfile/adapters"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/log"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/log"
 )
 
 // DevfilePush has the logic to perform the required actions for a given devfile

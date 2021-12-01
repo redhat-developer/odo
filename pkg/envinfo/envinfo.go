@@ -9,14 +9,14 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type RUNMode string

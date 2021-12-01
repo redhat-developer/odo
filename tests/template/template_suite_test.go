@@ -3,7 +3,7 @@ package template
 import (
 	"testing"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 func TestTemplate(t *testing.T) {

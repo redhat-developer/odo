@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"

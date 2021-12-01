@@ -20,8 +20,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	corev1 "k8s.io/api/core/v1"
 )
 

@@ -6,15 +6,15 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/storage"
-	urlPkg "github.com/openshift/odo/pkg/url"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/storage"
+	urlPkg "github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

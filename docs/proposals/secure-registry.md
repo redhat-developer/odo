@@ -73,5 +73,5 @@ Create devfile component from secure registry:
 When downloading devfile from secure registry, we validate if the credential is valid by adding token to the request header and checking the response.
 
 ## Related issues
-- Dynamic registry support: https://github.com/openshift/odo/pull/2940
-- Performance improvement for `odo catalog list components`: https://github.com/openshift/odo/pull/3112
+- Dynamic registry support: https://github.com/redhat-developer/odo/pull/2940
+- Performance improvement for `odo catalog list components`: https://github.com/redhat-developer/odo/pull/3112

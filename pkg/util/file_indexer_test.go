@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestCheckGitIgnoreFile(t *testing.T) {

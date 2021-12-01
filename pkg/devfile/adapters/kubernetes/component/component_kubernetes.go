@@ -6,11 +6,11 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/service"
 	"github.com/pkg/errors"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/service"
 )
 
 // componentKubernetes represents a devfile component of type Kubernetes

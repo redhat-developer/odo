@@ -1,8 +1,8 @@
 package labels
 
 import (
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/pkg/version"
+	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // ApplicationLabel is label key that is used to group all object that belong to one application
