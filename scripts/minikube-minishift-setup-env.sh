@@ -13,11 +13,13 @@ setup_operator() {
   SETUP_OPERATORS="./scripts/configure-cluster/common/setup-operators.sh"
 
   # The OLM Version
-  export OLM_VERSION="v0.17.0"
+  LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/operator-framework/operator-lifecycle-manager/releases/latest)
+  OLM_VERSION=$(echo $LATEST_RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
+  export OLM_VERSION=${OLM_VERSION:-"v0.17.0"}
   # Enable OLM for running operator tests
   curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$OLM_VERSION/install.sh | bash -s $OLM_VERSION
 
-  # Create Operators for Operator tests
+  # Install Operators for Operator tests
   sh $SETUP_OPERATORS
 }
 
