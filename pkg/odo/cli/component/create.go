@@ -39,8 +39,8 @@ type CreateOptions struct {
 	portFlag    []string
 	envFlag     []string
 	nowFlag     bool
+	appFlag     string
 
-	appName     string
 	interactive bool
 
 	// devfileName stores the "componentType" passed by user irrespective of it being a valid componentType
@@ -126,7 +126,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return err
 	}
 	// Get the app name
-	co.appName = genericclioptions.ResolveAppFlag(cmd)
+	co.appFlag = genericclioptions.ResolveAppFlag(cmd)
 	// Get the project name
 	co.devfileMetadata.componentNamespace = co.Context.GetProject()
 	// Get DevfilePath
@@ -303,7 +303,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
 		Name:               co.devfileMetadata.componentName,
 		Project:            co.devfileMetadata.componentNamespace,
-		AppName:            co.appName,
+		AppName:            co.appFlag,
 		UserCreatedDevfile: co.devfileMetadata.userCreatedDevfile,
 	})
 	if err != nil {
