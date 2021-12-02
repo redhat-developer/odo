@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/devfile/registry-support/registry-library/library"
-	"github.com/openshift/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"io/ioutil"
 	"os"
 	"testing"
