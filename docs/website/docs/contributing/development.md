@@ -11,7 +11,7 @@ Testing and release builds happen with the above version. Developers are advised
 
 
 **Warning:**
-If you are adding any features that require a higher version of golang, than the one mentioned above, please contact the maintainers in order to check if the releasing systems can handle the newer version. If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
+If you are adding any features that require a higher version of golang than the one mentioned above, please contact the maintainers in order to check if the releasing systems can handle the newer version. If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
 
 List of files to update for golang version:
 * [scripts/rpm-prepare.sh](https://github.com/openshift/odo/blob/main/scripts/rpm-prepare.sh)
@@ -60,7 +60,7 @@ First setup your fork of the odo project, following the steps below
 Read the [Makefile](https://github.com/openshift/odo/blob/main/Makefile) itself for more information.
 
 ### Submitting a pull request(PR)
-To submit a PR, you must first create a branch from your fork, commits your changes to the branch, and push them on to GitHub.
+To submit a PR, you must first create a branch from your fork, commit your changes to the branch, and push them on to GitHub.
 A "signed-off" signature is good practice. You may sign your commit using `git commit -s` or `git commit --amend --no-edit -s` to a previously created commit
 
 Refer to the guidelines below, and create a PR with your changes.
@@ -72,7 +72,7 @@ Once you submit a PR, the @openshift-ci-bot will automatically request two revie
 
 ### Setting custom Init Container image for bootstrapping Supervisord
 For quick deployment of components, odo uses the [Supervisord](https://github.com/ochinchina/supervisord) process manager.
-Supervisord is deployed via [Init Container](https://docs.openshift.com/container-platform/4.1/nodes/containers/nodes-containers-init.html) image. 
+Supervisord is deployed via [Init Container](https://docs.openshift.com/container-platform/latest/nodes/containers/nodes-containers-init.html) image. 
 
 `ODO_BOOTSTRAPPER_IMAGE` is an environmental variable which specifies the Init Container image used for Supervisord deployment.  You can modify the value of the variable to use a custom Init Container image.
 The default Init Container image is `quay.io/openshiftdo/init` 
@@ -82,7 +82,7 @@ To set a custom Init Container image, run:
 export ODO_BOOTSTRAPPER_IMAGE=quay.io/myrepo/myimage:test
 ```
 
-To revert back to the default Init Container image, unset the variable:
+To revert to the default Init Container image, unset the variable:
 
 ```shell
 unset ODO_BOOTSTRAPPER_IMAGE
@@ -153,12 +153,6 @@ func main() {
 }
 ```
 
-### odo-bot
-
-[odo-bot](https://github.com/odo-bot) is the GitHub user that provides automation for certain tasks in odo.
-
-It uses the `.travis.yml` script to upload binaries to the GitHub release page using the *deploy-github-release*
-personal access token.
 
 ### Licenses
 
