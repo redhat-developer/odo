@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"hash/adler32"
 	"reflect"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -84,8 +85,9 @@ func GetURLString(protocol, URL, ingressDomain string) string {
 }
 
 // getDefaultTLSSecretName returns the name of the default tls secret name
-func getDefaultTLSSecretName(componentName, appName string) string {
-	return componentName + "-" + appName + "-tlssecret"
+func getDefaultTLSSecretName(urlName string, componentName, appName string) string {
+	suffix := fmt.Sprintf("%08x", adler32.Checksum([]byte(urlName+appName+componentName)))
+	return urlName + "-" + suffix + "-tls"
 }
 
 // ConvertExtensionV1IngressURLToIngress converts IngressURL to Ingress

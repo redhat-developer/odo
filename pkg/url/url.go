@@ -114,7 +114,7 @@ func Push(parameters PushParameters) error {
 				// the default secret name is used during creation
 				// thus setting it to the local URLs to avoid config mismatch
 				if val.Spec.Secure && val.Spec.TLSSecret == "" {
-					val.Spec.TLSSecret = getDefaultTLSSecretName(parameters.LocalConfigProvider.GetName(), parameters.LocalConfigProvider.GetApplication())
+					val.Spec.TLSSecret = getDefaultTLSSecretName(urlName, parameters.LocalConfigProvider.GetName(), parameters.LocalConfigProvider.GetApplication())
 				}
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			} else if val.Spec.Kind == localConfigProvider.ROUTE {
