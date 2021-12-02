@@ -2,12 +2,6 @@
 title: Getting involved in the Community
 sidebar_position: 0
 ---
-### Events
-
-#### Past events
-
-* [April 28-29 2020 - Red Hat Summit](https://www.redhat.com/en/summit)
-* [May 5-6 2020 - IBM Think Digital](https://www.ibm.com/events/think/)
 
 ### Join Slack
 
@@ -19,15 +13,12 @@ Ask questions, inquire about odo or even discuss a new feature.
 
 ### Email list
 
-For general help and inquiries as well as developmental discussion, we use Google Groups as our email list.
-
-* For general help and inquiries - [odo-users Google
+For general help and inquiries - [odo-users Google
    group](https://groups.google.com/forum/#!forum/odo-users)
-* Developmental discussion - [odo-dev Google group](https://groups.google.com/forum/#!forum/odo-dev)
 
 ### Issues
 
-* If you have any issues with odo, please [file a GitHub issue](https://github.com/openshift/odo/issues)
+* If you face any issues while using odo, please [file a GitHub issue](https://github.com/openshift/odo/issues)
 
 * Documentation issues can be filed with the [documentation template](https://github.com/openshift/odo/issues/new?template=Documentation.md)
 
