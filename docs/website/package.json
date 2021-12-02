@@ -18,6 +18,7 @@
     "@docusaurus/preset-classic": "^2.0.0-beta.ff31de0ff",
     "@docusaurus/theme-search-algolia": "^2.0.0-beta.ff31de0ff",
     "@mdx-js/react": "^1.6.21",
+    "@segment/snippet": "^4.15.3",
     "@svgr/webpack": "^5.5.0",
     "browserslist": "^4.16.5",
     "clsx": "^1.1.1",

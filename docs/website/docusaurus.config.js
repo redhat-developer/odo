@@ -13,7 +13,17 @@ module.exports = {
   favicon: 'img/favicon.ico',
   organizationName: 'openshift', // Usually your GitHub org/user name.
   projectName: 'odo', // Usually your repo name.
-  plugins: [path.resolve(__dirname, 'docusaurus-odo-plugin-segment')],
+  plugins: [
+      [
+          path.resolve(__dirname, 'docusaurus-odo-plugin-segment'),
+        {
+          apiKey: 'seYXMF0tyHs5WcPsaNXtSEmQk3FqzTz0',
+          options: {
+            context: {ip: '0.0.0.0'}
+          }
+        }
+      ]
+  ],
   themeConfig: {
     navbar: {
       title: 'odo',
