@@ -3,8 +3,8 @@ package segment
 import (
 	"github.com/Xuanwo/go-locale"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryConsts "github.com/openshift/odo/pkg/odo/cli/registry/consts"
-	"github.com/openshift/odo/pkg/preference"
+	registryConsts "github.com/redhat-developer/odo/pkg/odo/cli/registry/consts"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"k8s.io/klog"
 )
 

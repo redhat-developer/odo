@@ -3,7 +3,7 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/segment"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"net/url"
 	"strings"
 	"sync"
@@ -17,10 +17,10 @@ import (
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
-  "github.com/redhat-developer/odo/pkg/util"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // GetDevfileRegistries gets devfile registries from preference file,
