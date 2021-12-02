@@ -1,5 +1,5 @@
 ---
-title:  Test Guide
+title:  Writing and running tests
 sidebar_position: 5
 ---
 
@@ -11,6 +11,19 @@ Testing happens with the above version. Developers are advised to stick to this 
 
 We use unit, integration and e2e (End to end) tests.
 Run `make goget-tools` target to set up the integration test environment. Unit tests do not require any precondition.   
+
+#### Test variables:
+
+There are some test environment variable that helps to get more control over the test run and it's results
+
+- TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
+
+- SLOW_SPEC_THRESHOLD: Env variable SLOW_SPEC_THRESHOLD is used for ginkgo tests. After this time (in second), ginkgo marks test as slow. The default value is set to 120s.
+
+- GINKGO_TEST_ARGS: Env variable GINKGO_TEST_ARGS is used to get control over enabling test flags against each test target run. For example, To enable verbosity export or set env GINKGO_TEST_ARGS like `GINKGO_TEST_ARGS=-v`.
+
+- UNIT_TEST_ARGS: Env variable UNIT_TEST_ARGS is used to get control over enabling test flags along with go test. For example, To enable verbosity export or set env UNIT_TEST_ARGS like `UNIT_TEST_ARGS=-v`.
+
 
 #### Setting up test environment for integration and e2e tests
 - **OpenShift:**
@@ -38,37 +51,58 @@ Unit tests for `odo` functions are written using package [fake](https://godoc.or
 The tests are written in golang using the [pkg/testing](https://golang.org/pkg/testing/) package.
 Run `make test` to validate unit tests.
 
-[//]: # (TODO: Writing unit tests using the fake Kubernetes client)
-
-### Integration tests:
+### Integration tests
 
 Integration tests utilize [Ginkgo](https://github.com/onsi/ginkgo) and its preferred matcher library [Gomega](https://github.com/onsi/gomega) which define sets of test cases (spec). As per ginkgo test file comprises specs and these test file are controlled by test suite. 
 
 Test and test suite files are located in `tests/integration` directory and can be called using `make test-integration`. 
 
+Integration tests validate and focus on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
+
+By default, the [integration tests](https://github.com/openshift/odo/tree/main/tests/integration/devfile) for the devfile feature run against a `kubernetes` cluster.
+
+#### Running integration tests
+Integration tests can be run in two ways, parallel and sequential. By default, the test will run in parallel on 4 ginkgo test node.
+- **Parallel Run:** To run the component command integration tests in parallel, on a test cluster:
+  ```shell
+  make test-cmp-e2e
+  ```
+  To control the parallel run, use the environment variable `TEST_EXEC_NODES`.
+
+- **Sequential Run:** To run the component command integration tests sequentially or on single ginkgo test node:
+  ```shell
+  TEST_EXEC_NODES=1 make test-cmd-cmp
+  ```
+  `make test-cmd-login-logout` doesn't honour environment variable `TEST_EXEC_NODES`. By default, login and logout command integration test suites are run on a single ginkgo test node sequentially to avoid race conditions during a parallel run.
+
+To see the number of available integration test files for validation, press `tab` just after writing `make test-cmd-`. However, there is a test file `generic_test.go` which handles certain test specs easily, and we can run it in parallel by calling `make test-generic`. By calling `make test-integration`, the whole suite will run all the specs in parallel on 4 ginkgo test nodes except `service` and `link`.
+
 To run ONE individual test, you can either:
-* Supply the name via command-line: 
+* Supply the name via command-line:
   ```shell
   ginkgo -focus="When executing catalog list without component directory" tests/integration/
   ```
 * Modify the `It` statement to `FIt` and run:
-	```shell
-	ginkgo tests/integration/
-	```
- 
-Integration tests validate and focus on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
+  ```shell
+  ginkgo tests/integration/
+  ```
 
 If you are running `operatorhub` tests, then you need to install certain operators on the cluster, which can be installed by running [setup-operator.sh](https://github.com/openshift/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh).
 
-#### E2e tests:
+### E2e tests
 
 E2e (End to end) uses the same library as integration test. E2e tests and test suite files are located in `tests/e2escenarios` directory and can be called using `.PHONY` within `makefile`. Basically end to end (e2e) test contains user specific scenario that is combination of some features/commands in a single test file.
 
-### Writing a test case
+#### Running E2e tests:
+
+End-to-end(E2e) test run behaves in the similar way like integration test does. To see the number of available e2e test file for execution, press `tab` just after writing `make test-e2e-`. For e2e suite level execution of all e2e test spec use `make test-e2e-all`.
+
+### Writing Tests
 
 Refer to the odo clean test [template](https://github.com/openshift/odo/blob/main/tests/template/template_cleantest_test.go).
 
 #### Test guidelines:
+[//]: # (TODO: Writing unit tests using the fake Kubernetes client)
 
 Please follow certain protocol before contributing to odo tests. This helps in contributing to [odo tests](https://github.com/openshift/odo/tree/main/tests). For better understanding of writing test please refer [Ginkgo](https://onsi.github.io/ginkgo/#getting-ginkgo) and it's preferred matcher library [Gomega](http://onsi.github.io/gomega/).
 
@@ -180,39 +214,3 @@ Please follow certain protocol before contributing to odo tests. This helps in c
 - The test spec should run in parallel (Default) or sequentially as per choice. Check test template for reference.
 
 - Run tests on local environment before pushing PRs.
-
-#### Test variables:
-
-There are some test environment variable that helps to get more control over the test run and it's results
-
-- TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
-
-- SLOW_SPEC_THRESHOLD: Env variable SLOW_SPEC_THRESHOLD is used for ginkgo tests. After this time (in second), ginkgo marks test as slow. The default value is set to 120s.
-
-- GINKGO_TEST_ARGS: Env variable GINKGO_TEST_ARGS is used to get control over enabling test flags against each test target run. For example, To enable verbosity export or set env GINKGO_TEST_ARGS like `GINKGO_TEST_ARGS=-v`.
-
-- UNIT_TEST_ARGS: Env variable UNIT_TEST_ARGS is used to get control over enabling test flags along with go test. For example, To enable verbosity export or set env UNIT_TEST_ARGS like `UNIT_TEST_ARGS=-v`.
-
-#### Running integration tests:
-Integration tests can be run in two ways, parallel and sequential. By default, the test will run in parallel on 4 ginkgo test node.
-- **Parallel Run:** To run the component command integration tests in parallel, on a test cluster:
-  ```shell
-  make test-cmp-e2e
-  ```
-  To control the parallel run, use the environment variable `TEST_EXEC_NODES`.
-
-- **Sequential Run:** To run the component command integration tests sequentially or on single ginkgo test node:
-  ```shell
-  TEST_EXEC_NODES=1 make test-cmd-cmp
-  ```
-	`make test-cmd-login-logout` doesn't honour environment variable `TEST_EXEC_NODES`. By default, login and logout command integration test suites are run on a single ginkgo test node sequentially to avoid race conditions during a parallel run.
-
-To see the number of available integration test files for validation, press `tab` just after writing `make test-cmd-`. However, there is a test file `generic_test.go` which handles certain test specs easily, and we can run it in parallel by calling `make test-generic`. By calling `make test-integration`, the whole suite will run all the specs in parallel on 4 ginkgo test nodes except `service` and `link`. 
-
-
-By default, the [integration tests](https://github.com/openshift/odo/tree/main/tests/integration/devfile) for the devfile feature run against a `kubernetes` cluster.
-
-
-#### Running e2e tests:
-
-End-to-end(E2e) test run behaves in the similar way like integration test does. To see the number of available e2e test file for execution, press `tab` just after writing `make test-e2e-`. For e2e suite level execution of all e2e test spec use `make test-e2e-all`. 
