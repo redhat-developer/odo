@@ -2,7 +2,7 @@
 title: odo storage
 sidebar_position: 7
 ---
-`odo` lets users manage storage volumes in the cluster. A storage volume is a [PVC](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim), which is a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without understanding the details of the particular cloud environment. The storage volume can be used to persist data across restarts and rebuilds of the component.
+odo lets users manage storage volumes in the cluster. A storage volume is a [PVC](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim), which is a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without understanding the details of the particular cloud environment. The storage volume can be used to persist data across restarts and rebuilds of the component.
 
 ### Adding a storage volume
 
@@ -21,7 +21,7 @@ Please use `odo push` command to make the storage accessible to the component
 
 The storage volume in the above example has been mounted to the `/data` path and has a size of `1Gi`
 
-### Listing a storage volumes
+### Listing the storage volumes
 
 We can check the storage volumes currently used by the component using `odo storage list`.
 ```shell
@@ -56,7 +56,7 @@ In the above example, using `-f` forcefully deletes the storage without asking u
 If your devfile has multiple containers, you can specify to which container you want the
 storage to attach to using the `--container` flag in the `odo storage create` command.
 
-Following is an example devfile(partial excerpt) with multiple containers :
+Following is an excerpt from an example devfile with multiple containers :
 ```yaml
 components:
   - name: runtime
@@ -74,7 +74,7 @@ components:
 ```
 
 
-Here, we have 2 containers, with names `runtime` and `funtime`. To attach a storage, only to the `funtime` container, we can do
+Here, we have two containers - `runtime` and `funtime`. To attach a storage, only to the `funtime` container, we can do
 ```shell
 odo storage create --container
 ```
