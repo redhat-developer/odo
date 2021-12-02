@@ -4,8 +4,6 @@ LOGFILE="pr-${GIT_PR_NUMBER}-openshift-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
-install_oc
-
 oc login -u apikey -p "${API_KEY}" "${IBM_OPENSHIFT_ENDPOINT}"
 
 (
@@ -20,8 +18,7 @@ oc login -u apikey -p "${API_KEY}" "${IBM_OPENSHIFT_ENDPOINT}"
 ) |& tee "/tmp/${LOGFILE}"
 RESULT=${PIPESTATUS[0]}
 
-install_ibmcloud cloud-object-storage
-install_gh
+ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 save_logs "${LOGFILE}" "OpenShift Tests"
 
 exit ${RESULT}

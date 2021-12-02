@@ -4,11 +4,8 @@ LOGFILE="pr-${GIT_PR_NUMBER}-kubernetes-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
-install_ibmcloud cloud-object-storage kubernetes-service
-
+ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 ibmcloud ks cluster config --cluster "${IBM_KUBERNETES_ID}" --admin
-
-install_kubectl
 
 (
     set -e
@@ -19,7 +16,6 @@ install_kubectl
 ) |& tee "/tmp/${LOGFILE}"
 RESULT=${PIPESTATUS[0]}
 
-install_gh
 save_logs "${LOGFILE}" "Kubernetes Tests"
 
 exit ${RESULT}
