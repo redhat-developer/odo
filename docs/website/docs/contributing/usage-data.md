@@ -4,7 +4,7 @@ sidebar_position: 11
 ---
 With user approval, we collect [pseudonymized](https://en.wikipedia.org/wiki/Pseudonymization) user data that will help us improve odo.
 
-To learn more about what data is being collected and how to configure this collection, see [here](https://github.com/openshift/odo/blob/main/USAGE_DATA.md).
+To learn more about what data is being collected and how to configure this collection, see [here](https://github.com/redhat-developer/odo/blob/main/USAGE_DATA.md).
 
 
 Considering the user has approved to data collection, everytime a command is executed, it triggers a background process that sends the data to our servers.

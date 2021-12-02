@@ -50,19 +50,19 @@ This document outlines the breaking changes that were introduced in odo 2.2. Wit
 
 3.  **`odo env set DebugPort` won't work with converted devfile components, you would need to use `odo config set --env DEBUG_PORT` instead.**
 
-   Currently, the `wildfly` and `dotnet` component types do not work when converted. We have an issue open for this - <https://github.com/openshift/odo/issues/4623>
+   Currently, the `wildfly` and `dotnet` component types do not work when converted. We have an issue open for this - <https://github.com/redhat-developer/odo/issues/4623>
 
 ### Known bugs and limitations
-- https://github.com/openshift/odo/issues/4623
-- https://github.com/openshift/odo/issues/4615
-- https://github.com/openshift/odo/issues/4594
-- https://github.com/openshift/odo/issues/4593
+- https://github.com/redhat-developer/odo/issues/4623
+- https://github.com/redhat-developer/odo/issues/4615
+- https://github.com/redhat-developer/odo/issues/4594
+- https://github.com/redhat-developer/odo/issues/4593
 
 
 ### Frequently asked questions
 1. Why does odo fail create to URL using `odo url create` for a component created using `odo create --s2i` even though `odo url create` is allowed for devfile?
 
-   * It won’t fail in the sense that if you tried the conventional s2i approach and try to create `odo url create` it would fail with url for 8080 port already present as there would already be one for you. Refer - https://github.com/openshift/odo/issues/4621
+   * It won’t fail in the sense that if you tried the conventional s2i approach and try to create `odo url create` it would fail with url for 8080 port already present as there would already be one for you. Refer - https://github.com/redhat-developer/odo/issues/4621
 
 2. How to understand the status of the debug?
 

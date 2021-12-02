@@ -14,22 +14,22 @@ Testing and release builds happen with the above version. Developers are advised
 If you are adding any features that require a higher version of golang than the one mentioned above, please contact the maintainers in order to check if the releasing systems can handle the newer version. If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
 
 List of files to update for golang version:
-* [scripts/rpm-prepare.sh](https://github.com/openshift/odo/blob/main/scripts/rpm-prepare.sh)
-* [Dockerfile.rhel](https://github.com/openshift/odo/blob/main/Dockerfile.rhel)
-* [openshift-ci/build-root/Dockerfile](https://github.com/openshift/odo/blob/main/openshift-ci/build-root/Dockerfile)
+* [scripts/rpm-prepare.sh](https://github.com/redhat-developer/odo/blob/main/scripts/rpm-prepare.sh)
+* [Dockerfile.rhel](https://github.com/redhat-developer/odo/blob/main/Dockerfile.rhel)
+* [openshift-ci/build-root/Dockerfile](https://github.com/redhat-developer/odo/blob/main/openshift-ci/build-root/Dockerfile)
 
 First setup your fork of the odo project, following the steps below
 
-1. [Fork](https://help.github.com/en/articles/fork-a-repo) the [odo](https://github.com/openshift/odo) repository.
+1. [Fork](https://help.github.com/en/articles/fork-a-repo) the [odo](https://github.com/redhat-developer/odo) repository.
 
 2. Clone your fork:
   NOTE: odo uses `go modules` to manage dependencies which means you can clone the code anywhere you like but for backwards compatibility
   we would be cloning it under `$GOPATH`
   
   ```shell
-  git clone https://github.com/<YOUR_GITHUB_USERNAME>/odo.git $GOPATH/src/github.com/openshift/odo
-  cd $GOPATH/src/github.com/openshift/odo
-  git remote add upstream 'https://github.com/openshift/odo'
+  git clone https://github.com/<YOUR_GITHUB_USERNAME>/odo.git $GOPATH/src/github.com/redhat-developer/odo
+  cd $GOPATH/src/github.com/redhat-developer/odo
+  git remote add upstream 'https://github.com/redhat-developer/odo'
   ```
   When cloning `odo`, the Windows terminal such as PowerShell or CMD may throw a *Filename too long* error. To avoid such an error, set your Git configuration as follows:
   
@@ -57,7 +57,7 @@ First setup your fork of the odo project, following the steps below
 6. test-integration:: run all integration tests
 7. test-coverage:: generate test coverage report
 
-Read the [Makefile](https://github.com/openshift/odo/blob/main/Makefile) itself for more information.
+Read the [Makefile](https://github.com/redhat-developer/odo/blob/main/Makefile) itself for more information.
 
 ### Submitting a pull request(PR)
 To submit a PR, you must first create a branch from your fork, commit your changes to the branch, and push them on to GitHub.
@@ -156,7 +156,7 @@ func main() {
 
 ### Licenses
 
-odo uses [wwhrd](https://github.com/frapposelli/wwhrd) to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in [.wwhrd.yml](https://github.com/openshift/odo/blob/main/.wwhrd.yml).
+odo uses [wwhrd](https://github.com/frapposelli/wwhrd) to  check license compatibility of vendor packages. The configuration for `wwhrd` is stored in [.wwhrd.yml](https://github.com/redhat-developer/odo/blob/main/.wwhrd.yml).
 
 The `whitelist` section is for licenses that are always allowed. The `blacklist` section is for licenses that are never allowed and will always fail a build. Any licenses that are not explicitly mentioned come under the `exceptions` section and need to be explicitly allowed by adding the import path to the exceptions.
 

@@ -18,9 +18,9 @@ For general help and inquiries - [odo-users Google
 
 ### Issues
 
-* If you face any issues while using odo, please [file a GitHub issue](https://github.com/openshift/odo/issues)
+* If you face any issues while using odo, please [file a GitHub issue](https://github.com/redhat-developer/odo/issues)
 
-* Documentation issues can be filed with the [documentation template](https://github.com/openshift/odo/issues/new?template=Documentation.md)
+* Documentation issues can be filed with the [documentation template](https://github.com/redhat-developer/odo/issues/new?template=Documentation.md)
 
 ### Public meetings
 

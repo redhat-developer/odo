@@ -4,7 +4,7 @@ sidebar_position: 7
 ---
 
 ### Running PR test job on PSI
-PSI contains an Openshift cluster running behind firewall, we are using prow to create request for PRs, we are running rabbitmq on a public cloud to access queue for creating jobs with internal jenkins(behind a firewall). Prow uses ci-firewall within [scripts/openshiftci-presubmit-all-tests.sh](https://github.com/openshift/odo/blob/main/scripts/openshiftci-presubmit-all-tests.sh) to create request to rabbitmq.
+PSI contains an Openshift cluster running behind firewall, we are using prow to create request for PRs, we are running rabbitmq on a public cloud to access queue for creating jobs with internal jenkins(behind a firewall). Prow uses ci-firewall within [scripts/openshiftci-presubmit-all-tests.sh](https://github.com/redhat-developer/odo/blob/main/scripts/openshiftci-presubmit-all-tests.sh) to create request to rabbitmq.
 ci-firewall creates the following json message and passes it to the rabbitmq send queue as an env variable.
 ```
 CI_MESSAGE='{"repourl": "repourl", "kind": "PR", "target": "target", "setupscript": "setupscript", "runscript": "runscript", "rcvident": "rcvident", "runscripturl": "http://url", "mainbranch": "master"}'
@@ -43,7 +43,7 @@ rm -rf ./*
 
 ### Running integration tests on Prow
 
-Prow is the Kubernetes or OpenShift way of managing workflow, including tests. Integration and periodic test targets for odo are passed through the script scripts/openshiftci-presubmit-all-tests.sh and scripts/openshiftci-periodic-tests.sh respectively available in the [odo](https://github.com/openshift/odo/tree/main/scripts) repository. Prow uses the script through the command attribute of the odo job configuration file in [openshift/release](https://github.com/openshift/release/tree/master/ci-operator/config/openshift/odo) repository.
+Prow is the Kubernetes or OpenShift way of managing workflow, including tests. Integration and periodic test targets for odo are passed through the script scripts/openshiftci-presubmit-all-tests.sh and scripts/openshiftci-periodic-tests.sh respectively available in the [odo](https://github.com/redhat-developer/odo/tree/main/scripts) repository. Prow uses the script through the command attribute of the odo job configuration file in [openshift/release](https://github.com/openshift/release/tree/master/ci-operator/config/openshift/odo) repository.
 
 For running integration test on 4.x cluster, job configuration file will be as follows:
 

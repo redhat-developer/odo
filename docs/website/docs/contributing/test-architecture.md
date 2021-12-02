@@ -59,7 +59,7 @@ Test and test suite files are located in `tests/integration` directory and can b
 
 Integration tests validate and focus on specific fields of odo functionality or individual commands. For example, `cmd_app_test.go` or `generic_test.go`.
 
-By default, the [integration tests](https://github.com/openshift/odo/tree/main/tests/integration/devfile) for the devfile feature run against a `kubernetes` cluster.
+By default, the [integration tests](https://github.com/redhat-developer/odo/tree/main/tests/integration/devfile) for the devfile feature run against a `kubernetes` cluster.
 
 #### Running integration tests
 Integration tests can be run in two ways, parallel and sequential. By default, the test will run in parallel on 4 ginkgo test node.
@@ -87,7 +87,7 @@ To run ONE individual test, you can either:
   ginkgo tests/integration/
   ```
 
-If you are running `operatorhub` tests, then you need to install certain operators on the cluster, which can be installed by running [setup-operator.sh](https://github.com/openshift/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh).
+If you are running `operatorhub` tests, then you need to install certain operators on the cluster, which can be installed by running [setup-operator.sh](https://github.com/redhat-developer/odo/blob/main/scripts/configure-cluster/common/setup-operators.sh).
 
 ### E2e tests
 
@@ -99,12 +99,12 @@ End-to-end(E2e) test run behaves in the similar way like integration test does. 
 
 ### Writing Tests
 
-Refer to the odo clean test [template](https://github.com/openshift/odo/blob/main/tests/template/template_cleantest_test.go).
+Refer to the odo clean test [template](https://github.com/redhat-developer/odo/blob/main/tests/template/template_cleantest_test.go).
 
 #### Test guidelines:
 [//]: # (TODO: Writing unit tests using the fake Kubernetes client)
 
-Please follow certain protocol before contributing to odo tests. This helps in contributing to [odo tests](https://github.com/openshift/odo/tree/main/tests). For better understanding of writing test please refer [Ginkgo](https://onsi.github.io/ginkgo/#getting-ginkgo) and it's preferred matcher library [Gomega](http://onsi.github.io/gomega/).
+Please follow certain protocol before contributing to odo tests. This helps in contributing to [odo tests](https://github.com/redhat-developer/odo/tree/main/tests). For better understanding of writing test please refer [Ginkgo](https://onsi.github.io/ginkgo/#getting-ginkgo) and it's preferred matcher library [Gomega](http://onsi.github.io/gomega/).
 
 - Before writing tests (Integration/e2e) scenario make sure that the test scenario (Integration or e2e) is identified properly.
 
@@ -189,7 +189,7 @@ Please follow certain protocol before contributing to odo tests. This helps in c
 
 - If oc, odo or generic library you are looking for is not present in helper package then create a new library function as per the scenario requirement. Avoid unnecessary function implementation within test files. Check to see if there is a helper function already implemented.
 
-- If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the [helper package](https://github.com/openshift/odo/tree/main/tests/helper) for more such reference.
+- If you are looking for delay with a specific feature test, don't use hard time.Sleep() function. Yes, you can use but as a polling interval of maximum duration. Check the [helper package](https://github.com/redhat-developer/odo/tree/main/tests/helper) for more such reference.
 
   **For example:**
   ```go

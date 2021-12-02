@@ -15,7 +15,7 @@ Developers can use the `GetValidatorFor` function to have odo automatically crea
 
 ### Default validators
 
-odo provides default validators in the [validation](https://github.com/openshift/odo/blob/main/pkg/odo/util/validation/validators.go) package to validate that a value can be converted to an `int` (`IntegerValidator`), that the value is a valid Kubernetes name (`NameValidator`) or a so-called `NilValidator` which is a noop validator used as a default validator when none is provided or can be inferred from provided metadata. More validators could be provided, in particular, validators based on `Validatable.Type`, see [validators.go](https://github.com/openshift/odo/blob/main/pkg/odo/util/validation/validators.go) for all the validators currently implemented by odo.
+odo provides default validators in the [validation](https://github.com/redhat-developer/odo/blob/main/pkg/odo/util/validation/validators.go) package to validate that a value can be converted to an `int` (`IntegerValidator`), that the value is a valid Kubernetes name (`NameValidator`) or a so-called `NilValidator` which is a noop validator used as a default validator when none is provided or can be inferred from provided metadata. More validators could be provided, in particular, validators based on `Validatable.Type`, see [validators.go](https://github.com/redhat-developer/odo/blob/main/pkg/odo/util/validation/validators.go) for all the validators currently implemented by odo.
 
 ### Creating a validator
 

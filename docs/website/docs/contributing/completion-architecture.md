@@ -28,7 +28,7 @@ In order to provide this information, odo allows commands to register completion
 type ContextualizedPredictor func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) []string
 ```
 
-This function should be put in [pkg/odo/util/completion/completionhandlers.go](https://github.com/openshift/odo/blob/main/pkg/odo/util/completion/completionhandlers.go) so that it can be reused across commands.
+This function should be put in [pkg/odo/util/completion/completionhandlers.go](https://github.com/redhat-developer/odo/blob/main/pkg/odo/util/completion/completionhandlers.go) so that it can be reused across commands.
 
 While filtering is done by `posener/complete` itself, automatically removing all completions not prefixed by what you’ve typed already, it might be useful to use the values provided by `parsedArgs` to help optimize things to avoid repeating possible completions for example.
 
