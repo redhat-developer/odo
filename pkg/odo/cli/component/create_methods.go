@@ -2,7 +2,7 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/segment"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,11 +11,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
