@@ -7,8 +7,8 @@ import (
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/tidwall/gjson"
 )
 
@@ -44,8 +44,8 @@ var _ = Describe("odo devfile describe command tests", func() {
 		})
 		AfterEach(func() {
 			// odo delete requires changing directory because it does not work as intended with --context
-			// TODO: Remove helper.Chdir after these issues are closed - https://github.com/openshift/odo/issues/4451
-			// TODO: and https://github.com/openshift/odo/issues/4135
+			// TODO: Remove helper.Chdir after these issues are closed - https://github.com/redhat-developer/odo/issues/4451
+			// TODO: and https://github.com/redhat-developer/odo/issues/4135
 			helper.Chdir(commonVar.Context)
 			helper.Cmd("odo", "delete", "-f", "--all").ShouldPass()
 		})
@@ -102,7 +102,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 
 	When("devfile has missing metadata", func() {
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
-		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/openshift/odo/issues/4815
+		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/redhat-developer/odo/issues/4815
 
 		var metadata devfilepkg.DevfileMetadata
 

@@ -4,25 +4,25 @@ import (
 	"fmt"
 	"path/filepath"
 
-	scontext "github.com/openshift/odo/pkg/segment/context"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/devfile/validate"
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/devfile/validate"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/occlient"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"k8s.io/klog"
 )
 

@@ -5,7 +5,7 @@ package service
 // and they want to use odo link without the Service Binding Operator.
 // The only difference between the original and forked implementation is that we check if the user is forbidden from accessing
 // CRD, and if they are, then we simply ignore checking CRD while linking.
-// For more information, see issue: https://github.com/openshift/odo/issues/4965
+// For more information, see issue: https://github.com/redhat-developer/odo/issues/4965
 // In case there is a need to revert the changes, or we figure out an alternate way of allowing forbidden users to link without SBO,
 // we can go back to using the builder.DefaultBuilder instead of the OdoDefaultBuilder in getPipeline.
 
@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/redhat-developer/service-binding-operator/apis"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"

@@ -3,11 +3,11 @@ package url
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/log"
-	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/log"
+	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

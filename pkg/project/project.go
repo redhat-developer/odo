@@ -1,8 +1,8 @@
 package project
 
 import (
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 )
 
 // GetCurrent returns the name of the current project

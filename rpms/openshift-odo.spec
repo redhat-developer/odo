@@ -21,7 +21,7 @@ Version:        %{odo_version}
 Release:        %{odo_release}%{?dist}
 Summary:        %{product_name} client odo CLI binary
 License:        ASL 2.0
-URL:            https://github.com/openshift/odo/tree/%{odo_cli_version}
+URL:            https://github.com/redhat-developer/odo/tree/%{odo_cli_version}
 
 Source0:        %{source_tar}
 BuildRequires:  gcc
@@ -38,9 +38,9 @@ odo is a fast, iterative, and straightforward CLI tool for developers who write,
 %build
 export GITCOMMIT="%{git_commit}"
 mkdir -p %{gopath}/src/github.com/openshift
-ln -s "$(pwd)" %{gopath}/src/github.com/openshift/odo
+ln -s "$(pwd)" %{gopath}/src/github.com/redhat-developer/odo
 export GOPATH=%{gopath}
-cd %{gopath}/src/github.com/openshift/odo
+cd %{gopath}/src/github.com/redhat-developer/odo
 go mod edit -go=%{golang_version}
 %ifarch x86_64
 # go test -race is not supported on all arches
@@ -48,7 +48,7 @@ GOFLAGS='-mod=vendor' make test
 %endif
 make prepare-release
 echo "%{odo_version}" > dist/release/VERSION
-unlink %{gopath}/src/github.com/openshift/odo
+unlink %{gopath}/src/github.com/redhat-developer/odo
 
 %install
 mkdir -p %{buildroot}/%{_bindir}

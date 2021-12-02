@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/odo/util"
-	genericUtil "github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	genericUtil "github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"

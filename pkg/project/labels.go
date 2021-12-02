@@ -1,8 +1,8 @@
 package project
 
 import (
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/util"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // GetSelector returns a selector to filter resource under the current project created by odo

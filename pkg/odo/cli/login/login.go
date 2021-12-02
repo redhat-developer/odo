@@ -3,9 +3,9 @@ package login
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/auth"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/auth"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )

@@ -1,4 +1,4 @@
-module github.com/openshift/odo
+module github.com/redhat-developer/odo
 
 go 1.16
 

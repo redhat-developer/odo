@@ -11,9 +11,9 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/mock/gomock"
 
-	"github.com/openshift/odo/pkg/devfile/consts"
-	devfiletesting "github.com/openshift/odo/pkg/devfile/testing"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/devfile/consts"
+	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"

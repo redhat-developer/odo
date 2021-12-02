@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

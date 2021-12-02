@@ -3,7 +3,7 @@ package devfile
 import (
 	"testing"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 func TestDevfiles(t *testing.T) {

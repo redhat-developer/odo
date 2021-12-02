@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 // NewComponentAdapter returns a Devfile adapter for the targeted platform

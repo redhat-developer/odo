@@ -3,15 +3,15 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
-	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/completion"
+	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )

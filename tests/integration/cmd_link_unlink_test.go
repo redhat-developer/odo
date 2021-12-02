@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo link and unlink command tests", func() {
@@ -120,7 +120,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 				})
 
 				It("should successfully delete component after linked component is deleted", func() {
-					// Testing: https://github.com/openshift/odo/issues/2355
+					// Testing: https://github.com/redhat-developer/odo/issues/2355
 					helper.Cmd("odo", "delete", "-f", "--context", backendContext).ShouldPass()
 					helper.Cmd("odo", "delete", "-f", "--context", frontendContext).ShouldPass()
 				})

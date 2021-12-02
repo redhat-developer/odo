@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/tidwall/gjson"
 
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

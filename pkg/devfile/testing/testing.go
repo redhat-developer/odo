@@ -8,7 +8,7 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/openshift/odo/pkg/devfile/consts"
+	"github.com/redhat-developer/odo/pkg/devfile/consts"
 )
 
 type InlinedComponent struct {

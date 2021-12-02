@@ -37,8 +37,8 @@ fi
 
 # Change the below to your credentials
 DOCS_REPO_NAME="odo"
-DOCS_REPO_URL="git@github.com:openshift/odo.git"
-DOCS_REPO_HTTP_URL="http://github.com/openshift/odo"
+DOCS_REPO_URL="git@github.com:redhat-developer/odo.git"
+DOCS_REPO_HTTP_URL="http://github.com/redhat-developer/odo"
 DOCS_USER="odo-bot"
 DOCS_EMAIL="cdrage+odo@redhat.com"
 
@@ -117,7 +117,7 @@ cd ..
 #
 #toc_footers:
 #  - <a href='http://openshiftdo.org'>openshiftdo.org</a>
-#  - <a href='https://github.com/openshift/odo'>odo on GitHub</a>
+#  - <a href='https://github.com/redhat-developer/odo'>odo on GitHub</a>
 #
 #search: true
 #---

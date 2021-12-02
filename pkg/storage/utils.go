@@ -3,11 +3,11 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/localConfigProvider"
-	"github.com/openshift/odo/pkg/occlient"
-	storagelabels "github.com/openshift/odo/pkg/storage/labels"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/occlient"
+	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // getPVCNameFromStorageName returns the PVC associated with the given storage

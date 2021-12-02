@@ -6,9 +6,9 @@ import (
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"github.com/spf13/cobra"
 
-	"github.com/openshift/odo/pkg/devfile/location"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )

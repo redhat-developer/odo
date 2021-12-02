@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift/odo/pkg/odo/cli/plugins"
+	"github.com/redhat-developer/odo/pkg/odo/cli/plugins"
 )
 
 var sampleScript = []byte(`

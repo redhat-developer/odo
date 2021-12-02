@@ -1,14 +1,14 @@
 package completion
 
 import (
-	applabels "github.com/openshift/odo/pkg/application/labels"
-	"github.com/openshift/odo/pkg/envinfo"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 
-	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/posener/complete"
+	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
 

@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ktesting "k8s.io/client-go/testing"

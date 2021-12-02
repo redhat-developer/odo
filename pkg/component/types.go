@@ -1,9 +1,9 @@
 package component
 
 import (
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/storage"
-	"github.com/openshift/odo/pkg/url"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

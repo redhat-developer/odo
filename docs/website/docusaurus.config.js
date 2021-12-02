@@ -28,7 +28,7 @@ module.exports = {
         },
         {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/openshift/odo',
+          href: 'https://github.com/redhat-developer/odo',
           label: 'GitHub',
           position: 'right',
         },
@@ -72,7 +72,7 @@ module.exports = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/openshift/odo',
+              href: 'https://github.com/redhat-developer/odo',
             },
             {
               label: 'Twitter',
@@ -102,13 +102,13 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/openshift/odo/edit/main/website/',
+            'https://github.com/redhat-developer/odo/edit/main/website/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-            'https://github.com/openshift/odo/edit/main/website/blog/',
+            'https://github.com/redhat-developer/odo/edit/main/website/blog/',
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
           postsPerPage: 5,

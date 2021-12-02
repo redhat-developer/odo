@@ -2,7 +2,7 @@
 
 ## Summary
 
-With this proposal and [it's related issue](https://github.com/openshift/odo/issues/2550) we examine how to consume build/run event output from odo in order to allow external tools (such as IDEs) to determine the application/build status of an odo-managed application.
+With this proposal and [it's related issue](https://github.com/redhat-developer/odo/issues/2550) we examine how to consume build/run event output from odo in order to allow external tools (such as IDEs) to determine the application/build status of an odo-managed application.
 
 In short, the proposal is:
 - New flag for push command, `odo push -o json`: Outputs JSON events that correspond to what devfile actions/commands are being executed by push.

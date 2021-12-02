@@ -4,7 +4,7 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 
-	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 )
 
 // AdapterContext is a construct that is common to all adapters

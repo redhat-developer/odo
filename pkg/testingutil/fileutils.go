@@ -2,7 +2,7 @@ package testingutil
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"os"
 	"path/filepath"

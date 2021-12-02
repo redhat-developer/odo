@@ -26,9 +26,9 @@ group] - General help and inquiries
 == Issues
 
 * If you have any issues with odo, please
-https://github.com/openshift/odo/issues[file a GitHub issue]
+https://github.com/redhat-developer/odo/issues[file a GitHub issue]
 * Documentation issues can be filed with the
-https://github.com/openshift/odo/issues/new?template=Documentation.md[documentation
+https://github.com/redhat-developer/odo/issues/new?template=Documentation.md[documentation
 template]
 
 == Public meetings
@@ -53,11 +53,11 @@ https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group].
 === Where do I start?
 
 odo is a complex project that touches both Kubernetes and OpenShift. We have a list of
-https://github.com/openshift/odo/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22[good
+https://github.com/redhat-developer/odo/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22[good
 first issues] to help start.
 
 === How do I contribute code?
 
 Want to submit your code? Have a look at our
-https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[development
+https://github.com/redhat-developer/odo/blob/master/docs/dev/development.adoc[development
 guide]. It goes over every aspect from submitting to writing tests.

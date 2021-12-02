@@ -9,7 +9,7 @@ import (
 	fakeImageClientset "github.com/openshift/client-go/image/clientset/versioned/fake"
 	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
 	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
-	"github.com/openshift/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery/fake"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"

@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/openshift/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"k8s.io/klog"

@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
+	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/tests/helper"
+	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -594,7 +594,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldFail().Err()
 				// This is expected to fail for now.
-				// see https://github.com/openshift/odo/issues/4187 for more info
+				// see https://github.com/redhat-developer/odo/issues/4187 for more info
 				helper.MatchAllInOutput(output, []string{"myprestart should either map to an apply command or a composite command with apply commands\n"})
 
 				/*
@@ -833,7 +833,7 @@ var _ = Describe("odo devfile push command tests", func() {
 	})
 
 	Context("devfile is modified", func() {
-		// Tests https://github.com/openshift/odo/issues/3838
+		// Tests https://github.com/redhat-developer/odo/issues/3838
 		ensureFilesSyncedTest := func(namespace string, shouldForcePush bool) {
 			output := ""
 			When("java-springboot application is created and pushed", func() {

@@ -13,8 +13,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/openshift/odo/tests/helper"
+	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile create command tests", func() {

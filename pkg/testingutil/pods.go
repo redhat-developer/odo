@@ -1,7 +1,7 @@
 package testingutil
 
 import (
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

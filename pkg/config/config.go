@@ -5,8 +5,8 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 const (

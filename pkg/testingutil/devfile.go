@@ -6,7 +6,7 @@ import (
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/openshift/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // GetFakeContainerComponent returns a fake container component for testing
