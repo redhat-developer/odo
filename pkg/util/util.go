@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"fmt"
+	"hash/adler32"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -1604,4 +1605,9 @@ func SafeGetBool(b *bool) bool {
 		return false
 	}
 	return *b
+}
+
+// GetAdler32Value returns an adler32 hash of a string on 8 hexadecimal characters
+func GetAdler32Value(s string) string {
+	return fmt.Sprintf("%08x", adler32.Checksum([]byte(s)))
 }

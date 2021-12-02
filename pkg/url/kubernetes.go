@@ -2,7 +2,6 @@ package url
 
 import (
 	"fmt"
-	"hash/adler32"
 	"sort"
 
 	"github.com/redhat-developer/odo/pkg/unions"
@@ -263,7 +262,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 
 	}
 
-	suffix := fmt.Sprintf("%08x", adler32.Checksum([]byte(url.Name+k.appName+k.componentName)))
+	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
 	ingressName, err := util.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
 		return "", err
@@ -298,7 +297,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	// we avoid using the getResourceName() and use the previous method from s2i
 	// as the host name, which is automatically created on openshift,
 	// can become more than 63 chars, which is invalid
-	suffix := fmt.Sprintf("%08x", adler32.Checksum([]byte(url.Name+k.appName+k.componentName)))
+	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
 	routeName, err := util.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")

@@ -2,13 +2,13 @@ package fake
 
 import (
 	"fmt"
-	"hash/adler32"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/unions"
 	"github.com/redhat-developer/odo/pkg/url/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -101,7 +101,7 @@ func GetSingleKubernetesIngress(urlName, componentName, appName string, networki
 // if no secret name is provided, the default one is used
 func GetSingleSecureKubernetesIngress(urlName, componentName, appName, secretName string, networkingV1Supported, extensionV1Supported bool) *unions.KubernetesIngress {
 	if secretName == "" {
-		suffix := fmt.Sprintf("%08x", adler32.Checksum([]byte(urlName+appName+componentName)))
+		suffix := util.GetAdler32Value(urlName + appName + componentName)
 
 		secretName = urlName + "-" + suffix + "-tls"
 	}

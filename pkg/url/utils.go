@@ -2,11 +2,11 @@ package url
 
 import (
 	"fmt"
-	"hash/adler32"
 	"reflect"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/util"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -86,7 +86,7 @@ func GetURLString(protocol, URL, ingressDomain string) string {
 
 // getDefaultTLSSecretName returns the name of the default tls secret name
 func getDefaultTLSSecretName(urlName string, componentName, appName string) string {
-	suffix := fmt.Sprintf("%08x", adler32.Checksum([]byte(urlName+appName+componentName)))
+	suffix := util.GetAdler32Value(urlName + appName + componentName)
 	return urlName + "-" + suffix + "-tls"
 }
 
