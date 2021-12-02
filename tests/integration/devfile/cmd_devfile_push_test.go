@@ -941,11 +941,13 @@ var _ = Describe("odo devfile push command tests", func() {
 					output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").ShouldPass().Out()
 					Expect(output).To(ContainSubstring(cpulimit))
 				})
+
 				By("check for cpuRequests", func() {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").ShouldPass().Out()
 					Expect(output).To(ContainSubstring(cpurequest))
 				})
+
 				By("check for memoryRequests", func() {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").ShouldPass().Out()
