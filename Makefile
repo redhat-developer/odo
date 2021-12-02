@@ -86,7 +86,7 @@ validate-vendor-licenses:
 
 .PHONY: golint
 golint:
-	golangci-lint run ./... --timeout 5m
+	golangci-lint run ./... --timeout 15m
 
 .PHONY: lint
 lint: ## golint errors are only recommendations
