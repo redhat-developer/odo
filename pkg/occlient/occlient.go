@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,9 +15,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	// api clientsets
+
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-	buildclientset "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
-	imageclientset "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
@@ -79,9 +77,7 @@ odo login https://mycluster.mydomain.com
 
 type Client struct {
 	kubeClient    *kclient.Client
-	imageClient   imageclientset.ImageV1Interface
 	appsClient    appsclientset.AppsV1Interface
-	buildClient   buildclientset.BuildV1Interface
 	projectClient projectclientset.ProjectV1Interface
 	routeClient   routeclientset.RouteV1Interface
 	userClient    userclientset.UserV1Interface
@@ -108,17 +104,7 @@ func New() (*Client, error) {
 		return nil, err
 	}
 
-	client.imageClient, err = imageclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
 	client.appsClient, err = appsclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	client.buildClient, err = buildclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -144,48 +130,6 @@ func New() (*Client, error) {
 	}
 
 	return &client, nil
-}
-
-// ParseImageName parse image reference
-// returns (imageNamespace, imageName, tag, digest, error)
-// if image is referenced by tag (name:tag)  than digest is ""
-// if image is referenced by digest (name@digest) than  tag is ""
-func ParseImageName(image string) (string, string, string, string, error) {
-	digestParts := strings.Split(image, "@")
-	if len(digestParts) == 2 {
-		// image is references digest
-		// Safe path image name and digest are non empty, else error
-		if digestParts[0] != "" && digestParts[1] != "" {
-			// Image name might be fully qualified name of form: Namespace/ImageName
-			imangeNameParts := strings.Split(digestParts[0], "/")
-			if len(imangeNameParts) == 2 {
-				return imangeNameParts[0], imangeNameParts[1], "", digestParts[1], nil
-			}
-			return "", imangeNameParts[0], "", digestParts[1], nil
-		}
-	} else if len(digestParts) == 1 && digestParts[0] != "" { // Filter out empty image name
-		tagParts := strings.Split(image, ":")
-		if len(tagParts) == 2 {
-			// ":1.0.0 is invalid image name"
-			if tagParts[0] != "" {
-				// Image name might be fully qualified name of form: Namespace/ImageName
-				imangeNameParts := strings.Split(tagParts[0], "/")
-				if len(imangeNameParts) == 2 {
-					return imangeNameParts[0], imangeNameParts[1], tagParts[1], "", nil
-				}
-				return "", tagParts[0], tagParts[1], "", nil
-			}
-		} else if len(tagParts) == 1 {
-			// Image name might be fully qualified name of form: Namespace/ImageName
-			imangeNameParts := strings.Split(tagParts[0], "/")
-			if len(imangeNameParts) == 2 {
-				return imangeNameParts[0], imangeNameParts[1], "latest", "", nil
-			}
-			return "", tagParts[0], "latest", "", nil
-		}
-	}
-	return "", "", "", "", fmt.Errorf("invalid image reference %s", image)
-
 }
 
 // RunLogout logs out the current user from cluster
