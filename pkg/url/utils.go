@@ -6,6 +6,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/util"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -84,8 +85,9 @@ func GetURLString(protocol, URL, ingressDomain string) string {
 }
 
 // getDefaultTLSSecretName returns the name of the default tls secret name
-func getDefaultTLSSecretName(componentName, appName string) string {
-	return componentName + "-" + appName + "-tlssecret"
+func getDefaultTLSSecretName(urlName string, componentName, appName string) string {
+	suffix := util.GetAdler32Value(urlName + appName + componentName)
+	return urlName + "-" + suffix + "-tls"
 }
 
 // ConvertExtensionV1IngressURLToIngress converts IngressURL to Ingress

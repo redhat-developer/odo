@@ -468,7 +468,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			args: args{
 				url: getFakeURL("nodejs", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			},
-			createdIngress: fake.GetSingleKubernetesIngress("nodejs-nodejs-app", "nodejs", "app", true, false),
+			createdIngress: fake.GetSingleKubernetesIngress("nodejs-322d0648", "nodejs", "app", true, false),
 			want:           "http://nodejs.com",
 			wantErr:        false,
 		},
@@ -478,7 +478,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			args: args{
 				url: getFakeURL("example", "com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			},
-			createdIngress: fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
+			createdIngress: fake.GetSingleKubernetesIngress("example-38d306b1", "nodejs", "app", true, false),
 			want:           "http://example.com",
 			wantErr:        false,
 		},
@@ -492,7 +492,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					return url
 				}(),
 			},
-			createdIngress:   fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
+			createdIngress:   fake.GetSingleKubernetesIngress("example-38d306b1", "nodejs", "app", true, false),
 			defaultTLSExists: true,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -507,7 +507,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					return url
 				}(),
 			},
-			createdIngress:   fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
+			createdIngress:   fake.GetSingleKubernetesIngress("example-38d306b1", "nodejs", "app", true, false),
 			defaultTLSExists: false,
 			want:             "https://example.com",
 			wantErr:          false,
@@ -539,7 +539,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					return url
 				}(),
 			},
-			createdIngress:     fake.GetSingleKubernetesIngress("example-nodejs-app", "nodejs", "app", true, false),
+			createdIngress:     fake.GetSingleKubernetesIngress("example-38d306b1", "nodejs", "app", true, false),
 			defaultTLSExists:   false,
 			userGivenTLSExists: true,
 			want:               "https://example.com",
@@ -575,7 +575,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 			fakeKClientSet.Kubernetes.PrependReactor("get", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
 				var secretName string
 				if tt.args.url.Spec.TLSSecret == "" {
-					secretName = getDefaultTLSSecretName(tt.fields.generic.componentName, tt.fields.generic.appName)
+					secretName = getDefaultTLSSecretName(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
 					if action.(ktesting.GetAction).GetName() != secretName {
 						return true, nil, fmt.Errorf("get for secrets called with invalid name, want: %s,got: %s", secretName, action.(ktesting.GetAction).GetName())
 					}
@@ -642,7 +642,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 					createIngressActionNo = 3
 				} else if !tt.defaultTLSExists {
 					createdDefaultTLS := fakeKClientSet.Kubernetes.Actions()[3].(ktesting.CreateAction).GetObject().(*corev1.Secret)
-					if createdDefaultTLS.Name != getDefaultTLSSecretName(tt.fields.generic.componentName, tt.fields.generic.appName) {
+					if createdDefaultTLS.Name != getDefaultTLSSecretName(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName) {
 						t.Errorf("default tls created with different name, want: %s,got: %s", tt.fields.generic.componentName+"-tlssecret", createdDefaultTLS.Name)
 					}
 					createIngressActionNo = 4
@@ -668,7 +668,7 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 
 			if tt.args.url.Spec.Secure {
 				if wantedIngressSpecParams.TLSSecretName == "" {
-					wantedIngressSpecParams.TLSSecretName = getDefaultTLSSecretName(tt.fields.generic.componentName, tt.fields.generic.appName)
+					wantedIngressSpecParams.TLSSecretName = getDefaultTLSSecretName(tt.args.url.Name, tt.fields.generic.componentName, tt.fields.generic.appName)
 				}
 				if !reflect.DeepEqual(createdIngress.Spec.TLS[0].SecretName, wantedIngressSpecParams.TLSSecretName) {
 					t.Errorf("ingress tls name not matching, expected: %s, got %s", wantedIngressSpecParams.TLSSecretName, createdIngress.Spec.TLS)
@@ -707,7 +707,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-app",
+					Name: "example-38d306b1",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -738,7 +738,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-app",
+					Name: "example-url-556a0831",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",
@@ -773,7 +773,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: v1.ObjectMeta{
-					Name: "example-url-app",
+					Name: "example-url-556a0831",
 					Labels: map[string]string{
 						"app.kubernetes.io/part-of":  "app",
 						"app.kubernetes.io/instance": "nodejs",

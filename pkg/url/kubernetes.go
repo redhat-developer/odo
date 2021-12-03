@@ -228,7 +228,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			}
 		} else {
 			// get the default secret
-			defaultTLSSecretName := getDefaultTLSSecretName(k.componentName, k.appName)
+			defaultTLSSecretName := getDefaultTLSSecretName(url.Name, k.componentName, k.appName)
 			_, err = k.client.GetKubeClient().GetSecret(defaultTLSSecretName, k.client.Namespace)
 
 			// create tls secret if it does not exist
@@ -262,7 +262,8 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 
 	}
 
-	ingressName, err := getResourceName(url.Name, k.componentName, k.appName)
+	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
+	ingressName, err := util.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
 		return "", err
 	}
@@ -296,7 +297,8 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	// we avoid using the getResourceName() and use the previous method from s2i
 	// as the host name, which is automatically created on openshift,
 	// can become more than 63 chars, which is invalid
-	routeName, err := util.NamespaceOpenShiftObject(url.Name, k.appName)
+	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
+	routeName, err := util.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}
@@ -323,18 +325,4 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 		return "", errors.Wrap(err, "unable to create route")
 	}
 	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
-}
-
-// getResourceName gets the route/ingress resource name
-func getResourceName(urlName, componentName, appName string) (string, error) {
-	resourceName, err := util.NamespaceKubernetesObject(urlName, componentName)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
-	}
-
-	resourceName, err = util.NamespaceKubernetesObject(resourceName, appName)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
-	}
-	return resourceName, nil
 }
