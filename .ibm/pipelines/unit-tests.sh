@@ -12,8 +12,7 @@ source .ibm/pipelines/functions.sh
 ) |& tee "/tmp/$LOGFILE"
 RESULT=${PIPESTATUS[0]}
 
-install_ibmcloud cloud-object-storage
-install_gh
+ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 save_logs "${LOGFILE}" "Unit Tests"
 
 exit ${RESULT}
