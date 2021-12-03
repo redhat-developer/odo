@@ -45,10 +45,10 @@ type CreateArgs struct {
 	StdOut             io.Writer
 }
 
-const (
-	// timeout for waiting for project deletion
-	waitForProjectDeletionTimeOut = 3 * time.Minute
-)
+//const (
+//	// timeout for waiting for project deletion
+//	waitForProjectDeletionTimeOut = 3 * time.Minute
+//)
 
 // UpdateComponentParams serves the purpose of holding the arguments to a component update request
 type UpdateComponentParams struct {

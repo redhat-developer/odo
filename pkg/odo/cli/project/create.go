@@ -61,7 +61,7 @@ func (pco *ProjectCreateOptions) Validate() error {
 // Run runs the project create command
 func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetClusterType(cmd.Context(), pco.Client)
+		scontext.SetClusterType(cmd.Context(), pco.KClient)
 	}
 
 	// Create the "spinner"
@@ -74,7 +74,7 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Create the project & end the spinner (if there is any..)
-	err = project.Create(pco.Context, pco.projectName, pco.waitFlag)
+	err = project.Create(pco.Context.KClient, pco.projectName, pco.waitFlag)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 	log.Successf(successMessage)
 
 	// Set the current project when created
-	err = project.SetCurrent(pco.Context, pco.projectName)
+	err = project.SetCurrent(pco.Context.KClient, pco.projectName)
 	if err != nil {
 		return err
 	}

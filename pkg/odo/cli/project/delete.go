@@ -58,7 +58,7 @@ func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args 
 // Validate validates the parameters of the ProjectDeleteOptions
 func (pdo *ProjectDeleteOptions) Validate() error {
 	// Validate existence of the project to be deleted
-	isValidProject, err := project.Exists(pdo.Context, pdo.projectName)
+	isValidProject, err := project.Exists(pdo.Context.KClient, pdo.projectName)
 	if kerrors.IsForbidden(err) {
 		return &odoerrors.Unauthorized{}
 	}
@@ -75,7 +75,7 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 	s := &log.Status{}
 
 	// This to set the project in the file and runtime
-	err = project.SetCurrent(pdo.Context, pdo.projectName)
+	err = project.SetCurrent(pdo.Context.KClient, pdo.projectName)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 			defer s.End(false)
 		}
 
-		err := project.Delete(pdo.Context, pdo.projectName, pdo.waitFlag)
+		err := project.Delete(pdo.Context.KClient, pdo.projectName, pdo.waitFlag)
 		if err != nil {
 			return err
 		}

@@ -5,12 +5,11 @@ import (
 	"os"
 	"sync"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-
-	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 const ComponentType = "componentType"
@@ -52,7 +51,7 @@ func SetComponentType(ctx context.Context, value string) {
 }
 
 // SetClusterType sets clusterType property for telemetry data when a component is pushed or a project is created/set
-func SetClusterType(ctx context.Context, client *occlient.Client) {
+func SetClusterType(ctx context.Context, client kclient.ClientInterface) {
 	var value string
 	if client == nil {
 		value = NOTFOUND
@@ -65,7 +64,7 @@ func SetClusterType(ctx context.Context, client *occlient.Client) {
 			value = NOTFOUND
 		} else {
 			if isOC {
-				isOC4, err := client.GetKubeClient().IsCSVSupported()
+				isOC4, err := client.IsCSVSupported()
 				// TODO: Add a unit test for this case
 				if err != nil {
 					value = "openshift"

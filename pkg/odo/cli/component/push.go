@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -15,7 +16,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -131,7 +131,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	// set the telemetry data
 	cmdCtx := cmd.Context()
 	devfileMetadata := po.Devfile.Data.GetMetadata()
-	scontext.SetClusterType(cmdCtx, po.Client)
+	scontext.SetClusterType(cmdCtx, po.Client.GetKubeClient())
 	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
 	scontext.SetLanguage(cmdCtx, component.GetLanguageFromDevfileMetadata(devfileMetadata))
 	scontext.SetProjectType(cmdCtx, component.GetProjectTypeFromDevfileMetadata(devfileMetadata))
@@ -140,6 +140,12 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 }
 
 func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *cobra.Command, args []string) error {
+	// TODO(feloy) use a global client?
+	kc, err := kclient.New()
+	if err != nil {
+		return err
+	}
+
 	// If the file does not exist, we should populate the environment file with the correct env.yaml information
 	// such as name and namespace.
 	if !envFileInfo.Exists() {
@@ -151,11 +157,8 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for the component")
 		}
-		client, err := genericclioptions.Client()
-		if err != nil {
-			return err
-		}
-		if err = checkDefaultProject(client, namespace); err != nil {
+
+		if err = checkDefaultProject(kc, namespace); err != nil {
 			return err
 		}
 
@@ -188,12 +191,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for devfile")
 		}
-		client, err := genericclioptions.Client()
-		if err != nil {
-			return err
-		}
-
-		if err = checkDefaultProject(client, namespace); err != nil {
+		if err = checkDefaultProject(kc, namespace); err != nil {
 			return err
 		}
 
@@ -202,11 +200,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 			return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
 		}
 	} else if envFileInfo.GetNamespace() == "default" {
-		client, err := genericclioptions.Client()
-		if err != nil {
-			return err
-		}
-		if err := checkDefaultProject(client, envFileInfo.GetNamespace()); err != nil {
+		if err := checkDefaultProject(kc, envFileInfo.GetNamespace()); err != nil {
 			return err
 		}
 	}
@@ -271,7 +265,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 }
 
 // checkDefaultProject errors out if the project resource is supported and the value is "default"
-func checkDefaultProject(client *occlient.Client, name string) error {
+func checkDefaultProject(client kclient.ClientInterface, name string) error {
 	// Check whether resource "Project" is supported
 	projectSupported, err := client.IsProjectSupported()
 

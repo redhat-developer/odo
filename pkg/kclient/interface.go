@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/go-openapi/spec"
+	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/unions"
@@ -100,6 +101,14 @@ type ClientInterface interface {
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
 	GetOnePodFromSelector(selector string) (*corev1.Pod, error)
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
+
+	// projects.go
+	CreateNewProject(projectName string, wait bool) error
+	DeleteProject(name string, wait bool) error
+	GetCurrentProjectName() string
+	GetProject(projectName string) (*projectv1.Project, error)
+	IsProjectSupported() (bool, error)
+	ListProjectNames() ([]string, error)
 
 	// secrets.go
 	CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objectMeta metav1.ObjectMeta) (*corev1.Secret, error)

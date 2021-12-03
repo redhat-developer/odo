@@ -24,6 +24,7 @@ import (
 
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 	operatorsclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -65,7 +66,8 @@ type Client struct {
 	isExtensionV1Beta1IngressSupported bool
 
 	// openshift clients
-	userClient userclientset.UserV1Interface
+	userClient    userclientset.UserV1Interface
+	projectClient projectclientset.ProjectV1Interface
 }
 
 // New creates a new client
@@ -144,6 +146,11 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	client.checkIngressSupports = true
 
 	client.userClient, err = userclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client.projectClient, err = projectclientset.NewForConfig(client.KubeClientConfig)
 	if err != nil {
 		return nil, err
 	}

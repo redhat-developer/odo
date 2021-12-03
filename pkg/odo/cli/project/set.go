@@ -57,7 +57,7 @@ func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []s
 // Validate validates the parameters of the ProjectSetOptions
 func (pso *ProjectSetOptions) Validate() (err error) {
 
-	exists, err := project.Exists(pso.Context, pso.projectName)
+	exists, err := project.Exists(pso.Context.KClient, pso.projectName)
 	if kerrors.IsForbidden(err) {
 		return &odoerrors.Unauthorized{}
 	}
@@ -71,10 +71,10 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 // Run runs the project set command
 func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetClusterType(cmd.Context(), pso.Client)
+		scontext.SetClusterType(cmd.Context(), pso.KClient)
 	}
 	current := pso.GetProject()
-	err = project.SetCurrent(pso.Context, pso.projectName)
+	err = project.SetCurrent(pso.Context.KClient, pso.projectName)
 	if err != nil {
 		return err
 	}
