@@ -7,25 +7,28 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/discovery"
-	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
-	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/util"
+
+	appsv1 "k8s.io/api/apps/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth" // Required for Kube clusters which use auth plugins
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 
 	// api clientsets
+	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 	operatorsclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
+	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // Required for Kube clusters which use auth plugins
 )
 
 const (
@@ -60,6 +63,9 @@ type Client struct {
 	checkIngressSupports               bool
 	isNetworkingV1IngressSupported     bool
 	isExtensionV1Beta1IngressSupported bool
+
+	// openshift clients
+	userClient userclientset.UserV1Interface
 }
 
 // New creates a new client
@@ -136,6 +142,11 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	}
 
 	client.checkIngressSupports = true
+
+	client.userClient, err = userclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	return client, nil
 }

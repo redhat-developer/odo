@@ -120,6 +120,9 @@ type ClientInterface interface {
 	GetOneService(componentName, appName string) (*corev1.Service, error)
 	GetOneServiceFromSelector(selector string) (*corev1.Service, error)
 
+	// user.go
+	RunLogout(stdout io.Writer) error
+
 	// volumes.go
 	CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error)
 	DeletePVC(pvcName string) error

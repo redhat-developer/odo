@@ -1092,6 +1092,20 @@ func (mr *MockClientInterfaceMockRecorder) ListServices(selector interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServices", reflect.TypeOf((*MockClientInterface)(nil).ListServices), selector)
 }
 
+// RunLogout mocks base method.
+func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RunLogout", stdout)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RunLogout indicates an expected call of RunLogout.
+func (mr *MockClientInterfaceMockRecorder) RunLogout(stdout interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunLogout", reflect.TypeOf((*MockClientInterface)(nil).RunLogout), stdout)
+}
+
 // SearchClusterServiceVersionList mocks base method.
 func (m *MockClientInterface) SearchClusterServiceVersionList(name string) (*v1alpha1.ClusterServiceVersionList, error) {
 	m.ctrl.T.Helper()
