@@ -54,7 +54,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else {
 			var consentTelemetry bool
-			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: false}
+			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
 			err = survey.AskOne(prompt, &consentTelemetry, nil)
 			ui.HandleError(err)
 			if err == nil {
