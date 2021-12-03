@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -533,7 +535,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if err != nil {
 		return err
 	}
-
+	deployment.Spec.Replicas = pointer.Int32Ptr(1)
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
 	}
