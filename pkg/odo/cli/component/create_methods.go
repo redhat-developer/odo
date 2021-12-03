@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,7 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
-	registryConsts "github.com/redhat-developer/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -339,7 +339,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			return err
 		}
 	} else {
-		err := registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, false, registryConsts.TelemetryClient)
+		err := registryLibrary.PullStackFromRegistry(registry.URL, componentType, componentContext, segment.GetRegistryOptions())
 		if err != nil {
 			return err
 		}

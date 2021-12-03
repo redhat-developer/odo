@@ -3,6 +3,7 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"net/url"
 	"strings"
 	"sync"
@@ -18,7 +19,6 @@ import (
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
-	registryConsts "github.com/redhat-developer/odo/pkg/odo/cli/registry/consts"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -103,7 +103,7 @@ const indexPath = "/devfiles/index.json"
 func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	if !strings.Contains(registry.URL, "github") {
 		// OCI-based registry
-		devfileIndex, err := registryLibrary.GetRegistryIndex(registry.URL, false, registryConsts.TelemetryClient, indexSchema.StackDevfileType)
+		devfileIndex, err := registryLibrary.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
 		if err != nil {
 			return nil, err
 		}

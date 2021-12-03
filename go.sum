@@ -272,8 +272,12 @@ github.com/devfile/library v1.2.0 h1:OT1Irwg5EZhlCpsAFkjIzd3bqyzbLG0JmFPMHeE1e7M
 github.com/devfile/library v1.2.0/go.mod h1:gyiQS+ZImnM4/d+wFUl3gJmIozOSXMenl0WX8cx4zu4=
 github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0 h1:F2OkuW0ASrSz5d06tJxWfweUNYTnsOCyiGTEORisokE=
 github.com/devfile/registry-support/index/generator v0.0.0-20210916150157-08b31e03fdf0/go.mod h1:bLGagbW2SFn7jo5+kUPlCMehIGqWkRtLKc5O0OyJMJM=
+github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f h1:fKNUmoOPh7yAs69uMRZWHvev+m3e7T4jBL/hOXZB9ys=
+github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f/go.mod h1:bLGagbW2SFn7jo5+kUPlCMehIGqWkRtLKc5O0OyJMJM=
 github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca h1:MioKDSUEwwYCGEjGioWYO1vodYAutS+ESkZBGCPtx/U=
 github.com/devfile/registry-support/registry-library v0.0.0-20210928163805-b0916a4f1aca/go.mod h1:AMc98EiYtcL3XDv1f/dmMzNwuhLY2hFdWm6iOr18bZ4=
+github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2 h1:Rwuc0bdx8xSZWdIwXjAxaKYnZIWHneJmDAAZ6a5jXzY=
+github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2/go.mod h1:P9ivpg3NdJR7/atzW6Jo7Qs0NbrLjwxoknhQN+lFyAc=
 github.com/dgrijalva/jwt-go v0.0.0-20170104182250-a601269ab70c/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
