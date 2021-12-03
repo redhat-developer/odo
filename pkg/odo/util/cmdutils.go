@@ -298,3 +298,20 @@ func ThrowContextError() error {
 	return errors.Errorf(`Please specify the application name and project name
 Or use the command from inside a directory containing an odo component.`)
 }
+
+// MapFromParameters takes an array of strings which are of the format "key=value" and returns a map from these
+// It returns error if any of the string in the array doesn't adhere to "key=value" format
+func MapFromParameters(params []string) (map[string]string, error) {
+	paramsMap := make(map[string]string)
+
+	for _, kv := range params {
+		kvSlice := strings.SplitN(kv, "=", 2)
+		// key value not provided in format of key=value
+		if len(kvSlice) != 2 {
+			return nil, errors.New("parameters not provided in key=value format")
+		}
+		paramsMap[kvSlice[0]] = kvSlice[1]
+	}
+
+	return paramsMap, nil
+}

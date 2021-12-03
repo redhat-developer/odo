@@ -1,7 +1,7 @@
 apiVersion: redis.redis.opstreelabs.in/v1beta1
 kind: Redis
 metadata:
-  name: redis-standalone
+  name: redis
 spec:
   redisExporter:
     enabled: true

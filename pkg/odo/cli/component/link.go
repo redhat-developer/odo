@@ -115,6 +115,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVarP(&o.inlined, "inlined", "", false, "Puts the link definition in the devfile instead of a separate file")
 	linkCmd.PersistentFlags().StringVar(&o.name, "name", "", "Name of the created ServiceBinding resource")
 	linkCmd.PersistentFlags().BoolVar(&o.bindAsFiles, "bind-as-files", false, "If enabled, configuration values will be mounted as files, instead of declared as environment variables")
+	linkCmd.PersistentFlags().StringArrayVarP(&o.mappings, "map", "", []string{}, "Mappings (custom binding data) to be added to the component; each map should be specified as <key>=<value>")
 	linkCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--component` flag

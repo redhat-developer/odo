@@ -1,12 +1,11 @@
 package service
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -80,14 +79,9 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 	// we convert the param list provided in the format of key=value list
 	// to a map
-	o.ParametersMap = make(map[string]string)
-	for _, kv := range o.parameters {
-		kvSlice := strings.Split(kv, "=")
-		// key value not provided in format of key=value
-		if len(kvSlice) != 2 {
-			return errors.New("parameters not provided in key=value format")
-		}
-		o.ParametersMap[kvSlice[0]] = kvSlice[1]
+	o.ParametersMap, err = util.MapFromParameters(o.parameters)
+	if err != nil {
+		return err
 	}
 
 	err = validDevfileDirectory(o.componentContext)
