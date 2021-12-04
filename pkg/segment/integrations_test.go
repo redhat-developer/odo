@@ -3,11 +3,12 @@ package segment
 import (
 	"errors"
 	"fmt"
-	"github.com/devfile/registry-support/registry-library/library"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/devfile/registry-support/registry-library/library"
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 func TestGetRegistryOptions(t *testing.T) {

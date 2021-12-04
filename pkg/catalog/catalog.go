@@ -3,10 +3,11 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/segment"
 	"net/url"
 	"strings"
 	"sync"
+
+	"github.com/redhat-developer/odo/pkg/segment"
 
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/zalando/go-keyring"

@@ -1,8 +1,9 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/util"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 

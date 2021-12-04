@@ -2,10 +2,11 @@ package testingutil
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/pkg/errors"
 )

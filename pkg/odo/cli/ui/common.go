@@ -1,11 +1,12 @@
 package ui
 
 import (
+	"os"
+
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"k8s.io/klog"
-	"os"
 )
 
 // HandleError handles UI-related errors, in particular useful to gracefully handle ctrl-c interrupts gracefully
