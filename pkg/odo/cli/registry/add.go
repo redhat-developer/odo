@@ -3,6 +3,7 @@ package registry
 import (
 	// Built-in packages
 	"fmt"
+
 	util2 "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 
 	// Third-party packages

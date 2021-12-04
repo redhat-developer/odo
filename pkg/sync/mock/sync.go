@@ -5,10 +5,11 @@
 package mock
 
 import (
-	gomock "github.com/golang/mock/gomock"
-	common "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	io "io"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	common "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 )
 
 // MockSyncClient is a mock of SyncClient interface

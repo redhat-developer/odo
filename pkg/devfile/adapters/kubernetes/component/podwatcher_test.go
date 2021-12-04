@@ -3,10 +3,11 @@ package component
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"

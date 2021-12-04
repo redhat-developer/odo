@@ -1,8 +1,9 @@
 package secret
 
 import (
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"

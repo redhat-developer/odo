@@ -3,6 +3,7 @@ package kclient
 import (
 	"context"
 	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/unions"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

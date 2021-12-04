@@ -2,8 +2,9 @@ package kclient
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/unions"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"

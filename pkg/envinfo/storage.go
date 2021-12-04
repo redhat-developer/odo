@@ -2,6 +2,7 @@ package envinfo
 
 import (
 	"fmt"
+
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog/v2"
 

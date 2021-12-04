@@ -2,7 +2,7 @@ package odogenerator
 
 import (
 	"github.com/devfile/library/pkg/devfile/generator"
-	"k8s.io/api/networking/v1"
+	v1 "k8s.io/api/networking/v1"
 )
 
 // TODO: These functions are replicated from devfile library generators and it makes more sense that they reside there

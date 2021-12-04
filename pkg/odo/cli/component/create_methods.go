@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/segment"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/segment"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
