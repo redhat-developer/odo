@@ -92,7 +92,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 
 		It("should not show deprication warning, if git registry is not used", func() {
-			out, err := helper.Cmd("odo", "registry", "list").ShouldPass().OutAndErr()
+			out, err = helper.Cmd("odo", "registry", "list").ShouldPass().OutAndErr()
 			helper.DontMatchAllInOutput(fmt.Sprintln(out, err), []string{deprecated, docLink})
 		})
 
