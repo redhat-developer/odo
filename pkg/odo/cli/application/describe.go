@@ -60,7 +60,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.GetProject())
 	}
 
-	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())
+	exist, err := application.Exists(o.appName, o.KClient)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -70,14 +70,14 @@ func (o *DescribeOptions) Validate() (err error) {
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
-		appDef := application.GetMachineReadableFormat(o.Client, o.appName, o.GetProject())
+		appDef := application.GetMachineReadableFormat(o.KClient, o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)
 	} else {
 		var selector string
 		if o.appName != "" {
 			selector = applabels.GetSelector(o.appName)
 		}
-		componentList, err := component.List(o.Client, selector)
+		componentList, err := component.List(o.KClient, selector)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 				o.appName, len(componentList.Items))
 			if len(componentList.Items) > 0 {
 				for _, currentComponent := range componentList.Items {
-					err := util.PrintComponentInfo(o.Client, currentComponent.Name, currentComponent, o.appName, o.GetProject())
+					err := util.PrintComponentInfo(o.KClient, currentComponent.Name, currentComponent, o.appName, o.GetProject())
 					if err != nil {
 						return err
 					}

@@ -6,7 +6,6 @@ import (
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
-	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery/fake"
@@ -18,7 +17,6 @@ import (
 type FakeClientset struct {
 	Kubernetes              *fakeKubeClientset.Clientset
 	AppsClientset           *fakeAppsClientset.Clientset
-	RouteClientset          *fakeRouteClientset.Clientset
 	ProjClientset           *fakeProjClientset.Clientset
 	ServiceCatalogClientSet *fakeServiceCatalogClientSet.Clientset
 	DiscoveryClientSet      *fake.FakeDiscovery
@@ -38,9 +36,6 @@ func FakeNew() (*Client, *FakeClientset) {
 
 	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
 	client.appsClient = fkclientset.AppsClientset.AppsV1()
-
-	fkclientset.RouteClientset = fakeRouteClientset.NewSimpleClientset()
-	client.routeClient = fkclientset.RouteClientset.RouteV1()
 
 	fkclientset.ProjClientset = fakeProjClientset.NewSimpleClientset()
 	client.projectClient = fkclientset.ProjClientset.ProjectV1()

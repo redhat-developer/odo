@@ -10,7 +10,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -88,16 +87,7 @@ func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
 
 	loggingClient := machineoutput.NewConsoleMachineEventLoggingClient()
 
-	// occlient is required so that we can report the status for route URLs (eg in addition to our already testing ingress URLs for k8s)
-	oclient, err := occlient.New()
-	if err != nil {
-		// Fallback to k8s if occlient throws an error
-		oclient = nil
-	} else {
-		oclient.Namespace = so.KClient.GetCurrentNamespace()
-	}
-
-	url.StartURLHttpRequestStatusWatchForK8S(oclient, so.KClient, &so.LocalConfigProvider, loggingClient)
+	url.StartURLHttpRequestStatusWatchForK8S(so.KClient, &so.LocalConfigProvider, loggingClient)
 
 	// You can call Run() any time you like, but you can never leave.
 	for {

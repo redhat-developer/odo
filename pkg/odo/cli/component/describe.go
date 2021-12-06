@@ -70,7 +70,7 @@ func (do *DescribeOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.Context.Client, do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.Context.KClient, do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(cfd)
 	} else {
-		err = cfd.Print(do.Context.Client)
+		err = cfd.Print(do.Context.KClient)
 		if err != nil {
 			return err
 		}

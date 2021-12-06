@@ -25,6 +25,7 @@ import (
 	// api clientsets
 	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
+	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 	operatorsclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 	appsclientset "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -68,6 +69,7 @@ type Client struct {
 	// openshift clients
 	userClient    userclientset.UserV1Interface
 	projectClient projectclientset.ProjectV1Interface
+	routeClient   routeclientset.RouteV1Interface
 }
 
 // New creates a new client
@@ -151,6 +153,11 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	}
 
 	client.projectClient, err = projectclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client.routeClient, err = routeclientset.NewForConfig(client.KubeClientConfig)
 	if err != nil {
 		return nil, err
 	}

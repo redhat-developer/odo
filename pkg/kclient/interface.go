@@ -4,9 +4,11 @@ import (
 	"io"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/go-openapi/spec"
 	projectv1 "github.com/openshift/api/project/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/unions"
@@ -109,6 +111,14 @@ type ClientInterface interface {
 	GetProject(projectName string) (*projectv1.Project, error)
 	IsProjectSupported() (bool, error)
 	ListProjectNames() ([]string, error)
+
+	// routes.go
+	IsRouteSupported() (bool, error)
+	GetRoute(name string) (*routev1.Route, error)
+	CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error)
+	DeleteRoute(name string) error
+	ListRoutes(labelSelector string) ([]routev1.Route, error)
+	GetOneRouteFromSelector(selector string) (*routev1.Route, error)
 
 	// secrets.go
 	CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objectMeta metav1.ObjectMeta) (*corev1.Secret, error)

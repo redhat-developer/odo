@@ -2,7 +2,6 @@ package debug
 
 import (
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"k8s.io/client-go/rest"
 
 	"fmt"
@@ -18,7 +17,6 @@ import (
 
 // DefaultPortForwarder implements the SPDY based port forwarder
 type DefaultPortForwarder struct {
-	client  *occlient.Client
 	kClient kclient.ClientInterface
 	k8sgenclioptions.IOStreams
 	componentName string
@@ -26,9 +24,8 @@ type DefaultPortForwarder struct {
 	projectName   string
 }
 
-func NewDefaultPortForwarder(componentName, appName string, projectName string, client *occlient.Client, kClient kclient.ClientInterface, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
+func NewDefaultPortForwarder(componentName, appName string, projectName string, kClient kclient.ClientInterface, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
 	return &DefaultPortForwarder{
-		client:        client,
 		kClient:       kClient,
 		IOStreams:     streams,
 		componentName: componentName,
@@ -57,10 +54,7 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 			return err
 		}
 	} else {
-		conf, err = f.client.KubeConfig.ClientConfig()
-		if err != nil {
-			return err
-		}
+		conf = f.kClient.GetClientConfig()
 	}
 
 	if pod.Status.Phase != corev1.PodRunning {

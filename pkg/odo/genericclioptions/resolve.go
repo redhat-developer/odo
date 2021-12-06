@@ -65,8 +65,6 @@ func (o *internalCxt) resolveProjectAndNamespace(command *cobra.Command, configP
 			}
 		}
 	}
-	o.Client.Namespace = namespace
-	o.Client.GetKubeClient().Namespace = namespace
 	o.KClient.SetNamespace(namespace)
 	o.project = namespace
 	return nil

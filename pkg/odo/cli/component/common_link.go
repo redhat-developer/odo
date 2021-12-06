@@ -71,7 +71,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		return err
 	}
 
-	o.csvSupport, _ = o.Client.GetKubeClient().IsCSVSupported()
+	o.csvSupport, _ = o.KClient.IsCSVSupported()
 
 	o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(o.suppliedName)
 	if err != nil {
@@ -84,7 +84,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		// TODO find the service using an app name to link components in other apps
 		// requires modification of the app flag or finding some other way
 		var s *v1.Service
-		s, err = o.Context.Client.GetKubeClient().GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
+		s, err = o.Context.KClient.GetOneService(o.suppliedName, o.EnvSpecificInfo.GetApplication())
 		if kerrors.IsNotFound(err) {
 			return fmt.Errorf("couldn't find component named %q. Refer %q to see list of running components", o.suppliedName, "odo list")
 		}
@@ -272,7 +272,7 @@ func (o *commonLinkOptions) run() (err error) {
 		return fmt.Errorf("unknown operation %s", o.operationName)
 	}
 
-	secret, err := o.Client.GetKubeClient().GetSecret(o.secretName, o.GetProject())
+	secret, err := o.KClient.GetSecret(o.secretName, o.GetProject())
 	if err != nil {
 		return err
 	}

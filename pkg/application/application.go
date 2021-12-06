@@ -7,7 +7,6 @@ import (
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +19,7 @@ const (
 )
 
 // List all applications names in current project by looking at `app` labels in deployments
-func List(client *kclient.Client) ([]string, error) {
+func List(client kclient.ClientInterface) ([]string, error) {
 	if client == nil {
 		return nil, nil
 	}
@@ -36,7 +35,7 @@ func List(client *kclient.Client) ([]string, error) {
 }
 
 // Exists checks whether the given app exist or not in the list of applications
-func Exists(app string, client *kclient.Client) (bool, error) {
+func Exists(app string, client kclient.ClientInterface) (bool, error) {
 
 	appList, err := List(client)
 
@@ -52,7 +51,7 @@ func Exists(app string, client *kclient.Client) (bool, error) {
 }
 
 // Delete the given application by deleting deployments and services instances belonging to this application
-func Delete(client *kclient.Client, name string) error {
+func Delete(client kclient.ClientInterface, name string) error {
 	klog.V(4).Infof("Deleting application %s", name)
 
 	labels := applabels.GetLabels(name, false)
@@ -67,7 +66,7 @@ func Delete(client *kclient.Client, name string) error {
 }
 
 // GetMachineReadableFormat returns resource information in machine readable format
-func GetMachineReadableFormat(client *occlient.Client, appName string, projectName string) App {
+func GetMachineReadableFormat(client kclient.ClientInterface, appName string, projectName string) App {
 	componentList, _ := component.GetComponentNames(client, appName)
 	appDef := App{
 		TypeMeta: metav1.TypeMeta{

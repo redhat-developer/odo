@@ -8,20 +8,20 @@ import (
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/service"
 )
 
 // componentKubernetes represents a devfile component of type Kubernetes
 type componentKubernetes struct {
-	client        occlient.Client
+	client        kclient.ClientInterface
 	component     devfilev1.Component
 	componentName string
 	appName       string
 }
 
-func newComponentKubernetes(client occlient.Client, component devfilev1.Component, componentName string, appName string) componentKubernetes {
+func newComponentKubernetes(client kclient.ClientInterface, component devfilev1.Component, componentName string, appName string) componentKubernetes {
 	return componentKubernetes{
 		client:        client,
 		component:     component,
@@ -33,7 +33,7 @@ func newComponentKubernetes(client occlient.Client, component devfilev1.Componen
 // Apply a component of type Kubernetes by creating resources into a Kubernetes cluster
 func (o componentKubernetes) Apply(devfileObj parser.DevfileObj, devfilePath string) error {
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := service.ValidateResourceExist(o.client.GetKubeClient(), o.component, devfilePath)
+	_, err := service.ValidateResourceExist(o.client, o.component, devfilePath)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (o componentKubernetes) Apply(devfileObj parser.DevfileObj, devfilePath str
 	}
 
 	log.Infof("\nDeploying Kubernetes %s: %s", u.GetKind(), u.GetName())
-	isOperatorBackedService, err := service.PushKubernetesResource(o.client.GetKubeClient(), u, labels)
+	isOperatorBackedService, err := service.PushKubernetesResource(o.client, u, labels)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}

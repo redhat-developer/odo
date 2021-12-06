@@ -7,12 +7,12 @@ import (
 	"unicode"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlPkg "github.com/redhat-developer/odo/pkg/url"
 
@@ -73,7 +73,7 @@ func CheckOutputFlag(outputFlag string) error {
 }
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string, project string) error {
+func PrintComponentInfo(client kclient.ClientInterface, currentComponentName string, componentDesc component.Component, applicationName string, project string) error {
 
 	log.Describef("Component Name: ", currentComponentName)
 	log.Describef("Type: ", componentDesc.Spec.Type)
@@ -186,7 +186,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		for _, linkedService := range componentDesc.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, project)
+			secrets, err := client.GetSecret(linkedService.SecretName, project)
 			if err != nil {
 				return err
 			}

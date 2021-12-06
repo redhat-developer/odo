@@ -131,7 +131,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	// set the telemetry data
 	cmdCtx := cmd.Context()
 	devfileMetadata := po.Devfile.Data.GetMetadata()
-	scontext.SetClusterType(cmdCtx, po.Client.GetKubeClient())
+	scontext.SetClusterType(cmdCtx, po.KClient)
 	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
 	scontext.SetLanguage(cmdCtx, component.GetLanguageFromDevfileMetadata(devfileMetadata))
 	scontext.SetProjectType(cmdCtx, component.GetProjectTypeFromDevfileMetadata(devfileMetadata))

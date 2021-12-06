@@ -1,4 +1,4 @@
-package occlient
+package kclient
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
@@ -17,7 +16,7 @@ import (
 // IsRouteSupported checks if route resource type is present on the cluster
 func (c *Client) IsRouteSupported() (bool, error) {
 
-	return c.GetKubeClient().IsResourceSupported("route.openshift.io", "v1", "routes")
+	return c.IsResourceSupported("route.openshift.io", "v1", "routes")
 }
 
 // GetRoute gets the route with the given name
@@ -45,7 +44,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
-	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{FieldManager: kclient.FieldManager})
+	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating route")
 	}

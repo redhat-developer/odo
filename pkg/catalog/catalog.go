@@ -14,7 +14,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
@@ -231,7 +230,7 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 
 // SearchComponent searches for the component
 //TODO: Fix this to return devfile components
-func SearchComponent(client *occlient.Client, name string) ([]string, error) {
+func SearchComponent(client kclient.ClientInterface, name string) ([]string, error) {
 	//var result []string
 	//componentList, err := ListDevfileComponents(client)
 	//if err != nil {

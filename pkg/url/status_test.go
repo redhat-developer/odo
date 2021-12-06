@@ -10,7 +10,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -167,6 +166,7 @@ func TestGetURLsForKubernetes(t *testing.T) {
 			// Initialising the fakeclient
 			fkclient, fkclientset := kclient.FakeNewWithIngressSupports(true, false)
 			fkclient.Namespace = "default"
+			fkclient.SetDiscoveryInterface(fakeDiscoveryWithProject)
 
 			// Return the test's ingress list when requested
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -176,19 +176,12 @@ func TestGetURLsForKubernetes(t *testing.T) {
 				return true, tt.ingressList.GetExtensionV1Beta1IngresList(true), nil
 			})
 
-			// Initializing the fake occlient
-			fkoclient, fakeoclientSet := occlient.FakeNew()
-			fkoclient.Namespace = "default"
-			fkoclient.SetKubeClient(fkclient)
-			fkoclient.GetKubeClient().SetDiscoveryInterface(fakeDiscoveryWithProject)
-			fkoclient.SetKubeClient(fkclient)
-
 			// Return the test's route list when requested
-			fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fkclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, tt.routeList, nil
 			})
 
-			statusUrls, err := getURLsForKubernetes(fkoclient, fkclient, mockLocalConfig, false)
+			statusUrls, err := getURLsForKubernetes(fkclient, mockLocalConfig, false)
 
 			if err != nil {
 				t.Fatalf("Error occurred: %v", err)

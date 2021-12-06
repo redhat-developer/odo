@@ -17,7 +17,6 @@ import (
 
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	projectclientset "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
-	routeclientset "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -77,7 +76,6 @@ type Client struct {
 	kubeClient    *kclient.Client
 	appsClient    appsclientset.AppsV1Interface
 	projectClient projectclientset.ProjectV1Interface
-	routeClient   routeclientset.RouteV1Interface
 	userClient    userclientset.UserV1Interface
 	KubeConfig    clientcmd.ClientConfig
 	Namespace     string
@@ -108,11 +106,6 @@ func New() (*Client, error) {
 	}
 
 	client.projectClient, err = projectclientset.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	client.routeClient, err = routeclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}

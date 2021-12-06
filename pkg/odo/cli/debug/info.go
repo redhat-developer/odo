@@ -52,8 +52,9 @@ func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	}
 
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.EnvSpecificInfo.GetName(), o.Context.GetApplication(), o.Context.EnvSpecificInfo.GetNamespace(), o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
-	return nil
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.EnvSpecificInfo.GetName(), o.Context.GetApplication(), o.Context.EnvSpecificInfo.GetNamespace(), o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
+
+	return err
 }
 
 // Validate validates all the required options for port-forward cmd.

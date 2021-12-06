@@ -8,7 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -53,7 +52,7 @@ func AddApplicationFlag(cmd *cobra.Command) {
 }
 
 // printAppInfo will print things which will be deleted
-func printAppInfo(client *occlient.Client, kClient kclient.ClientInterface, appName string, projectName string) error {
+func printAppInfo(client kclient.ClientInterface, kClient kclient.ClientInterface, appName string, projectName string) error {
 	var selector string
 	if appName != "" {
 		selector = applabels.GetSelector(appName)

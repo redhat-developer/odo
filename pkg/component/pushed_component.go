@@ -7,7 +7,6 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/url"
 	v1 "k8s.io/api/apps/v1"
@@ -38,7 +37,7 @@ type defaultPushedComponent struct {
 	urls          []url.URL
 	storage       []storage.Storage
 	provider      provider
-	client        *occlient.Client
+	client        kclient.ClientInterface
 	storageClient storage.Client
 	urlClient     url.Client
 }
@@ -169,10 +168,10 @@ func getType(component provider) (string, error) {
 }
 
 // GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
-func GetPushedComponents(c *occlient.Client, applicationName string) (map[string]PushedComponent, error) {
+func GetPushedComponents(c kclient.ClientInterface, applicationName string) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 
-	deploymentList, err := c.GetKubeClient().ListDeployments(applicationSelector)
+	deploymentList, err := c.ListDeployments(applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
@@ -180,12 +179,12 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	for _, d := range deploymentList.Items {
 		deployment := d
 		storageClient := storage.NewClient(storage.ClientOptions{
-			OCClient:   *c,
+			Client:     c,
 			Deployment: &deployment,
 		})
 
 		urlClient := url.NewClient(url.ClientOptions{
-			OCClient:   *c,
+			Client:     c,
 			Deployment: &deployment,
 		})
 		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c, storageClient, urlClient)
@@ -195,7 +194,7 @@ func GetPushedComponents(c *occlient.Client, applicationName string) (map[string
 	return res, nil
 }
 
-func newPushedComponent(applicationName string, p provider, c *occlient.Client, storageClient storage.Client, urlClient url.Client) PushedComponent {
+func newPushedComponent(applicationName string, p provider, c kclient.ClientInterface, storageClient storage.Client, urlClient url.Client) PushedComponent {
 	return &defaultPushedComponent{
 		application:   applicationName,
 		provider:      p,
@@ -206,8 +205,8 @@ func newPushedComponent(applicationName string, p provider, c *occlient.Client, 
 }
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component
-func GetPushedComponent(c *occlient.Client, componentName, applicationName string) (PushedComponent, error) {
-	d, err := c.GetKubeClient().GetOneDeployment(componentName, applicationName)
+func GetPushedComponent(c kclient.ClientInterface, componentName, applicationName string) (PushedComponent, error) {
+	d, err := c.GetOneDeployment(componentName, applicationName)
 	if err != nil {
 		if isIgnorableError(err) {
 			return nil, nil
@@ -215,12 +214,12 @@ func GetPushedComponent(c *occlient.Client, componentName, applicationName strin
 		return nil, err
 	}
 	storageClient := storage.NewClient(storage.ClientOptions{
-		OCClient:   *c,
+		Client:     c,
 		Deployment: d,
 	})
 
 	urlClient := url.NewClient(url.ClientOptions{
-		OCClient:   *c,
+		Client:     c,
 		Deployment: d,
 	})
 	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c, storageClient, urlClient), nil

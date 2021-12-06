@@ -16,7 +16,6 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/occlient"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -206,7 +205,7 @@ func TestGetDeploymentStatus(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := occlient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNew()
 
 			// Return test case's deployment, when requested
 			fkclientset.Kubernetes.PrependReactor("get", "*", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -250,8 +249,8 @@ func TestGetDeploymentStatus(t *testing.T) {
 				AppName: testAppName,
 			})
 
-			componentAdapter := New(adapterCtx, *fkclient)
-			fkclient.Namespace = componentAdapter.Client.Namespace
+			componentAdapter := New(adapterCtx, fkclient)
+			fkclient.Namespace = componentAdapter.Client.GetCurrentNamespace()
 			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
