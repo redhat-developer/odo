@@ -988,6 +988,21 @@ func (mr *MockClientInterfaceMockRecorder) GetSecret(name, namespace interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecret", reflect.TypeOf((*MockClientInterface)(nil).GetSecret), name, namespace)
 }
 
+// GetServerVersion mocks base method.
+func (m *MockClientInterface) GetServerVersion() (*ServerInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServerVersion")
+	ret0, _ := ret[0].(*ServerInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServerVersion indicates an expected call of GetServerVersion.
+func (mr *MockClientInterfaceMockRecorder) GetServerVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion))
+}
+
 // GetService mocks base method.
 func (m *MockClientInterface) GetService(name string) (*v12.Service, error) {
 	m.ctrl.T.Helper()

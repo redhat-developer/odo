@@ -80,6 +80,9 @@ type ClientInterface interface {
 	SetCurrentNamespace(namespace string) error
 	WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error
 
+	// oc_server.go
+	GetServerVersion() (*ServerInfo, error)
+
 	// operators.go
 	IsServiceBindingSupported() (bool, error)
 	IsCSVSupported() (bool, error)
