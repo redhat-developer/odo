@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"io"
 	"os"
 	"reflect"
@@ -790,64 +791,81 @@ func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, t
 
 // Deploy executes the 'deploy' command defined in a devfile
 func (a Adapter) Deploy() error {
-	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
-		CommandOptions: parsercommon.CommandOptions{
-			CommandGroupKind: devfilev1.DeployCommandGroupKind,
-		},
-	})
+	deployCmd, err := getDeployCommand(a)
 	if err != nil {
-		return nil
+		return err
 	}
-
-	if len(commands) == 0 {
-		return errors.New("error deploying, no default deploy command found in devfile")
-	}
-
-	if len(commands) > 1 {
-		return errors.New("more than one default deploy command found in devfile, should not happen")
-	}
-
-	deployCmd := commands[0]
 
 	return a.ExecuteDevfileCommand(deployCmd, true)
 }
 
+// UnDeploy reverses the effect of the 'deploy' command defined in a devfile
 func (a Adapter) UnDeploy() error {
-	//// Instantiate the .group.kind=deploy command
-	//commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
-	//	CommandOptions: parsercommon.CommandOptions{
-	//		CommandGroupKind: devfilev1.DeployCommandGroupKind,
-	//	},
-	//})
-	//if err != nil {
-	//	return nil
-	//}
-	//
-	//if len(commands) == 0 {
-	//	return errors.New("error deploying, no default deploy command found in devfile")
-	//}
-	//
-	//if len(commands) > 1 {
-	//	return errors.New("more than one default deploy command found in devfile, should not happen")
-	//}
-	//
-	//deployCmd := commands[0]
-	//// Get a list of all the available commands
-	//allCommands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
-	//if err != nil {
-	//	return err
-	//}
-	//// Get the .group.kind=deploy command
-	//c, err := common.New(deployCmd, common.GetCommandsMap(allCommands), &a)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// Get the .group.kind=deploy command
-	//// Iterate through the commands from .group.kind=deploy and find the command that contains kubernetes
-	//// Get GVK, GVR
-	//// call the DeleteDynamicResource method of kClient.Interface and delete
-	return nil
+	deployCmd, err := getDeployCommand(a)
+	if err != nil {
+		return err
+	}
+	// Only get commands of type 'Apply'; those are the only ones we're concerned with for 'Deploy'
+	// 'Deploy' command does not support any other command type
+	allApplyCommands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
+		CommandOptions: parsercommon.CommandOptions{
+			CommandType: devfilev1.ApplyCommandType,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Get components of type Kubernetes; one of these components should be associated with one of the 'Deploy' composite commands
+	kubeComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
+	})
+	if err != nil {
+		return err
+	}
+
+	// A list of Command objects of the commands that form the composite 'Deploy' command
+	var requiredCommands []devfilev1.Command
+
+	// Get the Command object of commands that form the composite 'Deploy' command
+	for _, commandId := range deployCmd.Composite.Commands {
+		for _, cmd := range allApplyCommands {
+			if cmd.Id == commandId {
+				requiredCommands = append(requiredCommands, cmd)
+			}
+		}
+	}
+
+	// The component of type Kubernetes associated with one of the composite 'Deploy' commands
+	var component devfilev1.Component
+
+	// Get the component of the command that deploys the k8s object
+	// At this point we assume the component list is of type Kubernetes, and the commands are that of the composite 'Deploy' command
+	for _, cmp := range kubeComponents {
+		for _, cmd := range requiredCommands {
+			if cmd.Apply.Component == cmp.Name {
+				component = cmp
+				break
+			}
+		}
+	}
+
+	// Parse the component's Kubernetes manifest
+	u, err := service.GetK8sComponentAsUnstructured(component.Kubernetes, a.Context, devfilefs.DefaultFs{})
+	if err != nil {
+		return err
+	}
+
+	kClient := a.Client.GetKubeClient()
+	// Get the REST mappings
+	gvr, err := kClient.GetRestMappingFromUnstructured(u)
+	if err != nil {
+		return err
+	}
+	log.Infof("\nUn-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
+	// Un-deploy the K8s manifest
+	err = kClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
+	return err
 }
 
 // ExecuteDevfileCommand executes the devfile command
@@ -888,4 +906,23 @@ func (a Adapter) ApplyComponent(componentName string) error {
 	}
 
 	return cmp.Apply(a.Devfile, a.Context)
+}
+
+// getDeployCommand validates the deploy command and returns it
+func getDeployCommand(a Adapter) (devfilev1.Command, error) {
+	deployGroupCmd, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
+		CommandOptions: parsercommon.CommandOptions{
+			CommandGroupKind: devfilev1.DeployCommandGroupKind,
+		},
+	})
+	if err != nil {
+		return devfilev1.Command{}, err
+	}
+	if len(deployGroupCmd) == 0 {
+		return devfilev1.Command{}, errors.New("error deploying, no default deploy command found in devfile")
+	}
+	if len(deployGroupCmd) > 1 {
+		return devfilev1.Command{}, errors.New("more than one default deploy command found in devfile, should not happen")
+	}
+	return deployGroupCmd[0], nil
 }

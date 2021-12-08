@@ -83,16 +83,31 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("args: %#v", do)
 
 	if do.undeployFlag {
-		return do.DevfileUnDeploy()
+		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to undeploy?")) {
+			return do.DevfileUnDeploy()
+		} else {
+			log.Error("Aborting the un-deployment")
+		}
+	} else {
+		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+			err = do.DevfileComponentDelete()
+			if err != nil {
+				log.Errorf("error occurred while deleting component, cause: %v", err)
+			}
+		} else {
+			log.Error("Aborting deletion of component")
+		}
 	}
 
-	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+	if do.allFlag {
+		err := do.DevfileUnDeploy()
+		if err != nil {
+			log.Errorf("error occurred while un-deploying, cause: %v", err)
+		}
 		err = do.DevfileComponentDelete()
 		if err != nil {
 			log.Errorf("error occurred while deleting component, cause: %v", err)
 		}
-	} else {
-		log.Error("Aborting deletion of component")
 	}
 
 	if do.allFlag {
