@@ -82,35 +82,31 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
-	if do.undeployFlag {
-		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to undeploy?")) {
-			return do.DevfileUnDeploy()
-		} else {
-			log.Error("Aborting the un-deployment")
-		}
-	} else {
-		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
-			err = do.DevfileComponentDelete()
-			if err != nil {
-				log.Errorf("error occurred while deleting component, cause: %v", err)
+	var deleteFunc = func(do *DeleteOptions) error {
+		if do.undeployFlag {
+			if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to undeploy?")) {
+				err = do.DevfileUnDeploy()
+				if err != nil {
+					return fmt.Errorf("error occurred while undeploying, cause: %v", err)
+				}
+			} else {
+				log.Error("Aborting the un-deployment")
 			}
 		} else {
-			log.Error("Aborting deletion of component")
+			if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+				err = do.DevfileComponentDelete()
+				if err != nil {
+					log.Errorf("error occurred while deleting component, cause: %v", err)
+				}
+			} else {
+				log.Error("Aborting deletion of component")
+			}
 		}
+		return nil
 	}
 
 	if do.allFlag {
-		err := do.DevfileUnDeploy()
-		if err != nil {
-			log.Errorf("error occurred while un-deploying, cause: %v", err)
-		}
-		err = do.DevfileComponentDelete()
-		if err != nil {
-			log.Errorf("error occurred while deleting component, cause: %v", err)
-		}
-	}
-
-	if do.allFlag {
+		err = deleteFunc(do)
 		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
 		if do.forceFlag || ui.Proceed("Are you sure you want to delete env folder?") {
@@ -216,7 +212,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			log.Error("Aborting deletion of devfile.yaml file")
 		}
 	}
-
+	err = deleteFunc(do)
 	return nil
 }
 
