@@ -926,7 +926,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			ensureFilesSyncedTest(commonVar.Project, false)
 		})
 
-		FWhen("node-js application is created and pushed with devfile schema 2.2.0", func() {
+		When("node-js application is created and pushed with devfile schema 2.2.0", func() {
 
 			var output string
 			BeforeEach(func() {
