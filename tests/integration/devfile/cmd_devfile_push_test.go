@@ -926,7 +926,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			ensureFilesSyncedTest(commonVar.Project, false)
 		})
 
-		When("node-js application is created and pushed with devfile schema 2.2.0", func() {
+		FWhen("node-js application is created and pushed with devfile schema 2.2.0", func() {
 
 			var output string
 			BeforeEach(func() {
@@ -938,19 +938,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			ensureResource := func(output, cpulimit, cpurequest, memoryrequest string) {
 				By("check for cpuLimit", func() {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").ShouldPass().Out()
+					bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.limits.cpu}'").Out.Contents()
+					output = string(bufferOutput)
 					Expect(output).To(ContainSubstring(cpulimit))
 				})
 
 				By("check for cpuRequests", func() {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").ShouldPass().Out()
+					bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.cpu}'").Out.Contents()
+					output = string(bufferOutput)
 					Expect(output).To(ContainSubstring(cpurequest))
 				})
 
 				By("check for memoryRequests", func() {
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					output = helper.Cmd("kubectl", "get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").ShouldPass().Out()
+					bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
+					output = string(bufferOutput)
 					Expect(output).To(ContainSubstring(memoryrequest))
 				})
 			}

@@ -22,6 +22,7 @@ import (
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	apiOverride "github.com/devfile/api/v2/pkg/utils/overriding"
 	"github.com/devfile/api/v2/pkg/validation"
+	versionpkg "github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 )
 
@@ -110,7 +111,20 @@ func ParseDevfile(args ParserArgs) (d DevfileObj, err error) {
 		flattenedDevfile = *args.FlattenedDevfile
 	}
 
-	return populateAndParseDevfile(d, &resolutionContextTree{}, tool, flattenedDevfile)
+	d, err = populateAndParseDevfile(d, &resolutionContextTree{}, tool, flattenedDevfile)
+	if err != nil {
+		return d, errors.Wrap(err, "failed to populateAndParseDevfile")
+	}
+
+	//set defaults only if we are flattening parent and parsing succeeded
+	if flattenedDevfile && err == nil {
+		err = setDefaults(d)
+		if err != nil {
+			return d, errors.Wrap(err, "failed to setDefaults")
+		}
+	}
+
+	return d, err
 }
 
 // resolverTools contains required structs and data for resolving remote components of a devfile (plugins and parents)
@@ -185,6 +199,18 @@ func ParseFromData(data []byte) (d DevfileObj, err error) {
 
 func parseParentAndPlugin(d DevfileObj, resolveCtx *resolutionContextTree, tool resolverTools) (err error) {
 	flattenedParent := &v1.DevWorkspaceTemplateSpecContent{}
+	var mainDevfileVersion, parentDevfileVerson, pluginDevfileVerson *versionpkg.Version
+	var devfileVersion string
+	if devfileVersion = d.Ctx.GetApiVersion(); devfileVersion == "" {
+		devfileVersion = d.Data.GetSchemaVersion()
+	}
+
+	if devfileVersion != "" {
+		mainDevfileVersion, err = versionpkg.NewVersion(devfileVersion)
+		if err != nil {
+			return fmt.Errorf("fail to parse version of the main devfile")
+		}
+	}
 	parent := d.Data.GetParent()
 	if parent != nil {
 		if !reflect.DeepEqual(parent, &v1.Parent{}) {
@@ -203,7 +229,20 @@ func parseParentAndPlugin(d DevfileObj, resolveCtx *resolutionContextTree, tool 
 			if err != nil {
 				return err
 			}
+			var devfileVersion string
+			if devfileVersion = parentDevfileObj.Ctx.GetApiVersion(); devfileVersion == "" {
+				devfileVersion = parentDevfileObj.Data.GetSchemaVersion()
+			}
 
+			if devfileVersion != "" {
+				parentDevfileVerson, err = versionpkg.NewVersion(devfileVersion)
+				if err != nil {
+					return fmt.Errorf("fail to parse version of parent devfile from: %v", resolveImportReference(parent.ImportReference))
+				}
+				if parentDevfileVerson.GreaterThan(mainDevfileVersion) {
+					return fmt.Errorf("the parent devfile version from %v is greater than the child devfile version from %v", resolveImportReference(parent.ImportReference), resolveImportReference(resolveCtx.importReference))
+				}
+			}
 			parentWorkspaceContent := parentDevfileObj.Data.GetDevfileWorkspaceSpecContent()
 			// add attribute to parent elements
 			err = addSourceAttributesForOverrideAndMerge(parent.ImportReference, parentWorkspaceContent)
@@ -250,6 +289,20 @@ func parseParentAndPlugin(d DevfileObj, resolveCtx *resolutionContextTree, tool 
 			}
 			if err != nil {
 				return err
+			}
+			var devfileVersion string
+			if devfileVersion = pluginDevfileObj.Ctx.GetApiVersion(); devfileVersion == "" {
+				devfileVersion = pluginDevfileObj.Data.GetSchemaVersion()
+			}
+
+			if devfileVersion != "" {
+				pluginDevfileVerson, err = versionpkg.NewVersion(devfileVersion)
+				if err != nil {
+					return fmt.Errorf("fail to parse version of plugin devfile from: %v", resolveImportReference(component.Plugin.ImportReference))
+				}
+				if pluginDevfileVerson.GreaterThan(mainDevfileVersion) {
+					return fmt.Errorf("the plugin devfile version from %v is greater than the child devfile version from %v", resolveImportReference(component.Plugin.ImportReference), resolveImportReference(resolveCtx.importReference))
+				}
 			}
 			pluginWorkspaceContent := pluginDevfileObj.Data.GetDevfileWorkspaceSpecContent()
 			// add attribute to plugin elements
@@ -427,4 +480,111 @@ func convertDevWorskapceTemplateToDevObj(dwTemplate v1.DevWorkspaceTemplate) (d 
 
 	return d, nil
 
+}
+
+//setDefaults sets the default values for nil boolean properties after the merging of devWorkspaceTemplateSpec is complete
+func setDefaults(d DevfileObj) (err error) {
+
+	var devfileVersion string
+	if devfileVersion = d.Ctx.GetApiVersion(); devfileVersion == "" {
+		devfileVersion = d.Data.GetSchemaVersion()
+	}
+
+	commands, err := d.Data.GetCommands(common.DevfileOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	//set defaults on the commands
+	var cmdGroup *v1.CommandGroup
+	for i := range commands {
+		command := commands[i]
+		cmdGroup = nil
+
+		if command.Exec != nil {
+			exec := command.Exec
+			val := exec.GetHotReloadCapable()
+			exec.HotReloadCapable = &val
+			cmdGroup = exec.Group
+
+		} else if command.Composite != nil {
+			composite := command.Composite
+			val := composite.GetParallel()
+			composite.Parallel = &val
+			cmdGroup = composite.Group
+
+		} else if command.Apply != nil {
+			cmdGroup = command.Apply.Group
+		}
+
+		if cmdGroup != nil {
+			setIsDefault(cmdGroup)
+		}
+
+	}
+
+	//set defaults on the components
+
+	components, err := d.Data.GetComponents(common.DevfileOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	var endpoints []v1.Endpoint
+	for i := range components {
+		component := components[i]
+		endpoints = nil
+
+		if component.Container != nil {
+			container := component.Container
+			val := container.GetDedicatedPod()
+			container.DedicatedPod = &val
+
+			msVal := container.GetMountSources()
+			container.MountSources = &msVal
+
+			endpoints = container.Endpoints
+
+		} else if component.Kubernetes != nil {
+			endpoints = component.Kubernetes.Endpoints
+
+		} else if component.Openshift != nil {
+
+			endpoints = component.Openshift.Endpoints
+
+		} else if component.Volume != nil && devfileVersion != string(data.APISchemaVersion200) {
+			volume := component.Volume
+			val := volume.GetEphemeral()
+			volume.Ephemeral = &val
+
+		} else if component.Image != nil { //we don't need to do a schema version check since Image in v2.2.0.  If used in older specs, a parser error would occur
+			dockerImage := component.Image.Dockerfile
+			if dockerImage != nil {
+				val := dockerImage.GetRootRequired()
+				dockerImage.RootRequired = &val
+			}
+		}
+
+		if endpoints != nil {
+			setEndpoints(endpoints)
+		}
+	}
+
+	return nil
+}
+
+///setIsDefault sets the default value of CommandGroup.IsDefault if nil
+func setIsDefault(cmdGroup *v1.CommandGroup) {
+	val := cmdGroup.GetIsDefault()
+	cmdGroup.IsDefault = &val
+}
+
+//setEndpoints sets the default value of Endpoint.Secure if nil
+func setEndpoints(endpoints []v1.Endpoint) {
+	for i := range endpoints {
+		val := endpoints[i].GetSecure()
+		endpoints[i].Secure = &val
+	}
 }

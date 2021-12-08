@@ -3,6 +3,7 @@ package testingutil
 import (
 	"fmt"
 
+	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
@@ -50,7 +51,7 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 
 // GetSingleSecureRoute returns a secure route generated with the given parameters
 func GetSingleSecureRoute(urlName string, port int, componentName, applicationName string) routev1.Route {
-	generatedRoute := *generator.GetRoute(generator.RouteParams{
+	generatedRoute := *generator.GetRoute(v1.Endpoint{}, generator.RouteParams{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
