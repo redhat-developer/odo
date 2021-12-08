@@ -152,6 +152,11 @@ func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand de
 	return getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
 }
 
+// GetTestCommand iterates through the components in the devfile and returns the deploy command
+func GetDeployCommand(data data.DevfileData, devfileDeployCmd string) (deployCommand devfilev1.Command, err error) {
+	return getCommand(data, devfileDeployCmd, devfilev1.DeployCommandGroupKind)
+}
+
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
 // if provided through odo push or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.

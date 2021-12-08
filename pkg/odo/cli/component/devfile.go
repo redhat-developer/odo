@@ -1,6 +1,9 @@
 package component
 
 import (
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/service"
 	"os"
 	"reflect"
 	"strings"
@@ -164,6 +167,79 @@ func (lo LogOptions) DevfileComponentLog() error {
 	}
 
 	return util.DisplayLog(lo.followFlag, rd, os.Stdout, componentName, -1)
+}
+
+// Get the .group.kind=deploy command
+// Iterate through the commands from .group.kind=deploy and find the command that contains kubernetes
+// Get GVK, GVR
+// call the DeleteDynamicResource method of kClient.Interface and delete
+func (do *DeleteOptions) DevfileUnDeploy() error {
+	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
+	if err != nil {
+		return err
+	}
+	deployGroupCmd, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{
+		CommandOptions: parsercommon.CommandOptions{
+			CommandGroupKind: devfilev1.DeployCommandGroupKind,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if len(deployGroupCmd) == 0 {
+		return errors.New("error deploying, no default deploy command found in devfile")
+	}
+	if len(deployGroupCmd) > 1 {
+		return errors.New("more than one default deploy command found in devfile, should not happen")
+	}
+	deployCmd := deployGroupCmd[0]
+
+	// Only get commands of type Apply; those are the only ones we're concerned with for now
+	allApplyCommands, err := devObj.Data.GetCommands(parsercommon.DevfileOptions{
+		CommandOptions: parsercommon.CommandOptions{
+			CommandType: devfilev1.ApplyCommandType,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	// Get components of type Kubernetes
+	kubeComponents, err := devObj.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
+	})
+	if err != nil {
+		return err
+	}
+
+	var component devfilev1.Component
+	var requiredCommands []devfilev1.Command
+	for _, commandId := range deployCmd.Composite.Commands {
+		for _, cmd := range allApplyCommands {
+			if cmd.Id == commandId {
+				requiredCommands = append(requiredCommands, cmd)
+			}
+		}
+	}
+	for _, cmp := range kubeComponents {
+		for _, cmd := range requiredCommands {
+			if cmd.Apply.Component == cmp.Name {
+				component = cmp
+				break
+			}
+		}
+	}
+	//------------------------------------------------------------------------------------------------------------------
+	u, err := service.GetK8sComponentAsUnstructured(component.Kubernetes, do.GetDevfilePath(), devfilefs.DefaultFs{})
+	if err != nil {
+		return err
+	}
+	gvr, err := do.KClient.GetRestMappingFromUnstructured(u)
+	if err != nil {
+		return err
+	}
+	err = do.KClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
+
+	return err
 }
 
 // DevfileComponentDelete deletes the devfile component

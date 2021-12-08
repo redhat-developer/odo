@@ -812,6 +812,44 @@ func (a Adapter) Deploy() error {
 	return a.ExecuteDevfileCommand(deployCmd, true)
 }
 
+func (a Adapter) UnDeploy() error {
+	//// Instantiate the .group.kind=deploy command
+	//commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
+	//	CommandOptions: parsercommon.CommandOptions{
+	//		CommandGroupKind: devfilev1.DeployCommandGroupKind,
+	//	},
+	//})
+	//if err != nil {
+	//	return nil
+	//}
+	//
+	//if len(commands) == 0 {
+	//	return errors.New("error deploying, no default deploy command found in devfile")
+	//}
+	//
+	//if len(commands) > 1 {
+	//	return errors.New("more than one default deploy command found in devfile, should not happen")
+	//}
+	//
+	//deployCmd := commands[0]
+	//// Get a list of all the available commands
+	//allCommands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
+	//if err != nil {
+	//	return err
+	//}
+	//// Get the .group.kind=deploy command
+	//c, err := common.New(deployCmd, common.GetCommandsMap(allCommands), &a)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//// Get the .group.kind=deploy command
+	//// Iterate through the commands from .group.kind=deploy and find the command that contains kubernetes
+	//// Get GVK, GVR
+	//// call the DeleteDynamicResource method of kClient.Interface and delete
+	return nil
+}
+
 // ExecuteDevfileCommand executes the devfile command
 func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
 	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})

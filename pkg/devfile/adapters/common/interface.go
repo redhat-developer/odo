@@ -19,4 +19,5 @@ type ComponentAdapter interface {
 	Log(follow bool, command devfilev1.Command) (io.ReadCloser, error)
 	Exec(command []string) error
 	Deploy() error
+	UnDeploy() error
 }

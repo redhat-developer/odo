@@ -272,4 +272,41 @@ var _ = Describe("odo devfile delete command tests", func() {
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
 		})
 	})
+	When("odo deploy is run", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.Cmd("odo", "create").ShouldPass()
+		})
+		When("executing the odo delete command with the --deploy flag", func() {
+			var stdOut string
+			BeforeEach(func() {
+				stdOut = helper.Cmd("odo", "delete", "--deploy").ShouldPass().Out()
+			})
+			It("should successfully delete the deploy resources", func() {
+				Expect(stdOut).To(ContainSubstring("successfully deleted the deploy"))
+				Expect(stdOut).ToNot(ContainSubstring("successfully deleted the component"))
+			})
+		})
+		When("executing the odo delete command with -a flag", func() {
+			var stdOut string
+			BeforeEach(func() {
+				stdOut = helper.Cmd("odo", "delete", "-a").ShouldPass().Out()
+			})
+			It("should successfully delete the deploy resources", func() {
+				Expect(stdOut).To(ContainSubstring("successfully deleted the component"))
+				Expect(stdOut).To(ContainSubstring("successfully deleted the deploy"))
+			})
+		})
+		When("executing the odo delete", func() {
+			var stdOut string
+			BeforeEach(func() {
+				stdOut = helper.Cmd("odo", "delete").ShouldPass().Out()
+			})
+			It("should successfully delete the deploy resources", func() {
+				Expect(stdOut).To(ContainSubstring("successfully deleted the component"))
+				Expect(stdOut).ToNot(ContainSubstring("successfully deleted the deploy"))
+			})
+		})
+	})
 })
