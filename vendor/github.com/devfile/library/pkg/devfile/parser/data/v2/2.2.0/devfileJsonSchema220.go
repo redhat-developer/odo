@@ -269,6 +269,27 @@ const JsonSchema220 = `{
               "image"
             ],
             "properties": {
+              "annotation": {
+                "description": "Annotations that should be added to specific resources for this container",
+                "type": "object",
+                "properties": {
+                  "deployment": {
+                    "description": "Annotations to be added to deployment",
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "service": {
+                    "description": "Annotations to be added to service",
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
               "args": {
                 "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                 "type": "array",
@@ -302,6 +323,13 @@ const JsonSchema220 = `{
                     "targetPort"
                   ],
                   "properties": {
+                    "annotation": {
+                      "description": "Annotations to be added to Kubernetes Ingress or Openshift Route",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
                     "attributes": {
                       "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                       "type": "object",
@@ -558,6 +586,13 @@ const JsonSchema220 = `{
                     "targetPort"
                   ],
                   "properties": {
+                    "annotation": {
+                      "description": "Annotations to be added to Kubernetes Ingress or Openshift Route",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
                     "attributes": {
                       "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                       "type": "object",
@@ -648,6 +683,13 @@ const JsonSchema220 = `{
                     "targetPort"
                   ],
                   "properties": {
+                    "annotation": {
+                      "description": "Annotations to be added to Kubernetes Ingress or Openshift Route",
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
                     "attributes": {
                       "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                       "type": "object",
@@ -1101,6 +1143,27 @@ const JsonSchema220 = `{
                 "description": "Allows adding and configuring devworkspace-related containers",
                 "type": "object",
                 "properties": {
+                  "annotation": {
+                    "description": "Annotations that should be added to specific resources for this container",
+                    "type": "object",
+                    "properties": {
+                      "deployment": {
+                        "description": "Annotations to be added to deployment",
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "service": {
+                        "description": "Annotations to be added to service",
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
                   "args": {
                     "description": "The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command.\n\nDefaults to an empty array, meaning use whatever is defined in the image.",
                     "type": "array",
@@ -1133,6 +1196,13 @@ const JsonSchema220 = `{
                         "name"
                       ],
                       "properties": {
+                        "annotation": {
+                          "description": "Annotations to be added to Kubernetes Ingress or Openshift Route",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
                         "attributes": {
                           "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                           "type": "object",
@@ -1375,6 +1445,13 @@ const JsonSchema220 = `{
                         "name"
                       ],
                       "properties": {
+                        "annotation": {
+                          "description": "Annotations to be added to Kubernetes Ingress or Openshift Route",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
                         "attributes": {
                           "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                           "type": "object",
@@ -1462,6 +1539,13 @@ const JsonSchema220 = `{
                         "name"
                       ],
                       "properties": {
+                        "annotation": {
+                          "description": "Annotations to be added to Kubernetes Ingress or Openshift Route",
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
                         "attributes": {
                           "description": "Map of implementation-dependant string-based free-form attributes.\n\nExamples of Che-specific attributes:\n- cookiesAuthEnabled: \"true\" / \"false\",\n- type: \"terminal\" / \"ide\" / \"ide-dev\",",
                           "type": "object",
