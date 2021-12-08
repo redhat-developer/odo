@@ -26,7 +26,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("createing a notejs component", func() {
+	When("creating a nodejs component", func() {
 		storageNames := []string{helper.RandString(5), helper.RandString(5)}
 		pathNames := []string{"/data", "/" + storageNames[1]}
 		sizes := []string{"5Gi", "1Gi"}
@@ -40,7 +40,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.Cmd("odo", "storage", "delete", helper.RandString(5), "--context", commonVar.Context, "-f").ShouldFail()
 		})
 
-		When("ephemeral is set to false in preference.yaml and doing odo push", func() {
+		When("ephemeral is set to true in preference.yaml and doing odo push", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "ephemeral", "true").ShouldPass()
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
@@ -96,7 +96,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			})
 		})
 
-		When("devfile storage create command is executed and doing odo push", func() {
+		When("storage create command is executed and doing odo push", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "storage", "create", storageNames[0], "--path", pathNames[0], "--size", sizes[0], "--context", commonVar.Context).ShouldPass()
 			})
@@ -123,14 +123,12 @@ var _ = Describe("odo devfile storage command tests", func() {
 			})
 
 			When("odo push is executed", func() {
-				var stdOut string
-
 				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-					stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 				})
 
 				It("should list storage in pushed state", func() {
+					stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 					helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Pushed"})
 					helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
 				})
@@ -138,10 +136,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 				When("creating new storage and doing odo storage list", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "storage", "create", storageNames[1], "--path", pathNames[1], "--size", sizes[1], "--context", commonVar.Context).ShouldPass()
-						stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 					})
 
 					It("should list storage in correct state", func() {
+						stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 						helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Pushed"})
 						helper.MatchAllInOutput(stdOut, []string{storageNames[1], pathNames[1], sizes[1], "Not Pushed"})
 						helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
@@ -149,10 +147,10 @@ var _ = Describe("odo devfile storage command tests", func() {
 					When("deleting pushed storage and listing storage", func() {
 						BeforeEach(func() {
 							helper.Cmd("odo", "storage", "delete", storageNames[0], "-f", "--context", commonVar.Context).ShouldPass()
-							stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 						})
 
 						It("should list it as locally deleted", func() {
+							stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 							helper.MatchAllInOutput(stdOut, []string{storageNames[0], pathNames[0], sizes[0], "Locally Deleted"})
 							helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
 						})
@@ -164,9 +162,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 								// since we don't have `wait` for `odo delete` at this moment
 								// we need to wait for the pod to be in the terminating state or it has been deleted from the cluster
 								commonVar.CliRunner.WaitAndCheckForTerminatingState("pods", commonVar.Project, 1)
-								stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 							})
 							It("should list storage with correct state", func() {
+								stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 								helper.MatchAllInOutput(stdOut, []string{"Not Pushed"})
 								// since `Pushed` is a sub string of `Not Pushed`, we count the occurrence of `Pushed`
 								count := strings.Count(stdOut, "Pushed")
@@ -287,34 +285,34 @@ var _ = Describe("odo devfile storage command tests", func() {
 	})
 
 	When("should list the storage with the proper states and container names", func() {
-		var stdOut string
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
+
 		})
 
 		It("should list the storage with the proper states and container names", func() {
+			stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
 		})
 
 		When("doing odo push and listing storage", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
-				stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 			})
 
 			It("should list the storage with the proper states and container names", func() {
+				stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 				helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Pushed", "CONTAINER", "runtime", "runtime2"})
 			})
 
 			When("deleting storage push and doing storage list", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "storage", "delete", "firstvol", "-f", "--context", commonVar.Context).ShouldPass()
-					stdOut = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 				})
 
 				It("should list the storage with the proper states and container names", func() {
+					stdOut := helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 					helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Pushed", "Locally Deleted", "CONTAINER", "runtime", "runtime2"})
 				})
 			})
