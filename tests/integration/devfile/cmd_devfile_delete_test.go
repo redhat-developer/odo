@@ -64,6 +64,18 @@ var _ = Describe("odo devfile delete command tests", func() {
 				stdOut := helper.Cmd("odo", "delete", "-f").ShouldPass().Out()
 				Expect(stdOut).ToNot(ContainSubstring("Un-deploying the Kubernetes"))
 			})
+			When("outside the context directory", func() {
+				BeforeEach(func() {
+					helper.Chdir(commonVar.OriginalWorkingDirectory)
+				})
+				AfterEach(func() {
+					helper.Chdir(commonVar.Context)
+				})
+				It("should successfully undeploy", func() {
+					helper.Cmd("odo", "delete", "--deploy", "-f", "--context", commonVar.Context).ShouldPass()
+				})
+			})
+
 		})
 
 		When("the component is pushed", func() {
