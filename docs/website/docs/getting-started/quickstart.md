@@ -59,6 +59,10 @@ The `minikube ip` command helps get the IP address of the minikube instance. It 
 In the [prerequisites](#prerequisites) section, we installed Postgres Operator. Before being able to create a service using it, first ensure that the Operator is installed correctly. You should see the Postgres Operator like in below output. Note that you might see more Operators in the output if there are other Operators installed on your cluster: 
 ```shell
 odo catalog list services
+```
+
+```shell
+$ odo catalog list services
 Services available through Operators
 NAME                        CRDs
 postgresoperator.v5.0.3     PostgresCluster
@@ -66,7 +70,11 @@ postgresoperator.v5.0.3     PostgresCluster
 
 If you don't see the Postgres Operator here, it might be still installing. Take a look at what you see in the `PHASE` column in below output:
 ```shell
-kubectl get csv                         
+kubectl get csv
+```
+
+```shell
+$ kubectl get csv                         
 NAME                      DISPLAY                           VERSION   REPLACES                  PHASE
 postgresoperator.v5.0.3   Crunchy Postgres for Kubernetes   5.0.3     postgresoperator.v5.0.2   Succeeded
 ```

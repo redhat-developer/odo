@@ -10,7 +10,7 @@ module.exports = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
-  organizationName: 'openshift', // Usually your GitHub org/user name.
+  organizationName: 'redhat-developer', // Usually your GitHub org/user name.
   projectName: 'odo', // Usually your repo name.
   themeConfig: {
     navbar: {
