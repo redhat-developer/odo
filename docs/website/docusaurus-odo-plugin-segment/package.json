@@ -1,0 +1,16 @@
+{
+  "name": "docusaurus-odo-plugin-segment",
+  "version": "1.0.0",
+  "description": "Docusaurus plugin providing odo specific integration with Segment",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "segment",
+    "analytics.js",
+    "docusaurus-plugin"
+  ],
+  "author": "Parthvi Vala",
+  "license": "Apache-2.0"
+}
