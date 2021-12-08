@@ -47,47 +47,40 @@ var deleteExample = ktemplates.Examples(`
 
 // DeleteOptions is a container to attach complete, validate and run pattern
 type DeleteOptions struct {
-	componentForceDeleteFlag bool
-	componentDeleteAllFlag   bool
-	componentDeleteWaitFlag  bool
-	componentContext         string
-	isCmpExists              bool
+	// Component Context
 	*ComponentOptions
 
-	// devfile path
-	show bool
+	// Flags
+	contextFlag string
+	forceFlag   bool
+	allFlag     bool
+	waitFlag    bool
+	showLogFlag bool
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
 	return &DeleteOptions{
-		componentForceDeleteFlag: false,
-		componentDeleteAllFlag:   false,
-		componentDeleteWaitFlag:  false,
-		componentContext:         "",
-		isCmpExists:              false,
-		ComponentOptions:         &ComponentOptions{},
-		show:                     false,
+		ComponentOptions: &ComponentOptions{},
 	}
 }
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(do.componentContext))
+	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(do.contextFlag))
 	return err
 }
 
 // Validate validates the list parameters
-func (do *DeleteOptions) Validate() (err error) {
-	return
-
+func (do *DeleteOptions) Validate() error {
+	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
 func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
-	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 		err = do.DevfileComponentDelete()
 		if err != nil {
 			log.Errorf("error occurred while deleting component, cause: %v", err)
@@ -96,10 +89,10 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 		log.Error("Aborting deletion of component")
 	}
 
-	if do.componentDeleteAllFlag {
+	if do.allFlag {
 		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
-		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete env folder?") {
+		if do.forceFlag || ui.Proceed("Are you sure you want to delete env folder?") {
 			if !do.EnvSpecificInfo.Exists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}
@@ -115,7 +108,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			if err != nil {
 				return err
 			}
-			err = util.DeletePath(filepath.Join(do.componentContext, util.DotOdoDirectory))
+			err = util.DeletePath(filepath.Join(do.contextFlag, util.DotOdoDirectory))
 			if err != nil {
 				return err
 			}
@@ -124,7 +117,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			log.Error("Aborting deletion of env folder")
 		}
 
-		if do.componentForceDeleteFlag {
+		if do.forceFlag {
 			if !util.CheckPathExists(do.GetDevfilePath()) {
 				return fmt.Errorf("devfile.yaml does not exist in the current directory")
 			}
@@ -136,18 +129,18 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 					return err
 				}
 
-				err = common.RemoveDevfileURIContents(devfileObj, do.componentContext)
+				err = common.RemoveDevfileURIContents(devfileObj, do.contextFlag)
 				if err != nil {
 					return err
 				}
 
-				empty, err := util.IsEmpty(filepath.Join(do.componentContext, consts.UriFolder))
+				empty, err := util.IsEmpty(filepath.Join(do.contextFlag, consts.UriFolder))
 				if err != nil && !os.IsNotExist(err) {
 					return err
 				}
 
 				if !os.IsNotExist(err) && empty {
-					err = os.RemoveAll(filepath.Join(do.componentContext, consts.UriFolder))
+					err = os.RemoveAll(filepath.Join(do.contextFlag, consts.UriFolder))
 					if err != nil {
 						return err
 					}
@@ -175,18 +168,18 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 				return err
 			}
 
-			err = common.RemoveDevfileURIContents(devfileObj, do.componentContext)
+			err = common.RemoveDevfileURIContents(devfileObj, do.contextFlag)
 			if err != nil {
 				return err
 			}
 
-			empty, err := util.IsEmpty(filepath.Join(do.componentContext, consts.UriFolder))
+			empty, err := util.IsEmpty(filepath.Join(do.contextFlag, consts.UriFolder))
 			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
 
 			if !os.IsNotExist(err) && empty {
-				err = os.RemoveAll(filepath.Join(do.componentContext, consts.UriFolder))
+				err = os.RemoveAll(filepath.Join(do.contextFlag, consts.UriFolder))
 				if err != nil {
 					return err
 				}
@@ -223,16 +216,16 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		},
 	}
 
-	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
-	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
-	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
+	componentDeleteCmd.Flags().BoolVarP(&do.forceFlag, "force", "f", false, "Delete component without prompting")
+	componentDeleteCmd.Flags().BoolVarP(&do.allFlag, "all", "a", false, "Delete component and local config")
+	componentDeleteCmd.Flags().BoolVarP(&do.waitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
 
-	componentDeleteCmd.Flags().BoolVar(&do.show, "show-log", false, "If enabled, logs will be shown when deleted")
+	componentDeleteCmd.Flags().BoolVar(&do.showLogFlag, "show-log", false, "If enabled, logs will be shown when deleted")
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
 	//Adding `--context` flag
-	genericclioptions.AddContextFlag(componentDeleteCmd, &do.componentContext)
+	genericclioptions.AddContextFlag(componentDeleteCmd, &do.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)

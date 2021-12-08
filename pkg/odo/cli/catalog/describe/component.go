@@ -40,12 +40,14 @@ This describes the component and its associated starter projects.
 
 // DescribeComponentOptions encapsulates the options for the odo catalog describe component command
 type DescribeComponentOptions struct {
-	// name of the component to describe, from command arguments
-	componentName string
-	// if devfile components with name that matches arg[0]
-	devfileComponents []catalog.DevfileComponentType
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	componentName string
+
+	// devfile components with name that matches componentName
+	devfileComponents []catalog.DevfileComponentType
 }
 
 // NewDescribeComponentOptions creates a new DescribeComponentOptions instance
@@ -70,7 +72,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		return err
 	}
 
-	o.GetDevfileComponentsByName(catalogDevfileList)
+	o.devfileComponents = listDevfileComponentsByName(catalogDevfileList, o.componentName)
 	return nil
 }
 
@@ -157,13 +159,15 @@ func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
 	return command
 }
 
-// GetDevfileComponentsByName gets all the devfiles that have the same name as the specified components
-func (o *DescribeComponentOptions) GetDevfileComponentsByName(catalogDevfileList catalog.DevfileComponentTypeList) {
+// listDevfileComponentsByName lists all the devfile components that have the same name as the specified component
+func listDevfileComponentsByName(catalogDevfileList catalog.DevfileComponentTypeList, componentName string) []catalog.DevfileComponentType {
+	var components []catalog.DevfileComponentType
 	for _, devfileComponent := range catalogDevfileList.Items {
-		if devfileComponent.Name == o.componentName {
-			o.devfileComponents = append(o.devfileComponents, devfileComponent)
+		if devfileComponent.Name == componentName {
+			components = append(components, devfileComponent)
 		}
 	}
+	return components
 }
 
 // GetDevfile downloads the devfile in memory and return the devfile object

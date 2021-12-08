@@ -34,12 +34,15 @@ var (
 
 // AddOptions encapsulates the options for the "odo registry add" command
 type AddOptions struct {
-	operation    string
+	// Parameters
 	registryName string
 	registryURL  string
-	user         string
-	token        string
-	forceFlag    bool
+
+	// Flags
+	tokenFlag string
+
+	operation string
+	user      string
 }
 
 // NewAddOptions creates a new AddOptions instance
@@ -53,7 +56,7 @@ func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	o.registryName = args[0]
 	o.registryURL = args[1]
 	o.user = "default"
-	return
+	return nil
 }
 
 // Validate validates the AddOptions based on completed values
@@ -65,13 +68,13 @@ func (o *AddOptions) Validate() (err error) {
 	if util2.IsGitBasedRegistry(o.registryURL) {
 		util2.PrintGitRegistryDeprecationWarning()
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for "odo registry add" command
 func (o *AddOptions) Run(cmd *cobra.Command) (err error) {
 	isSecure := false
-	if o.token != "" {
+	if o.tokenFlag != "" {
 		isSecure = true
 	}
 
@@ -79,13 +82,13 @@ func (o *AddOptions) Run(cmd *cobra.Command) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "unable to add registry")
 	}
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, isSecure)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, false, isSecure)
 	if err != nil {
 		return err
 	}
 
-	if o.token != "" {
-		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
+	if o.tokenFlag != "" {
+		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
 		if err != nil {
 			return errors.Wrap(err, "unable to store registry credential to keyring")
 		}
@@ -109,7 +112,7 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 		},
 	}
 
-	registryAddCmd.Flags().StringVar(&o.token, "token", "", "Token to be used to access secure registry")
+	registryAddCmd.Flags().StringVar(&o.tokenFlag, "token", "", "Token to be used to access secure registry")
 
 	return registryAddCmd
 }

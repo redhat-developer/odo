@@ -27,24 +27,24 @@ const (
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
 type PortForwardOptions struct {
-	componentName   string
-	applicationName string
-	Namespace       string
+	// Context
+	*genericclioptions.Context
+
+	// Flags
+	contextFlag   string
+	localPortFlag int
 
 	// PortPair is the combination of local and remote port in the format "local:remote"
 	PortPair string
 
-	localPort  int
-	contextDir string
-
+	// Port forwarder backend
 	PortForwarder *debug.DefaultPortForwarder
+
 	// StopChannel is used to stop port forwarding
 	StopChannel chan struct{}
+
 	// ReadChannel is used to receive status of port forwarding ( ready or not ready )
 	ReadyChannel chan struct{}
-
-	*genericclioptions.Context
-	devfilePath string
 }
 
 var (
@@ -72,27 +72,15 @@ func NewPortForwardOptions() *PortForwardOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.devfilePath = location.DevfileLocation(o.contextDir)
-
-	var remotePort int
-
-	if util.CheckPathExists(o.devfilePath) {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-		if err != nil {
-			return err
-		}
-
-		// a small shortcut
-		env := o.Context.EnvSpecificInfo
-		remotePort = env.GetDebugPort()
-
-		o.componentName = env.GetName()
-		o.Namespace = env.GetNamespace()
-
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	if err != nil {
+		return err
 	}
 
+	remotePort := o.Context.EnvSpecificInfo.GetDebugPort()
+
 	// try to listen on the given local port and check if the port is free or not
-	addressLook := "localhost:" + strconv.Itoa(o.localPort)
+	addressLook := "localhost:" + strconv.Itoa(o.localPortFlag)
 	listener, err := net.Listen("tcp", addressLook)
 	if err != nil {
 		// if the local-port flag is set by the user, return the error and stop execution
@@ -101,12 +89,12 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 			return err
 		}
 		// else display a error message and auto select a new free port
-		log.Errorf("the local debug port %v is not free, cause: %v", o.localPort, err)
-		o.localPort, err = util.HTTPGetFreePort()
+		log.Errorf("the local debug port %v is not free, cause: %v", o.localPortFlag, err)
+		o.localPortFlag, err = util.HTTPGetFreePort()
 		if err != nil {
 			return err
 		}
-		log.Infof("The local port %v is auto selected", o.localPort)
+		log.Infof("The local port %v is auto selected", o.localPortFlag)
 	} else {
 		err = listener.Close()
 		if err != nil {
@@ -114,19 +102,18 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 		}
 	}
 
-	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
+	o.PortPair = fmt.Sprintf("%d:%d", o.localPortFlag, remotePort)
 
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.Context.EnvSpecificInfo.GetName(), o.Context.GetApplication(), o.Context.EnvSpecificInfo.GetNamespace(), o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	o.StopChannel = make(chan struct{}, 1)
 	o.ReadyChannel = make(chan struct{})
-	return err
+	return nil
 }
 
 // Validate validates all the required options for port-forward cmd.
 func (o PortForwardOptions) Validate() error {
-
 	if len(o.PortPair) < 1 {
 		return fmt.Errorf("ports cannot be empty")
 	}
@@ -143,7 +130,7 @@ func (o PortForwardOptions) Run(cmd *cobra.Command) error {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 	defer signal.Stop(signals)
-	defer os.RemoveAll(debug.GetDebugInfoFilePath(o.componentName, o.applicationName, o.Namespace))
+	defer os.RemoveAll(debug.GetDebugInfoFilePath(o.Context.EnvSpecificInfo.GetName(), o.Context.GetApplication(), o.Context.EnvSpecificInfo.GetNamespace()))
 
 	go func() {
 		<-signals
@@ -157,7 +144,8 @@ func (o PortForwardOptions) Run(cmd *cobra.Command) error {
 		return err
 	}
 
-	return o.PortForwarder.ForwardPorts(o.PortPair, o.StopChannel, o.ReadyChannel, util.CheckPathExists(o.devfilePath))
+	devfilePath := location.DevfileLocation(o.contextFlag)
+	return o.PortForwarder.ForwardPorts(o.PortPair, o.StopChannel, o.ReadyChannel, util.CheckPathExists(devfilePath))
 }
 
 // NewCmdPortForward implements the port-forward odo command
@@ -174,8 +162,8 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", DefaultDebugPort, "Set the local port")
+	genericclioptions.AddContextFlag(cmd, &opts.contextFlag)
+	cmd.Flags().IntVarP(&opts.localPortFlag, "local-port", "l", DefaultDebugPort, "Set the local port")
 
 	return cmd
 }

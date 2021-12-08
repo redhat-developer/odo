@@ -37,19 +37,17 @@ type ListOptions struct {
 
 // NewListOptions creates a new ListOptions instance
 func NewListOptions() *ListOptions {
-	return &ListOptions{
-		printGitRegistryDeprecationWarning: false,
-	}
+	return &ListOptions{}
 }
 
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	return
+	return nil
 }
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for "odo registry list" command
@@ -66,7 +64,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(machineoutput.NewRegistryListOutput(registryList))
-		return
+		return nil
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -76,7 +74,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 	if o.printGitRegistryDeprecationWarning {
 		util.PrintGitRegistryDeprecationWarning()
 	}
-	return
+	return nil
 }
 
 func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.Registry) {

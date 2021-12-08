@@ -30,8 +30,13 @@ var (
 
 // ListOptions encapsulates the options for the odo url list command
 type ListOptions struct {
-	componentContext string
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	contextFlag string
+
+	// Backend
 	client url.Client
 }
 
@@ -42,7 +47,7 @@ func NewURLListOptions() *ListOptions {
 
 // Complete completes ListOptions after they've been Listed
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -57,7 +62,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		OCClient:            *o.Context.Client,
 		IsRouteSupported:    routeSupported,
 	})
-	return
+	return nil
 }
 
 // Validate validates the ListOptions based on completed values
@@ -85,7 +90,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		}
 	}
 
-	return
+	return nil
 }
 
 // NewCmdURLList implements the odo url list command.
@@ -102,7 +107,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(urlListCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(urlListCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 
 	return urlListCmd

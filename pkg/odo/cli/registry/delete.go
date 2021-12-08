@@ -30,11 +30,15 @@ var (
 
 // DeleteOptions encapsulates the options for the "odo registry delete" command
 type DeleteOptions struct {
-	operation    string
+	// Parameters
 	registryName string
-	registryURL  string
-	user         string
-	forceFlag    bool
+
+	// Flags
+	forceFlag bool
+
+	operation   string
+	registryURL string
+	user        string
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance
@@ -48,12 +52,12 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.registryName = args[0]
 	o.registryURL = ""
 	o.user = "default"
-	return
+	return nil
 }
 
 // Validate validates the DeleteOptions based on completed values
 func (o *DeleteOptions) Validate() (err error) {
-	return
+	return nil
 }
 
 // Run contains the logic for "odo registry delete" command

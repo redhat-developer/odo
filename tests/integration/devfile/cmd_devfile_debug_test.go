@@ -106,8 +106,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
 			runningString := helper.Cmd("odo", "debug", "info", "--context", commonVar.Context).ShouldPass().Out()
 			Expect(runningString).To(ContainSubstring(freePort))
-			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-nodejs-cmp-odo-debug.json"))
-			defer helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-nodejs-cmp-odo-debug.json"))
+			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(commonVar.Project + "-app-nodejs-cmp-odo-debug.json"))
+			defer helper.DeleteFile(filepath.Join(os.TempDir(), commonVar.Project+"-app-nodejs-cmp-odo-debug.json"))
 			stopChannel <- true
 		})
 

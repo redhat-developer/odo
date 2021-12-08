@@ -37,12 +37,16 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
-	pathFlag         string
-	allAppsFlag      bool
-	componentContext string
-	componentType    string
-	devfilePath      string
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	pathFlag    string
+	allAppsFlag bool
+	contextFlag string
+
+	componentType string
+	devfilePath   string
 }
 
 // NewListOptions returns new instance of ListOptions
@@ -53,7 +57,7 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	lo.devfilePath = location.DevfileLocation(lo.componentContext)
+	lo.devfilePath = location.DevfileLocation(lo.contextFlag)
 
 	if util.CheckPathExists(lo.devfilePath) {
 
@@ -225,7 +229,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(componentListCmd, &o.contextFlag)
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path of the directory to scan for odo component directories")
 	componentListCmd.Flags().BoolVar(&o.allAppsFlag, "all-apps", false, "list all components from all applications for the current set project")
 	componentListCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

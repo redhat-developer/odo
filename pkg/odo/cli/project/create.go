@@ -31,12 +31,14 @@ var (
 
 // ProjectCreateOptions encapsulates the options for the odo project create command
 type ProjectCreateOptions struct {
-	// name of the project
-	projectName string
-	wait        bool
-
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	projectName string
+
+	// Flags
+	waitFlag bool
 }
 
 // NewProjectCreateOptions creates a ProjectCreateOptions instance
@@ -48,12 +50,12 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 func (pco *ProjectCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pco.projectName = args[0]
 	pco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return
+	return err
 }
 
 // Validate validates the parameters of the ProjectCreateOptions
-func (pco *ProjectCreateOptions) Validate() (err error) {
-	return
+func (pco *ProjectCreateOptions) Validate() error {
+	return nil
 }
 
 // Run runs the project create command
@@ -66,13 +68,13 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 	s := &log.Status{}
 
 	// If the --wait parameter has been passed, we add a spinner..
-	if pco.wait {
+	if pco.waitFlag {
 		s = log.Spinner("Waiting for project to come up")
 		defer s.End(false)
 	}
 
 	// Create the project & end the spinner (if there is any..)
-	err = project.Create(pco.Context, pco.projectName, pco.wait)
+	err = project.Create(pco.Context, pco.projectName, pco.waitFlag)
 	if err != nil {
 		return err
 	}
@@ -95,7 +97,7 @@ func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
 		machineoutput.OutputSuccess(prj)
 	}
 
-	return
+	return nil
 }
 
 // NewCmdProjectCreate creates the project create command
@@ -114,6 +116,6 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	projectCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the project is ready")
+	projectCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the project is ready")
 	return projectCreateCmd
 }

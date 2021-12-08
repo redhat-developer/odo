@@ -22,10 +22,10 @@ var componentsExample = `  # Get the supported components
 
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
+	// No context needed
+
 	// list of known devfiles
 	catalogDevfileList catalog.DevfileComponentTypeList
-	// generic context options common to all commands
-	*genericclioptions.Context
 }
 
 // NewListComponentsOptions creates a new ListComponentsOptions instance
@@ -35,31 +35,25 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if err = util.CheckKubeConfigPath(); err == nil {
-		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-		if err != nil {
-			return err
-		}
-	}
 
 	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 	if err != nil {
 		return err
 	}
+
 	if o.catalogDevfileList.DevfileRegistries == nil {
 		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the ListComponentsOptions based on completed values
-func (o *ListComponentsOptions) Validate() (err error) {
+func (o *ListComponentsOptions) Validate() error {
 	if len(o.catalogDevfileList.Items) == 0 {
 		return fmt.Errorf("no deployable components found")
 	}
-
-	return err
+	return nil
 }
 
 type catalogList struct {

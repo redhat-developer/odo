@@ -35,10 +35,15 @@ var (
 
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
-	context   string
-	cfg       *envinfo.EnvSpecificInfo
+	// Env context
+	cfg *envinfo.EnvSpecificInfo
+
+	// Parameters
 	paramName string
-	forceFlag bool
+
+	// Flags
+	contextFlag string
+	forceFlag   bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -48,7 +53,7 @@ func NewUnsetOptions() *UnsetOptions {
 
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.cfg, err = envinfo.NewEnvSpecificInfo(o.context)
+	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")
 	}
@@ -117,7 +122,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	}
 
 	envUnsetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the environment directly")
-	envUnsetCmd.Flags().StringVar(&o.context, "context", "", "Use given context directory as a source for component settings")
+	envUnsetCmd.Flags().StringVar(&o.contextFlag, "context", "", "Use given context directory as a source for component settings")
 
 	return envUnsetCmd
 }

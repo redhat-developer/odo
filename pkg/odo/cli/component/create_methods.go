@@ -78,7 +78,7 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.componentContext)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag)
 }
 
 func (icm InteractiveCreateMethod) Rollback(devfile, componentContext string) {
@@ -111,7 +111,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 		// If only component type is passed, then the component name will be created by odo
 		componentName, err = createDefaultComponentName(
 			co.devfileMetadata.componentType,
-			co.componentContext,
+			co.contextFlag,
 		)
 		if err != nil {
 			return err
@@ -122,7 +122,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.componentContext)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag)
 }
 
 func (dcm DirectCreateMethod) Rollback(devfile, componentContext string) {
@@ -367,7 +367,7 @@ func getMetadataForExistingDevfile(co *CreateOptions, args []string) (componentN
 			componentName = devObj.GetMetadataName()
 		} else {
 			// default name
-			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.componentContext)
+			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.contextFlag)
 			if err != nil {
 				return "", "", err
 			}

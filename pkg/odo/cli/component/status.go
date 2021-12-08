@@ -33,13 +33,16 @@ var statusExample = ktemplates.Examples(`  # Get the status for the nodejs compo
 
 // StatusOptions contains status options
 type StatusOptions struct {
-	componentContext string
-
-	componentName  string
-	devfileHandler common.ComponentAdapter
-
-	logFollow bool
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	contextFlag string
+	followFlag  bool
+
+	componentName string
+
+	devfileHandler common.ComponentAdapter
 }
 
 // NewStatusOptions returns new instance of StatusOptions
@@ -49,7 +52,7 @@ func NewStatusOptions() *StatusOptions {
 
 // Complete completes status args
 func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(so.componentContext))
+	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(so.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -61,14 +64,14 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		Namespace: so.KClient.GetCurrentNamespace(),
 	}
 
-	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.GetApplication(), so.EnvSpecificInfo.GetDevfileObj(), platformContext)
+	so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.contextFlag, so.GetApplication(), so.EnvSpecificInfo.GetDevfileObj(), platformContext)
 	return err
 }
 
 // Validate validates the status parameters
 func (so *StatusOptions) Validate() (err error) {
 
-	if !so.logFollow {
+	if !so.followFlag {
 		return fmt.Errorf("this command must be called with --follow")
 	}
 
@@ -124,9 +127,9 @@ func NewCmdStatus(name, fullName string) *cobra.Command {
 	statusCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding context flag
-	genericclioptions.AddContextFlag(statusCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(statusCmd, &o.contextFlag)
 
-	statusCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow the component and report all changes")
+	statusCmd.Flags().BoolVarP(&o.followFlag, "follow", "f", false, "Follow the component and report all changes")
 
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(statusCmd)

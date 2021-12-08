@@ -31,16 +31,21 @@ import (
 
 // CreateOptions encapsulates create options
 type CreateOptions struct {
-	componentContext string
-	componentPorts   []string
-	componentEnvVars []string
-	appName          string
-	interactive      bool
-	now              bool
+	// Push context
+	*PushOptions
+
+	// Flags
+	contextFlag string
+	portFlag    []string
+	envFlag     []string
+	nowFlag     bool
+	appFlag     string
+
+	interactive bool
+
 	// devfileName stores the "componentType" passed by user irrespective of it being a valid componentType
 	// we use it for telemetry
 	devfileName string
-	*PushOptions
 
 	createMethod    CreateMethod
 	devfileMetadata DevfileMetadata
@@ -116,22 +121,22 @@ func NewCreateOptions() *CreateOptions {
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	// GETTERS
 	// Get context
-	co.Context, err = getContext(co.now, cmd)
+	co.Context, err = getContext(co.nowFlag, cmd)
 	if err != nil {
 		return err
 	}
 	// Get the app name
-	co.appName = genericclioptions.ResolveAppFlag(cmd)
+	co.appFlag = genericclioptions.ResolveAppFlag(cmd)
 	// Get the project name
 	co.devfileMetadata.componentNamespace = co.Context.GetProject()
 	// Get DevfilePath
-	co.DevfilePath = location.DevfileLocation(co.componentContext)
+	co.DevfilePath = location.DevfileLocation(co.contextFlag)
 	//Check whether the directory already contains a devfile, this check should happen early
 	co.devfileMetadata.userCreatedDevfile = util.CheckPathExists(co.DevfilePath)
 	// EnvFilePath is the path of env file for devfile component
-	envFilePath := getEnvFilePath(co.componentContext)
+	envFilePath := getEnvFilePath(co.contextFlag)
 	// This is required so that .odo is created in the correct context
-	co.PushOptions.componentContext = co.componentContext
+	co.PushOptions.componentContext = co.contextFlag
 	// Use Interactive mode if: 1) no args are passed || 2) the devfile exists || 3) --devfile is used
 	if len(args) == 0 && !util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value == "" {
 		co.interactive = true
@@ -188,14 +193,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmd, args)
 	if err != nil {
-		co.createMethod.Rollback(co.DevfilePath, co.componentContext)
+		co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		return err
 	}
 
 	// From this point forward, rollback should be triggered if an error is encountered; rollback should delete all the files that were created by odo
 	defer func() {
 		if err != nil {
-			co.createMethod.Rollback(co.DevfilePath, co.componentContext)
+			co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		}
 	}()
 	// Set the starter project token if required
@@ -223,7 +228,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 func (co *CreateOptions) Validate() (err error) {
 	defer func() {
 		if err != nil {
-			co.createMethod.Rollback(co.DevfilePath, co.componentContext)
+			co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		}
 	}()
 	log.Info("Validation")
@@ -253,7 +258,7 @@ func (co *CreateOptions) Validate() (err error) {
 func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	defer func() {
 		if err != nil {
-			co.createMethod.Rollback(co.DevfilePath, co.componentContext)
+			co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		}
 	}()
 	// Adding component type to telemetry data
@@ -269,7 +274,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		return err
 	}
 	// WARN: Starter Project uses go-git that overrides the directory content, there by deleting the existing devfile.
-	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.componentContext)
+	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
@@ -298,7 +303,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
 		Name:               co.devfileMetadata.componentName,
 		Project:            co.devfileMetadata.componentNamespace,
-		AppName:            co.appName,
+		AppName:            co.appFlag,
 		UserCreatedDevfile: co.devfileMetadata.userCreatedDevfile,
 	})
 	if err != nil {
@@ -306,7 +311,7 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Prepare .gitignore file
-	sourcePath, err := util.GetAbsPath(co.componentContext)
+	sourcePath, err := util.GetAbsPath(co.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
@@ -316,12 +321,12 @@ func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
 		return err
 	}
 
-	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, EnvDirectory))
+	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.contextFlag, EnvDirectory))
 	if err != nil {
 		return err
 	}
 
-	if co.now {
+	if co.nowFlag {
 		err = co.DevfilePush()
 		if err != nil {
 			return fmt.Errorf("failed to push changes: %w", err)
@@ -351,9 +356,9 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(componentCreateCmd, &co.componentContext)
-	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
-	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
+	genericclioptions.AddContextFlag(componentCreateCmd, &co.contextFlag)
+	componentCreateCmd.Flags().StringSliceVarP(&co.portFlag, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
+	componentCreateCmd.Flags().StringSliceVar(&co.envFlag, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
 	componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
@@ -370,7 +375,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding `--now` flag
-	genericclioptions.AddNowFlag(componentCreateCmd, &co.now)
+	genericclioptions.AddNowFlag(componentCreateCmd, &co.nowFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag

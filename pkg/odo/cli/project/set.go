@@ -32,15 +32,14 @@ var (
 
 // ProjectSetOptions encapsulates the options for the odo project set command
 type ProjectSetOptions struct {
+	// Context
+	*genericclioptions.Context
 
-	// if supplied then only print the project name
-	projectShortFlag bool
-
-	// the name of the project that needs to be set as active
+	// Parameters
 	projectName string
 
-	// generic context options common to all commands
-	*genericclioptions.Context
+	// Flags
+	shortFlag bool
 }
 
 // NewProjectSetOptions creates a ProjectSetOptions instance
@@ -50,10 +49,9 @@ func NewProjectSetOptions() *ProjectSetOptions {
 
 // Complete completes ProjectSetOptions after they've been created
 func (pso *ProjectSetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
 	pso.projectName = args[0]
-
-	return
+	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	return err
 }
 
 // Validate validates the parameters of the ProjectSetOptions
@@ -67,7 +65,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 		return fmt.Errorf("The project %s does not exist", pso.projectName)
 	}
 
-	return
+	return nil
 }
 
 // Run runs the project set command
@@ -80,7 +78,7 @@ func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 	if err != nil {
 		return err
 	}
-	if pso.projectShortFlag {
+	if pso.shortFlag {
 		fmt.Print(pso.projectName)
 	} else {
 		if current == pso.projectName {
@@ -89,7 +87,7 @@ func (pso *ProjectSetOptions) Run(cmd *cobra.Command) (err error) {
 			log.Infof("Switched to project : %v", pso.projectName)
 		}
 	}
-	return
+	return nil
 }
 
 // NewCmdProjectSet creates the project set command
@@ -107,7 +105,7 @@ func NewCmdProjectSet(name, fullName string) *cobra.Command {
 		},
 	}
 
-	projectSetCmd.Flags().BoolVarP(&o.projectShortFlag, "short", "q", false, "If true, display only the project name")
+	projectSetCmd.Flags().BoolVarP(&o.shortFlag, "short", "q", false, "If true, display only the project name")
 
 	return projectSetCmd
 }

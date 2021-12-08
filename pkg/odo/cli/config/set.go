@@ -38,12 +38,17 @@ var (
 
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
+	// Push context
 	*clicomponent.PushOptions
-	paramName       string
-	paramValue      string
-	configForceFlag bool
-	envArray        []string
-	now             bool
+
+	// Parameters
+	paramName  string
+	paramValue string
+
+	// Flags
+	forceFlag    bool
+	envArrayFlag []string
+	nowFlag      bool
 }
 
 // NewSetOptions creates a new SetOptions instance
@@ -54,7 +59,7 @@ func NewSetOptions() *SetOptions {
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
-	if o.now {
+	if o.nowFlag {
 		params.CreateAppIfNeeded().RequireRouteAvailability()
 	}
 	o.Context, err = genericclioptions.New(params)
@@ -68,12 +73,12 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	o.DevfilePath = o.Context.EnvSpecificInfo.GetDevfilePath()
 	o.EnvSpecificInfo = o.Context.EnvSpecificInfo
 
-	if o.envArray == nil {
+	if o.envArrayFlag == nil {
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
 
-	if o.now {
+	if o.nowFlag {
 		prjName := o.Context.LocalConfigProvider.GetNamespace()
 		o.ResolveSrcAndConfigFlags()
 		err = o.ResolveProject(prjName)
@@ -82,21 +87,21 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		}
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the SetOptions based on completed values
-func (o *SetOptions) Validate() (err error) {
+func (o *SetOptions) Validate() error {
 	if !o.Context.LocalConfigProvider.Exists() {
 		return fmt.Errorf("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the command
 func (o *SetOptions) Run(cmd *cobra.Command) error {
-	if o.envArray != nil {
-		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArray)
+	if o.envArrayFlag != nil {
+		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArrayFlag)
 		if err != nil {
 			return err
 		}
@@ -106,13 +111,13 @@ func (o *SetOptions) Run(cmd *cobra.Command) error {
 		}
 
 		log.Success("Environment variables were successfully updated")
-		if o.now {
+		if o.nowFlag {
 			return o.DevfilePush()
 		}
 		log.Italic("\nRun `odo push` command to apply changes to the cluster")
 		return err
 	}
-	if !o.configForceFlag {
+	if !o.forceFlag {
 		if config.IsSetInDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.paramName) {
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the devfile", o.paramName)) {
 				fmt.Println("Aborted by the user.")
@@ -126,7 +131,7 @@ func (o *SetOptions) Run(cmd *cobra.Command) error {
 		return err
 	}
 	log.Success("Devfile successfully updated")
-	if o.now {
+	if o.nowFlag {
 		return o.DevfilePush()
 	}
 	log.Italic("\nRun `odo push` command to apply changes to the cluster")
@@ -174,7 +179,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Long:    fmt.Sprintf(setLongDesc, config.FormatDevfileSupportedParameters()),
 		Example: fmt.Sprintf("\n"+devfileSetExample, fullName, config.Name, config.Ports, config.Memory),
 		Args: func(cmd *cobra.Command, args []string) error {
-			if o.envArray != nil {
+			if o.envArrayFlag != nil {
 				// no args are needed
 				if len(args) > 0 {
 					return fmt.Errorf("expected 0 args")
@@ -186,10 +191,10 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	configurationSetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
-	configurationSetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Set the environment variables in config")
+	configurationSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
+	configurationSetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Set the environment variables in config")
 	o.AddContextFlag(configurationSetCmd)
-	genericclioptions.AddNowFlag(configurationSetCmd, &o.now)
+	genericclioptions.AddNowFlag(configurationSetCmd, &o.nowFlag)
 
 	return configurationSetCmd
 }

@@ -32,18 +32,15 @@ var (
 
 // ProjectDeleteOptions encapsulates the options for the odo project delete command
 type ProjectDeleteOptions struct {
-	// name of the project
-	projectName string
-
-	// force delete doesn't ask the user for confirmation
-	projectForceDeleteFlag bool
-
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
 
-	// wait is a boolean value to choose if we wait or not for
-	// our project to be deleted
-	wait bool
+	// Parameters
+	projectName string
+
+	// Flags
+	forceFlag bool
+	waitFlag  bool
 }
 
 // NewProjectDeleteOptions creates a ProjectDeleteOptions instance
@@ -55,11 +52,11 @@ func NewProjectDeleteOptions() *ProjectDeleteOptions {
 func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pdo.projectName = args[0]
 	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return
+	return err
 }
 
 // Validate validates the parameters of the ProjectDeleteOptions
-func (pdo *ProjectDeleteOptions) Validate() (err error) {
+func (pdo *ProjectDeleteOptions) Validate() error {
 	// Validate existence of the project to be deleted
 	isValidProject, err := project.Exists(pdo.Context, pdo.projectName)
 	if kerrors.IsForbidden(err) {
@@ -68,7 +65,7 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 	if !isValidProject {
 		return fmt.Errorf("The project %q does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
 	}
-	return
+	return nil
 }
 
 // Run the project delete command
@@ -80,7 +77,7 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 	// This to set the project in the file and runtime
 	err = project.SetCurrent(pdo.Context, pdo.projectName)
 	if err != nil {
-		return
+		return err
 	}
 
 	// Prints out what will be deleted
@@ -91,15 +88,15 @@ func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
 	//	return err
 	//}
 
-	if log.IsJSON() || pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+	if log.IsJSON() || pdo.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
 
 		// If the --wait parameter has been passed, we add a spinner..
-		if pdo.wait {
+		if pdo.waitFlag {
 			s = log.Spinner("Waiting for project to be deleted")
 			defer s.End(false)
 		}
 
-		err := project.Delete(pdo.Context, pdo.projectName, pdo.wait)
+		err := project.Delete(pdo.Context, pdo.projectName, pdo.waitFlag)
 		if err != nil {
 			return err
 		}
@@ -134,8 +131,8 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 		},
 	}
 
-	projectDeleteCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the project has been completely deleted")
-	projectDeleteCmd.Flags().BoolVarP(&o.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
+	projectDeleteCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the project has been completely deleted")
+	projectDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete project without prompting")
 
 	return projectDeleteCmd
 }

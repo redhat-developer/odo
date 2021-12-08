@@ -28,19 +28,24 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
-	componentContext string
+	// Component context
 	*ComponentOptions
+
+	// Flags
+	contextFlag string
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{"", &ComponentOptions{}}
+	return &DescribeOptions{
+		ComponentOptions: &ComponentOptions{},
+	}
 }
 
 // Complete completes describe args
 func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if do.componentContext == "" {
-		do.componentContext, err = os.Getwd()
+	if do.contextFlag == "" {
+		do.contextFlag, err = os.Getwd()
 		if err != nil {
 			return err
 		}
@@ -65,7 +70,7 @@ func (do *DescribeOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.Context.Client, do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.componentContext)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.Context.Client, do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -100,7 +105,7 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
 	// Adding --context flag
-	genericclioptions.AddContextFlag(describeCmd, &do.componentContext)
+	genericclioptions.AddContextFlag(describeCmd, &do.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)

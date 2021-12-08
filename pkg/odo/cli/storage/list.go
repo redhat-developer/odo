@@ -29,9 +29,13 @@ var (
 )
 
 type ListOptions struct {
-	componentContext string
+	// Context
 	*genericclioptions.Context
 
+	// Flags
+	contextFlag string
+
+	// Backend
 	client storage.Client
 }
 
@@ -42,7 +46,7 @@ func NewStorageListOptions() *ListOptions {
 
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.componentContext))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -52,7 +56,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		OCClient:            *o.Context.Client,
 	})
 
-	return
+	return nil
 }
 
 // Validate validates the ListOptions based on completed values
@@ -80,7 +84,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		}
 	}
 
-	return
+	return nil
 }
 
 // printStorage prints the given storageList
@@ -203,7 +207,7 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(storageListCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(storageListCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageListCmd, "context", completion.FileCompletionHandler)
 
 	return storageListCmd

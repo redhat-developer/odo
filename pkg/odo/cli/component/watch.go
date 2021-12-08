@@ -37,23 +37,25 @@ var watchExampleWithDevfile = ktemplates.Examples(`  # Watch for changes in dire
 
 // WatchOptions contains attributes of the watch command
 type WatchOptions struct {
-	ignores []string
-	delay   int
-	show    bool
+	// Context
+	*genericclioptions.Context
 
-	sourcePath       string
-	componentContext string
+	// Flags
+	ignoreFlag  []string
+	delayFlag   int
+	showLogFlag bool
+	contextFlag string
+
+	// devfile commands flags
+	buildCommandFlag string
+	runCommandFlag   string
+	debugCommandFlag string
+
+	sourcePath string
 
 	// initialDevfileHandler is only used to do initial validation on the devfile.
 	// All subsequent uses of the devfile adapter are generated in regenerateAdapterAndPush.
 	initialDevfileHandler common.ComponentAdapter
-
-	// devfile commands
-	devfileBuildCommand string
-	devfileRunCommand   string
-	devfileDebugCommand string
-
-	*genericclioptions.Context
 }
 
 // NewWatchOptions returns new instance of WatchOptions
@@ -63,18 +65,18 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(wo.componentContext))
+	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(wo.contextFlag))
 	if err != nil {
 		return err
 	}
 	// Set the source path to either the context or current working directory (if context not set)
-	wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
+	wo.sourcePath, err = util.GetAbsPath(wo.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
 
 	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&wo.ignores, wo.sourcePath)
+	err = genericclioptions.ApplyIgnore(&wo.ignoreFlag, wo.sourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
@@ -84,7 +86,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		Namespace: wo.KClient.GetCurrentNamespace(),
 	}
 
-	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.EnvSpecificInfo.GetName(), wo.componentContext, wo.GetApplication(), wo.EnvSpecificInfo.GetDevfileObj(), platformContext)
+	wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.EnvSpecificInfo.GetName(), wo.contextFlag, wo.GetApplication(), wo.EnvSpecificInfo.GetDevfileObj(), platformContext)
 
 	return err
 }
@@ -93,15 +95,15 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 func (wo *WatchOptions) Validate() (err error) {
 
 	// Delay interval cannot be -ve
-	if wo.delay < 0 {
+	if wo.delayFlag < 0 {
 		return fmt.Errorf("Delay cannot be lesser than 0 and delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 	// Print a debug message warning user if delay is set to 0
-	if wo.delay == 0 {
+	if wo.delayFlag == 0 {
 		klog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
-	if wo.devfileDebugCommand != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
+	if wo.debugCommandFlag != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
 		return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
 	}
 	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.EnvSpecificInfo.GetName(), wo.GetApplication())
@@ -122,15 +124,15 @@ func (wo *WatchOptions) Run(cmd *cobra.Command) (err error) {
 			ComponentName:       wo.EnvSpecificInfo.GetName(),
 			ApplicationName:     wo.Context.GetApplication(),
 			Path:                wo.sourcePath,
-			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
-			PushDiffDelay:       wo.delay,
+			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignoreFlag),
+			PushDiffDelay:       wo.delayFlag,
 			StartChan:           nil,
 			ExtChan:             make(chan bool),
 			DevfileWatchHandler: wo.regenerateAdapterAndPush,
-			Show:                wo.show,
-			DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
-			DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
-			DevfileDebugCmd:     strings.ToLower(wo.devfileDebugCommand),
+			Show:                wo.showLogFlag,
+			DevfileBuildCmd:     strings.ToLower(wo.buildCommandFlag),
+			DevfileRunCmd:       strings.ToLower(wo.runCommandFlag),
+			DevfileDebugCmd:     strings.ToLower(wo.debugCommandFlag),
 			EnvSpecificInfo:     wo.EnvSpecificInfo,
 		},
 	)
@@ -161,18 +163,18 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 		},
 	}
 
-	watchCmd.Flags().BoolVar(&wo.show, "show-log", false, "If enabled, logs will be shown when built")
-	watchCmd.Flags().StringSliceVar(&wo.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
-	watchCmd.Flags().IntVar(&wo.delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+	watchCmd.Flags().BoolVar(&wo.showLogFlag, "show-log", false, "If enabled, logs will be shown when built")
+	watchCmd.Flags().StringSliceVar(&wo.ignoreFlag, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
+	watchCmd.Flags().IntVar(&wo.delayFlag, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
-	watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
-	watchCmd.Flags().StringVar(&wo.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
+	watchCmd.Flags().StringVar(&wo.buildCommandFlag, "build-command", "", "Devfile Build Command to execute")
+	watchCmd.Flags().StringVar(&wo.runCommandFlag, "run-command", "", "Devfile Run Command to execute")
+	watchCmd.Flags().StringVar(&wo.debugCommandFlag, "debug-command", "", "Devfile Debug Command to execute")
 
 	// Adding context flag
-	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
+	genericclioptions.AddContextFlag(watchCmd, &wo.contextFlag)
 
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(watchCmd)

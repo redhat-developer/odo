@@ -21,8 +21,7 @@ var viewExample = ktemplates.Examples(`# For viewing the current preference valu
   `)
 
 // ViewOptions encapsulates the options for the command
-type ViewOptions struct {
-}
+type ViewOptions struct{}
 
 // NewViewOptions creates a new ViewOptions instance
 func NewViewOptions() *ViewOptions {

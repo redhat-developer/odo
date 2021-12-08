@@ -17,10 +17,14 @@ var componentExample = `  # Search for a component
 
 // SearchComponentOptions encapsulates the options for the odo catalog describe service command
 type SearchComponentOptions struct {
-	searchTerm string
-	components []string
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	searchTerm string
+
+	// components matching the search query
+	components []string
 }
 
 // NewSearchComponentOptions creates a new SearchComponentOptions instance
@@ -41,18 +45,18 @@ func (o *SearchComponentOptions) Complete(name string, cmd *cobra.Command, args 
 }
 
 // Validate validates the SearchComponentOptions based on completed values
-func (o *SearchComponentOptions) Validate() (err error) {
+func (o *SearchComponentOptions) Validate() error {
 	if len(o.components) == 0 {
 		return fmt.Errorf("no component matched the query: %s", o.searchTerm)
 	}
 
-	return
+	return nil
 }
 
 // Run contains the logic for the command associated with SearchComponentOptions
-func (o *SearchComponentOptions) Run(cmd *cobra.Command) (err error) {
+func (o *SearchComponentOptions) Run(cmd *cobra.Command) error {
 	util.DisplayComponents(o.components)
-	return
+	return nil
 }
 
 // NewCmdCatalogSearchComponent implements the odo catalog search component command

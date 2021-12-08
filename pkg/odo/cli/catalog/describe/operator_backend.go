@@ -105,7 +105,7 @@ func (ohb *operatorBackend) RunDescribeService(dso *DescribeServiceOptions) erro
 		}
 		return nil
 	}
-	if dso.isExample {
+	if dso.exampleFlag {
 		almExample, err := service.GetAlmExample(ohb.CSV, ohb.CustomResource, ohb.OperatorType)
 		if err != nil {
 			return err

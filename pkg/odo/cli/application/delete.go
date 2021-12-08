@@ -11,7 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -25,9 +24,14 @@ var (
 
 // DeleteOptions encapsulates the options for the odo command
 type DeleteOptions struct {
-	appName string
-	force   bool
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	appName string
+
+	// Flags
+	forceFlag bool
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance
@@ -55,9 +59,6 @@ func (o *DeleteOptions) Validate() (err error) {
 	if o.Context.GetProject() == "" || o.appName == "" {
 		return odoUtil.ThrowContextError()
 	}
-	if !util.CheckOutputFlag(o.GetOutputFlag()) {
-		return fmt.Errorf("given output format %s is not supported", o.GetOutputFlag())
-	}
 
 	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())
 	if !exist {
@@ -82,7 +83,7 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 		return err
 	}
 
-	if o.force || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.GetProject())) {
+	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.GetProject())) {
 		err = application.Delete(o.Client.GetKubeClient(), o.appName)
 		if err != nil {
 			return err
@@ -108,7 +109,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		},
 	}
 
-	command.Flags().BoolVarP(&o.force, "force", "f", false, "Delete application without prompting")
+	command.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete application without prompting")
 
 	project.AddProjectFlag(command)
 	completion.RegisterCommandHandler(command, completion.AppCompletionHandler)

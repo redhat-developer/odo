@@ -22,9 +22,14 @@ var execExample = ktemplates.Examples(`  # Executes a command inside the compone
 
 // ExecOptions contains exec options
 type ExecOptions struct {
-	componentContext string
+	// Component context
 	componentOptions *ComponentOptions
-	command          []string
+
+	// Parameters
+	command []string
+
+	// Flags
+	contextFlag string
 }
 
 // NewExecOptions returns new instance of ExecOptions
@@ -54,7 +59,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		return fmt.Errorf("no parameter is expected for the command")
 	}
 
-	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(eo.componentContext))
+	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(eo.contextFlag))
 	return err
 }
 
@@ -85,7 +90,7 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 
 	execCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(execCmd, completion.ComponentNameCompletionHandler)
-	genericclioptions.AddContextFlag(execCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(execCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(execCmd)

@@ -21,10 +21,14 @@ var getExample = ktemplates.Examples(`  # Get the currently active component
 
 // GetOptions encapsulates component get options
 type GetOptions struct {
-	componentShortFlag bool
-	componentName      string
-	componentContext   string
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	shortFlag   bool
+	contextFlag string
+
+	componentName string
 }
 
 // NewGetOptions returns new instance of GetOptions
@@ -54,7 +58,7 @@ func (gto *GetOptions) Validate() (err error) {
 func (gto *GetOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component get called")
 
-	if gto.componentShortFlag {
+	if gto.shortFlag {
 		fmt.Print(gto.componentName)
 	} else {
 		if gto.componentName == "" {
@@ -81,13 +85,13 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 		},
 	}
 
-	componentGetCmd.Flags().BoolVarP(&o.componentShortFlag, "short", "q", false, "If true, display only the component name")
+	componentGetCmd.Flags().BoolVarP(&o.shortFlag, "short", "q", false, "If true, display only the component name")
 
 	// Hide component get, as we only use this command for autocompletion
 	componentGetCmd.Hidden = true
 
 	// add --context flag
-	genericclioptions.AddContextFlag(componentGetCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(componentGetCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	project.AddProjectFlag(componentGetCmd)

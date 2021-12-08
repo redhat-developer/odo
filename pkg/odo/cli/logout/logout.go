@@ -19,6 +19,7 @@ var example = templates.Examples(`  # Logout
 
 // LogoutOptions encapsulates the options for the odo logout command
 type LogoutOptions struct {
+	// Context
 	*genericclioptions.Context
 }
 

@@ -27,12 +27,11 @@ var (
 
 // ProjectGetOptions encapsulates the options for the odo project get command
 type ProjectGetOptions struct {
-
-	// if supplied then only print the project name
-	projectShortFlag bool
-
-	// generic context options common to all commands
+	// Context
 	*genericclioptions.Context
+
+	// Flags
+	shortFlag bool
 }
 
 // NewProjectGetOptions creates a ProjectGetOptions instance
@@ -43,21 +42,21 @@ func NewProjectGetOptions() *ProjectGetOptions {
 // Complete completes ProjectGetOptions after they've been created
 func (pgo *ProjectGetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	pgo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return
+	return err
 }
 
 // Validate validates the parameters of the ProjectGetOptions
 func (pgo *ProjectGetOptions) Validate() (err error) {
-	return
+	return nil
 }
 
 // Run the project get command
 func (pgo *ProjectGetOptions) Run(cmd *cobra.Command) (err error) {
 	currentProject := pgo.Context.GetProject()
 
-	if pgo.projectShortFlag {
+	if pgo.shortFlag {
 		fmt.Print(currentProject)
-		return
+		return nil
 	}
 
 	log.Infof("The current project is: %v", currentProject)
@@ -67,7 +66,7 @@ func (pgo *ProjectGetOptions) Run(cmd *cobra.Command) (err error) {
 		machineoutput.OutputSuccess(prj)
 	}
 
-	return
+	return nil
 }
 
 // NewCmdProjectGet creates the project get command
@@ -86,7 +85,7 @@ func NewCmdProjectGet(name, fullName string) *cobra.Command {
 		},
 	}
 
-	projectGetCmd.Flags().BoolVarP(&o.projectShortFlag, "short", "q", false, "If true, display only the project name")
+	projectGetCmd.Flags().BoolVarP(&o.shortFlag, "short", "q", false, "If true, display only the project name")
 
 	return projectGetCmd
 }

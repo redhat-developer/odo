@@ -17,19 +17,18 @@ import (
 
 // CommonPushOptions has data needed for all pushes
 type CommonPushOptions struct {
-	show             bool
+	// TODO(feloy) Fixme
+	showFlag         bool //nolint:structcheck
 	componentContext string
-	pushConfig       bool
-	pushSource       bool
+	configFlag       bool
+	sourceFlag       bool
 	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 	*genericclioptions.Context
 }
 
 // NewCommonPushOptions instantiates a commonPushOptions object
 func NewCommonPushOptions() *CommonPushOptions {
-	return &CommonPushOptions{
-		show: false,
-	}
+	return &CommonPushOptions{}
 }
 
 //InitEnvInfoFromContext initializes envinfo from the context
@@ -49,9 +48,9 @@ func (cpo *CommonPushOptions) AddContextFlag(cmd *cobra.Command) {
 // ResolveSrcAndConfigFlags sets all pushes if none is asked
 func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 	// If neither config nor source flag is passed, update both config and source to the component
-	if !cpo.pushConfig && !cpo.pushSource {
-		cpo.pushConfig = true
-		cpo.pushSource = true
+	if !cpo.configFlag && !cpo.sourceFlag {
+		cpo.configFlag = true
+		cpo.sourceFlag = true
 	}
 }
 

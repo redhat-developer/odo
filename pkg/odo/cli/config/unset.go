@@ -34,11 +34,16 @@ var (
 
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
+	// Push context
 	*clicomponent.PushOptions
-	paramName       string
-	configForceFlag bool
-	envArray        []string
-	now             bool
+
+	// Parameters
+	paramName string
+
+	// Flags
+	forceFlag    bool
+	envArrayFlag []string
+	nowFlag      bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -49,7 +54,7 @@ func NewUnsetOptions() *UnsetOptions {
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
-	if o.now {
+	if o.nowFlag {
 		params.CreateAppIfNeeded().RequireRouteAvailability()
 	}
 	o.Context, err = genericclioptions.New(params)
@@ -63,11 +68,11 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	o.DevfilePath = o.Context.EnvSpecificInfo.GetDevfilePath()
 	o.EnvSpecificInfo = o.Context.EnvSpecificInfo
 
-	if o.envArray == nil {
+	if o.envArrayFlag == nil {
 		o.paramName = args[0]
 	}
 
-	if o.now {
+	if o.nowFlag {
 		prjName := o.Context.LocalConfigProvider.GetNamespace()
 		o.ResolveSrcAndConfigFlags()
 		err = o.ResolveProject(prjName)
@@ -76,39 +81,39 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the UnsetOptions based on completed values
-func (o *UnsetOptions) Validate() (err error) {
+func (o *UnsetOptions) Validate() error {
 	if !o.Context.LocalConfigProvider.Exists() {
 		return fmt.Errorf("the directory doesn't contain a component. Use 'odo create' to create a component")
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the command
 func (o *UnsetOptions) Run(cmd *cobra.Command) error {
-	if o.envArray != nil {
+	if o.envArrayFlag != nil {
 
-		if err := o.EnvSpecificInfo.GetDevfileObj().RemoveEnvVars(o.envArray); err != nil {
+		if err := o.EnvSpecificInfo.GetDevfileObj().RemoveEnvVars(o.envArrayFlag); err != nil {
 			return err
 		}
 		log.Success("Environment variables were successfully updated")
-		if o.now {
+		if o.nowFlag {
 			return o.DevfilePush()
 		}
 		log.Italic("\nRun `odo push` command to apply changes to the cluster")
 		return nil
 	}
 	if isSet := config.IsSetInDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.paramName); isSet {
-		if !o.configForceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
+		if !o.forceFlag && !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the devfile", o.paramName)) {
 			fmt.Println("Aborted by the user.")
 			return nil
 		}
 		err := config.DeleteDevfileConfiguration(o.EnvSpecificInfo.GetDevfileObj(), strings.ToLower(o.paramName))
 		log.Success("Devfile was successfully updated.")
-		if o.now {
+		if o.nowFlag {
 			return o.DevfilePush()
 		}
 		return err
@@ -125,7 +130,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Long:    fmt.Sprintf(unsetLongDesc, config.FormatDevfileSupportedParameters()),
 		Example: fmt.Sprintf("\n"+devfileUnsetExample, fullName, config.Name, config.Ports, config.Memory),
 		Args: func(cmd *cobra.Command, args []string) error {
-			if o.envArray != nil {
+			if o.envArrayFlag != nil {
 				// no args are needed
 				if len(args) > 0 {
 					return fmt.Errorf("expected 0 args")
@@ -145,9 +150,9 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	configurationUnsetCmd.Flags().BoolVarP(&o.configForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
-	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArray, "env", "e", nil, "Unset the environment variables in config")
+	configurationUnsetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
+	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Unset the environment variables in config")
 	o.AddContextFlag(configurationUnsetCmd)
-	genericclioptions.AddNowFlag(configurationUnsetCmd, &o.now)
+	genericclioptions.AddNowFlag(configurationUnsetCmd, &o.nowFlag)
 	return configurationUnsetCmd
 }

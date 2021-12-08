@@ -36,8 +36,11 @@ For this command to be successful, the service or component needs to have been l
 
 // UnlinkOptions encapsulates the options for the odo link command
 type UnlinkOptions struct {
-	componentContext string
+	// Common link/unlink context
 	*commonLinkOptions
+
+	// Flags
+	contextFlag string
 }
 
 // NewUnlinkOptions creates a new UnlinkOptions instance
@@ -49,7 +52,7 @@ func NewUnlinkOptions() *UnlinkOptions {
 
 // Complete completes UnlinkOptions after they've been created
 func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	err = o.complete(name, cmd, args, o.componentContext)
+	err = o.complete(name, cmd, args, o.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -90,7 +93,7 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	//Adding `--component` flag
 	AddComponentFlag(unlinkCmd)
 	// Adding context flag
-	genericclioptions.AddContextFlag(unlinkCmd, &o.componentContext)
+	genericclioptions.AddContextFlag(unlinkCmd, &o.contextFlag)
 
 	return unlinkCmd
 }

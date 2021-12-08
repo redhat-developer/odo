@@ -28,8 +28,11 @@ var (
 
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
-	context string
-	cfg     *envinfo.EnvSpecificInfo
+	// Env context
+	cfg *envinfo.EnvSpecificInfo
+
+	// Flags
+	contextFlag string
 }
 
 // NewViewOptions creates a new ViewOptions instance
@@ -39,7 +42,7 @@ func NewViewOptions() *ViewOptions {
 
 // Complete completes ViewOptions after they've been created
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.cfg, err = envinfo.NewEnvSpecificInfo(o.context)
+	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")
 	}
@@ -83,7 +86,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		},
 	}
 
-	envViewCmd.Flags().StringVar(&o.context, "context", "", "Use given context directory as a source for component settings")
+	envViewCmd.Flags().StringVar(&o.contextFlag, "context", "", "Use given context directory as a source for component settings")
 
 	return envViewCmd
 }

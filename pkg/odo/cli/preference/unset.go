@@ -27,8 +27,11 @@ var (
 
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
-	paramName           string
-	preferenceForceFlag bool
+	//Parameters
+	paramName string
+
+	// Flags
+	forceFlag bool
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
@@ -56,7 +59,7 @@ func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
 		return errors.Errorf("something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 
-	if !o.preferenceForceFlag {
+	if !o.forceFlag {
 
 		if isSet := cfg.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
@@ -104,7 +107,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	preferenceUnsetCmd.Flags().BoolVarP(&o.preferenceForceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the preference directly")
+	preferenceUnsetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the preference directly")
 
 	return preferenceUnsetCmd
 }

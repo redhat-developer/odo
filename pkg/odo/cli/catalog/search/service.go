@@ -16,10 +16,14 @@ var serviceExample = `  # Search for a service
 
 // SearchServiceOptions encapsulates the options for the odo catalog describe service command
 type SearchServiceOptions struct {
-	searchTerm string
-	// generic context options common to all commands
-	csvs *olm.ClusterServiceVersionList
+	// Context
 	*genericclioptions.Context
+
+	// Parameters
+	searchTerm string
+
+	// list of clusterserviceversions (installed by Operators)
+	csvs *olm.ClusterServiceVersionList
 }
 
 // NewSearchServiceOptions creates a new SearchServiceOptions instance
@@ -33,29 +37,31 @@ func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []
 	if err != nil {
 		return err
 	}
+
 	o.searchTerm = args[0]
+
 	o.csvs, err = o.KClient.SearchClusterServiceVersionList(o.searchTerm)
 	if err != nil {
 		return fmt.Errorf("unable to list services because Operator Hub is not enabled in your cluster: %v", err)
 	}
 
-	return err
+	return nil
 }
 
 // Validate validates the SearchServiceOptions based on completed values
-func (o *SearchServiceOptions) Validate() (err error) {
+func (o *SearchServiceOptions) Validate() error {
 	if len(o.csvs.Items) == 0 {
 		return fmt.Errorf("no service matched the query: %s", o.searchTerm)
 	}
-	return
+	return nil
 }
 
 // Run contains the logic for the command associated with SearchServiceOptions
-func (o *SearchServiceOptions) Run(cmd *cobra.Command) (err error) {
+func (o *SearchServiceOptions) Run(cmd *cobra.Command) error {
 	if len(o.csvs.Items) > 0 {
 		util.DisplayClusterServiceVersions(o.csvs)
 	}
-	return
+	return nil
 }
 
 // NewCmdCatalogSearchService implements the odo catalog search service command
