@@ -133,7 +133,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 					helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
 				})
 
-				When("creating new storage and doing odo storage list", func() {
+				When("creating new storage", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "storage", "create", storageNames[1], "--path", pathNames[1], "--size", sizes[1], "--context", commonVar.Context).ShouldPass()
 					})
@@ -173,9 +173,8 @@ var _ = Describe("odo devfile storage command tests", func() {
 						})
 					})
 
-					When("a second create the storage and doing odo push", func() {
+					When("doing odo push", func() {
 						BeforeEach(func() {
-							//helper.Cmd("odo", "storage", "create", storageNames[1], "--size", sizes[1], "--context", commonVar.Context).ShouldPass()
 							helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 						})
 						It("should mount it on the container with correct path and size", func() {
