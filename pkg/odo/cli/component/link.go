@@ -125,7 +125,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	AddComponentFlag(linkCmd)
 
 	//Adding context flag
-	genericclioptions.AddContextFlag(linkCmd, &o.contextFlag)
+	odoutil.AddContextFlag(linkCmd, &o.contextFlag)
 
 	return linkCmd
 }

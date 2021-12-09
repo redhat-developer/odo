@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 	"sigs.k8s.io/yaml"
@@ -83,7 +84,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(configurationViewCmd, &o.contextFlag)
+	odoutil.AddContextFlag(configurationViewCmd, &o.contextFlag)
 
 	return configurationViewCmd
 }

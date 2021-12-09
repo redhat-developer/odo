@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -94,7 +95,7 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	//Adding `--component` flag
 	AddComponentFlag(unlinkCmd)
 	// Adding context flag
-	genericclioptions.AddContextFlag(unlinkCmd, &o.contextFlag)
+	odoutil.AddContextFlag(unlinkCmd, &o.contextFlag)
 
 	return unlinkCmd
 }

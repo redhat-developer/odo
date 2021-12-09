@@ -327,7 +327,9 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
+			// the first one is to cleanup the directory before execution (is ncase therea re remaining files from a previous execution)
 			os.RemoveAll(prefixDir)
+			// the second one to cleanup after execution
 			defer os.RemoveAll(prefixDir)
 			os.Setenv("KUBECONFIG", filepath.Join(prefixDir, ".kube", "config"))
 			ctrl := gomock.NewController(t)
@@ -347,7 +349,7 @@ func TestNew(t *testing.T) {
 			cmdline.EXPECT().GetRootName().Return(tt.input.parentCommandName).AnyTimes()
 
 			// Fake fs
-			// TODO(feloy) Unable to use memory FS because of devfile.ParseDevfileAndValidate
+			// TODO(feloy) Unable to use memory FS because of devfile.ParseDevfileAndValidate not accepting FS parameter
 			//mockFs := filesystem.NewFakeFs()
 			//filesystem.Set(mockFs)
 			tt.input.populateWorkingDir(filesystem.DefaultFs{})

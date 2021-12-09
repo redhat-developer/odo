@@ -226,7 +226,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
 	//Adding `--context` flag
-	genericclioptions.AddContextFlag(componentDeleteCmd, &do.contextFlag)
+	odoutil.AddContextFlag(componentDeleteCmd, &do.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)

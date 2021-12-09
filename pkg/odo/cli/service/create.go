@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -138,6 +139,6 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parametersFlag, "parameters", "p", []string{}, "Parameters to be used to create Operator backed service where a parameter is expressed as <key>=<value")
 	serviceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the service is ready")
-	genericclioptions.AddContextFlag(serviceCreateCmd, &o.contextFlag)
+	odoutil.AddContextFlag(serviceCreateCmd, &o.contextFlag)
 	return serviceCreateCmd
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -12,13 +13,6 @@ import (
 type Cobra struct {
 	cmd *cobra.Command
 }
-
-const (
-	// ApplicationFlagName is the name of the flag allowing a user to specify which application to operate on
-	ApplicationFlagName = "app"
-	// ContextFlagName is the name of the flag allowing a user to specify the location of the component settings
-	ContextFlagName = "context"
-)
 
 func NewCobra(cmd *cobra.Command) *Cobra {
 	return &Cobra{
@@ -62,7 +56,7 @@ func (o *Cobra) IsFlagSet(flagName string) bool {
 }
 
 func (o *Cobra) GetWorkingDirectory() (string, error) {
-	contextDir := o.FlagValueIfSet(ContextFlagName)
+	contextDir := o.FlagValueIfSet(util.ContextFlagName)
 
 	// Grab the absolute path of the configuration
 	if contextDir != "" {
@@ -103,7 +97,7 @@ func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 		// Gather necessary preliminary information
 		parentCommand := o.cmd.Parent()
 		rootCommand := o.cmd.Root()
-		flagValue := o.FlagValueIfSet(ApplicationFlagName)
+		flagValue := o.FlagValueIfSet(util.ApplicationFlagName)
 
 		// Find the first child of the command, as some groups are allowed even with non existent configuration
 		firstChildCommand := getFirstChildOfCommand(o.cmd)

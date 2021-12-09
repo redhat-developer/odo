@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -162,7 +163,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(cmd, &opts.contextFlag)
+	odoutil.AddContextFlag(cmd, &opts.contextFlag)
 	cmd.Flags().IntVarP(&opts.localPortFlag, "local-port", "l", DefaultDebugPort, "Set the local port")
 
 	return cmd

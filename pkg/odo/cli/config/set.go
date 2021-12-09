@@ -13,6 +13,7 @@ import (
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 
 	"github.com/spf13/cobra"
@@ -195,7 +196,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	configurationSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
 	configurationSetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Set the environment variables in config")
 	o.AddContextFlag(configurationSetCmd)
-	genericclioptions.AddNowFlag(configurationSetCmd, &o.nowFlag)
+	odoutil.AddNowFlag(configurationSetCmd, &o.nowFlag)
 
 	return configurationSetCmd
 }
