@@ -50,6 +50,6 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 		klog.V(1).Infof("%v : unable to write config to config file", err)
 	}
 
-	_, err = io.WriteString(stdout, fmt.Sprintf("Logged \"%v\" out on \"%v\"\n", output.Name, conf.Host))
+	_, err = io.WriteString(stdout, fmt.Sprintf("Logged %q out on %q\n", output.Name, conf.Host))
 	return err
 }
