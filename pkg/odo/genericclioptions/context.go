@@ -14,7 +14,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/occlient"
 )
 
 const (
@@ -47,9 +46,7 @@ type internalCxt struct {
 	// The path of the detected devfile
 	devfilePath string
 	// Kclient can be used to access Kubernetes resources
-	KClient kclient.ClientInterface
-	// Client can be used to access OpenShift resources
-	Client              *occlient.Client
+	KClient             kclient.ClientInterface
 	EnvSpecificInfo     *envinfo.EnvSpecificInfo
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 }
@@ -115,10 +112,6 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		ctx.Client, err = Client()
-		if err != nil {
-			return nil, err
-		}
 		if e := ctx.resolveProjectAndNamespace(parameters.cmd, ctx.EnvSpecificInfo); e != nil {
 			return nil, e
 		}
@@ -130,7 +123,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 
 		if parameters.routeAvailability {
-			isRouteSupported, err := ctx.Client.IsRouteSupported()
+			isRouteSupported, err := ctx.KClient.IsRouteSupported()
 			if err != nil {
 				return nil, err
 			}

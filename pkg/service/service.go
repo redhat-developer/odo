@@ -699,7 +699,7 @@ func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (stri
 }
 
 // ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
-func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Component, context string) error {
+func ValidateResourcesExist(client kclient.ClientInterface, k8sComponents []devfile.Component, context string) error {
 	if len(k8sComponents) == 0 {
 		return nil
 	}
@@ -723,7 +723,7 @@ func ValidateResourcesExist(client *kclient.Client, k8sComponents []devfile.Comp
 	return nil
 }
 
-func ValidateResourceExist(client *kclient.Client, k8sComponent devfile.Component, context string) (kindErr string, err error) {
+func ValidateResourceExist(client kclient.ClientInterface, k8sComponent devfile.Component, context string) (kindErr string, err error) {
 	// get the string representation of the YAML definition of a CRD
 	u, err := GetK8sComponentAsUnstructured(k8sComponent.Kubernetes, context, devfilefs.DefaultFs{})
 	if err != nil {

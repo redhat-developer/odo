@@ -53,7 +53,7 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 	o.client = storage.NewClient(storage.ClientOptions{
 		LocalConfigProvider: o.Context.LocalConfigProvider,
-		OCClient:            *o.Context.Client,
+		Client:              o.Context.KClient,
 	})
 
 	return nil

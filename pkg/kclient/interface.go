@@ -4,8 +4,11 @@ import (
 	"io"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/go-openapi/spec"
+	projectv1 "github.com/openshift/api/project/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/unions"
@@ -77,6 +80,9 @@ type ClientInterface interface {
 	SetCurrentNamespace(namespace string) error
 	WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error
 
+	// oc_server.go
+	GetServerVersion() (*ServerInfo, error)
+
 	// operators.go
 	IsServiceBindingSupported() (bool, error)
 	IsCSVSupported() (bool, error)
@@ -101,6 +107,22 @@ type ClientInterface interface {
 	GetOnePodFromSelector(selector string) (*corev1.Pod, error)
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
 
+	// projects.go
+	CreateNewProject(projectName string, wait bool) error
+	DeleteProject(name string, wait bool) error
+	GetCurrentProjectName() string
+	GetProject(projectName string) (*projectv1.Project, error)
+	IsProjectSupported() (bool, error)
+	ListProjectNames() ([]string, error)
+
+	// routes.go
+	IsRouteSupported() (bool, error)
+	GetRoute(name string) (*routev1.Route, error)
+	CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference metav1.OwnerReference) (*routev1.Route, error)
+	DeleteRoute(name string) error
+	ListRoutes(labelSelector string) ([]routev1.Route, error)
+	GetOneRouteFromSelector(selector string) (*routev1.Route, error)
+
 	// secrets.go
 	CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objectMeta metav1.ObjectMeta) (*corev1.Secret, error)
 	GetSecret(name, namespace string) (*corev1.Secret, error)
@@ -119,6 +141,9 @@ type ClientInterface interface {
 	DeleteService(serviceName string) error
 	GetOneService(componentName, appName string) (*corev1.Service, error)
 	GetOneServiceFromSelector(selector string) (*corev1.Service, error)
+
+	// user.go
+	RunLogout(stdout io.Writer) error
 
 	// volumes.go
 	CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error)

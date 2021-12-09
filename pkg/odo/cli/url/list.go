@@ -52,14 +52,14 @@ func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		return err
 	}
 
-	routeSupported, err := o.Context.Client.IsRouteSupported()
+	routeSupported, err := o.Context.KClient.IsRouteSupported()
 	if err != nil {
 		return err
 	}
 
 	o.client = url.NewClient(url.ClientOptions{
 		LocalConfigProvider: o.Context.LocalConfigProvider,
-		OCClient:            *o.Context.Client,
+		Client:              o.Context.KClient,
 		IsRouteSupported:    routeSupported,
 	})
 	return nil

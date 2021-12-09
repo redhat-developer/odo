@@ -7,7 +7,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/kclient/fake"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	kappsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -657,8 +656,7 @@ func TestPush(t *testing.T) {
 				mockURLClient.EXPECT().Delete(gomock.Eq(tt.deletedItems[i].string), gomock.Eq(tt.deletedItems[i].URLKind)).Times(1)
 			}
 
-			fakeClient, _ := occlient.FakeNew()
-			fakeKClient, fakeKClientSet := kclient.FakeNewWithIngressSupports(tt.args.networkingV1IngressSupported, tt.args.extensionV1IngressSupported)
+			_, fakeKClientSet := kclient.FakeNewWithIngressSupports(tt.args.networkingV1IngressSupported, tt.args.extensionV1IngressSupported)
 
 			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &kappsv1.DeploymentList{
@@ -667,8 +665,6 @@ func TestPush(t *testing.T) {
 					},
 				}, nil
 			})
-
-			fakeClient.SetKubeClient(fakeKClient)
 
 			if err := Push(PushParameters{
 				LocalConfigProvider: mockLocalConfigProvider,

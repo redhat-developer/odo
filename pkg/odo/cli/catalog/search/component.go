@@ -40,7 +40,7 @@ func (o *SearchComponentOptions) Complete(name string, cmd *cobra.Command, args 
 	}
 	o.searchTerm = args[0]
 
-	o.components, err = catalog.SearchComponent(o.Client, o.searchTerm)
+	o.components, err = catalog.SearchComponent(o.KClient, o.searchTerm)
 	return err
 }
 

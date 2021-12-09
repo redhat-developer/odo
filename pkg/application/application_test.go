@@ -6,7 +6,7 @@ import (
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/version"
 	appsv1 "k8s.io/api/apps/v1"
@@ -107,7 +107,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Fake the client with the appropriate arguments
-			client, fakeClientSet := occlient.FakeNew()
+			client, fakeClientSet := kclient.FakeNew()
 
 			// fake the project
 			fakeClientSet.Kubernetes.PrependReactor("get", "projects", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {

@@ -53,7 +53,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
-	apps, err := application.List(o.Client.GetKubeClient())
+	apps, err := application.List(o.KClient)
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}
@@ -63,7 +63,7 @@ func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
 		if log.IsJSON() {
 			var appList []application.App
 			for _, app := range apps {
-				appDef := application.GetMachineReadableFormat(o.Client, app, o.GetProject())
+				appDef := application.GetMachineReadableFormat(o.KClient, app, o.GetProject())
 				appList = append(appList, appDef)
 			}
 

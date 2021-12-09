@@ -2,7 +2,6 @@ package url
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"k8s.io/klog"
 )
@@ -23,7 +21,7 @@ const (
 )
 
 // StartURLHttpRequestStatusWatchForK8S begins testing URLs for responses, outputting the result to console
-func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client kclient.ClientInterface, localConfigProvider *localConfigProvider.LocalConfigProvider, loggingClient machineoutput.MachineEventLoggingClient) {
+func StartURLHttpRequestStatusWatchForK8S(client kclient.ClientInterface, localConfigProvider *localConfigProvider.LocalConfigProvider, loggingClient machineoutput.MachineEventLoggingClient) {
 
 	// This is a non-blocking function so that other status watchers may start as needed
 	go func() {
@@ -32,7 +30,7 @@ func StartURLHttpRequestStatusWatchForK8S(occlient *occlient.Client, client kcli
 
 		for {
 			var err error
-			urlList, err = getURLsForKubernetes(occlient, client, *localConfigProvider, true)
+			urlList, err = getURLsForKubernetes(client, *localConfigProvider, true)
 
 			if err == nil {
 				// Success!
@@ -63,26 +61,20 @@ func startURLTester(urlsToTest [][]statusURL, loggingClient machineoutput.Machin
 	}
 }
 
-func getURLsForKubernetes(oclient *occlient.Client, client kclient.ClientInterface, lcProvider localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
+func getURLsForKubernetes(client kclient.ClientInterface, lcProvider localConfigProvider.LocalConfigProvider, ignoreUnpushed bool) ([]statusURL, error) {
+	var err error
 	componentName := lcProvider.GetName()
 
 	routesSupported := false
 
-	if oclient != nil {
-		var err error
-
-		if routesSupported, err = oclient.IsRouteSupported(); err != nil {
-			// Fallback to Kubernetes client on error
-			routesSupported = false
-		}
-
-	} else {
-		return []statusURL{}, fmt.Errorf("the client is nil")
+	if routesSupported, err = client.IsRouteSupported(); err != nil {
+		// Fallback to Kubernetes client on error
+		routesSupported = false
 	}
 
 	urlClient := NewClient(ClientOptions{
 		LocalConfigProvider: lcProvider,
-		OCClient:            *oclient,
+		Client:              client,
 		IsRouteSupported:    routesSupported,
 	})
 	urls, err := urlClient.List()

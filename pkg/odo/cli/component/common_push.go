@@ -58,12 +58,12 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist
-	isPrjExists, err := project.Exists(cpo.Context, prjName)
+	isPrjExists, err := project.Exists(cpo.Context.KClient, prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
-		err = project.Create(cpo.Context, prjName, true)
+		err = project.Create(cpo.Context.KClient, prjName, true)
 		if err != nil {
 			return errors.Wrapf(
 				err,
@@ -72,7 +72,7 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 			)
 		}
 	}
-	cpo.Context.Client.Namespace = prjName
+	cpo.Context.KClient.SetNamespace(prjName)
 	return
 }
 

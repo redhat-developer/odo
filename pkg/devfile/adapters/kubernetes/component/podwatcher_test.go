@@ -11,8 +11,8 @@ import (
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/occlient"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -292,9 +292,9 @@ func TestStatusReconciler(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, _ := occlient.FakeNew()
+			fkclient, _ := kclient.FakeNew()
 
-			adapter := New(adapterCtx, *fkclient)
+			adapter := New(adapterCtx, fkclient)
 
 			lfo := logFuncOutput{}
 			adapter.GenericAdapter.SetLogger(machineoutput.NewConsoleMachineEventLoggingClientWithFunction(lfo.logFunc))

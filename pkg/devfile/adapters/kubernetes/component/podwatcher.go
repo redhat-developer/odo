@@ -100,7 +100,7 @@ func (pw *podWatcher) startWatchThread(adapter *Adapter) {
 			klog.V(4).Infof("Attempting to acquire watch, attempt #%d", watchAttempts)
 
 			var err error
-			w, err = adapter.Client.GetKubeClient().KubeClient.CoreV1().Pods(adapter.Client.Namespace).Watch(context.TODO(), metav1.ListOptions{})
+			w, err = adapter.Client.GetClient().CoreV1().Pods(adapter.Client.GetCurrentNamespace()).Watch(context.TODO(), metav1.ListOptions{})
 
 			if err != nil || w == nil {
 

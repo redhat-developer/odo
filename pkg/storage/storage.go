@@ -4,9 +4,9 @@ import (
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	v1 "k8s.io/api/apps/v1"
 )
 
@@ -29,7 +29,7 @@ type generic struct {
 }
 
 type ClientOptions struct {
-	OCClient            occlient.Client
+	Client              kclient.ClientInterface
 	LocalConfigProvider localConfigProvider.LocalConfigProvider
 	Deployment          *v1.Deployment
 }
@@ -60,7 +60,7 @@ func NewClient(options ClientOptions) Client {
 
 	return kubernetesClient{
 		generic:    genericInfo,
-		client:     options.OCClient,
+		client:     options.Client,
 		deployment: options.Deployment,
 	}
 }

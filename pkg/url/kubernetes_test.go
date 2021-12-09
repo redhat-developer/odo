@@ -16,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/kclient/fake"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -191,17 +190,14 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 				return true, tt.returnedIngresses.GetExtensionV1Beta1IngresList(true), nil
 			})
 
-			fkocclient, fkocclientset := occlient.FakeNew()
-			fkocclient.SetKubeClient(fkclient)
-
-			fkocclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fkclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &tt.returnedRoutes, nil
 			})
 
 			k := kubernetesClient{
 				generic:          tt.fields.generic,
 				isRouteSupported: tt.fields.isRouteSupported,
-				client:           *fkocclient,
+				client:           fkclient,
 			}
 			got, err := k.ListFromCluster()
 			if (err != nil) != tt.wantErr {
@@ -419,10 +415,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 				return true, tt.returnedIngress.GetExtensionV1Beta1IngresList(true), nil
 			})
 
-			fkocclient, fkocclientset := occlient.FakeNew()
-			fkocclient.SetKubeClient(fkclient)
-
-			fkocclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fkclientset.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &tt.returnedRoutes, nil
 			})
 
@@ -430,7 +423,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			k := kubernetesClient{
 				generic:          tt.fields.generic,
 				isRouteSupported: tt.fields.isRouteSupported,
-				client:           *fkocclient,
+				client:           fkclient,
 			}
 			got, err := k.List()
 			if (err != nil) != tt.wantErr {
@@ -554,14 +547,12 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 
 			}
 
-			client, fakeClientSet := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNewWithIngressSupports(true, false)
-			client.SetKubeClient(fakeKClient)
 
 			k := kubernetesClient{
 				generic:          tt.fields.generic,
 				isRouteSupported: tt.fields.isRouteSupported,
-				client:           *client,
+				client:           fakeKClient,
 			}
 
 			fakeKClientSet.Kubernetes.PrependReactor("list", "services", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -629,8 +620,8 @@ func Test_kubernetesClient_createIngress(t *testing.T) {
 				t.Errorf("expected %v Kubernetes.Actions() in Create, got: %v", wantKubernetesActionLength, len(fakeKClientSet.Kubernetes.Actions()))
 			}
 
-			if len(fakeClientSet.RouteClientset.Actions()) != 0 {
-				t.Errorf("expected 0 RouteClientset.Actions() in CreateService, got: %v", fakeClientSet.RouteClientset.Actions())
+			if len(fakeKClientSet.RouteClientset.Actions()) != 0 {
+				t.Errorf("expected 0 RouteClientset.Actions() in CreateService, got: %v", fakeKClientSet.RouteClientset.Actions())
 			}
 
 			var createdIngress *networkingv1.Ingress
@@ -803,11 +794,9 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNew()
-			client.SetKubeClient(fakeKClient)
 
-			fakeClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeKClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
 				route.Spec.Host = "host"
 				return true, route, nil
@@ -828,7 +817,7 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 			k := kubernetesClient{
 				generic:          tt.fields.generic,
 				isRouteSupported: tt.fields.isRouteSupported,
-				client:           *client,
+				client:           fakeKClient,
 			}
 			got, err := k.createRoute(tt.args.url, urlLabels.GetLabels(tt.args.url.Name, k.componentName, k.appName, true))
 			if (err != nil) != tt.wantErr {
@@ -839,11 +828,11 @@ func Test_kubernetesClient_createRoute(t *testing.T) {
 				t.Errorf("createRoute() got = %v, want %v", got, tt.want)
 			}
 
-			if len(fakeClientSet.RouteClientset.Actions()) != 1 {
-				t.Errorf("expected 1 RouteClientset.Actions() in CreateService, got: %v", len(fakeClientSet.RouteClientset.Actions()))
+			if len(fakeKClientSet.RouteClientset.Actions()) != 1 {
+				t.Errorf("expected 1 RouteClientset.Actions() in CreateService, got: %v", len(fakeKClientSet.RouteClientset.Actions()))
 			}
 
-			createdRoute := fakeClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+			createdRoute := fakeKClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
 			if !reflect.DeepEqual(createdRoute.Name, tt.returnedRoute.Name) {
 				t.Errorf("route name not matching, expected: %s, got %s", tt.returnedRoute.Name, createdRoute.Name)
 			}
@@ -935,9 +924,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := occlient.FakeNew()
 			fakeKClient, fakeKClientSet := kclient.FakeNew()
-			client.SetKubeClient(fakeKClient)
 
 			fakeKClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &appsv1.DeploymentList{Items: []appsv1.Deployment{*testingutil.CreateFakeDeployment("nodejs")}}, nil
@@ -951,7 +938,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				}, nil
 			})
 
-			fakeClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+			fakeKClientSet.RouteClientset.PrependReactor("create", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 				route := action.(ktesting.CreateAction).GetObject().(*routev1.Route)
 				route.Spec.Host = "host"
 				return true, route, nil
@@ -960,7 +947,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 			k := kubernetesClient{
 				generic:          tt.fields.generic,
 				isRouteSupported: tt.fields.isRouteSupported,
-				client:           *client,
+				client:           fakeKClient,
 			}
 			got, err := k.Create(tt.args.url)
 			if (err != nil) != tt.wantErr {
@@ -988,7 +975,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				requiredRoute := testingutil.GetSingleRoute(tt.args.url.Name, tt.args.url.Spec.Port, tt.fields.generic.componentName, tt.fields.generic.appName)
 				requiredRoute.Labels["app"] = tt.fields.generic.appName
 
-				createdRoute := fakeClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
+				createdRoute := fakeKClientSet.RouteClientset.Actions()[0].(ktesting.CreateAction).GetObject().(*routev1.Route)
 				if !reflect.DeepEqual(createdRoute.Labels, requiredRoute.Labels) {
 					t.Errorf("route labels not matching, %v", pretty.Compare(requiredRoute.Labels, createdRoute.Labels))
 				}

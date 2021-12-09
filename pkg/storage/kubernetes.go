@@ -8,7 +8,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -20,7 +19,7 @@ import (
 // kubernetesClient contains information required for devfile based Storage operations
 type kubernetesClient struct {
 	generic
-	client occlient.Client
+	client kclient.ClientInterface
 
 	// if we don't have access to the local config
 	// we can use the deployment to call ListFromCluster() and
@@ -50,7 +49,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 		labels[storagelabels.SourcePVCLabel] = storage.Name
 	}
 
-	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetKubeClient().Namespace, labels, nil)
+	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetCurrentNamespace(), labels, nil)
 
 	quantity, err := resource.ParseQuantity(storage.Spec.Size)
 	if err != nil {
@@ -65,7 +64,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 
 	// Create PVC
 	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
-	_, err = k.client.GetKubeClient().CreatePVC(*pvc)
+	_, err = k.client.CreatePVC(*pvc)
 	if err != nil {
 		return errors.Wrap(err, "unable to create PVC")
 	}
@@ -74,13 +73,13 @@ func (k kubernetesClient) Create(storage Storage) error {
 
 // Delete deletes the pvc belonging to the given Storage
 func (k kubernetesClient) Delete(name string) error {
-	pvcName, err := getPVCNameFromStorageName(&k.client, name)
+	pvcName, err := getPVCNameFromStorageName(k.client, name)
 	if err != nil {
 		return err
 	}
 
 	// delete the associated PVC with the component
-	err = k.client.GetKubeClient().DeletePVC(pvcName)
+	err = k.client.DeletePVC(pvcName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete PVC %v", pvcName)
 	}
@@ -92,7 +91,7 @@ func (k kubernetesClient) Delete(name string) error {
 func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 	if k.deployment == nil {
 		var err error
-		k.deployment, err = k.client.GetKubeClient().GetOneDeployment(k.componentName, k.appName)
+		k.deployment, err = k.client.GetOneDeployment(k.componentName, k.appName)
 		if err != nil {
 			if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
 				return StorageList{}, nil
@@ -145,7 +144,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.componentName, storagelabels.SourcePVCLabel)
 
-	pvcs, err := k.client.GetKubeClient().ListPVCs(selector)
+	pvcs, err := k.client.ListPVCs(selector)
 	if err != nil {
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
@@ -199,7 +198,7 @@ func (k kubernetesClient) List() (StorageList, error) {
 
 	localStorage := ConvertListLocalToMachine(localConfigStorage)
 	var clusterStorage StorageList
-	if k.client.GetKubeClient() != nil {
+	if k.client != nil {
 		clusterStorage, err = k.ListFromCluster()
 		if err != nil {
 			return StorageList{}, err

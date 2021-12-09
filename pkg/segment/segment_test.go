@@ -15,8 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/occlient"
-
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -275,7 +274,7 @@ func TestClientUploadWithContext(t *testing.T) {
 			scontext.SetComponentType(ctx, v)
 			uploadData = fakeTelemetryData("odo create", nil, ctx)
 		case scontext.ClusterType:
-			fakeClient, _ := occlient.FakeNew()
+			fakeClient, _ := kclient.FakeNew()
 			scontext.SetClusterType(ctx, fakeClient)
 			uploadData = fakeTelemetryData("odo project set", nil, ctx)
 		}

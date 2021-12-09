@@ -10,9 +10,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
-
-	"github.com/redhat-developer/odo/pkg/occlient"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
@@ -35,7 +34,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
@@ -158,7 +157,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	client: occlient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
-func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParameters) error {
+func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)

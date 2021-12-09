@@ -8,7 +8,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	storageLabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	appsv1 "k8s.io/api/apps/v1"
@@ -325,9 +324,6 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 				return true, tt.returnedDeployments, nil
 			})
 
-			fkocclient, _ := occlient.FakeNew()
-			fkocclient.SetKubeClient(fakeClient)
-
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -339,7 +335,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 
 			k := kubernetesClient{
 				generic: tt.fields.generic,
-				client:  *fkocclient,
+				client:  fakeClient,
 			}
 			got, err := k.ListFromCluster()
 			if (err != nil) != tt.wantErr {
@@ -615,9 +611,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 				return true, tt.returnedDeployments, nil
 			})
 
-			fkocclient, _ := occlient.FakeNew()
-			fkocclient.SetKubeClient(fakeClient)
-
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -630,7 +623,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 
 			k := kubernetesClient{
 				generic: tt.fields.generic,
-				client:  *fkocclient,
+				client:  fakeClient,
 			}
 			got, err := k.List()
 			if (err != nil) != tt.wantErr {
@@ -699,12 +692,9 @@ func Test_kubernetesClient_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := kclient.FakeNew()
 
-			fakeocclient, _ := occlient.FakeNew()
-			fakeocclient.SetKubeClient(fkclient)
-
 			k := kubernetesClient{
 				generic: tt.fields.generic,
-				client:  *fakeocclient,
+				client:  fkclient,
 			}
 			if err := k.Create(tt.args.storage); (err != nil) != tt.wantErr {
 				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
@@ -806,9 +796,6 @@ func Test_kubernetesClient_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fkclient, fkclientset := kclient.FakeNew()
 
-			fakeocclient, _ := occlient.FakeNew()
-			fakeocclient.SetKubeClient(fkclient)
-
 			fkclientset.Kubernetes.PrependReactor("list", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &returnedPVCs, nil
 			})
@@ -822,7 +809,7 @@ func Test_kubernetesClient_Delete(t *testing.T) {
 
 			k := kubernetesClient{
 				generic: tt.fields.generic,
-				client:  *fakeocclient,
+				client:  fkclient,
 			}
 			if err := k.Delete(tt.args.name); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)

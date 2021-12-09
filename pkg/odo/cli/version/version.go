@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
@@ -35,7 +35,7 @@ type VersionOptions struct {
 	clientFlag bool
 
 	// serverInfo contains the remote server information if the user asked for it, nil otherwise
-	serverInfo *occlient.ServerInfo
+	serverInfo *kclient.ServerInfo
 }
 
 // NewVersionOptions creates a new VersionOptions instance
@@ -47,7 +47,7 @@ func NewVersionOptions() *VersionOptions {
 func (o *VersionOptions) Complete(name string, cmd *cobra.Command, args []string) error {
 	if !o.clientFlag {
 		// Let's fetch the info about the server, ignoring errors
-		client, err := occlient.New()
+		client, err := kclient.New()
 		if err == nil {
 			o.serverInfo, _ = client.GetServerVersion()
 		}

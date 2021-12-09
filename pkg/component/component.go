@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/preference"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -104,12 +103,12 @@ func GetDefaultComponentName(componentPath string, componentType string, existin
 
 // ApplyConfig applies the component config onto component deployment
 // Parameters:
-//	client: occlient instance
+//	client: kclient instance
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
+func ApplyConfig(client kclient.ClientInterface, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
 	isRouteSupported := false
 	isRouteSupported, err = client.IsRouteSupported()
 	if err != nil {
@@ -117,7 +116,7 @@ func ApplyConfig(client *occlient.Client, envSpecificInfo envinfo.EnvSpecificInf
 	}
 
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
-		OCClient:            *client,
+		Client:              client,
 		IsRouteSupported:    isRouteSupported,
 		LocalConfigProvider: &envSpecificInfo,
 	})
@@ -130,7 +129,7 @@ func ApplyConfig(client *occlient.Client, envSpecificInfo envinfo.EnvSpecificInf
 }
 
 // GetComponentNames retrieves the names of the components in the specified application
-func GetComponentNames(client *occlient.Client, applicationName string) ([]string, error) {
+func GetComponentNames(client kclient.ClientInterface, applicationName string) ([]string, error) {
 	components, err := GetPushedComponents(client, applicationName)
 	if err != nil {
 		return []string{}, err
@@ -146,20 +145,20 @@ func GetComponentNames(client *occlient.Client, applicationName string) ([]strin
 // ListDevfileComponents returns the devfile component matching a selector.
 // The selector could be about selecting components part of an application.
 // There are helpers in "applabels" package for this.
-func ListDevfileComponents(client *occlient.Client, selector string) (ComponentList, error) {
+func ListDevfileComponents(client kclient.ClientInterface, selector string) (ComponentList, error) {
 
 	var deploymentList []v1.Deployment
 	var components []Component
 
 	// retrieve all the deployments that are associated with this application
-	deploymentList, err := client.GetKubeClient().GetDeploymentFromSelector(selector)
+	deploymentList, err := client.GetDeploymentFromSelector(selector)
 	if err != nil {
 		return ComponentList{}, errors.Wrapf(err, "unable to list components")
 	}
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.Namespace)
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -175,7 +174,7 @@ func ListDevfileComponents(client *occlient.Client, selector string) (ComponentL
 }
 
 // List lists all the devfile components in active application
-func List(client *occlient.Client, applicationSelector string) (ComponentList, error) {
+func List(client kclient.ClientInterface, applicationSelector string) (ComponentList, error) {
 	devfileList, err := ListDevfileComponents(client, applicationSelector)
 	if err != nil {
 		return ComponentList{}, nil
@@ -346,7 +345,7 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 	return false, nil
 }
 
-func GetComponentState(client *occlient.Client, componentName, applicationName string) State {
+func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) State {
 	// first check if a deployment exists
 	c, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
@@ -359,12 +358,12 @@ func GetComponentState(client *occlient.Client, componentName, applicationName s
 }
 
 // GetComponent provides component definition
-func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
+func GetComponent(client kclient.ClientInterface, componentName string, applicationName string, projectName string) (component Component, err error) {
 	return getRemoteComponentMetadata(client, componentName, applicationName, true, true)
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func getRemoteComponentMetadata(client *occlient.Client, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
+func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
@@ -434,7 +433,7 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 	// Labels
 	component.Labels = fromCluster.GetLabels()
 
-	component.Namespace = client.Namespace
+	component.Namespace = client.GetCurrentNamespace()
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
 	component.Status.State = StateTypePushed
@@ -443,8 +442,8 @@ func getRemoteComponentMetadata(client *occlient.Client, componentName string, a
 }
 
 // setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
-func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount, selector string) error {
-	ok, err := client.GetKubeClient().IsServiceBindingSupported()
+func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []SecretMount, selector string) error {
+	ok, err := client.IsServiceBindingSupported()
 	if err != nil {
 		return fmt.Errorf("unable to check if service binding is supported: %w", err)
 	}
@@ -452,7 +451,7 @@ func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount, 
 	serviceBindings := map[string]string{}
 	if ok {
 		// service binding operator is installed on the cluster
-		list, err := client.GetKubeClient().ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		list, err := client.ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
 		if err != nil || list == nil {
 			return err
 		}
@@ -481,13 +480,13 @@ func setLinksServiceNames(client *occlient.Client, linkedSecrets []SecretMount, 
 	} else {
 		// service binding operator is not installed
 		// get the secrets instead of the service binding objects to retrieve the link data
-		secrets, err := client.GetKubeClient().ListSecrets(selector)
+		secrets, err := client.ListSecrets(selector)
 		if err != nil {
 			return err
 		}
 
 		// get the services to get their names against the component names
-		services, err := client.GetKubeClient().ListServices("")
+		services, err := client.ListServices("")
 		if err != nil {
 			return err
 		}

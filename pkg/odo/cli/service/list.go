@@ -43,7 +43,7 @@ func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []st
 		return err
 	}
 
-	o.csvSupport, err = o.Client.GetKubeClient().IsCSVSupported()
+	o.csvSupport, err = o.KClient.IsCSVSupported()
 	if err != nil {
 		return err
 	}

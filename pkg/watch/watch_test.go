@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/occlient"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -754,7 +754,7 @@ func TestWatchAndPush(t *testing.T) {
 				t.Errorf("failed to setup test environment. Error %v", err)
 			}
 
-			fkclient, _ := occlient.FakeNew()
+			fkclient, _ := kclient.FakeNew()
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)

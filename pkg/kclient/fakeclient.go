@@ -2,6 +2,9 @@ package kclient
 
 import (
 	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
+	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
+	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
+	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
 	odoFake "github.com/redhat-developer/odo/pkg/kclient/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +16,9 @@ import (
 type FakeClientset struct {
 	Kubernetes              *fakeKubeClientset.Clientset
 	ServiceCatalogClientSet *fakeServiceCatalogClientSet.Clientset
+	ProjClientset           *fakeProjClientset.Clientset
+	RouteClientset          *fakeRouteClientset.Clientset
+	AppsClientset           *fakeAppsClientset.Clientset
 }
 
 // FakeNew creates new fake client for testing
@@ -35,11 +41,19 @@ func FakeNewWithIngressSupports(networkingv1Supported, extensionV1Supported bool
 
 	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
 	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.ServicecatalogV1beta1()
+
+	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
 	client.appsClient = fkclientset.Kubernetes.AppsV1()
 	client.isExtensionV1Beta1IngressSupported = extensionV1Supported
 	client.isNetworkingV1IngressSupported = networkingv1Supported
 	client.checkIngressSupports = false
 	client.SetDiscoveryInterface(NewKubernetesFakedDiscovery(true, true))
+
+	fkclientset.ProjClientset = fakeProjClientset.NewSimpleClientset()
+	client.projectClient = fkclientset.ProjClientset.ProjectV1()
+
+	fkclientset.RouteClientset = fakeRouteClientset.NewSimpleClientset()
+	client.routeClient = fkclientset.RouteClientset.RouteV1()
 
 	return &client, &fkclientset
 }

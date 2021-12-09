@@ -19,7 +19,6 @@ import (
 	componentLabels "github.com/redhat-developer/odo/pkg/component/labels"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 
 	v1 "k8s.io/api/apps/v1"
@@ -122,7 +121,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := occlient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNew()
 
 			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, &deployment, nil
@@ -137,7 +136,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := New(adapterCtx, *fkclient)
+			componentAdapter := New(adapterCtx, fkclient)
 			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
 			// Checks for unexpected error cases
@@ -319,7 +318,7 @@ func TestDoesComponentExist(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := occlient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNew()
 			fkWatch := watch.NewFake()
 
 			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
@@ -351,7 +350,7 @@ func TestDoesComponentExist(t *testing.T) {
 			})
 
 			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := New(adapterCtx, *fkclient)
+			componentAdapter := New(adapterCtx, fkclient)
 			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
 
 			// Checks for unexpected error cases
@@ -432,7 +431,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			fkclient, fkclientset := occlient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNew()
 			fkWatch := watch.NewFake()
 
 			// Change the status
@@ -444,7 +443,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			componentAdapter := New(adapterCtx, *fkclient)
+			componentAdapter := New(adapterCtx, fkclient)
 			_, err := componentAdapter.getPod(false)
 
 			// Checks for unexpected error cases
@@ -563,9 +562,9 @@ func TestAdapterDelete(t *testing.T) {
 				adapterCtx.ComponentName = "doesNotExists"
 			}
 
-			fkclient, fkclientset := occlient.FakeNew()
+			fkclient, fkclientset := kclient.FakeNew()
 
-			a := New(adapterCtx, *fkclient)
+			a := New(adapterCtx, fkclient)
 
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
@@ -666,11 +665,11 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeClient, _ := occlient.FakeNew()
+			fakeClient, _ := kclient.FakeNew()
 			fakeClient.Namespace = "project-0"
 
 			a := Adapter{
-				Client: *fakeClient,
+				Client: fakeClient,
 				GenericAdapter: &adaptersCommon.GenericAdapter{
 					AdapterContext: adaptersCommon.AdapterContext{
 						ComponentName: tt.fields.componentName,

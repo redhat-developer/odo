@@ -9,7 +9,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/segment"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/pkg/errors"
@@ -62,11 +61,8 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 			return err
 		}
 	} else {
-		client, e := genericclioptions.Client()
 		// if the user is logged in or if we have cluster information, display the default project
-		if e == nil {
-			componentNamespace = ui.EnterDevfileComponentProject(client.GetCurrentProjectName())
-		}
+		componentNamespace = ui.EnterDevfileComponentProject(co.KClient.GetCurrentProjectName())
 	}
 
 	co.devfileMetadata.componentType = componentType

@@ -1,4 +1,4 @@
-package occlient
+package kclient
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	projectv1 "github.com/openshift/api/project/v1"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +14,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
+)
+
+const (
+	// timeout for waiting for project deletion
+	waitForProjectDeletionTimeOut = 3 * time.Minute
 )
 
 // GetProject returns project based on the name of the project
@@ -177,7 +181,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			Name: projectName,
 		},
 	}
-	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{FieldManager: kclient.FieldManager})
+	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
 		return errors.Wrapf(err, "unable to create new project %s", projectName)
 	}
@@ -210,7 +214,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 
 // IsProjectSupported checks if Project resource type is present on the cluster
 func (c *Client) IsProjectSupported() (bool, error) {
-	return c.GetKubeClient().IsResourceSupported("project.openshift.io", "v1", "projects")
+	return c.IsResourceSupported("project.openshift.io", "v1", "projects")
 }
 
 // GetCurrentProjectName returns the current project name

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/service"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/occlient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
@@ -47,20 +47,15 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 }
 
 // loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
+func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client kclient.ClientInterface, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
-	var derefClient occlient.Client
-
-	if client != nil {
-		derefClient = *client
-	}
 
 	// if component is pushed call ListWithState which gets storages from localconfig and cluster
 	// this result is already in mc readable form
 	if componentDesc.Status.State == StateTypePushed {
 		storageClient := storage.NewClient(storage.ClientOptions{
-			OCClient:            derefClient,
+			Client:              client,
 			LocalConfigProvider: configProvider,
 		})
 
@@ -107,7 +102,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 }
 
 // NewComponentFullDescriptionFromClientAndLocalConfigProvider gets the complete description of the component from cluster
-func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client *occlient.Client, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
+func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.ClientInterface, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	var state State
 	if client == nil {
@@ -178,15 +173,9 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client *occlien
 	envInfo.SetDevfileObj(devfile)
 	configProvider = envInfo
 
-	var derefClient occlient.Client
-
-	if client != nil {
-		derefClient = *client
-	}
-
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
 		LocalConfigProvider: configProvider,
-		OCClient:            derefClient,
+		Client:              client,
 		IsRouteSupported:    routeSupported,
 	})
 
@@ -205,7 +194,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client *occlien
 }
 
 // Print prints the complete information of component onto stdout (Note: long term this function should not need to access any parameters, but just print the information in struct)
-func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
+func (cfd *ComponentFullDescription) Print(client kclient.ClientInterface) error {
 	// TODO: remove the need to client here print should just deal with printing
 	log.Describef("Component Name: ", cfd.GetName())
 	log.Describef("Type: ", cfd.Spec.Type)
@@ -279,7 +268,7 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 			}
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetKubeClient().GetSecret(linkedService.SecretName, cfd.GetNamespace())
+			secrets, err := client.GetSecret(linkedService.SecretName, cfd.GetNamespace())
 			if err != nil {
 				return err
 			}

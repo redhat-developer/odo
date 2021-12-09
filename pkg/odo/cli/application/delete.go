@@ -60,7 +60,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return odoUtil.ThrowContextError()
 	}
 
-	exist, err := application.Exists(o.appName, o.Client.GetKubeClient())
+	exist, err := application.Exists(o.appName, o.KClient)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -70,7 +70,7 @@ func (o *DeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo command
 func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	if log.IsJSON() {
-		err = application.Delete(o.Client.GetKubeClient(), o.appName)
+		err = application.Delete(o.KClient, o.appName)
 		if err != nil {
 			return err
 		}
@@ -78,13 +78,13 @@ func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// Print App Information which will be deleted
-	err = printAppInfo(o.Client, o.KClient, o.appName, o.GetProject())
+	err = printAppInfo(o.KClient, o.KClient, o.appName, o.GetProject())
 	if err != nil {
 		return err
 	}
 
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.GetProject())) {
-		err = application.Delete(o.Client.GetKubeClient(), o.appName)
+		err = application.Delete(o.KClient, o.appName)
 		if err != nil {
 			return err
 		}

@@ -16,7 +16,7 @@ import (
 var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	applications, err := application.List(context.Client.GetKubeClient())
+	applications, err := application.List(context.KClient)
 	if err != nil {
 		return completions
 	}
@@ -39,7 +39,7 @@ var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *g
 // ProjectNameCompletionHandler provides project name completion
 var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	projects, err := context.Client.ListProjectNames()
+	projects, err := context.KClient.ListProjectNames()
 	if err != nil {
 		return completions
 	}
@@ -108,7 +108,7 @@ var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	if context.GetApplication() != "" {
 		selector = applabels.GetSelector(context.GetApplication())
 	}
-	components, err := component.List(context.Client, selector)
+	components, err := component.List(context.KClient, selector)
 
 	if err != nil {
 		return completions

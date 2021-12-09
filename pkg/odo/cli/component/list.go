@@ -161,7 +161,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) error {
 	currentComponentState := component.StateTypeNotPushed
 
 	if lo.KClient != nil {
-		devfileComponentsOut, err := component.ListDevfileComponents(lo.Client, selector)
+		devfileComponentsOut, err := component.ListDevfileComponents(lo.KClient, selector)
 		if err != nil {
 			return err
 		}
@@ -198,7 +198,7 @@ func (lo *ListOptions) Run(cmd *cobra.Command) error {
 		selector = applabels.GetNonOdoSelector(lo.GetApplication())
 	}
 
-	otherComponents, err := component.List(lo.Client, selector)
+	otherComponents, err := component.List(lo.KClient, selector)
 	if err != nil {
 		return fmt.Errorf("failed to fetch components not managed by odo: %w", err)
 	}
