@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/spf13/cobra"
 
@@ -50,7 +51,13 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 func (pco *ProjectCreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	pco.projectName = args[0]
 	pco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	return err
+	if err != nil {
+		return err
+	}
+	if context.GetTelemetryStatus(cmdline.Context()) {
+		context.SetClusterType(cmdline.Context(), pco.Client)
+	}
+	return nil
 }
 
 // Validate validates the parameters of the ProjectCreateOptions
