@@ -7,6 +7,7 @@
 save_logs() {
     LOGFILE="$1"
     NAME="$2"
+    RESULT="$3"
     apt update
     apt install jq colorized-logs --yes
 
@@ -22,8 +23,13 @@ save_logs() {
 
     echo -n ${GITHUB_TOKEN} | gh auth login --with-token
     BASE_URL="https://s3.${IBM_REGION}.cloud-object-storage.appdomain.cloud/${IBM_BUCKET}"
+    if [[ $RESULT == "0" ]]; then
+        STATUS="successfully"
+    else
+        STATUS="with errors"
+    fi
     cat <<EOF | gh pr comment ${GIT_PR_NUMBER} --body-file -
-${NAME} finished.
+${NAME} finished ${STATUS}.
 View logs: [TXT](${BASE_URL}/${LOGFILE}.txt) [HTML](${BASE_URL}/${LOGFILE}.html)
 EOF
 }
