@@ -16,6 +16,6 @@ ibmcloud ks cluster config --cluster "${IBM_KUBERNETES_ID}" --admin
 ) |& tee "/tmp/${LOGFILE}"
 RESULT=${PIPESTATUS[0]}
 
-save_logs "${LOGFILE}" "Kubernetes Tests"
+save_logs "${LOGFILE}" "Kubernetes Tests" ${RESULT}
 
 exit ${RESULT}
