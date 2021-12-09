@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -154,6 +155,6 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	configurationUnsetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Unset the environment variables in config")
 	o.AddContextFlag(configurationUnsetCmd)
-	genericclioptions.AddNowFlag(configurationUnsetCmd, &o.nowFlag)
+	odoutil.AddNowFlag(configurationUnsetCmd, &o.nowFlag)
 	return configurationUnsetCmd
 }

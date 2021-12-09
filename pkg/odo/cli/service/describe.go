@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/service"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
@@ -102,6 +103,6 @@ func NewCmdServiceDescribe(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(describeCmd, &do.contextFlag)
+	odoutil.AddContextFlag(describeCmd, &do.contextFlag)
 	return describeCmd
 }

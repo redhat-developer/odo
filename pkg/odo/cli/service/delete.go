@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -111,6 +112,6 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 		},
 	}
 	serviceDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete service without prompting")
-	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.contextFlag)
+	odoutil.AddContextFlag(serviceDeleteCmd, &o.contextFlag)
 	return serviceDeleteCmd
 }

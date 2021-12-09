@@ -94,7 +94,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	testCmd.Flags().StringVar(&to.testCommandFlag, "test-command", "", "Devfile Test Command to execute")
 	testCmd.Flags().BoolVar(&to.showLogFlag, "show-log", false, "If enabled, logs will be shown when running the test command")
 	//Adding `--context` flag
-	genericclioptions.AddContextFlag(testCmd, &to.contextFlag)
+	odoutil.AddContextFlag(testCmd, &to.contextFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(testCmd)
 	// Adding `--app` flag

@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/storage"
 
@@ -208,7 +209,7 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(storageListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(storageListCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageListCmd, "context", completion.FileCompletionHandler)
 
 	return storageListCmd

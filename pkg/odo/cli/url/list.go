@@ -108,7 +108,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(urlListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(urlListCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 
 	return urlListCmd

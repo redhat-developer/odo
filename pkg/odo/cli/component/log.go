@@ -79,7 +79,7 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
 	// Adding `--context` flag
-	genericclioptions.AddContextFlag(logCmd, &o.contextFlag)
+	odoutil.AddContextFlag(logCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(logCmd)

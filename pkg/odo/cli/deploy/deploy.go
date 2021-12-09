@@ -80,6 +80,6 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	deployCmd.Annotations = map[string]string{"command": "utility"}
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	genericclioptions.AddContextFlag(deployCmd, &o.contextFlag)
+	odoutil.AddContextFlag(deployCmd, &o.contextFlag)
 	return deployCmd
 }

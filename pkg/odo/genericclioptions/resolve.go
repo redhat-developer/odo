@@ -8,11 +8,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
 // ResolveAppFlag resolves the app from the flag
 func ResolveAppFlag(cmdline cmdline.Cmdline) string {
-	appFlag := cmdline.FlagValueIfSet(ApplicationFlagName)
+	appFlag := cmdline.FlagValueIfSet(util.ApplicationFlagName)
 	if len(appFlag) > 0 {
 		return appFlag
 	}
@@ -22,7 +23,7 @@ func ResolveAppFlag(cmdline cmdline.Cmdline) string {
 // resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
 func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string
-	projectFlag := cmdline.FlagValueIfSet(ProjectFlagName)
+	projectFlag := cmdline.FlagValueIfSet(util.ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := o.KClient.GetNamespaceNormal(projectFlag)
@@ -74,7 +75,7 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 // Or If app is set in envfile, return its value
 // Or if createAppIfNeeded, returns the default app name
 func resolveApp(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
-	appFlag := cmdline.FlagValueIfSet(ApplicationFlagName)
+	appFlag := cmdline.FlagValueIfSet(util.ApplicationFlagName)
 	if len(appFlag) > 0 {
 		return appFlag
 	}
@@ -90,7 +91,7 @@ func resolveApp(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.
 // If `--component` flag is used, return its value
 // Or Return the value in envfile
 func resolveComponent(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
-	cmpFlag := cmdline.FlagValueIfSet(ComponentFlagName)
+	cmpFlag := cmdline.FlagValueIfSet(util.ComponentFlagName)
 	if len(cmpFlag) > 0 {
 		return cmpFlag
 	}
@@ -99,7 +100,7 @@ func resolveComponent(cmdline cmdline.Cmdline, localConfiguration localConfigPro
 }
 
 func resolveProject(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
-	projectFlag := cmdline.FlagValueIfSet(ProjectFlagName)
+	projectFlag := cmdline.FlagValueIfSet(util.ProjectFlagName)
 	if projectFlag != "" {
 		return projectFlag
 	}

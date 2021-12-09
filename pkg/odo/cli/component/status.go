@@ -118,7 +118,7 @@ func NewCmdStatus(name, fullName string) *cobra.Command {
 	statusCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding context flag
-	genericclioptions.AddContextFlag(statusCmd, &o.contextFlag)
+	odoutil.AddContextFlag(statusCmd, &o.contextFlag)
 
 	statusCmd.Flags().BoolVarP(&o.followFlag, "follow", "f", false, "Follow the component and report all changes")
 

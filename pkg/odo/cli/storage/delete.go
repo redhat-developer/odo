@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/spf13/cobra"
@@ -114,7 +115,7 @@ func NewCmdStorageDelete(name, fullName string) *cobra.Command {
 	storageDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete storage without prompting")
 	completion.RegisterCommandHandler(storageDeleteCmd, completion.StorageDeleteCompletionHandler)
 
-	genericclioptions.AddContextFlag(storageDeleteCmd, &o.contextFlag)
+	odoutil.AddContextFlag(storageDeleteCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageDeleteCmd, "context", completion.FileCompletionHandler)
 
 	return storageDeleteCmd

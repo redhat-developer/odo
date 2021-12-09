@@ -242,7 +242,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
+	odoutil.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.showFlag, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignoreFlag, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	pushCmd.Flags().BoolVar(&po.configFlag, "config", false, "Use config flag to only apply config on to cluster")

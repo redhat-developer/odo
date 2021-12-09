@@ -85,7 +85,7 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 
 	execCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(execCmd, completion.ComponentNameCompletionHandler)
-	genericclioptions.AddContextFlag(execCmd, &o.contextFlag)
+	odoutil.AddContextFlag(execCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(execCmd)

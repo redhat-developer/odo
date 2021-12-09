@@ -357,7 +357,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(componentCreateCmd, &co.contextFlag)
+	odoutil.AddContextFlag(componentCreateCmd, &co.contextFlag)
 	componentCreateCmd.Flags().StringSliceVarP(&co.portFlag, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.envFlag, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
@@ -376,7 +376,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding `--now` flag
-	genericclioptions.AddNowFlag(componentCreateCmd, &co.nowFlag)
+	odoutil.AddNowFlag(componentCreateCmd, &co.nowFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag

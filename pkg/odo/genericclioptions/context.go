@@ -106,7 +106,7 @@ func New(parameters CreateParameters) (*Context, error) {
 
 	ctx.componentContext = parameters.componentContext
 
-	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(OutputFlagName)
+	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(util.OutputFlagName)
 
 	if !parameters.offline {
 		ctx.KClient, err = parameters.cmdline.GetKubeClient()
@@ -117,7 +117,7 @@ func New(parameters CreateParameters) (*Context, error) {
 			return nil, e
 		}
 
-		if parameters.cmdline.FlagValueIfSet(ComponentFlagName) != "" {
+		if parameters.cmdline.FlagValueIfSet(util.ComponentFlagName) != "" {
 			if err = ctx.checkComponentExistsOrFail(); err != nil {
 				return nil, err
 			}

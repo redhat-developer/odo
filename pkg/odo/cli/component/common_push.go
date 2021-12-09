@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ func (cpo *CommonPushOptions) InitEnvInfoFromContext() (err error) {
 
 //AddContextFlag adds the context flag to specified command storing value of flag in options.componentContext
 func (cpo *CommonPushOptions) AddContextFlag(cmd *cobra.Command) {
-	genericclioptions.AddContextFlag(cmd, &cpo.componentContext)
+	odoutil.AddContextFlag(cmd, &cpo.componentContext)
 }
 
 // ResolveSrcAndConfigFlags sets all pushes if none is asked

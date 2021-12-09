@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -80,6 +81,6 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(serviceListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(serviceListCmd, &o.contextFlag)
 	return serviceListCmd
 }

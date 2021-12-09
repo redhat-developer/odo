@@ -175,7 +175,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.Flags().StringVar(&wo.debugCommandFlag, "debug-command", "", "Devfile Debug Command to execute")
 
 	// Adding context flag
-	genericclioptions.AddContextFlag(watchCmd, &wo.contextFlag)
+	odoutil.AddContextFlag(watchCmd, &wo.contextFlag)
 
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(watchCmd)

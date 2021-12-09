@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -117,7 +118,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	urlDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete url without prompting")
 
 	o.AddContextFlag(urlDeleteCmd)
-	genericclioptions.AddNowFlag(urlDeleteCmd, &o.nowFlag)
+	odoutil.AddNowFlag(urlDeleteCmd, &o.nowFlag)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
 

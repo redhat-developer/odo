@@ -106,7 +106,7 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
 	// Adding --context flag
-	genericclioptions.AddContextFlag(describeCmd, &do.contextFlag)
+	odoutil.AddContextFlag(describeCmd, &do.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)
