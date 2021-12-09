@@ -152,7 +152,7 @@ func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand de
 	return getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
 }
 
-// GetTestCommand iterates through the components in the devfile and returns the deploy command
+// GetDeployCommand iterates through the components in the devfile and returns the deploy command
 func GetDeployCommand(data data.DevfileData, devfileDeployCmd string) (deployCommand devfilev1.Command, err error) {
 	return getCommand(data, devfileDeployCmd, devfilev1.DeployCommandGroupKind)
 }

@@ -236,7 +236,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentDeleteCmd.Flags().BoolVarP(&do.allFlag, "all", "a", false, "Delete component and local config")
 	componentDeleteCmd.Flags().BoolVarP(&do.waitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
-	componentDeleteCmd.Flags().BoolVarP(&do.undeployFlag, "deploy", "d", false, "Undeploy")
+	componentDeleteCmd.Flags().BoolVarP(&do.undeployFlag, "deploy", "d", false, "Undeploy the Devfile Kubernetes Component deployed via `odo deploy`")
 
 	componentDeleteCmd.Flags().BoolVar(&do.showLogFlag, "show-log", false, "If enabled, logs will be shown when deleted")
 
