@@ -719,10 +719,10 @@ func (mr *MockClientInterfaceMockRecorder) GetNamespace(name interface{}) *gomoc
 }
 
 // GetNamespaceNormal mocks base method.
-func (m *MockClientInterface) GetNamespaceNormal(name string) (*v10.Namespace, error) {
+func (m *MockClientInterface) GetNamespaceNormal(name string) (*v12.Namespace, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNamespaceNormal", name)
-	ret0, _ := ret[0].(*v10.Namespace)
+	ret0, _ := ret[0].(*v12.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
