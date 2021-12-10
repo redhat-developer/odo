@@ -13,6 +13,6 @@ source .ibm/pipelines/functions.sh
 RESULT=${PIPESTATUS[0]}
 
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
-save_logs "${LOGFILE}" "Unit Tests"
+save_logs "${LOGFILE}" "Unit Tests" ${RESULT}
 
 exit ${RESULT}

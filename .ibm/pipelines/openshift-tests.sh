@@ -19,6 +19,6 @@ oc login -u apikey -p "${API_KEY}" "${IBM_OPENSHIFT_ENDPOINT}"
 RESULT=${PIPESTATUS[0]}
 
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
-save_logs "${LOGFILE}" "OpenShift Tests"
+save_logs "${LOGFILE}" "OpenShift Tests" ${RESULT}
 
 exit ${RESULT}
