@@ -56,7 +56,7 @@ func (pso *ProjectSetOptions) Complete(name string, cmdline cmdline.Cmdline, arg
 		return err
 	}
 	if context.GetTelemetryStatus(cmdline.Context()) {
-		context.SetClusterType(cmdline.Context(), pso.Client)
+		context.SetClusterType(cmdline.Context(), pso.KClient)
 	}
 	return nil
 }
