@@ -39,6 +39,7 @@ type CreateOptions struct {
 	pathFlag      string
 	contextFlag   string
 	containerFlag string
+	ephemeralFlag bool
 
 	storage localConfigProvider.LocalStorage
 }
@@ -61,9 +62,14 @@ func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []st
 		o.storageName = fmt.Sprintf("%s-%s", o.Context.LocalConfigProvider.GetName(), util.GenerateRandomString(4))
 	}
 
+	var eph *bool
+	if o.ephemeralFlag {
+		eph = &o.ephemeralFlag
+	}
 	o.storage = localConfigProvider.LocalStorage{
 		Name:      o.storageName,
 		Size:      o.sizeFlag,
+		Ephemeral: eph,
 		Path:      o.pathFlag,
 		Container: o.containerFlag,
 	}
@@ -115,6 +121,7 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&o.sizeFlag, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.pathFlag, "path", "", "Path to mount the storage on")
 	storageCreateCmd.Flags().StringVar(&o.containerFlag, "container", "", "Name of container to attach the storage to in devfile")
+	storageCreateCmd.Flags().BoolVar(&o.ephemeralFlag, "ephemeral", false, "Set volume as ephemeral")
 
 	odoutil.AddContextFlag(storageCreateCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)

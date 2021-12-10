@@ -3,6 +3,7 @@ package envinfo
 import (
 	"fmt"
 
+	"github.com/blang/semver"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog/v2"
 
@@ -28,6 +29,18 @@ func (ei *EnvInfo) CompleteStorage(storage *localConfigProvider.LocalStorage) {
 
 // ValidateStorage validates the given storage
 func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) error {
+
+	if storage.Ephemeral != nil && *storage.Ephemeral {
+		minSupport := semver.MustParse("2.1.0")
+		version, err := semver.Make(ei.devfileObj.Data.GetSchemaVersion())
+		if err != nil {
+			return err
+		}
+		if !version.GE(minSupport) {
+			return fmt.Errorf("Version of devfile is %q, should be at least %q to use --ephemeral flag", version, minSupport)
+		}
+	}
+
 	storageList, err := ei.ListStorage()
 	if err != nil {
 		return err
@@ -58,6 +71,7 @@ func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) err
 	if !containerExists {
 		return fmt.Errorf("specified container %s does not exist", storage.Container)
 	}
+
 	return nil
 }
 
@@ -89,7 +103,8 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 		ComponentUnion: devfilev1.ComponentUnion{
 			Volume: &devfilev1.VolumeComponent{
 				Volume: devfilev1.Volume{
-					Size: storage.Size,
+					Size:      storage.Size,
+					Ephemeral: storage.Ephemeral,
 				},
 			},
 		},
