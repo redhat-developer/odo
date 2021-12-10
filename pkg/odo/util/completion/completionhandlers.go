@@ -2,6 +2,7 @@ package completion
 
 import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 
 	"github.com/posener/complete"
@@ -68,6 +69,11 @@ var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	if err != nil {
 		return completions
 	}
+	devObj, err := devfile.ParseAndValidateFromFile(envInfo.GetDevfilePath())
+	if err != nil {
+		return completions
+	}
+	envInfo.SetDevfileObj(devObj)
 
 	storageList, err := envInfo.ListStorage()
 	if err != nil {
