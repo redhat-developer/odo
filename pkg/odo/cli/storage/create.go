@@ -87,7 +87,7 @@ func (o *CreateOptions) Run() (err error) {
 	}
 
 	if log.IsJSON() {
-		storageResultMachineReadable := storage.NewStorage(o.storage.Name, o.storage.Size, o.storage.Path)
+		storageResultMachineReadable := storage.NewStorage(o.storage.Name, o.storage.Size, o.storage.Path, nil)
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.Context.LocalConfigProvider.GetName())

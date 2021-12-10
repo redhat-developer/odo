@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	storageLabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -102,8 +103,8 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), "", "container-0"),
 				},
 			},
 			wantErr: false,
@@ -137,9 +138,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
-					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-1"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), "", "container-1"),
 				},
 			},
 			wantErr: false,
@@ -194,7 +195,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), "", "container-0"),
 				},
 			},
 			wantErr: false,
@@ -260,9 +261,9 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			},
 			want: StorageList{
 				Items: []Storage{
-					generateStorage(NewStorage("volume-0", "5Gi", "/data"), "", "container-0"),
-					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-0"),
-					generateStorage(NewStorage("volume-1", "10Gi", "/path"), "", "container-1"),
+					generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), "", "container-0"),
+					generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), "", "container-1"),
 				},
 			},
 			wantErr: false,
@@ -440,8 +441,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			want: NewStorageList([]Storage{
-				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
-				generateStorage(NewStorage("volume-1", "10Gi", "/path"), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), StateTypePushed, "container-0"),
 			}),
 			wantErr: false,
 		},
@@ -484,10 +485,10 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			want: NewStorageList([]Storage{
-				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypeNotPushed, "container-0"),
-				generateStorage(NewStorage("volume-1", "10Gi", "/path"), StateTypeNotPushed, "container-0"),
-				generateStorage(NewStorage("volume-00", "5Gi", "/data"), StateTypeLocallyDeleted, "container-0"),
-				generateStorage(NewStorage("volume-11", "10Gi", "/path"), StateTypeLocallyDeleted, "container-0"),
+				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypeNotPushed, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), StateTypeNotPushed, "container-0"),
+				generateStorage(NewStorage("volume-00", "5Gi", "/data", nil), StateTypeLocallyDeleted, "container-0"),
+				generateStorage(NewStorage("volume-11", "10Gi", "/path", nil), StateTypeLocallyDeleted, "container-0"),
 			}),
 			wantErr: false,
 		},
@@ -528,8 +529,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			want: NewStorageList([]Storage{
-				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
-				generateStorage(NewStorage("volume-1", "10Gi", "/data"), StateTypeNotPushed, "container-1"),
+				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/data", nil), StateTypeNotPushed, "container-1"),
 			}),
 			wantErr: false,
 		},
@@ -567,8 +568,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				},
 			},
 			want: NewStorageList([]Storage{
-				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypePushed, "container-0"),
-				generateStorage(NewStorage("volume-0", "5Gi", "/data"), StateTypeLocallyDeleted, "container-1"),
+				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypePushed, "container-0"),
+				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypeLocallyDeleted, "container-1"),
 			}),
 			wantErr: false,
 		},
@@ -659,7 +660,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: NewStorageWithContainer("storage-0", "5Gi", "/data", "runtime"),
+				storage: NewStorageWithContainer("storage-0", "5Gi", "/data", "runtime", util.GetBoolPtr(false)),
 			},
 		},
 		{
@@ -671,7 +672,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: NewStorageWithContainer("storage-0", "example", "/data", "runtime"),
+				storage: NewStorageWithContainer("storage-0", "example", "/data", "runtime", util.GetBoolPtr(false)),
 			},
 			wantErr: true,
 		},
@@ -684,7 +685,7 @@ func Test_kubernetesClient_Create(t *testing.T) {
 				},
 			},
 			args: args{
-				storage: NewStorageWithContainer("odo-projects-vol", "5Gi", "/data", "runtime"),
+				storage: NewStorageWithContainer("odo-projects-vol", "5Gi", "/data", "runtime", util.GetBoolPtr(false)),
 			},
 		},
 	}

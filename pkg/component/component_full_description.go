@@ -227,7 +227,15 @@ func (cfd *ComponentFullDescription) Print(client kclient.ClientInterface) error
 		// Gather the output
 		var output string
 		for _, store := range cfd.Spec.Storage.Items {
-			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
+			eph := ""
+			if store.Spec.Ephemeral != nil {
+				if *store.Spec.Ephemeral {
+					eph = " as ephemeral volume"
+				} else {
+					eph = " as persistent volume"
+				}
+			}
+			output += fmt.Sprintf(" · %v of size %v mounted to %v%s\n", store.Name, store.Spec.Size, store.Spec.Path, eph)
 		}
 
 		// Cut off the last newline and output

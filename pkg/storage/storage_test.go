@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	storageLabels "github.com/redhat-developer/odo/pkg/storage/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func getStorageLabels(storageName, componentName, applicationName string) map[string]string {
@@ -20,16 +21,18 @@ func TestPush(t *testing.T) {
 		Size:      "1Gi",
 		Path:      "/data",
 		Container: "runtime-0",
+		Ephemeral: util.GetBoolPtr(false),
 	}
 	localStorage1 := localConfigProvider.LocalStorage{
 		Name:      "storage-1",
 		Size:      "5Gi",
 		Path:      "/path",
 		Container: "runtime-1",
+		Ephemeral: util.GetBoolPtr(false),
 	}
 
-	clusterStorage0 := NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0")
-	clusterStorage1 := NewStorageWithContainer("storage-1", "5Gi", "/path", "runtime-1")
+	clusterStorage0 := NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBoolPtr(false))
+	clusterStorage1 := NewStorageWithContainer("storage-1", "5Gi", "/path", "runtime-1", util.GetBoolPtr(false))
 
 	tests := []struct {
 		name                string
@@ -54,12 +57,14 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/data",
 					Container: "runtime-0",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 				{
 					Name:      "storage-1",
 					Size:      "5Gi",
 					Path:      "/path",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 		},
@@ -89,6 +94,7 @@ func TestPush(t *testing.T) {
 					Size:      "5Gi",
 					Path:      "/path",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 			returnedFromCluster: StorageList{
@@ -103,6 +109,7 @@ func TestPush(t *testing.T) {
 					Size:      "5Gi",
 					Path:      "/path",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 			deletedItems: []string{clusterStorage1.Name},
@@ -115,6 +122,7 @@ func TestPush(t *testing.T) {
 					Size:      "3Gi",
 					Path:      "/path",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 			returnedFromCluster: StorageList{
@@ -134,12 +142,14 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/data",
 					Container: "runtime-0",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 				{
 					Name:      "storage-0",
 					Size:      "1Gi",
 					Path:      "/path",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 			returnedFromCluster: StorageList{},
@@ -149,6 +159,7 @@ func TestPush(t *testing.T) {
 					Size:      "1Gi",
 					Path:      "/path",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 		},
@@ -160,6 +171,7 @@ func TestPush(t *testing.T) {
 					Size:      "5Gi",
 					Path:      "/data",
 					Container: "runtime-1",
+					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
 			returnedFromCluster: StorageList{
@@ -173,8 +185,8 @@ func TestPush(t *testing.T) {
 			returnedFromLocal: []localConfigProvider.LocalStorage{},
 			returnedFromCluster: StorageList{
 				Items: []Storage{
-					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0"),
-					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-1"),
+					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBoolPtr(false)),
+					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-1", util.GetBoolPtr(false)),
 				},
 			},
 			deletedItems: []string{"storage-0"},
@@ -203,7 +215,7 @@ func TestPush(t *testing.T) {
 				fakeStorageClient.EXPECT().Delete(tt.deletedItems[i]).Return(nil).Times(1)
 			}
 
-			if err := Push(fakeStorageClient, fakeLocalConfig); (err != nil) != tt.wantErr {
+			if _, err := Push(fakeStorageClient, fakeLocalConfig); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

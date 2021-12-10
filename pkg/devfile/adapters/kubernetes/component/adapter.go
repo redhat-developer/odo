@@ -436,7 +436,8 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	err = storagepkg.Push(storageClient, &ei)
+	// From devfile info, create PVCs and return ephemeral storages
+	ephemerals, err := storagepkg.Push(storageClient, &ei)
 	if err != nil {
 		return err
 	}
@@ -509,13 +510,23 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		}
 	}
 
+	var allVolumes []corev1.Volume
+
 	// Get PVC volumes and Volume Mounts
 	pvcVolumes, err := storage.GetVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
 	}
+	allVolumes = append(allVolumes, pvcVolumes...)
+
+	ephemeralVolumes, err := storage.GetEphemeralVolumesAndVolumeMounts(a.Devfile, containers, initContainers, ephemerals, parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	allVolumes = append(allVolumes, ephemeralVolumes...)
 
 	odoMandatoryVolumes := utils.GetOdoContainerVolumes(odoSourcePVCName)
+	allVolumes = append(allVolumes, odoMandatoryVolumes...)
 
 	selectorLabels := map[string]string{
 		"component": componentName,
@@ -531,7 +542,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		ObjectMeta:        deploymentObjectMeta,
 		InitContainers:    initContainers,
 		Containers:        containers,
-		Volumes:           append(pvcVolumes, odoMandatoryVolumes...),
+		Volumes:           allVolumes,
 		PodSelectorLabels: selectorLabels,
 	}
 

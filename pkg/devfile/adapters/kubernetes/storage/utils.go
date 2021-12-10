@@ -55,6 +55,30 @@ func GetVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, containers [
 	return pvcVols, nil
 }
 
+func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, containers []corev1.Container, initContainers []corev1.Container, ephemerals map[string]storage.Storage, options parsercommon.DevfileOptions) ([]corev1.Volume, error) {
+	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	if err != nil {
+		return nil, err
+	}
+	var emptydirVols []corev1.Volume
+	for volName, volInfo := range ephemerals {
+		emptydirVols = append(emptydirVols, getEmptyDir(volInfo.Name))
+
+		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
+		containerNameToMountPaths := make(map[string][]string)
+		for _, containerComp := range containerComponents {
+			for _, volumeMount := range containerComp.Container.VolumeMounts {
+				if volName == volumeMount.Name {
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], envinfo.GetVolumeMountPath(volumeMount))
+				}
+			}
+		}
+
+		addVolumeMountToContainers(containers, initContainers, volInfo.Name, containerNameToMountPaths)
+	}
+	return emptydirVols, nil
+}
+
 // getPVC gets a pvc type volume with the given volume name and pvc name.
 // To be moved to devfile/library.
 func getPVC(volumeName, pvcName string) corev1.Volume {
@@ -65,6 +89,18 @@ func getPVC(volumeName, pvcName string) corev1.Volume {
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 				ClaimName: pvcName,
 			},
+		},
+	}
+}
+
+// getEmptyDir gets an emptyDir type volume with the given volume name.
+// To be moved to devfile/library.
+func getEmptyDir(volumeName string) corev1.Volume {
+
+	return corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
 		},
 	}
 }

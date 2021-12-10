@@ -50,7 +50,7 @@ func TestNewStorage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotStorage := NewStorage(tt.storageName, tt.storageSize, tt.mountedPath)
+			gotStorage := NewStorage(tt.storageName, tt.storageSize, tt.mountedPath, nil)
 			if !reflect.DeepEqual(tt.want, gotStorage) {
 				t.Errorf("the returned storage is different, expected: %v, got: %v", tt.want, gotStorage)
 			}

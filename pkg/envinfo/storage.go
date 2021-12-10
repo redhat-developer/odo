@@ -146,7 +146,7 @@ func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error
 func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 	var storageList []localConfigProvider.LocalStorage
 
-	volumeSizeMap := make(map[string]string)
+	volumeMap := make(map[string]devfilev1.Volume)
 	components, err := ei.devfileObj.Data.GetComponents(common.DevfileOptions{})
 	if err != nil {
 		return storageList, err
@@ -159,7 +159,7 @@ func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 		if component.Volume.Size == "" {
 			component.Volume.Size = DefaultVolumeSize
 		}
-		volumeSizeMap[component.Name] = component.Volume.Size
+		volumeMap[component.Name] = component.Volume.Volume
 	}
 
 	for _, component := range components {
@@ -167,11 +167,12 @@ func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 			continue
 		}
 		for _, volumeMount := range component.Container.VolumeMounts {
-			size, ok := volumeSizeMap[volumeMount.Name]
+			vol, ok := volumeMap[volumeMount.Name]
 			if ok {
 				storageList = append(storageList, localConfigProvider.LocalStorage{
 					Name:      volumeMount.Name,
-					Size:      size,
+					Size:      vol.Size,
+					Ephemeral: vol.Ephemeral,
 					Path:      GetVolumeMountPath(volumeMount),
 					Container: component.Name,
 				})
