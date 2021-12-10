@@ -187,8 +187,8 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		AfterEach(func() {
-			helper.DeleteDir(contextDevfile)
 			helper.Chdir(commonVar.Context)
+			helper.DeleteDir(contextDevfile)
 		})
 
 		It("should successfully create the component and download the source", func() {

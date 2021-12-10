@@ -112,8 +112,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			AfterEach(func() {
-				helper.DeleteDir(newContext)
 				helper.Chdir(commonVar.Context)
+				helper.DeleteDir(newContext)
 			})
 
 			It("should push correct component based on --context flag", func() {
