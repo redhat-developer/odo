@@ -30,6 +30,13 @@ func TestPush(t *testing.T) {
 		Container: "runtime-1",
 		Ephemeral: util.GetBoolPtr(false),
 	}
+	localEphemeralStorage0 := localConfigProvider.LocalStorage{
+		Name:      "ephemeral-storage-0",
+		Size:      "5Gi",
+		Path:      "/path",
+		Container: "runtime-1",
+		Ephemeral: util.GetBoolPtr(true),
+	}
 
 	clusterStorage0 := NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-0", util.GetBoolPtr(false))
 	clusterStorage1 := NewStorageWithContainer("storage-1", "5Gi", "/path", "runtime-1", util.GetBoolPtr(false))
@@ -48,7 +55,7 @@ func TestPush(t *testing.T) {
 			returnedFromCluster: StorageList{},
 		},
 		{
-			name:                "case 2: two storage in local and no on cluster",
+			name:                "case 2: two persistent storage in local and no on cluster",
 			returnedFromLocal:   []localConfigProvider.LocalStorage{localStorage0, localStorage1},
 			returnedFromCluster: StorageList{},
 			createdItems: []localConfigProvider.LocalStorage{
@@ -69,7 +76,7 @@ func TestPush(t *testing.T) {
 			},
 		},
 		{
-			name:              "case 3: 0 storage in local and two on cluster",
+			name:              "case 3: 0 persistent storage in local and two on cluster",
 			returnedFromLocal: []localConfigProvider.LocalStorage{},
 			returnedFromCluster: StorageList{
 				Items: []Storage{clusterStorage0, clusterStorage1},
@@ -78,7 +85,7 @@ func TestPush(t *testing.T) {
 			deletedItems: []string{"storage-0", "storage-1"},
 		},
 		{
-			name:              "case 4: same two storage in local and cluster",
+			name:              "case 4: same two persistent storage in local and cluster",
 			returnedFromLocal: []localConfigProvider.LocalStorage{localStorage0, localStorage1},
 			returnedFromCluster: StorageList{
 				Items: []Storage{clusterStorage0, clusterStorage1},
@@ -87,7 +94,7 @@ func TestPush(t *testing.T) {
 			deletedItems: []string{},
 		},
 		{
-			name: "case 5: two storage in both local and cluster but two of them are different and the other two are same",
+			name: "case 5: two persistent storage in both local and cluster but two of them are different and the other two are same",
 			returnedFromLocal: []localConfigProvider.LocalStorage{localStorage0,
 				{
 					Name:      "storage-1-1",
@@ -190,6 +197,25 @@ func TestPush(t *testing.T) {
 				},
 			},
 			deletedItems: []string{"storage-0"},
+		},
+		{
+			name:                "case 10: one ephemeral storage in local, none in cluster",
+			returnedFromLocal:   []localConfigProvider.LocalStorage{localEphemeralStorage0},
+			returnedFromCluster: StorageList{},
+		},
+		{
+			name:                "case 11: one persistent + one ephemeral storage in local and no on cluster",
+			returnedFromLocal:   []localConfigProvider.LocalStorage{localStorage0, localEphemeralStorage0},
+			returnedFromCluster: StorageList{},
+			createdItems: []localConfigProvider.LocalStorage{
+				{
+					Name:      "storage-0",
+					Size:      "1Gi",
+					Path:      "/data",
+					Container: "runtime-0",
+					Ephemeral: util.GetBoolPtr(false),
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
