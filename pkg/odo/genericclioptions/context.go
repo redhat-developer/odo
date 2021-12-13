@@ -202,6 +202,10 @@ func (o *Context) GetOutputFlag() string {
 	return o.outputFlag
 }
 
+func (o *Context) IsJSON() bool {
+	return o.outputFlag == "json"
+}
+
 func (o *Context) GetComponentContext() string {
 	return o.componentContext
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	"github.com/redhat-developer/odo/pkg/application"
@@ -30,13 +31,18 @@ type DescribeOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	appClient application.Client
+
 	// Parameters
 	appName string
 }
 
 // NewDescribeOptions creates a new DescribeOptions instance
-func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{}
+func NewDescribeOptions(appClient application.Client) *DescribeOptions {
+	return &DescribeOptions{
+		appClient: appClient,
+	}
 }
 
 // Complete completes DescribeOptions after they've been created
@@ -61,7 +67,7 @@ func (o *DescribeOptions) Validate() (err error) {
 		return fmt.Errorf("There's no active application in project: %v", o.GetProject())
 	}
 
-	exist, err := application.Exists(o.appName, o.KClient)
+	exist, err := o.appClient.Exists(o.appName)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -71,7 +77,7 @@ func (o *DescribeOptions) Validate() (err error) {
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
-		appDef := application.GetMachineReadableFormat(o.KClient, o.appName, o.GetProject())
+		appDef := o.appClient.GetMachineReadableFormat(o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)
 	} else {
 		var selector string
@@ -105,7 +111,8 @@ func (o *DescribeOptions) Run() (err error) {
 
 // NewCmdDescribe implements the odo command.
 func NewCmdDescribe(name, fullName string) *cobra.Command {
-	o := NewDescribeOptions()
+	kubclient, _ := kclient.New()
+	o := NewDescribeOptions(application.NewClient(kubclient))
 	command := &cobra.Command{
 		Use:         fmt.Sprintf("%s [application_name]", name),
 		Short:       "Describe the given application",

@@ -124,7 +124,8 @@ func TestGetMachineReadableFormat(t *testing.T) {
 					return true, &deploymentList.Items[i], nil
 				})
 			}
-			if got := GetMachineReadableFormat(client, tt.args.appName, tt.args.projectName); !reflect.DeepEqual(got, tt.want) {
+			kclient := NewClient(client)
+			if got := kclient.GetMachineReadableFormat(tt.args.appName, tt.args.projectName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetMachineReadableFormat() = %v,\n want %v", got, tt.want)
 			}
 		})
@@ -184,7 +185,9 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetMachineReadableFormatForList(tt.args.apps); !reflect.DeepEqual(got, tt.want) {
+			client, _ := kclient.FakeNew()
+			kclient := NewClient(client)
+			if got := kclient.GetMachineReadableFormatForList(tt.args.apps); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetMachineReadableFormatForList() = %v, want %v", got, tt.want)
 			}
 		})

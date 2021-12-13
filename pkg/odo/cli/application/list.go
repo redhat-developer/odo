@@ -30,6 +30,9 @@ var (
 type ListOptions struct {
 	// Context
 	*genericclioptions.Context
+
+	// Clients
+	appClient application.Client
 }
 
 // NewListOptions creates a new ListOptions instance
@@ -40,7 +43,11 @@ func NewListOptions() *ListOptions {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	return
+	if err != nil {
+		return err
+	}
+	o.appClient = application.NewClient(o.KClient)
+	return nil
 }
 
 // Validate validates the ListOptions based on completed values
@@ -54,7 +61,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *ListOptions) Run() (err error) {
-	apps, err := application.List(o.KClient)
+	apps, err := o.appClient.List()
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}
@@ -64,11 +71,11 @@ func (o *ListOptions) Run() (err error) {
 		if log.IsJSON() {
 			var appList []application.App
 			for _, app := range apps {
-				appDef := application.GetMachineReadableFormat(o.KClient, app, o.GetProject())
+				appDef := o.appClient.GetMachineReadableFormat(app, o.GetProject())
 				appList = append(appList, appDef)
 			}
 
-			appListDef := application.GetMachineReadableFormatForList(appList)
+			appListDef := o.appClient.GetMachineReadableFormatForList(appList)
 			machineoutput.OutputSuccess(appListDef)
 
 		} else {
@@ -88,7 +95,7 @@ func (o *ListOptions) Run() (err error) {
 		}
 	} else {
 		if log.IsJSON() {
-			apps := application.GetMachineReadableFormatForList([]application.App{})
+			apps := o.appClient.GetMachineReadableFormatForList([]application.App{})
 			machineoutput.OutputSuccess(apps)
 		} else {
 			log.Infof("There are no applications deployed in the project '%v'", o.GetProject())
