@@ -52,16 +52,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 				Expect(len(PVCs)).To(Equal(0))
 				output := commonVar.CliRunner.GetVolumeNamesFromDeployment(cmpName, "app", commonVar.Project)
-				found := false
-				for key, value := range output {
-					if key == "odo-projects" {
-						if value == "emptyDir" {
-							found = true
-							break
-						}
-					}
-				}
-				Expect(found).To(BeTrue())
+				value, ok := output["odo-projects"]
+				Expect(ok).To(BeTrue())
+				Expect(value).Should(Equal(("emptyDir")))
 			})
 		})
 
@@ -96,17 +89,18 @@ var _ = Describe("odo devfile storage command tests", func() {
 			})
 		})
 
-		When("storage create command is executed and doing odo push", func() {
+		When("storage create command is executed", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "storage", "create", storageNames[0], "--path", pathNames[0], "--size", sizes[0], "--context", commonVar.Context).ShouldPass()
 			})
 
-			It("should error if same path is provided again", func() {
-				helper.Cmd("odo", "storage", "create", storageNames[1], "--path", pathNames[0], "--size", sizes[1], "--context", commonVar.Context).ShouldFail()
-			})
-
-			It("should error if same storage name is provided again", func() {
-				helper.Cmd("odo", "storage", "create", storageNames[0], "--path", pathNames[1], "--size", sizes[1], "--context", commonVar.Context).ShouldFail()
+			It("should error if same path or same storage is provided again", func() {
+				By("same path is provided again", func() {
+					helper.Cmd("odo", "storage", "create", storageNames[1], "--path", pathNames[0], "--size", sizes[1], "--context", commonVar.Context).ShouldFail()
+				})
+				By("same storage is provided again", func() {
+					helper.Cmd("odo", "storage", "create", storageNames[0], "--path", pathNames[1], "--size", sizes[1], "--context", commonVar.Context).ShouldFail()
+				})
 			})
 
 			It("should list output in json format", func() {
@@ -144,7 +138,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 						helper.MatchAllInOutput(stdOut, []string{storageNames[1], pathNames[1], sizes[1], "Not Pushed"})
 						helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
 					})
-					When("deleting pushed storage and listing storage", func() {
+					When("deleting pushed storage", func() {
 						BeforeEach(func() {
 							helper.Cmd("odo", "storage", "delete", storageNames[0], "-f", "--context", commonVar.Context).ShouldPass()
 						})
@@ -155,7 +149,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 							helper.DontMatchAllInOutput(stdOut, []string{"CONTAINER", "runtime"})
 						})
 
-						When("doing odo push, odo delete -f and listing storage", func() {
+						When("doing odo push, odo delete -f", func() {
 							BeforeEach(func() {
 								helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 								helper.Cmd("odo", "delete", "-f", "--context", commonVar.Context).ShouldPass()
@@ -173,7 +167,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 						})
 					})
 
-					When("doing odo push", func() {
+					When("pushing the new storage", func() {
 						BeforeEach(func() {
 							helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 						})
@@ -206,7 +200,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 					})
 				})
 
-				When("should create with output as json format", func() {
+				When("creating with output as json format", func() {
 					var values []gjson.Result
 					BeforeEach(func() {
 						actualJSONStorage := helper.Cmd("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
@@ -234,6 +228,8 @@ var _ = Describe("odo devfile storage command tests", func() {
 		When("ephemeral is not set in preference.yaml", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+				value := helper.GetPreferenceValue("Ephemeral")
+				Expect(value).To(BeEmpty())
 			})
 			It("should not create a pvc to store source code  (default is ephemeral=true)", func() {
 				helper.Cmd("odo", "preference", "view").ShouldPass().Out()
@@ -245,16 +241,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 				output := commonVar.CliRunner.GetVolumeNamesFromDeployment(cmpName, "app", commonVar.Project)
 
-				found := false
-				for key, value := range output {
-					if key == "odo-projects" {
-						if value == "emptyDir" {
-							found = true
-							break
-						}
-					}
-				}
+				value, found := output["odo-projects"]
 				Expect(found).To(BeTrue())
+				Expect(value).Should(Equal("emptyDir"))
 			})
 		})
 
@@ -283,7 +272,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 	})
 
-	When("should list the storage with the proper states and container names", func() {
+	When("creating the storage with proper states and container names set in the devfile", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -295,7 +284,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			helper.MatchAllInOutput(stdOut, []string{"firstvol", "secondvol", "/secondvol", "/data", "/data2", "Not Pushed", "CONTAINER", "runtime", "runtime2"})
 		})
 
-		When("doing odo push and listing storage", func() {
+		When("doing odo push", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			})
@@ -334,7 +323,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 				helper.Cmd("odo", "storage", "create", storageName, "--path", pathName, "--context", commonVar.Context, "--container", "tools", "--size", size).ShouldPass()
 
 			})
-			It("should create storage and attach to specified container successfully and list it correctly", func() {
+			It("should list the storage attached to the specified container", func() {
 				storageList = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 				helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
 			})
@@ -342,7 +331,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 				})
-				It("should create storage and attach to specified container successfully and list it correctly", func() {
+				It("should list the storage attached to the specified container", func() {
 					storageList = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 					helper.MatchAllInOutput(storageList, []string{pathName, "tools", storageName})
 					// check the volume name and mount paths for the funtime container
@@ -380,7 +369,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 					})
 
-					It("check deleted storage with odo list", func() {
+					It("should list the deleted storage with odo list", func() {
 						storageList = helper.Cmd("odo", "storage", "list", "--context", commonVar.Context).ShouldPass().Out()
 						helper.DontMatchAllInOutput(storageList, []string{pathName, "tools", storageName, size})
 					})
