@@ -134,6 +134,15 @@ func TestList(t *testing.T) {
 			if err != nil {
 				return
 			}
+
+			/* Mocks for Run */
+			appClient.EXPECT().List().Times(1)
+
+			/* RUN */
+			err = opts.Run()
+			if err != nil {
+				t.Errorf("Expected nil err, got %s", err)
+			}
 		})
 	}
 }

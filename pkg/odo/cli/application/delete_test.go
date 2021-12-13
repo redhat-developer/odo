@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -154,6 +155,8 @@ func TestDelete(t *testing.T) {
 				return false
 			}(), nil).AnyTimes()
 			opts := NewDeleteOptions(appClient)
+			// Force to disable interactive confirmation
+			opts.forceFlag = true
 
 			/* COMPLETE */
 			err := opts.Complete("delete", cmdline, tt.args)
@@ -182,6 +185,16 @@ func TestDelete(t *testing.T) {
 			}
 			if err != nil {
 				return
+			}
+
+			/* Mocks for Run */
+			kclient.EXPECT().GetDeploymentFromSelector(fmt.Sprintf("app=%s,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=%s", tt.wantAppName, tt.wantAppName)).AnyTimes()
+			appClient.EXPECT().Delete(tt.wantAppName).Times(1)
+
+			/* RUN */
+			err = opts.Run()
+			if err != nil {
+				t.Errorf("Expected nil err, got %s", err)
 			}
 		})
 	}
