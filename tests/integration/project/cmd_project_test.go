@@ -125,10 +125,10 @@ var _ = Describe("odo project command tests", func() {
 		})
 
 		AfterEach(func() {
-			helper.Cmd("odo", "project", "delete", "-f", projectName)
+			helper.Cmd("odo", "project", "delete", "-f", projectName).ShouldPass()
 		})
 
-		It("should display information of created project", func() {
+		FIt("should display information of created project", func() {
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.active")
 			expected := []string{"Project", projectName, "true"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
