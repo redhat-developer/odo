@@ -16,6 +16,7 @@ import (
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -91,7 +92,11 @@ func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, con
 	}
 	var emptydirVols []corev1.Volume
 	for volName, volInfo := range ephemerals {
-		emptydirVols = append(emptydirVols, getEmptyDir(volInfo.Name))
+		emptyDir, err := getEmptyDir(volInfo.Name, volInfo.Spec.Size)
+		if err != nil {
+			return nil, err
+		}
+		emptydirVols = append(emptydirVols, emptyDir)
 
 		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
 		containerNameToMountPaths := make(map[string][]string)
@@ -109,7 +114,6 @@ func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, con
 }
 
 // getPVC gets a pvc type volume with the given volume name and pvc name.
-// To be moved to devfile/library.
 func getPVC(volumeName, pvcName string) corev1.Volume {
 
 	return corev1.Volume{
@@ -122,16 +126,22 @@ func getPVC(volumeName, pvcName string) corev1.Volume {
 	}
 }
 
-// getEmptyDir gets an emptyDir type volume with the given volume name.
-// To be moved to devfile/library.
-func getEmptyDir(volumeName string) corev1.Volume {
+// getEmptyDir gets an emptyDir type volume with the given volume name and size.
+// size should be parseable as a Kubernetes `Quantity` or an error will be returned
+func getEmptyDir(volumeName string, size string) (corev1.Volume, error) {
 
+	emptyDir := &corev1.EmptyDirVolumeSource{}
+	qty, err := resource.ParseQuantity(size)
+	if err != nil {
+		return corev1.Volume{}, err
+	}
+	emptyDir.SizeLimit = &qty
 	return corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
+			EmptyDir: emptyDir,
 		},
-	}
+	}, nil
 }
 
 // addVolumeMountToContainers adds the Volume Mounts in containerNameToMountPaths to the containers for a given pvc and volumeName
