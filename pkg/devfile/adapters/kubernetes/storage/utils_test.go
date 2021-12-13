@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -10,7 +11,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGetPVC(t *testing.T) {
@@ -35,6 +38,112 @@ func TestGetPVC(t *testing.T) {
 
 			if volume.PersistentVolumeClaim.ClaimName != tt.pvc {
 				t.Errorf("TestGetPVC error: pvc name does not match; expected %s got %s", tt.pvc, volume.PersistentVolumeClaim.ClaimName)
+			}
+		})
+	}
+}
+
+func TestGetVolumeInfos(t *testing.T) {
+	tests := []struct {
+		name                 string
+		pvcs                 []corev1.PersistentVolumeClaim
+		wantOdoSourcePVCName string
+		wantInfos            map[string]VolumeInfo
+		wantErr              bool
+	}{
+		{
+			name: "odo-projects is not found",
+			pvcs: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pvc1",
+						Labels: map[string]string{
+							"app.kubernetes.io/storage-name": "a-name",
+						},
+					},
+				},
+			},
+			wantOdoSourcePVCName: "",
+			wantInfos: map[string]VolumeInfo{
+				"a-name": {
+					PVCName:    "pvc1",
+					VolumeName: "pvc1-vol",
+				},
+			},
+		},
+		{
+			name: "odo-projects is found",
+			pvcs: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pvc1",
+						Labels: map[string]string{
+							"app.kubernetes.io/storage-name": "odo-projects",
+						},
+					},
+				},
+			},
+			wantOdoSourcePVCName: "pvc1",
+			wantInfos:            map[string]VolumeInfo{},
+		},
+		{
+			name: "odo-projects is found and other pvcs",
+			pvcs: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pvc1",
+						Labels: map[string]string{
+							"app.kubernetes.io/storage-name": "odo-projects",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pvc2",
+						Labels: map[string]string{
+							"app.kubernetes.io/storage-name": "name2",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pvc3",
+						Labels: map[string]string{
+							"app.kubernetes.io/storage-name": "name3",
+						},
+					},
+				},
+			},
+			wantOdoSourcePVCName: "pvc1",
+			wantInfos: map[string]VolumeInfo{
+				"name2": {
+					PVCName:    "pvc2",
+					VolumeName: "pvc2-vol",
+				},
+				"name3": {
+					PVCName:    "pvc3",
+					VolumeName: "pvc3-vol",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			odoSourcePVCName, infos, err := GetVolumeInfos(tt.pvcs)
+			if err != nil != tt.wantErr {
+				t.Errorf("Got error %v, expected %v", err, tt.wantErr)
+				return
+			}
+			if err != nil {
+				return
+			}
+			if odoSourcePVCName != tt.wantOdoSourcePVCName {
+				t.Errorf("Got odoSource PVC name %v, expected %v", odoSourcePVCName, tt.wantOdoSourcePVCName)
+			}
+			if !reflect.DeepEqual(infos, tt.wantInfos) {
+				t.Errorf("Got infos %v, expected %v", infos, tt.wantInfos)
+
 			}
 		})
 	}
@@ -309,7 +418,7 @@ func TestGetVolumesAndVolumeMounts(t *testing.T) {
 			}
 
 			initContainers := []v1.Container{}
-			pvcVols, err := GetVolumesAndVolumeMounts(devObj, containers, initContainers, tt.volumeNameToVolInfo, options)
+			pvcVols, err := GetPersistentVolumesAndVolumeMounts(devObj, containers, initContainers, tt.volumeNameToVolInfo, options)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestGetVolumesAndVolumeMounts unexpected error: %v", err)
 				return
