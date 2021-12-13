@@ -2,7 +2,7 @@
 title: odo storage
 sidebar_position: 7
 ---
-odo lets users manage storage volumes in the cluster. A storage volume is a [PVC](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim), which is a way for users to "claim" durable storage (such as a GCE PersistentDisk or an iSCSI volume) without understanding the details of the particular cloud environment. The storage volume can be used to persist data across restarts and rebuilds of the component.
+odo lets users manage storage volumes attached to the components. A storage volume can be either an ephemeral volume, or a [PVC](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim), which is a way for users to "claim" a persistent volume (such as a GCE PersistentDisk or an iSCSI volume) without understanding the details of the particular cloud environment. The persistent storage volume can be used to persist data across restarts and rebuilds of the component.
 
 ### Adding a storage volume
 
@@ -16,10 +16,15 @@ For example:
 $ odo storage create store --path /data --size 1Gi
 ✓  Added storage store to nodejs-project-ufyy
 
+$ odo storage create tempdir --path /tmp --size 2Gi --ephemeral
+✓  Added storage tempdir to nodejs-project-ufyy
+
+
 Please use `odo push` command to make the storage accessible to the component
 ```
 
-The storage volume in the above example has been mounted to the `/data` path and has a size of `1Gi`
+In the above example, the first storage volume has been mounted to the `/data` path and has a size of `1Gi`,
+and the second volume has been mounted to `/tmp` and is ephemeral.
 
 ### Listing the storage volumes
 
@@ -33,6 +38,7 @@ $ odo storage list
 The component 'nodejs-project-ufyy' has the following storage attached:
 NAME      SIZE     PATH      STATE
 store     1Gi      /data     Not Pushed
+tempdir   2Gi      /tmp      Not Pushed
 ```
 
 ### Deleting a storage volume

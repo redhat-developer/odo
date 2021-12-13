@@ -24,6 +24,9 @@ var (
 	storageCreateExample   = ktemplates.Examples(`
 	# Create storage of size 1Gb to a component
   %[1]s mystorage --path=/opt/app-root/src/storage/ --size=1Gi
+
+	# Create storage with ephemeral volume of size 2Gi to a component
+  %[1]s mystorage --path=/opt/app-root/src/storage/ --size=2Gi --ephemeral
 	`)
 )
 
