@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -182,6 +183,15 @@ func TestDescribe(t *testing.T) {
 			}
 			if err != nil {
 				return
+			}
+
+			/* Mocks for Run */
+			kclient.EXPECT().GetDeploymentFromSelector(fmt.Sprintf("app=%s,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=%s", tt.wantAppName, tt.wantAppName)).AnyTimes()
+
+			/* RUN */
+			err = opts.Run()
+			if err != nil {
+				t.Errorf("Expected nil err, got %s", err)
 			}
 		})
 	}

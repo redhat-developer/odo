@@ -66,7 +66,7 @@ func (o *ListOptions) Run() (err error) {
 	}
 
 	if len(apps) == 0 {
-		if log.IsJSON() {
+		if o.IsJSON() {
 			apps := o.appClient.GetMachineReadableFormatForList([]application.App{})
 			machineoutput.OutputSuccess(apps)
 			return nil
