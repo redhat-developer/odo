@@ -27,9 +27,6 @@ var _ = Describe("odo devfile storage command tests", func() {
 	})
 
 	When("creating a nodejs component", func() {
-		storageNames := []string{helper.RandString(5), helper.RandString(5)}
-		pathNames := []string{"/data", "/" + storageNames[1]}
-		sizes := []string{"5Gi", "1Gi"}
 
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
@@ -58,7 +55,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			})
 		})
 
-		When("ephemeral is set to false in preference.yaml", func() {
+		When("ephemeral is set to false in preference.yaml and doing odo push", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "ephemeral", "false").ShouldPass()
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
@@ -90,6 +87,9 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		When("storage create command is executed", func() {
+			storageNames := []string{helper.RandString(5), helper.RandString(5)}
+			pathNames := []string{"/data", "/" + storageNames[1]}
+			sizes := []string{"5Gi", "1Gi"}
 			BeforeEach(func() {
 				helper.Cmd("odo", "storage", "create", storageNames[0], "--path", pathNames[0], "--size", sizes[0], "--context", commonVar.Context).ShouldPass()
 			})
@@ -248,13 +248,14 @@ var _ = Describe("odo devfile storage command tests", func() {
 		})
 
 		When("creating storage  without --size and pushed", func() {
+			storageName := helper.RandString(5)
 			BeforeEach(func() {
-				helper.Cmd("odo", "storage", "create", storageNames[0], "--path", "/data", "--context", commonVar.Context).ShouldPass()
+				helper.Cmd("odo", "storage", "create", storageName, "--path", "/data", "--context", commonVar.Context).ShouldPass()
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 			})
 			It("should create a storage with default size", func() {
 				// Verify the pvc size
-				storageSize := commonVar.CliRunner.GetPVCSize(cmpName, storageNames[0], commonVar.Project)
+				storageSize := commonVar.CliRunner.GetPVCSize(cmpName, storageName, commonVar.Project)
 				Expect(storageSize).To(ContainSubstring("1Gi"))
 			})
 		})
