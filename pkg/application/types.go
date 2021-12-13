@@ -4,6 +4,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	appAPIVersion = "odo.dev/v1alpha1"
+	appKind       = "Application"
+	appList       = "List"
+)
+
 // Application
 type App struct {
 	metav1.TypeMeta   `json:",inline"`

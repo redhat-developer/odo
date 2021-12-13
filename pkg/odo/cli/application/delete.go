@@ -3,6 +3,10 @@ package application
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	odoUtil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/application"
@@ -28,6 +32,9 @@ type DeleteOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	appClient application.Client
+
 	// Parameters
 	appName string
 
@@ -36,8 +43,10 @@ type DeleteOptions struct {
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance
-func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{}
+func NewDeleteOptions(appClient application.Client) *DeleteOptions {
+	return &DeleteOptions{
+		appClient: appClient,
+	}
 }
 
 // Complete completes DeleteOptions after they've been created
@@ -51,7 +60,6 @@ func (o *DeleteOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		// If app name passed, consider it for deletion
 		o.appName = args[0]
 	}
-
 	return
 }
 
@@ -61,7 +69,7 @@ func (o *DeleteOptions) Validate() (err error) {
 		return odoUtil.ThrowContextError()
 	}
 
-	exist, err := application.Exists(o.appName, o.KClient)
+	exist, err := o.appClient.Exists(o.appName)
 	if !exist {
 		return fmt.Errorf("%s app does not exists", o.appName)
 	}
@@ -70,22 +78,18 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DeleteOptions) Run() (err error) {
-	if log.IsJSON() {
-		err = application.Delete(o.KClient, o.appName)
-		if err != nil {
-			return err
-		}
-		return nil
+	if o.IsJSON() {
+		return o.appClient.Delete(o.appName)
 	}
 
 	// Print App Information which will be deleted
-	err = printAppInfo(o.KClient, o.KClient, o.appName, o.GetProject())
+	err = printAppInfo(o.KClient, o.appName, o.GetProject())
 	if err != nil {
 		return err
 	}
 
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the application: %v from project: %v", o.appName, o.GetProject())) {
-		err = application.Delete(o.KClient, o.appName)
+		err = o.appClient.Delete(o.appName)
 		if err != nil {
 			return err
 		}
@@ -93,12 +97,48 @@ func (o *DeleteOptions) Run() (err error) {
 	} else {
 		log.Infof("Aborting deletion of application: %v", o.appName)
 	}
-	return
+	return nil
+}
+
+// printAppInfo will print things which will be deleted
+func printAppInfo(client kclient.ClientInterface, appName string, projectName string) error {
+	var selector string
+	if appName != "" {
+		selector = applabels.GetSelector(appName)
+	}
+	componentList, err := component.List(client, selector)
+	if err != nil {
+		return errors.Wrap(err, "failed to get Component list")
+	}
+
+	if len(componentList.Items) != 0 {
+		log.Info("This application has following components that will be deleted")
+		for _, currentComponent := range componentList.Items {
+			log.Info("component named", currentComponent.Name)
+
+			if len(currentComponent.Spec.URL) != 0 {
+				log.Info("This component has following urls that will be deleted with component")
+				for _, u := range currentComponent.Spec.URLSpec {
+					log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
+				}
+			}
+
+			if len(currentComponent.Spec.Storage) != 0 {
+				log.Info("The component has following storages which will be deleted with the component")
+				for _, storage := range currentComponent.Spec.StorageSpec {
+					store := storage
+					log.Info("Storage named", store.GetName(), "of size", store.Spec.Size)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // NewCmdDelete implements the odo command.
 func NewCmdDelete(name, fullName string) *cobra.Command {
-	o := NewDeleteOptions()
+	kubclient, _ := kclient.New()
+	o := NewDeleteOptions(application.NewClient(kubclient))
 	command := &cobra.Command{
 		Use:     name,
 		Short:   "Delete the given application",

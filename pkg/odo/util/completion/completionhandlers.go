@@ -17,7 +17,8 @@ import (
 var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
 
-	applications, err := application.List(context.KClient)
+	appClient := application.NewClient(context.KClient)
+	applications, err := appClient.List()
 	if err != nil {
 		return completions
 	}
