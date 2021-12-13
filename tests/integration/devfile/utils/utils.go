@@ -146,7 +146,7 @@ func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
 				// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 				// We are just using this to validate if nodejs agent is listening on the other side
 				helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
-
+				stopChannel <- true
 				return true
 			}
 
