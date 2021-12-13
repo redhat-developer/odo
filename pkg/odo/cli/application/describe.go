@@ -3,18 +3,19 @@ package application
 import (
 	"fmt"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/application"
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/spf13/cobra"
+
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 

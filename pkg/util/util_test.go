@@ -12,7 +12,6 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -1057,7 +1056,7 @@ func TestRemoveDuplicate(t *testing.T) {
 			name: "Case 2 - Remove duplicates, none in array",
 			args: args{
 				input:  []string{"bar", "foo"},
-				output: []string{"foo", "bar"},
+				output: []string{"bar", "foo"},
 			},
 		},
 	}
@@ -1066,10 +1065,6 @@ func TestRemoveDuplicate(t *testing.T) {
 
 			// Run function RemoveDuplicate
 			output := RemoveDuplicates(tt.args.input)
-
-			// sort the strings
-			sort.Strings(output)
-			sort.Strings(tt.args.output)
 
 			if !(reflect.DeepEqual(output, tt.args.output)) {
 				t.Errorf("expected %v, got %v", tt.args.output, output)

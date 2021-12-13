@@ -4,19 +4,20 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/redhat-developer/odo/pkg/application"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	odoUtil "github.com/redhat-developer/odo/pkg/odo/util"
-
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoUtil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/spf13/cobra"
+
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
