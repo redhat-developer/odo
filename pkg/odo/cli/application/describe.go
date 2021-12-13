@@ -9,7 +9,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -63,9 +62,6 @@ func (o *DescribeOptions) Validate() (err error) {
 	if o.Context.GetProject() == "" || o.appName == "" {
 		return util.ThrowContextError()
 	}
-	if o.appName == "" {
-		return fmt.Errorf("There's no active application in project: %v", o.GetProject())
-	}
 
 	exist, err := o.appClient.Exists(o.appName)
 	if !exist {
@@ -76,37 +72,34 @@ func (o *DescribeOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *DescribeOptions) Run() (err error) {
-	if log.IsJSON() {
+	if o.IsJSON() {
 		appDef := o.appClient.GetMachineReadableFormat(o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)
-	} else {
-		var selector string
-		if o.appName != "" {
-			selector = applabels.GetSelector(o.appName)
-		}
-		componentList, err := component.List(o.KClient, selector)
+		return nil
+	}
+
+	selector := applabels.GetSelector(o.appName)
+	componentList, err := component.List(o.KClient, selector)
+	if err != nil {
+		return err
+	}
+
+	if len(componentList.Items) == 0 {
+		fmt.Printf("Application %s has no components or services deployed.", o.appName)
+		return
+	}
+
+	fmt.Printf("Application Name: %s has %v component(s):\n--------------------------------------\n",
+		o.appName, len(componentList.Items))
+	for _, currentComponent := range componentList.Items {
+		err := util.PrintComponentInfo(o.KClient, currentComponent.Name, currentComponent, o.appName, o.GetProject())
 		if err != nil {
 			return err
 		}
-
-		if len(componentList.Items) == 0 {
-			fmt.Printf("Application %s has no components or services deployed.", o.appName)
-		} else {
-			fmt.Printf("Application Name: %s has %v component(s):\n--------------------------------------\n",
-				o.appName, len(componentList.Items))
-			if len(componentList.Items) > 0 {
-				for _, currentComponent := range componentList.Items {
-					err := util.PrintComponentInfo(o.KClient, currentComponent.Name, currentComponent, o.appName, o.GetProject())
-					if err != nil {
-						return err
-					}
-					fmt.Println("--------------------------------------")
-				}
-			}
-		}
+		fmt.Println("--------------------------------------")
 	}
 
-	return
+	return nil
 }
 
 // NewCmdDescribe implements the odo command.
