@@ -1,21 +1,131 @@
 package application
 
 import (
+	"errors"
 	"reflect"
+	"strings"
 	"testing"
+
+	gomock "github.com/golang/mock/gomock"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/version"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	kubclient := kclient.NewMockClientInterface(ctrl)
+	kubclient.EXPECT().GetDeploymentLabelValues("app.kubernetes.io/part-of", "app.kubernetes.io/part-of").Return([]string{"app1", "app3", "app1", "app2"}, nil).AnyTimes()
+	appClient := NewClient(kubclient)
+	result, err := appClient.List()
+	expected := []string{"app1", "app2", "app3"}
+	if err != nil {
+		t.Errorf("Expected nil error, got %s", err)
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Got %v, expected %v", result, expected)
+	}
+}
+
+func TestExists(t *testing.T) {
+
+	tests := []struct {
+		name   string
+		search string
+		result bool
+		err    bool
+	}{
+		{
+			name:   "not exists",
+			search: "an-app",
+			result: false,
+			err:    false,
+		},
+		{
+			name:   "exists",
+			search: "app1",
+			result: true,
+			err:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			kubclient := kclient.NewMockClientInterface(ctrl)
+			kubclient.EXPECT().GetDeploymentLabelValues("app.kubernetes.io/part-of", "app.kubernetes.io/part-of").Return([]string{"app1", "app3", "app1", "app2"}, nil).AnyTimes()
+			appClient := NewClient(kubclient)
+			result, err := appClient.Exists(tt.search)
+			if err != nil != tt.err {
+				t.Errorf("Expected %v error, got %v", tt.err, err)
+			}
+			if result != tt.result {
+				t.Errorf("Expected %v, got %v", tt.result, result)
+			}
+		})
+	}
+
+}
+
+func TestDelete(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		deleteReturn error
+		expectedErr  string
+	}{
+		{
+			name:         "kubernetes delete works",
+			deleteReturn: nil,
+			expectedErr:  "",
+		},
+		{
+			name:         "kubernetes delete fails",
+			deleteReturn: errors.New("an error"),
+			expectedErr:  "unable to delete application",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			kubclient := kclient.NewMockClientInterface(ctrl)
+			appClient := NewClient(kubclient)
+			labels := map[string]string{
+				"app.kubernetes.io/part-of": "an-app",
+			}
+			kubclient.EXPECT().Delete(labels, false).Return(tt.deleteReturn).Times(1)
+
+			// kube Delete works
+			err := appClient.Delete("an-app")
+
+			if err == nil && tt.expectedErr != "" {
+				t.Errorf("Expected %v, got no error", tt.expectedErr)
+				return
+			}
+			if err != nil && tt.expectedErr == "" {
+				t.Errorf("Expected no error, got %v", err.Error())
+				return
+			}
+			if err != nil && tt.expectedErr != "" && !strings.Contains(err.Error(), tt.expectedErr) {
+				t.Errorf("Expected error %v, got %v", tt.expectedErr, err.Error())
+				return
+			}
+			if err != nil {
+				return
+			}
+		})
+	}
+}
 
 func TestGetMachineReadableFormat(t *testing.T) {
 	type args struct {

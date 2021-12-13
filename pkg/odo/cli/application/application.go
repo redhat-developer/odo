@@ -3,10 +3,11 @@ package application
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/spf13/cobra"
 )
 
 // RecommendedCommandName is the recommended app command name
