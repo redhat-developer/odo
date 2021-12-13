@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/application"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -36,18 +37,16 @@ type ListOptions struct {
 }
 
 // NewListOptions creates a new ListOptions instance
-func NewListOptions() *ListOptions {
-	return &ListOptions{}
+func NewListOptions(appClient application.Client) *ListOptions {
+	return &ListOptions{
+		appClient: appClient,
+	}
 }
 
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
-		return err
-	}
-	o.appClient = application.NewClient(o.KClient)
-	return nil
+	return err
 }
 
 // Validate validates the ListOptions based on completed values
@@ -66,47 +65,49 @@ func (o *ListOptions) Run() (err error) {
 		return fmt.Errorf("unable to get list of applications: %v", err)
 	}
 
-	if len(apps) > 0 {
-
-		if log.IsJSON() {
-			var appList []application.App
-			for _, app := range apps {
-				appDef := o.appClient.GetMachineReadableFormat(app, o.GetProject())
-				appList = append(appList, appDef)
-			}
-
-			appListDef := o.appClient.GetMachineReadableFormatForList(appList)
-			machineoutput.OutputSuccess(appListDef)
-
-		} else {
-			log.Infof("The project '%v' has the following applications:", o.GetProject())
-			tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			_, err := fmt.Fprintln(tabWriter, "NAME")
-			if err != nil {
-				return err
-			}
-			for _, app := range apps {
-				_, err := fmt.Fprintln(tabWriter, app)
-				if err != nil {
-					return err
-				}
-			}
-			return tabWriter.Flush()
-		}
-	} else {
+	if len(apps) == 0 {
 		if log.IsJSON() {
 			apps := o.appClient.GetMachineReadableFormatForList([]application.App{})
 			machineoutput.OutputSuccess(apps)
-		} else {
-			log.Infof("There are no applications deployed in the project '%v'", o.GetProject())
+			return nil
+		}
+
+		log.Infof("There are no applications deployed in the project '%v'", o.GetProject())
+		return nil
+	}
+
+	if o.IsJSON() {
+		var appList []application.App
+		for _, app := range apps {
+			appDef := o.appClient.GetMachineReadableFormat(app, o.GetProject())
+			appList = append(appList, appDef)
+		}
+
+		appListDef := o.appClient.GetMachineReadableFormatForList(appList)
+		machineoutput.OutputSuccess(appListDef)
+		return nil
+	}
+
+	log.Infof("The project '%v' has the following applications:", o.GetProject())
+	tabWriter := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	_, err = fmt.Fprintln(tabWriter, "NAME")
+	if err != nil {
+		return err
+	}
+	for _, app := range apps {
+		_, err := fmt.Fprintln(tabWriter, app)
+		if err != nil {
+			return err
 		}
 	}
-	return
+	return tabWriter.Flush()
+
 }
 
 // NewCmdList implements the odo command.
 func NewCmdList(name, fullName string) *cobra.Command {
-	o := NewListOptions()
+	kubclient, _ := kclient.New()
+	o := NewListOptions(application.NewClient(kubclient))
 	command := &cobra.Command{
 		Use:         name,
 		Short:       "List all applications in the current project",
