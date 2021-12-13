@@ -130,7 +130,7 @@ func TestDescribe(t *testing.T) {
 			cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()
-			cmdline.EXPECT().FlagValueIfSet("output").Return("").AnyTimes()
+			cmdline.EXPECT().FlagValueIfSet("o").Return("").AnyTimes()
 			cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
 
 			ns := &corev1.Namespace{

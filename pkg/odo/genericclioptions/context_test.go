@@ -342,7 +342,7 @@ func TestNew(t *testing.T) {
 			cmdline.EXPECT().FlagValueIfSet("project").Return(tt.input.projectFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("app").Return(tt.input.appFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return(tt.input.componentFlag).AnyTimes()
-			cmdline.EXPECT().FlagValueIfSet("output").Return(tt.input.outputFlag).AnyTimes()
+			cmdline.EXPECT().FlagValueIfSet("o").Return(tt.input.outputFlag).AnyTimes()
 			cmdline.EXPECT().IsFlagSet("all").Return(tt.input.allFlagSet).AnyTimes()
 			cmdline.EXPECT().GetParentName().Return(tt.input.parentCommandName).AnyTimes()
 			cmdline.EXPECT().GetName().Return(tt.input.commandName).AnyTimes()

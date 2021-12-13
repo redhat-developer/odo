@@ -87,7 +87,7 @@ func TestList(t *testing.T) {
 			cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()
-			cmdline.EXPECT().FlagValueIfSet("output").Return("").AnyTimes()
+			cmdline.EXPECT().FlagValueIfSet("o").Return("").AnyTimes()
 			cmdline.EXPECT().GetName().Return("list").AnyTimes()
 			cmdline.EXPECT().GetParentName().Return("application").AnyTimes()
 			cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
