@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	component "github.com/redhat-developer/odo/pkg/component"
 )
 
 // MockClient is a mock of Client interface.
@@ -31,6 +32,21 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
+}
+
+// ComponentList mocks base method.
+func (m *MockClient) ComponentList(name string) ([]component.Component, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ComponentList", name)
+	ret0, _ := ret[0].([]component.Component)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ComponentList indicates an expected call of ComponentList.
+func (mr *MockClientMockRecorder) ComponentList(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComponentList", reflect.TypeOf((*MockClient)(nil).ComponentList), name)
 }
 
 // Delete mocks base method.

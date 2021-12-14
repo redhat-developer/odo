@@ -3,12 +3,9 @@ package application
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/application"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -84,7 +81,7 @@ func (o *DeleteOptions) Run() (err error) {
 	}
 
 	// Print App Information which will be deleted
-	err = printAppInfo(o.KClient, o.appName, o.GetProject())
+	err = printAppInfo(o.appClient, o.appName, o.GetProject())
 	if err != nil {
 		return err
 	}
@@ -102,19 +99,14 @@ func (o *DeleteOptions) Run() (err error) {
 }
 
 // printAppInfo will print things which will be deleted
-func printAppInfo(client kclient.ClientInterface, appName string, projectName string) error {
-	var selector string
-	if appName != "" {
-		selector = applabels.GetSelector(appName)
-	}
-	componentList, err := component.List(client, selector)
+func printAppInfo(appClient application.Client, appName string, projectName string) error {
+	components, err := appClient.ComponentList(appName)
 	if err != nil {
-		return errors.Wrap(err, "failed to get Component list")
+		return err
 	}
-
-	if len(componentList.Items) != 0 {
+	if len(components) != 0 {
 		log.Info("This application has following components that will be deleted")
-		for _, currentComponent := range componentList.Items {
+		for _, currentComponent := range components {
 			log.Info("component named", currentComponent.Name)
 
 			if len(currentComponent.Spec.URL) != 0 {
