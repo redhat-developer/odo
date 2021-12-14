@@ -33,3 +33,18 @@ ${NAME} finished ${STATUS}.
 View logs: [TXT](${BASE_URL}/${LOGFILE}.txt) [HTML](${BASE_URL}/${LOGFILE}.html)
 EOF
 }
+
+# Delete namespaces from cluster containing a configmap named config-map-for-cleanup
+# with values: "team: odo" and "type: testing"
+cleanup_namespaces() {
+    PROJECTS=$(kubectl get cm -A | grep config-map-for-cleanup | awk '{ print $1 }')
+    for PROJECT in ${PROJECTS}
+    do
+        TEAM=$(kubectl get configmaps config-map-for-cleanup -n ${PROJECT} -o jsonpath='{.data.team}')
+        TYPE=$(kubectl get configmaps config-map-for-cleanup -n ${PROJECT} -o jsonpath='{.data.type}')
+        if [[ "${TYPE}" -eq "testing" ]] &&  [[ "${TEAM}" -eq "odo" ]]
+        then
+            kubectl delete namespace ${PROJECT} --wait=false
+        fi
+    done
+}

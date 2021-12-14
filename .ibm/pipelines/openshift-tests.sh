@@ -6,6 +6,8 @@ source .ibm/pipelines/functions.sh
 
 oc login -u apikey -p "${API_KEY}" "${IBM_OPENSHIFT_ENDPOINT}"
 
+cleanup_namespaces
+
 (
     set -e
     make install
