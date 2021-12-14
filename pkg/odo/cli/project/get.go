@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -40,8 +41,8 @@ func NewProjectGetOptions() *ProjectGetOptions {
 }
 
 // Complete completes ProjectGetOptions after they've been created
-func (pgo *ProjectGetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	pgo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (pgo *ProjectGetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	pgo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 
@@ -51,7 +52,7 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 }
 
 // Run the project get command
-func (pgo *ProjectGetOptions) Run(cmd *cobra.Command) (err error) {
+func (pgo *ProjectGetOptions) Run() (err error) {
 	currentProject := pgo.Context.GetProject()
 
 	if pgo.shortFlag {

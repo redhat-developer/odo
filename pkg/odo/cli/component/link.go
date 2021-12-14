@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -74,10 +75,10 @@ func NewLinkOptions() *LinkOptions {
 }
 
 // Complete completes LinkOptions after they've been created
-func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *LinkOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.commonLinkOptions.devfilePath = location.DevfileLocation(o.contextFlag)
 
-	err = o.complete(name, cmd, args, o.contextFlag)
+	err = o.complete(name, cmdline, args, o.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func (o *LinkOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo link command
-func (o *LinkOptions) Run(cmd *cobra.Command) (err error) {
+func (o *LinkOptions) Run() (err error) {
 	return o.run()
 }
 
@@ -124,7 +125,7 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	AddComponentFlag(linkCmd)
 
 	//Adding context flag
-	genericclioptions.AddContextFlag(linkCmd, &o.contextFlag)
+	odoutil.AddContextFlag(linkCmd, &o.contextFlag)
 
 	return linkCmd
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/url"
 
@@ -50,8 +51,8 @@ func NewStatusOptions() *StatusOptions {
 }
 
 // Complete completes status args
-func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(so.contextFlag))
+func (so *StatusOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(so.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func (so *StatusOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (so *StatusOptions) Run(cmd *cobra.Command) (err error) {
+func (so *StatusOptions) Run() (err error) {
 	if !log.IsJSON() {
 		return errors.New("this command only supports the '-o json' output format")
 	}
@@ -117,7 +118,7 @@ func NewCmdStatus(name, fullName string) *cobra.Command {
 	statusCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding context flag
-	genericclioptions.AddContextFlag(statusCmd, &o.contextFlag)
+	odoutil.AddContextFlag(statusCmd, &o.contextFlag)
 
 	statusCmd.Flags().BoolVarP(&o.followFlag, "follow", "f", false, "Follow the component and report all changes")
 

@@ -6,7 +6,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/debug"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -45,8 +47,8 @@ func NewInfoOptions() *InfoOptions {
 }
 
 // Complete completes all the required options for port-forward cmd.
-func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *InfoOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -63,7 +65,7 @@ func (o InfoOptions) Validate() error {
 }
 
 // Run implements all the necessary functionality for port-forward cmd.
-func (o InfoOptions) Run(cmd *cobra.Command) error {
+func (o InfoOptions) Run() error {
 	if debugInfo, debugging := debug.GetInfo(o.PortForwarder); debugging {
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(debugInfo)
@@ -90,7 +92,7 @@ func NewCmdInfo(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(opts, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(cmd, &opts.contextFlag)
+	odoutil.AddContextFlag(cmd, &opts.contextFlag)
 
 	return cmd
 }

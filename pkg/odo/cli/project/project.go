@@ -3,7 +3,6 @@ package project
 import (
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
@@ -62,7 +61,7 @@ func NewCmdProject(name, fullName string) *cobra.Command {
 // AddProjectFlag adds a `project` flag to the given cobra command
 // Also adds a completion handler to the flag
 func AddProjectFlag(cmd *cobra.Command) {
-	cmd.Flags().String(genericclioptions.ProjectFlagName, "", "Project, defaults to active project")
+	cmd.Flags().String(odoutil.ProjectFlagName, "", "Project, defaults to active project")
 	completion.RegisterCommandFlagHandler(cmd, "project", completion.ProjectNameCompletionHandler)
 }
 

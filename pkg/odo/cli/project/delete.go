@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -49,9 +50,9 @@ func NewProjectDeleteOptions() *ProjectDeleteOptions {
 }
 
 // Complete completes ProjectDeleteOptions after they've been created
-func (pdo *ProjectDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (pdo *ProjectDeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	pdo.projectName = args[0]
-	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	pdo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 
@@ -69,7 +70,7 @@ func (pdo *ProjectDeleteOptions) Validate() error {
 }
 
 // Run the project delete command
-func (pdo *ProjectDeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (pdo *ProjectDeleteOptions) Run() (err error) {
 
 	// Create the "spinner"
 	s := &log.Status{}

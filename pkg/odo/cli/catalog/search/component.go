@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -33,8 +34,8 @@ func NewSearchComponentOptions() *SearchComponentOptions {
 }
 
 // Complete completes SearchComponentOptions after they've been created
-func (o *SearchComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *SearchComponentOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (o *SearchComponentOptions) Validate() error {
 }
 
 // Run contains the logic for the command associated with SearchComponentOptions
-func (o *SearchComponentOptions) Run(cmd *cobra.Command) error {
+func (o *SearchComponentOptions) Run() error {
 	util.DisplayComponents(o.components)
 	return nil
 }

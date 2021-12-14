@@ -1,7 +1,6 @@
-package genericclioptions
+package util
 
 import (
-	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -17,32 +16,6 @@ const (
 	// ContextFlagName is the name of the flag allowing a user to specify the location of the component settings
 	ContextFlagName = "context"
 )
-
-// FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
-func FlagValueIfSet(cmd *cobra.Command, flagName string) string {
-	flag, _ := cmd.Flags().GetString(flagName)
-	return flag
-}
-
-func GetContextFlagValue(command *cobra.Command) (string, error) {
-	contextDir := FlagValueIfSet(command, ContextFlagName)
-
-	// Grab the absolute path of the configuration
-	if contextDir != "" {
-		fAbs, err := pkgUtil.GetAbsPath(contextDir)
-		if err != nil {
-			return "", err
-		}
-		contextDir = fAbs
-	} else {
-		fAbs, err := pkgUtil.GetAbsPath(".")
-		if err != nil {
-			return "", err
-		}
-		contextDir = fAbs
-	}
-	return contextDir, nil
-}
 
 // AddContextFlag adds `context` flag to given cobra command
 func AddContextFlag(cmd *cobra.Command, setValueTo *string) {

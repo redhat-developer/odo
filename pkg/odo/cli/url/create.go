@@ -10,7 +10,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/url"
 
@@ -78,8 +80,8 @@ func NewURLCreateOptions() *CreateOptions {
 }
 
 // Complete completes CreateOptions after they've been Created
-func (o *CreateOptions) Complete(_ string, cmd *cobra.Command, args []string) (err error) {
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
+func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
 	if o.nowFlag {
 		params.CreateAppIfNeeded()
 	}
@@ -157,7 +159,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url create command
-func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (o *CreateOptions) Run() (err error) {
 
 	// create the URL and write it to the local config
 	err = o.Context.LocalConfigProvider.CreateURL(o.url)
@@ -212,7 +214,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	urlCreateCmd.Flags().StringVarP(&o.protocolFlag, "protocol", "", string(devfilev1.HTTPEndpointProtocol), "protocol for this URL")
 	urlCreateCmd.Flags().StringVarP(&o.containerFlag, "container", "", "", "container of the endpoint in devfile")
 
-	genericclioptions.AddNowFlag(urlCreateCmd, &o.nowFlag)
+	odoutil.AddNowFlag(urlCreateCmd, &o.nowFlag)
 	o.AddContextFlag(urlCreateCmd)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 

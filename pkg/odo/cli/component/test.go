@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -48,8 +49,8 @@ func NewTestOptions() *TestOptions {
 }
 
 // Complete completes TestOptions after they've been created
-func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(to.contextFlag))
+func (to *TestOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(to.contextFlag))
 	return
 }
 
@@ -69,7 +70,7 @@ func (to *TestOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (to *TestOptions) Run(cmd *cobra.Command) (err error) {
+func (to *TestOptions) Run() (err error) {
 	return to.RunTestCommand()
 }
 
@@ -93,7 +94,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	testCmd.Flags().StringVar(&to.testCommandFlag, "test-command", "", "Devfile Test Command to execute")
 	testCmd.Flags().BoolVar(&to.showLogFlag, "show-log", false, "If enabled, logs will be shown when running the test command")
 	//Adding `--context` flag
-	genericclioptions.AddContextFlag(testCmd, &to.contextFlag)
+	odoutil.AddContextFlag(testCmd, &to.contextFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(testCmd)
 	// Adding `--app` flag

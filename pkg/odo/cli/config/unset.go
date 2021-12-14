@@ -10,7 +10,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -52,8 +54,8 @@ func NewUnsetOptions() *UnsetOptions {
 }
 
 // Complete completes UnsetOptions after they've been created
-func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext())
+func (o *UnsetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext())
 	if o.nowFlag {
 		params.CreateAppIfNeeded().RequireRouteAvailability()
 	}
@@ -93,7 +95,7 @@ func (o *UnsetOptions) Validate() error {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run(cmd *cobra.Command) error {
+func (o *UnsetOptions) Run() error {
 	if o.envArrayFlag != nil {
 
 		if err := o.EnvSpecificInfo.GetDevfileObj().RemoveEnvVars(o.envArrayFlag); err != nil {
@@ -153,6 +155,6 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	configurationUnsetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the config directly")
 	configurationUnsetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Unset the environment variables in config")
 	o.AddContextFlag(configurationUnsetCmd)
-	genericclioptions.AddNowFlag(configurationUnsetCmd, &o.nowFlag)
+	odoutil.AddNowFlag(configurationUnsetCmd, &o.nowFlag)
 	return configurationUnsetCmd
 }

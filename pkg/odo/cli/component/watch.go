@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -64,8 +65,8 @@ func NewWatchOptions() *WatchOptions {
 }
 
 // Complete completes watch args
-func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(wo.contextFlag))
+func (wo *WatchOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(wo.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func (wo *WatchOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (wo *WatchOptions) Run(cmd *cobra.Command) (err error) {
+func (wo *WatchOptions) Run() (err error) {
 	err = watch.DevfileWatchAndPush(
 		os.Stdout,
 		watch.WatchParameters{
@@ -174,7 +175,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.Flags().StringVar(&wo.debugCommandFlag, "debug-command", "", "Devfile Debug Command to execute")
 
 	// Adding context flag
-	genericclioptions.AddContextFlag(watchCmd, &wo.contextFlag)
+	odoutil.AddContextFlag(watchCmd, &wo.contextFlag)
 
 	//Adding `--application` flag
 	appCmd.AddApplicationFlag(watchCmd)

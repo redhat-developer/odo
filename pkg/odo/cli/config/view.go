@@ -8,7 +8,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 	"sigs.k8s.io/yaml"
@@ -36,8 +38,8 @@ func NewViewOptions() *ViewOptions {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	params := genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag)
+func (o *ViewOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag)
 	o.Context, err = genericclioptions.New(params)
 	return err
 }
@@ -48,7 +50,7 @@ func (o *ViewOptions) Validate() error {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ViewOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	repr, err := component.ToDevfileRepresentation(o.Context.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
@@ -82,7 +84,7 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(configurationViewCmd, &o.contextFlag)
+	odoutil.AddContextFlag(configurationViewCmd, &o.contextFlag)
 
 	return configurationViewCmd
 }

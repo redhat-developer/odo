@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
@@ -35,8 +36,8 @@ func NewServiceOptions() *ServiceOptions {
 }
 
 // Complete completes ListServicesOptions after they've been created
-func (o *ServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *ServiceOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (o *ServiceOptions) Validate() error {
 }
 
 // Run contains the logic for the command associated with ListServicesOptions
-func (o *ServiceOptions) Run(cmd *cobra.Command) error {
+func (o *ServiceOptions) Run() error {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(newCatalogListOutput(o.csvs))
 	} else {

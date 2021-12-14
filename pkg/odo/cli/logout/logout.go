@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -29,8 +30,8 @@ func NewLogoutOptions() *LogoutOptions {
 }
 
 // Complete completes LogoutOptions after they've been created
-func (o *LogoutOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *LogoutOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return
 }
 
@@ -40,7 +41,7 @@ func (o *LogoutOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo logout command
-func (o *LogoutOptions) Run(cmd *cobra.Command) (err error) {
+func (o *LogoutOptions) Run() (err error) {
 	return o.KClient.RunLogout(os.Stdout)
 }
 

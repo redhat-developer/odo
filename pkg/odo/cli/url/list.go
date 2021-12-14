@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -46,8 +47,8 @@ func NewURLListOptions() *ListOptions {
 }
 
 // Complete completes ListOptions after they've been Listed
-func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -71,7 +72,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url list command
-func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ListOptions) Run() (err error) {
 	componentName := o.Context.LocalConfigProvider.GetName()
 	urls, err := o.client.List()
 	if err != nil {
@@ -107,7 +108,7 @@ func NewCmdURLList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(urlListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(urlListCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(urlListCmd, "context", completion.FileCompletionHandler)
 
 	return urlListCmd

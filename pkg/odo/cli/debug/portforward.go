@@ -11,7 +11,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/debug"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -71,8 +73,8 @@ func NewPortForwardOptions() *PortForwardOptions {
 }
 
 // Complete completes all the required options for port-forward cmd.
-func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *PortForwardOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -84,8 +86,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 	listener, err := net.Listen("tcp", addressLook)
 	if err != nil {
 		// if the local-port flag is set by the user, return the error and stop execution
-		flag := cmd.Flags().Lookup("local-port")
-		if flag != nil && flag.Changed {
+		if cmdline.IsFlagSet("local-port") {
 			return err
 		}
 		// else display a error message and auto select a new free port
@@ -121,7 +122,7 @@ func (o PortForwardOptions) Validate() error {
 }
 
 // Run implements all the necessary functionality for port-forward cmd.
-func (o PortForwardOptions) Run(cmd *cobra.Command) error {
+func (o PortForwardOptions) Run() error {
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt,
@@ -162,7 +163,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(cmd, &opts.contextFlag)
+	odoutil.AddContextFlag(cmd, &opts.contextFlag)
 	cmd.Flags().IntVarP(&opts.localPortFlag, "local-port", "l", DefaultDebugPort, "Set the local port")
 
 	return cmd

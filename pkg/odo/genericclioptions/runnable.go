@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
@@ -32,9 +33,9 @@ import (
 )
 
 type Runnable interface {
-	Complete(name string, cmd *cobra.Command, args []string) error
+	Complete(name string, cmdline cmdline.Cmdline, args []string) error
 	Validate() error
-	Run(cmd *cobra.Command) error
+	Run() error
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
@@ -82,7 +83,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	util.LogErrorAndExit(checkConflictingFlags(cmd, args), "")
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
-	err = o.Complete(cmd.Name(), cmd, args)
+	err = o.Complete(cmd.Name(), cmdline.NewCobra(cmd), args)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
 	}
@@ -94,7 +95,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Run(cmd)
+	err = o.Run()
 	startTelemetry(cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }

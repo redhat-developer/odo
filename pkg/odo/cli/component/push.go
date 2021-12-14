@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -93,7 +94,7 @@ func (po *PushOptions) GetComponentContext() string {
 }
 
 // Complete completes push args
-func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	po.CompleteDevfilePath()
 	devfileExists := util.CheckPathExists(po.DevfilePath)
 
@@ -116,20 +117,20 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
 
-	err = po.setupEnvFile(envFileInfo, cmd, args)
+	err = po.setupEnvFile(envFileInfo, cmdline, args)
 	if err != nil {
 		return err
 	}
 
 	po.EnvSpecificInfo = envFileInfo
 
-	po.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+	po.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
 
 	// set the telemetry data
-	cmdCtx := cmd.Context()
+	cmdCtx := cmdline.Context()
 	devfileMetadata := po.Devfile.Data.GetMetadata()
 	scontext.SetClusterType(cmdCtx, po.KClient)
 	scontext.SetComponentType(cmdCtx, component.GetComponentTypeFromDevfileMetadata(devfileMetadata))
@@ -139,7 +140,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	return nil
 }
 
-func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *cobra.Command, args []string) error {
+func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdline cmdline.Cmdline, args []string) error {
 	// TODO(feloy) use a global client?
 	kc, err := kclient.New()
 	if err != nil {
@@ -153,7 +154,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 
 		// Since the environment file does not exist, we will retrieve a correct namespace from
 		// either cmd commands or the current default kubernetes namespace
-		namespace, err := retrieveCmdNamespace(cmd)
+		namespace, err := retrieveCmdNamespace(cmdline)
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for the component")
 		}
@@ -187,7 +188,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmd *c
 		// Since the project name doesn't exist in the environment file, we will retrieve a correct namespace from
 		// either cmd commands or the current default kubernetes namespace
 		// and write it to the env.yaml
-		namespace, err := retrieveCmdNamespace(cmd)
+		namespace, err := retrieveCmdNamespace(cmdline)
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for devfile")
 		}
@@ -220,7 +221,7 @@ func (po *PushOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (po *PushOptions) Run(cmd *cobra.Command) (err error) {
+func (po *PushOptions) Run() (err error) {
 	// Return Devfile push
 	return po.DevfilePush()
 }
@@ -241,7 +242,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
+	odoutil.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.showFlag, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignoreFlag, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 	pushCmd.Flags().BoolVar(&po.configFlag, "config", false, "Use config flag to only apply config on to cluster")

@@ -21,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -55,13 +56,13 @@ func NewListOptions() *ListOptions {
 }
 
 // Complete completes log args
-func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (lo *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 
 	lo.devfilePath = location.DevfileLocation(lo.contextFlag)
 
 	if util.CheckPathExists(lo.devfilePath) {
 
-		lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+		lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 		if err != nil {
 			return err
 		}
@@ -76,7 +77,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		// as odo list should work in a non-component directory too
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
-			lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+			lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 			if err != nil {
 				return err
 			}
@@ -117,7 +118,7 @@ func (lo *ListOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *ListOptions) Run(cmd *cobra.Command) error {
+func (lo *ListOptions) Run() error {
 	var otherComps []component.Component
 	// --path workflow
 
@@ -229,7 +230,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(componentListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(componentListCmd, &o.contextFlag)
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path of the directory to scan for odo component directories")
 	componentListCmd.Flags().BoolVar(&o.allAppsFlag, "all-apps", false, "list all components from all applications for the current set project")
 	componentListCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

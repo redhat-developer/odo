@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/pkg/errors"
@@ -40,7 +41,7 @@ func NewUnsetOptions() *UnsetOptions {
 }
 
 // Complete completes UnsetOptions after they've been created
-func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *UnsetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = args[0]
 	return
 }
@@ -51,7 +52,7 @@ func (o *UnsetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run(cmd *cobra.Command) (err error) {
+func (o *UnsetOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 

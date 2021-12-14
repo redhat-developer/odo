@@ -8,6 +8,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/storage"
 
@@ -45,8 +47,8 @@ func NewStorageListOptions() *ListOptions {
 }
 
 // Complete completes ListOptions after they've been created
-func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func (o *ListOptions) Validate() (err error) {
 	return nil
 }
 
-func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ListOptions) Run() (err error) {
 	storageList, err := o.client.List()
 	if err != nil {
 		return err
@@ -207,7 +209,7 @@ func NewCmdStorageList(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(storageListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(storageListCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageListCmd, "context", completion.FileCompletionHandler)
 
 	return storageListCmd

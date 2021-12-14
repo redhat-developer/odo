@@ -6,7 +6,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -37,8 +39,8 @@ func NewGetOptions() *GetOptions {
 }
 
 // Complete completes get args
-func (gto *GetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	gto.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (gto *GetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	gto.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -55,7 +57,7 @@ func (gto *GetOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (gto *GetOptions) Run(cmd *cobra.Command) (err error) {
+func (gto *GetOptions) Run() (err error) {
 	klog.V(4).Infof("component get called")
 
 	if gto.shortFlag {
@@ -91,7 +93,7 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 	componentGetCmd.Hidden = true
 
 	// add --context flag
-	genericclioptions.AddContextFlag(componentGetCmd, &o.contextFlag)
+	odoutil.AddContextFlag(componentGetCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	project.AddProjectFlag(componentGetCmd)

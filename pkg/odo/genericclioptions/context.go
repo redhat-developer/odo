@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/util"
 
@@ -53,7 +54,7 @@ type internalCxt struct {
 
 // CreateParameters defines the options which can be provided while creating the context
 type CreateParameters struct {
-	cmd               *cobra.Command
+	cmdline           cmdline.Cmdline
 	componentContext  string
 	routeAvailability bool
 	devfile           bool
@@ -61,8 +62,8 @@ type CreateParameters struct {
 	appIfNeeded       bool
 }
 
-func NewCreateParameters(cmd *cobra.Command) CreateParameters {
-	return CreateParameters{cmd: cmd}
+func NewCreateParameters(cmdline cmdline.Cmdline) CreateParameters {
+	return CreateParameters{cmdline: cmdline}
 }
 
 func (o CreateParameters) RequireRouteAvailability() CreateParameters {
@@ -91,32 +92,32 @@ func New(parameters CreateParameters) (*Context, error) {
 	ctx := internalCxt{}
 	var err error
 
-	ctx.EnvSpecificInfo, err = getValidEnvInfo(parameters.cmd)
+	ctx.EnvSpecificInfo, err = GetValidEnvInfo(parameters.cmdline)
 	if err != nil {
 		return nil, err
 	}
 	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-	ctx.project = resolveProject(parameters.cmd, ctx.EnvSpecificInfo)
+	ctx.project = resolveProject(parameters.cmdline, ctx.EnvSpecificInfo)
 
-	ctx.application = resolveApp(parameters.cmd, ctx.EnvSpecificInfo, parameters.appIfNeeded)
+	ctx.application = resolveApp(parameters.cmdline, ctx.EnvSpecificInfo, parameters.appIfNeeded)
 
-	ctx.component = resolveComponent(parameters.cmd, ctx.EnvSpecificInfo)
+	ctx.component = resolveComponent(parameters.cmdline, ctx.EnvSpecificInfo)
 
 	ctx.componentContext = parameters.componentContext
 
-	ctx.outputFlag = FlagValueIfSet(parameters.cmd, OutputFlagName)
+	ctx.outputFlag = parameters.cmdline.FlagValueIfSet(util.OutputFlagName)
 
 	if !parameters.offline {
-		ctx.KClient, err = kclient.New()
+		ctx.KClient, err = parameters.cmdline.GetKubeClient()
 		if err != nil {
 			return nil, err
 		}
-		if e := ctx.resolveProjectAndNamespace(parameters.cmd, ctx.EnvSpecificInfo); e != nil {
+		if e := ctx.resolveProjectAndNamespace(parameters.cmdline, ctx.EnvSpecificInfo); e != nil {
 			return nil, e
 		}
 
-		if FlagValueIfSet(parameters.cmd, ComponentFlagName) != "" {
+		if parameters.cmdline.FlagValueIfSet(util.ComponentFlagName) != "" {
 			if err = ctx.checkComponentExistsOrFail(); err != nil {
 				return nil, err
 			}
@@ -154,7 +155,8 @@ func New(parameters CreateParameters) (*Context, error) {
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuration. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
-	ctx, err := New(CreateParameters{cmd: command})
+	cmdline := cmdline.NewCobra(command)
+	ctx, err := New(CreateParameters{cmdline: cmdline})
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}

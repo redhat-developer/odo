@@ -3,7 +3,9 @@ package component
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -51,8 +53,8 @@ func NewUnlinkOptions() *UnlinkOptions {
 }
 
 // Complete completes UnlinkOptions after they've been created
-func (o *UnlinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	err = o.complete(name, cmd, args, o.contextFlag)
+func (o *UnlinkOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	err = o.complete(name, cmdline, args, o.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -69,7 +71,7 @@ func (o *UnlinkOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo link command
-func (o *UnlinkOptions) Run(cmd *cobra.Command) (err error) {
+func (o *UnlinkOptions) Run() (err error) {
 	return o.run()
 }
 
@@ -93,7 +95,7 @@ func NewCmdUnlink(name, fullName string) *cobra.Command {
 	//Adding `--component` flag
 	AddComponentFlag(unlinkCmd)
 	// Adding context flag
-	genericclioptions.AddContextFlag(unlinkCmd, &o.contextFlag)
+	odoutil.AddContextFlag(unlinkCmd, &o.contextFlag)
 
 	return unlinkCmd
 }

@@ -3,7 +3,9 @@ package service
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/service"
 	svc "github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
@@ -41,8 +43,8 @@ func NewDescribeOptions() *DescribeOptions {
 	return &DescribeOptions{}
 }
 
-func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -81,7 +83,7 @@ func (o *DescribeOptions) Validate() error {
 }
 
 // Run contains the logic for the odo service describe command
-func (o *DescribeOptions) Run(cmd *cobra.Command) error {
+func (o *DescribeOptions) Run() error {
 	return o.Backend.DescribeService(o, o.serviceName, o.GetApplication())
 }
 
@@ -101,6 +103,6 @@ func NewCmdServiceDescribe(name, fullName string) *cobra.Command {
 		},
 	}
 
-	genericclioptions.AddContextFlag(describeCmd, &do.contextFlag)
+	odoutil.AddContextFlag(describeCmd, &do.contextFlag)
 	return describeCmd
 }

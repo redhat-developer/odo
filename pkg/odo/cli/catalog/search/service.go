@@ -5,6 +5,7 @@ import (
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
@@ -32,8 +33,8 @@ func NewSearchServiceOptions() *SearchServiceOptions {
 }
 
 // Complete completes SearchServiceOptions after they've been created
-func (o *SearchServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *SearchServiceOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func (o *SearchServiceOptions) Validate() error {
 }
 
 // Run contains the logic for the command associated with SearchServiceOptions
-func (o *SearchServiceOptions) Run(cmd *cobra.Command) error {
+func (o *SearchServiceOptions) Run() error {
 	if len(o.csvs.Items) > 0 {
 		util.DisplayClusterServiceVersions(o.csvs)
 	}

@@ -3,6 +3,7 @@ package describe
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -39,8 +40,8 @@ func NewDescribeServiceOptions() *DescribeServiceOptions {
 }
 
 // Complete completes DescribeServiceOptions after they've been created
-func (o *DescribeServiceOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *DescribeServiceOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func (o *DescribeServiceOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command associated with DescribeServiceOptions
-func (o *DescribeServiceOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DescribeServiceOptions) Run() (err error) {
 	return o.backend.RunDescribeService(o)
 }
 

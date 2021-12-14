@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ func NewViewOptions() *ViewOptions {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *ViewOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	return
 }
 
@@ -39,7 +40,7 @@ func (o *ViewOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ViewOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 

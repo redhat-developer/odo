@@ -5,6 +5,7 @@ import (
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -40,8 +41,8 @@ func NewLogOptions() *LogOptions {
 }
 
 // Complete completes log args
-func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(lo.contextFlag))
+func (lo *LogOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(lo.contextFlag))
 	return err
 }
 
@@ -51,7 +52,7 @@ func (lo *LogOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *LogOptions) Run(cmd *cobra.Command) (err error) {
+func (lo *LogOptions) Run() (err error) {
 	err = lo.DevfileComponentLog()
 	return
 }
@@ -78,7 +79,7 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
 	// Adding `--context` flag
-	genericclioptions.AddContextFlag(logCmd, &o.contextFlag)
+	odoutil.AddContextFlag(logCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(logCmd)

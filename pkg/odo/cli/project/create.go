@@ -5,9 +5,10 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/spf13/cobra"
 
@@ -47,10 +48,16 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 }
 
 // Complete completes ProjectCreateOptions after they've been created
-func (pco *ProjectCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (pco *ProjectCreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	pco.projectName = args[0]
-	pco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
-	return err
+	pco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
+	if err != nil {
+		return err
+	}
+	if context.GetTelemetryStatus(cmdline.Context()) {
+		context.SetClusterType(cmdline.Context(), pco.KClient)
+	}
+	return nil
 }
 
 // Validate validates the parameters of the ProjectCreateOptions
@@ -59,11 +66,7 @@ func (pco *ProjectCreateOptions) Validate() error {
 }
 
 // Run runs the project create command
-func (pco *ProjectCreateOptions) Run(cmd *cobra.Command) (err error) {
-	if scontext.GetTelemetryStatus(cmd.Context()) {
-		scontext.SetClusterType(cmd.Context(), pco.KClient)
-	}
-
+func (pco *ProjectCreateOptions) Run() (err error) {
 	// Create the "spinner"
 	s := &log.Status{}
 

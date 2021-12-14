@@ -14,6 +14,7 @@ import (
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -66,8 +67,8 @@ func NewDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes log args
-func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(do.contextFlag))
+func (do *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	do.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(do.contextFlag))
 	return err
 }
 
@@ -77,7 +78,7 @@ func (do *DeleteOptions) Validate() error {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
@@ -225,7 +226,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
 	//Adding `--context` flag
-	genericclioptions.AddContextFlag(componentDeleteCmd, &do.contextFlag)
+	odoutil.AddContextFlag(componentDeleteCmd, &do.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)

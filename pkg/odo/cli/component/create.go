@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/zalando/go-keyring"
 
 	"github.com/devfile/library/pkg/devfile"
@@ -118,15 +119,15 @@ func NewCreateOptions() *CreateOptions {
 	}
 }
 
-func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	// GETTERS
 	// Get context
-	co.Context, err = getContext(co.nowFlag, cmd)
+	co.Context, err = getContext(co.nowFlag, cmdline)
 	if err != nil {
 		return err
 	}
 	// Get the app name
-	co.appFlag = genericclioptions.ResolveAppFlag(cmd)
+	co.appFlag = genericclioptions.ResolveAppFlag(cmdline)
 	// Get the project name
 	co.devfileMetadata.componentNamespace = co.Context.GetProject()
 	// Get DevfilePath
@@ -191,7 +192,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	if err != nil {
 		return err
 	}
-	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmd, args)
+	err = co.createMethod.FetchDevfileAndCreateComponent(co, cmdline, args)
 	if err != nil {
 		co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		return err
@@ -220,7 +221,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 	}
 
-	scontext.SetDevfileName(cmd.Context(), co.devfileName)
+	scontext.SetDevfileName(cmdline.Context(), co.devfileName)
+	// Adding component type to telemetry data
+	scontext.SetComponentType(cmdline.Context(), co.devfileMetadata.componentType)
 
 	return nil
 }
@@ -255,14 +258,12 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
-func (co *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (co *CreateOptions) Run() (err error) {
 	defer func() {
 		if err != nil {
 			co.createMethod.Rollback(co.DevfilePath, co.contextFlag)
 		}
 	}()
-	// Adding component type to telemetry data
-	scontext.SetComponentType(cmd.Context(), co.devfileMetadata.componentType)
 
 	devObj, err := devfileParseFromFile(co.DevfilePath, false)
 	if err != nil {
@@ -356,7 +357,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(componentCreateCmd, &co.contextFlag)
+	odoutil.AddContextFlag(componentCreateCmd, &co.contextFlag)
 	componentCreateCmd.Flags().StringSliceVarP(&co.portFlag, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.envFlag, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
@@ -375,7 +376,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding `--now` flag
-	genericclioptions.AddNowFlag(componentCreateCmd, &co.nowFlag)
+	odoutil.AddNowFlag(componentCreateCmd, &co.nowFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag
@@ -388,8 +389,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	return componentCreateCmd
 }
 
-func getContext(now bool, cmd *cobra.Command) (*genericclioptions.Context, error) {
-	params := genericclioptions.NewCreateParameters(cmd)
+func getContext(now bool, cmdline cmdline.Cmdline) (*genericclioptions.Context, error) {
+	params := genericclioptions.NewCreateParameters(cmdline)
 	if now {
 		params = params.CreateAppIfNeeded()
 	} else {

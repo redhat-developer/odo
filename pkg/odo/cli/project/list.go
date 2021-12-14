@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
@@ -37,8 +38,8 @@ func NewProjectListOptions() *ProjectListOptions {
 }
 
 // Complete completes ProjectListOptions after they've been created
-func (plo *ProjectListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (plo *ProjectListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	plo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return err
 }
 
@@ -48,7 +49,7 @@ func (plo *ProjectListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo project list command
-func (plo *ProjectListOptions) Run(cmd *cobra.Command) error {
+func (plo *ProjectListOptions) Run() error {
 	projects, err := project.List(plo.Context.KClient)
 	if err != nil {
 		return err

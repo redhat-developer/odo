@@ -5,6 +5,7 @@ import (
 
 	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -40,17 +41,11 @@ func NewExecOptions() *ExecOptions {
 }
 
 // Complete completes exec args
-func (eo *ExecOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if cmd.ArgsLenAtDash() <= -1 {
-		return fmt.Errorf(`no command was given for the exec command
-Please provide a command to execute, odo exec -- <command to be execute>`)
-	}
-
+func (eo *ExecOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	// gets the command args passed after the dash i.e `--`
-	eo.command = args[cmd.ArgsLenAtDash():]
-
-	if len(eo.command) <= 0 {
-		return fmt.Errorf(`no command was given for the exec command.
+	eo.command, err = cmdline.GetArgsAfterDashes(args)
+	if err != nil || len(eo.command) <= 0 {
+		return fmt.Errorf(`no command was given for the exec command
 Please provide a command to execute, odo exec -- <command to be execute>`)
 	}
 
@@ -59,7 +54,7 @@ Please provide a command to execute, odo exec -- <command to be execute>`)
 		return fmt.Errorf("no parameter is expected for the command")
 	}
 
-	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(eo.contextFlag))
+	eo.componentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(eo.contextFlag))
 	return err
 }
 
@@ -69,7 +64,7 @@ func (eo *ExecOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (eo *ExecOptions) Run(cmd *cobra.Command) (err error) {
+func (eo *ExecOptions) Run() (err error) {
 	return eo.DevfileComponentExec(eo.command)
 }
 
@@ -90,7 +85,7 @@ func NewCmdExec(name, fullName string) *cobra.Command {
 
 	execCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(execCmd, completion.ComponentNameCompletionHandler)
-	genericclioptions.AddContextFlag(execCmd, &o.contextFlag)
+	odoutil.AddContextFlag(execCmd, &o.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(execCmd)

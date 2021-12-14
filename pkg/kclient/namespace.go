@@ -56,6 +56,11 @@ func (c *Client) GetNamespace(name string) (*corev1.Namespace, error) {
 
 }
 
+// GetNamespace returns Namespace based on its name
+func (c *Client) GetNamespaceNormal(name string) (*corev1.Namespace, error) {
+	return c.KubeClient.CoreV1().Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
+}
+
 // CreateNamespace creates new namespace
 func (c *Client) CreateNamespace(name string) (*corev1.Namespace, error) {
 	namespace := &corev1.Namespace{

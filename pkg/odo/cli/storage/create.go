@@ -6,7 +6,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -47,8 +49,8 @@ func NewStorageCreateOptions() *CreateOptions {
 }
 
 // Complete completes CreateOptions after they've been created
-func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -78,7 +80,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo storage create command
-func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (o *CreateOptions) Run() (err error) {
 	err = o.Context.LocalConfigProvider.CreateStorage(o.storage)
 	if err != nil {
 		return err
@@ -114,7 +116,7 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&o.pathFlag, "path", "", "Path to mount the storage on")
 	storageCreateCmd.Flags().StringVar(&o.containerFlag, "container", "", "Name of container to attach the storage to in devfile")
 
-	genericclioptions.AddContextFlag(storageCreateCmd, &o.contextFlag)
+	odoutil.AddContextFlag(storageCreateCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)
 
 	return storageCreateCmd

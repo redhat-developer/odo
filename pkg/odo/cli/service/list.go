@@ -3,7 +3,9 @@ package service
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -37,8 +39,8 @@ func NewServiceListOptions() *ServiceListOptions {
 }
 
 // Complete completes ServiceListOptions after they've been created
-func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *ServiceListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -61,7 +63,7 @@ func (o *ServiceListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service list command
-func (o *ServiceListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ServiceListOptions) Run() (err error) {
 	return o.listOperatorServices()
 }
 
@@ -79,6 +81,6 @@ func NewCmdServiceList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	genericclioptions.AddContextFlag(serviceListCmd, &o.contextFlag)
+	odoutil.AddContextFlag(serviceListCmd, &o.contextFlag)
 	return serviceListCmd
 }

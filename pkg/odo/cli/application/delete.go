@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
@@ -40,8 +41,8 @@ func NewDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been created
-func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DeleteOptions) Run() (err error) {
 	if log.IsJSON() {
 		err = application.Delete(o.KClient, o.appName)
 		if err != nil {

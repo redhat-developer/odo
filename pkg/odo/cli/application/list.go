@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -37,8 +38,8 @@ func NewListOptions() *ListOptions {
 }
 
 // Complete completes ListOptions after they've been created
-func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return
 }
 
@@ -52,7 +53,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ListOptions) Run() (err error) {
 	apps, err := application.List(o.KClient)
 	if err != nil {
 		return fmt.Errorf("unable to get list of applications: %v", err)

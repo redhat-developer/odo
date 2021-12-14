@@ -75,6 +75,7 @@ type ClientInterface interface {
 	SetNamespace(ns string)
 	GetNamespaces() ([]string, error)
 	GetNamespace(name string) (*corev1.Namespace, error)
+	GetNamespaceNormal(name string) (*corev1.Namespace, error)
 	CreateNamespace(name string) (*corev1.Namespace, error)
 	DeleteNamespace(name string, wait bool) error
 	SetCurrentNamespace(namespace string) error

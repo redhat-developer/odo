@@ -3,7 +3,9 @@ package component
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
@@ -19,10 +21,10 @@ type ComponentOptions struct {
 }
 
 // Complete completes component options
-func (co *ComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (co *ComponentOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
-		co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).IsOffline())
+		co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).IsOffline())
 		if err != nil {
 			return err
 		}
@@ -79,6 +81,6 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 // AddComponentFlag adds a `component` flag to the given cobra command
 // Also adds a completion handler to the flag
 func AddComponentFlag(cmd *cobra.Command) {
-	cmd.Flags().String(genericclioptions.ComponentFlagName, "", "Component, defaults to active component.")
+	cmd.Flags().String(util.ComponentFlagName, "", "Component, defaults to active component.")
 	completion.RegisterCommandFlagHandler(cmd, "component", completion.ComponentNameCompletionHandler)
 }

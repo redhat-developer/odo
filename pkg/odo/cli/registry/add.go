@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	util2 "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	// Third-party packages
 	"github.com/pkg/errors"
@@ -51,7 +52,7 @@ func NewAddOptions() *AddOptions {
 }
 
 // Complete completes AddOptions after they've been created
-func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *AddOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "add"
 	o.registryName = args[0]
 	o.registryURL = args[1]
@@ -72,7 +73,7 @@ func (o *AddOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry add" command
-func (o *AddOptions) Run(cmd *cobra.Command) (err error) {
+func (o *AddOptions) Run() (err error) {
 	isSecure := false
 	if o.tokenFlag != "" {
 		isSecure = true

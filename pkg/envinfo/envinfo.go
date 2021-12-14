@@ -90,7 +90,7 @@ func New() (*EnvSpecificInfo, error) {
 
 // NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
-	return newEnvSpecificInfo(envDir, filesystem.DefaultFs{})
+	return newEnvSpecificInfo(envDir, filesystem.Get())
 }
 
 // newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.

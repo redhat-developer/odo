@@ -15,6 +15,7 @@ import (
 
 	// odo packages
 	util "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/preference"
 )
@@ -41,7 +42,7 @@ func NewListOptions() *ListOptions {
 }
 
 // Complete completes ListOptions after they've been created
-func (o *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	return nil
 }
 
@@ -51,7 +52,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry list" command
-func (o *ListOptions) Run(cmd *cobra.Command) (err error) {
+func (o *ListOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
 		return err

@@ -8,7 +8,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -47,8 +49,8 @@ func NewDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been created
-func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service delete command
-func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DeleteOptions) Run() (err error) {
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
 		err = o.Backend.DeleteService(o, o.serviceName, o.GetApplication())
 		if err != nil {
@@ -110,6 +112,6 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 		},
 	}
 	serviceDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete service without prompting")
-	genericclioptions.AddContextFlag(serviceDeleteCmd, &o.contextFlag)
+	odoutil.AddContextFlag(serviceDeleteCmd, &o.contextFlag)
 	return serviceDeleteCmd
 }

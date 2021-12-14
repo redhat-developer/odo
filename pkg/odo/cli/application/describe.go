@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 
 	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -39,8 +40,8 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 // Complete completes DescribeOptions after they've been created
-func (o *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd))
+func (o *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func (o *DescribeOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *DescribeOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		appDef := application.GetMachineReadableFormat(o.KClient, o.appName, o.GetProject())
 		machineoutput.OutputSuccess(appDef)

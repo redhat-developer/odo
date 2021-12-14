@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -69,8 +71,8 @@ func NewCreateOptions() *CreateOptions {
 }
 
 // Complete completes CreateOptions after they've been created
-func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.contextFlag))
+func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
@@ -91,7 +93,7 @@ func (o *CreateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	}
 	o.Backend = NewOperatorBackend()
 	o.interactive = false
-	return o.Backend.CompleteServiceCreate(o, cmd, args)
+	return o.Backend.CompleteServiceCreate(o, args)
 }
 
 // Validate validates the CreateOptions based on completed values
@@ -100,7 +102,7 @@ func (o *CreateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo service create command
-func (o *CreateOptions) Run(cmd *cobra.Command) (err error) {
+func (o *CreateOptions) Run() (err error) {
 	err = o.Backend.RunServiceCreate(o)
 	if err != nil {
 		return fmt.Errorf("service %q already exists in configuration", o.ServiceName)
@@ -137,6 +139,6 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parametersFlag, "parameters", "p", []string{}, "Parameters to be used to create Operator backed service where a parameter is expressed as <key>=<value")
 	serviceCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the service is ready")
-	genericclioptions.AddContextFlag(serviceCreateCmd, &o.contextFlag)
+	odoutil.AddContextFlag(serviceCreateCmd, &o.contextFlag)
 	return serviceCreateCmd
 }

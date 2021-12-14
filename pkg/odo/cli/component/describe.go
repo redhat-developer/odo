@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -43,14 +44,14 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 // Complete completes describe args
-func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (do *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	if do.contextFlag == "" {
 		do.contextFlag, err = os.Getwd()
 		if err != nil {
 			return err
 		}
 	}
-	err = do.ComponentOptions.Complete(name, cmd, args)
+	err = do.ComponentOptions.Complete(name, cmdline, args)
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func (do *DescribeOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (do *DescribeOptions) Run(cmd *cobra.Command) (err error) {
+func (do *DescribeOptions) Run() (err error) {
 
 	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.Context.KClient, do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
 	if err != nil {
@@ -105,7 +106,7 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	describeCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(describeCmd, completion.ComponentNameCompletionHandler)
 	// Adding --context flag
-	genericclioptions.AddContextFlag(describeCmd, &do.contextFlag)
+	odoutil.AddContextFlag(describeCmd, &do.contextFlag)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)

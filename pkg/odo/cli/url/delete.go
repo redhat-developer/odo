@@ -6,7 +6,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -41,8 +43,8 @@ func NewURLDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been Deleted
-func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmd).NeedDevfile(o.GetComponentContext()))
+func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext()))
 	if err != nil {
 		return err
 	}
@@ -74,7 +76,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url delete command
-func (o *DeleteOptions) Run(cmd *cobra.Command) (err error) {
+func (o *DeleteOptions) Run() (err error) {
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
 		err := o.LocalConfigProvider.DeleteURL(o.urlName)
 		if err != nil {
@@ -116,7 +118,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	urlDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete url without prompting")
 
 	o.AddContextFlag(urlDeleteCmd)
-	genericclioptions.AddNowFlag(urlDeleteCmd, &o.nowFlag)
+	odoutil.AddNowFlag(urlDeleteCmd, &o.nowFlag)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
 

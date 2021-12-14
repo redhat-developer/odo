@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/auth"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ func NewLoginOptions() *LoginOptions {
 }
 
 // Complete completes LoginOptions after they've been created
-func (o *LoginOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+func (o *LoginOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
 	if len(args) == 1 {
 		o.server = args[0]
 	}
@@ -59,7 +60,7 @@ func (o *LoginOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *LoginOptions) Run(cmd *cobra.Command) (err error) {
+func (o *LoginOptions) Run() (err error) {
 	return auth.Login(o.server, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 
