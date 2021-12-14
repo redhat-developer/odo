@@ -12,6 +12,7 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/unions"
 	"github.com/redhat-developer/odo/pkg/version"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -124,6 +125,47 @@ func TestDelete(t *testing.T) {
 				return
 			}
 		})
+	}
+}
+
+func TestComponentList(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	kubclient := kclient.NewMockClientInterface(ctrl)
+	depList := []appsv1.Deployment{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					"app.kubernetes.io/instance": "a-component",
+					"app.kubernetes.io/part-of":  "an-app-name",
+				},
+				Annotations: map[string]string{
+					"odo.dev/project-type": "nodejs",
+				},
+			},
+		},
+	}
+	kubclient.EXPECT().GetDeploymentFromSelector("app=an-app-name,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=an-app-name").Return(depList, nil).AnyTimes()
+	kubclient.EXPECT().GetCurrentNamespace().Return("my-namespace").AnyTimes()
+	kubclient.EXPECT().GetOneDeployment("a-component", "an-app-name").Return(&depList[0], nil).AnyTimes()
+	ingresses := &unions.KubernetesIngressList{
+		Items: nil,
+	}
+	kubclient.EXPECT().ListIngresses("app.kubernetes.io/instance=a-component,app.kubernetes.io/part-of=an-app-name").Return(ingresses, nil).AnyTimes()
+	kubclient.EXPECT().IsServiceBindingSupported().Return(false, nil).AnyTimes()
+	kubclient.EXPECT().ListSecrets("app.kubernetes.io/instance=a-component,app.kubernetes.io/part-of=an-app-name").Return(nil, nil).AnyTimes()
+	kubclient.EXPECT().ListServices("").Return(nil, nil).AnyTimes()
+	appClient := NewClient(kubclient)
+
+	result, err := appClient.ComponentList("an-app-name")
+	if len(result) != 1 {
+		t.Errorf("expected 1 component in list, got %d", len(result))
+	}
+	component := result[0]
+	if component.Name != "a-component" {
+		t.Errorf("Expected component name %q, got %q", "a-component", component.Name)
+	}
+	if err != nil {
+		t.Errorf("Expected no error, got %s", err)
 	}
 }
 

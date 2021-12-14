@@ -154,6 +154,7 @@ func TestDelete(t *testing.T) {
 				}
 				return false
 			}(), nil).AnyTimes()
+			appClient.EXPECT().ComponentList(tt.wantAppName).AnyTimes()
 			opts := NewDeleteOptions(appClient)
 			// Force to disable interactive confirmation
 			opts.forceFlag = true
