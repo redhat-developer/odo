@@ -10,5 +10,7 @@ RUN curl -fsSL https://clis.cloud.ibm.com/install/linux | sh && \
     mv kubectl /usr/local/bin/ && \
     curl -sLO https://raw.githubusercontent.com/cptmorgan-rh/install-oc-tools/master/install-oc-tools.sh > /dev/null && \
     chmod +x install-oc-tools.sh && \
-    ./install-oc-tools.sh --latest 4.7
-
+    ./install-oc-tools.sh --latest 4.7 && \
+    apt-get update -y && \
+    apt-get install -y sshpass && \
+    rm -rf /var/lib/apt/lists/*
