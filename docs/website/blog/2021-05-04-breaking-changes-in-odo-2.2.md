@@ -10,7 +10,7 @@ slug: breaking-changes-in-odo-2.2
 Breaking changes in odo 2.2
 
 <!--truncate-->
-###Breaking changes in odo 2.2
+### Breaking changes in odo 2.2
 
 This document outlines the breaking changes that were introduced in odo 2.2. With the increased adoption of [Devfile](https://devfile.github.io/) we have started to reduce odo’s dependency on S2I(Source-to-Image). If you do not work with S2I, then you can stop reading here.
 
