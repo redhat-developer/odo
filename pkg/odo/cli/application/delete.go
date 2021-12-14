@@ -138,6 +138,7 @@ func printAppInfo(client kclient.ClientInterface, appName string, projectName st
 
 // NewCmdDelete implements the odo command.
 func NewCmdDelete(name, fullName string) *cobra.Command {
+	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
 	o := NewDeleteOptions(application.NewClient(kubclient))
 	command := &cobra.Command{
