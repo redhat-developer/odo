@@ -10,6 +10,7 @@ import (
 // componentToApply represents a devfile component that can be applied
 type componentToApply interface {
 	Apply(devfileObj parser.DevfileObj, devfilePath string) error
+	UnApply(devfilePath string) error
 }
 
 // createComponent returns an instance of a devfile component specific to its type (image, kubernetes, etc)

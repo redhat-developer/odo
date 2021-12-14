@@ -107,3 +107,7 @@ func (s execCommand) Execute(show bool) error {
 
 	return nil
 }
+
+func (s execCommand) UnExecute() error {
+	return nil
+}

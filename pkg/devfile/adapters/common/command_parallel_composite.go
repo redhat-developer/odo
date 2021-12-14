@@ -36,3 +36,23 @@ func (p parallelCompositeCommand) Execute(show bool) error {
 	}
 	return nil
 }
+
+func (p parallelCompositeCommand) UnExecute() error {
+	// Loop over each command and un-execute it in parallel
+	commandExecs := util.NewConcurrentTasks(len(p.cmds))
+	for _, command := range p.cmds {
+		cmd := command // needed to prevent the lambda from capturing the value
+		commandExecs.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			err := cmd.UnExecute()
+			if err != nil {
+				errChannel <- err
+			}
+		}})
+	}
+
+	err := commandExecs.Run()
+	if err != nil {
+		return errors.Wrap(err, "parallel command execution failed")
+	}
+	return nil
+}

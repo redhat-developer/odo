@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"io"
 	"os"
 	"reflect"
@@ -411,7 +410,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
-	err = a.ExecuteDevfileCommand(testCommand, show)
+	err = a.ExecuteDevfileCommand(testCommand, show, false)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
@@ -791,85 +790,25 @@ func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, t
 
 // Deploy executes the 'deploy' command defined in a devfile
 func (a Adapter) Deploy() error {
-	deployCmd, err := getDeployCommand(a)
+	deployCmd, err := a.getDeployCommand()
 	if err != nil {
 		return err
 	}
 
-	return a.ExecuteDevfileCommand(deployCmd, true)
+	return a.ExecuteDevfileCommand(deployCmd, true, false)
 }
 
 // UnDeploy reverses the effect of the 'deploy' command defined in a devfile
 func (a Adapter) UnDeploy() error {
-	deployCmd, err := getDeployCommand(a)
+	deployCmd, err := a.getDeployCommand()
 	if err != nil {
 		return err
 	}
-	// Only get commands of type 'Apply'; those are the only ones we're concerned with for 'Deploy'
-	// 'Deploy' command does not support any other command type
-	allApplyCommands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
-		CommandOptions: parsercommon.CommandOptions{
-			CommandType: devfilev1.ApplyCommandType,
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	// Get components of type Kubernetes; one of these components should be associated with one of the 'Deploy' composite commands
-	kubeComponents, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1.KubernetesComponentType},
-	})
-	if err != nil {
-		return err
-	}
-
-	// A list of Command objects of the commands that form the composite 'Deploy' command
-	var requiredCommands []devfilev1.Command
-
-	// Get the Command object of commands that form the composite 'Deploy' command
-	for _, commandId := range deployCmd.Composite.Commands {
-		for _, cmd := range allApplyCommands {
-			if cmd.Id == commandId {
-				requiredCommands = append(requiredCommands, cmd)
-			}
-		}
-	}
-
-	// The component of type Kubernetes associated with one of the composite 'Deploy' commands
-	var component devfilev1.Component
-
-	// Get the component of the command that deploys the k8s object
-	// At this point we assume the component list is of type Kubernetes, and the commands are that of the composite 'Deploy' command
-	for _, cmp := range kubeComponents {
-		for _, cmd := range requiredCommands {
-			if cmd.Apply.Component == cmp.Name {
-				component = cmp
-				break
-			}
-		}
-	}
-
-	// Parse the component's Kubernetes manifest
-	u, err := service.GetK8sComponentAsUnstructured(component.Kubernetes, a.Context, devfilefs.DefaultFs{})
-	if err != nil {
-		return err
-	}
-
-	kClient := a.Client.GetKubeClient()
-	// Get the REST mappings
-	gvr, err := kClient.GetRestMappingFromUnstructured(u)
-	if err != nil {
-		return err
-	}
-	log.Infof("\nUn-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
-	// Un-deploy the K8s manifest
-	err = kClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
-	return err
+	return a.ExecuteDevfileCommand(deployCmd, true, true)
 }
 
-// ExecuteDevfileCommand executes the devfile command
-func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
+// ExecuteDevfileCommand executes the devfile command; if unexecute is set to true, it reverses the effect of Execute
+func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show, unexecute bool) error {
 	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
@@ -879,28 +818,15 @@ func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) err
 	if err != nil {
 		return err
 	}
+	if unexecute {
+		return c.UnExecute()
+	}
 	return c.Execute(show)
 }
 
 // ApplyComponent 'applies' a devfile component
 func (a Adapter) ApplyComponent(componentName string) error {
-	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-	var component devfilev1.Component
-	var found bool
-	for _, component = range components {
-		if component.Name == componentName {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("component %q not found", componentName)
-	}
-
-	cmp, err := createComponent(a, component)
+	cmp, err := a.getApplyComponent(componentName)
 	if err != nil {
 		return err
 	}
@@ -908,8 +834,17 @@ func (a Adapter) ApplyComponent(componentName string) error {
 	return cmp.Apply(a.Devfile, a.Context)
 }
 
+// UnApplyComponent un-'applies' a devfile component
+func (a Adapter) UnApplyComponent(componentName string) error {
+	cmp, err := a.getApplyComponent(componentName)
+	if err != nil {
+		return err
+	}
+	return cmp.UnApply(a.Context)
+}
+
 // getDeployCommand validates the deploy command and returns it
-func getDeployCommand(a Adapter) (devfilev1.Command, error) {
+func (a Adapter) getDeployCommand() (devfilev1.Command, error) {
 	deployGroupCmd, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
 		CommandOptions: parsercommon.CommandOptions{
 			CommandGroupKind: devfilev1.DeployCommandGroupKind,
@@ -925,4 +860,29 @@ func getDeployCommand(a Adapter) (devfilev1.Command, error) {
 		return devfilev1.Command{}, errors.New("more than one default deploy command found in devfile, should not happen")
 	}
 	return deployGroupCmd[0], nil
+}
+
+// getApplyComponent returns the 'Apply' command's component(kubernetes/image)
+func (a Adapter) getApplyComponent(componentName string) (componentToApply, error) {
+	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
+	var component devfilev1.Component
+	var found bool
+	for _, component = range components {
+		if component.Name == componentName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("component %q not found", componentName)
+	}
+
+	cmp, err := createComponent(a, component)
+	if err != nil {
+		return nil, err
+	}
+	return cmp, nil
 }

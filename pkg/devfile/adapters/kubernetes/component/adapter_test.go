@@ -689,3 +689,7 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 		})
 	}
 }
+
+func Test_getApplyComponent(t *testing.T) {
+
+}

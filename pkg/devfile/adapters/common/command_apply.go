@@ -25,3 +25,8 @@ func (s applyCommand) Execute(show bool) error {
 	err := s.adapter.ApplyComponent(s.component)
 	return err
 }
+
+func (s applyCommand) UnExecute() error {
+	err := s.adapter.UnApplyComponent(s.component)
+	return err
+}

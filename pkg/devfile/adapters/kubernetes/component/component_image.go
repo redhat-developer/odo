@@ -19,3 +19,7 @@ func newComponentImage(component devfilev1.Component) componentImage {
 func (o componentImage) Apply(devfileObj parser.DevfileObj, devfilePath string) error {
 	return image.BuildPushSpecificImage(devfileObj, devfilePath, o.component, true)
 }
+
+func (o componentImage) UnApply(devfilePath string) error {
+	return nil
+}

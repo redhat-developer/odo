@@ -16,6 +16,7 @@ import (
 // command encapsulates a command meant to be executed either directly or as part of a composite
 type command interface {
 	Execute(show bool) error
+	UnExecute() error
 }
 
 // New returns a new command implementation based on the specified devfile command and the known commands

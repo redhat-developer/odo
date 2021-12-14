@@ -119,3 +119,7 @@ func (k Adapter) StartSupervisordCtlStatusWatch() {
 func (k Adapter) ApplyComponent(component string) error {
 	return k.componentAdapter.ApplyComponent(component)
 }
+
+func (k Adapter) UnApplyComponent(component string) error {
+	return k.componentAdapter.UnApplyComponent(component)
+}

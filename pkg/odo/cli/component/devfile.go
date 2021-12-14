@@ -166,10 +166,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 	return util.DisplayLog(lo.followFlag, rd, os.Stdout, componentName, -1)
 }
 
-// Get the .group.kind=deploy command
-// Iterate through the commands from .group.kind=deploy and find the command that contains kubernetes
-// Get GVK, GVR
-// call the DeleteDynamicResource method of kClient.Interface and delete
+// DevfileUnDeploy undeploys the devfile kubernetes components
 func (do *DeleteOptions) DevfileUnDeploy() error {
 	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
 	if err != nil {
@@ -182,7 +179,7 @@ func (do *DeleteOptions) DevfileUnDeploy() error {
 		Namespace: do.KClient.GetCurrentNamespace(),
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.GetApplication(), devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.contextFlag, do.GetApplication(), devObj, kc)
 	if err != nil {
 		return err
 	}

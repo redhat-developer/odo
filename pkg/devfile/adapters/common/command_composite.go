@@ -24,3 +24,14 @@ func (c compositeCommand) Execute(show bool) error {
 	}
 	return nil
 }
+
+func (c compositeCommand) UnExecute() error {
+	// UnExecute the commands in order
+	for _, command := range c.cmds {
+		err := command.UnExecute()
+		if err != nil {
+			return fmt.Errorf("command execution failed: %v", err)
+		}
+	}
+	return nil
+}

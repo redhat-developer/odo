@@ -82,31 +82,32 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
-	var deleteFunc = func(do *DeleteOptions) error {
-		if do.undeployFlag {
-			if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to undeploy?")) {
-				err = do.DevfileUnDeploy()
-				if err != nil {
-					return fmt.Errorf("error occurred while undeploying, cause: %v", err)
-				}
-			} else {
-				log.Error("Aborting the un-deployment")
+	// odo delete --deploy || odo delete --all
+	if do.undeployFlag || do.allFlag {
+		if do.forceFlag || ui.Proceed("Are you sure you want to undeploy?") {
+			err = do.DevfileUnDeploy()
+			if err != nil {
+				log.Errorf("error occurred while undeploying, cause: %v", err)
 			}
 		} else {
-			if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
-				err = do.DevfileComponentDelete()
-				if err != nil {
-					log.Errorf("error occurred while deleting component, cause: %v", err)
-				}
-			} else {
-				log.Error("Aborting deletion of component")
-			}
+			log.Error("Aborting the un-deployment")
 		}
-		return nil
 	}
 
+	// odo delete || odo delete --all
+	if !do.undeployFlag || do.allFlag {
+		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+			err = do.DevfileComponentDelete()
+			if err != nil {
+				log.Errorf("error occurred while deleting component, cause: %v", err)
+			}
+		} else {
+			log.Error("Aborting deletion of component")
+		}
+	}
+
+	// Delete the configuration files
 	if do.allFlag {
-		err = deleteFunc(do)
 		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
 		if do.forceFlag || ui.Proceed("Are you sure you want to delete env folder?") {
@@ -212,7 +213,6 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 			log.Error("Aborting deletion of devfile.yaml file")
 		}
 	}
-	err = deleteFunc(do)
 	return nil
 }
 
