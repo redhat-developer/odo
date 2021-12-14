@@ -1,0 +1,113 @@
+---
+- name: Create IBM Cloud VPC VSI
+  hosts: localhost
+  collections:
+   - ibm.cloudcollection
+  tasks:
+    - name: Fetch the variables from var file
+      include_vars:
+        file: vars.yml
+  
+    - name: Configure VPC
+      ibm_is_vpc:
+        name: "{{ name_prefix }}-vpc"
+        state: available
+        id: "{{ vpc.id | default(omit) }}"
+      register: vpc_create_output
+
+    - name: Save VPC as fact
+      set_fact:
+        cacheable: True
+        vpc: "{{ vpc_create_output.resource }}"
+
+    - name: Configure VPC Subnet
+      ibm_is_subnet:
+        name: "{{ name_prefix }}-subnet"
+        state: available
+        id: "{{ subnet.id | default(omit) }}"
+        vpc: "{{ vpc.id }}"
+        total_ipv4_address_count: "{{ total_ipv4_address_count }}"
+        zone: "{{ cluster_zone }}"
+      register: subnet_create_output
+
+    - name: Save VPC Subnet as fact
+      set_fact:
+        cacheable: True
+        subnet: "{{ subnet_create_output.resource }}"
+
+    # NOTE: Uncomment in case we want to create and use a new sshkey 
+    # - name: Configure SSH Key
+    #   ibm_is_ssh_key:
+    #     name: "{{ name_prefix }}-ssh-key"
+    #     public_key: "{{ ssh_public_key }}"
+    #     id: "{{ ssh_key.id | default(omit) }}"
+    #   register: ssh_key_create_output
+
+    # - name: Save SSH Key as fact
+    #   set_fact:
+    #     cacheable: True
+    #     ssh_key: "{{ ssh_key_create_output.resource }}"
+
+    - name: Retrieve image list
+      ibm_is_images_info:
+      register: images_list
+
+    - name: Set VM image name/id dictionary fact
+      set_fact:
+        cacheable: True
+        image_dict: "{{ images_list.resource.images |
+                        items2dict(key_name='name', value_name='id') }}"
+
+    - name: Configure VSI
+      ibm_is_instance:
+        name: "{{ name_prefix }}-windows-vsi"
+        state: available
+        id: "{{ vsi.id | default(omit) }}"
+        vpc: "{{ vpc.id }}"
+        profile: "{{ vsi_profile }}"
+        image: "{{ image_dict[vsi_image] }}"
+        keys:
+          - "r010-0f01beeb-9b45-4406-93bb-4a8604c8a3e0"         #sshkey id ansible-ssh-key in developer qe group in VPC sshkey
+        primary_network_interface:
+          - subnet: "{{ subnet.id }}"
+        zone: "{{ cluster_zone }}"
+      register: vsi_create_output
+
+    - name: Save VSI as fact
+      set_fact:
+        cacheable: True
+        vsi: "{{ vsi_create_output.resource }}"
+
+    - name: Configure Floating IP Address
+      ibm_is_floating_ip:
+        name: "{{ name_prefix }}-fip"
+        state: available
+        id: "{{ fip.id | default(omit) }}"
+        target: "{{ vsi.primary_network_interface[0]['id'] }}"
+      register: fip_create_output
+
+    - name: Save Floating IP as fact
+      set_fact:
+        cacheable: True
+        fip: "{{ fip_create_output.resource }}"
+
+    - name: Print Floating IP Address
+      debug:
+        msg: "IP Address: {{ fip.address }}"
+
+    - name: Configure Security Group Rule to open SSH on the VSI
+      ibm_is_security_group_rule:
+        state: available
+        group: "{{ vpc.default_security_group }}"
+        direction: inbound
+        remote: 0.0.0.0/0
+        tcp:
+          - port_max: 22
+            port_min: 22
+
+    - name: Add VSI to Ansible inventory
+      add_host:
+        name: "{{ fip.address }}"
+        ansible_user: root
+        groups: new_vsi
+        ansible_ssh_extra_args: -o StrictHostKeyChecking=no
