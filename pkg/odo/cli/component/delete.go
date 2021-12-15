@@ -51,12 +51,12 @@ type DeleteOptions struct {
 	*ComponentOptions
 
 	// Flags
-	contextFlag  string
-	forceFlag    bool
-	allFlag      bool
-	waitFlag     bool
-	showLogFlag  bool
-	undeployFlag bool
+	contextFlag string
+	forceFlag   bool
+	allFlag     bool
+	waitFlag    bool
+	showLogFlag bool
+	deployFlag  bool
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
@@ -83,7 +83,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	klog.V(4).Infof("args: %#v", do)
 
 	// odo delete --deploy || odo delete --all
-	if do.undeployFlag || do.allFlag {
+	if do.deployFlag || do.allFlag {
 		if do.forceFlag || ui.Proceed("Are you sure you want to undeploy?") {
 			err = do.DevfileUnDeploy()
 			if err != nil {
@@ -95,7 +95,7 @@ func (do *DeleteOptions) Run(cmd *cobra.Command) (err error) {
 	}
 
 	// odo delete || odo delete --all
-	if !do.undeployFlag || do.allFlag {
+	if !do.deployFlag || do.allFlag {
 		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 			err = do.DevfileComponentDelete()
 			if err != nil {
@@ -236,7 +236,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentDeleteCmd.Flags().BoolVarP(&do.allFlag, "all", "a", false, "Delete component and local config")
 	componentDeleteCmd.Flags().BoolVarP(&do.waitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
-	componentDeleteCmd.Flags().BoolVarP(&do.undeployFlag, "deploy", "d", false, "Undeploy the Devfile Kubernetes Component deployed via `odo deploy`")
+	componentDeleteCmd.Flags().BoolVarP(&do.deployFlag, "deploy", "d", false, "Undeploy the Devfile Kubernetes Component deployed via `odo deploy`")
 
 	componentDeleteCmd.Flags().BoolVar(&do.showLogFlag, "show-log", false, "If enabled, logs will be shown when deleted")
 
