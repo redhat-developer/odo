@@ -18,8 +18,7 @@ shout() {
 # Check SHASUM for all the binary files and there should be no difference
 
 # Create a Temp directory 
-mkdir -p /tmp/temp
-WORKING_DIR=/tmp/temp
+WORKING_DIR=`mktemp -d`
 
 # Extract from rpm file 
 rpm2cpio ${1} | cpio -idmvD $WORKING_DIR
