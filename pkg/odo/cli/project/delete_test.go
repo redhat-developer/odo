@@ -1,7 +1,7 @@
-package application
+package project
 
 import (
-	"fmt"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,10 +9,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	corev1 "k8s.io/api/core/v1"
@@ -32,16 +32,16 @@ func TestDelete(t *testing.T) {
 		name               string
 		populateWorkingDir func(fs filesystem.Filesystem)
 		args               []string
-		existingApps       []string
-		wantAppName        string
+		projectExists      bool
+		wantProjectName    string
 		wantErrValidate    string
 	}{
 		{
-			name: "default app",
+			name: "project from args",
 			populateWorkingDir: func(fs filesystem.Filesystem) {
 				_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-				env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-				if err != nil {
+				env, er := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
+				if er != nil {
 					return
 				}
 				_ = env.SetComponentSettings(envinfo.ComponentSettings{
@@ -50,15 +50,15 @@ func TestDelete(t *testing.T) {
 					AppName: "an-app-name",
 				})
 			},
-			existingApps: []string{"an-app-name", "another-app-name"},
-			wantAppName:  "an-app-name",
-		},
-		{
-			name: "app from args",
+			args:            []string{"project-name-to-delete"},
+			projectExists:   true,
+			wantProjectName: "project-name-to-delete",
+		}, {
+			name: "project from args not existing",
 			populateWorkingDir: func(fs filesystem.Filesystem) {
 				_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-				env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-				if err != nil {
+				env, er := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
+				if er != nil {
 					return
 				}
 				_ = env.SetComponentSettings(envinfo.ComponentSettings{
@@ -67,46 +67,10 @@ func TestDelete(t *testing.T) {
 					AppName: "an-app-name",
 				})
 			},
-			args:         []string{"another-app-name"},
-			existingApps: []string{"an-app-name", "another-app-name"},
-			wantAppName:  "another-app-name",
-		},
-		{
-			name: "empty app name",
-			populateWorkingDir: func(fs filesystem.Filesystem) {
-				_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-				env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-				if err != nil {
-					return
-				}
-				_ = env.SetComponentSettings(envinfo.ComponentSettings{
-					Name:    "a-name",
-					Project: "a-project",
-					AppName: "",
-				})
-			},
-			existingApps:    []string{"an-app-name", "another-app-name"},
-			wantAppName:     "",
-			wantErrValidate: "Please specify the application name and project name",
-		},
-		{
-			name: "non existing app name",
-			populateWorkingDir: func(fs filesystem.Filesystem) {
-				_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-				env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-				if err != nil {
-					return
-				}
-				_ = env.SetComponentSettings(envinfo.ComponentSettings{
-					Name:    "a-name",
-					Project: "a-project",
-					AppName: "an-app-name",
-				})
-			},
-			args:            []string{"an-unknown-app-name"},
-			existingApps:    []string{"an-app-name", "another-app-name"},
-			wantAppName:     "an-unknown-app-name",
-			wantErrValidate: " app does not exists",
+			args:            []string{"project-name-to-delete"},
+			projectExists:   false,
+			wantProjectName: "project-name-to-delete",
+			wantErrValidate: `The project "project-name-to-delete" does not exist`,
 		},
 	}
 
@@ -121,17 +85,16 @@ func TestDelete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			cmdline := cmdline.NewMockCmdline(ctrl)
-
-			// Fake odo Kube client
-			kclient := kclient.NewMockClientInterface(ctrl)
-
-			/* Mocks for Complete */
 			cmdline.EXPECT().GetWorkingDirectory().Return(workingDir, nil).AnyTimes()
-			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(false, nil).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("o").Return("").AnyTimes()
+			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(false, nil).AnyTimes()
+			cmdline.EXPECT().Context().Return(context.Background()).AnyTimes()
+
+			// Fake odo Kube client
+			kclient := kclient.NewMockClientInterface(ctrl)
 			cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
 
 			ns := &corev1.Namespace{
@@ -145,30 +108,23 @@ func TestDelete(t *testing.T) {
 			tt.populateWorkingDir(filesystem.DefaultFs{})
 
 			/* Mocks for Complete */
-			appClient := application.NewMockClient(ctrl)
-			appClient.EXPECT().Exists(tt.wantAppName).Return(func() bool {
-				for _, app := range tt.existingApps {
-					if tt.wantAppName == app {
-						return true
-					}
-				}
-				return false
-			}(), nil).AnyTimes()
-			appClient.EXPECT().ComponentList(tt.wantAppName).AnyTimes()
-			opts := NewDeleteOptions(appClient)
-			// Force to disable interactive confirmation
+			prjClient := project.NewMockClient(ctrl)
+			opts := NewProjectDeleteOptions(prjClient)
 			opts.forceFlag = true
 
 			/* COMPLETE */
-			err := opts.Complete("delete", cmdline, tt.args)
+			err = opts.Complete("delete", cmdline, tt.args)
 
 			if err != nil {
 				t.Errorf("Expected nil error, got %s", err)
 				return
 			}
-			if opts.appName != tt.wantAppName {
-				t.Errorf("Got appName %q, expected %q", opts.appName, tt.wantAppName)
+			if opts.projectName != tt.wantProjectName {
+				t.Errorf("Got appName %q, expected %q", opts.projectName, tt.wantProjectName)
 			}
+
+			/* Mocks for Validate */
+			prjClient.EXPECT().Exists(tt.wantProjectName).Return(tt.projectExists, nil).Times(1)
 
 			/* VALIDATE */
 			err = opts.Validate()
@@ -188,16 +144,12 @@ func TestDelete(t *testing.T) {
 			if err != nil {
 				return
 			}
-
 			/* Mocks for Run */
-			kclient.EXPECT().GetDeploymentFromSelector(fmt.Sprintf("app=%s,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=%s", tt.wantAppName, tt.wantAppName)).AnyTimes()
-			appClient.EXPECT().Delete(tt.wantAppName).Times(1)
+			prjClient.EXPECT().SetCurrent(tt.wantProjectName).Times(1)
+			prjClient.EXPECT().Delete(tt.wantProjectName, false).Times(1)
 
 			/* RUN */
 			err = opts.Run()
-			if err != nil {
-				t.Errorf("Expected nil err, got %s", err)
-			}
 		})
 	}
 }

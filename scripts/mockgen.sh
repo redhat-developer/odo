@@ -30,3 +30,7 @@ mockgen -source=pkg/odo/cmdline/cmdline.go \
 mockgen -source=pkg/application/application.go \
     -package application \
     -destination pkg/application/mock.go
+
+mockgen -source=pkg/project/project.go \
+    -package project \
+    -destination pkg/project/mock.go
