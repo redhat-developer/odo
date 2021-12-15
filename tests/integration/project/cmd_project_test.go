@@ -128,7 +128,7 @@ var _ = Describe("odo project command tests", func() {
 			helper.Cmd("odo", "project", "delete", "-f", projectName).ShouldPass()
 		})
 
-		FIt("should display information of created project", func() {
+		It("should display information of created project", func() {
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.active")
 			expected := []string{"Project", projectName, "true"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
