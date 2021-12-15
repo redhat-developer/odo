@@ -67,7 +67,7 @@
         profile: "{{ vsi_profile }}"
         image: "{{ image_dict[vsi_image] }}"
         keys:
-          - "r010-0f01beeb-9b45-4406-93bb-4a8604c8a3e0"         #sshkey id ansible-ssh-key in developer qe group in VPC sshkey
+          - " {{ sshkey_id }} "         #sshkey id ansible-ssh-key in developer qe group in VPC sshkey
         primary_network_interface:
           - subnet: "{{ subnet.id }}"
         zone: "{{ cluster_zone }}"
