@@ -18,8 +18,8 @@ case $1 in
         export SENDQUEUE="amqp.ci.queue.minikube.send"
         export SENDTOPIC="amqp.ci.topic.minikube.send"
         export EXCHANGE="amqp.ci.exchange.minikube.send"
-        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minikube"
-        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minikube"
+        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh"
+        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh"
         export TIMEOUT="4h00m"
         ;;
     *)

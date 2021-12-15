@@ -95,46 +95,38 @@ EOF
   cd $pwd || return
 }
 
-case ${1} in
-minikube)
-  mkStatus=$(minikube status)
-  shout "| Checking if Minikube needs to be started..."
-  if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" == *"kubelet: Running"* ]]; then
-    if [[ "$mkStatus" == *"kubeconfig: Misconfigured"* ]]; then
-      minikube update-context
-    fi
-    setup_kubeconfig
-    kubectl config use-context minikube
-  else
-    minikube delete
-    shout "| Start minikube"
-    minikube start --vm-driver=docker --container-runtime=docker
-    setup_kubeconfig
-    setup_operator
-    setup_minikube_developer
+mkStatus=$(minikube status)
+shout "| Checking if Minikube needs to be started..."
+if [[ "$mkStatus" == *"host: Running"* ]] && [[ "$mkStatus" == *"kubelet: Running"* ]]; then
+  if [[ "$mkStatus" == *"kubeconfig: Misconfigured"* ]]; then
+    minikube update-context
   fi
+  setup_kubeconfig
+  kubectl config use-context minikube
+else
+  minikube delete
+  shout "| Start minikube"
+  minikube start --vm-driver=docker --container-runtime=docker
+  setup_kubeconfig
+  setup_operator
+  setup_minikube_developer
+fi
 
-  minikube version
-  # Setup to find necessary data from cluster setup
-  ## Constants
+minikube version
+# Setup to find necessary data from cluster setup
+## Constants
 
-  set +x
-  # Get kubectl cluster info
-  kubectl cluster-info
+set +x
+# Get kubectl cluster info
+kubectl cluster-info
 
-  set -x
-  # Set kubernetes env var as true, to distinguish the platform inside the tests
-  export KUBERNETES=true
+set -x
+# Set kubernetes env var as true, to distinguish the platform inside the tests
+export KUBERNETES=true
 
-  # Create a developer user if it is not created already and change the context to use it after the setup is done
-  kubectl config get-contexts developer-minikube || setup_minikube_developer
-  kubectl config use-context developer-minikube
-  ;;
-*)
-  echo "<<< Need parameter set to minikube or minishift >>>"
-  exit 1
-  ;;
-esac
+# Create a developer user if it is not created already and change the context to use it after the setup is done
+kubectl config get-contexts developer-minikube || setup_minikube_developer
+kubectl config use-context developer-minikube
 
 # Create a bin directory whereever script runs. This will be where all binaries that need to be in PATH will reside.
 export HOME=$(pwd)/home
