@@ -1,5 +1,5 @@
 ---
-title: Flags
+title: Common Flags
 sidebar_position: 50
 ---
 
