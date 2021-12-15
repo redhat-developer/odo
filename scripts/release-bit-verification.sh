@@ -17,9 +17,13 @@ shout() {
 }
 # Check SHASUM for all the binary files and there should be no difference
 
+# Create a Temp directory 
+mkdir -p /tmp/temp
+WORKING_DIR=/tmp/temp
+
 # Extract from rpm file 
-rpm2cpio ${1} | cpio -idmvD /tmp
-pushd /tmp/usr/share/odo-redistributable/
+rpm2cpio ${1} | cpio -idmvD $WORKING_DIR
+pushd $WORKING_DIR/usr/share/odo-redistributable/
 
 # Check sha256sum for all the files
 while IFS= read -r line; do
@@ -51,11 +55,11 @@ if [[ "$ODOVERSIONCHECK" == *"$VERSION"*  ]]; then
 fi
 
 #clone repo for testing and checkout release tag
-pushd /tmp/
+pushd $WORKING_DIR
 if [  -d "odo" ]; then
     rm -rf odo
 fi
-git clone https://github.com/redhat-developer/odo.git  && cd odo && git checkout "v$VERSION"
+git clone https://github.com/redhat-developer/odo.git  && cd $WORKING_DIR/odo && git checkout "v$VERSION"
 
 #Run tests
 make test-integration-devfile
