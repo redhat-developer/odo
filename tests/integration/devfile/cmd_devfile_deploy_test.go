@@ -28,7 +28,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
-			helper.Cmd("odo", "create").ShouldPass()
 		})
 		AfterEach(func() {
 			helper.Cmd("odo", "delete", "-a").ShouldPass()

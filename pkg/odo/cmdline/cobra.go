@@ -146,6 +146,10 @@ func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 		if firstChildCommand.Name() == "service" && (o.cmd.Name() == "create" || o.cmd.Name() == "delete") {
 			return true, nil
 		}
+		// Case 11 : if command is deploy
+		if o.cmd.Name() == "deploy" {
+			return true, nil
+		}
 
 	} else {
 		return true, nil
