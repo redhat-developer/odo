@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -10,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -38,8 +40,8 @@ type DeleteOptions struct {
 }
 
 // NewURLDeleteOptions creates a new DeleteOptions instance
-func NewURLDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions()}
+func NewURLDeleteOptions(prjClient project.Client) *DeleteOptions {
+	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions(prjClient)}
 }
 
 // Complete completes DeleteOptions after they've been Deleted
@@ -104,7 +106,9 @@ func (o *DeleteOptions) Run() (err error) {
 
 // NewCmdURLDelete implements the odo url delete command.
 func NewCmdURLDelete(name, fullName string) *cobra.Command {
-	o := NewURLDeleteOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewURLDeleteOptions(project.NewClient(kubclient))
 	urlDeleteCmd := &cobra.Command{
 		Use:   name + " [url name]",
 		Short: urlDeleteShortDesc,

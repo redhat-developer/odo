@@ -6,6 +6,7 @@ import (
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -14,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/redhat-developer/odo/pkg/util"
@@ -75,8 +77,8 @@ type CreateOptions struct {
 }
 
 // NewURLCreateOptions creates a new CreateOptions instance
-func NewURLCreateOptions() *CreateOptions {
-	return &CreateOptions{PushOptions: clicomponent.NewPushOptions()}
+func NewURLCreateOptions(prjClient project.Client) *CreateOptions {
+	return &CreateOptions{PushOptions: clicomponent.NewPushOptions(prjClient)}
 }
 
 // Complete completes CreateOptions after they've been Created
@@ -193,7 +195,9 @@ func (o *CreateOptions) Run() (err error) {
 
 // NewCmdURLCreate implements the odo url create command.
 func NewCmdURLCreate(name, fullName string) *cobra.Command {
-	o := NewURLCreateOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewURLCreateOptions(project.NewClient(kubclient))
 	urlCreateCmd := &cobra.Command{
 		Use:         name + " [url name]",
 		Short:       urlCreateShortDesc,

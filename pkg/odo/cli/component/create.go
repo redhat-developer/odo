@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/zalando/go-keyring"
 
 	"github.com/devfile/library/pkg/devfile"
@@ -113,9 +115,9 @@ odo catalog list components
 %[1]s nodejs --app myapp --project myproject`)
 
 // NewCreateOptions returns new instance of CreateOptions
-func NewCreateOptions() *CreateOptions {
+func NewCreateOptions(prjClient project.Client) *CreateOptions {
 	return &CreateOptions{
-		PushOptions: NewPushOptions(),
+		PushOptions: NewPushOptions(prjClient),
 	}
 }
 
@@ -345,7 +347,9 @@ func (co *CreateOptions) Run() (err error) {
 
 // NewCmdCreate implements the create odo command
 func NewCmdCreate(name, fullName string) *cobra.Command {
-	co := NewCreateOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	co := NewCreateOptions(project.NewClient(kubclient))
 	var componentCreateCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
 		Short:       "Create a new component",

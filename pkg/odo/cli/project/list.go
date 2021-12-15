@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -30,11 +31,16 @@ var (
 type ProjectListOptions struct {
 	// Context
 	*genericclioptions.Context
+
+	// Clients
+	prjClient project.Client
 }
 
 // NewProjectListOptions creates a new ProjectListOptions instance
-func NewProjectListOptions() *ProjectListOptions {
-	return &ProjectListOptions{}
+func NewProjectListOptions(prjClient project.Client) *ProjectListOptions {
+	return &ProjectListOptions{
+		prjClient: prjClient,
+	}
 }
 
 // Complete completes ProjectListOptions after they've been created
@@ -50,7 +56,7 @@ func (plo *ProjectListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo project list command
 func (plo *ProjectListOptions) Run() error {
-	projects, err := project.List(plo.Context.KClient)
+	projects, err := plo.prjClient.List()
 	if err != nil {
 		return err
 	}
@@ -68,7 +74,9 @@ func (plo *ProjectListOptions) Run() error {
 
 // NewCmdProjectList implements the odo project list command.
 func NewCmdProjectList(name, fullName string) *cobra.Command {
-	o := NewProjectListOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewProjectListOptions(project.NewClient(kubclient))
 	projectListCmd := &cobra.Command{
 		Use:         name,
 		Short:       listLongDesc,

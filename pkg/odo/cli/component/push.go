@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/project"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -73,9 +74,9 @@ type PushOptions struct {
 
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
-func NewPushOptions() *PushOptions {
+func NewPushOptions(prjClient project.Client) *PushOptions {
 	return &PushOptions{
-		CommonPushOptions: NewCommonPushOptions(),
+		CommonPushOptions: NewCommonPushOptions(prjClient),
 	}
 }
 
@@ -228,7 +229,9 @@ func (po *PushOptions) Run() (err error) {
 
 // NewCmdPush implements the push odo command
 func NewCmdPush(name, fullName string) *cobra.Command {
-	po := NewPushOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	po := NewPushOptions(project.NewClient(kubclient))
 
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),

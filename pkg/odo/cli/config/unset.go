@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/config"
@@ -49,8 +51,10 @@ type UnsetOptions struct {
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
-func NewUnsetOptions() *UnsetOptions {
-	return &UnsetOptions{PushOptions: clicomponent.NewPushOptions()}
+func NewUnsetOptions(prjClient project.Client) *UnsetOptions {
+	return &UnsetOptions{
+		PushOptions: clicomponent.NewPushOptions(prjClient),
+	}
 }
 
 // Complete completes UnsetOptions after they've been created
@@ -125,7 +129,9 @@ func (o *UnsetOptions) Run() error {
 
 // NewCmdUnset implements the config unset odo command
 func NewCmdUnset(name, fullName string) *cobra.Command {
-	o := NewUnsetOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewUnsetOptions(project.NewClient(kubclient))
 	configurationUnsetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Unset a value in odo config file",

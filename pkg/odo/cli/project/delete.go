@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -36,6 +37,9 @@ type ProjectDeleteOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	prjClient project.Client
+
 	// Parameters
 	projectName string
 
@@ -45,8 +49,10 @@ type ProjectDeleteOptions struct {
 }
 
 // NewProjectDeleteOptions creates a ProjectDeleteOptions instance
-func NewProjectDeleteOptions() *ProjectDeleteOptions {
-	return &ProjectDeleteOptions{}
+func NewProjectDeleteOptions(prjClient project.Client) *ProjectDeleteOptions {
+	return &ProjectDeleteOptions{
+		prjClient: prjClient,
+	}
 }
 
 // Complete completes ProjectDeleteOptions after they've been created
@@ -59,7 +65,7 @@ func (pdo *ProjectDeleteOptions) Complete(cmdline cmdline.Cmdline, args []string
 // Validate validates the parameters of the ProjectDeleteOptions
 func (pdo *ProjectDeleteOptions) Validate() error {
 	// Validate existence of the project to be deleted
-	isValidProject, err := project.Exists(pdo.Context.KClient, pdo.projectName)
+	isValidProject, err := pdo.prjClient.Exists(pdo.projectName)
 	if kerrors.IsForbidden(err) {
 		return &odoerrors.Unauthorized{}
 	}
@@ -76,7 +82,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	s := &log.Status{}
 
 	// This to set the project in the file and runtime
-	err = project.SetCurrent(pdo.Context.KClient, pdo.projectName)
+	err = pdo.prjClient.SetCurrent(pdo.projectName)
 	if err != nil {
 		return err
 	}
@@ -97,7 +103,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 			defer s.End(false)
 		}
 
-		err := project.Delete(pdo.Context.KClient, pdo.projectName, pdo.waitFlag)
+		err := pdo.prjClient.Delete(pdo.projectName, pdo.waitFlag)
 		if err != nil {
 			return err
 		}
@@ -118,7 +124,9 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 
 // NewCmdProjectDelete creates the project delete command
 func NewCmdProjectDelete(name, fullName string) *cobra.Command {
-	o := NewProjectDeleteOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewProjectDeleteOptions(project.NewClient(kubclient))
 
 	projectDeleteCmd := &cobra.Command{
 		Use:         name,

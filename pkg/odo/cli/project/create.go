@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -35,6 +36,9 @@ type ProjectCreateOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	prjClient project.Client
+
 	// Parameters
 	projectName string
 
@@ -43,8 +47,10 @@ type ProjectCreateOptions struct {
 }
 
 // NewProjectCreateOptions creates a ProjectCreateOptions instance
-func NewProjectCreateOptions() *ProjectCreateOptions {
-	return &ProjectCreateOptions{}
+func NewProjectCreateOptions(prjClient project.Client) *ProjectCreateOptions {
+	return &ProjectCreateOptions{
+		prjClient: prjClient,
+	}
 }
 
 // Complete completes ProjectCreateOptions after they've been created
@@ -77,7 +83,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	}
 
 	// Create the project & end the spinner (if there is any..)
-	err = project.Create(pco.Context.KClient, pco.projectName, pco.waitFlag)
+	err = pco.prjClient.Create(pco.projectName, pco.waitFlag)
 	if err != nil {
 		return err
 	}
@@ -87,7 +93,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	log.Successf(successMessage)
 
 	// Set the current project when created
-	err = project.SetCurrent(pco.Context.KClient, pco.projectName)
+	err = pco.prjClient.SetCurrent(pco.projectName)
 	if err != nil {
 		return err
 	}
@@ -105,7 +111,9 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 
 // NewCmdProjectCreate creates the project create command
 func NewCmdProjectCreate(name, fullName string) *cobra.Command {
-	o := NewProjectCreateOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewProjectCreateOptions(project.NewClient(kubclient))
 
 	projectCreateCmd := &cobra.Command{
 		Use:         name,

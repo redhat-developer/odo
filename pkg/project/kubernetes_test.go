@@ -62,6 +62,7 @@ func TestCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kc := kclient.NewMockClientInterface(ctrl)
+			appClient := NewClient(kc)
 
 			if tt.expectedErr == false {
 				kc.EXPECT().IsProjectSupported().Return(tt.isProjectSupported, tt.isProjectSupportedErr)
@@ -75,7 +76,7 @@ func TestCreate(t *testing.T) {
 				}
 			}
 
-			err := Create(kc, tt.projectName, tt.wait)
+			err := appClient.Create(tt.projectName, tt.wait)
 
 			if err != nil != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
@@ -136,6 +137,7 @@ func TestDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kc := kclient.NewMockClientInterface(ctrl)
+			appClient := NewClient(kc)
 
 			if tt.expectedErr == false {
 				kc.EXPECT().IsProjectSupported().Return(tt.isProjectSupported, tt.isProjectSupportedErr)
@@ -146,7 +148,7 @@ func TestDelete(t *testing.T) {
 				}
 			}
 
-			err := Delete(kc, tt.projectName, tt.wait)
+			err := appClient.Delete(tt.projectName, tt.wait)
 
 			if err != nil != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
@@ -214,6 +216,7 @@ func TestList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kc := kclient.NewMockClientInterface(ctrl)
+			appClient := NewClient(kc)
 
 			kc.EXPECT().GetCurrentNamespace().Times(1)
 
@@ -226,7 +229,7 @@ func TestList(t *testing.T) {
 				}
 			}
 
-			list, err := List(kc)
+			list, err := appClient.List()
 
 			if err != nil != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
@@ -269,6 +272,7 @@ func TestExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kc := kclient.NewMockClientInterface(ctrl)
+			appClient := NewClient(kc)
 
 			if tt.expectedErr == false {
 				kc.EXPECT().IsProjectSupported().Return(tt.isProjectSupported, tt.isProjectSupportedErr)
@@ -279,7 +283,7 @@ func TestExists(t *testing.T) {
 				}
 			}
 
-			_, err := Exists(kc, tt.projectName)
+			_, err := appClient.Exists(tt.projectName)
 
 			if err != nil != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
