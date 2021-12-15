@@ -18,7 +18,7 @@ Use `-f` or `--force` flag to avoid the confirmation questions.
 
 ### Un-deploying Devfile Kubernetes components
 
-To undeploy the Devfile Kubernetes component deployed with `odo deploy` from the cluster, you can execute the `odo delete` command with `--deploy` flag:
+To undeploy the Devfile Kubernetes components deployed with `odo deploy` from the cluster, you can execute the `odo delete` command with `--deploy` flag:
 ```shell
 odo delete --deploy
 ```
