@@ -33,7 +33,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		It("should run odo deploy", func() {
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			By("building and pushing image to registry", func() {
-				Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + commonVar.Context + "/Dockerfile " + commonVar.Context))
+				Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
 				Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 			})
 			By("deploying a deployment with the built image", func() {
