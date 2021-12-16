@@ -413,7 +413,7 @@ var _ = Describe("odo devfile storage command tests", func() {
 			})
 		})
 
-		When("ephemeral is set to false in preference.yamland run odo push", func() {
+		When("ephemeral is set to false in preference.yaml and run odo push", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "ephemeral", "false").ShouldPass()
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
