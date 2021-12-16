@@ -35,6 +35,9 @@ var (
 
 // AddOptions encapsulates the options for the "odo registry add" command
 type AddOptions struct {
+	// Clients
+	prefClient preference.Client
+
 	// Parameters
 	registryName string
 	registryURL  string
@@ -47,8 +50,10 @@ type AddOptions struct {
 }
 
 // NewAddOptions creates a new AddOptions instance
-func NewAddOptions() *AddOptions {
-	return &AddOptions{}
+func NewAddOptions(prefClient preference.Client) *AddOptions {
+	return &AddOptions{
+		prefClient: prefClient,
+	}
 }
 
 // Complete completes AddOptions after they've been created
@@ -79,11 +84,7 @@ func (o *AddOptions) Run() (err error) {
 		isSecure = true
 	}
 
-	cfg, err := preference.New()
-	if err != nil {
-		return errors.Wrap(err, "unable to add registry")
-	}
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, false, isSecure)
+	err = o.prefClient.RegistryHandler(o.operation, o.registryName, o.registryURL, false, isSecure)
 	if err != nil {
 		return err
 	}
@@ -101,7 +102,11 @@ func (o *AddOptions) Run() (err error) {
 
 // NewCmdAdd implements the "odo registry add" command
 func NewCmdAdd(name, fullName string) *cobra.Command {
-	o := NewAddOptions()
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewAddOptions(prefClient)
 	registryAddCmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <registry name> <registry URL>", name),
 		Short:   addLongDesc,

@@ -60,8 +60,9 @@ func GetComponentDir(path string) (string, error) {
 // GetDefaultComponentName generates a unique component name
 // Parameters: desired default component name(w/o prefix) and slice of existing component names
 // Returns: Unique component name and error if any
-func GetDefaultComponentName(componentPath string, componentType string, existingComponentList ComponentList) (string, error) {
+func GetDefaultComponentName(cfg preference.Client, componentPath string, componentType string, existingComponentList ComponentList) (string, error) {
 	var prefix string
+	var err error
 
 	// Get component names from component list
 	var existingComponentNames []string
@@ -69,14 +70,8 @@ func GetDefaultComponentName(componentPath string, componentType string, existin
 		existingComponentNames = append(existingComponentNames, component.Name)
 	}
 
-	// Fetch config
-	cfg, err := preference.New()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
-	}
-
 	// If there's no prefix in config file, or its value is empty string use safe default - the current directory along with component type
-	if cfg.OdoSettings.NamePrefix == nil || *cfg.OdoSettings.NamePrefix == "" {
+	if cfg.NamePrefix() == nil || *cfg.NamePrefix() == "" {
 		prefix, err = GetComponentDir(componentPath)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to generate random component name")
@@ -84,7 +79,7 @@ func GetDefaultComponentName(componentPath string, componentType string, existin
 		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 	} else {
 		// Set the required prefix into componentName
-		prefix = *cfg.OdoSettings.NamePrefix
+		prefix = *cfg.NamePrefix()
 	}
 
 	// Generate unique name for the component using prefix and unique random suffix

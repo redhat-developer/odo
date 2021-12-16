@@ -31,6 +31,9 @@ var (
 
 // DeleteOptions encapsulates the options for the "odo registry delete" command
 type DeleteOptions struct {
+	// Clients
+	prefClient preference.Client
+
 	// Parameters
 	registryName string
 
@@ -43,8 +46,10 @@ type DeleteOptions struct {
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance
-func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{}
+func NewDeleteOptions(prefClient preference.Client) *DeleteOptions {
+	return &DeleteOptions{
+		prefClient: prefClient,
+	}
 }
 
 // Complete completes DeleteOptions after they've been created
@@ -63,15 +68,8 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry delete" command
 func (o *DeleteOptions) Run() (err error) {
-	isSecure, err := registryUtil.IsSecure(o.registryName)
-	if err != nil {
-		return err
-	}
-	cfg, err := preference.New()
-	if err != nil {
-		return errors.Wrap(err, "unable to delete registry")
-	}
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
+	isSecure := registryUtil.IsSecure(o.prefClient, o.registryName)
+	err = o.prefClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
 	if err != nil {
 		return err
 	}
@@ -88,7 +86,11 @@ func (o *DeleteOptions) Run() (err error) {
 
 // NewCmdDelete implements the "odo registry delete" command
 func NewCmdDelete(name, fullName string) *cobra.Command {
-	o := NewDeleteOptions()
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewDeleteOptions(prefClient)
 	registryDeleteCmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <registry name>", name),
 		Short:   deleteLongDesc,

@@ -22,7 +22,7 @@ func isServerUp(server string) bool {
 	ocRequestTimeout := preference.DefaultTimeout * time.Second
 	// checking the value of timeout in config
 	// before proceeding with default timeout
-	cfg, configReadErr := preference.New()
+	cfg, configReadErr := preference.NewClient()
 	if configReadErr != nil {
 		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {

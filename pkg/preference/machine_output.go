@@ -24,57 +24,57 @@ type PreferenceItem struct {
 	Description string      // The description of the preference
 }
 
-func NewPreferenceList(prefInfo PreferenceInfo) PreferenceList {
+func (o *preferenceInfo) NewPreferenceList() PreferenceList {
 	return PreferenceList{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: prefAPIVersion,
 			Kind:       prefKind,
 		},
-		Items: toPreferenceItems(prefInfo),
+		Items: toPreferenceItems(*o),
 	}
 }
 
-func toPreferenceItems(prefInfo PreferenceInfo) []PreferenceItem {
-	odoSettings := prefInfo.OdoSettings
+func toPreferenceItems(prefInfo preferenceInfo) []PreferenceItem {
+	settings := prefInfo.OdoSettings
 	return []PreferenceItem{
 		{
 			Name:        UpdateNotificationSetting,
-			Value:       odoSettings.UpdateNotification,
+			Value:       settings.UpdateNotification,
 			Default:     true,
 			Type:        getType(prefInfo.GetUpdateNotification()), // use the Getter here to determine type
 			Description: UpdateNotificationSettingDescription,
 		},
 		{
 			Name:        NamePrefixSetting,
-			Value:       odoSettings.NamePrefix,
+			Value:       settings.NamePrefix,
 			Default:     "",
 			Type:        getType(prefInfo.GetNamePrefix()),
 			Description: NamePrefixSettingDescription,
 		},
 		{
 			Name:        TimeoutSetting,
-			Value:       odoSettings.Timeout,
+			Value:       settings.Timeout,
 			Default:     DefaultTimeout,
 			Type:        getType(prefInfo.GetTimeout()),
 			Description: TimeoutSettingDescription,
 		},
 		{
 			Name:        BuildTimeoutSetting,
-			Value:       odoSettings.BuildTimeout,
+			Value:       settings.BuildTimeout,
 			Default:     DefaultBuildTimeout,
 			Type:        getType(prefInfo.GetBuildTimeout()),
 			Description: BuildTimeoutSettingDescription,
 		},
 		{
 			Name:        PushTimeoutSetting,
-			Value:       odoSettings.PushTimeout,
+			Value:       settings.PushTimeout,
 			Default:     DefaultPushTimeout,
 			Type:        getType(prefInfo.GetPushTimeout()),
 			Description: PushTimeoutSettingDescription,
 		},
 		{
 			Name:        ConsentTelemetrySetting,
-			Value:       odoSettings.ConsentTelemetry,
+			Value:       settings.ConsentTelemetry,
 			Default:     DefaultConsentTelemetrySetting,
 			Type:        getType(prefInfo.GetConsentTelemetry()),
 			Description: ConsentTelemetryDescription,

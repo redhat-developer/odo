@@ -27,7 +27,7 @@ func TestGetRegistryOptions(t *testing.T) {
 	tests := []struct {
 		testName string
 		consent  string
-		cfg      *preference.PreferenceInfo
+		cfg      preference.Client
 	}{
 		{
 			testName: "Registry options with telemetry consent",
@@ -42,7 +42,7 @@ func TestGetRegistryOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			cfg, err := preference.NewPreferenceInfo()
+			cfg, err := preference.NewClient()
 			if err != nil {
 				t.Error(err)
 			}

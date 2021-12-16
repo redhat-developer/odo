@@ -41,7 +41,7 @@ type Runnable interface {
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	startTime := time.Now()
-	cfg, _ := preference.New()
+	cfg, _ := preference.NewClient()
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
 
 	// Prompt the user to consent for telemetry if a value is not set already

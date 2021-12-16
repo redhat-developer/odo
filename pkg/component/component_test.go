@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"regexp"
 	"testing"
@@ -17,6 +16,7 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -253,27 +253,11 @@ func TestGetDefaultComponentName(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			odoConfigFile, kubeConfigFile, err := testingutil.SetUp(
-				testingutil.ConfigDetails{
-					FileName:      "odo-test-config",
-					Config:        testingutil.FakeOdoConfig("odo-test-config", false, ""),
-					ConfigPathEnv: "GLOBALODOCONFIG",
-				}, testingutil.ConfigDetails{
-					FileName:      "kube-test-config",
-					Config:        testingutil.FakeKubeClientConfig(),
-					ConfigPathEnv: "KUBECONFIG",
-				},
-			)
-			defer testingutil.CleanupEnv([]*os.File{odoConfigFile, kubeConfigFile}, t)
-			if err != nil {
-				t.Errorf("failed to setup test env. Error %v", err)
-			}
+			ctrl := gomock.NewController(t)
+			cfg := preference.NewMockClient(ctrl)
+			cfg.EXPECT().NamePrefix().Return(nil)
 
-			name, err := GetDefaultComponentName(tt.componentPath, tt.componentType, tt.existingComponents)
-			if err != nil {
-				t.Errorf("failed to setup mock environment. Error: %v", err)
-			}
-
+			name, err := GetDefaultComponentName(cfg, tt.componentPath, tt.componentType, tt.existingComponents)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
 			}

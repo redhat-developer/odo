@@ -30,7 +30,7 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 
 	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
 	pushTimeout := preference.DefaultPushTimeout * time.Second
-	cfg, configReadErr := preference.New()
+	cfg, configReadErr := preference.NewClient()
 	if configReadErr != nil {
 		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {

@@ -28,14 +28,14 @@ import (
 func GetDevfileRegistries(registryName string) ([]Registry, error) {
 	var devfileRegistries []Registry
 
-	cfg, err := preference.New()
+	cfg, err := preference.NewClient()
 	if err != nil {
 		return nil, err
 	}
 
 	hasName := len(registryName) != 0
-	if cfg.OdoSettings.RegistryList != nil {
-		registryList := *cfg.OdoSettings.RegistryList
+	if cfg.RegistryList() != nil {
+		registryList := *cfg.RegistryList()
 		// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
 		for i := len(registryList) - 1; i >= 0; i-- {
 			registry := registryList[i]
@@ -119,21 +119,20 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	request := util.HTTPRequestParams{
 		URL: indexLink,
 	}
-	secure, err := registryUtil.IsSecure(registry.Name)
+
+	// TODO(feloy) Get from DI
+	cfg, err := preference.NewClient()
 	if err != nil {
 		return nil, err
 	}
+
+	secure := registryUtil.IsSecure(cfg, registry.Name)
 	if secure {
 		token, e := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 		if e != nil {
 			return nil, errors.Wrap(e, "unable to get secure registry credential from keyring")
 		}
 		request.Token = token
-	}
-
-	cfg, err := preference.New()
-	if err != nil {
-		return nil, err
 	}
 
 	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())

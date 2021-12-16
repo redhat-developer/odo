@@ -299,7 +299,7 @@ func CommonBeforeEach() CommonVar {
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
 	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
-	cfg, _ := preference.New()
+	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
 	SetDefaultDevfileRegistryAsStaging()

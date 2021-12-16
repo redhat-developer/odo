@@ -321,11 +321,13 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			URL: registry.URL + devfileLink,
 		}
 
-		secure, err := registryUtil.IsSecure(registry.Name)
+		// TODO(feloy) Get from DI
+		cfg, err := preference.NewClient()
 		if err != nil {
 			return err
 		}
 
+		secure := registryUtil.IsSecure(cfg, registry.Name)
 		if secure {
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
@@ -335,10 +337,6 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			params.Token = token
 		}
 
-		cfg, err := preference.New()
-		if err != nil {
-			return err
-		}
 		devfileData, err := util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
 		if err != nil {
 			return err
@@ -399,7 +397,15 @@ func createDefaultComponentName(componentType string, sourcePath string) (string
 		return "", err
 	}
 
+	// Fetch config
+	// TODO(feloy) Get from DI
+	cfg, err := preference.NewClient()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to generate random component name")
+	}
+
 	return component.GetDefaultComponentName(
+		cfg,
 		finalSourcePath,
 		componentType,
 		component.ComponentList{},

@@ -188,7 +188,7 @@ func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 
 // HandleEphemeralStorage creates or deletes the ephemeral volume based on the preference setting
 func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string) error {
-	pref, err := preference.New()
+	pref, err := preference.NewClient()
 	if err != nil {
 		return err
 	}
