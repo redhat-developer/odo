@@ -47,7 +47,7 @@ func NewSetOptions(prefClient preference.Client) *SetOptions {
 
 // Complete completes SetOptions after they've been created
 func (o *SetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.paramName = args[0]
+	o.paramName = strings.ToLower(args[0])
 	o.paramValue = args[1]
 	return
 }
@@ -70,7 +70,7 @@ func (o *SetOptions) Run() (err error) {
 		}
 	}
 
-	err = o.prefClient.SetConfiguration(strings.ToLower(o.paramName), o.paramValue)
+	err = o.prefClient.SetConfiguration(o.paramName, o.paramValue)
 	if err != nil {
 		return err
 	}

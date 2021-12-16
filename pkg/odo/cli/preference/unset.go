@@ -47,7 +47,7 @@ func NewUnsetOptions(prefClient preference.Client) *UnsetOptions {
 
 // Complete completes UnsetOptions after they've been created
 func (o *UnsetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.paramName = args[0]
+	o.paramName = strings.ToLower(args[0])
 	return
 }
 
@@ -71,7 +71,7 @@ func (o *UnsetOptions) Run() (err error) {
 		}
 	}
 
-	err = o.prefClient.DeleteConfiguration(strings.ToLower(o.paramName))
+	err = o.prefClient.DeleteConfiguration(o.paramName)
 	if err != nil {
 		return err
 	}
