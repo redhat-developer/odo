@@ -7,9 +7,9 @@
 # 3. The cluster should be in a state where it can be used for testing
 #
 # USAGE:
-# ./check-binary.sh redistributable-binary
+# ./release-bit-verification.sh redistributable-binary
 #
-# Example: ./check-binary.sh ~/Downloads/odo-redistributable-2.4.3-1.el8.x86_64.rpm
+# Example: ./release-bit-verification.sh ~/Downloads/odo-redistributable-2.4.3-1.el8.x86_64.rpm
 #
 
 shout() {
