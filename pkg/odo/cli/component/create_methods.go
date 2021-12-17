@@ -61,17 +61,21 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 		if err != nil {
 			return err
 		}
-	} else if co.KClient != nil {
-		// Get the current project if no --project is passed, but --now is passed
-		componentNamespace = ui.EnterDevfileComponentProject(co.KClient.GetCurrentProjectName())
 	} else {
-		var client kclient.ClientInterface
-		client, err = kclient.New()
-		// Continue if an error is encountered
-		if err == nil && client != nil {
-			// Get the current project if no --project is passed and using offline context
-			componentNamespace = ui.EnterDevfileComponentProject(client.GetCurrentProjectName())
+		var currentNamespace string
+		if co.KClient != nil {
+			// Get the current project if no --project is passed, but --now is passed
+			currentNamespace = co.KClient.GetCurrentProjectName()
+		} else {
+			var client kclient.ClientInterface
+			client, err = kclient.New()
+			// if err != nil, currentNamespace will be an empty string
+			if err == nil && client != nil {
+				// Get the current project if no --project is passed and using offline context
+				currentNamespace = client.GetCurrentProjectName()
+			}
 		}
+		componentNamespace = ui.EnterDevfileComponentProject(currentNamespace)
 	}
 
 	co.devfileMetadata.componentType = componentType
