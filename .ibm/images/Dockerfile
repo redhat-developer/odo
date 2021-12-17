@@ -14,3 +14,5 @@ RUN curl -fsSL https://clis.cloud.ibm.com/install/linux | sh && \
     apt-get update -y && \
     apt-get install -y sshpass && \
     rm -rf /var/lib/apt/lists/*
+
+RUN go get github.com/kadel/odo-robot@965ea0dd848856691bfc76e6824a8b787b950045
