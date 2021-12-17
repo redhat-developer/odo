@@ -5,7 +5,6 @@
 # 1. Redistributable-binary(.rpm) should be passed as the first argument
 # 2. Login to the cluster should be done prior to running this script
 # 3. The cluster should be in a state where it can be used for testing
-# 4.
 #
 # USAGE:
 # ./release-bit-verification.sh redistributable-binary
