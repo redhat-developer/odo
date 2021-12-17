@@ -172,7 +172,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 		if len(args) == 1 {
 			name = args[0]
 		} else {
-			name, err = gatherName(po.Devfile, po.DevfilePath)
+			name, err = GatherName(po.Devfile, po.DevfilePath)
 			if err != nil {
 				return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
 			}

@@ -108,10 +108,10 @@ func retrieveCmdNamespace(cmdline cmdline.Cmdline) (componentNamespace string, e
 	return componentNamespace, nil
 }
 
-// gatherName parses the Devfile and retrieves an appropriate name in two ways.
+// GatherName parses the Devfile and retrieves an appropriate name in two ways.
 // 1. If metadata.name exists, we use it
 // 2. If metadata.name does NOT exist, we use the folder name where the devfile.yaml is located
-func gatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
+func GatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
 
 	metadata := devObj.Data.GetMetadata()
 
