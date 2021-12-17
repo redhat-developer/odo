@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -48,11 +49,13 @@ func TestPush(t *testing.T) {
 		createdItems        []localConfigProvider.LocalStorage
 		deletedItems        []string
 		wantErr             bool
+		wantEphemeralNames  []string
 	}{
 		{
 			name:                "case 1: no storage in both local and cluster",
 			returnedFromLocal:   []localConfigProvider.LocalStorage{},
 			returnedFromCluster: StorageList{},
+			wantEphemeralNames:  []string{},
 		},
 		{
 			name:                "case 2: two persistent storage in local and no on cluster",
@@ -74,6 +77,7 @@ func TestPush(t *testing.T) {
 					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name:              "case 3: 0 persistent storage in local and two on cluster",
@@ -81,8 +85,9 @@ func TestPush(t *testing.T) {
 			returnedFromCluster: StorageList{
 				Items: []Storage{clusterStorage0, clusterStorage1},
 			},
-			createdItems: []localConfigProvider.LocalStorage{},
-			deletedItems: []string{"storage-0", "storage-1"},
+			createdItems:       []localConfigProvider.LocalStorage{},
+			deletedItems:       []string{"storage-0", "storage-1"},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name:              "case 4: same two persistent storage in local and cluster",
@@ -90,8 +95,9 @@ func TestPush(t *testing.T) {
 			returnedFromCluster: StorageList{
 				Items: []Storage{clusterStorage0, clusterStorage1},
 			},
-			createdItems: []localConfigProvider.LocalStorage{},
-			deletedItems: []string{},
+			createdItems:       []localConfigProvider.LocalStorage{},
+			deletedItems:       []string{},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name: "case 5: two persistent storage in both local and cluster but two of them are different and the other two are same",
@@ -119,7 +125,8 @@ func TestPush(t *testing.T) {
 					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
-			deletedItems: []string{clusterStorage1.Name},
+			deletedItems:       []string{clusterStorage1.Name},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name: "case 6: spec mismatch",
@@ -137,9 +144,10 @@ func TestPush(t *testing.T) {
 					clusterStorage1,
 				},
 			},
-			createdItems: []localConfigProvider.LocalStorage{},
-			deletedItems: []string{},
-			wantErr:      true,
+			createdItems:       []localConfigProvider.LocalStorage{},
+			deletedItems:       []string{},
+			wantErr:            true,
+			wantEphemeralNames: []string{},
 		},
 		{
 			name: "case 7: only one PVC created for two storage with same name but on different containers",
@@ -169,6 +177,7 @@ func TestPush(t *testing.T) {
 					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name: "case 8: only path spec mismatch",
@@ -186,6 +195,7 @@ func TestPush(t *testing.T) {
 					clusterStorage1,
 				},
 			},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name:              "case 9: only one PVC deleted for two storage with same name but on different containers",
@@ -196,12 +206,14 @@ func TestPush(t *testing.T) {
 					NewStorageWithContainer("storage-0", "1Gi", "/data", "runtime-1", util.GetBoolPtr(false)),
 				},
 			},
-			deletedItems: []string{"storage-0"},
+			deletedItems:       []string{"storage-0"},
+			wantEphemeralNames: []string{},
 		},
 		{
 			name:                "case 10: one ephemeral storage in local, none in cluster",
 			returnedFromLocal:   []localConfigProvider.LocalStorage{localEphemeralStorage0},
 			returnedFromCluster: StorageList{},
+			wantEphemeralNames:  []string{"ephemeral-storage-0"},
 		},
 		{
 			name:                "case 11: one persistent + one ephemeral storage in local and no on cluster",
@@ -216,6 +228,7 @@ func TestPush(t *testing.T) {
 					Ephemeral: util.GetBoolPtr(false),
 				},
 			},
+			wantEphemeralNames: []string{"ephemeral-storage-0"},
 		},
 	}
 	for _, tt := range tests {
@@ -241,8 +254,16 @@ func TestPush(t *testing.T) {
 				fakeStorageClient.EXPECT().Delete(tt.deletedItems[i]).Return(nil).Times(1)
 			}
 
-			if _, err := Push(fakeStorageClient, fakeLocalConfig); (err != nil) != tt.wantErr {
+			ephemerals, err := Push(fakeStorageClient, fakeLocalConfig)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			ephemeralKeys := make([]string, 0, len(ephemerals))
+			for k := range ephemerals {
+				ephemeralKeys = append(ephemeralKeys, k)
+			}
+			if !reflect.DeepEqual(tt.wantEphemeralNames, ephemeralKeys) {
+				t.Errorf("Expected ephemeral names are %v, got %v\n", tt.wantEphemeralNames, ephemeralKeys)
 			}
 		})
 	}
