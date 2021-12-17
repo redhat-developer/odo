@@ -7,6 +7,8 @@ source .ibm/pipelines/functions.sh
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 ibmcloud ks cluster config --cluster "${IBM_KUBERNETES_ID}" --admin
 
+cleanup_namespaces
+
 (
     set -e
     make install
