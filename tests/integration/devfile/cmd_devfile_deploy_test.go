@@ -30,6 +30,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 			helper.Cmd("odo", "create").ShouldPass()
 		})
+		AfterEach(func() {
+			helper.Cmd("odo", "delete", "-a").ShouldPass()
+		})
 		It("should run odo deploy", func() {
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			By("building and pushing image to registry", func() {

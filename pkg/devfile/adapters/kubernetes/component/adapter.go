@@ -410,7 +410,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
-	err = a.ExecuteDevfileCommand(testCommand, show)
+	err = a.ExecuteDevfileCommand(testCommand, show, false)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
@@ -790,30 +790,25 @@ func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, t
 
 // Deploy executes the 'deploy' command defined in a devfile
 func (a Adapter) Deploy() error {
-	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
-		CommandOptions: parsercommon.CommandOptions{
-			CommandGroupKind: devfilev1.DeployCommandGroupKind,
-		},
-	})
+	deployCmd, err := a.getDeployCommand()
 	if err != nil {
-		return nil
+		return err
 	}
 
-	if len(commands) == 0 {
-		return errors.New("error deploying, no default deploy command found in devfile")
-	}
-
-	if len(commands) > 1 {
-		return errors.New("more than one default deploy command found in devfile, should not happen")
-	}
-
-	deployCmd := commands[0]
-
-	return a.ExecuteDevfileCommand(deployCmd, true)
+	return a.ExecuteDevfileCommand(deployCmd, true, false)
 }
 
-// ExecuteDevfileCommand executes the devfile command
-func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
+// UnDeploy reverses the effect of the 'deploy' command defined in a devfile
+func (a Adapter) UnDeploy() error {
+	deployCmd, err := a.getDeployCommand()
+	if err != nil {
+		return err
+	}
+	return a.ExecuteDevfileCommand(deployCmd, true, true)
+}
+
+// ExecuteDevfileCommand executes the devfile command; if unexecute is set to true, it reverses the effect of Execute
+func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show, unexecute bool) error {
 	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
@@ -823,14 +818,55 @@ func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) err
 	if err != nil {
 		return err
 	}
+	if unexecute {
+		return c.UnExecute()
+	}
 	return c.Execute(show)
 }
 
 // ApplyComponent 'applies' a devfile component
 func (a Adapter) ApplyComponent(componentName string) error {
-	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+	cmp, err := a.getApplyComponent(componentName)
 	if err != nil {
 		return err
+	}
+
+	return cmp.Apply(a.Devfile, a.Context)
+}
+
+// UnApplyComponent un-'applies' a devfile component
+func (a Adapter) UnApplyComponent(componentName string) error {
+	cmp, err := a.getApplyComponent(componentName)
+	if err != nil {
+		return err
+	}
+	return cmp.UnApply(a.Context)
+}
+
+// getDeployCommand validates the deploy command and returns it
+func (a Adapter) getDeployCommand() (devfilev1.Command, error) {
+	deployGroupCmd, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
+		CommandOptions: parsercommon.CommandOptions{
+			CommandGroupKind: devfilev1.DeployCommandGroupKind,
+		},
+	})
+	if err != nil {
+		return devfilev1.Command{}, err
+	}
+	if len(deployGroupCmd) == 0 {
+		return devfilev1.Command{}, errors.New("error deploying, no default deploy command found in devfile")
+	}
+	if len(deployGroupCmd) > 1 {
+		return devfilev1.Command{}, errors.New("more than one default deploy command found in devfile, should not happen")
+	}
+	return deployGroupCmd[0], nil
+}
+
+// getApplyComponent returns the 'Apply' command's component(kubernetes/image)
+func (a Adapter) getApplyComponent(componentName string) (componentToApply, error) {
+	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return nil, err
 	}
 	var component devfilev1.Component
 	var found bool
@@ -841,13 +877,12 @@ func (a Adapter) ApplyComponent(componentName string) error {
 		}
 	}
 	if !found {
-		return fmt.Errorf("component %q not found", componentName)
+		return nil, fmt.Errorf("component %q not found", componentName)
 	}
 
 	cmp, err := createComponent(a, component)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return cmp.Apply(a.Devfile, a.Context)
+	return cmp, nil
 }

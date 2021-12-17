@@ -16,6 +16,7 @@ import (
 // command encapsulates a command meant to be executed either directly or as part of a composite
 type command interface {
 	Execute(show bool) error
+	UnExecute() error
 }
 
 // New returns a new command implementation based on the specified devfile command and the known commands
@@ -150,6 +151,11 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand devf
 // GetTestCommand iterates through the components in the devfile and returns the test command
 func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand devfilev1.Command, err error) {
 	return getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
+}
+
+// GetDeployCommand iterates through the components in the devfile and returns the deploy command
+func GetDeployCommand(data data.DevfileData, devfileDeployCmd string) (deployCommand devfilev1.Command, err error) {
+	return getCommand(data, devfileDeployCmd, devfilev1.DeployCommandGroupKind)
 }
 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,

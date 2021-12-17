@@ -67,3 +67,7 @@ func (s supervisorCommand) Execute(show bool) error {
 	}
 	return nil
 }
+
+func (s supervisorCommand) UnExecute() error {
+	return nil
+}

@@ -57,6 +57,7 @@ type DeleteOptions struct {
 	allFlag     bool
 	waitFlag    bool
 	showLogFlag bool
+	deployFlag  bool
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
@@ -81,15 +82,32 @@ func (do *DeleteOptions) Validate() error {
 func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
-	if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
-		err = do.DevfileComponentDelete()
-		if err != nil {
-			log.Errorf("error occurred while deleting component, cause: %v", err)
+
+	// odo delete --deploy || odo delete --all
+	if do.deployFlag || do.allFlag {
+		if do.forceFlag || ui.Proceed("Are you sure you want to undeploy?") {
+			err = do.DevfileUnDeploy()
+			if err != nil {
+				log.Errorf("error occurred while undeploying, cause: %v", err)
+			}
+		} else {
+			log.Error("Aborting the un-deployment")
 		}
-	} else {
-		log.Error("Aborting deletion of component")
 	}
 
+	// odo delete || odo delete --all
+	if !do.deployFlag || do.allFlag {
+		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+			err = do.DevfileComponentDelete()
+			if err != nil {
+				log.Errorf("error occurred while deleting component, cause: %v", err)
+			}
+		} else {
+			log.Error("Aborting deletion of component")
+		}
+	}
+
+	// Delete the configuration files
 	if do.allFlag {
 		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
@@ -196,7 +214,6 @@ func (do *DeleteOptions) Run() (err error) {
 			log.Error("Aborting deletion of devfile.yaml file")
 		}
 	}
-
 	return nil
 }
 
@@ -220,6 +237,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	componentDeleteCmd.Flags().BoolVarP(&do.forceFlag, "force", "f", false, "Delete component without prompting")
 	componentDeleteCmd.Flags().BoolVarP(&do.allFlag, "all", "a", false, "Delete component and local config")
 	componentDeleteCmd.Flags().BoolVarP(&do.waitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
+	componentDeleteCmd.Flags().BoolVarP(&do.deployFlag, "deploy", "d", false, "Undeploy the Devfile Kubernetes Component deployed via `odo deploy`")
 
 	componentDeleteCmd.Flags().BoolVar(&do.showLogFlag, "show-log", false, "If enabled, logs will be shown when deleted")
 

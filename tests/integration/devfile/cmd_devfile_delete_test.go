@@ -46,6 +46,37 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should delete the component", func() {
 			helper.Cmd("odo", "delete", "-f").ShouldPass()
 		})
+		When("odo deploy is run", func() {
+			BeforeEach(func() {
+				// requires a different devfile
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+			})
+			It("should successfully delete the deploy resources with --deploy flag", func() {
+				stdOut := helper.Cmd("odo", "delete", "--deploy", "-f").ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring("Un-deploying the Kubernetes Deployment"))
+			})
+			It("should successfully delete the deploy resources", func() {
+				stdOut := helper.Cmd("odo", "delete", "-a", "-f").ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring("Un-deploying the Kubernetes Deployment"))
+			})
+			It("should successfully delete the component, but the deployed resources should remain intact", func() {
+				stdOut := helper.Cmd("odo", "delete", "-f").ShouldPass().Out()
+				Expect(stdOut).ToNot(ContainSubstring("Un-deploying the Kubernetes"))
+			})
+			When("outside the context directory", func() {
+				BeforeEach(func() {
+					helper.Chdir(commonVar.OriginalWorkingDirectory)
+				})
+				AfterEach(func() {
+					helper.Chdir(commonVar.Context)
+				})
+				It("should successfully undeploy", func() {
+					helper.Cmd("odo", "delete", "--deploy", "-f", "--context", commonVar.Context).ShouldPass()
+				})
+			})
+
+		})
 
 		When("the component is pushed", func() {
 			BeforeEach(func() {

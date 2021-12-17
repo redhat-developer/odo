@@ -46,6 +46,10 @@ func (k Adapter) Deploy() error {
 	return k.componentAdapter.Deploy()
 }
 
+func (k Adapter) UnDeploy() error {
+	return k.componentAdapter.UnDeploy()
+}
+
 // CheckSupervisordCommandStatus calls the component adapter's CheckSupervisordCommandStatus
 func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
 	err := k.componentAdapter.CheckSupervisordCommandStatus(command)
@@ -114,4 +118,8 @@ func (k Adapter) StartSupervisordCtlStatusWatch() {
 
 func (k Adapter) ApplyComponent(component string) error {
 	return k.componentAdapter.ApplyComponent(component)
+}
+
+func (k Adapter) UnApplyComponent(component string) error {
+	return k.componentAdapter.UnApplyComponent(component)
 }

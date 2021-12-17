@@ -546,6 +546,7 @@ func isOperatorBackedService(client kclient.ClientInterface, u unstructured.Unst
 	return false, nil
 }
 
+// GetK8sComponentAsUnstructured parses the Inlined/URI K8s of the devfile K8s component
 func GetK8sComponentAsUnstructured(component *devfile.KubernetesComponent, context string, fs devfilefs.Filesystem) (unstructured.Unstructured, error) {
 	strCRD := component.Inlined
 	var err error

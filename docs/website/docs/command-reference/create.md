@@ -3,7 +3,7 @@ title: odo create
 sidebar_position: 3
 ---
 
-odo uses the (_devfile_)[https://devfile.io] to store the configuration of and describe the resources like storage, services, etc. of a component. The _odo create_ command allows you to generate this file.
+odo uses the [_devfile_](https://devfile.io) to store the configuration of and describe the resources like storage, services, etc. of a component. The _odo create_ command allows you to generate this file.
 
 ## Creating a component
 
@@ -17,7 +17,7 @@ Here `nodejs` is the type of the component and `mynodejs` is the name of the com
 
 > Note: for a list of all the supported component types, run `odo catalog list components`.
 
-If your source code exists outside of the current directory, the `--context` flag can be used to specify the path. For example, if the source for the nodejs component was in a folder called `node-backend` relative to the current working directory, you could run:
+If your source code exists outside the current directory, the `--context` flag can be used to specify the path. For example, if the source for the nodejs component was in a folder called `node-backend` relative to the current working directory, you could run:
 
 ```
 odo create nodejs mynodejs --context ./node-backend

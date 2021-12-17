@@ -166,6 +166,27 @@ func (lo LogOptions) DevfileComponentLog() error {
 	return util.DisplayLog(lo.followFlag, rd, os.Stdout, componentName, -1)
 }
 
+// DevfileUnDeploy undeploys the devfile kubernetes components
+func (do *DeleteOptions) DevfileUnDeploy() error {
+	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
+	if err != nil {
+		return err
+	}
+
+	componentName := do.EnvSpecificInfo.GetName()
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: do.KClient.GetCurrentNamespace(),
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.contextFlag, do.GetApplication(), devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	return devfileHandler.UnDeploy()
+}
+
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
