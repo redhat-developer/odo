@@ -5,6 +5,7 @@
 # 1. Redistributable-binary(.rpm) should be passed as the first argument
 # 2. Login to the cluster should be done prior to running this script
 # 3. The cluster should be in a state where it can be used for testing
+# 4.
 #
 # USAGE:
 # ./release-bit-verification.sh redistributable-binary
@@ -13,52 +14,54 @@
 #
 
 shout() {
-  echo "--------------------------------------------------------------------------"
+    echo "--------------------------------$1------------------------------------------"
 }
 # Check SHASUM for all the binary files and there should be no difference
 
-# Create a Temp directory 
-WORKING_DIR=`mktemp -d`
+# Create a Temp directory
+WORKING_DIR=$(mktemp -d)
+shout "WORKING_DIR=$WORKING_DIR"
 
-# Extract from rpm file 
+# Extract from rpm file
 rpm2cpio ${1} | cpio -idmvD $WORKING_DIR
 pushd $WORKING_DIR/usr/share/odo-redistributable/
 
 # Check sha256sum for all the files
 while IFS= read -r line; do
     read -r SHA FILE <<<"$line"
-    read -r SHATOCHECK FILE <<< `sha256sum $FILE`
+    read -r SHATOCHECK FILE <<<$(sha256sum $FILE)
     if [[ $SHA == $SHATOCHECK ]]; then
         # Print if the file is correct
-        printf '%-50s\U0002705\n' $FILE 
+        printf '%-50s\U0002705\n' $FILE
     fi
-done < SHA256_SUM
+done <SHA256_SUM
 
 shout
 
 # Copy binary for testing purpose
-OS=`uname -s`
-ARCH=`uname -m`
+OS=$(uname -s)
+ARCH=$(uname -m)
 
 if [[ $OS == "Linux" ]]; then
     if [[ $ARCH == "x86_64" ]]; then
-        cp ./odo-linux-amd64 $GOBIN/odo
+        cp ./odo-linux-amd64 odo
+        PATH=$(pwd):$PATH
     fi
 fi
 
-# Check odo verion and if it is correct 
-VERSION=`cat VERSION`
-ODOVERSIONCHECK=`odo version`
-if [[ "$ODOVERSIONCHECK" == *"$VERSION"*  ]]; then
+# Check odo verion and if it is correct
+VERSION=$(cat VERSION)
+ODOVERSIONCHECK=$(odo version)
+if [[ "$ODOVERSIONCHECK" == *"$VERSION"* ]]; then
     echo "odo binary is installed correctly"
 fi
 
 #clone repo for testing and checkout release tag
 pushd $WORKING_DIR
-if [  -d "odo" ]; then
+if [ -d "odo" ]; then
     rm -rf odo
 fi
-git clone https://github.com/redhat-developer/odo.git  && cd $WORKING_DIR/odo && git checkout "v$VERSION"
+git clone https://github.com/redhat-developer/odo.git && cd $WORKING_DIR/odo && git checkout "v$VERSION"
 
 #Run tests
 make test-integration-devfile
