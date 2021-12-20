@@ -94,10 +94,10 @@ var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for 
 var RegistryCacheTimeDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from Devfile registry (Default: %d)", DefaultRegistryCacheTime)
 
 // EphemeralDescription adds a description for EphemeralSourceVolume
-var EphemeralDescription = fmt.Sprintf("If true odo will create a emptyDir volume to store source code (Default: %t)", DefaultEphemeralSettings)
+var EphemeralDescription = fmt.Sprintf("If true, odo will create an emptyDir volume to store source code (Default: %t)", DefaultEphemeralSettings)
 
 //TelemetryConsentDescription adds a description for TelemetryConsentSetting
-var ConsentTelemetryDescription = fmt.Sprintf("If true odo will collect telemetry for the user's odo usage (Default: %t)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection", DefaultConsentTelemetrySetting)
+var ConsentTelemetryDescription = fmt.Sprintf("If true, odo will collect telemetry for the user's odo usage (Default: %t)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection", DefaultConsentTelemetrySetting)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -309,11 +309,8 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		}
 		registryList = append(registryList, registry)
 
-	case "update":
-		return nil, errors.Errorf("failed to update registry: registry %q doesn't exist", registryName)
-
-	case "delete":
-		return nil, errors.Errorf("failed to delete registry: registry %q doesn't exist", registryName)
+	case "update", "delete":
+		return nil, errors.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
 	}
 
 	return registryList, nil
