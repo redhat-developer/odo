@@ -17,11 +17,6 @@ EOF
 }
 
 if [ $KUBERNETES == "true" ]; then
-  LATEST_RELEASE=$(curl -L -s -H 'Accept: application/json' https://github.com/operator-framework/operator-lifecycle-manager/releases/latest)
-  OLM_VERSION=$(echo $LATEST_RELEASE | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/')
-  export OLM_VERSION=${OLM_VERSION:-"v0.17.0"}
-  # Enable OLM for running operator tests
-  curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$OLM_VERSION/install.sh | bash -s $OLM_VERSION
   # install "redis-oprator" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog source from "olm" namespace
   install_redis_operator kubectl operators operatorhubio-catalog olm
 elif [ $(uname -m) == "s390x" ]; then
