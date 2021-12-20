@@ -31,7 +31,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/sync"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -436,7 +435,8 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	err = storagepkg.Push(storageClient, &ei)
+	// From devfile info, create PVCs and return ephemeral storages
+	ephemerals, err := storagepkg.Push(storageClient, &ei)
 	if err != nil {
 		return err
 	}
@@ -478,44 +478,34 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 
 	initContainers = append(initContainers, kclient.GetBootstrapSupervisordInitContainer())
 
-	var odoSourcePVCName string
-
 	// list all the pvcs for the component
 	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
 	if err != nil {
 		return err
 	}
 
-	volumeNameToVolInfo := make(map[string]storage.VolumeInfo)
-	for _, pvc := range pvcs {
-		// check if the pvc is in the terminating state
-		if pvc.DeletionTimestamp != nil {
-			continue
-		}
-
-		generatedVolumeName, e := storage.GenerateVolumeNameFromPVC(pvc.Name)
-		if e != nil {
-			return errors.Wrapf(e, "Unable to generate volume name from pvc name")
-		}
-
-		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {
-			odoSourcePVCName = pvc.Name
-			continue
-		}
-
-		volumeNameToVolInfo[pvc.Labels[storagelabels.StorageLabel]] = storage.VolumeInfo{
-			PVCName:    pvc.Name,
-			VolumeName: generatedVolumeName,
-		}
-	}
-
-	// Get PVC volumes and Volume Mounts
-	pvcVolumes, err := storage.GetVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
+	odoSourcePVCName, volumeNameToVolInfo, err := storage.GetVolumeInfos(pvcs)
 	if err != nil {
 		return err
 	}
 
+	var allVolumes []corev1.Volume
+
+	// Get PVC volumes and Volume Mounts
+	pvcVolumes, err := storage.GetPersistentVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	allVolumes = append(allVolumes, pvcVolumes...)
+
+	ephemeralVolumes, err := storage.GetEphemeralVolumesAndVolumeMounts(a.Devfile, containers, initContainers, ephemerals, parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	allVolumes = append(allVolumes, ephemeralVolumes...)
+
 	odoMandatoryVolumes := utils.GetOdoContainerVolumes(odoSourcePVCName)
+	allVolumes = append(allVolumes, odoMandatoryVolumes...)
 
 	selectorLabels := map[string]string{
 		"component": componentName,
@@ -531,7 +521,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		ObjectMeta:        deploymentObjectMeta,
 		InitContainers:    initContainers,
 		Containers:        containers,
-		Volumes:           append(pvcVolumes, odoMandatoryVolumes...),
+		Volumes:           allVolumes,
 		PodSelectorLabels: selectorLabels,
 	}
 

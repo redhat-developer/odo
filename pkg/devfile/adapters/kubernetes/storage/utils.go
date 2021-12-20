@@ -6,14 +6,17 @@ import (
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/storage"
+	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,10 +29,37 @@ type VolumeInfo struct {
 	VolumeName string
 }
 
-// GetVolumesAndVolumeMounts gets the PVC volumes and updates the containers with the volume mounts.
+// GetVolumeInfos returns the PVC name attached to the `odo-projects` directory and a map of other PVCs
+func GetVolumeInfos(pvcs []corev1.PersistentVolumeClaim) (odoSourcePVCName string, infos map[string]VolumeInfo, _ error) {
+	infos = make(map[string]VolumeInfo)
+	for _, pvc := range pvcs {
+		// check if the pvc is in the terminating state
+		if pvc.DeletionTimestamp != nil {
+			continue
+		}
+
+		generatedVolumeName, e := generateVolumeNameFromPVC(pvc.Name)
+		if e != nil {
+			return "", nil, errors.Wrapf(e, "Unable to generate volume name from pvc name")
+		}
+
+		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {
+			odoSourcePVCName = pvc.Name
+			continue
+		}
+
+		infos[pvc.Labels[storagelabels.StorageLabel]] = VolumeInfo{
+			PVCName:    pvc.Name,
+			VolumeName: generatedVolumeName,
+		}
+	}
+	return odoSourcePVCName, infos, nil
+}
+
+// GetPersistentVolumesAndVolumeMounts gets the PVC volumes and updates the containers with the volume mounts.
 // volumeNameToVolInfo is a map of the devfile volume name to the volume info containing the pvc name and the volume name.
 // To be moved to devfile/library.
-func GetVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, containers []corev1.Container, initContainers []corev1.Container, volumeNameToVolInfo map[string]VolumeInfo, options parsercommon.DevfileOptions) ([]corev1.Volume, error) {
+func GetPersistentVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, containers []corev1.Container, initContainers []corev1.Container, volumeNameToVolInfo map[string]VolumeInfo, options parsercommon.DevfileOptions) ([]corev1.Volume, error) {
 
 	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
 	if err != nil {
@@ -55,8 +85,35 @@ func GetVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, containers [
 	return pvcVols, nil
 }
 
+func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, containers []corev1.Container, initContainers []corev1.Container, ephemerals map[string]storage.Storage, options parsercommon.DevfileOptions) ([]corev1.Volume, error) {
+	containerComponents, err := devfileObj.Data.GetDevfileContainerComponents(options)
+	if err != nil {
+		return nil, err
+	}
+	var emptydirVols []corev1.Volume
+	for volName, volInfo := range ephemerals {
+		emptyDir, err := getEmptyDir(volInfo.Name, volInfo.Spec.Size)
+		if err != nil {
+			return nil, err
+		}
+		emptydirVols = append(emptydirVols, emptyDir)
+
+		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
+		containerNameToMountPaths := make(map[string][]string)
+		for _, containerComp := range containerComponents {
+			for _, volumeMount := range containerComp.Container.VolumeMounts {
+				if volName == volumeMount.Name {
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], envinfo.GetVolumeMountPath(volumeMount))
+				}
+			}
+		}
+
+		addVolumeMountToContainers(containers, initContainers, volInfo.Name, containerNameToMountPaths)
+	}
+	return emptydirVols, nil
+}
+
 // getPVC gets a pvc type volume with the given volume name and pvc name.
-// To be moved to devfile/library.
 func getPVC(volumeName, pvcName string) corev1.Volume {
 
 	return corev1.Volume{
@@ -67,6 +124,24 @@ func getPVC(volumeName, pvcName string) corev1.Volume {
 			},
 		},
 	}
+}
+
+// getEmptyDir gets an emptyDir type volume with the given volume name and size.
+// size should be parseable as a Kubernetes `Quantity` or an error will be returned
+func getEmptyDir(volumeName string, size string) (corev1.Volume, error) {
+
+	emptyDir := &corev1.EmptyDirVolumeSource{}
+	qty, err := resource.ParseQuantity(size)
+	if err != nil {
+		return corev1.Volume{}, err
+	}
+	emptyDir.SizeLimit = &qty
+	return corev1.Volume{
+		Name: volumeName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: emptyDir,
+		},
+	}, nil
 }
 
 // addVolumeMountToContainers adds the Volume Mounts in containerNameToMountPaths to the containers for a given pvc and volumeName
@@ -102,8 +177,8 @@ func addVolumeMountToContainers(containers []corev1.Container, initContainers []
 	}
 }
 
-// GenerateVolumeNameFromPVC generates a volume name based on the pvc name
-func GenerateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
+// generateVolumeNameFromPVC generates a volume name based on the pvc name
+func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 	volumeName, err = util.NamespaceOpenShiftObject(pvc, "vol")
 	if err != nil {
 		return "", err

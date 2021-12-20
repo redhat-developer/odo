@@ -24,6 +24,9 @@ var (
 	storageCreateExample   = ktemplates.Examples(`
 	# Create storage of size 1Gb to a component
   %[1]s mystorage --path=/opt/app-root/src/storage/ --size=1Gi
+
+	# Create storage with ephemeral volume of size 2Gi to a component
+  %[1]s mystorage --path=/opt/app-root/src/storage/ --size=2Gi --ephemeral
 	`)
 )
 
@@ -39,6 +42,7 @@ type CreateOptions struct {
 	pathFlag      string
 	contextFlag   string
 	containerFlag string
+	ephemeralFlag bool
 
 	storage localConfigProvider.LocalStorage
 }
@@ -61,9 +65,14 @@ func (o *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []st
 		o.storageName = fmt.Sprintf("%s-%s", o.Context.LocalConfigProvider.GetName(), util.GenerateRandomString(4))
 	}
 
+	var eph *bool
+	if o.ephemeralFlag {
+		eph = &o.ephemeralFlag
+	}
 	o.storage = localConfigProvider.LocalStorage{
 		Name:      o.storageName,
 		Size:      o.sizeFlag,
+		Ephemeral: eph,
 		Path:      o.pathFlag,
 		Container: o.containerFlag,
 	}
@@ -87,7 +96,7 @@ func (o *CreateOptions) Run() (err error) {
 	}
 
 	if log.IsJSON() {
-		storageResultMachineReadable := storage.NewStorage(o.storage.Name, o.storage.Size, o.storage.Path)
+		storageResultMachineReadable := storage.NewStorage(o.storage.Name, o.storage.Size, o.storage.Path, nil)
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
 		log.Successf("Added storage %v to %v", o.storageName, o.Context.LocalConfigProvider.GetName())
@@ -115,6 +124,7 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 	storageCreateCmd.Flags().StringVar(&o.sizeFlag, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.pathFlag, "path", "", "Path to mount the storage on")
 	storageCreateCmd.Flags().StringVar(&o.containerFlag, "container", "", "Name of container to attach the storage to in devfile")
+	storageCreateCmd.Flags().BoolVar(&o.ephemeralFlag, "ephemeral", false, "Set volume as ephemeral")
 
 	odoutil.AddContextFlag(storageCreateCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)

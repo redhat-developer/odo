@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"path/filepath"
+	"sort"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -35,6 +36,11 @@ var _ = Describe("odo devfile storage command tests", func() {
 
 		It("should throw error if no storage is present", func() {
 			helper.Cmd("odo", "storage", "delete", helper.RandString(5), "--context", commonVar.Context, "-f").ShouldFail()
+		})
+
+		It("should fail if trying to create an ephemeral storage with devfile 2.0.0", func() {
+			stderr := helper.Cmd("odo", "storage", "create", "--ephemeral", "--context", commonVar.Context).ShouldFail().Err()
+			Expect(stderr).To(ContainSubstring(`Version of devfile is "2.0.0", should be at least "2.1.0" to use --ephemeral flag`))
 		})
 
 		When("ephemeral is set to true in preference.yaml and doing odo push", func() {
@@ -380,6 +386,53 @@ var _ = Describe("odo devfile storage command tests", func() {
 						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 					})
 				})
+			})
+		})
+	})
+
+	When("creating a nodejs component with devfile v2.1.0 and two storages, one persistent and one ephemeral", func() {
+
+		BeforeEach(func() {
+			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-2.1.0.yaml")).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+
+			helper.Cmd("odo", "storage", "create", "ephemeral-storage", "--ephemeral", "--context", commonVar.Context).ShouldPass()
+			helper.Cmd("odo", "storage", "create", "persistent-storage", "--context", commonVar.Context).ShouldPass()
+		})
+
+		When("ephemeral is set to true in preference.yaml and run odo push", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "preference", "set", "ephemeral", "true").ShouldPass()
+				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+			})
+
+			It("should create only one PVC", func() {
+				pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+				Expect(len(pvcs)).To(Equal(1))
+				Expect(pvcs[0]).To(ContainSubstring("persistent-storage"))
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", `jsonpath='{.spec.volumes[?(@.name=="ephemeral-storage")]}'`).Out.Contents()
+				Expect(string(bufferOutput)).To(ContainSubstring("emptyDir"))
+				bufferOutput = commonVar.CliRunner.Run("get", "pods", podName, "-o", `jsonpath='{.spec.volumes[?(@.name=="odo-projects")]}'`).Out.Contents()
+				Expect(string(bufferOutput)).To(ContainSubstring("emptyDir"))
+			})
+		})
+
+		When("ephemeral is set to false in preference.yaml and run odo push", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "preference", "set", "ephemeral", "false").ShouldPass()
+				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
+			})
+
+			It("should create only two PVCs (one for odo-project volume, one for persistent volume)", func() {
+				pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+				Expect(len(pvcs)).To(Equal(2))
+				sort.Strings(pvcs)
+				Expect(pvcs[0]).To(ContainSubstring("odo-projects"))
+				Expect(pvcs[1]).To(ContainSubstring("persistent-storage"))
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", `jsonpath='{.spec.volumes[?(@.name=="ephemeral-storage")]}'`).Out.Contents()
+				Expect(string(bufferOutput)).To(ContainSubstring("emptyDir"))
 			})
 		})
 	})

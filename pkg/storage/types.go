@@ -32,6 +32,8 @@ type StorageSpec struct {
 	Size string `json:"size,omitempty"`
 	// if path is empty, it indicates that the storage is not mounted in any component
 	Path string `json:"path,omitempty"`
+	// indicates if storage should be ephemeral, if nil the default behaviour will be used
+	Ephemeral *bool `json:"ephemeral,omitempty"`
 
 	ContainerName string `json:"containerName,omitempty"`
 }
@@ -57,7 +59,7 @@ func NewStorageList(items []Storage) StorageList {
 
 // NewStorage returns an instance of Storage
 // storagePath indicates the path to which the storage is mounted to, "" if not mounted
-func NewStorage(storageName, storageSize, storagePath string) Storage {
+func NewStorage(storageName, storageSize, storagePath string, ephemeral *bool) Storage {
 	return Storage{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       StorageKind,
@@ -65,16 +67,17 @@ func NewStorage(storageName, storageSize, storagePath string) Storage {
 		},
 		ObjectMeta: metav1.ObjectMeta{Name: storageName},
 		Spec: StorageSpec{
-			Size: storageSize,
-			Path: storagePath,
+			Size:      storageSize,
+			Path:      storagePath,
+			Ephemeral: ephemeral,
 		},
 	}
 }
 
 // NewStorageWithContainer returns an instance of Storage with container specified
 // storagePath indicates the path to which the storage is mounted to, "" if not mounted
-func NewStorageWithContainer(storageName, storageSize, storagePath string, container string) Storage {
-	storage := NewStorage(storageName, storageSize, storagePath)
+func NewStorageWithContainer(storageName, storageSize, storagePath string, container string, ephemeral *bool) Storage {
+	storage := NewStorage(storageName, storageSize, storagePath, ephemeral)
 	storage.Spec.ContainerName = container
 	return storage
 }

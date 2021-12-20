@@ -65,61 +65,67 @@ func NewClient(options ClientOptions) Client {
 	}
 }
 
-// Push creates and deletes the required Storage
+// Push creates and deletes the required persistent storages and returns the list of ephemeral storages
 // it compares the local storage against the storage on the cluster
-func Push(client Client, configProvider localConfigProvider.LocalConfigProvider) error {
+func Push(client Client, configProvider localConfigProvider.LocalConfigProvider) (ephemerals map[string]Storage, _ error) {
 	// list all the storage in the cluster
 	storageClusterList := StorageList{}
 
 	storageClusterList, err := client.ListFromCluster()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	storageClusterNames := make(map[string]Storage)
 	for _, storage := range storageClusterList.Items {
 		storageClusterNames[storage.Name] = storage
 	}
 
-	// list all the storage in the config
-	storageConfigNames := make(map[string]Storage)
+	// list the persistent storages in the config
+	persistentConfigNames := make(map[string]Storage)
+	// list the ephemeral storages
+	ephemeralConfigNames := make(map[string]Storage)
 
 	localStorage, err := configProvider.ListStorage()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, storage := range ConvertListLocalToMachine(localStorage).Items {
-		storageConfigNames[storage.Name] = storage
+		if storage.Spec.Ephemeral == nil || storage.Spec.Ephemeral != nil && !*storage.Spec.Ephemeral {
+			persistentConfigNames[storage.Name] = storage
+		} else {
+			ephemeralConfigNames[storage.Name] = storage
+		}
 	}
 
 	// find storage to delete
 	for storageName, storage := range storageClusterNames {
-		val, ok := storageConfigNames[storageName]
+		val, ok := persistentConfigNames[storageName]
 		if !ok {
 			// delete the pvc
 			err = client.Delete(storage.Name)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			log.Successf("Deleted storage %v from %v", storage.Name, configProvider.GetName())
 			continue
 		} else if storage.Name == val.Name {
 			if val.Spec.Size != storage.Spec.Size {
-				return errors.Errorf("config mismatch for storage with the same name %s", storage.Name)
+				return nil, errors.Errorf("config mismatch for storage with the same name %s", storage.Name)
 			}
 		}
 	}
 
 	// find storage to create
-	for storageName, storage := range storageConfigNames {
+	for storageName, storage := range persistentConfigNames {
 		_, ok := storageClusterNames[storageName]
 		if ok {
 			continue
 		}
 		if e := client.Create(storage); e != nil {
-			return e
+			return nil, e
 		}
 		log.Successf("Added storage %v to %v", storage.Name, configProvider.GetName())
 	}
 
-	return err
+	return ephemeralConfigNames, nil
 }

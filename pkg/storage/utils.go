@@ -49,7 +49,7 @@ func ConvertListLocalToMachine(storageListConfig []localConfigProvider.LocalStor
 	var storageListLocal []Storage
 
 	for _, storeLocal := range storageListConfig {
-		s := NewStorage(storeLocal.Name, storeLocal.Size, storeLocal.Path)
+		s := NewStorage(storeLocal.Name, storeLocal.Size, storeLocal.Path, storeLocal.Ephemeral)
 		s.Spec.ContainerName = storeLocal.Container
 		storageListLocal = append(storageListLocal, s)
 	}

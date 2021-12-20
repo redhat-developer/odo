@@ -161,7 +161,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-				storage = append(storage, NewStorageWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName))
+				storage = append(storage, NewStorageWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName, nil))
 			}
 		}
 		if !found {
