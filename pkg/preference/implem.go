@@ -120,13 +120,6 @@ var (
 	lowerCaseParameters = util.GetLowerCaseParameters(GetSupportedParameters())
 )
 
-// preferenceInfo wraps the preference and provides helpers to
-// serialize it.
-type preferenceInfo struct {
-	Filename   string `yaml:"FileName,omitempty"`
-	Preference `yaml:",omitempty"`
-}
-
 // odoSettings holds all odo specific configurations
 type odoSettings struct {
 	// Controls if an update notification is shown or not
@@ -170,6 +163,13 @@ type Preference struct {
 
 	// Odo settings holds the odo specific global settings
 	OdoSettings odoSettings `yaml:"OdoSettings,omitempty"`
+}
+
+// preferenceInfo wraps the preference and provides helpers to
+// serialize it.
+type preferenceInfo struct {
+	Filename   string `yaml:"FileName,omitempty"`
+	Preference `yaml:",omitempty"`
 }
 
 func getPreferenceFile() (string, error) {
