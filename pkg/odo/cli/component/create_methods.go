@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -61,8 +62,20 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 			return err
 		}
 	} else {
-		// if the user is logged in or if we have cluster information, display the default project
-		componentNamespace = ui.EnterDevfileComponentProject(co.KClient.GetCurrentProjectName())
+		var currentNamespace string
+		if co.KClient != nil {
+			// Get the current project if no --project is passed, but --now is passed
+			currentNamespace = co.KClient.GetCurrentProjectName()
+		} else {
+			var client kclient.ClientInterface
+			client, err = kclient.New()
+			// if err != nil, currentNamespace will be an empty string
+			if err == nil && client != nil {
+				// Get the current project if no --project is passed and using offline context
+				currentNamespace = client.GetCurrentProjectName()
+			}
+		}
+		componentNamespace = ui.EnterDevfileComponentProject(currentNamespace)
 	}
 
 	co.devfileMetadata.componentType = componentType
