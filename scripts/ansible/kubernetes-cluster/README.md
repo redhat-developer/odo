@@ -107,6 +107,14 @@ ansible-playbook destroy.yml -e name_prefix=...
 
 This ansible playbook deploys operators on a Kubernetes cluster. The cluster should be running the Operator Lifecycle Manager ([OLM](https://olm.operatorframework.io/)), either natively for an OpenShift cluster, or by installing it on a Kubernetes cluster.
 
+To install OLM on a Kubernetes cluster go to the ([OLM releases page](https://github.com/operator-framework/operator-lifecycle-manager/releases/)), the latest version is displayed at the top, execute the commands as described under the "Scripted" section. At the time this document was written the latest version was v0.19.1:
+
+```
+curl -L https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.19.1/install.sh -o install.sh
+chmod +x install.sh
+./install.sh v0.19.1
+```
+
 
 ### Running
 
