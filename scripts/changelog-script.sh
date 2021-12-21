@@ -48,7 +48,7 @@ echo ""
 
 $RUN_GITHUB_CHANGELOG_GENERATOR \
 --max-issues 500 \
---user openshift \
+--user redhat-developer \
 --project odo \
 --no-issues \
 -t $GITHUB_TOKEN \
