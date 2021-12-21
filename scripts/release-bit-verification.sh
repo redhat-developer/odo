@@ -20,6 +20,7 @@ shout() {
 # Create a Temp directory
 WORKING_DIR=$(mktemp -d)
 shout "WORKING_DIR=$WORKING_DIR"
+export REPO_URL=${REPO_URL:-"https://github.com/redhat-developer/odo.git"}
 
 # Extract from rpm file
 rpm2cpio ${1} | cpio -idmvD $WORKING_DIR
@@ -60,7 +61,7 @@ pushd $WORKING_DIR
 if [ -d "odo" ]; then
     rm -rf odo
 fi
-git clone https://github.com/redhat-developer/odo.git && cd $WORKING_DIR/odo && git checkout "v$VERSION"
+git clone $REPO_URL odo && cd $WORKING_DIR/odo && git checkout "v$VERSION"
 
 #Run tests
 make test-integration-devfile
