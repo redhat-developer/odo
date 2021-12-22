@@ -54,6 +54,9 @@ VERSION=$(cat VERSION)
 ODOVERSIONCHECK=$(odo version)
 if [[ "$ODOVERSIONCHECK" == *"$VERSION"* ]]; then
     echo "odo binary is installed correctly"
+else 
+    echo "odo binary is not installed correctly"
+    exit 1
 fi
 
 #clone repo for testing and checkout release tag
