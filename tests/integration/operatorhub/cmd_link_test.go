@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -28,9 +27,6 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 	Context("Operators are installed in the cluster", func() {
 
-		var redisOperator string
-		var redisCluster string
-
 		BeforeEach(func() {
 			// wait till odo can see that all operators installed by setup script in the namespace
 			odoArgs := []string{"catalog", "list", "services"}
@@ -42,9 +38,6 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			}
 
 			commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
-			list := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
-			redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(list)
-			redisCluster = fmt.Sprintf("%s/Redis", redisOperator)
 		})
 
 		When("a component and a service are deployed", func() {
@@ -59,9 +52,9 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 				helper.Cmd("odo", "create", componentName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 				helper.Cmd("odo", "config", "set", "Memory", "300M", "-f", "--context", commonVar.Context).ShouldPass()
 
-				serviceName = "service" + helper.RandString(6)
+				serviceName = "redis"
 				svcFullName = strings.Join([]string{"Redis", serviceName}, "/")
-				helper.Cmd("odo", "service", "create", redisCluster, serviceName, "--context", commonVar.Context).ShouldPass()
+				helper.Cmd("odo", "service", "create", "--from-file", helper.GetExamplePath("operators", "redis.yaml"), "--context", commonVar.Context).ShouldPass()
 
 				helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 				name := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
@@ -156,7 +149,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 					content, err := ioutil.ReadFile(devfilePath)
 					Expect(err).To(BeNil())
-					matchInOutput := []string{"inlined", "Redis", "redis", "ServiceBinding"}
+					matchInOutput := []string{"inlined", "Redis", "ServiceBinding"}
 					helper.DontMatchAllInOutput(string(content), matchInOutput)
 				})
 
@@ -258,7 +251,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 
 			When("a link is created and custom binding data is being injected with --map", func() {
 				var imageMapping string
-				var imageMappingValue = "image=quay.io/opstree/redis:v6.2.5"
+				var imageMappingValue = "image=quay.io/opstree/redis:v6.2"
 
 				BeforeEach(func() {
 					imageMapping = fmt.Sprintf("image={{ .%s.spec.kubernetesConfig.image }}", serviceName)
@@ -293,7 +286,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 						helper.Cmd("odo", "link", svcFullName, "--bind-as-files", "--context", commonVar.Context, "--map", "key=value", "--map", imageMapping).ShouldPass()
 						helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 						// change the imageMappingValue variable here because we're going to "cat" the file (named after our key) content (contains our value as content)
-						imageMappingValue = "quay.io/opstree/redis:v6.2.5"
+						imageMappingValue = "quay.io/opstree/redis:v6.2"
 					})
 
 					It("should have created the mappings correctly", func() {

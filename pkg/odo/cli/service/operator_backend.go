@@ -114,6 +114,7 @@ func (b *OperatorBackend) ValidateServiceCreate(o *CreateOptions) error {
 
 		// CRD is valid. We can use it further to create a service from it.
 		b.CustomResourceDefinition = u.Object
+		b.CustomResource = b.kind
 
 		// Validate spec
 		hasCR, cr := o.KClient.CheckCustomResourceInCSV(b.kind, &csv)
