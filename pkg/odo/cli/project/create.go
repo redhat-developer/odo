@@ -48,7 +48,7 @@ func NewProjectCreateOptions() *ProjectCreateOptions {
 }
 
 // Complete completes ProjectCreateOptions after they've been created
-func (pco *ProjectCreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (pco *ProjectCreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	pco.projectName = args[0]
 	pco.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {

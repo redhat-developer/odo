@@ -65,7 +65,7 @@ func NewWatchOptions() *WatchOptions {
 }
 
 // Complete completes watch args
-func (wo *WatchOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (wo *WatchOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	wo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(wo.contextFlag))
 	if err != nil {
 		return err

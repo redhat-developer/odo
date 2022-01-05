@@ -119,7 +119,7 @@ func NewCreateOptions() *CreateOptions {
 	}
 }
 
-func (co *CreateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	// GETTERS
 	// Get context
 	co.Context, err = getContext(co.nowFlag, cmdline)

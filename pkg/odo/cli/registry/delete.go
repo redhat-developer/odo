@@ -48,7 +48,7 @@ func NewDeleteOptions() *DeleteOptions {
 }
 
 // Complete completes DeleteOptions after they've been created
-func (o *DeleteOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *DeleteOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "delete"
 	o.registryName = args[0]
 	o.registryURL = ""

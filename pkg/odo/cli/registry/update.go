@@ -49,7 +49,7 @@ func NewUpdateOptions() *UpdateOptions {
 }
 
 // Complete completes UpdateOptions after they've been created
-func (o *UpdateOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *UpdateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "update"
 	o.registryName = args[0]
 	o.registryURL = args[1]

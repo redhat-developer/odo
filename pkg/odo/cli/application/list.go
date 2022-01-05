@@ -38,7 +38,7 @@ func NewListOptions() *ListOptions {
 }
 
 // Complete completes ListOptions after they've been created
-func (o *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return
 }

@@ -53,7 +53,7 @@ func NewUnsetOptions() *UnsetOptions {
 }
 
 // Complete completes UnsetOptions after they've been created
-func (o *UnsetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *UnsetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")

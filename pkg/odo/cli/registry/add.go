@@ -52,7 +52,7 @@ func NewAddOptions() *AddOptions {
 }
 
 // Complete completes AddOptions after they've been created
-func (o *AddOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *AddOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "add"
 	o.registryName = args[0]
 	o.registryURL = args[1]

@@ -62,8 +62,8 @@ func (o *commonLinkOptions) getLinkType() string {
 }
 
 // Complete completes LinkOptions after they've been created
-func (o *commonLinkOptions) complete(name string, cmdline cmdline.Cmdline, args []string, context string) (err error) {
-	o.operationName = name
+func (o *commonLinkOptions) complete(cmdline cmdline.Cmdline, args []string, context string) (err error) {
+	o.operationName = cmdline.GetName()
 	o.suppliedName = args[0]
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(context))

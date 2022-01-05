@@ -41,7 +41,7 @@ func NewLogOptions() *LogOptions {
 }
 
 // Complete completes log args
-func (lo *LogOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (lo *LogOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	lo.ComponentOptions.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(lo.contextFlag))
 	return err
 }

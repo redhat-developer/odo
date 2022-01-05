@@ -47,7 +47,7 @@ func NewLoginOptions() *LoginOptions {
 }
 
 // Complete completes LoginOptions after they've been created
-func (o *LoginOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *LoginOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	if len(args) == 1 {
 		o.server = args[0]
 	}

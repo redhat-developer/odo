@@ -39,7 +39,7 @@ func NewServiceListOptions() *ServiceListOptions {
 }
 
 // Complete completes ServiceListOptions after they've been created
-func (o *ServiceListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ServiceListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err

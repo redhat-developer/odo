@@ -51,7 +51,7 @@ func NewStatusOptions() *StatusOptions {
 }
 
 // Complete completes status args
-func (so *StatusOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (so *StatusOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	so.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(so.contextFlag))
 	if err != nil {
 		return err

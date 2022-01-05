@@ -59,7 +59,7 @@ func NewSetOptions() *SetOptions {
 }
 
 // Complete completes SetOptions after they've been created
-func (o *SetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *SetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")
