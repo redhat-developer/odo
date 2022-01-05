@@ -345,3 +345,7 @@ func (kubectl KubectlRunner) GetVolumeNamesFromDeployment(componentName, appName
 func (kubectl KubectlRunner) addConfigMapForCleanup(projectName string) {
 	Cmd(kubectl.path, "create", "configmap", "config-map-for-cleanup", "--from-literal", "type=testing", "--from-literal", "team=odo", "-n", projectName).ShouldPass()
 }
+
+func (kubectl KubectlRunner) ScalePodToZero(componentName, appName string) {
+	Cmd(kubectl.path, "scale", "deploy", strings.Join([]string{componentName, appName}, "-"), "--replicas=0").ShouldPass()
+}
