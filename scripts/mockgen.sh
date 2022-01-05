@@ -26,3 +26,11 @@ mockgen -source=pkg/devfile/image/image.go \
 mockgen -source=pkg/odo/cmdline/cmdline.go \
     -package cmdline \
     -destination pkg/odo/cmdline/mock.go
+
+mockgen -source=pkg/application/application.go \
+    -package application \
+    -destination pkg/application/mock.go
+
+mockgen -source=pkg/project/project.go \
+    -package project \
+    -destination pkg/project/mock.go

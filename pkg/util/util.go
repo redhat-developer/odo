@@ -91,7 +91,13 @@ type DownloadParams struct {
 func ConvertLabelsToSelector(labels map[string]string) string {
 	var selector string
 	isFirst := true
-	for k, v := range labels {
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := labels[k]
 		if isFirst {
 			isFirst = false
 			if v == "" {
@@ -694,6 +700,7 @@ func RemoveDuplicates(s []string) []string {
 	for item := range m {
 		result = append(result, item)
 	}
+	sort.Strings(result)
 	return result
 }
 

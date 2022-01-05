@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -36,6 +37,9 @@ type ProjectSetOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	prjClient project.Client
+
 	// Parameters
 	projectName string
 
@@ -44,8 +48,10 @@ type ProjectSetOptions struct {
 }
 
 // NewProjectSetOptions creates a ProjectSetOptions instance
-func NewProjectSetOptions() *ProjectSetOptions {
-	return &ProjectSetOptions{}
+func NewProjectSetOptions(prjClient project.Client) *ProjectSetOptions {
+	return &ProjectSetOptions{
+		prjClient: prjClient,
+	}
 }
 
 // Complete completes ProjectSetOptions after they've been created
@@ -64,7 +70,7 @@ func (pso *ProjectSetOptions) Complete(cmdline cmdline.Cmdline, args []string) (
 // Validate validates the parameters of the ProjectSetOptions
 func (pso *ProjectSetOptions) Validate() (err error) {
 
-	exists, err := project.Exists(pso.Context.KClient, pso.projectName)
+	exists, err := pso.prjClient.Exists(pso.projectName)
 	if kerrors.IsForbidden(err) {
 		return &odoerrors.Unauthorized{}
 	}
@@ -78,7 +84,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 // Run runs the project set command
 func (pso *ProjectSetOptions) Run() (err error) {
 	current := pso.GetProject()
-	err = project.SetCurrent(pso.Context.KClient, pso.projectName)
+	err = pso.prjClient.SetCurrent(pso.projectName)
 	if err != nil {
 		return err
 	}
@@ -96,7 +102,9 @@ func (pso *ProjectSetOptions) Run() (err error) {
 
 // NewCmdProjectSet creates the project set command
 func NewCmdProjectSet(name, fullName string) *cobra.Command {
-	o := NewProjectSetOptions()
+	// The error is not handled at this point, it will be handled during Context creation
+	kubclient, _ := kclient.New()
+	o := NewProjectSetOptions(project.NewClient(kubclient))
 
 	projectSetCmd := &cobra.Command{
 		Use:     name,

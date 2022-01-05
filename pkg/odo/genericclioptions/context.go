@@ -42,7 +42,7 @@ type internalCxt struct {
 	component string
 	// componentContext is the value passed with the `--context` flag
 	componentContext string
-	// outputFlag is the value passed with the `--output` flag
+	// outputFlag is the value passed with the `-o` flag
 	outputFlag string
 	// The path of the detected devfile
 	devfilePath string
@@ -200,6 +200,10 @@ func (o *Context) GetApplication() string {
 
 func (o *Context) GetOutputFlag() string {
 	return o.outputFlag
+}
+
+func (o *Context) IsJSON() bool {
+	return o.outputFlag == "json"
 }
 
 func (o *Context) GetComponentContext() string {

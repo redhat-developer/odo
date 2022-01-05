@@ -3,15 +3,11 @@ package application
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/spf13/cobra"
 )
 
 // RecommendedCommandName is the recommended app command name
@@ -49,39 +45,4 @@ func NewCmdApplication(name, fullName string) *cobra.Command {
 func AddApplicationFlag(cmd *cobra.Command) {
 	cmd.Flags().String(util.ApplicationFlagName, "", "Application, defaults to active application")
 	completion.RegisterCommandFlagHandler(cmd, "app", completion.AppCompletionHandler)
-}
-
-// printAppInfo will print things which will be deleted
-func printAppInfo(client kclient.ClientInterface, kClient kclient.ClientInterface, appName string, projectName string) error {
-	var selector string
-	if appName != "" {
-		selector = applabels.GetSelector(appName)
-	}
-	componentList, err := component.List(client, selector)
-	if err != nil {
-		return errors.Wrap(err, "failed to get Component list")
-	}
-
-	if len(componentList.Items) != 0 {
-		log.Info("This application has following components that will be deleted")
-		for _, currentComponent := range componentList.Items {
-			log.Info("component named", currentComponent.Name)
-
-			if len(currentComponent.Spec.URL) != 0 {
-				log.Info("This component has following urls that will be deleted with component")
-				for _, u := range currentComponent.Spec.URLSpec {
-					log.Info("URL named", u.GetName(), "with host", u.Spec.Host, "having protocol", u.Spec.Protocol, "at port", u.Spec.Port)
-				}
-			}
-
-			if len(currentComponent.Spec.Storage) != 0 {
-				log.Info("The component has following storages which will be deleted with the component")
-				for _, storage := range currentComponent.Spec.StorageSpec {
-					store := storage
-					log.Info("Storage named", store.GetName(), "of size", store.Spec.Size)
-				}
-			}
-		}
-	}
-	return nil
 }

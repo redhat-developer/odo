@@ -1,25 +1,25 @@
 package kclient
 
 import (
+	reflect "reflect"
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/pkg/errors"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
+
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
-
-	"github.com/pkg/errors"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -312,5 +312,49 @@ func TestDeleteDeployment(t *testing.T) {
 				t.Errorf("DeleteDeployment() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestGetDeploymentLabelValues(t *testing.T) {
+	fkclient, fkclientset := FakeNew()
+	fkclient.Namespace = "default"
+	fkclientset.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+		depList := appsv1.DeploymentList{
+			Items: []appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"a-selector": "sel-value",
+							"a-label":    "a-value",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"a-selector": "sel-value-2",
+							"a-label":    "a-value-2",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"other-selector": "sel-value",
+							"a-label":        "another-value",
+						},
+					},
+				},
+			},
+		}
+		return true, &depList, nil
+	})
+	result, err := fkclient.GetDeploymentLabelValues("a-label", "a-selector")
+	expected := []string{"a-value", "a-value-2"}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+	if err != nil {
+		t.Errorf("Expected no error, got %s", err)
 	}
 }

@@ -19,18 +19,27 @@ import (
 
 // CommonPushOptions has data needed for all pushes
 type CommonPushOptions struct {
+	// Context
+	*genericclioptions.Context
+
+	// Clients
+	prjClient project.Client
+
+	//Flags
 	// TODO(feloy) Fixme
 	showFlag         bool //nolint:structcheck
 	componentContext string
 	configFlag       bool
 	sourceFlag       bool
-	EnvSpecificInfo  *envinfo.EnvSpecificInfo
-	*genericclioptions.Context
+
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // NewCommonPushOptions instantiates a commonPushOptions object
-func NewCommonPushOptions() *CommonPushOptions {
-	return &CommonPushOptions{}
+func NewCommonPushOptions(prjClient project.Client) *CommonPushOptions {
+	return &CommonPushOptions{
+		prjClient: prjClient,
+	}
 }
 
 //InitEnvInfoFromContext initializes envinfo from the context
@@ -60,12 +69,12 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist
-	isPrjExists, err := project.Exists(cpo.Context.KClient, prjName)
+	isPrjExists, err := cpo.prjClient.Exists(prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
-		err = project.Create(cpo.Context.KClient, prjName, true)
+		err = cpo.prjClient.Create(prjName, true)
 		if err != nil {
 			return errors.Wrapf(
 				err,
