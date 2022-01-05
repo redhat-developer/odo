@@ -42,7 +42,7 @@ func NewSetOptions() *SetOptions {
 }
 
 // Complete completes SetOptions after they've been created
-func (o *SetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *SetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = args[0]
 	o.paramValue = args[1]
 	return

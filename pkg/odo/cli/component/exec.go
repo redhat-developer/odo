@@ -41,7 +41,7 @@ func NewExecOptions() *ExecOptions {
 }
 
 // Complete completes exec args
-func (eo *ExecOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (eo *ExecOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	// gets the command args passed after the dash i.e `--`
 	eo.command, err = cmdline.GetArgsAfterDashes(args)
 	if err != nil || len(eo.command) <= 0 {

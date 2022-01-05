@@ -56,7 +56,7 @@ func NewListOptions() *ListOptions {
 }
 
 // Complete completes log args
-func (lo *ListOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
 	lo.devfilePath = location.DevfileLocation(lo.contextFlag)
 

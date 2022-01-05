@@ -30,7 +30,7 @@ func NewLogoutOptions() *LogoutOptions {
 }
 
 // Complete completes LogoutOptions after they've been created
-func (o *LogoutOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *LogoutOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	return
 }

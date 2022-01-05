@@ -49,7 +49,7 @@ func NewTestOptions() *TestOptions {
 }
 
 // Complete completes TestOptions after they've been created
-func (to *TestOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (to *TestOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	to.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(to.contextFlag))
 	return
 }

@@ -39,7 +39,7 @@ func NewGetOptions() *GetOptions {
 }
 
 // Complete completes get args
-func (gto *GetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (gto *GetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	gto.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err

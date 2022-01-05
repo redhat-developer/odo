@@ -49,7 +49,7 @@ func NewProjectSetOptions() *ProjectSetOptions {
 }
 
 // Complete completes ProjectSetOptions after they've been created
-func (pso *ProjectSetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (pso *ProjectSetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	pso.projectName = args[0]
 	pso.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {

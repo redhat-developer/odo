@@ -41,7 +41,7 @@ func NewUnsetOptions() *UnsetOptions {
 }
 
 // Complete completes UnsetOptions after they've been created
-func (o *UnsetOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *UnsetOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.paramName = args[0]
 	return
 }

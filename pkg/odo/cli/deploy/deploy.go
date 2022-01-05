@@ -36,7 +36,7 @@ func NewDeployOptions() *DeployOptions {
 }
 
 // Complete DeployOptions after they've been created
-func (o *DeployOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err

@@ -33,7 +33,7 @@ import (
 )
 
 type Runnable interface {
-	Complete(name string, cmdline cmdline.Cmdline, args []string) error
+	Complete(cmdline cmdline.Cmdline, args []string) error
 	Validate() error
 	Run() error
 }
@@ -83,7 +83,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	util.LogErrorAndExit(checkConflictingFlags(cmd, args), "")
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
-	err = o.Complete(cmd.Name(), cmdline.NewCobra(cmd), args)
+	err = o.Complete(cmdline.NewCobra(cmd), args)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
 	}

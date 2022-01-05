@@ -23,7 +23,7 @@ func NewTelemetryOptions() *TelemetryOptions {
 	return &TelemetryOptions{}
 }
 
-func (o *TelemetryOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *TelemetryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	err = json.Unmarshal([]byte(args[0]), &o.telemetryData)
 	return err
 }

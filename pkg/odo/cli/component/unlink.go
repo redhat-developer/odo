@@ -53,8 +53,8 @@ func NewUnlinkOptions() *UnlinkOptions {
 }
 
 // Complete completes UnlinkOptions after they've been created
-func (o *UnlinkOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
-	err = o.complete(name, cmdline, args, o.contextFlag)
+func (o *UnlinkOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+	err = o.complete(cmdline, args, o.contextFlag)
 	if err != nil {
 		return err
 	}

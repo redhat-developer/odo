@@ -94,7 +94,7 @@ func (po *PushOptions) GetComponentContext() string {
 }
 
 // Complete completes push args
-func (po *PushOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (po *PushOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	po.CompleteDevfilePath()
 	devfileExists := util.CheckPathExists(po.DevfilePath)
 

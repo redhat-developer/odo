@@ -42,7 +42,7 @@ func NewViewOptions() *ViewOptions {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ViewOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "failed to load environment file")

@@ -40,7 +40,7 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 // Complete completes DescribeOptions after they've been created
-func (o *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *DescribeOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		return err

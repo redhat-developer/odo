@@ -30,7 +30,7 @@ func NewViewOptions() *ViewOptions {
 }
 
 // Complete completes ViewOptions after they've been created
-func (o *ViewOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ViewOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	return
 }
 

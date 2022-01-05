@@ -21,7 +21,7 @@ type ComponentOptions struct {
 }
 
 // Complete completes component options
-func (co *ComponentOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (co *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
 		co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).IsOffline())

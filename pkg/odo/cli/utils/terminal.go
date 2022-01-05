@@ -74,7 +74,7 @@ func NewTerminalOptions() *TerminalOptions {
 }
 
 // Complete completes TerminalOptions after they've been created
-func (o *TerminalOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *TerminalOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.shellType = args[0]
 	return
 }

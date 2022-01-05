@@ -35,7 +35,7 @@ func NewListComponentsOptions() *ListComponentsOptions {
 }
 
 // Complete completes ListComponentsOptions after they've been created
-func (o *ListComponentsOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (o *ListComponentsOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 	if err != nil {
 		return err

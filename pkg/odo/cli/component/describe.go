@@ -44,14 +44,14 @@ func NewDescribeOptions() *DescribeOptions {
 }
 
 // Complete completes describe args
-func (do *DescribeOptions) Complete(name string, cmdline cmdline.Cmdline, args []string) (err error) {
+func (do *DescribeOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	if do.contextFlag == "" {
 		do.contextFlag, err = os.Getwd()
 		if err != nil {
 			return err
 		}
 	}
-	err = do.ComponentOptions.Complete(name, cmdline, args)
+	err = do.ComponentOptions.Complete(cmdline, args)
 	if err != nil {
 		return err
 	}
