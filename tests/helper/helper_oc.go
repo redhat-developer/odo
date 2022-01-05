@@ -563,3 +563,7 @@ func (oc OcRunner) addConfigMapForCleanup(projectName string) {
 func (oc OcRunner) Logout() {
 	Cmd(oc.path, "logout")
 }
+
+func (oc OcRunner) ScalePodToZero(componentName, appName string) {
+	Cmd(oc.path, "scale", "deploy", strings.Join([]string{componentName, appName}, "-"), "--replicas=0").ShouldPass()
+}
