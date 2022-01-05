@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -157,7 +156,7 @@ func TestDescribe(t *testing.T) {
 			opts := NewDescribeOptions(appClient)
 
 			/* COMPLETE */
-			err := opts.Complete("describe", cmdline, tt.args)
+			err := opts.Complete(cmdline, tt.args)
 
 			if err != nil {
 				return
@@ -186,7 +185,7 @@ func TestDescribe(t *testing.T) {
 			}
 
 			/* Mocks for Run */
-			kclient.EXPECT().GetDeploymentFromSelector(fmt.Sprintf("app=%s,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=%s", tt.wantAppName, tt.wantAppName)).AnyTimes()
+			appClient.EXPECT().ComponentList(tt.wantAppName)
 
 			/* RUN */
 			err = opts.Run()

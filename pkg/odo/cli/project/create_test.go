@@ -92,7 +92,7 @@ func TestCreate(t *testing.T) {
 			opts := NewProjectCreateOptions(prjClient)
 
 			/* COMPLETE */
-			err = opts.Complete("create", cmdline, tt.args)
+			err = opts.Complete(cmdline, tt.args)
 
 			if err != nil {
 				t.Errorf("Expected nil error, got %s", err)

@@ -6,8 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/application"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -79,20 +77,19 @@ func (o *DescribeOptions) Run() (err error) {
 		return nil
 	}
 
-	selector := applabels.GetSelector(o.appName)
-	componentList, err := component.List(o.KClient, selector)
+	componentList, err := o.appClient.ComponentList(o.appName)
 	if err != nil {
 		return err
 	}
 
-	if len(componentList.Items) == 0 {
+	if len(componentList) == 0 {
 		fmt.Printf("Application %s has no components or services deployed.", o.appName)
 		return
 	}
 
 	fmt.Printf("Application Name: %s has %v component(s):\n--------------------------------------\n",
-		o.appName, len(componentList.Items))
-	for _, currentComponent := range componentList.Items {
+		o.appName, len(componentList))
+	for _, currentComponent := range componentList {
 		err := util.PrintComponentInfo(o.KClient, currentComponent.Name, currentComponent, o.appName, o.GetProject())
 		if err != nil {
 			return err
@@ -105,6 +102,7 @@ func (o *DescribeOptions) Run() (err error) {
 
 // NewCmdDescribe implements the odo command.
 func NewCmdDescribe(name, fullName string) *cobra.Command {
+	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
 	o := NewDescribeOptions(application.NewClient(kubclient))
 	command := &cobra.Command{

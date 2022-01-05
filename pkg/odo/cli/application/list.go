@@ -108,6 +108,7 @@ func (o *ListOptions) Run() (err error) {
 
 // NewCmdList implements the odo command.
 func NewCmdList(name, fullName string) *cobra.Command {
+	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
 	o := NewListOptions(application.NewClient(kubclient))
 	command := &cobra.Command{

@@ -5,9 +5,8 @@ import (
 )
 
 const (
-	appAPIVersion = "odo.dev/v1alpha1"
-	appKind       = "Application"
-	appList       = "List"
+	appKind = "Application"
+	appList = "List"
 )
 
 // Application

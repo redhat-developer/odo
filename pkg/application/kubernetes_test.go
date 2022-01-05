@@ -11,6 +11,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/unions"
 	"github.com/redhat-developer/odo/pkg/version"
@@ -191,7 +192,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 			want: App{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       appKind,
-					APIVersion: appAPIVersion,
+					APIVersion: machineoutput.APIVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "myapp",
@@ -300,7 +301,7 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 					{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       appKind,
-							APIVersion: appAPIVersion,
+							APIVersion: machineoutput.APIVersion,
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "myapp",
@@ -314,14 +315,14 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 			want: AppList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       appList,
-					APIVersion: appAPIVersion,
+					APIVersion: machineoutput.APIVersion,
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []App{
 					{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       appKind,
-							APIVersion: appAPIVersion,
+							APIVersion: machineoutput.APIVersion,
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "myapp",

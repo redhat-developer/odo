@@ -98,7 +98,7 @@ func (o *DeleteOptions) Run() (err error) {
 	return nil
 }
 
-// printAppInfo will print things which will be deleted
+// printAppInfo will print information about the app requested for deletion
 func printAppInfo(appClient application.Client, appName string, projectName string) error {
 	components, err := appClient.ComponentList(appName)
 	if err != nil {

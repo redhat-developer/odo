@@ -111,7 +111,7 @@ func TestList(t *testing.T) {
 			opts := NewListOptions(appClient)
 
 			/* COMPLETE */
-			err := opts.Complete("list", cmdline, []string{})
+			err := opts.Complete(cmdline, []string{})
 
 			if err != nil {
 				return

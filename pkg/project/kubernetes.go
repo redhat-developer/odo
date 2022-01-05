@@ -29,7 +29,7 @@ func (o kubernetesClient) SetCurrent(projectName string) error {
 // (which will trigger the creation of a namespace),
 // or by creating directly a `namespace` resource.
 // With the `wait` flag, the function will wait for the `default` service account
-// to be created in the namespace before to return.
+// to be created in the namespace before returning
 func (o kubernetesClient) Create(projectName string, wait bool) error {
 	if projectName == "" {
 		return errors.Errorf("no project name given")
@@ -39,17 +39,15 @@ func (o kubernetesClient) Create(projectName string, wait bool) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to detect project support")
 	}
+
 	if projectSupport {
 		err = o.client.CreateNewProject(projectName, wait)
-		if err != nil {
-			return errors.Wrap(err, "unable to create new project")
-		}
 
 	} else {
 		_, err = o.client.CreateNamespace(projectName)
-		if err != nil {
-			return errors.Wrap(err, "unable to create new project")
-		}
+	}
+	if err != nil {
+		return errors.Wrap(err, "unable to create new project")
 	}
 
 	if wait {
@@ -74,16 +72,12 @@ func (o kubernetesClient) Delete(projectName string, wait bool) error {
 	}
 
 	if projectSupport {
-		// Delete the requested project
-		err := o.client.DeleteProject(projectName, wait)
-		if err != nil {
-			return errors.Wrapf(err, "unable to delete project %s", projectName)
-		}
+		err = o.client.DeleteProject(projectName, wait)
 	} else {
-		err := o.client.DeleteNamespace(projectName, wait)
-		if err != nil {
-			return errors.Wrapf(err, "unable to delete namespace %s", projectName)
-		}
+		err = o.client.DeleteNamespace(projectName, wait)
+	}
+	if err != nil {
+		return errors.Wrapf(err, "unable to delete project %q", projectName)
 	}
 	return nil
 }
@@ -100,14 +94,11 @@ func (o kubernetesClient) List() (ProjectList, error) {
 	var allProjects []string
 	if projectSupport {
 		allProjects, err = o.client.ListProjectNames()
-		if err != nil {
-			return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
-		}
 	} else {
 		allProjects, err = o.client.GetNamespaces()
-		if err != nil {
-			return ProjectList{}, errors.Wrap(err, "cannot get all the namespaces")
-		}
+	}
+	if err != nil {
+		return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
 	}
 
 	projects := make([]Project, len(allProjects))

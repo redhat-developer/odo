@@ -6,6 +6,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +57,7 @@ func (o kubernetesClient) Exists(app string) (bool, error) {
 
 // Delete the given application by deleting deployments and services instances belonging to this application
 func (o kubernetesClient) Delete(name string) error {
-	klog.V(4).Infof("Deleting application %s", name)
+	klog.V(4).Infof("Deleting application %q", name)
 
 	labels := applabels.GetLabels(name, false)
 
@@ -85,7 +86,7 @@ func (o kubernetesClient) GetMachineReadableFormat(appName string, projectName s
 	appDef := App{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       appKind,
-			APIVersion: appAPIVersion,
+			APIVersion: machineoutput.APIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appName,
@@ -103,7 +104,7 @@ func (o kubernetesClient) GetMachineReadableFormatForList(apps []App) AppList {
 	return AppList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       appList,
-			APIVersion: appAPIVersion,
+			APIVersion: machineoutput.APIVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    apps,

@@ -160,7 +160,7 @@ func TestDelete(t *testing.T) {
 			opts.forceFlag = true
 
 			/* COMPLETE */
-			err := opts.Complete("delete", cmdline, tt.args)
+			err := opts.Complete(cmdline, tt.args)
 
 			if err != nil {
 				t.Errorf("Expected nil error, got %s", err)
