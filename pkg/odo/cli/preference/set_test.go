@@ -17,7 +17,7 @@ func TestSet(t *testing.T) {
 	cmdline := cmdline.NewMockCmdline(ctrl)
 
 	args := []string{"Arg1", "Arg2"}
-	err := opts.Complete("set", cmdline, args)
+	err := opts.Complete(cmdline, args)
 	if err != nil {
 		t.Errorf("Expected nil error, got %s", err)
 		return

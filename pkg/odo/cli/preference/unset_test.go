@@ -38,7 +38,7 @@ func TestUnsetForce(t *testing.T) {
 			cmdline := cmdline.NewMockCmdline(ctrl)
 
 			args := []string{"Arg1"}
-			err := opts.Complete("unset", cmdline, args)
+			err := opts.Complete(cmdline, args)
 			if err != nil {
 				t.Errorf("Expected nil error, got %s", err)
 				return

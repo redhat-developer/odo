@@ -16,7 +16,7 @@ func TestView(t *testing.T) {
 	cmdline := cmdline.NewMockCmdline(ctrl)
 
 	args := []string{}
-	err := opts.Complete("view", cmdline, args)
+	err := opts.Complete(cmdline, args)
 	if err != nil {
 		t.Errorf("Expected nil error, got %s", err)
 		return
