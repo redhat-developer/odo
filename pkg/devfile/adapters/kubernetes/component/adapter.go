@@ -263,8 +263,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	var podName string
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
+	var podErr error
 	if componentExists {
-		pod, podErr := a.getPod(true)
+		pod, podErr = a.getPod(true)
 		if podErr != nil {
 			return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
 		}
