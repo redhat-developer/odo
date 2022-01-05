@@ -17,6 +17,7 @@ import (
 	util "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
@@ -102,7 +103,7 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 func NewCmdList(name, fullName string) *cobra.Command {
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 	o := NewListOptions(prefClient)
 	registryListCmd := &cobra.Command{

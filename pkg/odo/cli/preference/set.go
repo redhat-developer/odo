@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -83,7 +84,7 @@ func (o *SetOptions) Run() (err error) {
 func NewCmdSet(name, fullName string) *cobra.Command {
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 	o := NewSetOptions(prefClient)
 	preferenceSetCmd := &cobra.Command{

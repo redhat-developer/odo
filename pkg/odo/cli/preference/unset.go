@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -85,7 +86,7 @@ func (o *UnsetOptions) Run() (err error) {
 func NewCmdUnset(name, fullName string) *cobra.Command {
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 	o := NewUnsetOptions(prefClient)
 	preferenceUnsetCmd := &cobra.Command{

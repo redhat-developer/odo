@@ -16,6 +16,7 @@ import (
 	// odo packages
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -104,7 +105,7 @@ func (o *AddOptions) Run() (err error) {
 func NewCmdAdd(name, fullName string) *cobra.Command {
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 	o := NewAddOptions(prefClient)
 	registryAddCmd := &cobra.Command{

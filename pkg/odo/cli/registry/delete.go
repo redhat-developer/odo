@@ -14,6 +14,7 @@ import (
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -88,7 +89,7 @@ func (o *DeleteOptions) Run() (err error) {
 func NewCmdDelete(name, fullName string) *cobra.Command {
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 	o := NewDeleteOptions(prefClient)
 	registryDeleteCmd := &cobra.Command{

@@ -352,7 +352,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	kubclient, _ := kclient.New()
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		panic("unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 	co := NewCreateOptions(project.NewClient(kubclient), prefClient)
 	var componentCreateCmd = &cobra.Command{
