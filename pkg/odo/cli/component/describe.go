@@ -39,10 +39,10 @@ type DescribeOptions struct {
 }
 
 // NewDescribeOptions returns new instance of ListOptions
-func NewDescribeOptions(client component.Client) *DescribeOptions {
+func NewDescribeOptions(compClient component.Client) *DescribeOptions {
 	return &DescribeOptions{
 		ComponentOptions: &ComponentOptions{},
-		componentClient:  client,
+		componentClient:  compClient,
 	}
 }
 
@@ -92,8 +92,8 @@ func (do *DescribeOptions) Run() (err error) {
 
 // NewCmdDescribe implements the describe odo command
 func NewCmdDescribe(name, fullName string) *cobra.Command {
-	client, _ := kclient.New()
-	do := NewDescribeOptions(component.NewClient(client))
+	kubeclient, _ := kclient.New()
+	do := NewDescribeOptions(component.NewClient(kubeclient))
 
 	var describeCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component_name]", name),
@@ -112,9 +112,9 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	// Adding --context flag
 	odoutil.AddContextFlag(describeCmd, &do.contextFlag)
 
-	//Adding `--project` flag
+	// Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)
-	//Adding `--application` flag
+	// Adding `--application` flag
 	appCmd.AddApplicationFlag(describeCmd)
 
 	return describeCmd

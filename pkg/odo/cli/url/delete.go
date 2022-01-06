@@ -42,7 +42,7 @@ type DeleteOptions struct {
 
 // NewURLDeleteOptions creates a new DeleteOptions instance
 func NewURLDeleteOptions(prjClient project.Client, prefClient preference.Client) *DeleteOptions {
-	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions(prjClient, prefClient)}
+	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions(nil, prjClient, prefClient)}
 }
 
 // Complete completes DeleteOptions after they've been Deleted

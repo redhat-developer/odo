@@ -1,11 +1,9 @@
 package component
 
 import (
-	"path/filepath"
-	"strings"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -16,6 +14,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
+	"path/filepath"
+	"strings"
 )
 
 // CommonPushOptions has data needed for all pushes
@@ -24,10 +24,11 @@ type CommonPushOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	prjClient  project.Client
-	prefClient preference.Client
+	prjClient       project.Client
+	prefClient      preference.Client
+	componentClient component.Client
 
-	//Flags
+	// Flags
 	// TODO(feloy) Fixme
 	showFlag         bool //nolint:structcheck
 	componentContext string
@@ -38,14 +39,15 @@ type CommonPushOptions struct {
 }
 
 // NewCommonPushOptions instantiates a commonPushOptions object
-func NewCommonPushOptions(prjClient project.Client, prefClient preference.Client) *CommonPushOptions {
+func NewCommonPushOptions(prjClient project.Client, prefClient preference.Client, compClient component.Client) *CommonPushOptions {
 	return &CommonPushOptions{
-		prjClient:  prjClient,
-		prefClient: prefClient,
+		prjClient:       prjClient,
+		prefClient:      prefClient,
+		componentClient: compClient,
 	}
 }
 
-//InitEnvInfoFromContext initializes envinfo from the context
+// InitEnvInfoFromContext initializes envinfo from the context
 func (cpo *CommonPushOptions) InitEnvInfoFromContext() (err error) {
 	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.componentContext)
 	if err != nil {
@@ -54,7 +56,7 @@ func (cpo *CommonPushOptions) InitEnvInfoFromContext() (err error) {
 	return nil
 }
 
-//AddContextFlag adds the context flag to specified command storing value of flag in options.componentContext
+// AddContextFlag adds the context flag to specified command storing value of flag in options.componentContext
 func (cpo *CommonPushOptions) AddContextFlag(cmd *cobra.Command) {
 	odoutil.AddContextFlag(cmd, &cpo.componentContext)
 }

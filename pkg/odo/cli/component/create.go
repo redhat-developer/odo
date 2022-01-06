@@ -38,7 +38,7 @@ import (
 type CreateOptions struct {
 	// Push context
 	*PushOptions
-	componentClient component.Client
+
 	// Flags
 	contextFlag string
 	portFlag    []string
@@ -116,11 +116,9 @@ odo catalog list components
 # Create a new Node.js component that is a part of 'myapp' app inside the 'myproject' project 
 %[1]s nodejs --app myapp --project myproject`)
 
-// NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions(client component.Client, prjClient project.Client, prefClient preference.Client) *CreateOptions {
 	return &CreateOptions{
-		PushOptions:     NewPushOptions(prjClient, prefClient),
-		componentClient: client,
+		PushOptions: NewPushOptions(client, prjClient, prefClient),
 	}
 }
 

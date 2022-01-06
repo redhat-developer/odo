@@ -54,7 +54,7 @@ type UnsetOptions struct {
 // NewUnsetOptions creates a new UnsetOptions instance
 func NewUnsetOptions(prjClient project.Client, prefClient preference.Client) *UnsetOptions {
 	return &UnsetOptions{
-		PushOptions: clicomponent.NewPushOptions(prjClient, prefClient),
+		PushOptions: clicomponent.NewPushOptions(nil, prjClient, prefClient),
 	}
 }
 

@@ -73,7 +73,8 @@ func (o kubernetesClient) Delete(name string) error {
 // ComponentList returns the list of components for an application
 func (o kubernetesClient) ComponentList(name string) ([]component.Component, error) {
 	selector := applabels.GetSelector(name)
-	componentList, err := component.List(o.client, selector)
+	compClient := component.NewClient(o.client)
+	componentList, err := compClient.List(selector)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get Component list")
 	}
@@ -82,7 +83,8 @@ func (o kubernetesClient) ComponentList(name string) ([]component.Component, err
 
 // GetMachineReadableFormat returns resource information in machine readable format
 func (o kubernetesClient) GetMachineReadableFormat(appName string, projectName string) App {
-	componentList, _ := component.GetComponentNames(o.client, appName)
+	compClient := component.NewClient(o.client)
+	componentList, _ := compClient.GetComponentNames(appName)
 	appDef := App{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       appKind,

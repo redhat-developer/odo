@@ -55,13 +55,13 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 	if c.client == nil {
 		state = StateTypeUnknown
 	} else {
-		state = c.GetComponentState(componentName, applicationName)
+		state = getComponentState(componentName, applicationName, c.client)
 	}
 	var componentDesc Component
 	var devfileObj parser.DevfileObj
 	var err error
 	var configLinks []string
-	componentDesc, devfileObj, err = c.GetComponentFromDevfile(envInfo)
+	componentDesc, devfileObj, err = getComponentFromDevfile(envInfo)
 	if err != nil {
 		return cfd, err
 	}
@@ -76,7 +76,7 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 	}
 	cfd.Status.State = state
 	if state == StateTypePushed {
-		componentDescFromCluster, e := c.getRemoteComponentMetadata(componentName, applicationName, false, false)
+		componentDescFromCluster, e := getRemoteComponentMetadata(componentName, applicationName, false, false, c.client)
 		if e != nil {
 			return cfd, e
 		}
@@ -144,7 +144,7 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 
 // GetComponentNames retrieves the names of the components in the specified application
 func (c componentClient) GetComponentNames(applicationName string) ([]string, error) {
-	components, err := c.GetPushedComponents(applicationName)
+	components, err := getPushedComponents(applicationName, c.client)
 	if err != nil {
 		return []string{}, err
 	}
@@ -172,7 +172,7 @@ func (c componentClient) List(selector string) (ComponentList, error) {
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := c.GetComponent(elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel])
+		component, err := getComponent(elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], c.client)
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -187,8 +187,8 @@ func (c componentClient) List(selector string) (ComponentList, error) {
 	return compoList, nil
 }
 
-// GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
-func (c componentClient) GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
+// getComponentFromDevfile extracts component's metadata from the specified env info if it exists
+func getComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
 	if info.Exists() {
 		devfileObj, err := parser.Parse(info.GetDevfilePath())
 		if err != nil {
@@ -287,9 +287,9 @@ func (c componentClient) Exists(componentName, applicationName string) (bool, er
 	return false, nil
 }
 
-func (c componentClient) GetComponentState(componentName, applicationName string) State {
+func getComponentState(componentName, applicationName string, kubeclient kclient.ClientInterface) State {
 	// first check if a deployment exists
-	pushedComponent, err := c.GetPushedComponent(componentName, applicationName)
+	pushedComponent, err := getPushedComponent(componentName, applicationName, kubeclient)
 	if err != nil {
 		return StateTypeUnknown
 	}
@@ -299,16 +299,16 @@ func (c componentClient) GetComponentState(componentName, applicationName string
 	return StateTypeNotPushed
 }
 
-// GetComponent provides component definition
-func (c componentClient) GetComponent(componentName string, applicationName string) (component Component, err error) {
-	return c.getRemoteComponentMetadata(componentName, applicationName, true, true)
+// getComponent provides component definition
+func getComponent(componentName string, applicationName string, kubeclient kclient.ClientInterface) (component Component, err error) {
+	return getRemoteComponentMetadata(componentName, applicationName, true, true, kubeclient)
 }
 
-// GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
-func (c componentClient) GetPushedComponents(applicationName string) (map[string]PushedComponent, error) {
+// getPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
+func getPushedComponents(applicationName string, kubeclient kclient.ClientInterface) (map[string]PushedComponent, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 
-	deploymentList, err := c.client.ListDeployments(applicationSelector)
+	deploymentList, err := kubeclient.ListDeployments(applicationSelector)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list components")
 	}
@@ -316,15 +316,15 @@ func (c componentClient) GetPushedComponents(applicationName string) (map[string
 	for _, d := range deploymentList.Items {
 		deployment := d
 		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:     c.client,
+			Client:     kubeclient,
 			Deployment: &deployment,
 		})
 
 		urlClient := url.NewClient(url.ClientOptions{
-			Client:     c.client,
+			Client:     kubeclient,
 			Deployment: &deployment,
 		})
-		comp := c.newPushedComponent(applicationName, &devfileComponent{d: d}, storageClient, urlClient)
+		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, kubeclient, storageClient, urlClient)
 		res[comp.GetName()] = comp
 	}
 
@@ -332,8 +332,8 @@ func (c componentClient) GetPushedComponents(applicationName string) (map[string
 }
 
 // GetPushedComponent returns an abstraction over the cluster representation of the component
-func (c componentClient) GetPushedComponent(componentName, applicationName string) (PushedComponent, error) {
-	d, err := c.client.GetOneDeployment(componentName, applicationName)
+func getPushedComponent(componentName, applicationName string, kubeclient kclient.ClientInterface) (PushedComponent, error) {
+	d, err := kubeclient.GetOneDeployment(componentName, applicationName)
 	if err != nil {
 		if isIgnorableError(err) {
 			return nil, nil
@@ -341,15 +341,15 @@ func (c componentClient) GetPushedComponent(componentName, applicationName strin
 		return nil, err
 	}
 	storageClient := storage.NewClient(storage.ClientOptions{
-		Client:     c.client,
+		Client:     kubeclient,
 		Deployment: d,
 	})
 
 	urlClient := url.NewClient(url.ClientOptions{
-		Client:     c.client,
+		Client:     kubeclient,
 		Deployment: d,
 	})
-	return c.newPushedComponent(applicationName, &devfileComponent{d: *d}, storageClient, urlClient), nil
+	return newPushedComponent(applicationName, &devfileComponent{d: *d}, kubeclient, storageClient, urlClient), nil
 }
 
 // CheckDefaultProject errors out if the project resource is supported and the value is "default"
@@ -368,8 +368,8 @@ func (c componentClient) CheckDefaultProject(name string) error {
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func (c componentClient) getRemoteComponentMetadata(componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
-	fromCluster, err := c.GetPushedComponent(componentName, applicationName)
+func getRemoteComponentMetadata(componentName string, applicationName string, getUrls, getStorage bool, kubeclient kclient.ClientInterface) (Component, error) {
+	fromCluster, err := getPushedComponent(componentName, applicationName, kubeclient)
 	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
 	}
@@ -426,7 +426,7 @@ func (c componentClient) getRemoteComponentMetadata(componentName string, applic
 
 	// Secrets
 	linkedSecrets := fromCluster.GetLinkedSecrets()
-	err = c.setLinksServiceNames(linkedSecrets, componentlabels.GetSelector(componentName, applicationName))
+	err = setLinksServiceNames(linkedSecrets, componentlabels.GetSelector(componentName, applicationName), kubeclient)
 	if err != nil {
 		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
 	}
@@ -438,7 +438,7 @@ func (c componentClient) getRemoteComponentMetadata(componentName string, applic
 	// Labels
 	component.Labels = fromCluster.GetLabels()
 
-	component.Namespace = c.client.GetCurrentNamespace()
+	component.Namespace = kubeclient.GetCurrentNamespace()
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
 	component.Status.State = StateTypePushed
@@ -447,8 +447,8 @@ func (c componentClient) getRemoteComponentMetadata(componentName string, applic
 }
 
 // setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
-func (c componentClient) setLinksServiceNames(linkedSecrets []SecretMount, selector string) error {
-	ok, err := c.client.IsServiceBindingSupported()
+func setLinksServiceNames(linkedSecrets []SecretMount, selector string, kubeclient kclient.ClientInterface) error {
+	ok, err := kubeclient.IsServiceBindingSupported()
 	if err != nil {
 		return fmt.Errorf("unable to check if service binding is supported: %w", err)
 	}
@@ -456,7 +456,7 @@ func (c componentClient) setLinksServiceNames(linkedSecrets []SecretMount, selec
 	serviceBindings := map[string]string{}
 	if ok {
 		// service binding operator is installed on the cluster
-		list, err := c.client.ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		list, err := kubeclient.ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
 		if err != nil || list == nil {
 			return err
 		}
@@ -485,13 +485,13 @@ func (c componentClient) setLinksServiceNames(linkedSecrets []SecretMount, selec
 	} else {
 		// service binding operator is not installed
 		// get the secrets instead of the service binding objects to retrieve the link data
-		secrets, err := c.client.ListSecrets(selector)
+		secrets, err := kubeclient.ListSecrets(selector)
 		if err != nil {
 			return err
 		}
 
 		// get the services to get their names against the component names
-		services, err := c.client.ListServices("")
+		services, err := kubeclient.ListServices("")
 		if err != nil {
 			return err
 		}
@@ -562,11 +562,11 @@ func (c componentClient) loadStoragesFromClientAndLocalConfig(configProvider loc
 	return storages, nil
 }
 
-func (c componentClient) newPushedComponent(applicationName string, p provider, storageClient storage.Client, urlClient url.Client) PushedComponent {
+func newPushedComponent(applicationName string, p provider, kubeclient kclient.ClientInterface, storageClient storage.Client, urlClient url.Client) PushedComponent {
 	return &defaultPushedComponent{
 		application:   applicationName,
 		provider:      p,
-		client:        c.client,
+		client:        kubeclient,
 		storageClient: storageClient,
 		urlClient:     urlClient,
 	}

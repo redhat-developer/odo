@@ -52,7 +52,7 @@ const PushRecommendedCommandName = "push"
 type PushOptions struct {
 	// Push context
 	*CommonPushOptions
-	componentClient component.Client
+
 	// Flags
 	ignoreFlag     []string
 	forceBuildFlag bool
@@ -78,8 +78,7 @@ type PushOptions struct {
 
 func NewPushOptions(client component.Client, prjClient project.Client, prefClient preference.Client) *PushOptions {
 	return &PushOptions{
-		CommonPushOptions: NewCommonPushOptions(prjClient, prefClient),
-		componentClient:   client,
+		CommonPushOptions: NewCommonPushOptions(prjClient, prefClient, client),
 	}
 }
 

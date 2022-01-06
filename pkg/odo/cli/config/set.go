@@ -60,7 +60,7 @@ type SetOptions struct {
 // NewSetOptions creates a new SetOptions instance
 func NewSetOptions(prjClient project.Client, prefClient preference.Client) *SetOptions {
 	return &SetOptions{
-		PushOptions: clicomponent.NewPushOptions(prjClient, prefClient),
+		PushOptions: clicomponent.NewPushOptions(nil, prjClient, prefClient),
 	}
 }
 

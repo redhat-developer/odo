@@ -52,8 +52,8 @@ type ListOptions struct {
 }
 
 // NewListOptions returns new instance of ListOptions
-func NewListOptions(client component.Client) *ListOptions {
-	return &ListOptions{componentClient: client}
+func NewListOptions(compClient component.Client) *ListOptions {
+	return &ListOptions{componentClient: compClient}
 }
 
 // Complete completes log args
@@ -217,8 +217,8 @@ func (lo *ListOptions) Run() error {
 
 // NewCmdList implements the list odo command
 func NewCmdList(name, fullName string) *cobra.Command {
-	client, _ := kclient.New()
-	o := NewListOptions(component.NewClient(client))
+	kubeclient, _ := kclient.New()
+	o := NewListOptions(component.NewClient(kubeclient))
 
 	var componentListCmd = &cobra.Command{
 		Use:         name,
@@ -236,9 +236,9 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	componentListCmd.Flags().BoolVar(&o.allAppsFlag, "all-apps", false, "list all components from all applications for the current set project")
 	componentListCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
-	//Adding `--project` flag
+	// Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
-	//Adding `--application` flag
+	// Adding `--application` flag
 	appCmd.AddApplicationFlag(componentListCmd)
 
 	completion.RegisterCommandFlagHandler(componentListCmd, "path", completion.FileCompletionHandler)

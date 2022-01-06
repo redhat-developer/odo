@@ -79,7 +79,7 @@ type CreateOptions struct {
 
 // NewURLCreateOptions creates a new CreateOptions instance
 func NewURLCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
-	return &CreateOptions{PushOptions: clicomponent.NewPushOptions(prjClient, prefClient)}
+	return &CreateOptions{PushOptions: clicomponent.NewPushOptions(nil, prjClient, prefClient)}
 }
 
 // Complete completes CreateOptions after they've been Created
