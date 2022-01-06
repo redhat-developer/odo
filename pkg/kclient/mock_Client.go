@@ -7,6 +7,7 @@ package kclient
 import (
 	io "io"
 	reflect "reflect"
+	time "time"
 
 	spec "github.com/go-openapi/spec"
 	gomock "github.com/golang/mock/gomock"
@@ -1004,18 +1005,18 @@ func (mr *MockClientInterfaceMockRecorder) GetSecret(name, namespace interface{}
 }
 
 // GetServerVersion mocks base method.
-func (m *MockClientInterface) GetServerVersion() (*ServerInfo, error) {
+func (m *MockClientInterface) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServerVersion")
+	ret := m.ctrl.Call(m, "GetServerVersion", timeout)
 	ret0, _ := ret[0].(*ServerInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetServerVersion indicates an expected call of GetServerVersion.
-func (mr *MockClientInterfaceMockRecorder) GetServerVersion() *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
 }
 
 // GetService mocks base method.

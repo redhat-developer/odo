@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"io"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -82,7 +83,7 @@ type ClientInterface interface {
 	WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error
 
 	// oc_server.go
-	GetServerVersion() (*ServerInfo, error)
+	GetServerVersion(timeout time.Duration) (*ServerInfo, error)
 
 	// operators.go
 	IsServiceBindingSupported() (bool, error)
