@@ -39,13 +39,11 @@ type CreateOptions struct {
 	*PushOptions
 
 	// Flags
-	contextFlag       string
-	portFlag          []string
-	envFlag           []string
-	nowFlag           bool
-	appFlag           string
-	starterHasDevfile bool
-
+	contextFlag string
+	portFlag    []string
+	envFlag     []string
+	nowFlag     bool
+	appFlag     string
 	interactive bool
 
 	// devfileName stores the "componentType" passed by user irrespective of it being a valid componentType
