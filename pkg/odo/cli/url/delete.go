@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -40,8 +41,8 @@ type DeleteOptions struct {
 }
 
 // NewURLDeleteOptions creates a new DeleteOptions instance
-func NewURLDeleteOptions(prjClient project.Client) *DeleteOptions {
-	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions(prjClient)}
+func NewURLDeleteOptions(prjClient project.Client, prefClient preference.Client) *DeleteOptions {
+	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions(prjClient, prefClient)}
 }
 
 // Complete completes DeleteOptions after they've been Deleted
@@ -108,7 +109,11 @@ func (o *DeleteOptions) Run() (err error) {
 func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
-	o := NewURLDeleteOptions(project.NewClient(kubclient))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewURLDeleteOptions(project.NewClient(kubclient), prefClient)
 	urlDeleteCmd := &cobra.Command{
 		Use:   name + " [url name]",
 		Short: urlDeleteShortDesc,

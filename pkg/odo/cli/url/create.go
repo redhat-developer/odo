@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/url"
 
@@ -77,8 +78,8 @@ type CreateOptions struct {
 }
 
 // NewURLCreateOptions creates a new CreateOptions instance
-func NewURLCreateOptions(prjClient project.Client) *CreateOptions {
-	return &CreateOptions{PushOptions: clicomponent.NewPushOptions(prjClient)}
+func NewURLCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
+	return &CreateOptions{PushOptions: clicomponent.NewPushOptions(prjClient, prefClient)}
 }
 
 // Complete completes CreateOptions after they've been Created
@@ -197,7 +198,11 @@ func (o *CreateOptions) Run() (err error) {
 func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
-	o := NewURLCreateOptions(project.NewClient(kubclient))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewURLCreateOptions(project.NewClient(kubclient), prefClient)
 	urlCreateCmd := &cobra.Command{
 		Use:         name + " [url name]",
 		Short:       urlCreateShortDesc,

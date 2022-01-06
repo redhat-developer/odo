@@ -12,6 +12,7 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -38,9 +39,9 @@ import (
 const supervisorDStatusWaitTimeInterval = 1
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, client kclient.ClientInterface) Adapter {
+func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
 
-	adapter := Adapter{Client: client}
+	adapter := Adapter{Client: client, prefClient: prefClient}
 	adapter.GenericAdapter = common.NewGenericAdapter(&adapter, adapterContext)
 	adapter.GenericAdapter.InitWith(&adapter)
 	return adapter
@@ -91,7 +92,9 @@ func (a *Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.Com
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
-	Client kclient.ClientInterface
+	Client     kclient.ClientInterface
+	prefClient preference.Client
+
 	*common.GenericAdapter
 
 	devfileBuildCmd  string
@@ -196,7 +199,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
+	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -421,7 +425,7 @@ func (a Adapter) DoesComponentExist(cmpName string, appName string) (bool, error
 	return utils.ComponentExists(a.Client, cmpName, appName)
 }
 
-func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
+func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
 	ei.SetDevfileObj(a.Devfile)
 
 	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
@@ -430,7 +434,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	})
 
 	// handle the ephemeral storage
-	err = storage.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName)
+	err = storage.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName, isMainStorageEphemeral)
 	if err != nil {
 		return err
 	}

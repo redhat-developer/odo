@@ -136,8 +136,8 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := New(adapterCtx, fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
+			componentAdapter := New(adapterCtx, fkclient, nil)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -350,8 +350,8 @@ func TestDoesComponentExist(t *testing.T) {
 			})
 
 			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := New(adapterCtx, fkclient)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
+			componentAdapter := New(adapterCtx, fkclient, nil)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false)
 
 			// Checks for unexpected error cases
 			if err != nil {
@@ -443,7 +443,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			componentAdapter := New(adapterCtx, fkclient)
+			componentAdapter := New(adapterCtx, fkclient, nil)
 			_, err := componentAdapter.getPod(false)
 
 			// Checks for unexpected error cases
@@ -564,7 +564,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
 
-			a := New(adapterCtx, fkclient)
+			a := New(adapterCtx, fkclient, nil)
 
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {

@@ -121,7 +121,7 @@ odo catalog list components
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
 	return &CreateOptions{
-		PushOptions: NewPushOptions(prjClient),
+		PushOptions: NewPushOptions(prjClient, prefClient),
 		prefClient:  prefClient,
 	}
 }

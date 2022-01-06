@@ -249,9 +249,9 @@ func TestGetDeploymentStatus(t *testing.T) {
 				AppName: testAppName,
 			})
 
-			componentAdapter := New(adapterCtx, fkclient)
+			componentAdapter := New(adapterCtx, fkclient, nil)
 			fkclient.Namespace = componentAdapter.Client.GetCurrentNamespace()
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
