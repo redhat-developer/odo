@@ -124,7 +124,6 @@ func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *C
 func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	// GETTERS
 	// Get context
-	co.starterHasDevfile = false
 	co.Context, err = getContext(co.nowFlag, cmdline)
 	if err != nil {
 		return err
