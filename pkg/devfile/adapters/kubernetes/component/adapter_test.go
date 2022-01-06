@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/golang/mock/gomock"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -443,7 +445,10 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			componentAdapter := New(adapterCtx, fkclient, nil)
+			ctrl := gomock.NewController(t)
+			prefClient := preference.NewMockClient(ctrl)
+			prefClient.EXPECT().GetPushTimeout().Return(10)
+			componentAdapter := New(adapterCtx, fkclient, prefClient)
 			_, err := componentAdapter.getPod(false)
 
 			// Checks for unexpected error cases

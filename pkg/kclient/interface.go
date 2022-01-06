@@ -101,7 +101,7 @@ type ClientInterface interface {
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
 
 	// pods.go
-	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error)
+	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string, pushTimeout time.Duration) (*corev1.Pod, error)
 	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 	ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error
 	GetOnePod(componentName, appName string) (*corev1.Pod, error)

@@ -80,7 +80,7 @@ func TestWaitAndGetPodWithEvents(t *testing.T) {
 
 			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
 
-			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
+			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", time.Second)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)

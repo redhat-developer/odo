@@ -1476,18 +1476,18 @@ func (mr *MockClientInterfaceMockRecorder) UpdateStorageOwnerReference(pvc inter
 }
 
 // WaitAndGetPodWithEvents mocks base method.
-func (m *MockClientInterface) WaitAndGetPodWithEvents(selector string, desiredPhase v12.PodPhase, waitMessage string) (*v12.Pod, error) {
+func (m *MockClientInterface) WaitAndGetPodWithEvents(selector string, desiredPhase v12.PodPhase, waitMessage string, pushTimeout time.Duration) (*v12.Pod, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitAndGetPodWithEvents", selector, desiredPhase, waitMessage)
+	ret := m.ctrl.Call(m, "WaitAndGetPodWithEvents", selector, desiredPhase, waitMessage, pushTimeout)
 	ret0, _ := ret[0].(*v12.Pod)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WaitAndGetPodWithEvents indicates an expected call of WaitAndGetPodWithEvents.
-func (mr *MockClientInterfaceMockRecorder) WaitAndGetPodWithEvents(selector, desiredPhase, waitMessage interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) WaitAndGetPodWithEvents(selector, desiredPhase, waitMessage, pushTimeout interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetPodWithEvents", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetPodWithEvents), selector, desiredPhase, waitMessage)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetPodWithEvents", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetPodWithEvents), selector, desiredPhase, waitMessage, pushTimeout)
 }
 
 // WaitAndGetSecret mocks base method.

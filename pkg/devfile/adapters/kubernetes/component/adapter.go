@@ -54,7 +54,7 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start")
+		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", time.Duration(a.prefClient.GetPushTimeout())*time.Second)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 		}

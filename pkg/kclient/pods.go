@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/preference"
-
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/klog"
@@ -26,16 +24,7 @@ import (
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
-
-	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
-	pushTimeout := preference.DefaultPushTimeout * time.Second
-	cfg, configReadErr := preference.NewClient()
-	if configReadErr != nil {
-		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
-	}
+func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string, pushTimeout time.Duration) (*corev1.Pod, error) {
 
 	klog.V(3).Infof("Waiting for %s pod", selector)
 
