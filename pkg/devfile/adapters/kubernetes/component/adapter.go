@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"io"
 	"os"
 	"reflect"
@@ -105,6 +106,33 @@ type Adapter struct {
 	devfileDebugPort int
 	pod              *corev1.Pod
 	deployment       *appsv1.Deployment
+}
+
+// ApplyConfig applies the component config onto component deployment
+// Parameters:
+//	client: kclient instance
+//	componentConfig: Component configuration
+//	envSpecificInfo: Component environment specific information, available if uses devfile
+// Returns:
+//	err: Errors if any else nil
+func (a Adapter) ApplyConfig(envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
+	isRouteSupported := false
+	isRouteSupported, err = a.Client.IsRouteSupported()
+	if err != nil {
+		isRouteSupported = false
+	}
+
+	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
+		Client:              a.Client,
+		IsRouteSupported:    isRouteSupported,
+		LocalConfigProvider: &envSpecificInfo,
+	})
+
+	return urlpkg.Push(urlpkg.PushParameters{
+		LocalConfigProvider: &envSpecificInfo,
+		URLClient:           urlClient,
+		IsRouteSupported:    isRouteSupported,
+	})
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -272,7 +300,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
-	err = component.ApplyConfig(a.Client, parameters.EnvSpecificInfo)
+	err = a.ApplyConfig(parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update config to component deployed.")
 	}

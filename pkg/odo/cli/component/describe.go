@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -31,15 +32,17 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component
 type DescribeOptions struct {
 	// Component context
 	*ComponentOptions
-
+	// Clients
+	componentClient component.Client
 	// Flags
 	contextFlag string
 }
 
 // NewDescribeOptions returns new instance of ListOptions
-func NewDescribeOptions() *DescribeOptions {
+func NewDescribeOptions(client component.Client) *DescribeOptions {
 	return &DescribeOptions{
 		ComponentOptions: &ComponentOptions{},
+		componentClient:  client,
 	}
 }
 
@@ -71,7 +74,7 @@ func (do *DescribeOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
 
-	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.Context.KClient, do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
+	cfd, err := do.componentClient.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -89,7 +92,8 @@ func (do *DescribeOptions) Run() (err error) {
 
 // NewCmdDescribe implements the describe odo command
 func NewCmdDescribe(name, fullName string) *cobra.Command {
-	do := NewDescribeOptions()
+	client, _ := kclient.New()
+	do := NewDescribeOptions(component.NewClient(client))
 
 	var describeCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component_name]", name),

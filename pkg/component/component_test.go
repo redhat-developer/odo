@@ -10,7 +10,6 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	"github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -20,11 +19,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ktesting "k8s.io/client-go/testing"
 )
 
-func TestGetComponentFrom(t *testing.T) {
+func Test_getComponentFrom(t *testing.T) {
 	type cmpSetting struct {
 		componentName   string
 		project         string
@@ -135,7 +132,6 @@ func TestGetComponentFrom(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
 			}
-
 		})
 	}
 }
@@ -159,6 +155,7 @@ func TestList(t *testing.T) {
 		deploymentList v1.DeploymentList
 		projectExists  bool
 		wantErr        bool
+		mockError      error
 		output         ComponentList
 	}{
 		{
@@ -166,6 +163,7 @@ func TestList(t *testing.T) {
 			wantErr:       false,
 			projectExists: true,
 			output:        newComponentList([]Component{}),
+			mockError:     fmt.Errorf("some error"),
 		},
 		{
 			name:           "Case 2: Components are returned from deployments on a kubernetes cluster",
@@ -188,35 +186,46 @@ func TestList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := kclient.FakeNew()
-			client.Namespace = "test"
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			// client, fakeClientSet := kclient.FakeNew()
+			// client.Namespace = "test"
+			//
+			// fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+			//	listAction, ok := action.(ktesting.ListAction)
+			//	if !ok {
+			//		return false, nil, fmt.Errorf("expected a ListAction, got %v", action)
+			//	}
+			//	if len(tt.deploymentList.Items) <= 0 {
+			//		return true, &tt.deploymentList, nil
+			//	}
+			//
+			//	var deploymentLabels0 map[string]string
+			//	var deploymentLabels1 map[string]string
+			//	if len(tt.deploymentList.Items) == 2 {
+			//		deploymentLabels0 = tt.deploymentList.Items[0].Labels
+			//		deploymentLabels1 = tt.deploymentList.Items[1].Labels
+			//	}
+			//	switch listAction.GetListRestrictions().Labels.String() {
+			//	case util.ConvertLabelsToSelector(deploymentLabels0):
+			//		return true, &tt.deploymentList.Items[0], nil
+			//	case util.ConvertLabelsToSelector(deploymentLabels1):
+			//		return true, &tt.deploymentList.Items[1], nil
+			//	default:
+			//		return true, &tt.deploymentList, nil
+			//	}
+			// })
 
-			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				listAction, ok := action.(ktesting.ListAction)
-				if !ok {
-					return false, nil, fmt.Errorf("expected a ListAction, got %v", action)
-				}
-				if len(tt.deploymentList.Items) <= 0 {
-					return true, &tt.deploymentList, nil
-				}
+			mockComponentClient := NewMockClient(ctrl)
+			applicationSelector := applabels.GetSelector("app")
+			mockKClient := kclient.NewMockClientInterface(ctrl)
+			mockKClient.EXPECT().GetDeploymentFromSelector(applicationSelector).Return(tt.deploymentList)
 
-				var deploymentLabels0 map[string]string
-				var deploymentLabels1 map[string]string
-				if len(tt.deploymentList.Items) == 2 {
-					deploymentLabels0 = tt.deploymentList.Items[0].Labels
-					deploymentLabels1 = tt.deploymentList.Items[1].Labels
-				}
-				switch listAction.GetListRestrictions().Labels.String() {
-				case util.ConvertLabelsToSelector(deploymentLabels0):
-					return true, &tt.deploymentList.Items[0], nil
-				case util.ConvertLabelsToSelector(deploymentLabels1):
-					return true, &tt.deploymentList.Items[1], nil
-				default:
-					return true, &tt.deploymentList, nil
-				}
-			})
+			mockComponentClient.EXPECT().GetComponent(tt.deploymentList.Items[0].Labels[componentlabels.ComponentLabel], tt.deploymentList.Items[0].Labels[componentlabels.ComponentLabel]).Return(tt.output.Items[0]).AnyTimes()
+			mockComponentClient.EXPECT().GetComponent(tt.deploymentList.Items[1].Labels[componentlabels.ComponentLabel], tt.deploymentList.Items[1].Labels[componentlabels.ComponentLabel]).Return(tt.output.Items[1]).AnyTimes()
 
-			results, err := List(client, applabels.GetSelector("app"))
+			// mockComponentClient.EXPECT().ListDevfileComponents(applicationSelector).Return(tt.output, tt.mockError)
+			results, err := mockComponentClient.List(applicationSelector)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
@@ -237,6 +246,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 		existingComponents ComponentList
 		wantErr            bool
 		wantRE             string
+		mockComponentName  string
 		needPrefix         bool
 	}{
 		{
@@ -246,6 +256,7 @@ func TestGetDefaultComponentName(t *testing.T) {
 			existingComponents: ComponentList{},
 			wantErr:            false,
 			wantRE:             "nodejs-testing-*",
+			mockComponentName:  "nodejs-testing-123",
 			needPrefix:         true,
 		},
 	}
@@ -473,6 +484,54 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 	}
 }
 
+func TestComponentClient_CheckDefaultProject(t *testing.T) {
+	tests := []struct {
+		testName    string
+		supported   bool
+		wantErr     bool
+		projectName string
+		supportErr  error
+	}{
+		{
+			testName:    "Case 0: CheckDefaultProject returns no error",
+			projectName: "myproject",
+			supported:   true,
+			wantErr:     false,
+			supportErr:  nil,
+		},
+		{
+			testName:    "Case 1: CheckDefaultProject returns error on using 'default' project name in OC",
+			projectName: "default",
+			supported:   true,
+			wantErr:     true,
+			supportErr:  nil,
+		},
+		{testName: "Case 2: CheckDefaultProject returns error on checking if the project resource is supported",
+			projectName: "myproject",
+			supported:   false,
+			wantErr:     true,
+			supportErr:  fmt.Errorf("some error while checking project support"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockKClient := kclient.NewMockClientInterface(ctrl)
+			mockKClient.EXPECT().IsProjectSupported().Return(tt.supported, tt.supportErr).AnyTimes()
+
+			client := componentClient{client: mockKClient}
+			got := client.CheckDefaultProject(tt.projectName)
+			if (!tt.wantErr && got != nil) || (tt.wantErr && got == nil) {
+				t.Errorf("got==nil: %v; wantErr: %v", got == nil, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestComponentClient_Exists(t *testing.T) {
+
+}
 func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
@@ -501,5 +560,4 @@ func getFakeComponent(compName, namespace, appName, compType string, state State
 			State: state,
 		},
 	}
-
 }

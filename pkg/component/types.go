@@ -93,7 +93,7 @@ func NewComponent(componentName string) Component {
 	}
 }
 
-// newComponentList returns list of devfile and s2i components in machine readable format
+// newComponentList returns list of devfile in machine readable format
 func newComponentList(comps []Component) ComponentList {
 	if len(comps) == 0 {
 		comps = []Component{}

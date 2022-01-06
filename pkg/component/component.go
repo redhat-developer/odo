@@ -3,13 +3,14 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/url"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
-
-	"github.com/devfile/api/v2/pkg/devfile"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/preference"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -38,94 +38,113 @@ const NotAvailable = "Not available"
 
 const apiVersion = "odo.dev/v1alpha1"
 
-// GetComponentDir returns source repo name
-// Parameters:
-//		path: source path
-// Returns: directory name
-func GetComponentDir(path string) (string, error) {
-	retVal := ""
-	if path != "" {
-		retVal = filepath.Base(path)
-	} else {
-		currDir, err := os.Getwd()
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to generate a random name as getting current directory failed")
-		}
-		retVal = filepath.Base(currDir)
-	}
-	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
-	return retVal, nil
+type componentClient struct {
+	client kclient.ClientInterface
 }
 
-// GetDefaultComponentName generates a unique component name
-// Parameters: desired default component name(w/o prefix) and slice of existing component names
-// Returns: Unique component name and error if any
-func GetDefaultComponentName(cfg preference.Client, componentPath string, componentType string, existingComponentList ComponentList) (string, error) {
-	var prefix string
+func NewClient(client kclient.ClientInterface) Client {
+	return componentClient{
+		client: client,
+	}
+}
+
+// NewComponentFullDescriptionFromClientAndLocalConfigProvider gets the complete description of the component from cluster
+func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProvider(envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
+	cfd := &ComponentFullDescription{}
+	var state State
+	if c.client == nil {
+		state = StateTypeUnknown
+	} else {
+		state = c.GetComponentState(componentName, applicationName)
+	}
+	var componentDesc Component
+	var devfileObj parser.DevfileObj
 	var err error
-
-	// Get component names from component list
-	var existingComponentNames []string
-	for _, component := range existingComponentList.Items {
-		existingComponentNames = append(existingComponentNames, component.Name)
+	var configLinks []string
+	componentDesc, devfileObj, err = c.GetComponentFromDevfile(envInfo)
+	if err != nil {
+		return cfd, err
 	}
+	configLinks, err = service.ListDevfileLinks(devfileObj, context)
 
-	// If there's no prefix in config file, or its value is empty string use safe default - the current directory along with component type
-	if cfg.NamePrefix() == nil || *cfg.NamePrefix() == "" {
-		prefix, err = GetComponentDir(componentPath)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to generate random component name")
+	if err != nil {
+		return cfd, err
+	}
+	err = cfd.copyFromComponentDesc(&componentDesc)
+	if err != nil {
+		return cfd, err
+	}
+	cfd.Status.State = state
+	if state == StateTypePushed {
+		componentDescFromCluster, e := c.getRemoteComponentMetadata(componentName, applicationName, false, false)
+		if e != nil {
+			return cfd, e
 		}
-		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
+		cfd.Spec.Env = componentDescFromCluster.Spec.Env
+		cfd.Spec.Type = componentDescFromCluster.Spec.Type
+		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
+	}
+
+	for _, link := range configLinks {
+		found := false
+		for _, linked := range cfd.Status.LinkedServices {
+			if linked.ServiceName == link {
+				found = true
+				break
+			}
+		}
+		if !found {
+			cfd.Status.LinkedServices = append(cfd.Status.LinkedServices, SecretMount{
+				ServiceName: link,
+			})
+		}
+	}
+
+	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
+
+	var urls urlpkg.URLList
+
+	var routeSupported bool
+	var e error
+	if c.client == nil {
+		routeSupported = false
 	} else {
-		// Set the required prefix into componentName
-		prefix = *cfg.NamePrefix()
+		routeSupported, e = c.client.IsRouteSupported()
+		if e != nil {
+			// we assume if there was an error then the cluster is not connected
+			routeSupported = false
+		}
 	}
 
-	// Generate unique name for the component using prefix and unique random suffix
-	componentName, err := util.GetRandomName(
-		fmt.Sprintf("%s-%s", componentType, prefix),
-		componentNameMaxLen,
-		existingComponentNames,
-		componentNameMaxRetries,
-	)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
-	}
-
-	return util.GetDNS1123Name(componentName), nil
-}
-
-// ApplyConfig applies the component config onto component deployment
-// Parameters:
-//	client: kclient instance
-//	componentConfig: Component configuration
-//	envSpecificInfo: Component environment specific information, available if uses devfile
-// Returns:
-//	err: Errors if any else nil
-func ApplyConfig(client kclient.ClientInterface, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
-	isRouteSupported := false
-	isRouteSupported, err = client.IsRouteSupported()
-	if err != nil {
-		isRouteSupported = false
-	}
+	var configProvider localConfigProvider.LocalConfigProvider
+	envInfo.SetDevfileObj(devfileObj)
+	configProvider = envInfo
 
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
-		Client:              client,
-		IsRouteSupported:    isRouteSupported,
-		LocalConfigProvider: &envSpecificInfo,
+		LocalConfigProvider: configProvider,
+		Client:              c.client,
+		IsRouteSupported:    routeSupported,
 	})
 
-	return urlpkg.Push(urlpkg.PushParameters{
-		LocalConfigProvider: &envSpecificInfo,
-		URLClient:           urlClient,
-		IsRouteSupported:    isRouteSupported,
-	})
+	urls, err = urlClient.List()
+	if err != nil {
+		log.Warningf("URLs couldn't not be retrieved: %v", err)
+	}
+	cfd.Spec.URL = urls
+
+	var storages storage.StorageList
+	storages, err = c.loadStoragesFromClientAndLocalConfig(configProvider, &componentDesc)
+	if err != nil {
+		return cfd, err
+	}
+	cfd.Spec.Storage = storages
+
+	return cfd, nil
 }
 
 // GetComponentNames retrieves the names of the components in the specified application
-func GetComponentNames(client kclient.ClientInterface, applicationName string) ([]string, error) {
-	components, err := GetPushedComponents(client, applicationName)
+func (c componentClient) GetComponentNames(applicationName string) ([]string, error) {
+	components, err := c.GetPushedComponents(applicationName)
 	if err != nil {
 		return []string{}, err
 	}
@@ -137,23 +156,23 @@ func GetComponentNames(client kclient.ClientInterface, applicationName string) (
 	return names, nil
 }
 
-// ListDevfileComponents returns the devfile component matching a selector.
+// List returns the devfile component matching a selector.
 // The selector could be about selecting components part of an application.
 // There are helpers in "applabels" package for this.
-func ListDevfileComponents(client kclient.ClientInterface, selector string) (ComponentList, error) {
+func (c componentClient) List(selector string) (ComponentList, error) {
 
 	var deploymentList []v1.Deployment
 	var components []Component
 
 	// retrieve all the deployments that are associated with this application
-	deploymentList, err := client.GetDeploymentFromSelector(selector)
+	deploymentList, err := c.client.GetDeploymentFromSelector(selector)
 	if err != nil {
 		return ComponentList{}, errors.Wrapf(err, "unable to list components")
 	}
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
+		component, err := c.GetComponent(elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel])
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -168,27 +187,18 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 	return compoList, nil
 }
 
-// List lists all the devfile components in active application
-func List(client kclient.ClientInterface, applicationSelector string) (ComponentList, error) {
-	devfileList, err := ListDevfileComponents(client, applicationSelector)
-	if err != nil {
-		return ComponentList{}, nil
-	}
-	return newComponentList(devfileList.Items), nil
-}
-
 // GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
-func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
+func (c componentClient) GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
 	if info.Exists() {
-		devfile, err := parser.Parse(info.GetDevfilePath())
+		devfileObj, err := parser.Parse(info.GetDevfilePath())
 		if err != nil {
 			return Component{}, parser.DevfileObj{}, err
 		}
-		component, err := getComponentFrom(info, GetComponentTypeFromDevfileMetadata(devfile.Data.GetMetadata()))
+		component, err := getComponentFrom(info, GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 		if err != nil {
 			return Component{}, parser.DevfileObj{}, err
 		}
-		components, err := devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+		components, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{})
 		if err != nil {
 			return Component{}, parser.DevfileObj{}, err
 		}
@@ -200,75 +210,12 @@ func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 			}
 		}
 
-		return component, devfile, nil
+		return component, devfileObj, nil
 	}
 	return Component{}, parser.DevfileObj{}, nil
 }
 
-// GetComponentTypeFromDevfileMetadata returns component type from the devfile metadata;
-// it could either be projectType or language, if neither of them are set, return 'Not available'
-func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
-	var componentType string
-	if metadata.ProjectType != "" {
-		componentType = metadata.ProjectType
-	} else if metadata.Language != "" {
-		componentType = metadata.Language
-	} else {
-		componentType = NotAvailable
-	}
-	return componentType
-}
-
-// GetProjectTypeFromDevfileMetadata returns component type from the devfile metadata
-func GetProjectTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
-	var projectType string
-	if metadata.ProjectType != "" {
-		projectType = metadata.ProjectType
-	} else {
-		projectType = NotAvailable
-	}
-	return projectType
-}
-
-// GetLanguageFromDevfileMetadata returns component type from the devfile metadata
-func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
-	var language string
-	if metadata.Language != "" {
-		language = metadata.Language
-	} else {
-		language = NotAvailable
-	}
-	return language
-}
-
-func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
-	if info.Exists() {
-		component := newComponentWithType(info.GetName(), componentType)
-
-		component.Namespace = info.GetNamespace()
-
-		component.Spec = ComponentSpec{
-			App:   info.GetApplication(),
-			Type:  componentType,
-			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
-		}
-
-		urls, err := info.ListURLs()
-		if err != nil {
-			return Component{}, err
-		}
-		if len(urls) > 0 {
-			for _, url := range urls {
-				component.Spec.URL = append(component.Spec.URL, url.Name)
-			}
-		}
-
-		return component, nil
-	}
-	return Component{}, nil
-}
-
-func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
+func (c componentClient) ListDevfileComponentsInPath(paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {
@@ -304,9 +251,9 @@ func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string)
 				comp.Status.Context = con
 
 				// since the config file maybe belong to a component of a different project
-				if client != nil {
-					client.SetNamespace(data.GetNamespace())
-					deployment, err := client.GetOneDeployment(comp.Name, comp.Spec.App)
+				if c.client != nil {
+					c.client.SetNamespace(data.GetNamespace())
+					deployment, err := c.client.GetOneDeployment(comp.Name, comp.Spec.App)
 					if err != nil {
 						comp.Status.State = StateTypeNotPushed
 					} else if deployment != nil {
@@ -327,39 +274,102 @@ func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string)
 // Exists checks whether a component with the given name exists in the current application or not
 // componentName is the component name to perform check for
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
-// The second returned parameter is the error that might occurs while execution
-func Exists(client kclient.ClientInterface, componentName, applicationName string) (bool, error) {
+// The second returned parameter is the error that might occur while execution
+func (c componentClient) Exists(componentName, applicationName string) (bool, error) {
 	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to create namespaced name")
 	}
-	deployment, _ := client.GetDeploymentByName(deploymentName)
+	deployment, _ := c.client.GetDeploymentByName(deploymentName)
 	if deployment != nil {
 		return true, nil
 	}
 	return false, nil
 }
 
-func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) State {
+func (c componentClient) GetComponentState(componentName, applicationName string) State {
 	// first check if a deployment exists
-	c, err := GetPushedComponent(client, componentName, applicationName)
+	pushedComponent, err := c.GetPushedComponent(componentName, applicationName)
 	if err != nil {
 		return StateTypeUnknown
 	}
-	if c != nil {
+	if pushedComponent != nil {
 		return StateTypePushed
 	}
 	return StateTypeNotPushed
 }
 
 // GetComponent provides component definition
-func GetComponent(client kclient.ClientInterface, componentName string, applicationName string, projectName string) (component Component, err error) {
-	return getRemoteComponentMetadata(client, componentName, applicationName, true, true)
+func (c componentClient) GetComponent(componentName string, applicationName string) (component Component, err error) {
+	return c.getRemoteComponentMetadata(componentName, applicationName, true, true)
+}
+
+// GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
+func (c componentClient) GetPushedComponents(applicationName string) (map[string]PushedComponent, error) {
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+
+	deploymentList, err := c.client.ListDeployments(applicationSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list components")
+	}
+	res := make(map[string]PushedComponent, len(deploymentList.Items))
+	for _, d := range deploymentList.Items {
+		deployment := d
+		storageClient := storage.NewClient(storage.ClientOptions{
+			Client:     c.client,
+			Deployment: &deployment,
+		})
+
+		urlClient := url.NewClient(url.ClientOptions{
+			Client:     c.client,
+			Deployment: &deployment,
+		})
+		comp := c.newPushedComponent(applicationName, &devfileComponent{d: d}, storageClient, urlClient)
+		res[comp.GetName()] = comp
+	}
+
+	return res, nil
+}
+
+// GetPushedComponent returns an abstraction over the cluster representation of the component
+func (c componentClient) GetPushedComponent(componentName, applicationName string) (PushedComponent, error) {
+	d, err := c.client.GetOneDeployment(componentName, applicationName)
+	if err != nil {
+		if isIgnorableError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	storageClient := storage.NewClient(storage.ClientOptions{
+		Client:     c.client,
+		Deployment: d,
+	})
+
+	urlClient := url.NewClient(url.ClientOptions{
+		Client:     c.client,
+		Deployment: d,
+	})
+	return c.newPushedComponent(applicationName, &devfileComponent{d: *d}, storageClient, urlClient), nil
+}
+
+// CheckDefaultProject errors out if the project resource is supported and the value is "default"
+func (c componentClient) CheckDefaultProject(name string) error {
+	// Check whether resource "Project" is supported
+	projectSupported, err := c.client.IsProjectSupported()
+
+	if err != nil {
+		return errors.Wrap(err, "resource project validation check failed.")
+	}
+
+	if projectSupported && name == "default" {
+		return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
+	}
+	return nil
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
-	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
+func (c componentClient) getRemoteComponentMetadata(componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
+	fromCluster, err := c.GetPushedComponent(componentName, applicationName)
 	if err != nil || fromCluster == nil {
 		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
 	}
@@ -416,7 +426,7 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 
 	// Secrets
 	linkedSecrets := fromCluster.GetLinkedSecrets()
-	err = setLinksServiceNames(client, linkedSecrets, componentlabels.GetSelector(componentName, applicationName))
+	err = c.setLinksServiceNames(linkedSecrets, componentlabels.GetSelector(componentName, applicationName))
 	if err != nil {
 		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
 	}
@@ -428,7 +438,7 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	// Labels
 	component.Labels = fromCluster.GetLabels()
 
-	component.Namespace = client.GetCurrentNamespace()
+	component.Namespace = c.client.GetCurrentNamespace()
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
 	component.Status.State = StateTypePushed
@@ -437,8 +447,8 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 }
 
 // setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
-func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []SecretMount, selector string) error {
-	ok, err := client.IsServiceBindingSupported()
+func (c componentClient) setLinksServiceNames(linkedSecrets []SecretMount, selector string) error {
+	ok, err := c.client.IsServiceBindingSupported()
 	if err != nil {
 		return fmt.Errorf("unable to check if service binding is supported: %w", err)
 	}
@@ -446,7 +456,7 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 	serviceBindings := map[string]string{}
 	if ok {
 		// service binding operator is installed on the cluster
-		list, err := client.ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
+		list, err := c.client.ListDynamicResource(kclient.ServiceBindingGroup, kclient.ServiceBindingVersion, kclient.ServiceBindingResource)
 		if err != nil || list == nil {
 			return err
 		}
@@ -465,23 +475,23 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 			if len(services) != 1 {
 				return errors.New("the ServiceBinding resource should define only one service")
 			}
-			service := services[0]
-			if service.Kind == "Service" {
-				serviceBindings[sbr.Status.Secret] = service.Name
+			serviceObj := services[0]
+			if serviceObj.Kind == "Service" {
+				serviceBindings[sbr.Status.Secret] = serviceObj.Name
 			} else {
-				serviceBindings[sbr.Status.Secret] = service.Kind + "/" + service.Name
+				serviceBindings[sbr.Status.Secret] = serviceObj.Kind + "/" + serviceObj.Name
 			}
 		}
 	} else {
 		// service binding operator is not installed
 		// get the secrets instead of the service binding objects to retrieve the link data
-		secrets, err := client.ListSecrets(selector)
+		secrets, err := c.client.ListSecrets(selector)
 		if err != nil {
 			return err
 		}
 
 		// get the services to get their names against the component names
-		services, err := client.ListServices("")
+		services, err := c.client.ListServices("")
 		if err != nil {
 			return err
 		}
@@ -520,4 +530,71 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 		linkedSecrets[i].ServiceName = serviceBindings[linkedSecret.SecretName]
 	}
 	return nil
+}
+
+// loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
+func (c componentClient) loadStoragesFromClientAndLocalConfig(configProvider localConfigProvider.LocalConfigProvider, componentDesc *Component) (storage.StorageList, error) {
+	var storages storage.StorageList
+	var err error
+
+	// if component is pushed call ListWithState which gets storages from localconfig and cluster
+	// this result is already in mc readable form
+	if componentDesc.Status.State == StateTypePushed {
+		storageClient := storage.NewClient(storage.ClientOptions{
+			Client:              c.client,
+			LocalConfigProvider: configProvider,
+		})
+
+		storages, err = storageClient.List()
+		if err != nil {
+			return storages, err
+		}
+	} else {
+		var storageLocal []localConfigProvider.LocalStorage
+		// otherwise simply fetch storagelist locally
+		storageLocal, err = configProvider.ListStorage()
+		if err != nil {
+			return storages, err
+		}
+		// convert to machine readable format
+		storages = storage.ConvertListLocalToMachine(storageLocal)
+	}
+	return storages, nil
+}
+
+func (c componentClient) newPushedComponent(applicationName string, p provider, storageClient storage.Client, urlClient url.Client) PushedComponent {
+	return &defaultPushedComponent{
+		application:   applicationName,
+		provider:      p,
+		client:        c.client,
+		storageClient: storageClient,
+		urlClient:     urlClient,
+	}
+}
+
+func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
+	if info.Exists() {
+		component := newComponentWithType(info.GetName(), componentType)
+
+		component.Namespace = info.GetNamespace()
+
+		component.Spec = ComponentSpec{
+			App:   info.GetApplication(),
+			Type:  componentType,
+			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
+		}
+
+		urls, err := info.ListURLs()
+		if err != nil {
+			return Component{}, err
+		}
+		if len(urls) > 0 {
+			for _, url := range urls {
+				component.Spec.URL = append(component.Spec.URL, url.Name)
+			}
+		}
+
+		return component, nil
+	}
+	return Component{}, nil
 }

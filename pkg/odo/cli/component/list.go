@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"io"
 	"os"
 	"path/filepath"
@@ -40,7 +41,7 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 type ListOptions struct {
 	// Context
 	*genericclioptions.Context
-
+	componentClient component.Client
 	// Flags
 	pathFlag    string
 	allAppsFlag bool
@@ -51,8 +52,8 @@ type ListOptions struct {
 }
 
 // NewListOptions returns new instance of ListOptions
-func NewListOptions() *ListOptions {
-	return &ListOptions{}
+func NewListOptions(client component.Client) *ListOptions {
+	return &ListOptions{componentClient: client}
 }
 
 // Complete completes log args
@@ -123,8 +124,7 @@ func (lo *ListOptions) Run() error {
 	// --path workflow
 
 	if len(lo.pathFlag) != 0 {
-
-		devfileComps, err := component.ListDevfileComponentsInPath(lo.KClient, filepath.SplitList(lo.pathFlag))
+		devfileComps, err := lo.componentClient.ListDevfileComponentsInPath(filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}
@@ -162,7 +162,7 @@ func (lo *ListOptions) Run() error {
 	currentComponentState := component.StateTypeNotPushed
 
 	if lo.KClient != nil {
-		devfileComponentsOut, err := component.ListDevfileComponents(lo.KClient, selector)
+		devfileComponentsOut, err := lo.componentClient.List(selector)
 		if err != nil {
 			return err
 		}
@@ -199,7 +199,7 @@ func (lo *ListOptions) Run() error {
 		selector = applabels.GetNonOdoSelector(lo.GetApplication())
 	}
 
-	otherComponents, err := component.List(lo.KClient, selector)
+	otherComponents, err := lo.componentClient.List(selector)
 	if err != nil {
 		return fmt.Errorf("failed to fetch components not managed by odo: %w", err)
 	}
@@ -217,7 +217,8 @@ func (lo *ListOptions) Run() error {
 
 // NewCmdList implements the list odo command
 func NewCmdList(name, fullName string) *cobra.Command {
-	o := NewListOptions()
+	client, _ := kclient.New()
+	o := NewListOptions(component.NewClient(client))
 
 	var componentListCmd = &cobra.Command{
 		Use:         name,

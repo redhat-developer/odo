@@ -6,11 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/service"
-
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/storage"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
@@ -46,36 +41,6 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
-// loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client kclient.ClientInterface, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
-	var storages storage.StorageList
-	var err error
-
-	// if component is pushed call ListWithState which gets storages from localconfig and cluster
-	// this result is already in mc readable form
-	if componentDesc.Status.State == StateTypePushed {
-		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:              client,
-			LocalConfigProvider: configProvider,
-		})
-
-		storages, err = storageClient.List()
-		if err != nil {
-			return err
-		}
-	} else {
-		// otherwise simply fetch storagelist locally
-		storageLocal, err := configProvider.ListStorage()
-		if err != nil {
-			return err
-		}
-		// convert to machine readable format
-		storages = storage.ConvertListLocalToMachine(storageLocal)
-	}
-	cfd.Spec.Storage = storages
-	return nil
-}
-
 // fillEmptyFields fills any fields that are empty in the ComponentFullDescription
 func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
 	//fix missing names in case it in not in description
@@ -99,98 +64,6 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 		cfd.Spec.App = applicationName
 	}
 	cfd.Spec.Ports = componentDesc.Spec.Ports
-}
-
-// NewComponentFullDescriptionFromClientAndLocalConfigProvider gets the complete description of the component from cluster
-func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.ClientInterface, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
-	cfd := &ComponentFullDescription{}
-	var state State
-	if client == nil {
-		state = StateTypeUnknown
-	} else {
-		state = GetComponentState(client, componentName, applicationName)
-	}
-	var componentDesc Component
-	var devfile devfileParser.DevfileObj
-	var err error
-	var configLinks []string
-	componentDesc, devfile, err = GetComponentFromDevfile(envInfo)
-	if err != nil {
-		return cfd, err
-	}
-	configLinks, err = service.ListDevfileLinks(devfile, context)
-
-	if err != nil {
-		return cfd, err
-	}
-	err = cfd.copyFromComponentDesc(&componentDesc)
-	if err != nil {
-		return cfd, err
-	}
-	cfd.Status.State = state
-	if state == StateTypePushed {
-		componentDescFromCluster, e := getRemoteComponentMetadata(client, componentName, applicationName, false, false)
-		if e != nil {
-			return cfd, e
-		}
-		cfd.Spec.Env = componentDescFromCluster.Spec.Env
-		cfd.Spec.Type = componentDescFromCluster.Spec.Type
-		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
-	}
-
-	for _, link := range configLinks {
-		found := false
-		for _, linked := range cfd.Status.LinkedServices {
-			if linked.ServiceName == link {
-				found = true
-				break
-			}
-		}
-		if !found {
-			cfd.Status.LinkedServices = append(cfd.Status.LinkedServices, SecretMount{
-				ServiceName: link,
-			})
-		}
-	}
-
-	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
-
-	var urls urlpkg.URLList
-
-	var routeSupported bool
-	var e error
-	if client == nil {
-		routeSupported = false
-	} else {
-		routeSupported, e = client.IsRouteSupported()
-		if e != nil {
-			// we assume if there was an error then the cluster is not connected
-			routeSupported = false
-		}
-	}
-
-	var configProvider localConfigProvider.LocalConfigProvider
-	envInfo.SetDevfileObj(devfile)
-	configProvider = envInfo
-
-	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
-		LocalConfigProvider: configProvider,
-		Client:              client,
-		IsRouteSupported:    routeSupported,
-	})
-
-	urls, err = urlClient.List()
-	if err != nil {
-		log.Warningf("URLs couldn't not be retrieved: %v", err)
-	}
-	cfd.Spec.URL = urls
-
-	err = cfd.loadStoragesFromClientAndLocalConfig(client, configProvider, componentName, applicationName, &componentDesc)
-	if err != nil {
-		return cfd, err
-	}
-
-	return cfd, nil
 }
 
 // Print prints the complete information of component onto stdout (Note: long term this function should not need to access any parameters, but just print the information in struct)
@@ -275,7 +148,7 @@ func (cfd *ComponentFullDescription) Print(client kclient.ClientInterface) error
 				continue
 			}
 
-			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
+			// Let's also get the secrets / environment variables that are being passed in. (if there are any)
 			secrets, err := client.GetSecret(linkedService.SecretName, cfd.GetNamespace())
 			if err != nil {
 				return err

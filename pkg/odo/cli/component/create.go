@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/component"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -37,7 +38,7 @@ import (
 type CreateOptions struct {
 	// Push context
 	*PushOptions
-
+	componentClient component.Client
 	// Flags
 	contextFlag string
 	portFlag    []string
@@ -116,9 +117,10 @@ odo catalog list components
 %[1]s nodejs --app myapp --project myproject`)
 
 // NewCreateOptions returns new instance of CreateOptions
-func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
+func NewCreateOptions(client component.Client, prjClient project.Client, prefClient preference.Client) *CreateOptions {
 	return &CreateOptions{
-		PushOptions: NewPushOptions(prjClient, prefClient),
+		PushOptions:     NewPushOptions(prjClient, prefClient),
+		componentClient: client,
 	}
 }
 
@@ -135,7 +137,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	co.devfileMetadata.componentNamespace = co.Context.GetProject()
 	// Get DevfilePath
 	co.DevfilePath = location.DevfileLocation(co.contextFlag)
-	//Check whether the directory already contains a devfile, this check should happen early
+	// Check whether the directory already contains a devfile, this check should happen early
 	co.devfileMetadata.userCreatedDevfile = util.CheckPathExists(co.DevfilePath)
 	// EnvFilePath is the path of env file for devfile component
 	envFilePath := getEnvFilePath(co.contextFlag)
@@ -159,7 +161,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 			return err
 		}
 	}
-	//Check if the directory already contains a devfile when --devfile flag is passed
+	// Check if the directory already contains a devfile when --devfile flag is passed
 	if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 	}
@@ -176,7 +178,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	case co.devfileMetadata.userCreatedDevfile:
 		co.createMethod = UserCreatedDevfileMethod{}
 	case co.devfileMetadata.devfilePath.value != "":
-		//co.devfileName = "" for user provided devfile
+		// co.devfileName = "" for user provided devfile
 		fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 		urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 		if fileErr != nil && urlErr != nil {
@@ -350,7 +352,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
-	co := NewCreateOptions(project.NewClient(kubclient), prefClient)
+	co := NewCreateOptions(component.NewClient(kubclient), project.NewClient(kubclient), prefClient)
 	var componentCreateCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
 		Short:       "Create a new component",
@@ -382,9 +384,9 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	// Adding `--now` flag
 	odoutil.AddNowFlag(componentCreateCmd, &co.nowFlag)
-	//Adding `--project` flag
+	// Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
-	//Adding `--application` flag
+	// Adding `--application` flag
 	appCmd.AddApplicationFlag(componentCreateCmd)
 
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)

@@ -7,6 +7,10 @@ mockgen -source=pkg/kclient/interface.go \
     -package kclient \
     -destination pkg/kclient/mock_Client.go
 
+mockgen -source=pkg/component/interface.go \
+    -package component \
+    -destination pkg/component/mock_Client.go
+
 mockgen -source=pkg/localConfigProvider/localConfigProvider.go \
     -package localConfigProvider \
     -destination pkg/localConfigProvider/mock_localConfigProvider.go 

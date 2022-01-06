@@ -52,7 +52,7 @@ const PushRecommendedCommandName = "push"
 type PushOptions struct {
 	// Push context
 	*CommonPushOptions
-
+	componentClient component.Client
 	// Flags
 	ignoreFlag     []string
 	forceBuildFlag bool
@@ -75,9 +75,11 @@ type PushOptions struct {
 
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
-func NewPushOptions(prjClient project.Client, prefClient preference.Client) *PushOptions {
+
+func NewPushOptions(client component.Client, prjClient project.Client, prefClient preference.Client) *PushOptions {
 	return &PushOptions{
 		CommonPushOptions: NewCommonPushOptions(prjClient, prefClient),
+		componentClient:   client,
 	}
 }
 
@@ -143,12 +145,6 @@ func (po *PushOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 }
 
 func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdline cmdline.Cmdline, args []string) error {
-	// TODO(feloy) use a global client?
-	kc, err := kclient.New()
-	if err != nil {
-		return err
-	}
-
 	// If the file does not exist, we should populate the environment file with the correct env.yaml information
 	// such as name and namespace.
 	if !envFileInfo.Exists() {
@@ -161,7 +157,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 			return errors.Wrap(err, "unable to determine target namespace for the component")
 		}
 
-		if err = checkDefaultProject(kc, namespace); err != nil {
+		if err = po.componentClient.CheckDefaultProject(namespace); err != nil {
 			return err
 		}
 
@@ -194,7 +190,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for devfile")
 		}
-		if err = checkDefaultProject(kc, namespace); err != nil {
+		if err = po.componentClient.CheckDefaultProject(namespace); err != nil {
 			return err
 		}
 
@@ -203,7 +199,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 			return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
 		}
 	} else if envFileInfo.GetNamespace() == "default" {
-		if err := checkDefaultProject(kc, envFileInfo.GetNamespace()); err != nil {
+		if err := po.componentClient.CheckDefaultProject(envFileInfo.GetNamespace()); err != nil {
 			return err
 		}
 	}
@@ -236,7 +232,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
-	po := NewPushOptions(project.NewClient(kubclient), prefClient)
+	po := NewPushOptions(component.NewClient(kubclient), project.NewClient(kubclient), prefClient)
 
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
@@ -263,7 +259,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().BoolVar(&po.debugFlag, "debug", false, "Runs the component in debug mode")
 	pushCmd.Flags().StringVar(&po.debugCommandFlag, "debug-command", "", "Devfile Debug Command to execute")
 
-	//Adding `--project` flag
+	// Adding `--project` flag
 	projectCmd.AddProjectFlag(pushCmd)
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
@@ -271,19 +267,4 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	completion.RegisterCommandFlagHandler(pushCmd, "context", completion.FileCompletionHandler)
 
 	return pushCmd
-}
-
-// checkDefaultProject errors out if the project resource is supported and the value is "default"
-func checkDefaultProject(client kclient.ClientInterface, name string) error {
-	// Check whether resource "Project" is supported
-	projectSupported, err := client.IsProjectSupported()
-
-	if err != nil {
-		return errors.Wrap(err, "resource project validation check failed.")
-	}
-
-	if projectSupported && name == "default" {
-		return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
-	}
-	return nil
 }

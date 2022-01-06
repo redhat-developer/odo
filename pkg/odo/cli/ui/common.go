@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"os"
-
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
