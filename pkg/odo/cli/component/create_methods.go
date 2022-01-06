@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"github.com/redhat-developer/odo/pkg/segment"
 
@@ -87,7 +88,7 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag, co.prefClient)
 }
 
 func (icm InteractiveCreateMethod) Rollback(devfile, componentContext string) {
@@ -121,6 +122,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 		componentName, err = createDefaultComponentName(
 			co.devfileMetadata.componentType,
 			co.contextFlag,
+			co.prefClient,
 		)
 		if err != nil {
 			return err
@@ -131,7 +133,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag, co.prefClient)
 }
 
 func (dcm DirectCreateMethod) Rollback(devfile, componentContext string) {
@@ -308,7 +310,7 @@ func findDevfileFromRegistry(catalogDevfileList catalog.DevfileComponentTypeList
 }
 
 // fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
-func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePath, componentType, componentContext string) (err error) {
+func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePath, componentType, componentContext string, prefClient preference.Client) (err error) {
 	// Download devfile from registry
 	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", registry.Name)
 	defer registrySpinner.End(false)
@@ -321,13 +323,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			URL: registry.URL + devfileLink,
 		}
 
-		// TODO(feloy) Get from DI
-		cfg, err := preference.NewClient()
-		if err != nil {
-			return err
-		}
-
-		secure := registryUtil.IsSecure(cfg, registry.Name)
+		secure := registryUtil.IsSecure(prefClient, registry.Name)
 		if secure {
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
@@ -337,7 +333,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			params.Token = token
 		}
 
-		devfileData, err := util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
+		devfileData, err := util.DownloadFileInMemoryWithCache(params, prefClient.GetRegistryCacheTime())
 		if err != nil {
 			return err
 		}
@@ -374,7 +370,7 @@ func getMetadataForExistingDevfile(co *CreateOptions, args []string) (componentN
 			componentName = devObj.GetMetadataName()
 		} else {
 			// default name
-			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.contextFlag)
+			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.contextFlag, co.prefClient)
 			if err != nil {
 				return "", "", err
 			}
@@ -385,7 +381,7 @@ func getMetadataForExistingDevfile(co *CreateOptions, args []string) (componentN
 }
 
 // createDefaultComponentName creates a default unique component name with the help of component context
-func createDefaultComponentName(componentType string, sourcePath string) (string, error) {
+func createDefaultComponentName(componentType string, sourcePath string, prefClient preference.Client) (string, error) {
 	var finalSourcePath string
 	var err error
 	if sourcePath != "" {
@@ -397,15 +393,8 @@ func createDefaultComponentName(componentType string, sourcePath string) (string
 		return "", err
 	}
 
-	// Fetch config
-	// TODO(feloy) Get from DI
-	cfg, err := preference.NewClient()
-	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
-	}
-
 	return component.GetDefaultComponentName(
-		cfg,
+		prefClient,
 		finalSourcePath,
 		componentType,
 		component.ComponentList{},
