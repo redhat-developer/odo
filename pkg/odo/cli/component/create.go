@@ -39,11 +39,12 @@ type CreateOptions struct {
 	*PushOptions
 
 	// Flags
-	contextFlag string
-	portFlag    []string
-	envFlag     []string
-	nowFlag     bool
-	appFlag     string
+	contextFlag       string
+	portFlag          []string
+	envFlag           []string
+	nowFlag           bool
+	appFlag           string
+	starterHasDevfile bool
 
 	interactive bool
 
@@ -125,6 +126,7 @@ func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *C
 func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	// GETTERS
 	// Get context
+	co.starterHasDevfile = false
 	co.Context, err = getContext(co.nowFlag, cmdline)
 	if err != nil {
 		return err
@@ -279,10 +281,13 @@ func (co *CreateOptions) Run() (err error) {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
 
-	// TODO: We should not have to rewrite to the file. Fix the starter project.
-	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
-	if err != nil {
-		return err
+	//Check if the directory already contains a devfile when starter project is downloaded
+	if co.devfileMetadata.starter != "" && !(util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value)) {
+		// TODO: We should not have to rewrite to the file. Fix the starter project.
+		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
+		if err != nil {
+			return err
+		}
 	}
 
 	// If user provided a custom name, re-write the devfile
