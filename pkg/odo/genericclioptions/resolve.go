@@ -110,7 +110,9 @@ func resolveProject(cmdline cmdline.Cmdline, localConfiguration localConfigProvi
 // checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
 // KClient, component and application should have been set before to call this method
 func (o *internalCxt) checkComponentExistsOrFail() error {
-	exists, err := component.Exists(o.KClient, o.component, o.application)
+	// TODO: implement with DI (pvala)
+	compClient := component.NewClient(o.KClient)
+	exists, err := compClient.Exists(o.component, o.application)
 	if err != nil {
 		return err
 	}

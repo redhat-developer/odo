@@ -115,7 +115,8 @@ var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, c
 	if context.GetApplication() != "" {
 		selector = applabels.GetSelector(context.GetApplication())
 	}
-	components, err := component.List(context.KClient, selector)
+	compClient := component.NewClient(context.KClient)
+	components, err := compClient.List(selector)
 
 	if err != nil {
 		return completions
