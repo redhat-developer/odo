@@ -47,7 +47,7 @@ func (co *CreateOptions) DevfileJSON() error {
 	}
 
 	// Ignore the error as we want other information if connection to cluster is not possible
-	cfd, err := co.componentClient.NewComponentFullDescriptionFromClientAndLocalConfigProvider(envInfo, envInfo.GetName(), envInfo.GetApplication(), co.GetProject(), co.GetComponentContext())
+	cfd, err := co.componentClient.GetComponentFullDescription(envInfo, envInfo.GetName(), envInfo.GetApplication(), co.GetProject(), co.GetComponentContext())
 	if err != nil {
 		return err
 	}

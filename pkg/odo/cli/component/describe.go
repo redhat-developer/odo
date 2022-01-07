@@ -3,7 +3,9 @@ package component
 import (
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"os"
+	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -74,7 +76,7 @@ func (do *DescribeOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
 
-	cfd, err := do.componentClient.NewComponentFullDescriptionFromClientAndLocalConfigProvider(do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
+	cfd, err := do.componentClient.GetComponentFullDescription(do.EnvSpecificInfo, do.componentName, do.Context.GetApplication(), do.Context.GetProject(), do.contextFlag)
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func (do *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(cfd)
 	} else {
-		err = cfd.Print(do.Context.KClient)
+		err = humanReadableDescribeOutput(cfd, do.componentClient)
 		if err != nil {
 			return err
 		}
@@ -118,4 +120,122 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	appCmd.AddApplicationFlag(describeCmd)
 
 	return describeCmd
+}
+
+// Print prints the complete information of component onto stdout (Note: long term this function should not need to access any parameters, but just print the information in struct)
+func humanReadableDescribeOutput(cfd *component.ComponentFullDescription, compClient component.Client) error {
+	log.Describef("Component Name: ", cfd.GetName())
+	log.Describef("Type: ", cfd.Spec.Type)
+
+	// Env
+	if cfd.Spec.Env != nil {
+
+		// Retrieve all the environment variables
+		var output string
+		for _, env := range cfd.Spec.Env {
+			output += fmt.Sprintf(" · %v=%v\n", env.Name, env.Value)
+		}
+
+		// Cut off the last newline and output
+		if len(output) > 0 {
+			log.Describef("Environment Variables:\n", output[:len(output)-1])
+		}
+
+	}
+
+	// Storage
+	if len(cfd.Spec.Storage.Items) > 0 {
+
+		// Gather the output
+		var output string
+		for _, store := range cfd.Spec.Storage.Items {
+			var eph string
+			if store.Spec.Ephemeral != nil {
+				if *store.Spec.Ephemeral {
+					eph = " as ephemeral volume"
+				} else {
+					eph = " as persistent volume"
+				}
+			}
+			output += fmt.Sprintf(" · %v of size %v mounted to %v%s\n", store.Name, store.Spec.Size, store.Spec.Path, eph)
+		}
+
+		// Cut off the last newline and output
+		if len(output) > 0 {
+			log.Describef("Storage:\n", output[:len(output)-1])
+		}
+
+	}
+
+	// URL
+	if len(cfd.Spec.URL.Items) > 0 {
+		var output string
+		// if the component is not pushed
+		for _, componentURL := range cfd.Spec.URL.Items {
+			if componentURL.Status.State == urlpkg.StateTypePushed {
+				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
+			} else {
+				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, componentURL.Spec.Port)
+			}
+		}
+
+		// Cut off the last newline and output
+		if len(output) > 0 {
+			log.Describef("URLs:\n", output[:len(output)-1])
+		}
+	}
+
+	// Linked services
+	if len(cfd.Status.LinkedServices) > 0 {
+
+		// Gather the output
+		var output string
+		for _, linkedService := range cfd.Status.LinkedServices {
+
+			if linkedService.SecretName == "" {
+				output += fmt.Sprintf(" · %s\n", linkedService.ServiceName)
+				continue
+			}
+			// Let's also get the secrets / environment variables that are being passed in. (if there are any)
+			//  FIXME: This data is not available via JSON
+			secretsData, err := compClient.GetLinkedServicesSecretData(cfd.GetNamespace(), linkedService.SecretName)
+			if err != nil {
+				return err
+			}
+
+			if len(secretsData) > 0 {
+				// Iterate through the secrets to throw in a string
+				var secretOutput string
+				for i := range secretsData {
+					if linkedService.MountVolume {
+						secretOutput += fmt.Sprintf("    · %v\n", filepath.ToSlash(filepath.Join(linkedService.MountPath, i)))
+					} else {
+						secretOutput += fmt.Sprintf("    · %v\n", i)
+					}
+				}
+
+				if len(secretOutput) > 0 {
+					// Cut off the last newline
+					secretOutput = secretOutput[:len(secretOutput)-1]
+					if linkedService.MountVolume {
+						output += fmt.Sprintf(" · %s\n   Files:\n%s\n", linkedService.ServiceName, secretOutput)
+					} else {
+						output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService.ServiceName, secretOutput)
+					}
+				}
+
+			} else {
+				output += fmt.Sprintf(" · %s\n", linkedService.SecretName)
+			}
+
+		}
+
+		if len(output) > 0 {
+			// Cut off the last newline and output
+			output = output[:len(output)-1]
+			log.Describef("Linked Services:\n", output)
+		}
+
+	}
+	return nil
 }

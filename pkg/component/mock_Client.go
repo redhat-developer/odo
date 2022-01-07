@@ -5,7 +5,6 @@
 package component
 
 import (
-	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	envinfo "github.com/redhat-developer/odo/pkg/envinfo"
 	reflect "reflect"
@@ -34,21 +33,6 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// NewComponentFullDescriptionFromClientAndLocalConfigProvider mocks base method
-func (m *MockClient) NewComponentFullDescriptionFromClientAndLocalConfigProvider(envInfo *envinfo.EnvSpecificInfo, componentName, applicationName, projectName, context string) (*ComponentFullDescription, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewComponentFullDescriptionFromClientAndLocalConfigProvider", envInfo, componentName, applicationName, projectName, context)
-	ret0, _ := ret[0].(*ComponentFullDescription)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// NewComponentFullDescriptionFromClientAndLocalConfigProvider indicates an expected call of NewComponentFullDescriptionFromClientAndLocalConfigProvider
-func (mr *MockClientMockRecorder) NewComponentFullDescriptionFromClientAndLocalConfigProvider(envInfo, componentName, applicationName, projectName, context interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewComponentFullDescriptionFromClientAndLocalConfigProvider", reflect.TypeOf((*MockClient)(nil).NewComponentFullDescriptionFromClientAndLocalConfigProvider), envInfo, componentName, applicationName, projectName, context)
-}
-
 // List mocks base method
 func (m *MockClient) List(applicationSelector string) (ComponentList, error) {
 	m.ctrl.T.Helper()
@@ -64,19 +48,19 @@ func (mr *MockClientMockRecorder) List(applicationSelector interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockClient)(nil).List), applicationSelector)
 }
 
-// ListDevfileComponentsInPath mocks base method
-func (m *MockClient) ListDevfileComponentsInPath(paths []string) ([]Component, error) {
+// ListComponentsInPath mocks base method
+func (m *MockClient) ListComponentsInPath(paths []string) ([]Component, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDevfileComponentsInPath", paths)
+	ret := m.ctrl.Call(m, "ListComponentsInPath", paths)
 	ret0, _ := ret[0].([]Component)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDevfileComponentsInPath indicates an expected call of ListDevfileComponentsInPath
-func (mr *MockClientMockRecorder) ListDevfileComponentsInPath(paths interface{}) *gomock.Call {
+// ListComponentsInPath indicates an expected call of ListComponentsInPath
+func (mr *MockClientMockRecorder) ListComponentsInPath(paths interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileComponentsInPath", reflect.TypeOf((*MockClient)(nil).ListDevfileComponentsInPath), paths)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListComponentsInPath", reflect.TypeOf((*MockClient)(nil).ListComponentsInPath), paths)
 }
 
 // Exists mocks base method
@@ -109,91 +93,32 @@ func (mr *MockClientMockRecorder) GetComponentNames(applicationName interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponentNames", reflect.TypeOf((*MockClient)(nil).GetComponentNames), applicationName)
 }
 
-// GetComponentFromDevfile mocks base method
-func (m *MockClient) GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
+// GetComponentFullDescription mocks base method
+func (m *MockClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName, applicationName, projectName, context string) (*ComponentFullDescription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetComponentFromDevfile", info)
-	ret0, _ := ret[0].(Component)
-	ret1, _ := ret[1].(parser.DevfileObj)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetComponentFromDevfile indicates an expected call of GetComponentFromDevfile
-func (mr *MockClientMockRecorder) GetComponentFromDevfile(info interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponentFromDevfile", reflect.TypeOf((*MockClient)(nil).GetComponentFromDevfile), info)
-}
-
-// GetComponentState mocks base method
-func (m *MockClient) GetComponentState(componentName, applicationName string) State {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetComponentState", componentName, applicationName)
-	ret0, _ := ret[0].(State)
-	return ret0
-}
-
-// GetComponentState indicates an expected call of GetComponentState
-func (mr *MockClientMockRecorder) GetComponentState(componentName, applicationName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponentState", reflect.TypeOf((*MockClient)(nil).GetComponentState), componentName, applicationName)
-}
-
-// GetComponent mocks base method
-func (m *MockClient) GetComponent(componentName, applicationName string) (Component, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetComponent", componentName, applicationName)
-	ret0, _ := ret[0].(Component)
+	ret := m.ctrl.Call(m, "GetComponentFullDescription", envInfo, componentName, applicationName, projectName, context)
+	ret0, _ := ret[0].(*ComponentFullDescription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetComponent indicates an expected call of GetComponent
-func (mr *MockClientMockRecorder) GetComponent(componentName, applicationName interface{}) *gomock.Call {
+// GetComponentFullDescription indicates an expected call of GetComponentFullDescription
+func (mr *MockClientMockRecorder) GetComponentFullDescription(envInfo, componentName, applicationName, projectName, context interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponent", reflect.TypeOf((*MockClient)(nil).GetComponent), componentName, applicationName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponentFullDescription", reflect.TypeOf((*MockClient)(nil).GetComponentFullDescription), envInfo, componentName, applicationName, projectName, context)
 }
 
-// GetPushedComponents mocks base method
-func (m *MockClient) GetPushedComponents(applicationName string) (map[string]PushedComponent, error) {
+// GetLinkedServicesSecretData mocks base method
+func (m *MockClient) GetLinkedServicesSecretData(namespace, secretName string) (map[string][]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPushedComponents", applicationName)
-	ret0, _ := ret[0].(map[string]PushedComponent)
+	ret := m.ctrl.Call(m, "GetLinkedServicesSecretData", namespace, secretName)
+	ret0, _ := ret[0].(map[string][]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPushedComponents indicates an expected call of GetPushedComponents
-func (mr *MockClientMockRecorder) GetPushedComponents(applicationName interface{}) *gomock.Call {
+// GetLinkedServicesSecretData indicates an expected call of GetLinkedServicesSecretData
+func (mr *MockClientMockRecorder) GetLinkedServicesSecretData(namespace, secretName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPushedComponents", reflect.TypeOf((*MockClient)(nil).GetPushedComponents), applicationName)
-}
-
-// GetPushedComponent mocks base method
-func (m *MockClient) GetPushedComponent(componentName, applicationName string) (PushedComponent, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPushedComponent", componentName, applicationName)
-	ret0, _ := ret[0].(PushedComponent)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPushedComponent indicates an expected call of GetPushedComponent
-func (mr *MockClientMockRecorder) GetPushedComponent(componentName, applicationName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPushedComponent", reflect.TypeOf((*MockClient)(nil).GetPushedComponent), componentName, applicationName)
-}
-
-// CheckDefaultProject mocks base method
-func (m *MockClient) CheckDefaultProject(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckDefaultProject", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckDefaultProject indicates an expected call of CheckDefaultProject
-func (mr *MockClientMockRecorder) CheckDefaultProject(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDefaultProject", reflect.TypeOf((*MockClient)(nil).CheckDefaultProject), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLinkedServicesSecretData", reflect.TypeOf((*MockClient)(nil).GetLinkedServicesSecretData), namespace, secretName)
 }

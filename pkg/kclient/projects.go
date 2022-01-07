@@ -110,7 +110,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 				// If watch unexpected has been closed..
 				val, ok := <-watcher.ResultChan()
 				if !ok {
-					//return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
+					// return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
 					watchErrorChannel <- errors.Errorf("watch channel was closed unexpectedly: %+v", val)
 					break
 				}
@@ -121,7 +121,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 					klog.V(3).Infof("Status of delete of project %s is '%s'", name, projectStatus.Status.Phase)
 
 					switch projectStatus.Status.Phase {
-					//projectStatus.Status.Phase can only be "Terminating" or "Active" or ""
+					// projectStatus.Status.Phase can only be "Terminating" or "Active" or ""
 					case "":
 						if val.Type == watch.Deleted {
 							projectChannel <- projectStatus
@@ -195,7 +195,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			if prj, ok := val.Object.(*projectv1.Project); ok {
 				klog.V(3).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
 				switch prj.Status.Phase {
-				//prj.Status.Phase can only be "Terminating" or "Active" or ""
+				// prj.Status.Phase can only be "Terminating" or "Active" or ""
 				case corev1.NamespaceActive:
 					if val.Type == watch.Added {
 						klog.V(3).Infof("Project %s now exists", prj.Name)
@@ -215,6 +215,21 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 // IsProjectSupported checks if Project resource type is present on the cluster
 func (c *Client) IsProjectSupported() (bool, error) {
 	return c.IsResourceSupported("project.openshift.io", "v1", "projects")
+}
+
+// CheckDefaultProject errors out if the project resource is supported and the value is "default"
+func (c *Client) CheckDefaultProject(name string) error {
+	// Check whether resource "Project" is supported
+	projectSupported, err := c.IsProjectSupported()
+
+	if err != nil {
+		return errors.Wrap(err, "resource project validation check failed.")
+	}
+
+	if projectSupported && name == "default" {
+		return &DefaultProjectError{}
+	}
+	return nil
 }
 
 // GetCurrentProjectName returns the current project name

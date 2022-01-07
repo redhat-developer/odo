@@ -22,7 +22,6 @@ type Component struct {
 type ComponentSpec struct {
 	App         string            `json:"app,omitempty"`
 	Type        string            `json:"type,omitempty"`
-	Source      string            `json:"source,omitempty"`
 	URL         []string          `json:"url,omitempty"`
 	URLSpec     []url.URL         `json:"-"`
 	Storage     []string          `json:"storage,omitempty"`
@@ -109,7 +108,7 @@ func newComponentList(comps []Component) ComponentList {
 	}
 }
 
-// NewCombinedComponentList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
+// NewCombinedComponentList returns list of devfile and other components(not managed by odo) in machine readable format
 func NewCombinedComponentList(devfileComps []Component, otherComps []Component) CombinedComponentList {
 
 	if len(devfileComps) == 0 {

@@ -78,11 +78,6 @@ func PrintComponentInfo(client kclient.ClientInterface, currentComponentName str
 	log.Describef("Component Name: ", currentComponentName)
 	log.Describef("Type: ", componentDesc.Spec.Type)
 
-	// Source
-	if componentDesc.Spec.Source != "" {
-		log.Describef("Source: ", componentDesc.Spec.Source)
-	}
-
 	// Env
 	if componentDesc.Spec.Env != nil {
 

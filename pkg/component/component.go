@@ -48,8 +48,8 @@ func NewClient(client kclient.ClientInterface) Client {
 	}
 }
 
-// NewComponentFullDescriptionFromClientAndLocalConfigProvider gets the complete description of the component from cluster
-func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProvider(envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
+// GetComponentFullDescription gets the complete description of the component from cluster
+func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	var state State
 	if c.client == nil {
@@ -65,7 +65,6 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 	if err != nil {
 		return cfd, err
 	}
-	configLinks, err = service.ListDevfileLinks(devfileObj, context)
 
 	if err != nil {
 		return cfd, err
@@ -84,6 +83,8 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 		cfd.Spec.Type = componentDescFromCluster.Spec.Type
 		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
 	}
+
+	configLinks, err = service.ListDevfileLinks(devfileObj, context)
 
 	for _, link := range configLinks {
 		found := false
@@ -105,15 +106,9 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 	var urls urlpkg.URLList
 
 	var routeSupported bool
-	var e error
-	if c.client == nil {
-		routeSupported = false
-	} else {
-		routeSupported, e = c.client.IsRouteSupported()
-		if e != nil {
-			// we assume if there was an error then the cluster is not connected
-			routeSupported = false
-		}
+	if c.client != nil {
+		// we assume if there was an error then the cluster is not connected
+		routeSupported, _ = c.client.IsRouteSupported()
 	}
 
 	var configProvider localConfigProvider.LocalConfigProvider
@@ -133,9 +128,14 @@ func (c componentClient) NewComponentFullDescriptionFromClientAndLocalConfigProv
 	cfd.Spec.URL = urls
 
 	var storages storage.StorageList
-	storages, err = c.loadStoragesFromClientAndLocalConfig(configProvider, &componentDesc)
+	storageClient := storage.NewClient(storage.ClientOptions{
+		Client:              c.client,
+		LocalConfigProvider: configProvider,
+	})
+
+	storages, err = storageClient.List()
 	if err != nil {
-		return cfd, err
+		log.Warningf("Storages couldn't not be retrieved: %v", err)
 	}
 	cfd.Spec.Storage = storages
 
@@ -172,7 +172,7 @@ func (c componentClient) List(selector string) (ComponentList, error) {
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := getComponent(elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], c.client)
+		component, err := getRemoteComponentMetadata(elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], true, true, c.client)
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -187,35 +187,8 @@ func (c componentClient) List(selector string) (ComponentList, error) {
 	return compoList, nil
 }
 
-// getComponentFromDevfile extracts component's metadata from the specified env info if it exists
-func getComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
-	if info.Exists() {
-		devfileObj, err := parser.Parse(info.GetDevfilePath())
-		if err != nil {
-			return Component{}, parser.DevfileObj{}, err
-		}
-		component, err := getComponentFrom(info, GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
-		if err != nil {
-			return Component{}, parser.DevfileObj{}, err
-		}
-		components, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{})
-		if err != nil {
-			return Component{}, parser.DevfileObj{}, err
-		}
-		for _, cmp := range components {
-			if cmp.Container != nil {
-				for _, env := range cmp.Container.Env {
-					component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
-				}
-			}
-		}
-
-		return component, devfileObj, nil
-	}
-	return Component{}, parser.DevfileObj{}, nil
-}
-
-func (c componentClient) ListDevfileComponentsInPath(paths []string) ([]Component, error) {
+// ListComponentsInPath: list all the components in a path
+func (c componentClient) ListComponentsInPath(paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {
@@ -287,84 +260,13 @@ func (c componentClient) Exists(componentName, applicationName string) (bool, er
 	return false, nil
 }
 
-func getComponentState(componentName, applicationName string, kubeclient kclient.ClientInterface) State {
-	// first check if a deployment exists
-	pushedComponent, err := getPushedComponent(componentName, applicationName, kubeclient)
+// GetLinkedServicesSecretData: get the secrets/environment variables that are passed by the linkedsecret
+func (c componentClient) GetLinkedServicesSecretData(namespace, secretName string) (map[string][]byte, error) {
+	secrets, err := c.client.GetSecret(secretName, namespace)
 	if err != nil {
-		return StateTypeUnknown
+		return map[string][]byte{}, err
 	}
-	if pushedComponent != nil {
-		return StateTypePushed
-	}
-	return StateTypeNotPushed
-}
-
-// getComponent provides component definition
-func getComponent(componentName string, applicationName string, kubeclient kclient.ClientInterface) (component Component, err error) {
-	return getRemoteComponentMetadata(componentName, applicationName, true, true, kubeclient)
-}
-
-// getPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
-func getPushedComponents(applicationName string, kubeclient kclient.ClientInterface) (map[string]PushedComponent, error) {
-	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-
-	deploymentList, err := kubeclient.ListDeployments(applicationSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list components")
-	}
-	res := make(map[string]PushedComponent, len(deploymentList.Items))
-	for _, d := range deploymentList.Items {
-		deployment := d
-		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:     kubeclient,
-			Deployment: &deployment,
-		})
-
-		urlClient := url.NewClient(url.ClientOptions{
-			Client:     kubeclient,
-			Deployment: &deployment,
-		})
-		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, kubeclient, storageClient, urlClient)
-		res[comp.GetName()] = comp
-	}
-
-	return res, nil
-}
-
-// GetPushedComponent returns an abstraction over the cluster representation of the component
-func getPushedComponent(componentName, applicationName string, kubeclient kclient.ClientInterface) (PushedComponent, error) {
-	d, err := kubeclient.GetOneDeployment(componentName, applicationName)
-	if err != nil {
-		if isIgnorableError(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	storageClient := storage.NewClient(storage.ClientOptions{
-		Client:     kubeclient,
-		Deployment: d,
-	})
-
-	urlClient := url.NewClient(url.ClientOptions{
-		Client:     kubeclient,
-		Deployment: d,
-	})
-	return newPushedComponent(applicationName, &devfileComponent{d: *d}, kubeclient, storageClient, urlClient), nil
-}
-
-// CheckDefaultProject errors out if the project resource is supported and the value is "default"
-func (c componentClient) CheckDefaultProject(name string) error {
-	// Check whether resource "Project" is supported
-	projectSupported, err := c.client.IsProjectSupported()
-
-	if err != nil {
-		return errors.Wrap(err, "resource project validation check failed.")
-	}
-
-	if projectSupported && name == "default" {
-		return errors.New("odo may not work as expected in the default project, please run the odo component in a non-default project")
-	}
-	return nil
+	return secrets.Data, nil
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
@@ -426,7 +328,7 @@ func getRemoteComponentMetadata(componentName string, applicationName string, ge
 
 	// Secrets
 	linkedSecrets := fromCluster.GetLinkedSecrets()
-	err = setLinksServiceNames(linkedSecrets, componentlabels.GetSelector(componentName, applicationName), kubeclient)
+	err = setLinksServiceNames(kubeclient, linkedSecrets, componentlabels.GetSelector(componentName, applicationName))
 	if err != nil {
 		return Component{}, fmt.Errorf("unable to get name of services: %w", err)
 	}
@@ -446,8 +348,105 @@ func getRemoteComponentMetadata(componentName string, applicationName string, ge
 	return component, nil
 }
 
+func newPushedComponent(applicationName string, p provider, kubeclient kclient.ClientInterface, storageClient storage.Client, urlClient url.Client) PushedComponent {
+	return &defaultPushedComponent{
+		application:   applicationName,
+		provider:      p,
+		client:        kubeclient,
+		storageClient: storageClient,
+		urlClient:     urlClient,
+	}
+}
+
+func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
+	if info.Exists() {
+		component := newComponentWithType(info.GetName(), componentType)
+
+		component.Namespace = info.GetNamespace()
+
+		component.Spec = ComponentSpec{
+			App:   info.GetApplication(),
+			Type:  componentType,
+			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
+		}
+
+		urls, err := info.ListURLs()
+		if err != nil {
+			return Component{}, err
+		}
+		if len(urls) > 0 {
+			for _, url := range urls {
+				component.Spec.URL = append(component.Spec.URL, url.Name)
+			}
+		}
+
+		return component, nil
+	}
+	return Component{}, nil
+}
+
+func getComponentState(componentName, applicationName string, kubeclient kclient.ClientInterface) State {
+	// first check if a deployment exists
+	pushedComponent, err := getPushedComponent(componentName, applicationName, kubeclient)
+	if err != nil {
+		return StateTypeUnknown
+	}
+	if pushedComponent != nil {
+		return StateTypePushed
+	}
+	return StateTypeNotPushed
+}
+
+// getPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
+func getPushedComponents(applicationName string, kubeclient kclient.ClientInterface) (map[string]PushedComponent, error) {
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
+
+	deploymentList, err := kubeclient.ListDeployments(applicationSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list components")
+	}
+	res := make(map[string]PushedComponent, len(deploymentList.Items))
+	for _, d := range deploymentList.Items {
+		deployment := d
+		storageClient := storage.NewClient(storage.ClientOptions{
+			Client:     kubeclient,
+			Deployment: &deployment,
+		})
+
+		urlClient := url.NewClient(url.ClientOptions{
+			Client:     kubeclient,
+			Deployment: &deployment,
+		})
+		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, kubeclient, storageClient, urlClient)
+		res[comp.GetName()] = comp
+	}
+
+	return res, nil
+}
+
+// getPushedComponent returns an abstraction over the cluster representation of the component
+func getPushedComponent(componentName, applicationName string, kubeclient kclient.ClientInterface) (PushedComponent, error) {
+	d, err := kubeclient.GetOneDeployment(componentName, applicationName)
+	if err != nil {
+		if isIgnorableError(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	storageClient := storage.NewClient(storage.ClientOptions{
+		Client:     kubeclient,
+		Deployment: d,
+	})
+
+	urlClient := url.NewClient(url.ClientOptions{
+		Client:     kubeclient,
+		Deployment: d,
+	})
+	return newPushedComponent(applicationName, &devfileComponent{d: *d}, kubeclient, storageClient, urlClient), nil
+}
+
 // setLinksServiceNames sets the service name of the links from the info in ServiceBindingRequests present in the cluster
-func setLinksServiceNames(linkedSecrets []SecretMount, selector string, kubeclient kclient.ClientInterface) error {
+func setLinksServiceNames(kubeclient kclient.ClientInterface, linkedSecrets []SecretMount, selector string) error {
 	ok, err := kubeclient.IsServiceBindingSupported()
 	if err != nil {
 		return fmt.Errorf("unable to check if service binding is supported: %w", err)
@@ -532,69 +531,30 @@ func setLinksServiceNames(linkedSecrets []SecretMount, selector string, kubeclie
 	return nil
 }
 
-// loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (c componentClient) loadStoragesFromClientAndLocalConfig(configProvider localConfigProvider.LocalConfigProvider, componentDesc *Component) (storage.StorageList, error) {
-	var storages storage.StorageList
-	var err error
-
-	// if component is pushed call ListWithState which gets storages from localconfig and cluster
-	// this result is already in mc readable form
-	if componentDesc.Status.State == StateTypePushed {
-		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:              c.client,
-			LocalConfigProvider: configProvider,
-		})
-
-		storages, err = storageClient.List()
-		if err != nil {
-			return storages, err
-		}
-	} else {
-		var storageLocal []localConfigProvider.LocalStorage
-		// otherwise simply fetch storagelist locally
-		storageLocal, err = configProvider.ListStorage()
-		if err != nil {
-			return storages, err
-		}
-		// convert to machine readable format
-		storages = storage.ConvertListLocalToMachine(storageLocal)
-	}
-	return storages, nil
-}
-
-func newPushedComponent(applicationName string, p provider, kubeclient kclient.ClientInterface, storageClient storage.Client, urlClient url.Client) PushedComponent {
-	return &defaultPushedComponent{
-		application:   applicationName,
-		provider:      p,
-		client:        kubeclient,
-		storageClient: storageClient,
-		urlClient:     urlClient,
-	}
-}
-
-func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
+// getComponentFromDevfile extracts component's metadata from the specified env info if it exists
+func getComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
 	if info.Exists() {
-		component := newComponentWithType(info.GetName(), componentType)
-
-		component.Namespace = info.GetNamespace()
-
-		component.Spec = ComponentSpec{
-			App:   info.GetApplication(),
-			Type:  componentType,
-			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
-		}
-
-		urls, err := info.ListURLs()
+		devfileObj, err := parser.Parse(info.GetDevfilePath())
 		if err != nil {
-			return Component{}, err
+			return Component{}, parser.DevfileObj{}, err
 		}
-		if len(urls) > 0 {
-			for _, url := range urls {
-				component.Spec.URL = append(component.Spec.URL, url.Name)
+		component, err := getComponentFrom(info, GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+		if err != nil {
+			return Component{}, parser.DevfileObj{}, err
+		}
+		components, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{})
+		if err != nil {
+			return Component{}, parser.DevfileObj{}, err
+		}
+		for _, cmp := range components {
+			if cmp.Container != nil {
+				for _, env := range cmp.Container.Env {
+					component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
+				}
 			}
 		}
 
-		return component, nil
+		return component, devfileObj, nil
 	}
-	return Component{}, nil
+	return Component{}, parser.DevfileObj{}, nil
 }

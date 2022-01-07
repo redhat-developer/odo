@@ -124,7 +124,7 @@ func (lo *ListOptions) Run() error {
 	// --path workflow
 
 	if len(lo.pathFlag) != 0 {
-		devfileComps, err := lo.componentClient.ListDevfileComponentsInPath(filepath.SplitList(lo.pathFlag))
+		devfileComps, err := lo.componentClient.ListComponentsInPath(filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}

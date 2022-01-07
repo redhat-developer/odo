@@ -216,16 +216,15 @@ func TestList(t *testing.T) {
 			//	}
 			// })
 
-			mockComponentClient := NewMockClient(ctrl)
 			applicationSelector := applabels.GetSelector("app")
 			mockKClient := kclient.NewMockClientInterface(ctrl)
-			mockKClient.EXPECT().GetDeploymentFromSelector(applicationSelector).Return(tt.deploymentList)
+			mockKClient.EXPECT().GetDeploymentFromSelector(applicationSelector).Return(&tt.deploymentList.Items, nil).AnyTimes()
+			mockKClient.EXPECT().GetOneDeployment("comp0", "app").Return(tt.deploymentList.Items[0], nil).AnyTimes()
+			mockKClient.EXPECT().GetOneDeployment("comp0", "app").Return(tt.deploymentList.Items[1], nil).AnyTimes()
 
-			mockComponentClient.EXPECT().GetComponent(tt.deploymentList.Items[0].Labels[componentlabels.ComponentLabel], tt.deploymentList.Items[0].Labels[componentlabels.ComponentLabel]).Return(tt.output.Items[0]).AnyTimes()
-			mockComponentClient.EXPECT().GetComponent(tt.deploymentList.Items[1].Labels[componentlabels.ComponentLabel], tt.deploymentList.Items[1].Labels[componentlabels.ComponentLabel]).Return(tt.output.Items[1]).AnyTimes()
+			compClient := NewClient(mockKClient)
 
-			// mockComponentClient.EXPECT().ListDevfileComponents(applicationSelector).Return(tt.output, tt.mockError)
-			results, err := mockComponentClient.List(applicationSelector)
+			results, err := compClient.List(applicationSelector)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
@@ -479,51 +478,6 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 			}
 			if got != want {
 				t.Errorf("Incorrect component type returned; got: %q, want: %q", got, want)
-			}
-		})
-	}
-}
-
-func TestComponentClient_CheckDefaultProject(t *testing.T) {
-	tests := []struct {
-		testName    string
-		supported   bool
-		wantErr     bool
-		projectName string
-		supportErr  error
-	}{
-		{
-			testName:    "Case 0: CheckDefaultProject returns no error",
-			projectName: "myproject",
-			supported:   true,
-			wantErr:     false,
-			supportErr:  nil,
-		},
-		{
-			testName:    "Case 1: CheckDefaultProject returns error on using 'default' project name in OC",
-			projectName: "default",
-			supported:   true,
-			wantErr:     true,
-			supportErr:  nil,
-		},
-		{testName: "Case 2: CheckDefaultProject returns error on checking if the project resource is supported",
-			projectName: "myproject",
-			supported:   false,
-			wantErr:     true,
-			supportErr:  fmt.Errorf("some error while checking project support"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-			mockKClient := kclient.NewMockClientInterface(ctrl)
-			mockKClient.EXPECT().IsProjectSupported().Return(tt.supported, tt.supportErr).AnyTimes()
-
-			client := componentClient{client: mockKClient}
-			got := client.CheckDefaultProject(tt.projectName)
-			if (!tt.wantErr && got != nil) || (tt.wantErr && got == nil) {
-				t.Errorf("got==nil: %v; wantErr: %v", got == nil, tt.wantErr)
 			}
 		})
 	}

@@ -28,3 +28,9 @@ type ServiceNotFoundError struct {
 func (e *ServiceNotFoundError) Error() string {
 	return fmt.Sprintf("service not found for the selector %q", e.Selector)
 }
+
+type DefaultProjectError struct{}
+
+func (e *DefaultProjectError) Error() string {
+	return fmt.Sprintf("odo may not work as expected in the default project, please run the odo component in a non-default project")
+}
