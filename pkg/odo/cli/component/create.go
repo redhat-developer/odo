@@ -158,9 +158,15 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 			return err
 		}
 	}
-	//Check if the directory already contains a devfile when --devfile flag is passed
-	if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
-		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
+	//Check if the directory already contains a devfile
+	if util.CheckPathExists(co.DevfilePath) {
+		//if --devfile arg is provided, return arror
+		if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
+		} else if !util.CheckPathExists(envFilePath) && co.devfileMetadata.starter != "" {
+			//if devfile already exists, then don't allow --starter
+			return fmt.Errorf("this directory already has a devfile so ou cannot provide a starter. Please remove exisiting devfile and re-create")
+		}
 	}
 
 	// Initialize envinfo
