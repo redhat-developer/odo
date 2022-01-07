@@ -198,7 +198,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			When("the Deployment's Replica count (pods) is scaled to 0", func() {
 				BeforeEach(func() {
-					commonVar.CliRunner.ScalePodToZero(cmpName, "app")
+					commonVar.CliRunner.ScalePodToZero(cmpName, "app", commonVar.Project)
 				})
 
 				It("odo push should successfully recreate the pod", func() {
