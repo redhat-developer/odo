@@ -276,7 +276,7 @@ func (kubectl KubectlRunner) PodsShouldBeRunning(project string, regex string) {
 	})
 }
 
-// WaitForCmdOut runs "kubectl" command until it gets
+// WaitForRunnerCmdOut runs "kubectl" command until it gets
 // the expected output.
 // It accepts 4 arguments
 // args (arguments to the program)
@@ -346,6 +346,12 @@ func (kubectl KubectlRunner) addConfigMapForCleanup(projectName string) {
 	Cmd(kubectl.path, "create", "configmap", "config-map-for-cleanup", "--from-literal", "type=testing", "--from-literal", "team=odo", "-n", projectName).ShouldPass()
 }
 
-func (kubectl KubectlRunner) ScalePodToZero(componentName, appName string) {
+// ScalePodToZero scales the pod of the deployment to zero.
+// It waits for the pod to get deleted from the cluster before returning
+func (kubectl KubectlRunner) ScalePodToZero(componentName, appName, projectName string) {
+	podName := kubectl.GetRunningPodNameByComponent(componentName, projectName)
 	Cmd(kubectl.path, "scale", "deploy", strings.Join([]string{componentName, appName}, "-"), "--replicas=0").ShouldPass()
+	kubectl.WaitForRunnerCmdOut([]string{"get", "-n", projectName, "pod", podName}, 1, false, func(output string) bool {
+		return !strings.Contains(output, podName)
+	})
 }
