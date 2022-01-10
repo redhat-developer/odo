@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/redhat-developer/odo/pkg/preference"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	corev1 "k8s.io/api/core/v1"
@@ -80,7 +81,7 @@ func TestWaitAndGetPodWithEvents(t *testing.T) {
 
 			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
 
-			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", time.Second)
+			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", preference.DefaultPushTimeout*time.Second)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)

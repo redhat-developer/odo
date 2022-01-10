@@ -38,9 +38,6 @@ type CreateOptions struct {
 	// Push context
 	*PushOptions
 
-	// Clients
-	prefClient preference.Client
-
 	// Flags
 	contextFlag string
 	portFlag    []string
@@ -122,7 +119,6 @@ odo catalog list components
 func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
 	return &CreateOptions{
 		PushOptions: NewPushOptions(prjClient, prefClient),
-		prefClient:  prefClient,
 	}
 }
 
