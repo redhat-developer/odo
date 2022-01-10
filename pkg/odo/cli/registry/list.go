@@ -17,6 +17,7 @@ import (
 	util "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
@@ -33,12 +34,17 @@ var (
 
 // ListOptions encapsulates the options for "odo registry list" command
 type ListOptions struct {
+	// Clients
+	prefClient preference.Client
+
 	printGitRegistryDeprecationWarning bool
 }
 
 // NewListOptions creates a new ListOptions instance
-func NewListOptions() *ListOptions {
-	return &ListOptions{}
+func NewListOptions(prefClient preference.Client) *ListOptions {
+	return &ListOptions{
+		prefClient: prefClient,
+	}
 }
 
 // Complete completes ListOptions after they've been created
@@ -53,12 +59,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry list" command
 func (o *ListOptions) Run() (err error) {
-	cfg, err := preference.New()
-	if err != nil {
-		return err
-	}
-
-	registryList := cfg.OdoSettings.RegistryList
+	registryList := o.prefClient.RegistryList()
 	if registryList == nil || len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
 	}
@@ -100,7 +101,11 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 
 // NewCmdList implements the "odo registry list" command
 func NewCmdList(name, fullName string) *cobra.Command {
-	o := NewListOptions()
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewListOptions(prefClient)
 	registryListCmd := &cobra.Command{
 		Use:         name,
 		Short:       listDesc,

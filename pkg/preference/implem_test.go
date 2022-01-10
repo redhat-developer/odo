@@ -22,19 +22,19 @@ func TestNew(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		output  *PreferenceInfo
+		output  *preferenceInfo
 		success bool
 	}{
 		{
 			name: "Test filename is being set",
-			output: &PreferenceInfo{
+			output: &preferenceInfo{
 				Filename: tempConfigFile.Name(),
 				Preference: Preference{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       preferenceKind,
 						APIVersion: preferenceAPIVersion,
 					},
-					OdoSettings: OdoSettings{
+					OdoSettings: odoSettings{
 						RegistryList: &[]Registry{
 							{
 								Name:   DefaultDevfileRegistryName,
@@ -51,7 +51,7 @@ func TestNew(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfi, err := NewPreferenceInfo()
+			cfi, err := newPreferenceInfo()
 			switch test.success {
 			case true:
 				if err != nil {
@@ -93,7 +93,7 @@ func TestGetBuildTimeout(t *testing.T) {
 		{
 			name: "Case 2: Validating value 0 from configuration",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					BuildTimeout: &zeroValue,
 				},
 			},
@@ -103,7 +103,7 @@ func TestGetBuildTimeout(t *testing.T) {
 		{
 			name: "Case 3: Validating value 5 from configuration",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					BuildTimeout: &nonzeroValue,
 				},
 			},
@@ -112,7 +112,7 @@ func TestGetBuildTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreferenceInfo()
+			cfg, err := newPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -149,7 +149,7 @@ func TestGetPushTimeout(t *testing.T) {
 		{
 			name: "Case 2: Validating value 0 from configuration",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					PushTimeout: &zeroValue,
 				},
 			},
@@ -159,7 +159,7 @@ func TestGetPushTimeout(t *testing.T) {
 		{
 			name: "Case 3: Validating value 5 from configuration",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					PushTimeout: &nonzeroValue,
 				},
 			},
@@ -168,7 +168,7 @@ func TestGetPushTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreferenceInfo()
+			cfg, err := newPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -205,7 +205,7 @@ func TestGetTimeout(t *testing.T) {
 		{
 			name: "Case 2: validating value 0 from config",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					Timeout: &zeroValue,
 				},
 			},
@@ -215,7 +215,7 @@ func TestGetTimeout(t *testing.T) {
 		{
 			name: "Case 3: validating value 5 from config",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					Timeout: &nonzeroValue,
 				},
 			},
@@ -224,7 +224,7 @@ func TestGetTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreferenceInfo()
+			cfg, err := newPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -272,7 +272,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: UpdateNotificationSetting,
 			value:     "false",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					UpdateNotification: &trueValue,
 				},
 			},
@@ -284,7 +284,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: UpdateNotificationSetting,
 			value:     "true",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					UpdateNotification: &falseValue,
 				},
 			},
@@ -305,7 +305,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: TimeoutSetting,
 			value:     "5",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					Timeout: &zeroValue,
 				},
 			},
@@ -429,7 +429,7 @@ func TestSetConfiguration(t *testing.T) {
 			parameter: ConsentTelemetrySetting,
 			value:     "false",
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					ConsentTelemetry: &trueValue,
 				},
 			},
@@ -439,7 +439,7 @@ func TestSetConfiguration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := NewPreferenceInfo()
+			cfg, err := newPreferenceInfo()
 			if err != nil {
 				t.Error(err)
 			}
@@ -506,7 +506,7 @@ func TestConsentTelemetry(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 2: %s true", ConsentTelemetrySetting),
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					ConsentTelemetry: &trueValue,
 				},
 			},
@@ -515,7 +515,7 @@ func TestConsentTelemetry(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 3: %s false", ConsentTelemetrySetting),
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					ConsentTelemetry: &falseValue,
 				},
 			},
@@ -525,7 +525,7 @@ func TestConsentTelemetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := PreferenceInfo{
+			cfg := preferenceInfo{
 				Preference: tt.existingConfig,
 			}
 			output := cfg.GetConsentTelemetry()
@@ -562,7 +562,7 @@ func TestGetupdateNotification(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 2: %s true", UpdateNotificationSetting),
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					UpdateNotification: &trueValue,
 				},
 			},
@@ -571,7 +571,7 @@ func TestGetupdateNotification(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 3: %s false", UpdateNotificationSetting),
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					UpdateNotification: &falseValue,
 				},
 			},
@@ -581,7 +581,7 @@ func TestGetupdateNotification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := PreferenceInfo{
+			cfg := preferenceInfo{
 				Preference: tt.existingConfig,
 			}
 			output := cfg.GetUpdateNotification()
@@ -650,7 +650,7 @@ func TestPreferenceIsntCreatedWhenOdoIsUsed(t *testing.T) {
 	}
 	os.RemoveAll(filename)
 
-	conf, err := NewPreferenceInfo()
+	conf, err := newPreferenceInfo()
 	if err != nil {
 		t.Errorf("error while creating global preference %v", err)
 	}
@@ -660,7 +660,7 @@ func TestPreferenceIsntCreatedWhenOdoIsUsed(t *testing.T) {
 }
 
 func TestMetaTypePopulatedInPreference(t *testing.T) {
-	pi, err := NewPreferenceInfo()
+	pi, err := newPreferenceInfo()
 
 	if err != nil {
 		t.Error(err)
@@ -821,7 +821,7 @@ func TestGetConsentTelemetry(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 2: %s true", ConsentTelemetrySetting),
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					ConsentTelemetry: &trueValue,
 				},
 			},
@@ -830,7 +830,7 @@ func TestGetConsentTelemetry(t *testing.T) {
 		{
 			name: fmt.Sprintf("Case 3: %s false", ConsentTelemetrySetting),
 			existingConfig: Preference{
-				OdoSettings: OdoSettings{
+				OdoSettings: odoSettings{
 					ConsentTelemetry: &falseValue,
 				},
 			},
@@ -840,7 +840,7 @@ func TestGetConsentTelemetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := PreferenceInfo{
+			cfg := preferenceInfo{
 				Preference: tt.existingConfig,
 			}
 			output := cfg.GetConsentTelemetry()

@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -23,7 +24,8 @@ type CommonPushOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	prjClient project.Client
+	prjClient  project.Client
+	prefClient preference.Client
 
 	//Flags
 	// TODO(feloy) Fixme
@@ -36,9 +38,10 @@ type CommonPushOptions struct {
 }
 
 // NewCommonPushOptions instantiates a commonPushOptions object
-func NewCommonPushOptions(prjClient project.Client) *CommonPushOptions {
+func NewCommonPushOptions(prjClient project.Client, prefClient preference.Client) *CommonPushOptions {
 	return &CommonPushOptions{
-		prjClient: prjClient,
+		prjClient:  prjClient,
+		prefClient: prefClient,
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -63,15 +64,11 @@ func TestClientUploadWithoutConsent(t *testing.T) {
 	body, server := mockServer()
 	defer server.Close()
 	defer close(body)
-	falseValue := false
 
-	cfg := &preference.PreferenceInfo{
-		Preference: preference.Preference{
-			OdoSettings: preference.OdoSettings{
-				ConsentTelemetry: &falseValue,
-			},
-		},
-	}
+	ctrl := gomock.NewController(t)
+	cfg := preference.NewMockClient(ctrl)
+	cfg.EXPECT().GetConsentTelemetry().Return(false)
+
 	c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
 	if err != nil {
 		t.Error(err)
@@ -100,15 +97,6 @@ func TestClientUploadWithConsent(t *testing.T) {
 	defer server.Close()
 	defer close(body)
 
-	trueValue := true
-
-	cfg := &preference.PreferenceInfo{
-		Preference: preference.Preference{
-			OdoSettings: preference.OdoSettings{
-				ConsentTelemetry: &trueValue,
-			},
-		},
-	}
 	tests := []struct {
 		cmd      string
 		testName string
@@ -135,6 +123,10 @@ func TestClientUploadWithConsent(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			cfg := preference.NewMockClient(ctrl)
+			cfg.EXPECT().GetConsentTelemetry().Return(true)
+
 			c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
 			if err != nil {
 				t.Error(err)
@@ -239,13 +231,10 @@ func TestIsTelemetryEnabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		os.Setenv(DisableTelemetryEnv, tt.envVar)
-		cfg := &preference.PreferenceInfo{
-			Preference: preference.Preference{
-				OdoSettings: preference.OdoSettings{
-					ConsentTelemetry: &tt.preferenceValue,
-				},
-			},
-		}
+		ctrl := gomock.NewController(t)
+		cfg := preference.NewMockClient(ctrl)
+		cfg.EXPECT().GetConsentTelemetry().Return(tt.preferenceValue).AnyTimes()
+
 		if IsTelemetryEnabled(cfg) != tt.want {
 			t.Errorf(tt.errMesssage, "%s is set to %q. %s is set to %q.", DisableTelemetryEnv, tt.envVar, preference.ConsentTelemetrySetting, tt.preferenceValue)
 		}
@@ -257,15 +246,10 @@ func TestClientUploadWithContext(t *testing.T) {
 	body, server := mockServer()
 	defer server.Close()
 	defer close(body)
-	trueValue := true
 
-	cfg := &preference.PreferenceInfo{
-		Preference: preference.Preference{
-			OdoSettings: preference.OdoSettings{
-				ConsentTelemetry: &trueValue,
-			},
-		},
-	}
+	ctrl := gomock.NewController(t)
+	cfg := preference.NewMockClient(ctrl)
+	cfg.EXPECT().GetConsentTelemetry().Return(true).AnyTimes()
 	ctx := scontext.NewContext(context.Background())
 
 	for k, v := range map[string]string{scontext.ComponentType: "nodejs", scontext.ClusterType: ""} {

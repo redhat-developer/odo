@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -56,9 +57,9 @@ type SetOptions struct {
 }
 
 // NewSetOptions creates a new SetOptions instance
-func NewSetOptions(prjClient project.Client) *SetOptions {
+func NewSetOptions(prjClient project.Client, prefClient preference.Client) *SetOptions {
 	return &SetOptions{
-		PushOptions: clicomponent.NewPushOptions(prjClient),
+		PushOptions: clicomponent.NewPushOptions(prjClient, prefClient),
 	}
 }
 
@@ -180,7 +181,11 @@ func isValidArgumentList(args []string) error {
 func NewCmdSet(name, fullName string) *cobra.Command {
 	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
-	o := NewSetOptions(project.NewClient(kubclient))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewSetOptions(project.NewClient(kubclient), prefClient)
 	configurationSetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Set a value in odo config file",

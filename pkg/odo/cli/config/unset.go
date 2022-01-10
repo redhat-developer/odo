@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -51,9 +52,9 @@ type UnsetOptions struct {
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
-func NewUnsetOptions(prjClient project.Client) *UnsetOptions {
+func NewUnsetOptions(prjClient project.Client, prefClient preference.Client) *UnsetOptions {
 	return &UnsetOptions{
-		PushOptions: clicomponent.NewPushOptions(prjClient),
+		PushOptions: clicomponent.NewPushOptions(prjClient, prefClient),
 	}
 }
 
@@ -131,7 +132,11 @@ func (o *UnsetOptions) Run() error {
 func NewCmdUnset(name, fullName string) *cobra.Command {
 	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
-	o := NewUnsetOptions(project.NewClient(kubclient))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewUnsetOptions(project.NewClient(kubclient), prefClient)
 	configurationUnsetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Unset a value in odo config file",

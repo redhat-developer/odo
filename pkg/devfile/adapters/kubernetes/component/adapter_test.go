@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/golang/mock/gomock"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -136,8 +138,8 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := New(adapterCtx, fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
+			componentAdapter := New(adapterCtx, fkclient, nil)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -350,8 +352,8 @@ func TestDoesComponentExist(t *testing.T) {
 			})
 
 			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := New(adapterCtx, fkclient)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
+			componentAdapter := New(adapterCtx, fkclient, nil)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false)
 
 			// Checks for unexpected error cases
 			if err != nil {
@@ -443,7 +445,10 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			componentAdapter := New(adapterCtx, fkclient)
+			ctrl := gomock.NewController(t)
+			prefClient := preference.NewMockClient(ctrl)
+			prefClient.EXPECT().GetPushTimeout().Return(10)
+			componentAdapter := New(adapterCtx, fkclient, prefClient)
 			_, err := componentAdapter.getPod(false)
 
 			// Checks for unexpected error cases
@@ -564,7 +569,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
 
-			a := New(adapterCtx, fkclient)
+			a := New(adapterCtx, fkclient, nil)
 
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {

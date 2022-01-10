@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
@@ -16,24 +15,13 @@ import (
 
 // isServerUp returns true if server is up and running
 // server parameter has to be a valid url
-func isServerUp(server string) bool {
-	// initialising the default timeout, this will be used
-	// when the value is not readable from config
-	ocRequestTimeout := preference.DefaultTimeout * time.Second
-	// checking the value of timeout in config
-	// before proceeding with default timeout
-	cfg, configReadErr := preference.New()
-	if configReadErr != nil {
-		klog.V(3).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		ocRequestTimeout = time.Duration(cfg.GetTimeout()) * time.Second
-	}
+func isServerUp(server string, timeout time.Duration) bool {
 	address, err := util.GetHostWithPort(server)
 	if err != nil {
 		klog.V(3).Infof("Unable to parse url %s (%s)", server, err)
 	}
 	klog.V(3).Infof("Trying to connect to server %s", address)
-	_, connectionError := net.DialTimeout("tcp", address, time.Duration(ocRequestTimeout))
+	_, connectionError := net.DialTimeout("tcp", address, timeout)
 	if connectionError != nil {
 		klog.V(3).Info(errors.Wrap(connectionError, "unable to connect to server"))
 		return false
@@ -53,7 +41,7 @@ type ServerInfo struct {
 
 // GetServerVersion will fetch the Server Host, OpenShift and Kubernetes Version
 // It will be shown on the execution of odo version command
-func (c *Client) GetServerVersion() (*ServerInfo, error) {
+func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	var info ServerInfo
 
 	// This will fetch the information about Server Address
@@ -64,7 +52,7 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	info.Address = config.Host
 
 	// checking if the server is reachable
-	if !isServerUp(config.Host) {
+	if !isServerUp(config.Host, timeout) {
 		return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
 	}
 

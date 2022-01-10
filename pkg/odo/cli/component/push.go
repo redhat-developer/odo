@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -74,9 +75,9 @@ type PushOptions struct {
 
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
-func NewPushOptions(prjClient project.Client) *PushOptions {
+func NewPushOptions(prjClient project.Client, prefClient preference.Client) *PushOptions {
 	return &PushOptions{
-		CommonPushOptions: NewCommonPushOptions(prjClient),
+		CommonPushOptions: NewCommonPushOptions(prjClient, prefClient),
 	}
 }
 
@@ -231,7 +232,11 @@ func (po *PushOptions) Run() (err error) {
 func NewCmdPush(name, fullName string) *cobra.Command {
 	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
-	po := NewPushOptions(project.NewClient(kubclient))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	po := NewPushOptions(project.NewClient(kubclient), prefClient)
 
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),

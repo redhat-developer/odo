@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/zalando/go-keyring"
 
@@ -115,9 +116,9 @@ odo catalog list components
 %[1]s nodejs --app myapp --project myproject`)
 
 // NewCreateOptions returns new instance of CreateOptions
-func NewCreateOptions(prjClient project.Client) *CreateOptions {
+func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
 	return &CreateOptions{
-		PushOptions: NewPushOptions(prjClient),
+		PushOptions: NewPushOptions(prjClient, prefClient),
 	}
 }
 
@@ -208,11 +209,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	}()
 	// Set the starter project token if required
 	if co.devfileMetadata.starter != "" {
-		var secure bool
-		secure, err = registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name)
-		if err != nil {
-			return err
-		}
+		secure := registryUtil.IsSecure(co.prefClient, co.devfileMetadata.devfileRegistry.Name)
 		if co.devfileMetadata.starterToken == "" && secure {
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
@@ -349,7 +346,11 @@ func (co *CreateOptions) Run() (err error) {
 func NewCmdCreate(name, fullName string) *cobra.Command {
 	// The error is not handled at this point, it will be handled during Context creation
 	kubclient, _ := kclient.New()
-	co := NewCreateOptions(project.NewClient(kubclient))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	co := NewCreateOptions(project.NewClient(kubclient), prefClient)
 	var componentCreateCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
 		Short:       "Create a new component",

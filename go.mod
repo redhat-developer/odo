@@ -59,6 +59,7 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.10.0
 	k8s.io/kubectl v0.22.1
+	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/controller-runtime v0.10.2
 	sigs.k8s.io/yaml v1.3.0
 

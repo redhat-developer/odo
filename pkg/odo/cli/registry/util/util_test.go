@@ -53,7 +53,7 @@ func TestIsSecure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := preference.New()
+			cfg, err := preference.NewClient()
 			if err != nil {
 				t.Errorf("Unable to get preference file with error: %v", err)
 			}
@@ -62,10 +62,7 @@ func TestIsSecure(t *testing.T) {
 				t.Errorf("Unable to add registry to preference file with error: %v", err)
 			}
 
-			got, err := IsSecure(tt.registryName)
-			if err != nil {
-				t.Errorf("Unable to check if the registry is secure or not")
-			}
+			got := IsSecure(cfg, tt.registryName)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %t, want %t", got, tt.want)
 			}

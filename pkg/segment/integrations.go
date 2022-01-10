@@ -17,7 +17,8 @@ func getTelemetryForDevfileRegistry() (registryLibrary.TelemetryData, error) {
 		Client: registryConsts.TelemetryClient,
 	}
 
-	cfg, err := preference.New()
+	// TODO(feloy) Get from DI
+	cfg, err := preference.NewClient()
 	if err != nil {
 		return td, err
 	}

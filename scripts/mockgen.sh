@@ -34,3 +34,7 @@ mockgen -source=pkg/application/application.go \
 mockgen -source=pkg/project/project.go \
     -package project \
     -destination pkg/project/mock.go
+
+mockgen -source=pkg/preference/preference.go \
+    -package preference \
+    -destination pkg/preference/mock.go
