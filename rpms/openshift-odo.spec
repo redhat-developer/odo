@@ -37,7 +37,7 @@ odo is a fast, iterative, and straightforward CLI tool for developers who write,
 
 %build
 export GITCOMMIT="%{git_commit}"
-mkdir -p %{gopath}/src/github.com/openshift
+mkdir -p %{gopath}/src/github.com/redhat-developer
 ln -s "$(pwd)" %{gopath}/src/github.com/redhat-developer/odo
 export GOPATH=%{gopath}
 cd %{gopath}/src/github.com/redhat-developer/odo
