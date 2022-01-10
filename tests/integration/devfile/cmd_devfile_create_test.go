@@ -409,4 +409,12 @@ var _ = Describe("odo devfile create command tests", func() {
 			Expect(stdout).To(ContainSubstring("Please use `odo push` command to create the component with source deployed"))
 		})
 	})
+
+	When("there is already a devfile in the directory", func() {
+		It("should fail with appropriate error when --starer is given to odo create", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
+			stderr := helper.Cmd("odo", "create", "--starter", "nodejs-starter").ShouldFail().Err()
+			Expect(stderr).To(ContainSubstring("already has a devfile so you cannot provide a starter"))
+		})
+	})
 })
