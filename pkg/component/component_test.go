@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/unions"
+	corev1 "k8s.io/api/core/v1"
 	"reflect"
 	"regexp"
 	"testing"
@@ -188,42 +190,28 @@ func TestList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			// client, fakeClientSet := kclient.FakeNew()
-			// client.Namespace = "test"
-			//
-			// fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-			//	listAction, ok := action.(ktesting.ListAction)
-			//	if !ok {
-			//		return false, nil, fmt.Errorf("expected a ListAction, got %v", action)
-			//	}
-			//	if len(tt.deploymentList.Items) <= 0 {
-			//		return true, &tt.deploymentList, nil
-			//	}
-			//
-			//	var deploymentLabels0 map[string]string
-			//	var deploymentLabels1 map[string]string
-			//	if len(tt.deploymentList.Items) == 2 {
-			//		deploymentLabels0 = tt.deploymentList.Items[0].Labels
-			//		deploymentLabels1 = tt.deploymentList.Items[1].Labels
-			//	}
-			//	switch listAction.GetListRestrictions().Labels.String() {
-			//	case util.ConvertLabelsToSelector(deploymentLabels0):
-			//		return true, &tt.deploymentList.Items[0], nil
-			//	case util.ConvertLabelsToSelector(deploymentLabels1):
-			//		return true, &tt.deploymentList.Items[1], nil
-			//	default:
-			//		return true, &tt.deploymentList, nil
-			//	}
-			// })
-
 			applicationSelector := applabels.GetSelector("app")
 			mockKClient := kclient.NewMockClientInterface(ctrl)
-			mockKClient.EXPECT().GetDeploymentFromSelector(applicationSelector).Return(&tt.deploymentList.Items, nil).AnyTimes()
-			mockKClient.EXPECT().GetOneDeployment("comp0", "app").Return(tt.deploymentList.Items[0], nil).AnyTimes()
-			mockKClient.EXPECT().GetOneDeployment("comp0", "app").Return(tt.deploymentList.Items[1], nil).AnyTimes()
-
 			compClient := NewClient(mockKClient)
-
+			var expectedList []*v1.Deployment
+			for _, dep := range tt.deploymentList.Items {
+				expectedList = append(expectedList, &dep)
+			}
+			mockKClient.EXPECT().GetDeploymentFromSelector(applicationSelector).Return(tt.deploymentList.Items, nil).AnyTimes()
+			if tt.deploymentList.Items != nil {
+				mockKClient.EXPECT().GetOneDeployment("comp0", "app").Return(expectedList[0], nil).AnyTimes()
+				mockKClient.EXPECT().GetOneDeployment("comp1", "app").Return(expectedList[1], nil).AnyTimes()
+				mockKClient.EXPECT().ListIngresses(componentlabels.GetSelector("comp0", "app")).Return(&unions.KubernetesIngressList{}, nil).AnyTimes()
+				mockKClient.EXPECT().ListIngresses(componentlabels.GetSelector("comp1", "app")).Return(&unions.KubernetesIngressList{}, nil).AnyTimes()
+				mockKClient.EXPECT().IsServiceBindingSupported().Return(false, nil).AnyTimes()
+				mockKClient.EXPECT().ListSecrets(componentlabels.GetSelector("comp0", "app")).Return([]corev1.Secret{}, nil).AnyTimes()
+				mockKClient.EXPECT().ListSecrets(componentlabels.GetSelector("comp1", "app")).Return([]corev1.Secret{}, nil).AnyTimes()
+				mockKClient.EXPECT().ListServices(componentlabels.GetSelector("comp0", "app")).Return([]corev1.Service{}, nil).AnyTimes()
+				mockKClient.EXPECT().ListServices(componentlabels.GetSelector("comp1", "app")).Return([]corev1.Service{}, nil).AnyTimes()
+			} else {
+				mockKClient.EXPECT().GetOneDeployment("comp0", "app").Return(nil, nil).AnyTimes()
+				mockKClient.EXPECT().GetOneDeployment("comp1", "app").Return(nil, nil).AnyTimes()
+			}
 			results, err := compClient.List(applicationSelector)
 
 			if (err != nil) != tt.wantErr {
