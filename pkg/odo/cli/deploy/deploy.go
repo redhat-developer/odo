@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -40,6 +43,28 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
+	}
+
+	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextFlag)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve configuration information")
+	}
+	if !envFileInfo.Exists() {
+		var cmpName string
+		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve component name")
+		}
+		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
+		if err != nil {
+			return errors.Wrap(err, "failed to write new env.yaml file")
+		}
+
+	} else if envFileInfo.GetComponentSettings().Project != o.GetProject() {
+		err = envFileInfo.SetConfiguration("project", o.GetProject())
+		if err != nil {
+			return errors.Wrap(err, "failed to update project in env.yaml file")
+		}
 	}
 	return
 }
