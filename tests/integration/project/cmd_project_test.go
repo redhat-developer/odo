@@ -125,7 +125,7 @@ var _ = Describe("odo project command tests", func() {
 		})
 
 		AfterEach(func() {
-			helper.Cmd("odo", "project", "delete", "-f", projectName)
+			helper.Cmd("odo", "project", "delete", "-f", projectName).ShouldPass()
 		})
 
 		It("should display information of created project", func() {

@@ -18,22 +18,12 @@ case $1 in
         export SENDQUEUE="amqp.ci.queue.minikube.send"
         export SENDTOPIC="amqp.ci.topic.minikube.send"
         export EXCHANGE="amqp.ci.exchange.minikube.send"
-        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh minikube"
-        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh minikube"
-        export TIMEOUT="4h00m"
-        ;;
-    k8s)
-        #Removing minishift (dropped support for 3.11) and adding K8S on IBM Cloud
-        export JOB_NAME="odo-k8s-ibmc-pr-build"
-        export SENDQUEUE="amqp.ci.queue.k8sibmc.send"
-        export SENDTOPIC="amqp.ci.topic.k8sibmc.send"
-        export EXCHANGE="amqp.ci.exchange.k8sibmc.send"
-        export SETUP_SCRIPT="scripts/k8sibmc-setup-env.sh k8s"
-        export RUN_SCRIPT="scripts/k8sibmc-all-tests.sh k8s"
+        export SETUP_SCRIPT="scripts/minikube-minishift-setup-env.sh"
+        export RUN_SCRIPT="scripts/minikube-minishift-all-tests.sh"
         export TIMEOUT="4h00m"
         ;;
     *)
-        echo "Must pass minikube or k8s as paramater"
+        echo "Must pass minikube as paramater"
         exit 1
         ;;
 esac
