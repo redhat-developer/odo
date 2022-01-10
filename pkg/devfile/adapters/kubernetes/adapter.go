@@ -6,6 +6,7 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -22,9 +23,9 @@ type KubernetesContext struct {
 }
 
 // New instantiates a kubernetes adapter
-func New(adapterContext common.AdapterContext, client kclient.ClientInterface) Adapter {
+func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
 
-	compAdapter := component.New(adapterContext, client)
+	compAdapter := component.New(adapterContext, client, prefClient)
 
 	return Adapter{
 		componentAdapter: &compAdapter,

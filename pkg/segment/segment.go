@@ -54,13 +54,13 @@ type Client struct {
 	// SegmentClient helps interact with the segment API
 	SegmentClient analytics.Client
 	// Preference points to the global odo config
-	Preference *preference.PreferenceInfo
+	Preference preference.Client
 	// TelemetryFilePath points to the file containing anonymousID used for tracking odo commands executed by the user
 	TelemetryFilePath string
 }
 
 // NewClient returns a Client created with the default args
-func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
+func NewClient(preference preference.Client) (*Client, error) {
 	return newCustomClient(preference,
 		GetTelemetryFilePath(),
 		analytics.DefaultEndpoint,
@@ -68,7 +68,7 @@ func NewClient(preference *preference.PreferenceInfo) (*Client, error) {
 }
 
 // newCustomClient returns a Client created with custom args
-func newCustomClient(preference *preference.PreferenceInfo, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
+func newCustomClient(preference preference.Client, telemetryFilePath string, segmentEndpoint string) (*Client, error) {
 	// get the locale information
 	tag, err := locale.Detect()
 	if err != nil {
@@ -247,16 +247,8 @@ func RunningInTerminal() bool {
 }
 
 // IsTelemetryEnabled returns true if user has consented to telemetry
-func IsTelemetryEnabled(cfg *preference.PreferenceInfo) bool {
+func IsTelemetryEnabled(cfg preference.Client) bool {
 	klog.V(4).Info("Checking telemetry enable status")
-	var err error
-	if cfg == nil {
-		cfg, err = preference.New()
-		if err != nil {
-			klog.V(3).Info(errors.Wrap(err, "unable to read config file"))
-			return false
-		}
-	}
 	// The env variable gets precedence in this decision.
 	// In case a non-bool value was passed to the env var, we ignore it
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(DisableTelemetryEnv))

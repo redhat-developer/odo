@@ -14,15 +14,10 @@ const (
 )
 
 // IsSecure checks if the registry is secure
-func IsSecure(registryName string) (bool, error) {
-	cfg, err := preference.New()
-	if err != nil {
-		return false, err
-	}
-
+func IsSecure(prefClient preference.Client, registryName string) bool {
 	isSecure := false
-	if cfg.OdoSettings.RegistryList != nil {
-		for _, registry := range *cfg.OdoSettings.RegistryList {
+	if prefClient.RegistryList() != nil {
+		for _, registry := range *prefClient.RegistryList() {
 			if registry.Name == registryName && registry.Secure {
 				isSecure = true
 				break
@@ -30,7 +25,7 @@ func IsSecure(registryName string) (bool, error) {
 		}
 	}
 
-	return isSecure, nil
+	return isSecure
 }
 
 func IsGitBasedRegistry(url string) bool {

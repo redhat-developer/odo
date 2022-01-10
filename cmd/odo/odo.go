@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 
-	cfg, err := preference.New()
+	cfg, err := preference.NewClient()
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}

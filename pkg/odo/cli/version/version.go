@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/preference"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/redhat-developer/odo/pkg/notify"
@@ -37,11 +40,15 @@ type VersionOptions struct {
 
 	// serverInfo contains the remote server information if the user asked for it, nil otherwise
 	serverInfo *kclient.ServerInfo
+
+	prefClient preference.Client
 }
 
 // NewVersionOptions creates a new VersionOptions instance
-func NewVersionOptions() *VersionOptions {
-	return &VersionOptions{}
+func NewVersionOptions(prefClient preference.Client) *VersionOptions {
+	return &VersionOptions{
+		prefClient: prefClient,
+	}
 }
 
 // Complete completes VersionOptions after they have been created
@@ -49,8 +56,18 @@ func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	if !o.clientFlag {
 		// Let's fetch the info about the server, ignoring errors
 		client, err := kclient.New()
+
 		if err == nil {
-			o.serverInfo, _ = client.GetServerVersion()
+			// checking the value of timeout in preference
+			var timeout time.Duration
+			if o.prefClient != nil {
+				timeout = time.Duration(o.prefClient.GetTimeout()) * time.Second
+			} else {
+				// the default timeout will be used
+				// when the value is not readable from preference
+				timeout = preference.DefaultTimeout * time.Second
+			}
+			o.serverInfo, _ = client.GetServerVersion(timeout)
 		}
 	}
 	return nil
@@ -93,7 +110,11 @@ func (o *VersionOptions) Run() (err error) {
 
 // NewCmdVersion implements the version odo command
 func NewCmdVersion(name, fullName string) *cobra.Command {
-	o := NewVersionOptions()
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		klog.V(3).Info(errors.Wrap(err, "unable to read preference file"))
+	}
+	o := NewVersionOptions(prefClient)
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
 		Use:     name,

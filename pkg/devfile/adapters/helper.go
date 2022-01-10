@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 // NewComponentAdapter returns a Devfile adapter for the targeted platform
@@ -32,17 +33,21 @@ func createKubernetesAdapter(adapterContext common.AdapterContext, namespace str
 	if err != nil {
 		return nil, err
 	}
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		return nil, err
+	}
 
 	// If a namespace was passed in
 	if namespace != "" {
 		client.Namespace = namespace
 	}
-	return newKubernetesAdapter(adapterContext, client)
+	return newKubernetesAdapter(adapterContext, client, prefClient)
 }
 
-func newKubernetesAdapter(adapterContext common.AdapterContext, client kclient.ClientInterface) (common.ComponentAdapter, error) {
+func newKubernetesAdapter(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) (common.ComponentAdapter, error) {
 	// Feed the common metadata to the platform-specific adapter
-	kubernetesAdapter := kubernetes.New(adapterContext, client)
+	kubernetesAdapter := kubernetes.New(adapterContext, client, prefClient)
 
 	return kubernetesAdapter, nil
 }

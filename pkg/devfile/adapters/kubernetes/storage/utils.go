@@ -10,7 +10,6 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/storage"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
@@ -187,12 +186,7 @@ func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 }
 
 // HandleEphemeralStorage creates or deletes the ephemeral volume based on the preference setting
-func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string) error {
-	pref, err := preference.New()
-	if err != nil {
-		return err
-	}
-
+func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
 	selector := fmt.Sprintf("%v=%s,%s=%s", componentlabels.ComponentLabel, componentName, storagelabels.SourcePVCLabel, storage.OdoSourceVolume)
 
 	pvcs, err := client.ListPVCs(selector)
@@ -200,7 +194,7 @@ func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storag
 		return err
 	}
 
-	if !pref.GetEphemeralSourceVolume() {
+	if !isEphemeral {
 		if len(pvcs) == 0 {
 			err := storageClient.Create(storage.Storage{
 				ObjectMeta: metav1.ObjectMeta{

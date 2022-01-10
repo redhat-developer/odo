@@ -49,7 +49,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 				Devfile:       devObj,
 			}
 			fkclient, _ := kclient.FakeNew()
-			adapter, err := newKubernetesAdapter(adapterContext, fkclient)
+			adapter, err := newKubernetesAdapter(adapterContext, fkclient, nil)
 			if err != nil {
 				t.Errorf("unexpected error: '%v'", err)
 			}

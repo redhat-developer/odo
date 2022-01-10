@@ -294,7 +294,7 @@ func TestStatusReconciler(t *testing.T) {
 
 			fkclient, _ := kclient.FakeNew()
 
-			adapter := New(adapterCtx, fkclient)
+			adapter := New(adapterCtx, fkclient, nil)
 
 			lfo := logFuncOutput{}
 			adapter.GenericAdapter.SetLogger(machineoutput.NewConsoleMachineEventLoggingClientWithFunction(lfo.logFunc))

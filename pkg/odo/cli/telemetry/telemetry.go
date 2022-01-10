@@ -5,9 +5,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/preference"
+
 	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -16,11 +15,14 @@ import (
 const RecommendedCommandName = "telemetry"
 
 type TelemetryOptions struct {
+	prefClient    preference.Client
 	telemetryData segment.TelemetryData
 }
 
-func NewTelemetryOptions() *TelemetryOptions {
-	return &TelemetryOptions{}
+func NewTelemetryOptions(prefClient preference.Client) *TelemetryOptions {
+	return &TelemetryOptions{
+		prefClient: prefClient,
+	}
 }
 
 func (o *TelemetryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
@@ -33,16 +35,11 @@ func (o *TelemetryOptions) Validate() (err error) {
 }
 
 func (o *TelemetryOptions) Run() (err error) {
-	cfg, err := preference.New()
-	if err != nil {
-		return errors.Wrapf(err, "unable to upload telemetry data")
-	}
-
-	if !segment.IsTelemetryEnabled(cfg) {
+	if !segment.IsTelemetryEnabled(o.prefClient) {
 		return nil
 	}
 
-	segmentClient, err := segment.NewClient(cfg)
+	segmentClient, err := segment.NewClient(o.prefClient)
 	if err != nil {
 		klog.V(4).Infof("Cannot create a segment client. Will not send any data: %q", err)
 	}
@@ -57,7 +54,8 @@ func (o *TelemetryOptions) Run() (err error) {
 }
 
 func NewCmdTelemetry(name string) *cobra.Command {
-	o := NewTelemetryOptions()
+	prefClient, _ := preference.NewClient()
+	o := NewTelemetryOptions(prefClient)
 	telemetryCmd := &cobra.Command{
 		Use:                    name,
 		Short:                  "Collect and upload usage data.",
