@@ -426,7 +426,9 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.Cmd("odo", "create", "nodejs", "==devfile", "devfilex.yaml").ShouldPass()
 		})
 		It("should pass and keep the devfile in starter", func() {
-
+			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(Not(HaveOccurred()))
+			helper.MatchAllInOutput(devfileContent, []string{"outerloop-deploy", "deployk8s", "outerloop-build"})
 		})
 	})
 })
