@@ -107,7 +107,7 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 				crName := strings.Join([]string{csv.Name, cr.Kind}, "/")
 				klog.V(4).Infof("Failed to list instances of %q with error: %s", crName, err.Error())
 				failedListingCR = append(failedListingCR, crName)
-				break
+				continue
 			}
 
 			if len(list.Items) > 0 {
