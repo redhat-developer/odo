@@ -420,13 +420,13 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	//When("a devfile is provided which has a starter that has its own devfile", func() {
-	//	BeforeEach(func() {
-	//		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml"), filepath.Join(commonVar.Context, "devfilex.yaml"))
-	//		helper.Cmd("odo", "create", "nodejs", "==devfile", "devfilex.yaml").ShouldPass()
-	//	})
-	//	It("should pass and keep the devfile in starter", func() {
-	//
-	//	})
-	//})
+	When("a devfile is provided which has a starter that has its own devfile", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml"), filepath.Join(commonVar.Context, "devfilex.yaml"))
+			helper.Cmd("odo", "create", "nodejs", "==devfile", "devfilex.yaml").ShouldPass()
+		})
+		It("should pass and keep the devfile in starter", func() {
+
+		})
+	})
 })
