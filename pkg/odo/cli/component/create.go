@@ -163,7 +163,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		//if --devfile arg is provided, return arror
 		if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
-		} else if !util.CheckPathExists(envFilePath) && co.devfileMetadata.starter != "" {
+		} else if !util.CheckPathExists(envFilePath) && co.devfileMetadata.starter != "" && len(args) == 0 {
 			//if devfile already exists, then don't allow --starter
 			return fmt.Errorf("this directory already has a devfile so you cannot provide a starter. Please remove exisiting devfile and re-create")
 		}
