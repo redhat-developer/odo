@@ -11,4 +11,5 @@ type Client interface {
 	GetComponentNames(applicationName string) ([]string, error)
 	GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error)
 	GetLinkedServicesSecretData(namespace, secretName string) (map[string][]byte, error)
+	CheckDefaultProject(name string) error
 }

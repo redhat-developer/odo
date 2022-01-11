@@ -2,7 +2,7 @@ package component
 
 import (
 	"fmt"
-	
+
 	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"

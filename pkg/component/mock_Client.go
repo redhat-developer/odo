@@ -122,3 +122,17 @@ func (mr *MockClientMockRecorder) GetLinkedServicesSecretData(namespace, secretN
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLinkedServicesSecretData", reflect.TypeOf((*MockClient)(nil).GetLinkedServicesSecretData), namespace, secretName)
 }
+
+// CheckDefaultProject mocks base method
+func (m *MockClient) CheckDefaultProject(name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckDefaultProject", name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckDefaultProject indicates an expected call of CheckDefaultProject
+func (mr *MockClientMockRecorder) CheckDefaultProject(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDefaultProject", reflect.TypeOf((*MockClient)(nil).CheckDefaultProject), name)
+}

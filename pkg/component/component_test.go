@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"reflect"
 	"regexp"
 	"testing"
@@ -9,8 +10,6 @@ import (
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 
 	"github.com/golang/mock/gomock"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/preference"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -469,32 +468,78 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 func TestComponentClient_Exists(t *testing.T) {
 
 }
-func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
-	return Component{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
-			APIVersion: "odo.dev/v1alpha1",
+
+// func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
+// 	return Component{
+// 		TypeMeta: metav1.TypeMeta{
+// 			Kind:       "Component",
+// 			APIVersion: "odo.dev/v1alpha1",
+// 		},
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      compName,
+// 			Namespace: namespace,
+// 			Labels: map[string]string{
+// 				applabels.App:                      appName,
+// 				applabels.ManagedBy:                "odo",
+// 				applabels.ApplicationLabel:         appName,
+// 				componentlabels.ComponentLabel:     compName,
+// 				componentlabels.ComponentTypeLabel: compType,
+// 			},
+// 			Annotations: map[string]string{
+// 				componentlabels.ComponentTypeAnnotation: compType,
+// 			},
+// 		},
+// 		Spec: ComponentSpec{
+// 			Type: compType,
+// 			App:  appName,
+// 		},
+// 		Status: ComponentStatus{
+// 			State: state,
+// 		},
+// 	}
+// }
+
+func TestComponentClient_CheckDefaultProject(t *testing.T) {
+	tests := []struct {
+		testName    string
+		supported   bool
+		wantErr     bool
+		projectName string
+		supportErr  error
+	}{
+		{
+			testName:    "Case 0: CheckDefaultProject returns no error",
+			projectName: "myproject",
+			supported:   true,
+			wantErr:     false,
+			supportErr:  nil,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      compName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				applabels.App:                      appName,
-				applabels.ManagedBy:                "odo",
-				applabels.ApplicationLabel:         appName,
-				componentlabels.ComponentLabel:     compName,
-				componentlabels.ComponentTypeLabel: compType,
-			},
-			Annotations: map[string]string{
-				componentlabels.ComponentTypeAnnotation: compType,
-			},
+		{
+			testName:    "Case 1: CheckDefaultProject returns error on using 'default' project name in OC",
+			projectName: "default",
+			supported:   true,
+			wantErr:     true,
+			supportErr:  nil,
 		},
-		Spec: ComponentSpec{
-			Type: compType,
-			App:  appName,
+		{testName: "Case 2: CheckDefaultProject returns error on checking if the project resource is supported",
+			projectName: "myproject",
+			supported:   false,
+			wantErr:     true,
+			supportErr:  fmt.Errorf("some error while checking project support"),
 		},
-		Status: ComponentStatus{
-			State: state,
-		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockKClient := kclient.NewMockClientInterface(ctrl)
+			mockKClient.EXPECT().IsProjectSupported().Return(tt.supported, tt.supportErr).AnyTimes()
+			//  TODO: This wil not work (pvala)
+			compClient := NewClient(mockKClient)
+			got := compClient.CheckDefaultProject(tt.projectName)
+			if (!tt.wantErr && got != nil) || (tt.wantErr && got == nil) {
+				t.Errorf("got==nil: %v; wantErr: %v", got == nil, tt.wantErr)
+			}
+		})
 	}
 }

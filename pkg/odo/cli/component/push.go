@@ -156,7 +156,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 			return errors.Wrap(err, "unable to determine target namespace for the component")
 		}
 
-		if err = po.KClient.CheckDefaultProject(namespace); err != nil {
+		if err = po.componentClient.CheckDefaultProject(namespace); err != nil {
 			return err
 		}
 
@@ -189,7 +189,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 		if err != nil {
 			return errors.Wrap(err, "unable to determine target namespace for devfile")
 		}
-		if err = po.KClient.CheckDefaultProject(namespace); err != nil {
+		if err = po.componentClient.CheckDefaultProject(namespace); err != nil {
 			return err
 		}
 
@@ -198,7 +198,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 			return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
 		}
 	} else if envFileInfo.GetNamespace() == "default" {
-		if err := po.KClient.CheckDefaultProject(envFileInfo.GetNamespace()); err != nil {
+		if err := po.componentClient.CheckDefaultProject(envFileInfo.GetNamespace()); err != nil {
 			return err
 		}
 	}

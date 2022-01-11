@@ -217,21 +217,6 @@ func (c *Client) IsProjectSupported() (bool, error) {
 	return c.IsResourceSupported("project.openshift.io", "v1", "projects")
 }
 
-// CheckDefaultProject errors out if the project resource is supported and the value is "default"
-func (c *Client) CheckDefaultProject(name string) error {
-	// Check whether resource "Project" is supported
-	projectSupported, err := c.IsProjectSupported()
-
-	if err != nil {
-		return errors.Wrap(err, "resource project validation check failed.")
-	}
-
-	if projectSupported && name == "default" {
-		return &DefaultProjectError{}
-	}
-	return nil
-}
-
 // GetCurrentProjectName returns the current project name
 func (c *Client) GetCurrentProjectName() string {
 	return c.Namespace

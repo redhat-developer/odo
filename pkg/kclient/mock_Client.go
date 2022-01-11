@@ -1111,20 +1111,6 @@ func (mr *MockClientInterfaceMockRecorder) ListProjectNames() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjectNames", reflect.TypeOf((*MockClientInterface)(nil).ListProjectNames))
 }
 
-// CheckDefaultProject mocks base method
-func (m *MockClientInterface) CheckDefaultProject(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckDefaultProject", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckDefaultProject indicates an expected call of CheckDefaultProject
-func (mr *MockClientInterfaceMockRecorder) CheckDefaultProject(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDefaultProject", reflect.TypeOf((*MockClientInterface)(nil).CheckDefaultProject), name)
-}
-
 // IsRouteSupported mocks base method
 func (m *MockClientInterface) IsRouteSupported() (bool, error) {
 	m.ctrl.T.Helper()

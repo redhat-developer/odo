@@ -85,7 +85,9 @@ func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecifi
 	}
 
 	configLinks, err = service.ListDevfileLinks(devfileObj, context)
-
+	if err != nil {
+		return cfd, err
+	}
 	for _, link := range configLinks {
 		found := false
 		for _, linked := range cfd.Status.LinkedServices {
@@ -557,4 +559,19 @@ func getComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.D
 		return component, devfileObj, nil
 	}
 	return Component{}, parser.DevfileObj{}, nil
+}
+
+// CheckDefaultProject errors out if the project resource is supported and the value is "default"
+func (c componentClient) CheckDefaultProject(name string) error {
+	// Check whether resource "Project" is supported
+	projectSupported, err := c.client.IsProjectSupported()
+
+	if err != nil {
+		return errors.Wrap(err, "resource project validation check failed.")
+	}
+
+	if projectSupported && name == "default" {
+		return &DefaultProjectError{}
+	}
+	return nil
 }

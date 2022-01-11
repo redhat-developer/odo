@@ -116,7 +116,6 @@ type ClientInterface interface {
 	GetProject(projectName string) (*projectv1.Project, error)
 	IsProjectSupported() (bool, error)
 	ListProjectNames() ([]string, error)
-	CheckDefaultProject(name string) error
 
 	// routes.go
 	IsRouteSupported() (bool, error)
