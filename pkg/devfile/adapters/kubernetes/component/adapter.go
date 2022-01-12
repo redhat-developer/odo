@@ -125,6 +125,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	a.devfileDebugCmd = parameters.DevfileDebugCmd
 	a.devfileDebugPort = parameters.DebugPort
 
+	podChanged := false
+	var podName string
+
+	// If the component already exists, retrieve the pod's name before it's potentially updated
+	if componentExists && *a.deployment.Spec.Replicas == 1 {
+		pod, podErr := a.getPod(true)
+		if podErr != nil {
+			return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
+		}
+		podName = pod.GetName()
+	}
+
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
@@ -257,19 +269,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	err = component.ApplyConfig(a.Client, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update config to component deployed.")
-	}
-
-	podChanged := false
-	var podName string
-
-	// If the component already exists, retrieve the pod's name before it's potentially updated
-	var podErr error
-	if componentExists {
-		pod, podErr = a.getPod(true)
-		if podErr != nil {
-			return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
-		}
-		podName = pod.GetName()
 	}
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
