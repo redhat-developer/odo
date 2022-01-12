@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/envvar"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -108,7 +109,7 @@ func (o *SetOptions) Validate() error {
 // Run contains the logic for the command
 func (o *SetOptions) Run() error {
 	if o.envArrayFlag != nil {
-		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArrayFlag)
+		newEnvVarList, err := envvar.NewListFromSlice(o.envArrayFlag)
 		if err != nil {
 			return err
 		}

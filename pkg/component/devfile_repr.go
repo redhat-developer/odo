@@ -3,7 +3,7 @@ package component
 import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/redhat-developer/odo/pkg/config"
+	"github.com/redhat-developer/odo/pkg/envvar"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,7 +23,7 @@ func ToDevfileRepresentation(d parser.DevfileObj) (ConfigurableRepr, error) {
 			cont := ContainerRepr{
 				ContainerName: component.Name,
 			}
-			cont.EnvironmentVariables = config.NewEnvVarListFromDevfileEnv(component.Container.Env)
+			cont.EnvironmentVariables = envvar.NewListFromDevfileEnv(component.Container.Env)
 			for _, endpoint := range component.Container.Endpoints {
 				port := PortRepr{
 					ExposedPort: endpoint.TargetPort,
@@ -66,9 +66,9 @@ type ConfigurableRepr struct {
 }
 
 type ContainerRepr struct {
-	ContainerName        string            `yaml:"ContainerName" json:"ContainerName"`
-	EnvironmentVariables config.EnvVarList `yaml:"EnvironmentVariables" json:"EnvironmentVariables,omitempty"`
-	Ports                []PortRepr        `yaml:"Ports" json:"Ports,omitempty"`
+	ContainerName        string      `yaml:"ContainerName" json:"ContainerName"`
+	EnvironmentVariables envvar.List `yaml:"EnvironmentVariables" json:"EnvironmentVariables,omitempty"`
+	Ports                []PortRepr  `yaml:"Ports" json:"Ports,omitempty"`
 }
 
 type PortRepr struct {
