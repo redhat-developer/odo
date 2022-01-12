@@ -104,7 +104,7 @@ func BindingDefinitions(ctx pipeline.Context) {
 				return
 			} else {
 				log.Warning("Skipping the check for CRD, user does not have access")
-				continue
+				//continue
 			}
 		}
 		if crd != nil {
