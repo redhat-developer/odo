@@ -848,10 +848,10 @@ func (a Adapter) getDeployCommand() (devfilev1.Command, error) {
 		return devfilev1.Command{}, err
 	}
 	if len(deployGroupCmd) == 0 {
-		return devfilev1.Command{}, errors.New("error deploying, no default deploy command found in devfile")
+		return devfilev1.Command{}, &NoDefaultDeployCommandFoundError{}
 	}
 	if len(deployGroupCmd) > 1 {
-		return devfilev1.Command{}, errors.New("more than one default deploy command found in devfile, should not happen")
+		return devfilev1.Command{}, &MoreThanOneDefaultDeployCommandFoundError{}
 	}
 	return deployGroupCmd[0], nil
 }

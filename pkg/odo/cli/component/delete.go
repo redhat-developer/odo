@@ -1,11 +1,12 @@
 package component
 
 import (
+	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
-
-	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -86,9 +87,15 @@ func (do *DeleteOptions) Run() (err error) {
 	// odo delete --deploy || odo delete --all
 	if do.deployFlag || do.allFlag {
 		if do.forceFlag || ui.Proceed("Are you sure you want to undeploy?") {
+			log.Infof("Un-deploying the Kubernetes Deployment")
 			err = do.DevfileUnDeploy()
 			if err != nil {
-				log.Errorf("error occurred while undeploying, cause: %v", err)
+				// if there is no component in the devfile to undeploy, skip the error log
+				if errors.Is(err, &component.NoDefaultDeployCommandFoundError{}) {
+					log.Error("no kubernetes component to un-deploy")
+				} else {
+					log.Errorf("error occurred while undeploying, cause: %v", err)
+				}
 			}
 		} else {
 			log.Error("Aborting the un-deployment")
@@ -243,12 +250,12 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
-	//Adding `--context` flag
+	// Adding `--context` flag
 	odoutil.AddContextFlag(componentDeleteCmd, &do.contextFlag)
 
-	//Adding `--project` flag
+	// Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)
-	//Adding `--application` flag
+	// Adding `--application` flag
 	appCmd.AddApplicationFlag(componentDeleteCmd)
 
 	return componentDeleteCmd
