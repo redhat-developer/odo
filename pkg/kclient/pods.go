@@ -203,7 +203,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 		LabelSelector: selector,
 	})
 	if err != nil {
-		// Dont wrap error since we want to know if its a forbidden error
+		// Don't wrap error since we want to know if it's a forbidden error
 		// if we wrap, we lose the err status reason and callers of this api rely on it
 		return nil, err
 	}
