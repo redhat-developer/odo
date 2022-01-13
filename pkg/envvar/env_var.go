@@ -1,4 +1,4 @@
-// envvar package helps converting name/value pairs to devfile EnvVars
+// envvar package helps converting name/value pairs to devfile EnvVar
 package envvar
 
 import (
@@ -17,8 +17,8 @@ type EnvVar struct {
 // List represents a list of environment variables
 type List []EnvVar
 
-// ToDevfileEnv converts the EnvVarList to the list of Envs supported by devfile
-func (evl List) ToDevfileEnv() []devfilev1.EnvVar {
+// ToDevfileEnvVar converts the List to an array of devfile EnvVar
+func (evl List) ToDevfileEnvVar() []devfilev1.EnvVar {
 	var envList []devfilev1.EnvVar
 	for _, ev := range evl {
 		envList = append(envList, devfilev1.EnvVar{
@@ -27,21 +27,6 @@ func (evl List) ToDevfileEnv() []devfilev1.EnvVar {
 		})
 	}
 	return envList
-}
-
-// newFromString takes a string of format "name=value" and returns an Env
-// variable struct
-func newFromString(envStr string) (EnvVar, error) {
-	envList := strings.SplitN(envStr, "=", 2)
-	// if there is not = in the string
-	if len(envList) < 2 {
-		return EnvVar{}, errors.New("invalid environment variable format")
-	}
-
-	return EnvVar{
-		Name:  strings.TrimSpace(envList[0]),
-		Value: strings.TrimSpace(envList[1]),
-	}, nil
 }
 
 // NewListFromSlice takes multiple env variables with format
@@ -60,7 +45,7 @@ func NewListFromSlice(envList []string) (List, error) {
 
 }
 
-// NewListFromDevfileEnv creates an EnvVarList from the list of envs present in a devfile.
+// NewListFromDevfileEnv creates a List from the array of envs present in a devfile.
 func NewListFromDevfileEnv(envList []devfilev1.EnvVar) List {
 	var envVarList List
 	for _, env := range envList {
@@ -70,4 +55,18 @@ func NewListFromDevfileEnv(envList []devfilev1.EnvVar) List {
 		})
 	}
 	return envVarList
+}
+
+// newFromString takes a string of format "name=value" and returns an EnvVar
+func newFromString(envStr string) (EnvVar, error) {
+	envList := strings.SplitN(envStr, "=", 2)
+	// if there is not = in the string
+	if len(envList) < 2 {
+		return EnvVar{}, errors.New("invalid environment variable format")
+	}
+
+	return EnvVar{
+		Name:  strings.TrimSpace(envList[0]),
+		Value: strings.TrimSpace(envList[1]),
+	}, nil
 }

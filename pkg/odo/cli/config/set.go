@@ -113,7 +113,7 @@ func (o *SetOptions) Run() error {
 		if err != nil {
 			return err
 		}
-		err = o.EnvSpecificInfo.GetDevfileObj().AddEnvVars(newEnvVarList.ToDevfileEnv())
+		err = o.EnvSpecificInfo.GetDevfileObj().AddEnvVars(newEnvVarList.ToDevfileEnvVar())
 		if err != nil {
 			return err
 		}
