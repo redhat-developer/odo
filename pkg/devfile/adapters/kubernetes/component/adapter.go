@@ -131,7 +131,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// If the component already exists, retrieve the pod's name before it's potentially updated
 	if componentExists {
 		// First see if the component does have a pod. it could have been scaled down to zero
-		_, err := a.Client.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
+		_, err = a.Client.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
 		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
 		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
 		if err == nil {
