@@ -206,7 +206,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		},
 	}
 	configurationSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
-	configurationSetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Set the environment variables in config")
+	configurationSetCmd.Flags().StringArrayVarP(&o.envArrayFlag, "env", "e", nil, "Set the environment variables in config")
 	o.AddContextFlag(configurationSetCmd)
 	odoutil.AddNowFlag(configurationSetCmd, &o.nowFlag)
 
