@@ -3,6 +3,8 @@ package envvar
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
 	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -64,9 +66,16 @@ func newFromString(envStr string) (EnvVar, error) {
 	if len(envList) < 2 {
 		return EnvVar{}, errors.New("invalid environment variable format")
 	}
-
+	name := strings.TrimSpace(envList[0])
+	match, err := regexp.MatchString("^[a-zA-Z_][a-zA-Z0-9_]*$", name)
+	if err != nil {
+		return EnvVar{}, err
+	}
+	if !match {
+		return EnvVar{}, fmt.Errorf("%q contains invalid characters, it should contain only alphanumeric characters and underscores, and should not start with a digit", name)
+	}
 	return EnvVar{
-		Name:  strings.TrimSpace(envList[0]),
+		Name:  name,
 		Value: strings.TrimSpace(envList[1]),
 	}, nil
 }
