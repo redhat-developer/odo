@@ -129,12 +129,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	var podName string
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
-	if componentExists && *a.deployment.Spec.Replicas == 1 {
-		pod, podErr := a.getPod(true)
-		if podErr != nil {
-			return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
+	if componentExists {
+		// First see if the component does have a pod. it could have been scaled down to zero
+		_, err := a.Client.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
+		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
+		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
+		if err == nil {
+			pod, podErr := a.getPod(true)
+			if podErr != nil {
+				return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
+			}
+			podName = pod.GetName()
 		}
-		podName = pod.GetName()
 	}
 
 	// Validate the devfile build and run commands
