@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/debug"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
 	"github.com/redhat-developer/odo/pkg/odo/cli/env"
+	_init "github.com/redhat-developer/odo/pkg/odo/cli/init"
 	"github.com/redhat-developer/odo/pkg/odo/cli/login"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
 	"github.com/redhat-developer/odo/pkg/odo/cli/plugins"
@@ -209,6 +210,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
+		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands

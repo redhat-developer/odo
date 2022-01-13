@@ -108,6 +108,20 @@ func (mr *MockCmdlineMockRecorder) GetArgsAfterDashes(args interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArgsAfterDashes", reflect.TypeOf((*MockCmdline)(nil).GetArgsAfterDashes), args)
 }
 
+// GetFlags mocks base method.
+func (m *MockCmdline) GetFlags() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFlags")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetFlags indicates an expected call of GetFlags.
+func (mr *MockCmdlineMockRecorder) GetFlags() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlags", reflect.TypeOf((*MockCmdline)(nil).GetFlags))
+}
+
 // GetKubeClient mocks base method.
 func (m *MockCmdline) GetKubeClient() (kclient.ClientInterface, error) {
 	m.ctrl.T.Helper()

@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type Cobra struct {
@@ -181,4 +182,12 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 
 func (o *Cobra) GetKubeClient() (kclient.ClientInterface, error) {
 	return kclient.New()
+}
+
+func (o *Cobra) GetFlags() map[string]string {
+	flags := map[string]string{}
+	o.cmd.Flags().Visit(func(f *pflag.Flag) {
+		flags[f.Name] = f.Value.String()
+	})
+	return flags
 }
