@@ -17,7 +17,6 @@ import (
 
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -246,32 +245,4 @@ func SearchComponent(client kclient.ClientInterface, name string) ([]string, err
 	//}
 
 	return []string{}, nil
-}
-
-// ListOperatorServices fetches a list of Operators from the cluster and
-// returns only those Operators which are successfully installed on the cluster
-func ListOperatorServices(client kclient.ClientInterface) (*olm.ClusterServiceVersionList, error) {
-	var csvList olm.ClusterServiceVersionList
-
-	// first check for CSV support
-	csvSupport, err := client.IsCSVSupported()
-	if !csvSupport || err != nil {
-		return &csvList, err
-	}
-
-	allCsvs, err := client.ListClusterServiceVersions()
-	if err != nil {
-		return &csvList, err
-	}
-
-	// now let's filter only those csvs which are successfully installed
-	csvList.TypeMeta = allCsvs.TypeMeta
-	csvList.ListMeta = allCsvs.ListMeta
-	for _, csv := range allCsvs.Items {
-		if csv.Status.Phase == "Succeeded" {
-			csvList.Items = append(csvList.Items, csv)
-		}
-	}
-
-	return &csvList, nil
 }
