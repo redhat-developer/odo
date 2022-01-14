@@ -42,3 +42,7 @@ mockgen -source=pkg/preference/preference.go \
 mockgen -source=pkg/auth/interface.go \
     -package auth \
     -destination pkg/auth/mock.go
+
+mockgen -source=pkg/odo/cli/init/params.go \
+    -package init \
+    -destination pkg/odo/cli/init/mock_params.go

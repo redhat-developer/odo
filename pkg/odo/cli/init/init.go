@@ -1,6 +1,7 @@
 package init
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -10,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -27,29 +29,40 @@ var initExample = templates.Examples(`
 `)
 
 type InitOptions struct {
-	// Context
-	*genericclioptions.Context
+	// Backends to build init parameters
+	backends []ParamsBuilder
+
+	// filesystem on which command is running
+	fsys filesystem.Filesystem
 
 	// the parameters needed to run the init procedure
 	initParams
 }
 
 // NewInitOptions creates a new InitOptions instance
-func NewInitOptions() *InitOptions {
-	return &InitOptions{}
+func NewInitOptions(backends []ParamsBuilder, fsys filesystem.Filesystem) *InitOptions {
+	return &InitOptions{
+		backends: backends,
+		fsys:     fsys,
+	}
 }
 
 // Complete will build the parameters for init, using different backends based on the flags set,
 // either by using flags or interactively is no flag is passed
+// Complete will return an error immediately if the current working directory is not empty
 func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	flags := cmdline.GetFlags()
-	backends := []ParamsBuilder{
-		&FlagsBuilder{},
-		&InteractiveBuilder{},
+
+	empty, err := isEmpty(o.fsys, ".")
+	if err != nil {
+		return err
+	}
+	if !empty {
+		return errors.New("The current directory is not empty. You can bootstrap new component only in empty directory.\nIf you have existing code that you want to deploy use `odo deploy` or use `odo dev` command to quickly iterate on your component.")
 	}
 
+	flags := cmdline.GetFlags()
 	done := false
-	for _, backend := range backends {
+	for _, backend := range o.backends {
 		if backend.IsAdequate(flags) {
 			o.initParams, err = backend.ParamsBuild()
 			if err != nil {
@@ -66,6 +79,14 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 	return nil
 }
 
+func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
+	files, err := fsys.ReadDir(path)
+	if err != nil {
+		return false, err
+	}
+	return len(files) == 0, nil
+}
+
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
 	return o.initParams.validate()
@@ -78,7 +99,12 @@ func (o *InitOptions) Run() error {
 
 // NewCmdInit implements the odo command
 func NewCmdInit(name, fullName string) *cobra.Command {
-	o := NewInitOptions()
+	backends := []ParamsBuilder{
+		&FlagsBuilder{},
+		&InteractiveBuilder{},
+	}
+
+	o := NewInitOptions(backends, filesystem.DefaultFs{})
 	initCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Init bootstraps a new project",
