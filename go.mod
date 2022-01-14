@@ -3,6 +3,7 @@ module github.com/redhat-developer/odo
 go 1.16
 
 require (
+	github.com/AlecAivazis/survey/v2 v2.0.5
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
 	github.com/Xuanwo/go-locale v1.0.0
 	github.com/blang/semver v3.5.1+incompatible

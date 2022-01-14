@@ -1,5 +1,10 @@
 # cloud.google.com/go v0.60.0
 cloud.google.com/go/compute/metadata
+# github.com/AlecAivazis/survey/v2 v2.0.5
+## explicit
+github.com/AlecAivazis/survey/v2
+github.com/AlecAivazis/survey/v2/core
+github.com/AlecAivazis/survey/v2/terminal
 # github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm

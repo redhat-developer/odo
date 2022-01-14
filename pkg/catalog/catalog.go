@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 
@@ -245,4 +246,81 @@ func SearchComponent(client kclient.ClientInterface, name string) ([]string, err
 	//}
 
 	return []string{}, nil
+}
+
+func (o *DevfileComponentTypeList) GetLanguages() []string {
+	languagesMap := map[string]bool{}
+	for _, item := range o.Items {
+		languagesMap[item.Language] = true
+	}
+
+	languages := make([]string, 0, len(languagesMap))
+	for k := range languagesMap {
+		languages = append(languages, k)
+	}
+	return languages
+}
+
+type TypeDetails struct {
+	Name     string
+	Registry string
+}
+
+type TypesWithDetails map[string][]TypeDetails
+
+func (o *DevfileComponentTypeList) GetProjectTypes(language string) TypesWithDetails {
+	types := TypesWithDetails{}
+	for _, item := range o.Items {
+		if item.Language != language {
+			continue
+		}
+		if _, found := types[item.DisplayName]; !found {
+			types[item.DisplayName] = []TypeDetails{}
+		}
+		types[item.DisplayName] = append(types[item.DisplayName], TypeDetails{
+			Name:     item.Name,
+			Registry: item.Registry.Name,
+		})
+	}
+	return types
+}
+
+func (types TypesWithDetails) GetOrderedLabels() []string {
+	stringTypes := []string{}
+
+	sortedTypes := make([]string, 0, len(types))
+	for typ := range types {
+		sortedTypes = append(sortedTypes, typ)
+	}
+	sort.Strings(sortedTypes)
+
+	for _, typ := range sortedTypes {
+		detailsList := types[typ]
+		if len(detailsList) == 1 {
+			stringTypes = append(stringTypes, typ)
+		} else {
+			for _, details := range detailsList {
+				stringTypes = append(stringTypes, fmt.Sprintf("%s (%s, registry: %s)", typ, details.Name, details.Registry))
+			}
+		}
+	}
+	return stringTypes
+}
+
+func (types TypesWithDetails) GetAtOrderedPosition(pos int) (string, TypeDetails, error) {
+	sortedTypes := make([]string, 0, len(types))
+	for typ := range types {
+		sortedTypes = append(sortedTypes, typ)
+	}
+	sort.Strings(sortedTypes)
+
+	for _, typ := range sortedTypes {
+		detailsList := types[typ]
+		if pos >= len(detailsList) {
+			pos -= len(detailsList)
+			continue
+		}
+		return typ, detailsList[pos], nil
+	}
+	return "", TypeDetails{}, errors.New("index not found")
 }
