@@ -1,21 +1,39 @@
-**What type of PR is this?**
-> Uncomment only one ` /kind` line, and delete the rest.
-> For example, `> /kind bug` would simply become: `/kind bug`
+<!-- 
+Thank you for opening a PR! Here are some things you need to know before submitting:
 
-> /kind bug
-> /kind feature
-> /kind cleanup
-> /kind tests
-> /kind documentation
-> Feel free to use other [labels](https://github.com/redhat-developer/odo/labels) as needed. However one of the above labels must be present or the PR will not be reviewed. This instruction is for reviewers as well.
+1. Please read our developer guideline: https://github.com/redhat-developer/odo/wiki/Developer-Guidelines
+2. Label this PR accordingly with the '/kind' line
+3. Ensure you have written and ran the appropriate tests: https://github.com/redhat-developer/odo/wiki/Writing-and-running-tests
+4. Read how we approve and LGTM each PR: https://github.com/redhat-developer/odo/wiki/PR-Review
 
-**What does this PR do / why we need it**:
+Documentation:
 
-**Which issue(s) this PR fixes**:
+If you are pushing a change to documentation, please read: https://github.com/redhat-developer/odo/wiki/Contributing-to-Docs
+-->
 
-Fixes #?
+**What type of PR is this:**
 
-**PR acceptance criteria**:
+<!--
+Add one of the following kinds:
+/kind bug
+/kind feature
+/kind cleanup
+/kind tests
+/kind documentation
+
+Feel free to use other [labels](https://github.com/redhat-developer/odo/labels) as needed. However one of the above labels must be present or the PR will not be reviewed. This instruction is for reviewers as well.
+-->
+
+**What does this PR do / why we need it:**
+
+**Which issue(s) this PR fixes:**
+<!-- 
+Specifying the issue will automatically close it when this PR is merged
+-->
+
+Fixes #
+
+**PR acceptance criteria:**
 
 - [ ] Unit test 
 
@@ -23,6 +41,4 @@ Fixes #?
 
 - [ ] Documentation 
 
-- [ ] I have read the [test guidelines](https://github.com/redhat-developer/odo/blob/master/docs/dev/test-architecture.adoc)
-
-**How to test changes / Special notes to the reviewer**:
+**How to test changes / Special notes to the reviewer:**
