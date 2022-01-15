@@ -569,7 +569,7 @@ func (oc OcRunner) Logout() {
 func (oc OcRunner) ScalePodToZero(componentName, appName, projectName string) {
 	podName := oc.GetRunningPodNameByComponent(componentName, projectName)
 	Cmd(oc.path, "scale", "deploy", strings.Join([]string{componentName, appName}, "-"), "--replicas=0").ShouldPass()
-	oc.WaitForRunnerCmdOut([]string{"get", "-n", projectName, "pod", podName}, 1, true, func(output string) bool {
+	oc.WaitForRunnerCmdOut([]string{"get", "-n", projectName, "pod", podName}, 1, false, func(output string) bool {
 		return !strings.Contains(output, podName)
 	})
 }
