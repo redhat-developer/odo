@@ -52,6 +52,7 @@ type CreateOptions struct {
 
 	createMethod    CreateMethod
 	devfileMetadata DevfileMetadata
+	stackName       string
 }
 
 // Path of user's own devfile, user specifies the path via --devfile flag
@@ -226,7 +227,9 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	scontext.SetDevfileName(cmdline.Context(), co.devfileName)
 	// Adding component type to telemetry data
 	scontext.SetComponentType(cmdline.Context(), co.devfileMetadata.componentType)
-
+	if len(args) > 0 {
+		co.stackName = args[0]
+	}
 	return nil
 }
 
@@ -283,7 +286,7 @@ func (co *CreateOptions) Run() (err error) {
 	}
 
 	//Check if the directory already contains a devfile when starter project is downloaded
-	if co.devfileMetadata.starter != "" && !(util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value)) {
+	if co.devfileMetadata.starter != "" && len(co.stackName) > 0 && !(util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value)) {
 		// TODO: We should not have to rewrite to the file. Fix the starter project.
 		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 		if err != nil {
