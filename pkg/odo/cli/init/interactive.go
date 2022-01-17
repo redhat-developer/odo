@@ -2,59 +2,55 @@ package init
 
 import (
 	"fmt"
-	"sort"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/redhat-developer/odo/pkg/catalog"
 )
 
 // InteractiveBuilder is a backend that will ask init parameters interactively
-type InteractiveBuilder struct{}
+type InteractiveBuilder struct {
+	asker asker
+}
+
+func NewInteractiveBuilder(asker asker) *InteractiveBuilder {
+	return &InteractiveBuilder{
+		asker: asker,
+	}
+}
 
 func (o *InteractiveBuilder) IsAdequate(flags map[string]string) bool {
 	return len(flags) == 0
 }
 
 func (o *InteractiveBuilder) ParamsBuild() (initParams, error) {
+	result := initParams{}
 	devfileEntries, _ := catalog.ListDevfileComponents("")
 	langs := devfileEntries.GetLanguages()
-	lang, err := askLanguage(langs)
+	lang, err := o.asker.askLanguage(langs)
 	if err != nil {
 		return initParams{}, err
 	}
 	types := devfileEntries.GetProjectTypes(lang)
-	typ, details, err := askType(types)
+	details, err := o.asker.askType(types)
 	if err != nil {
 		return initParams{}, err
 	}
-	fmt.Printf("typ: %s, details: %+v\n", typ, details)
-	return initParams{}, nil
-}
+	result.devfileRegistry = details.Registry.Name
+	result.devfile = details.Name
 
-func askLanguage(langs []string) (string, error) {
-	sort.Strings(langs)
-	question := &survey.Select{
-		Message: "Select language:",
-		Options: langs,
-	}
-	var answer string
-	err := survey.AskOne(question, &answer)
+	projects, err := catalog.GetStarterProjectsNames(details)
 	if err != nil {
-		return "", err
+		return initParams{}, err
 	}
-	return answer, nil
-}
 
-func askType(types catalog.TypesWithDetails) (string, catalog.TypeDetails, error) {
-	stringTypes := types.GetOrderedLabels()
-	question := &survey.Select{
-		Message: "Select project type:",
-		Options: stringTypes,
-	}
-	var answerPos int
-	err := survey.AskOne(question, &answerPos)
+	result.starter, err = o.asker.askStarterProject(projects)
 	if err != nil {
-		return "", catalog.TypeDetails{}, err
+		return initParams{}, err
 	}
-	return types.GetAtOrderedPosition(answerPos)
+
+	result.name, err = o.asker.askName(fmt.Sprintf("my-%s-app", result.devfile))
+	if err != nil {
+		return initParams{}, err
+	}
+
+	return result, nil
 }

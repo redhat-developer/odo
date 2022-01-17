@@ -101,7 +101,7 @@ func (o *InitOptions) Run() error {
 func NewCmdInit(name, fullName string) *cobra.Command {
 	backends := []ParamsBuilder{
 		&FlagsBuilder{},
-		&InteractiveBuilder{},
+		NewInteractiveBuilder(NewSurveyAsker()),
 	}
 
 	o := NewInitOptions(backends, filesystem.DefaultFs{})

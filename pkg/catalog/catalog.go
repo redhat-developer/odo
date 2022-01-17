@@ -3,23 +3,27 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 
-	"github.com/redhat-developer/odo/pkg/segment"
-
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/pkg/errors"
 	"github.com/zalando/go-keyring"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/log"
-
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	"github.com/pkg/errors"
+
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -227,6 +231,35 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 	return *catalogDevfileList, nil
 }
 
+// GetStarterProjectsNames returns the list of starter projects in a devfile,
+// by temporarily downloading the devile
+func GetStarterProjectsNames(details DevfileComponentType) ([]string, error) {
+	tmpDir, err := ioutil.TempDir("", "odoinit")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	err = registryLibrary.PullStackFromRegistry(details.Registry.URL, details.Name, tmpDir, segment.GetRegistryOptions())
+	if err != nil {
+		return nil, err
+	}
+
+	devObj, err := devfile.ParseAndValidateFromFile(filepath.Join(tmpDir, "devfile.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	starterProjects, err := devObj.Data.GetStarterProjects(parsercommon.DevfileOptions{})
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(starterProjects))
+	for _, starterProject := range starterProjects {
+		names = append(names, starterProject.Name)
+	}
+	return names, err
+}
+
 // SearchComponent searches for the component
 //TODO: Fix this to return devfile components
 func SearchComponent(client kclient.ClientInterface, name string) ([]string, error) {
@@ -248,6 +281,8 @@ func SearchComponent(client kclient.ClientInterface, name string) ([]string, err
 	return []string{}, nil
 }
 
+// GetLanguages returns the list of unique languages, ordered by name,
+// from a list of registry items
 func (o *DevfileComponentTypeList) GetLanguages() []string {
 	languagesMap := map[string]bool{}
 	for _, item := range o.Items {
@@ -258,16 +293,14 @@ func (o *DevfileComponentTypeList) GetLanguages() []string {
 	for k := range languagesMap {
 		languages = append(languages, k)
 	}
+	sort.Strings(languages)
 	return languages
 }
 
-type TypeDetails struct {
-	Name     string
-	Registry string
-}
+type TypesWithDetails map[string][]DevfileComponentType
 
-type TypesWithDetails map[string][]TypeDetails
-
+// GetProjectTypes returns the list of project types and associated details
+// from a list of registry items
 func (o *DevfileComponentTypeList) GetProjectTypes(language string) TypesWithDetails {
 	types := TypesWithDetails{}
 	for _, item := range o.Items {
@@ -275,16 +308,14 @@ func (o *DevfileComponentTypeList) GetProjectTypes(language string) TypesWithDet
 			continue
 		}
 		if _, found := types[item.DisplayName]; !found {
-			types[item.DisplayName] = []TypeDetails{}
+			types[item.DisplayName] = []DevfileComponentType{}
 		}
-		types[item.DisplayName] = append(types[item.DisplayName], TypeDetails{
-			Name:     item.Name,
-			Registry: item.Registry.Name,
-		})
+		types[item.DisplayName] = append(types[item.DisplayName], item)
 	}
 	return types
 }
 
+// GetOrderedLabels returns a list of labels for a list of project types
 func (types TypesWithDetails) GetOrderedLabels() []string {
 	stringTypes := []string{}
 
@@ -300,14 +331,16 @@ func (types TypesWithDetails) GetOrderedLabels() []string {
 			stringTypes = append(stringTypes, typ)
 		} else {
 			for _, details := range detailsList {
-				stringTypes = append(stringTypes, fmt.Sprintf("%s (%s, registry: %s)", typ, details.Name, details.Registry))
+				stringTypes = append(stringTypes, fmt.Sprintf("%s (%s, registry: %s)", typ, details.Name, details.Registry.Name))
 			}
 		}
 	}
 	return stringTypes
 }
 
-func (types TypesWithDetails) GetAtOrderedPosition(pos int) (string, TypeDetails, error) {
+// GetAtOrderedPosition returns the project type at the given position,
+// when the list of project types is ordered by GetOrderedLabels
+func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileComponentType, error) {
 	sortedTypes := make([]string, 0, len(types))
 	for typ := range types {
 		sortedTypes = append(sortedTypes, typ)
@@ -320,7 +353,7 @@ func (types TypesWithDetails) GetAtOrderedPosition(pos int) (string, TypeDetails
 			pos -= len(detailsList)
 			continue
 		}
-		return typ, detailsList[pos], nil
+		return detailsList[pos], nil
 	}
-	return "", TypeDetails{}, errors.New("index not found")
+	return DevfileComponentType{}, errors.New("index not found")
 }
