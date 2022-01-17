@@ -12,7 +12,7 @@ KUBEADMIN_SCRIPT="$LIBCOMMON/kubeconfigandadmin.sh"
 # Exported to current env
 
 # list of namespace to create
-IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11"
+IMAGE_TEST_NAMESPACES="openjdk-11-rhel8 nodejs-12-rhel7 nodejs-12 openjdk-11 nodejs-14"
 
 . $KUBEADMIN_SCRIPT
 
