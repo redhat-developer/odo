@@ -423,7 +423,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	When("a devfile is provided which has a starter that has its own devfile", func() {
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "nodejs", "--devfile", filepath.Join(helper.GetExamplePath("source", "devfiles", "devfile"))).ShouldPass()
+			helper.Cmd("odo", "create", "nodejs", "--devfile", filepath.Join(helper.GetExamplePath("source", "devfiles", "devfile-with-starter-with-devfile.yaml"))).ShouldPass()
 		})
 		It("should pass and keep the devfile in starter", func() {
 			devfileobj, err := devfilelib.ParseAndValidateFromFile(filepath.Join(commonVar.Context, "devfile.yaml"))
