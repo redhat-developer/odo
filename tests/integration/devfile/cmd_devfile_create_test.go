@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"github.com/redhat-developer/odo/tests/helper"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,8 +14,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	devfilelib "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile create command tests", func() {
@@ -425,6 +426,10 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.Cmd("odo", "create", "nodejs", "--devfile", filepath.Join(helper.GetExamplePath("source", "devfiles", "devfile"))).ShouldPass()
 		})
 		It("should pass and keep the devfile in starter", func() {
+			devfileobj, err := devfilelib.ParseAndValidateFromFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(devfileobj.Data.GetSchemaVersion()).To(Equal("2.2.0"))
+
 			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			Expect(err).To(Not(HaveOccurred()))
 			helper.MatchAllInOutput(devfileContent, []string{"outerloop-deploy", "deployk8s", "outerloop-build"})
