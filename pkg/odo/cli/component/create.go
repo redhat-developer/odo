@@ -146,16 +146,17 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	}
 	// CONFLICT CHECK
 	// Check if a component exists
-	if util.CheckPathExists(envFilePath) && util.CheckPathExists(co.DevfilePath) {
-		//if --devfile arg is provided, return arror
-		if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+	if util.CheckPathExists(co.DevfilePath) {
+		if util.CheckPathExists(envFilePath) {
+			return errors.New("this directory already contains a component")
+		} else if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 		} else if co.devfileMetadata.starter != "" && len(args) == 0 {
 			//if devfile already exists, then don't allow --starter
 			return fmt.Errorf("this directory already has a devfile so you cannot provide a starter. Please remove exisiting devfile and re-create")
 		}
-		return errors.New("this directory already contains a component")
 	}
+
 	// Check if there is a dangling env file; delete the env file if found
 	if util.CheckPathExists(envFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
