@@ -229,7 +229,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the component and extract the project in the specified subDir path", func() {
 				var found, notToBeFound int
-				helper.Cmd("odo", "create", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
+				helper.Cmd("odo", "create", "java", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
 				pathsToValidate := map[string]bool{
 					filepath.Join(contextDevfile, "java", "com"):                                            true,
 					filepath.Join(contextDevfile, "java", "com", "example"):                                 true,
