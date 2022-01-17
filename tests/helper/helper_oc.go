@@ -563,3 +563,13 @@ func (oc OcRunner) addConfigMapForCleanup(projectName string) {
 func (oc OcRunner) Logout() {
 	Cmd(oc.path, "logout")
 }
+
+// ScalePodToZero scales the pod of the deployment to zero.
+// It waits for the pod to get deleted from the cluster before returning
+func (oc OcRunner) ScalePodToZero(componentName, appName, projectName string) {
+	podName := oc.GetRunningPodNameByComponent(componentName, projectName)
+	Cmd(oc.path, "scale", "deploy", strings.Join([]string{componentName, appName}, "-"), "--replicas=0").ShouldPass()
+	oc.WaitForRunnerCmdOut([]string{"get", "-n", projectName, "pod", podName}, 1, false, func(output string) bool {
+		return !strings.Contains(output, podName)
+	})
+}

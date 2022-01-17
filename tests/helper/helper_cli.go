@@ -35,4 +35,5 @@ type CliRunner interface {
 	GetSecrets(project string) string
 	GetEnvFromEntry(componentName string, appName string, projectName string) string
 	GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string
+	ScalePodToZero(componentName, appName, projectName string)
 }
