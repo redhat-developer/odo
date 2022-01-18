@@ -83,31 +83,37 @@ func (do *DeleteOptions) Validate() error {
 func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
+	devfileExists := util.CheckPathExists(do.GetDevfilePath())
 
 	// odo delete --deploy || odo delete --all
 	if do.deployFlag || do.allFlag {
-		if do.forceFlag || ui.Proceed("Are you sure you want to undeploy?") {
-			log.Infof("Un-deploying the Kubernetes Deployment")
+		log.Info("Un-deploying the Kubernetes Component")
+		if do.forceFlag || ui.Proceed("Are you sure you want to un-deploy?") {
 			err = do.DevfileUnDeploy()
 			if err != nil {
-				// if there is no component in the devfile to undeploy, skip the error log
-				if errors.Is(err, &component.NoDefaultDeployCommandFoundError{}) {
-					log.Error("no kubernetes component to un-deploy")
+				// if there is no component in the devfile to undeploy or if the devfile is non-existent, then skip the error log
+				if errors.Is(err, &component.NoDefaultDeployCommandFoundError{}) || !devfileExists {
+					log.Print("no kubernetes component to un-deploy")
 				} else {
-					log.Errorf("error occurred while undeploying, cause: %v", err)
+					log.Errorf("error occurred while un-deploying, cause: %v", err)
 				}
 			}
 		} else {
-			log.Error("Aborting the un-deployment")
+			log.Error("Aborting un-deployment of the component")
 		}
 	}
 
 	// odo delete || odo delete --all
 	if !do.deployFlag || do.allFlag {
+		log.Info("Deleting the devfile component")
 		if do.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
 			err = do.DevfileComponentDelete()
 			if err != nil {
-				log.Errorf("error occurred while deleting component, cause: %v", err)
+				if !devfileExists {
+					log.Print("no devfile component to delete")
+				} else {
+					log.Errorf("error occurred while deleting component, cause: %v", err)
+				}
 			}
 		} else {
 			log.Error("Aborting deletion of component")
@@ -116,11 +122,12 @@ func (do *DeleteOptions) Run() (err error) {
 
 	// Delete the configuration files
 	if do.allFlag {
-		log.Info("\nDeleting local config")
+		log.Info("Deleting local config")
 		// Prompt and delete env folder
 		if do.forceFlag || ui.Proceed("Are you sure you want to delete env folder?") {
 			if !do.EnvSpecificInfo.Exists() {
-				return fmt.Errorf("env folder doesn't exist for the component")
+				log.Print("env folder doesn't exist for the component")
+				return nil
 			}
 			if err = util.DeleteIndexFile(filepath.Dir(do.GetDevfilePath())); err != nil {
 				return err
@@ -143,9 +150,13 @@ func (do *DeleteOptions) Run() (err error) {
 			log.Error("Aborting deletion of env folder")
 		}
 
+		// Prompt and delete the devfile.yaml
+		successMessage := "Successfully delete devfile.yaml file"
+		devfileNotExistsMessage := "devfile.yaml does not exist in the current directory"
 		if do.forceFlag {
-			if !util.CheckPathExists(do.GetDevfilePath()) {
-				return fmt.Errorf("devfile.yaml does not exist in the current directory")
+			if !devfileExists {
+				log.Print(devfileNotExistsMessage)
+				return nil
 			}
 			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
 
@@ -177,15 +188,16 @@ func (do *DeleteOptions) Run() (err error) {
 					return err
 				}
 
-				log.Successf("Successfully deleted devfile.yaml file")
+				log.Successf(successMessage)
 
 			} else {
 				log.Info("Didn't delete the devfile as it was user provided")
 			}
 
 		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
-			if !util.CheckPathExists(do.GetDevfilePath()) {
-				return fmt.Errorf("devfile.yaml does not exist in the current directory")
+			if !devfileExists {
+				log.Print(devfileNotExistsMessage)
+				return nil
 			}
 
 			// first remove the uri based files mentioned in the devfile
@@ -216,7 +228,7 @@ func (do *DeleteOptions) Run() (err error) {
 				return err
 			}
 
-			log.Successf("Successfully deleted devfile.yaml file")
+			log.Successf(successMessage)
 		} else {
 			log.Error("Aborting deletion of devfile.yaml file")
 		}
