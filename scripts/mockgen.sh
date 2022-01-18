@@ -52,7 +52,7 @@ mockgen -source=pkg/odo/cli/init/params/interface.go \
     -package params \
     -destination pkg/odo/cli/init/params/mock.go
 
-mockgen -source=pkg/catalog/catalog.go \
+mockgen -source=pkg/catalog/interface.go \
     -package catalog \
     -destination pkg/catalog/mock_catalog.go
 

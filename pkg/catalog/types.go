@@ -23,3 +23,5 @@ type DevfileComponentTypeList struct {
 	DevfileRegistries []Registry
 	Items             []DevfileComponentType
 }
+
+type TypesWithDetails map[string][]DevfileComponentType
