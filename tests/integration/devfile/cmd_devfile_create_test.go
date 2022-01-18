@@ -415,8 +415,8 @@ var _ = Describe("odo devfile create command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile-with-starter-with-devfile.yaml"))
 		})
-		It("should fail with appropriate error when --starer is given to odo create", func() {
-			stderr := helper.Cmd("odo", "create", "--starter", "nodejs-starter").ShouldFail().Err()
+		It("should fail with appropriate error when --starter is given to odo create", func() {
+			stderr := helper.Cmd("odo", "create", "--starter", "nodejs-starter", "--context", commonVar.Context).ShouldFail().Err()
 			Expect(stderr).To(ContainSubstring("already has a devfile so you cannot provide a starter"))
 		})
 	})
