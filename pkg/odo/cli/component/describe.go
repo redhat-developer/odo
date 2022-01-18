@@ -123,7 +123,7 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 }
 
 // Print prints the complete information of component onto stdout (Note: long term this function should not need to access any parameters, but just print the information in struct)
-func humanReadableDescribeOutput(cfd *component.ComponentFullDescription, compClient component.Client) error {
+func humanReadableDescribeOutput(cfd *component.Component, compClient component.Client) error {
 	log.Describef("Component Name: ", cfd.GetName())
 	log.Describef("Type: ", cfd.Spec.Type)
 
@@ -144,11 +144,11 @@ func humanReadableDescribeOutput(cfd *component.ComponentFullDescription, compCl
 	}
 
 	// Storage
-	if len(cfd.Spec.Storage.Items) > 0 {
+	if len(cfd.Spec.StorageSpec) > 0 {
 
 		// Gather the output
 		var output string
-		for _, store := range cfd.Spec.Storage.Items {
+		for _, store := range cfd.Spec.StorageSpec {
 			var eph string
 			if store.Spec.Ephemeral != nil {
 				if *store.Spec.Ephemeral {
@@ -168,10 +168,10 @@ func humanReadableDescribeOutput(cfd *component.ComponentFullDescription, compCl
 	}
 
 	// URL
-	if len(cfd.Spec.URL.Items) > 0 {
+	if len(cfd.Spec.URLSpec) > 0 {
 		var output string
 		// if the component is not pushed
-		for _, componentURL := range cfd.Spec.URL.Items {
+		for _, componentURL := range cfd.Spec.URLSpec {
 			if componentURL.Status.State == urlpkg.StateTypePushed {
 				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
 			} else {

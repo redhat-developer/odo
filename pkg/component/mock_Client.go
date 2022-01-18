@@ -94,10 +94,10 @@ func (mr *MockClientMockRecorder) GetComponentNames(applicationName interface{})
 }
 
 // GetComponentFullDescription mocks base method
-func (m *MockClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName, applicationName, projectName, context string) (*ComponentFullDescription, error) {
+func (m *MockClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName, applicationName, projectName, context string) (*Component, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetComponentFullDescription", envInfo, componentName, applicationName, projectName, context)
-	ret0, _ := ret[0].(*ComponentFullDescription)
+	ret0, _ := ret[0].(*Component)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

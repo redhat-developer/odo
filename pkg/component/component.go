@@ -49,99 +49,93 @@ func NewClient(client kclient.ClientInterface) Client {
 }
 
 // GetComponentFullDescription gets the complete description of the component from cluster
-func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
-	cfd := &ComponentFullDescription{}
-	var state State
-	if c.client == nil {
-		state = StateTypeUnknown
-	} else {
-		state = getComponentState(componentName, applicationName, c.client)
-	}
-	var componentDesc Component
-	var devfileObj parser.DevfileObj
-	var err error
-	var configLinks []string
-	componentDesc, devfileObj, err = getComponentFromDevfile(envInfo)
+func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*Component, error) {
+	componentDesc, devfileObj, err := getComponentFromDevfile(envInfo)
 	if err != nil {
-		return cfd, err
+		return &componentDesc, err
 	}
+	envInfo.SetDevfileObj(devfileObj)
 
-	if err != nil {
-		return cfd, err
+	componentDesc.Status.State = StateTypeUnknown
+	if c.client != nil {
+		componentDesc.Status.State = getComponentState(componentName, applicationName, c.client)
 	}
-	err = cfd.copyFromComponentDesc(&componentDesc)
-	if err != nil {
-		return cfd, err
-	}
-	cfd.Status.State = state
-	if state == StateTypePushed {
+	var deployment *v1.Deployment
+	if componentDesc.Status.State == StateTypePushed {
 		componentDescFromCluster, e := getRemoteComponentMetadata(componentName, applicationName, false, false, c.client)
 		if e != nil {
-			return cfd, e
+			return &componentDesc, e
 		}
-		cfd.Spec.Env = componentDescFromCluster.Spec.Env
-		cfd.Spec.Type = componentDescFromCluster.Spec.Type
-		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
+		deployment, err = c.client.GetOneDeployment(componentName, applicationName)
+		if err != nil {
+			return &componentDesc, err
+		}
+		componentDesc.Spec.Env = componentDescFromCluster.Spec.Env
+		componentDesc.Spec.Type = componentDescFromCluster.Spec.Type
+		componentDesc.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
 	}
 
+	// Obtain Links information
+	var configLinks []string
 	configLinks, err = service.ListDevfileLinks(devfileObj, context)
 	if err != nil {
-		return cfd, err
+		return &componentDesc, err
 	}
 	for _, link := range configLinks {
 		found := false
-		for _, linked := range cfd.Status.LinkedServices {
+		for _, linked := range componentDesc.Status.LinkedServices {
 			if linked.ServiceName == link {
 				found = true
 				break
 			}
 		}
 		if !found {
-			cfd.Status.LinkedServices = append(cfd.Status.LinkedServices, SecretMount{
+			componentDesc.Status.LinkedServices = append(componentDesc.Status.LinkedServices, SecretMount{
 				ServiceName: link,
 			})
 		}
 	}
 
-	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
+	componentDesc.fillEmptyFields(componentName, applicationName, projectName)
 
+	// Obtain URLs information
 	var urls urlpkg.URLList
-
 	var routeSupported bool
 	if c.client != nil {
 		// we assume if there was an error then the cluster is not connected
 		routeSupported, _ = c.client.IsRouteSupported()
 	}
 
-	var configProvider localConfigProvider.LocalConfigProvider
-	envInfo.SetDevfileObj(devfileObj)
-	configProvider = envInfo
-
 	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
-		LocalConfigProvider: configProvider,
+		LocalConfigProvider: envInfo,
 		Client:              c.client,
 		IsRouteSupported:    routeSupported,
+		Deployment:          deployment,
 	})
 
 	urls, err = urlClient.List()
 	if err != nil {
 		log.Warningf("URLs couldn't not be retrieved: %v", err)
 	}
-	cfd.Spec.URL = urls
+	// We explicitly do not fill in Spec.URL for describe
+	componentDesc.Spec.URLSpec = urls.Items
 
+	// Obtain Storage information
 	var storages storage.StorageList
 	storageClient := storage.NewClient(storage.ClientOptions{
 		Client:              c.client,
-		LocalConfigProvider: configProvider,
+		LocalConfigProvider: envInfo,
+		Deployment:          deployment,
 	})
 
+	// We explicitly do not fill in Spec.Storage for describe
 	storages, err = storageClient.List()
 	if err != nil {
 		log.Warningf("Storages couldn't not be retrieved: %v", err)
 	}
-	cfd.Spec.Storage = storages
+	componentDesc.Spec.StorageSpec = storages.Items
 
-	return cfd, nil
+	return &componentDesc, nil
 }
 
 // GetComponentNames retrieves the names of the components in the specified application
@@ -180,6 +174,10 @@ func (c componentClient) List(selector string) (ComponentList, error) {
 		}
 
 		if !reflect.ValueOf(component).IsZero() {
+			// This is a workaround to avoid having Storage and URL specs in the JSON output;
+			// We do not want this information in the output; and JSON marshaller will omit this since it's empty
+			component.Spec.URLSpec = []url.URL{}
+			component.Spec.StorageSpec = []storage.Storage{}
 			components = append(components, component)
 		}
 
@@ -189,7 +187,7 @@ func (c componentClient) List(selector string) (ComponentList, error) {
 	return compoList, nil
 }
 
-// ListComponentsInPath: list all the components in a path
+// ListComponentsInPath lists all the components in a path
 func (c componentClient) ListComponentsInPath(paths []string) ([]Component, error) {
 	var components []Component
 	var err error
@@ -262,7 +260,7 @@ func (c componentClient) Exists(componentName, applicationName string) (bool, er
 	return false, nil
 }
 
-// GetLinkedServicesSecretData: get the secrets/environment variables that are passed by the linkedsecret
+// GetLinkedServicesSecretData gets the secrets/environment variables that are passed by the linkedsecret
 func (c componentClient) GetLinkedServicesSecretData(namespace, secretName string) (map[string][]byte, error) {
 	secrets, err := c.client.GetSecret(secretName, namespace)
 	if err != nil {

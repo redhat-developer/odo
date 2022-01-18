@@ -23,9 +23,9 @@ type ComponentSpec struct {
 	App         string            `json:"app,omitempty"`
 	Type        string            `json:"type,omitempty"`
 	URL         []string          `json:"url,omitempty"`
-	URLSpec     []url.URL         `json:"-"`
+	URLSpec     []url.URL         `json:"urls,omitempty"`
 	Storage     []string          `json:"storage,omitempty"`
-	StorageSpec []storage.Storage `json:"-"`
+	StorageSpec []storage.Storage `json:"storages,omitempty"`
 	Env         []corev1.EnvVar   `json:"env,omitempty"`
 	Ports       []string          `json:"ports,omitempty"`
 }
@@ -126,5 +126,29 @@ func NewCombinedComponentList(devfileComps []Component, otherComps []Component) 
 		ListMeta:          metav1.ListMeta{},
 		DevfileComponents: devfileComps,
 		OtherComponents:   otherComps,
+	}
+}
+
+// fillEmptyFields fills any fields(name, namespace, kind, APIVersion, and app) that are empty in the Component
+func (cmp *Component) fillEmptyFields(componentName string, applicationName string, projectName string) {
+	// fix missing names in case it is not in description
+	if len(cmp.Name) <= 0 {
+		cmp.Name = componentName
+	}
+
+	if len(cmp.Namespace) <= 0 {
+		cmp.Namespace = projectName
+	}
+
+	if len(cmp.Kind) <= 0 {
+		cmp.Kind = "Component"
+	}
+
+	if len(cmp.APIVersion) <= 0 {
+		cmp.APIVersion = apiVersion
+	}
+
+	if len(cmp.Spec.App) <= 0 {
+		cmp.Spec.App = applicationName
 	}
 }
