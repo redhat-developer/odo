@@ -80,7 +80,7 @@ func (o *DeleteOptions) Run() (err error) {
 		return o.appClient.Delete(o.appName)
 	}
 
-	// Print App Information which will be deleted
+	// Printf App Information which will be deleted
 	err = printAppInfo(o.appClient, o.appName, o.GetProject())
 	if err != nil {
 		return err

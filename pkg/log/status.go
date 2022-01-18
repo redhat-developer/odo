@@ -227,9 +227,9 @@ func Progressf(format string, a ...interface{}) {
 	}
 }
 
-// Print will output in an appropriate "information" manner; for e.g.
+// Printf will output in an appropriate "information" manner; for e.g.
 // • <message>
-func Print(format string, a ...interface{}) {
+func Printf(format string, a ...interface{}) {
 	if !IsJSON() {
 		fmt.Fprintf(GetStdout(), "%s%s%s%s\n", prefixSpacing, getSpacingString(), suffixSpacing, fmt.Sprintf(format, a...))
 	}

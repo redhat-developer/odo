@@ -93,7 +93,7 @@ func (do *DeleteOptions) Run() (err error) {
 			if err != nil {
 				// if there is no component in the devfile to undeploy or if the devfile is non-existent, then skip the error log
 				if errors.Is(err, &component.NoDefaultDeployCommandFoundError{}) || !devfileExists {
-					log.Print("no kubernetes component to un-deploy")
+					log.Printf("no kubernetes component to un-deploy")
 				} else {
 					log.Errorf("error occurred while un-deploying, cause: %v", err)
 				}
@@ -110,7 +110,7 @@ func (do *DeleteOptions) Run() (err error) {
 			err = do.DevfileComponentDelete()
 			if err != nil {
 				if !devfileExists {
-					log.Print("no devfile component to delete")
+					log.Printf("no devfile component to delete")
 				} else {
 					log.Errorf("error occurred while deleting component, cause: %v", err)
 				}
@@ -126,7 +126,7 @@ func (do *DeleteOptions) Run() (err error) {
 		// Prompt and delete env folder
 		if do.forceFlag || ui.Proceed("Are you sure you want to delete env folder?") {
 			if !do.EnvSpecificInfo.Exists() {
-				log.Print("env folder doesn't exist for the component")
+				log.Printf("env folder doesn't exist for the component")
 				return nil
 			}
 			if err = util.DeleteIndexFile(filepath.Dir(do.GetDevfilePath())); err != nil {
@@ -151,11 +151,11 @@ func (do *DeleteOptions) Run() (err error) {
 		}
 
 		// Prompt and delete the devfile.yaml
-		successMessage := "Successfully delete devfile.yaml file"
+		successMessage := "Successfully deleted devfile.yaml file"
 		devfileNotExistsMessage := "devfile.yaml does not exist in the current directory"
 		if do.forceFlag {
 			if !devfileExists {
-				log.Print(devfileNotExistsMessage)
+				log.Printf(devfileNotExistsMessage)
 				return nil
 			}
 			if !do.EnvSpecificInfo.IsUserCreatedDevfile() {
@@ -196,7 +196,7 @@ func (do *DeleteOptions) Run() (err error) {
 
 		} else if ui.Proceed("Are you sure you want to delete devfile.yaml?") {
 			if !devfileExists {
-				log.Print(devfileNotExistsMessage)
+				log.Printf(devfileNotExistsMessage)
 				return nil
 			}
 
