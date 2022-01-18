@@ -30,6 +30,22 @@ func TestNewEnvVarFromString(t *testing.T) {
 				Value: "bar",
 			},
 		},
+		{
+			envStr:  "0foo=bar",
+			wantErr: true,
+		},
+		{
+			envStr:  "f°°=bar",
+			wantErr: true,
+		},
+		{
+			envStr:  "foo=b°°",
+			wantErr: false,
+			expected: EnvVar{
+				Name:  "foo",
+				Value: "b°°",
+			},
+		},
 	}
 
 	for _, testCase := range cases {
