@@ -416,14 +416,14 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 		})
 		It("should fail with appropriate error when --starter is given to odo create", func() {
-			stderr := helper.Cmd("odo", "create", "--starter", "nodejs-starter", "--context", commonVar.Context).ShouldFail().Err()
+			stderr := helper.Cmd("odo", "create", "--starter", "nodejs-starter", "--context", commonVar.Context, "--project", commonVar.Project).ShouldFail().Err()
 			Expect(stderr).To(ContainSubstring("already has a devfile so you cannot provide a starter"))
 		})
 	})
 
 	When("a devfile is provided which has a starter that has its own devfile", func() {
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "nodejs", "--devfile", filepath.Join(helper.GetExamplePath("source", "devfiles", "devfile-with-starter-with-devfile.yaml"))).ShouldPass()
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", filepath.Join(helper.GetExamplePath("source", "devfiles", "devfile-with-starter-with-devfile.yaml"))).ShouldPass()
 		})
 		It("should pass and keep the devfile in starter", func() {
 			devfileobj, err := devfilelib.ParseAndValidateFromFile(filepath.Join(commonVar.Context, "devfile.yaml"))
