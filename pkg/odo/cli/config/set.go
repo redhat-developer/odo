@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/envvar"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -108,11 +109,11 @@ func (o *SetOptions) Validate() error {
 // Run contains the logic for the command
 func (o *SetOptions) Run() error {
 	if o.envArrayFlag != nil {
-		newEnvVarList, err := config.NewEnvVarListFromSlice(o.envArrayFlag)
+		newEnvVarList, err := envvar.NewListFromSlice(o.envArrayFlag)
 		if err != nil {
 			return err
 		}
-		err = o.EnvSpecificInfo.GetDevfileObj().AddEnvVars(newEnvVarList.ToDevfileEnv())
+		err = o.EnvSpecificInfo.GetDevfileObj().AddEnvVars(newEnvVarList.ToDevfileEnvVar())
 		if err != nil {
 			return err
 		}
@@ -205,7 +206,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		},
 	}
 	configurationSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the config directly")
-	configurationSetCmd.Flags().StringSliceVarP(&o.envArrayFlag, "env", "e", nil, "Set the environment variables in config")
+	configurationSetCmd.Flags().StringArrayVarP(&o.envArrayFlag, "env", "e", nil, "Set the environment variables in config")
 	o.AddContextFlag(configurationSetCmd)
 	odoutil.AddNowFlag(configurationSetCmd, &o.nowFlag)
 
