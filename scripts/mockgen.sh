@@ -46,3 +46,11 @@ mockgen -source=pkg/auth/interface.go \
 mockgen -source=pkg/odo/cli/init/params.go \
     -package init \
     -destination pkg/odo/cli/init/mock_params.go
+
+mockgen -source=pkg/catalog/catalog.go \
+    -package catalog \
+    -destination pkg/catalog/mock_catalog.go
+
+mockgen -source=pkg/odo/cli/init/asker.go \
+    -package init \
+    -destination pkg/odo/cli/init/mock_asker.go
