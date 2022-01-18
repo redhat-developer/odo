@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/util"
@@ -101,7 +102,7 @@ func (o *InitOptions) Run() error {
 func NewCmdInit(name, fullName string) *cobra.Command {
 	backends := []ParamsBuilder{
 		&FlagsBuilder{},
-		NewInteractiveBuilder(NewSurveyAsker()),
+		NewInteractiveBuilder(NewSurveyAsker(), catalog.NewCatalogClient()),
 	}
 
 	o := NewInitOptions(backends, filesystem.DefaultFs{})

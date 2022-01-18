@@ -44,6 +44,9 @@ type DescribeComponentOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	catalogClient catalog.Client
+
 	// Parameters
 	componentName string
 
@@ -52,8 +55,10 @@ type DescribeComponentOptions struct {
 }
 
 // NewDescribeComponentOptions creates a new DescribeComponentOptions instance
-func NewDescribeComponentOptions() *DescribeComponentOptions {
-	return &DescribeComponentOptions{}
+func NewDescribeComponentOptions(catalogClient catalog.Client) *DescribeComponentOptions {
+	return &DescribeComponentOptions{
+		catalogClient: catalogClient,
+	}
 }
 
 // Complete completes DescribeComponentOptions after they've been created
@@ -65,7 +70,7 @@ func (o *DescribeComponentOptions) Complete(cmdline cmdline.Cmdline, args []stri
 		return err
 	}
 
-	catalogDevfileList, err := catalog.ListDevfileComponents("")
+	catalogDevfileList, err := o.catalogClient.ListDevfileComponents("")
 	if catalogDevfileList.DevfileRegistries == nil {
 		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 	}
@@ -144,7 +149,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 // NewCmdCatalogDescribeComponent implements the odo catalog describe component command
 func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
-	o := NewDescribeComponentOptions()
+	o := NewDescribeComponentOptions(catalog.NewCatalogClient())
 	command := &cobra.Command{
 		Use:         name,
 		Short:       "Describe a component",

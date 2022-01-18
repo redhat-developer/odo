@@ -97,7 +97,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	completions = make([]string, 0)
 	comps := &completions
 
-	components, _ := catalog.ListDevfileComponents("")
+	components, _ := catalog.NewCatalogClient().ListDevfileComponents("")
 	for _, devfile := range components.Items {
 		if args.commands[devfile.Name] {
 			return nil

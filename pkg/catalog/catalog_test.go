@@ -71,7 +71,8 @@ OdoSettings:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDevfileRegistries(tt.registryName)
+			catClient := NewCatalogClient()
+			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
 				t.Errorf("Error message is %v", err)
 			}

@@ -260,11 +260,13 @@ func conflictCheckForDevfileFlag(args []string, registryName string) error {
 // validateAndFetchRegistry validates if the provided registryName exists and returns the devfile listed in the registy;
 // if the registryName is "", then it returns devfiles of all the available registries
 func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
+	// TODO(feloy) Get from DI
+	catalogClient := catalog.NewCatalogClient()
 	// Validate if the component type is available
 	if registryName != "" {
 		registryExistSpinner := log.Spinnerf("Checking if the registry %q exists", registryName)
 		defer registryExistSpinner.End(false)
-		registryList, e := catalog.GetDevfileRegistries(registryName)
+		registryList, e := catalogClient.GetDevfileRegistries(registryName)
 		if e != nil {
 			return catalog.DevfileComponentTypeList{}, errors.Wrap(e, "failed to get registry")
 		}
@@ -276,7 +278,7 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 
 	klog.V(4).Infof("Fetching the available devfile components")
 	// Get available devfile components for checking devfile compatibility
-	catalogDevfileList, err := catalog.ListDevfileComponents(registryName)
+	catalogDevfileList, err := catalogClient.ListDevfileComponents(registryName)
 	if err != nil {
 		return catalog.DevfileComponentTypeList{}, err
 	}

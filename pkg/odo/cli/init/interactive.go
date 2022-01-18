@@ -8,12 +8,14 @@ import (
 
 // InteractiveBuilder is a backend that will ask init parameters interactively
 type InteractiveBuilder struct {
-	asker asker
+	asker         asker
+	catalogClient catalog.Client
 }
 
-func NewInteractiveBuilder(asker asker) *InteractiveBuilder {
+func NewInteractiveBuilder(asker asker, catalogClient catalog.Client) *InteractiveBuilder {
 	return &InteractiveBuilder{
-		asker: asker,
+		asker:         asker,
+		catalogClient: catalogClient,
 	}
 }
 
@@ -23,7 +25,7 @@ func (o *InteractiveBuilder) IsAdequate(flags map[string]string) bool {
 
 func (o *InteractiveBuilder) ParamsBuild() (initParams, error) {
 	result := initParams{}
-	devfileEntries, _ := catalog.ListDevfileComponents("")
+	devfileEntries, _ := o.catalogClient.ListDevfileComponents("")
 	langs := devfileEntries.GetLanguages()
 	lang, err := o.asker.askLanguage(langs)
 	if err != nil {
@@ -37,7 +39,7 @@ func (o *InteractiveBuilder) ParamsBuild() (initParams, error) {
 	result.devfileRegistry = details.Registry.Name
 	result.devfile = details.Name
 
-	projects, err := catalog.GetStarterProjectsNames(details)
+	projects, err := o.catalogClient.GetStarterProjectsNames(details)
 	if err != nil {
 		return initParams{}, err
 	}

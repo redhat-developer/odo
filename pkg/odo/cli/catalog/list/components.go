@@ -25,18 +25,23 @@ var componentsExample = `  # Get the supported components
 type ListComponentsOptions struct {
 	// No context needed
 
+	// Clients
+	catalogClient catalog.Client
+
 	// list of known devfiles
 	catalogDevfileList catalog.DevfileComponentTypeList
 }
 
 // NewListComponentsOptions creates a new ListComponentsOptions instance
-func NewListComponentsOptions() *ListComponentsOptions {
-	return &ListComponentsOptions{}
+func NewListComponentsOptions(catalogClient catalog.Client) *ListComponentsOptions {
+	return &ListComponentsOptions{
+		catalogClient: catalogClient,
+	}
 }
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+	o.catalogDevfileList, err = o.catalogClient.ListDevfileComponents("")
 	if err != nil {
 		return err
 	}
@@ -88,7 +93,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 
 // NewCmdCatalogListComponents implements the odo catalog list components command
 func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
-	o := NewListComponentsOptions()
+	o := NewListComponentsOptions(catalog.NewCatalogClient())
 
 	var componentListCmd = &cobra.Command{
 		Use:         name,

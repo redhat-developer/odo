@@ -21,6 +21,9 @@ type SearchComponentOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	catalogClient catalog.Client
+
 	// Parameters
 	searchTerm string
 
@@ -29,8 +32,10 @@ type SearchComponentOptions struct {
 }
 
 // NewSearchComponentOptions creates a new SearchComponentOptions instance
-func NewSearchComponentOptions() *SearchComponentOptions {
-	return &SearchComponentOptions{}
+func NewSearchComponentOptions(catalogClient catalog.Client) *SearchComponentOptions {
+	return &SearchComponentOptions{
+		catalogClient: catalogClient,
+	}
 }
 
 // Complete completes SearchComponentOptions after they've been created
@@ -41,7 +46,7 @@ func (o *SearchComponentOptions) Complete(cmdline cmdline.Cmdline, args []string
 	}
 	o.searchTerm = args[0]
 
-	o.components, err = catalog.SearchComponent(o.KClient, o.searchTerm)
+	o.components, err = o.catalogClient.SearchComponent(o.KClient, o.searchTerm)
 	return err
 }
 
@@ -62,7 +67,7 @@ func (o *SearchComponentOptions) Run() error {
 
 // NewCmdCatalogSearchComponent implements the odo catalog search component command
 func NewCmdCatalogSearchComponent(name, fullName string) *cobra.Command {
-	o := NewSearchComponentOptions()
+	o := NewSearchComponentOptions(catalog.NewCatalogClient())
 	return &cobra.Command{
 		Use:   name,
 		Short: "Search component type in catalog",
