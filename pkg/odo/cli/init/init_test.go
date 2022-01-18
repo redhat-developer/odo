@@ -5,13 +5,15 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestInitOptions_Complete(t *testing.T) {
 	type fields struct {
-		backends func(*gomock.Controller) []ParamsBuilder
+		backends func(*gomock.Controller) []params.ParamsBuilder
 	}
 	tests := []struct {
 		name           string
@@ -30,13 +32,13 @@ func TestInitOptions_Complete(t *testing.T) {
 		{
 			name: "second backend used",
 			fields: fields{
-				backends: func(ctrl *gomock.Controller) []ParamsBuilder {
-					b1 := NewMockParamsBuilder(ctrl)
-					b2 := NewMockParamsBuilder(ctrl)
+				backends: func(ctrl *gomock.Controller) []params.ParamsBuilder {
+					b1 := params.NewMockParamsBuilder(ctrl)
+					b2 := params.NewMockParamsBuilder(ctrl)
 					b1.EXPECT().IsAdequate(gomock.Any()).Return(false)
 					b2.EXPECT().IsAdequate(gomock.Any()).Return(true)
 					b2.EXPECT().ParamsBuild().Times(1)
-					return []ParamsBuilder{b1, b2}
+					return []params.ParamsBuilder{b1, b2}
 				},
 			},
 			cmdlineExpects: func(mock *cmdline.MockCmdline) {
@@ -52,11 +54,12 @@ func TestInitOptions_Complete(t *testing.T) {
 				tt.fsysPopulate(fsys)
 			}
 			ctrl := gomock.NewController(t)
-			var backends []ParamsBuilder
+			var backends []params.ParamsBuilder
 			if tt.fields.backends != nil {
 				backends = tt.fields.backends(ctrl)
 			}
-			o := NewInitOptions(backends, fsys)
+			prefClient := preference.NewMockClient(ctrl)
+			o := NewInitOptions(backends, fsys, prefClient)
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			if tt.cmdlineExpects != nil {
 				tt.cmdlineExpects(cmdline)

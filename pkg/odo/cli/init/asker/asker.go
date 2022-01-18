@@ -1,4 +1,4 @@
-package init
+package asker
 
 import (
 	"sort"
@@ -14,7 +14,7 @@ func NewSurveyAsker() *Survey {
 	return &Survey{}
 }
 
-func (o *Survey) askLanguage(langs []string) (string, error) {
+func (o *Survey) AskLanguage(langs []string) (string, error) {
 	sort.Strings(langs)
 	question := &survey.Select{
 		Message: "Select language:",
@@ -28,7 +28,7 @@ func (o *Survey) askLanguage(langs []string) (string, error) {
 	return answer, nil
 }
 
-func (o *Survey) askType(types catalog.TypesWithDetails) (catalog.DevfileComponentType, error) {
+func (o *Survey) AskType(types catalog.TypesWithDetails) (catalog.DevfileComponentType, error) {
 	stringTypes := types.GetOrderedLabels()
 	question := &survey.Select{
 		Message: "Select project type:",
@@ -42,7 +42,7 @@ func (o *Survey) askType(types catalog.TypesWithDetails) (catalog.DevfileCompone
 	return types.GetAtOrderedPosition(answerPos)
 }
 
-func (o *Survey) askStarterProject(projects []string) (string, error) {
+func (o *Survey) AskStarterProject(projects []string) (string, error) {
 	sort.Strings(projects)
 	question := &survey.Select{
 		Message: "Which starter project do you want to use?",
@@ -56,7 +56,7 @@ func (o *Survey) askStarterProject(projects []string) (string, error) {
 	return answer, nil
 }
 
-func (o *Survey) askName(defaultName string) (string, error) {
+func (o *Survey) AskName(defaultName string) (string, error) {
 	question := &survey.Input{
 		Message: "Enter component name:",
 		Default: defaultName,

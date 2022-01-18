@@ -1,8 +1,8 @@
-package init
+package params
 
 import "testing"
 
-func Test_initParams_validate(t *testing.T) {
+func Test_InitParams_Validate(t *testing.T) {
 	type fields struct {
 		name            string
 		devfile         string
@@ -67,14 +67,14 @@ func Test_initParams_validate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &initParams{
-				name:            tt.fields.name,
-				devfile:         tt.fields.devfile,
-				devfileRegistry: tt.fields.devfileRegistry,
-				starter:         tt.fields.starter,
-				devfilePath:     tt.fields.devfilePath,
+			o := &InitParams{
+				Name:            tt.fields.name,
+				Devfile:         tt.fields.devfile,
+				DevfileRegistry: tt.fields.devfileRegistry,
+				Starter:         tt.fields.starter,
+				DevfilePath:     tt.fields.devfilePath,
 			}
-			if err := o.validate(); (err != nil) != tt.wantErr {
+			if err := o.Validate(); (err != nil) != tt.wantErr {
 				t.Errorf("initParams.validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

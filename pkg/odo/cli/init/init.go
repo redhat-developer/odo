@@ -1,28 +1,37 @@
 package init
 
 import (
-	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
+	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	odoodoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/util"
+
+	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "init"
-
-const FLAG_NAME = "name"
-const FLAG_DEVFILE = "devfile"
-const FLAG_DEVFILE_REGISTRY = "devfile-registry"
-const FLAG_STARTER = "starter"
-const FLAG_DEVFILE_PATH = "devfile-path"
 
 var initExample = templates.Examples(`
   # Boostrap a new project in interactive mode
@@ -31,20 +40,24 @@ var initExample = templates.Examples(`
 
 type InitOptions struct {
 	// Backends to build init parameters
-	backends []ParamsBuilder
+	backends []params.ParamsBuilder
 
 	// filesystem on which command is running
 	fsys filesystem.Filesystem
 
+	// Clients
+	preferenceClient preference.Client
+
 	// the parameters needed to run the init procedure
-	initParams
+	params.InitParams
 }
 
 // NewInitOptions creates a new InitOptions instance
-func NewInitOptions(backends []ParamsBuilder, fsys filesystem.Filesystem) *InitOptions {
+func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem, prefClient preference.Client) *InitOptions {
 	return &InitOptions{
-		backends: backends,
-		fsys:     fsys,
+		backends:         backends,
+		fsys:             fsys,
+		preferenceClient: prefClient,
 	}
 }
 
@@ -65,7 +78,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 	done := false
 	for _, backend := range o.backends {
 		if backend.IsAdequate(flags) {
-			o.initParams, err = backend.ParamsBuild()
+			o.InitParams, err = backend.ParamsBuild()
 			if err != nil {
 				return err
 			}
@@ -75,7 +88,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 	}
 
 	if !done {
-		util.LogErrorAndExit(nil, "no backend found to build init parameters. This should not happen")
+		odoutil.LogErrorAndExit(nil, "no backend found to build init parameters. This should not happen")
 	}
 	return nil
 }
@@ -90,22 +103,150 @@ func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
 
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
-	return o.initParams.validate()
+	// TODO
+	// - check registry name exists in preference
+	// - check starter name exists in devfile
+	return o.InitParams.Validate()
 }
 
 // Run contains the logic for the odo command
-func (o *InitOptions) Run() error {
+func (o *InitOptions) Run() (err error) {
+	destDevfile := "./devfile.yaml"
+	if o.InitParams.DevfilePath != "" {
+		err = o.downloadDirect(o.InitParams.DevfilePath, destDevfile)
+	} else {
+		err = o.downloadRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, destDevfile)
+	}
+	if err != nil {
+		return fmt.Errorf("Unable to download devfile: %w", err)
+	}
+
+	devfileObj, err := devfile.ParseAndValidateFromFile(destDevfile)
+	if err != nil {
+		return err
+	}
+
+	if o.InitParams.Starter != "" {
+		// WARNING: this will remove all the content of the destination directory, including the devfile.yaml file
+		err = o.downloadStarterProject(devfileObj, o.InitParams.Starter, ".")
+		if err != nil {
+			return fmt.Errorf("unable to download starter project %q: %w", o.InitParams.Starter, err)
+		}
+
+		// in case the starter project contains a devfile, read it again
+		if _, err = o.fsys.Stat(destDevfile); err == nil {
+			devfileObj, err = devfile.ParseAndValidateFromFile(destDevfile)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Set the name in the devfile *AND* writes the devfile back to the disk in case
+	// it has been removed and not replaced by the starter project
+	err = devfileObj.SetMetadataName(o.InitParams.Name)
+	if err != nil {
+		return fmt.Errorf("Failed to update the devfile's name: %w", err)
+	}
+
+	return nil
+}
+
+// downloadDirect downloads a devfile at the provided URL and saves it in dest
+func (o *InitOptions) downloadDirect(URL string, dest string) error {
+	parsedURL, err := url.Parse(URL)
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(parsedURL.Scheme, "http") {
+		params := util.HTTPRequestParams{
+			URL: URL,
+		}
+		devfileData, err := util.DownloadFileInMemory(params)
+		if err != nil {
+			return err
+		}
+		err = o.fsys.WriteFile(dest, devfileData, 0644)
+		if err != nil {
+			return err
+		}
+	} else {
+		content, err := o.fsys.ReadFile(URL)
+		if err != nil {
+			return err
+		}
+		info, err := o.fsys.Stat(URL)
+		if err != nil {
+			return err
+		}
+		err = o.fsys.WriteFile(dest, content, info.Mode().Perm())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// downloadRegistry downloads a devfile from the provided registry and saves it in dest
+func (o *InitOptions) downloadRegistry(registryName string, devfile string, dest string) error {
+	registries := o.preferenceClient.RegistryList()
+	var registry preference.Registry
+	var found bool
+	for _, registry = range *registries {
+		if registry.Name == registryName {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("unable to find the registry with name %q", registryName)
+	}
+
+	err := registryLibrary.PullStackFromRegistry(registry.URL, devfile, dest, segment.GetRegistryOptions())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// downloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
+// WARNING: This will first remove all the content of dest.
+func (o *InitOptions) downloadStarterProject(devfile parser.DevfileObj, project string, dest string) error {
+	projects, err := devfile.Data.GetStarterProjects(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	var prj v1alpha2.StarterProject
+	var found bool
+	for _, prj = range projects {
+		if prj.Name == project {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("starter project %q does not exist in devfile", project)
+	}
+	err = component.DownloadStarterProject(&prj, "", dest)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // NewCmdInit implements the odo command
 func NewCmdInit(name, fullName string) *cobra.Command {
-	backends := []ParamsBuilder{
-		&FlagsBuilder{},
-		NewInteractiveBuilder(NewSurveyAsker(), catalog.NewCatalogClient()),
+	backends := []params.ParamsBuilder{
+		&params.FlagsBuilder{},
+		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient()),
+	}
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoodoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 
-	o := NewInitOptions(backends, filesystem.DefaultFs{})
+	o := NewInitOptions(backends, filesystem.DefaultFs{}, prefClient)
 	initCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Init bootstraps a new project",
@@ -117,13 +258,13 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVar(&o.name, FLAG_NAME, "", "name of the component to create")
-	initCmd.Flags().StringVar(&o.devfile, FLAG_DEVFILE, "", "name of the devfile in devfile registry")
-	initCmd.Flags().StringVar(&o.devfileRegistry, FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in odo registry). It can be used in combination with --devfile, but not with --devfile-path")
-	initCmd.Flags().StringVar(&o.starter, FLAG_STARTER, "", "name of the starter project")
-	initCmd.Flags().StringVar(&o.devfilePath, FLAG_DEVFILE_PATH, "", "path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
+	initCmd.Flags().StringVar(&o.Name, params.FLAG_NAME, "", "name of the component to create")
+	initCmd.Flags().StringVar(&o.Devfile, params.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
+	initCmd.Flags().StringVar(&o.DevfileRegistry, params.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in odo registry). It can be used in combination with --devfile, but not with --devfile-path")
+	initCmd.Flags().StringVar(&o.Starter, params.FLAG_STARTER, "", "name of the starter project")
+	initCmd.Flags().StringVar(&o.DevfilePath, params.FLAG_DEVFILE_PATH, "", "path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu
-	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	initCmd.SetUsageTemplate(odoodoutil.CmdUsageTemplate)
 	return initCmd
 }

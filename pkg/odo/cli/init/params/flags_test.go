@@ -1,4 +1,4 @@
-package init
+package params
 
 import (
 	"reflect"
@@ -12,7 +12,7 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    initParams
+		want    InitParams
 		wantErr bool
 	}{
 		{
@@ -27,12 +27,12 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want: initParams{
-				name:            "aname",
-				devfile:         "adevfile",
-				devfilePath:     "apath",
-				devfileRegistry: "aregistry",
-				starter:         "astarter",
+			want: InitParams{
+				Name:            "aname",
+				Devfile:         "adevfile",
+				DevfilePath:     "apath",
+				DevfileRegistry: "aregistry",
+				Starter:         "astarter",
 			},
 		},
 	}

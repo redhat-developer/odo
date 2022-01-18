@@ -1,18 +1,19 @@
-package init
+package params
 
 import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
 )
 
 // InteractiveBuilder is a backend that will ask init parameters interactively
 type InteractiveBuilder struct {
-	asker         asker
+	asker         asker.Asker
 	catalogClient catalog.Client
 }
 
-func NewInteractiveBuilder(asker asker, catalogClient catalog.Client) *InteractiveBuilder {
+func NewInteractiveBuilder(asker asker.Asker, catalogClient catalog.Client) *InteractiveBuilder {
 	return &InteractiveBuilder{
 		asker:         asker,
 		catalogClient: catalogClient,
@@ -23,35 +24,35 @@ func (o *InteractiveBuilder) IsAdequate(flags map[string]string) bool {
 	return len(flags) == 0
 }
 
-func (o *InteractiveBuilder) ParamsBuild() (initParams, error) {
-	result := initParams{}
+func (o *InteractiveBuilder) ParamsBuild() (InitParams, error) {
+	result := InitParams{}
 	devfileEntries, _ := o.catalogClient.ListDevfileComponents("")
 	langs := devfileEntries.GetLanguages()
-	lang, err := o.asker.askLanguage(langs)
+	lang, err := o.asker.AskLanguage(langs)
 	if err != nil {
-		return initParams{}, err
+		return InitParams{}, err
 	}
 	types := devfileEntries.GetProjectTypes(lang)
-	details, err := o.asker.askType(types)
+	details, err := o.asker.AskType(types)
 	if err != nil {
-		return initParams{}, err
+		return InitParams{}, err
 	}
-	result.devfileRegistry = details.Registry.Name
-	result.devfile = details.Name
+	result.DevfileRegistry = details.Registry.Name
+	result.Devfile = details.Name
 
 	projects, err := o.catalogClient.GetStarterProjectsNames(details)
 	if err != nil {
-		return initParams{}, err
+		return InitParams{}, err
 	}
 
-	result.starter, err = o.asker.askStarterProject(projects)
+	result.Starter, err = o.asker.AskStarterProject(projects)
 	if err != nil {
-		return initParams{}, err
+		return InitParams{}, err
 	}
 
-	result.name, err = o.asker.askName(fmt.Sprintf("my-%s-app", result.devfile))
+	result.Name, err = o.asker.AskName(fmt.Sprintf("my-%s-app", result.Devfile))
 	if err != nil {
-		return initParams{}, err
+		return InitParams{}, err
 	}
 
 	return result, nil

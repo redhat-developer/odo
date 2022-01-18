@@ -73,7 +73,8 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 }
 
-// DownloadStarterProject Downloads first starter project from list of starter projects in devfile
+// DownloadStarterProject downloads a starter project referenced in devfile
+// This will first remove the content of the contextDir
 func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string) error {
 	var path string
 	var err error
