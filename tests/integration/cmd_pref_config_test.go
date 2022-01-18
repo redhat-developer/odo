@@ -165,9 +165,12 @@ var _ = Describe("odo preference and config command tests", func() {
 				if helper.IsKubernetesCluster() {
 					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
 				}
-				helper.Cmd("odo", "config", "set", "--force", "--env", "hello=world", "--context", commonVar.Context).ShouldPass()
+				multiLineContent := `line1
+line2
+line3`
+				helper.Cmd("odo", "config", "set", "--force", "--env", "hello=world", "--env", "certif="+multiLineContent, "--context", commonVar.Context).ShouldPass()
 				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-				helper.MatchAllInOutput(configValue, []string{"hello", "world"})
+				helper.MatchAllInOutput(configValue, []string{"hello", "world", "line1", "line2", "line3"})
 			})
 		})
 	})
