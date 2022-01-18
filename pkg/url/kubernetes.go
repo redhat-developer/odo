@@ -70,15 +70,28 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 }
 
 // List lists both route/ingress based URLs and local URLs with respective states
+// if cluster data is available, get cluster URLS
+// if local data is available, get local URLS
+// if both cluster and local data is available, compare the two and return
+// if only cluster data is available, return it
+// if only local data is available, return it
 func (k kubernetesClient) List() (URLList, error) {
-	// get the URLs present on the cluster
+	var err error
+	var urls sortableURLs
+	localConfigExists := k.localConfigProvider.Exists()
+
+	// if cluster data is available, get cluster URLs
 	clusterURLMap := make(map[string]URL)
 	var clusterURLs URLList
-	var err error
+
 	if k.client != nil {
 		clusterURLs, err = k.ListFromCluster()
 		if err != nil {
 			return URLList{}, errors.Wrap(err, "unable to list routes")
+		}
+		// if only cluster data is available, return cluster data
+		if !localConfigExists {
+			return NewURLList(clusterURLs.Items), nil
 		}
 	}
 
@@ -86,8 +99,9 @@ func (k kubernetesClient) List() (URLList, error) {
 		clusterURLMap[url.Name] = url
 	}
 
+	// if local data is available, get local URLs
 	localMap := make(map[string]URL)
-	if k.localConfigProvider != nil {
+	if localConfigExists {
 		// get the URLs present on the localConfigProvider
 		localURLS, err := k.localConfigProvider.ListURLs()
 		if err != nil {
@@ -107,12 +121,20 @@ func (k kubernetesClient) List() (URLList, error) {
 			}
 			localMap[url.Name] = localURL
 		}
+		// if only local data is available; return local data
+		if k.client == nil {
+			for _, localURL := range localMap {
+				urls = append(urls, localURL)
+			}
+			return NewURLList(urls), nil
+		}
 	}
+
+	// if both cluster and local data is available, compare the two as follows:
 
 	// find the URLs which are present on the cluster but not on the localConfigProvider
 	// if not found on the localConfigProvider, mark them as 'StateTypeLocallyDeleted'
 	// else mark them as 'StateTypePushed'
-	var urls sortableURLs
 	for URLName, clusterURL := range clusterURLMap {
 		_, found := localMap[URLName]
 		if found {

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"reflect"
 	"strings"
 
@@ -186,17 +187,27 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 }
 
 // List lists pvc based Storage and local Storage with respective states
+// if cluster data is available, get cluster Storage
+// if local data is available, get local Storage
+// if both cluster and local data is available, compare the two and return
+// if only cluster data is available, return it
+// if only local data is available, return it
 func (k kubernetesClient) List() (StorageList, error) {
-	if !k.localConfigProvider.Exists() {
-		return StorageList{}, fmt.Errorf("no local config was provided")
+	var err error
+
+	// if local data is available, get the local Storage
+	var localStorage StorageList
+	var localConfigStorage []localConfigProvider.LocalStorage
+	localConfigExists := k.localConfigProvider.Exists()
+	if localConfigExists {
+		localConfigStorage, err = k.localConfigProvider.ListStorage()
+		if err != nil {
+			return StorageList{}, err
+		}
+		localStorage = ConvertListLocalToMachine(localConfigStorage)
 	}
 
-	localConfigStorage, err := k.localConfigProvider.ListStorage()
-	if err != nil {
-		return StorageList{}, err
-	}
-
-	localStorage := ConvertListLocalToMachine(localConfigStorage)
+	// if the cluster data is available, get the cluster Storage
 	var clusterStorage StorageList
 	if k.client != nil {
 		clusterStorage, err = k.ListFromCluster()
@@ -205,6 +216,17 @@ func (k kubernetesClient) List() (StorageList, error) {
 		}
 	}
 
+	// if only local data is available, return it
+	if localConfigExists && k.client == nil {
+		return NewStorageList(localStorage.Items), nil
+	}
+
+	// if only cluster data is available, return it
+	if k.client != nil && !localConfigExists {
+		return NewStorageList(clusterStorage.Items), nil
+	}
+
+	// if both cluster and local data is available, compare the two and return
 	var storageList []Storage
 
 	// find the local storage which are in a pushed and not pushed state

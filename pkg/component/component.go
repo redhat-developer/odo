@@ -60,6 +60,13 @@ func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecifi
 	if c.client != nil {
 		componentDesc.Status.State = getComponentState(componentName, applicationName, c.client)
 	}
+	// If the component is not pushed, and devfile.yaml is not accessible, return early
+	if componentDesc.Status.State == StateTypeNotPushed && devfileObj.Data == nil {
+		componentDesc.Name = componentName
+		return &componentDesc, nil
+	}
+
+	// If devfile.yaml is accessible, or if the component is pushed, continue
 	var deployment *v1.Deployment
 	if componentDesc.Status.State == StateTypePushed {
 		componentDescFromCluster, e := getRemoteComponentMetadata(componentName, applicationName, false, false, c.client)
@@ -75,7 +82,10 @@ func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecifi
 		componentDesc.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
 	}
 
-	// Obtain Links information
+	// Fill empty fields
+	componentDesc.fillEmptyFields(componentName, applicationName, projectName)
+
+	// Get links
 	var configLinks []string
 	configLinks, err = service.ListDevfileLinks(devfileObj, context)
 	if err != nil {
@@ -95,8 +105,6 @@ func (c componentClient) GetComponentFullDescription(envInfo *envinfo.EnvSpecifi
 			})
 		}
 	}
-
-	componentDesc.fillEmptyFields(componentName, applicationName, projectName)
 
 	// Obtain URLs information
 	var urls urlpkg.URLList
