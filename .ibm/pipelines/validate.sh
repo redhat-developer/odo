@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Script to run validate test on IBM Cloud 
+# This script needs update if there is any change in steps of executing validate test
+
 LOGFILE="pr-${GIT_PR_NUMBER}-Validate-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
