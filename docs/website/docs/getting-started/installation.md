@@ -1,6 +1,6 @@
 ---
 title: Installation
-sidebar_position: 4
+sidebar_position: 3
 ---
 
 odo can be used as a CLI tool and as an IDE plugin; it can be run on Linux, Windows and Mac systems.
