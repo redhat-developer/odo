@@ -26,13 +26,13 @@ func TestInteractiveBuilder_ParamsBuild(t *testing.T) {
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(catalog.DevfileComponentType{
+					client.EXPECT().AskType(gomock.Any()).Return(false, catalog.DevfileComponentType{
 						Name: "a-devfile-name",
 						Registry: catalog.Registry{
 							Name: "MyRegistry1",
 						},
 					}, nil)
-					client.EXPECT().AskStarterProject(gomock.Any()).Return("starter1", nil)
+					client.EXPECT().AskStarterProject(gomock.Any()).Return(false, "starter1", nil)
 					client.EXPECT().AskName(gomock.Any()).Return("a-name", nil)
 					return client
 				},
