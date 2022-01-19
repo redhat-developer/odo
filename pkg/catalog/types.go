@@ -24,4 +24,5 @@ type DevfileComponentTypeList struct {
 	Items             []DevfileComponentType
 }
 
+// TypesWithDetails is the list of project types in devfile registries, and their associated devfiles
 type TypesWithDetails map[string][]DevfileComponentType

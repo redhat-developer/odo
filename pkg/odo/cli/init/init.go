@@ -52,6 +52,9 @@ type InitOptions struct {
 
 	// the parameters needed to run the init procedure
 	params.InitParams
+
+	// Destination directory
+	destDir string
 }
 
 // NewInitOptions creates a new InitOptions instance
@@ -60,6 +63,7 @@ func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem,
 		backends:         backends,
 		fsys:             fsys,
 		preferenceClient: prefClient,
+		destDir:          ".",
 	}
 }
 
@@ -68,7 +72,7 @@ func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem,
 // Complete will return an error immediately if the current working directory is not empty
 func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
-	empty, err := isEmpty(o.fsys, ".")
+	empty, err := isEmpty(o.fsys, o.destDir)
 	if err != nil {
 		return err
 	}
@@ -110,12 +114,26 @@ func (o *InitOptions) Validate() error {
 
 // Run contains the logic for the odo command
 func (o *InitOptions) Run() (err error) {
-	destDir := "."
-	destDevfile := filepath.Join(destDir, "devfile.yaml")
+
+	var starterDownloaded bool
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		if starterDownloaded {
+			err = fmt.Errorf("%w\nThe command failed after downloading the starter project. By security, the directory is not cleaned up.", err)
+		} else {
+			_ = o.fsys.Remove("devfile.yaml")
+			err = fmt.Errorf("%w\nThe command failed, the devfile has been removed from current directory.", err)
+		}
+	}()
+
+	destDevfile := filepath.Join(o.destDir, "devfile.yaml")
 	if o.InitParams.DevfilePath != "" {
 		err = o.downloadDirect(o.InitParams.DevfilePath, destDevfile)
 	} else {
-		err = o.downloadRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, destDir)
+		err = o.downloadRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.destDir)
 	}
 	if err != nil {
 		return fmt.Errorf("Unable to download devfile: %w", err)
@@ -127,11 +145,12 @@ func (o *InitOptions) Run() (err error) {
 	}
 
 	if o.InitParams.Starter != "" {
-		// WARNING: this will remove all the content of the destination directory, including the devfile.yaml file
-		err = o.downloadStarterProject(devfileObj, o.InitParams.Starter, ".")
+		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
+		err = o.downloadStarterProject(devfileObj, o.InitParams.Starter, o.destDir)
 		if err != nil {
 			return fmt.Errorf("unable to download starter project %q: %w", o.InitParams.Starter, err)
 		}
+		starterDownloaded = true
 
 		// in case the starter project contains a devfile, read it again
 		if _, err = o.fsys.Stat(destDevfile); err == nil {
