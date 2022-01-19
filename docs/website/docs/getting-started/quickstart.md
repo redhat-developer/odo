@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-sidebar_position: 3
+sidebar_position: 5
 ---
 
 In this guide, we will be using odo to set up a todo application based on Java Spring Boot framework for the backend/APIs, ReactJS for the frontend, and PostgreSQL database to store the todo items.
