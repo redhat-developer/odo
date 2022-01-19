@@ -26,7 +26,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-// TODO(feloy) find a better name
 type CatalogClient struct{}
 
 func NewCatalogClient() *CatalogClient {

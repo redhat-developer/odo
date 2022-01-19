@@ -1,6 +1,11 @@
 package params
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/redhat-developer/odo/pkg/preference"
+)
 
 func Test_InitParams_Validate(t *testing.T) {
 	type fields struct {
@@ -11,9 +16,10 @@ func Test_InitParams_Validate(t *testing.T) {
 		devfilePath     string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
+		name               string
+		fields             fields
+		registryNameExists bool
+		wantErr            bool
 	}{
 		{
 			name: "no name passed",
@@ -53,7 +59,18 @@ func Test_InitParams_Validate(t *testing.T) {
 				devfile:         "adevfile",
 				devfileRegistry: "aregistry",
 			},
-			wantErr: false,
+			registryNameExists: true,
+			wantErr:            false,
+		},
+		{
+			name: "devfile and devfile-registry passed with non existing registry",
+			fields: fields{
+				name:            "aname",
+				devfile:         "adevfile",
+				devfileRegistry: "aregistry",
+			},
+			registryNameExists: false,
+			wantErr:            true,
 		},
 		{
 			name: "devfile-path and devfile-registry passed",
@@ -62,11 +79,31 @@ func Test_InitParams_Validate(t *testing.T) {
 				devfilePath:     "apath",
 				devfileRegistry: "aregistry",
 			},
+			registryNameExists: true,
+			wantErr:            true,
+		},
+		{
+			name: "numeric name",
+			fields: fields{
+				name:    "1234",
+				devfile: "adevfile",
+			},
+			wantErr: true,
+		},
+		{
+			name: "non DNS name",
+			fields: fields{
+				name:    "WrongName",
+				devfile: "adevfile",
+			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			prefClient := preference.NewMockClient(ctrl)
+			prefClient.EXPECT().RegistryNameExists(gomock.Any()).Return(tt.registryNameExists).AnyTimes()
 			o := &InitParams{
 				Name:            tt.fields.name,
 				Devfile:         tt.fields.devfile,
@@ -74,7 +111,7 @@ func Test_InitParams_Validate(t *testing.T) {
 				Starter:         tt.fields.starter,
 				DevfilePath:     tt.fields.devfilePath,
 			}
-			if err := o.Validate(); (err != nil) != tt.wantErr {
+			if err := o.Validate(prefClient); (err != nil) != tt.wantErr {
 				t.Errorf("initParams.validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

@@ -103,10 +103,7 @@ func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
 
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
-	// TODO
-	// - check registry name exists in preference
-	// - check starter name exists in devfile
-	return o.InitParams.Validate()
+	return o.InitParams.Validate(o.preferenceClient)
 }
 
 // Run contains the logic for the odo command
