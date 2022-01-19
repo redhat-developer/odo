@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/devfile/library/pkg/devfile/generator"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -116,10 +118,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	componentExists := false
-	if a.deployment != nil {
-		componentExists = true
-	}
+	componentExists := a.deployment != nil
 
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
@@ -131,11 +130,17 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
 	if componentExists {
-		pod, podErr := a.getPod(true)
-		if podErr != nil {
-			return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
+		// First see if the component does have a pod. it could have been scaled down to zero
+		_, err = a.Client.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
+		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
+		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
+		if err == nil {
+			pod, podErr := a.getPod(true)
+			if podErr != nil {
+				return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
+			}
+			podName = pod.GetName()
 		}
-		podName = pod.GetName()
 	}
 
 	// Validate the devfile build and run commands
@@ -533,7 +538,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if err != nil {
 		return err
 	}
-
+	deployment.Spec.Replicas = pointer.Int32Ptr(1)
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
 	}

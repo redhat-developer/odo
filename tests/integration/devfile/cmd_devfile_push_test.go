@@ -188,12 +188,21 @@ var _ = Describe("odo devfile push command tests", func() {
 					}, 180, 10).Should(Equal(true))
 					newPod := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, newPod)
-
 				})
 
 				It("should execute run command on odo push", func() {
 					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 					Expect(output).To(ContainSubstring("Executing devrun command"))
+				})
+			})
+
+			When("the Deployment's Replica count (pods) is scaled to 0", func() {
+				BeforeEach(func() {
+					commonVar.CliRunner.ScalePodToZero(cmpName, "app", commonVar.Project)
+				})
+
+				It("odo push should successfully recreate the pod", func() {
+					helper.Cmd("odo", "push").ShouldPass()
 				})
 			})
 		})
