@@ -3,6 +3,7 @@ package init
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -108,11 +109,12 @@ func (o *InitOptions) Validate() error {
 
 // Run contains the logic for the odo command
 func (o *InitOptions) Run() (err error) {
-	destDevfile := "./devfile.yaml"
+	destDir := "."
+	destDevfile := filepath.Join(destDir, "devfile.yaml")
 	if o.InitParams.DevfilePath != "" {
 		err = o.downloadDirect(o.InitParams.DevfilePath, destDevfile)
 	} else {
-		err = o.downloadRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, destDevfile)
+		err = o.downloadRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, destDir)
 	}
 	if err != nil {
 		return fmt.Errorf("Unable to download devfile: %w", err)

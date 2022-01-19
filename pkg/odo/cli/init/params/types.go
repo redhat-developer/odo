@@ -35,6 +35,8 @@ func (o *InitParams) Validate(prefClient preference.Client) error {
 		return errors.New("devfile-registry cannot be used with devfile-path")
 	}
 
+	// TODO when devfile and not devfileRegistry?
+
 	err := util.ValidateK8sResourceName("name", o.Name)
 	if err != nil {
 		return err
