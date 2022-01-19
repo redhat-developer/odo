@@ -17,6 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -148,6 +149,11 @@ func (o *InitOptions) Run() (err error) {
 		return fmt.Errorf("Failed to update the devfile's name: %w", err)
 	}
 
+	log.Italicf(`Your new component %q is ready in the current directory.
+To start editing your component, use "odo dev" and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+To deploy your component to a cluster use “odo deploy”.`, o.InitParams.Name)
+
 	return nil
 }
 
@@ -158,6 +164,8 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 		return err
 	}
 	if strings.HasPrefix(parsedURL.Scheme, "http") {
+		downloadSpinner := log.Spinnerf("Downloading devfile from %q", URL)
+		defer downloadSpinner.End(false)
 		params := util.HTTPRequestParams{
 			URL: URL,
 		}
@@ -169,7 +177,10 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 		if err != nil {
 			return err
 		}
+		downloadSpinner.End(true)
 	} else {
+		downloadSpinner := log.Spinnerf("Copying devfile from %q", URL)
+		defer downloadSpinner.End(false)
 		content, err := o.fsys.ReadFile(URL)
 		if err != nil {
 			return err
@@ -182,6 +193,7 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 		if err != nil {
 			return err
 		}
+		downloadSpinner.End(true)
 	}
 
 	return nil
@@ -189,6 +201,8 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 
 // downloadRegistry downloads a devfile from the provided registry and saves it in dest
 func (o *InitOptions) downloadRegistry(registryName string, devfile string, dest string) error {
+	downloadSpinner := log.Spinnerf("Downloading devfile %q from registry %q", devfile, registryName)
+	defer downloadSpinner.End(false)
 	registries := o.preferenceClient.RegistryList()
 	var registry preference.Registry
 	var found bool
@@ -206,6 +220,7 @@ func (o *InitOptions) downloadRegistry(registryName string, devfile string, dest
 	if err != nil {
 		return err
 	}
+	downloadSpinner.End(true)
 	return nil
 }
 
@@ -227,10 +242,13 @@ func (o *InitOptions) downloadStarterProject(devfile parser.DevfileObj, project 
 	if !found {
 		return fmt.Errorf("starter project %q does not exist in devfile", project)
 	}
-	err = component.DownloadStarterProject(&prj, "", dest)
+	downloadSpinner := log.Spinnerf("Downloading starter project %q", prj.Name)
+	err = component.DownloadStarterProject(&prj, "", dest, false)
 	if err != nil {
+		downloadSpinner.End(false)
 		return err
 	}
+	downloadSpinner.End(true)
 	return nil
 }
 

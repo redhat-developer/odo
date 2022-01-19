@@ -75,7 +75,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 // DownloadStarterProject downloads a starter project referenced in devfile
 // This will first remove the content of the contextDir
-func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string) error {
+func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
 	var path string
 	var err error
 	// Retrieve the working directory in order to clone correctly
@@ -94,10 +94,12 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 		return err
 	}
 
-	log.Info("\nStarter Project")
+	if verbose {
+		log.Info("\nStarter Project")
+	}
 
 	if starterProject.Git != nil {
-		err := downloadGitProject(starterProject, decryptedToken, path)
+		err := downloadGitProject(starterProject, decryptedToken, path, verbose)
 
 		if err != nil {
 			return err
@@ -106,13 +108,20 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	} else if starterProject.Zip != nil {
 		url := starterProject.Zip.Location
 		sparseDir := starterProject.SubDir
-		downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, url)
+		var downloadSpinner *log.Status
+		if verbose {
+			downloadSpinner = log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, url)
+		}
 		err := checkoutProject(sparseDir, url, path, decryptedToken)
 		if err != nil {
-			downloadSpinner.End(false)
+			if verbose {
+				downloadSpinner.End(false)
+			}
 			return err
 		}
-		downloadSpinner.End(true)
+		if verbose {
+			downloadSpinner.End(true)
+		}
 	} else {
 		return errors.Errorf("Project type not supported")
 	}
@@ -121,7 +130,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 }
 
 // downloadGitProject downloads the git starter projects from devfile.yaml
-func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string) error {
+func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string, verbose bool) error {
 	remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(starterProject.Git.GitLikeProjectSource)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
@@ -144,8 +153,11 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 		refName = plumbing.NewBranchReferenceName(revision)
 	}
 
-	downloadSpinner := log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
-	defer downloadSpinner.End(false)
+	var downloadSpinner *log.Status
+	if verbose {
+		downloadSpinner = log.Spinnerf("Downloading starter project %s from %s", starterProject.Name, remoteUrl)
+		defer downloadSpinner.End(false)
+	}
 
 	cloneOptions := &git.CloneOptions{
 		URL:           remoteUrl,
@@ -206,7 +218,9 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 			return err
 		}
 	}
-	downloadSpinner.End(true)
+	if verbose {
+		downloadSpinner.End(true)
+	}
 
 	return nil
 
