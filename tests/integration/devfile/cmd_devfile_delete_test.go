@@ -46,7 +46,17 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should delete the component", func() {
 			helper.Cmd("odo", "delete", "-f").ShouldPass()
 		})
+		It("should delete the component, env, odo folders and odo-index-file.json with --all flag", func() {
+			stdOut := helper.Cmd("odo", "delete", "-f", "--all").ShouldPass().Out()
+
+			files := helper.ListFilesInDir(commonVar.Context)
+			Expect(files).To(Not(ContainElement(".odo")))
+			Expect(files).To(Not(ContainElement("devfile.yaml")))
+			Expect(stdOut).To(ContainSubstring("no kubernetes component to un-deploy"))
+		})
+
 		When("odo deploy is run", func() {
+			undeploymentMessage := "Un-deploying the Kubernetes Component"
 			BeforeEach(func() {
 				// requires a different devfile
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
@@ -54,15 +64,15 @@ var _ = Describe("odo devfile delete command tests", func() {
 			})
 			It("should successfully delete the deploy resources with --deploy flag", func() {
 				stdOut := helper.Cmd("odo", "delete", "--deploy", "-f").ShouldPass().Out()
-				Expect(stdOut).To(ContainSubstring("Un-deploying the Kubernetes Deployment"))
+				Expect(stdOut).To(ContainSubstring(undeploymentMessage))
 			})
 			It("should successfully delete the deploy resources", func() {
 				stdOut := helper.Cmd("odo", "delete", "-a", "-f").ShouldPass().Out()
-				Expect(stdOut).To(ContainSubstring("Un-deploying the Kubernetes Deployment"))
+				Expect(stdOut).To(ContainSubstring(undeploymentMessage))
 			})
 			It("should successfully delete the component, but the deployed resources should remain intact", func() {
 				stdOut := helper.Cmd("odo", "delete", "-f").ShouldPass().Out()
-				Expect(stdOut).ToNot(ContainSubstring("Un-deploying the Kubernetes"))
+				Expect(stdOut).ToNot(ContainSubstring(undeploymentMessage))
 			})
 			When("outside the context directory", func() {
 				BeforeEach(func() {
@@ -83,11 +93,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			})
 			It("should delete the component, env, odo folders and odo-index-file.json with --all flag", func() {
-				helper.Cmd("odo", "delete", "-f", "--all").ShouldPass()
+				stdOut := helper.Cmd("odo", "delete", "-f", "--all").ShouldPass().Out()
 
 				files := helper.ListFilesInDir(commonVar.Context)
 				Expect(files).To(Not(ContainElement(".odo")))
 				Expect(files).To(Not(ContainElement("devfile.yaml")))
+				Expect(stdOut).To(ContainSubstring("no kubernetes component to un-deploy"))
 			})
 
 			Describe("deleting a component from other component directory", func() {

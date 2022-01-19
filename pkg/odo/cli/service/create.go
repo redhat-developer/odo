@@ -87,7 +87,7 @@ func (o *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	if err != nil {
 		return err
 	}
-	//if no args are provided and if request is not from file, user wants interactive mode
+	// if no args are provided and if request is not from file, user wants interactive mode
 	if o.fromFileFlag == "" && len(args) == 0 {
 		return fmt.Errorf("odo doesn't support interactive mode for creating Operator backed service")
 	}
