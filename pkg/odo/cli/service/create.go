@@ -133,7 +133,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	}
 
 	serviceCreateCmd.Flags().BoolVar(&o.inlinedFlag, "inlined", false, "Puts the service definition in the devfile instead of a separate file")
-	serviceCreateCmd.Flags().BoolVar(&o.DryRunFlag, "dry-run", false, "Printf the yaml specificiation that will be used to create the operator backed service")
+	serviceCreateCmd.Flags().BoolVar(&o.DryRunFlag, "dry-run", false, "Print the yaml specificiation that will be used to create the operator backed service")
 	// remove this feature after enabling service create interactive mode for operator backed services
 	serviceCreateCmd.Flags().StringVar(&o.fromFileFlag, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
 
