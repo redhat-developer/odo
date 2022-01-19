@@ -25,6 +25,7 @@ type LoginOptions struct {
 	tokenFlag    string
 	caAuthFlag   string
 	skipTlsFlag  bool
+	serverFlag   string
 }
 
 var loginExample = templates.Examples(`
@@ -49,6 +50,9 @@ func NewLoginOptions() *LoginOptions {
 // Complete completes LoginOptions after they've been created
 func (o *LoginOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	if len(args) == 1 {
+		// if the user specifies server without --server flag. Example:
+		// odo login -u developer -p developer https://api.crc.testing:6443
+		// odo login --token=<some-token> https://api.crc.testing:6443
 		o.server = args[0]
 	}
 	return
@@ -56,12 +60,21 @@ func (o *LoginOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 
 // Validate validates the LoginOptions based on completed values
 func (o *LoginOptions) Validate() (err error) {
+	if o.server != "" && o.serverFlag != "" && o.server != o.serverFlag {
+		// if user has passed server value as parameter as well as used --server flag:
+		// * odo errors *if* the values are different
+		// * odo silently continues if the values are same
+		return fmt.Errorf("either use --server flag or pass server link as a paremeter, don't use both")
+	} else if o.serverFlag == "" {
+		o.serverFlag = o.server //	set o.serverFlag to same as o.server if there was no error
+	}
+
 	return
 }
 
 // Run contains the logic for the odo command
 func (o *LoginOptions) Run() (err error) {
-	return auth.Login(o.server, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
+	return auth.Login(o.serverFlag, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 
 // NewCmdLogin implements the odo command
@@ -86,5 +99,6 @@ func NewCmdLogin(name, fullName string) *cobra.Command {
 	loginCmd.Flags().StringVarP(&o.tokenFlag, "token", "t", "", "token, will prompt if not provided")
 	loginCmd.Flags().BoolVar(&o.skipTlsFlag, "insecure-skip-tls-verify", false, "If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure")
 	loginCmd.Flags().StringVar(&o.caAuthFlag, "certificate-authority", "", "Path to a cert file for the certificate authority")
+	loginCmd.Flags().StringVar(&o.serverFlag, "server", "", "OpenShift server to log into")
 	return loginCmd
 }
