@@ -68,7 +68,7 @@ func (o componentKubernetes) UnApply(devfilePath string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Un-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
+	log.Printf("Un-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
 	// Un-deploy the K8s manifest
 	return o.client.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
 }
