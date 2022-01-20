@@ -5,7 +5,7 @@ const path = require('path');
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: 'odo',
-  tagline: 'Fast iterative Kubernetes and OpenShift development',
+  tagline: 'odo - Fast iterative Kubernetes and OpenShift development',
   url: 'https://odo.dev',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -25,12 +25,16 @@ module.exports = {
       ]
   ],
   themeConfig: {
+          announcementBar: {
+        id: 'announcementBar-2', // Increment on change
+        content: `⭐️ Love odo? Support us by giving it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/redhat-developer/odo">GitHub</a>! ⭐️`,
+      },
     navbar: {
       title: 'odo',
-      // logo: {
-      //   alt: 'My Site Logo',
-      //   src: 'img/logo.svg',
-      // },
+       logo: {
+         alt: 'odo Logo',
+         src: 'img/logo.png',
+       },
       items: [
         {
           type: 'doc',
@@ -66,8 +70,9 @@ module.exports = {
           title: 'Community',
           items: [
             {
-              label: 'Slack',
-              href: 'https://kubernetes.slack.com/archives/C01D6L2NUAG',
+              label: '#odo on the Kubernetes Slack',
+              href: 'https://slack.k8s.io/',
+              external: true,
             },
             {
               label: 'Meetings',
@@ -93,7 +98,7 @@ module.exports = {
           ],
         },
       ],
-      // copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+       copyright: `Copyright © ${new Date().getFullYear()} odo Authors -- All Rights Reserved <br> Apache License 2.0 open source project`,
     },
     prism: {
       theme: lightCodeTheme,

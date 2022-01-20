@@ -44,5 +44,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^2.0.0-beta.14",
+    "@tsconfig/docusaurus": "^1.0.4",
+    "typescript": "^4.5.4"
   }
 }
