@@ -19,6 +19,7 @@ func Test_InitParams_Validate(t *testing.T) {
 		name               string
 		fields             fields
 		registryNameExists bool
+		registryList       []preference.Registry
 		wantErr            bool
 	}{
 		{
@@ -36,12 +37,35 @@ func Test_InitParams_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "devfile passed",
+			name: "devfile passed with a single registry",
 			fields: fields{
 				name:    "aname",
 				devfile: "adevfile",
 			},
-			wantErr: false,
+			registryList: []preference.Registry{
+				{
+					Name: "aregistry",
+				},
+			},
+			registryNameExists: true,
+			wantErr:            false,
+		},
+		{
+			name: "devfile passed with several registries",
+			fields: fields{
+				name:    "aname",
+				devfile: "adevfile",
+			},
+			registryList: []preference.Registry{
+				{
+					Name: "registry1",
+				},
+				{
+					Name: "registry2",
+				},
+			},
+			registryNameExists: true,
+			wantErr:            true,
 		},
 		{
 			name: "devfile and devfile-path passed",
@@ -104,6 +128,7 @@ func Test_InitParams_Validate(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
 			prefClient.EXPECT().RegistryNameExists(gomock.Any()).Return(tt.registryNameExists).AnyTimes()
+			prefClient.EXPECT().RegistryList().Return(&tt.registryList).AnyTimes()
 			o := &InitParams{
 				Name:            tt.fields.name,
 				Devfile:         tt.fields.devfile,

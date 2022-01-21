@@ -22,7 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoodoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -36,7 +35,7 @@ import (
 const RecommendedCommandName = "init"
 
 var initExample = templates.Examples(`
-  # Boostrap a new project in interactive mode
+  # Boostrap a new component in interactive mode
   %[1]s
 `)
 
@@ -68,7 +67,7 @@ func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem,
 }
 
 // Complete will build the parameters for init, using different backends based on the flags set,
-// either by using flags or interactively is no flag is passed
+// either by using flags or interactively if no flag is passed
 // Complete will return an error immediately if the current working directory is not empty
 func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
@@ -133,7 +132,7 @@ func (o *InitOptions) Run() (err error) {
 	if o.InitParams.DevfilePath != "" {
 		err = o.downloadDirect(o.InitParams.DevfilePath, destDevfile)
 	} else {
-		err = o.downloadRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.destDir)
+		err = o.downloadFromRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.destDir)
 	}
 	if err != nil {
 		return fmt.Errorf("Unable to download devfile: %w", err)
@@ -168,10 +167,11 @@ func (o *InitOptions) Run() (err error) {
 		return fmt.Errorf("Failed to update the devfile's name: %w", err)
 	}
 
-	log.Italicf(`Your new component %q is ready in the current directory.
+	log.Italicf(`
+Your new component %q is ready in the current directory.
 To start editing your component, use "odo dev" and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use “odo deploy”.`, o.InitParams.Name)
+To deploy your component to a cluster use "odo deploy".`, o.InitParams.Name)
 
 	return nil
 }
@@ -218,8 +218,8 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 	return nil
 }
 
-// downloadRegistry downloads a devfile from the provided registry and saves it in dest
-func (o *InitOptions) downloadRegistry(registryName string, devfile string, dest string) error {
+// downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
+func (o *InitOptions) downloadFromRegistry(registryName string, devfile string, dest string) error {
 	downloadSpinner := log.Spinnerf("Downloading devfile %q from registry %q", devfile, registryName)
 	defer downloadSpinner.End(false)
 	registries := o.preferenceClient.RegistryList()
@@ -279,7 +279,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	}
 	prefClient, err := preference.NewClient()
 	if err != nil {
-		odoodoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 
 	o := NewInitOptions(backends, filesystem.DefaultFs{}, prefClient)
@@ -296,11 +296,11 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 
 	initCmd.Flags().StringVar(&o.Name, params.FLAG_NAME, "", "name of the component to create")
 	initCmd.Flags().StringVar(&o.Devfile, params.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
-	initCmd.Flags().StringVar(&o.DevfileRegistry, params.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in odo registry). It can be used in combination with --devfile, but not with --devfile-path")
+	initCmd.Flags().StringVar(&o.DevfileRegistry, params.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in `odo registry list`). It can be used in combination with --devfile, but not with --devfile-path")
 	initCmd.Flags().StringVar(&o.Starter, params.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().StringVar(&o.DevfilePath, params.FLAG_DEVFILE_PATH, "", "path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu
-	initCmd.SetUsageTemplate(odoodoutil.CmdUsageTemplate)
+	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return initCmd
 }

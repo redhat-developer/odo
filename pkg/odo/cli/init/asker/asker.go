@@ -43,8 +43,8 @@ func (o *Survey) AskType(types catalog.TypesWithDetails) (back bool, _ catalog.D
 	if answerPos == len(stringTypes)-1 {
 		return true, catalog.DevfileComponentType{}, nil
 	}
-	pos, err := types.GetAtOrderedPosition(answerPos)
-	return false, pos, err
+	compType, err := types.GetAtOrderedPosition(answerPos)
+	return false, compType, err
 }
 
 func (o *Survey) AskStarterProject(projects []string) (back bool, _ string, _ error) {

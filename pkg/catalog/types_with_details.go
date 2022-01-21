@@ -8,14 +8,8 @@ import (
 
 // GetOrderedLabels returns a list of labels for a list of project types
 func (types TypesWithDetails) GetOrderedLabels() []string {
+	sortedTypes := sortTypes(types)
 	stringTypes := []string{}
-
-	sortedTypes := make([]string, 0, len(types))
-	for typ := range types {
-		sortedTypes = append(sortedTypes, typ)
-	}
-	sort.Strings(sortedTypes)
-
 	for _, typ := range sortedTypes {
 		detailsList := types[typ]
 		if len(detailsList) == 1 {
@@ -32,12 +26,7 @@ func (types TypesWithDetails) GetOrderedLabels() []string {
 // GetAtOrderedPosition returns the project type at the given position,
 // when the list of project types is ordered by GetOrderedLabels
 func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileComponentType, error) {
-	sortedTypes := make([]string, 0, len(types))
-	for typ := range types {
-		sortedTypes = append(sortedTypes, typ)
-	}
-	sort.Strings(sortedTypes)
-
+	sortedTypes := sortTypes(types)
 	for _, typ := range sortedTypes {
 		detailsList := types[typ]
 		if pos >= len(detailsList) {
@@ -47,4 +36,13 @@ func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileComponentTyp
 		return detailsList[pos], nil
 	}
 	return DevfileComponentType{}, errors.New("index not found")
+}
+
+func sortTypes(types TypesWithDetails) []string {
+	sortedTypes := make([]string, 0, len(types))
+	for typ := range types {
+		sortedTypes = append(sortedTypes, typ)
+	}
+	sort.Strings(sortedTypes)
+	return sortedTypes
 }
