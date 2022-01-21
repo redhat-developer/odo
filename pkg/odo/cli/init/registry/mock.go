@@ -9,6 +9,7 @@ import (
 
 	library "github.com/devfile/registry-support/registry-library/library"
 	gomock "github.com/golang/mock/gomock"
+	util "github.com/redhat-developer/odo/pkg/util"
 )
 
 // MockClient is a mock of Client interface.
@@ -32,6 +33,21 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
+}
+
+// DownloadFileInMemory mocks base method.
+func (m *MockClient) DownloadFileInMemory(params util.HTTPRequestParams) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadFileInMemory", params)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadFileInMemory indicates an expected call of DownloadFileInMemory.
+func (mr *MockClientMockRecorder) DownloadFileInMemory(params interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFileInMemory", reflect.TypeOf((*MockClient)(nil).DownloadFileInMemory), params)
 }
 
 // PullStackFromRegistry mocks base method.

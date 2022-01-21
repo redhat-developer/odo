@@ -190,7 +190,7 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 		params := util.HTTPRequestParams{
 			URL: URL,
 		}
-		devfileData, err := util.DownloadFileInMemory(params)
+		devfileData, err := o.registryClient.DownloadFileInMemory(params)
 		if err != nil {
 			return err
 		}

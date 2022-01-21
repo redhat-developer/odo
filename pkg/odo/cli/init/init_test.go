@@ -230,3 +230,145 @@ func TestInitOptions_downloadFromRegistry(t *testing.T) {
 		})
 	}
 }
+
+func TestInitOptions_downloadDirect(t *testing.T) {
+	type fields struct {
+		backends         []params.ParamsBuilder
+		fsys             func(fs filesystem.Filesystem) filesystem.Filesystem
+		preferenceClient preference.Client
+		registryClient   func(ctrl *gomock.Controller) registry.Client
+		InitParams       params.InitParams
+		destDir          string
+	}
+	type args struct {
+		URL  string
+		dest string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		want    func(fs filesystem.Filesystem) error
+	}{
+		{
+			name: "download an existing file",
+			fields: fields{
+				fsys: func(fs filesystem.Filesystem) filesystem.Filesystem {
+					fs.WriteFile("/src/devfile.yaml", []byte("a content"), 0666)
+					return fs
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					return nil
+				},
+			},
+			args: args{
+				URL:  "/src/devfile.yaml",
+				dest: "/dest/file.yaml",
+			},
+			want: func(fs filesystem.Filesystem) error {
+				content, err := fs.ReadFile("/dest/file.yaml")
+				if err != nil {
+					return errors.New("error reading file")
+				}
+				if string(content) != "a content" {
+					return errors.New("content of file does not match")
+				}
+				info, err := fs.Stat("/dest/file.yaml")
+				if err != nil {
+					return errors.New("error executing Stat")
+				}
+				if info.Mode().Perm() != 0666 {
+					return errors.New("permissions of destination file do not match")
+				}
+				return nil
+			},
+			wantErr: false,
+		},
+		{
+			name: "non existing source file",
+			fields: fields{
+				fsys: func(fs filesystem.Filesystem) filesystem.Filesystem {
+					return fs
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					return nil
+				},
+			},
+			args: args{
+				URL:  "/src/devfile.yaml",
+				dest: "/dest/devfile.yaml",
+			},
+			want: func(fs filesystem.Filesystem) error {
+				return nil
+			},
+			wantErr: true,
+		},
+		{
+			name: "non existing URL",
+			fields: fields{
+				fsys: func(fs filesystem.Filesystem) filesystem.Filesystem {
+					return fs
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					client.EXPECT().DownloadFileInMemory(gomock.Any()).Return([]byte{}, errors.New(""))
+					return client
+				},
+			},
+			args: args{
+				URL:  "https://example.com/devfile.yaml",
+				dest: "/dest/devfile.yaml",
+			},
+			want: func(fs filesystem.Filesystem) error {
+				return nil
+			},
+			wantErr: true,
+		},
+		{
+			name: "existing URL",
+			fields: fields{
+				fsys: func(fs filesystem.Filesystem) filesystem.Filesystem {
+					return fs
+				},
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					client.EXPECT().DownloadFileInMemory(gomock.Any()).Return([]byte("a content"), nil)
+					return client
+				},
+			},
+			args: args{
+				URL:  "https://example.com/devfile.yaml",
+				dest: "/dest/devfile.yaml",
+			},
+			want: func(fs filesystem.Filesystem) error {
+				content, err := fs.ReadFile("/dest/devfile.yaml")
+				if err != nil {
+					return errors.New("error reading dest file")
+				}
+				if string(content) != "a content" {
+					return errors.New("unexpected file content")
+				}
+				return nil
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := filesystem.NewFakeFs()
+			ctrl := gomock.NewController(t)
+			o := &InitOptions{
+				fsys:           tt.fields.fsys(fs),
+				registryClient: tt.fields.registryClient(ctrl),
+			}
+			if err := o.downloadDirect(tt.args.URL, tt.args.dest); (err != nil) != tt.wantErr {
+				t.Errorf("InitOptions.downloadDirect() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			result := tt.want(fs)
+			if result != nil {
+				t.Errorf("unexpected error: %s", result)
+			}
+		})
+	}
+}
