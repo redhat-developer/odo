@@ -13,8 +13,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+type KubernetesClient struct{}
+
 // Login takes care of authentication part and returns error, if any
-func Login(server, username, password, token, caAuth string, skipTLS bool) error {
+func (o KubernetesClient) Login(server, username, password, token, caAuth string, skipTLS bool) error {
 	// Here we are grabbing the stdout output and then
 	// throwing it through "copyAndFilter" in order to get
 	// a correctly filtered result from `odo login`

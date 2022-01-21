@@ -26,6 +26,9 @@ type LoginOptions struct {
 	caAuthFlag   string
 	skipTlsFlag  bool
 	serverFlag   string
+
+	// client
+	loginClient auth.Client
 }
 
 var loginExample = templates.Examples(`
@@ -43,8 +46,10 @@ var loginExample = templates.Examples(`
 `)
 
 // NewLoginOptions creates a new LoginOptions instance
-func NewLoginOptions() *LoginOptions {
-	return &LoginOptions{}
+func NewLoginOptions(client auth.Client) *LoginOptions {
+	return &LoginOptions{
+		loginClient: client,
+	}
 }
 
 // Complete completes LoginOptions after they've been created
@@ -74,12 +79,14 @@ func (o *LoginOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *LoginOptions) Run() (err error) {
-	return auth.Login(o.serverFlag, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
+	return o.loginClient.Login(o.serverFlag, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 
 // NewCmdLogin implements the odo command
 func NewCmdLogin(name, fullName string) *cobra.Command {
-	o := NewLoginOptions()
+	loginClient := auth.KubernetesClient{}
+	o := NewLoginOptions(loginClient)
+
 	loginCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Login to cluster",
