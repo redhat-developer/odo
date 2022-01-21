@@ -32,15 +32,6 @@ func (o *InitParams) Validate(prefClient preference.Client) error {
 		return errors.New("only one of devfile or devfile-path should be set")
 	}
 
-	// If devfile registry is omitted, get the only one in preference, or fails if several exist
-	if o.Devfile != "" && o.DevfileRegistry == "" {
-		if len(*prefClient.RegistryList()) == 1 {
-			o.DevfileRegistry = (*prefClient.RegistryList())[0].Name
-		} else {
-			return errors.New("unable to auto-select registry, please use devfile-registry to select a registry")
-		}
-	}
-
 	if o.DevfileRegistry != "" && !prefClient.RegistryNameExists(o.DevfileRegistry) {
 		return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo registry` command to configure devfile registries", o.DevfileRegistry)
 	}

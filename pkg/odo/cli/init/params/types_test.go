@@ -51,23 +51,6 @@ func Test_InitParams_Validate(t *testing.T) {
 			wantErr:            false,
 		},
 		{
-			name: "devfile passed with several registries",
-			fields: fields{
-				name:    "aname",
-				devfile: "adevfile",
-			},
-			registryList: []preference.Registry{
-				{
-					Name: "registry1",
-				},
-				{
-					Name: "registry2",
-				},
-			},
-			registryNameExists: true,
-			wantErr:            true,
-		},
-		{
 			name: "devfile and devfile-path passed",
 			fields: fields{
 				name:        "aname",

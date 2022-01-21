@@ -1,0 +1,13 @@
+package registry
+
+import "github.com/devfile/registry-support/registry-library/library"
+
+type RegistryClient struct{}
+
+func NewRegistryClient() RegistryClient {
+	return RegistryClient{}
+}
+
+func (o RegistryClient) PullStackFromRegistry(registry string, stack string, destDir string, options library.RegistryOptions) error {
+	return library.PullStackFromRegistry(registry, stack, destDir, options)
+}

@@ -12,7 +12,6 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
@@ -20,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
+	"github.com/redhat-developer/odo/pkg/odo/cli/init/registry"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -48,6 +48,7 @@ type InitOptions struct {
 
 	// Clients
 	preferenceClient preference.Client
+	registryClient   registry.Client
 
 	// the parameters needed to run the init procedure
 	params.InitParams
@@ -57,11 +58,12 @@ type InitOptions struct {
 }
 
 // NewInitOptions creates a new InitOptions instance
-func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem, prefClient preference.Client) *InitOptions {
+func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem, prefClient preference.Client, registryClient registry.Client) *InitOptions {
 	return &InitOptions{
 		backends:         backends,
 		fsys:             fsys,
 		preferenceClient: prefClient,
+		registryClient:   registryClient,
 		destDir:          ".",
 	}
 }
@@ -219,28 +221,40 @@ func (o *InitOptions) downloadDirect(URL string, dest string) error {
 }
 
 // downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
+// If registryName is empty, will try to download the devfile from the list of registries in preferences
 func (o *InitOptions) downloadFromRegistry(registryName string, devfile string, dest string) error {
-	downloadSpinner := log.Spinnerf("Downloading devfile %q from registry %q", devfile, registryName)
+	var downloadSpinner *log.Status
+	var forceRegistry bool
+	if registryName == "" {
+		downloadSpinner = log.Spinnerf("Downloading devfile %q", devfile)
+		forceRegistry = false
+	} else {
+		downloadSpinner = log.Spinnerf("Downloading devfile %q from registry %q", devfile, registryName)
+		forceRegistry = true
+	}
 	defer downloadSpinner.End(false)
+
 	registries := o.preferenceClient.RegistryList()
-	var registry preference.Registry
-	var found bool
-	for _, registry = range *registries {
-		if registry.Name == registryName {
-			found = true
-			break
+	var reg preference.Registry
+	for _, reg = range *registries {
+		if forceRegistry && reg.Name == registryName {
+			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
+			if err != nil {
+				return err
+			}
+			downloadSpinner.End(true)
+			return nil
+		} else if !forceRegistry {
+			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
+			if err != nil {
+				continue
+			}
+			downloadSpinner.End(true)
+			return nil
 		}
 	}
-	if !found {
-		return fmt.Errorf("unable to find the registry with name %q", registryName)
-	}
 
-	err := registryLibrary.PullStackFromRegistry(registry.URL, devfile, dest, segment.GetRegistryOptions())
-	if err != nil {
-		return err
-	}
-	downloadSpinner.End(true)
-	return nil
+	return fmt.Errorf("unable to find the registry with name %q", devfile)
 }
 
 // downloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
@@ -282,7 +296,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 
-	o := NewInitOptions(backends, filesystem.DefaultFs{}, prefClient)
+	o := NewInitOptions(backends, filesystem.DefaultFs{}, prefClient, registry.NewRegistryClient())
 	initCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Init bootstraps a new project",
