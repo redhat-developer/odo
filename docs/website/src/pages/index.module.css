@@ -108,8 +108,7 @@
 
 .logo {
   float: right;
-  margin-top: 20px;
-  padding: 0 20px 20px;
+  max-width: 250px;
 }
 
 
@@ -161,6 +160,7 @@
     display: block;
     float: none;
     margin: 0px auto;
+    max-width:150px;
   }
 
   .indexCtas {
