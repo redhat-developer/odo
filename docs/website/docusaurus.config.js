@@ -34,6 +34,7 @@ module.exports = {
        logo: {
          alt: 'odo Logo',
          src: 'img/logo.png',
+         srcDark: 'img/logo_dark.png',
        },
       items: [
         {
