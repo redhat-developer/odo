@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/redhat-developer/odo/pkg/segment"
 
@@ -261,7 +262,7 @@ func conflictCheckForDevfileFlag(args []string, registryName string) error {
 // if the registryName is "", then it returns devfiles of all the available registries
 func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
 	// TODO(feloy) Get from DI
-	catalogClient := catalog.NewCatalogClient()
+	catalogClient := catalog.NewCatalogClient(filesystem.DefaultFs{})
 	// Validate if the component type is available
 	if registryName != "" {
 		registryExistSpinner := log.Spinnerf("Checking if the registry %q exists", registryName)

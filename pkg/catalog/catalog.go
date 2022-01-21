@@ -3,9 +3,7 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -23,13 +21,18 @@ import (
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-type CatalogClient struct{}
+type CatalogClient struct {
+	fsys filesystem.Filesystem
+}
 
-func NewCatalogClient() *CatalogClient {
-	return &CatalogClient{}
+func NewCatalogClient(fsys filesystem.Filesystem) *CatalogClient {
+	return &CatalogClient{
+		fsys: fsys,
+	}
 }
 
 // GetDevfileRegistries gets devfile registries from preference file,
@@ -126,11 +129,13 @@ func (o *CatalogClient) ListDevfileComponents(registryName string) (DevfileCompo
 // GetStarterProjectsNames returns the list of starter projects in a devfile,
 // by temporarily downloading the devile
 func (o *CatalogClient) GetStarterProjectsNames(details DevfileComponentType) ([]string, error) {
-	tmpDir, err := ioutil.TempDir("", "odoinit")
+	tmpDir, err := o.fsys.TempDir("", "odoinit")
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = o.fsys.RemoveAll(tmpDir)
+	}()
 
 	err = registryLibrary.PullStackFromRegistry(details.Registry.URL, details.Name, tmpDir, segment.GetRegistryOptions())
 	if err != nil {

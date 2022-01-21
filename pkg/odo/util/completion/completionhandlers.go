@@ -4,6 +4,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/posener/complete"
 	"github.com/redhat-developer/odo/pkg/application"
@@ -97,7 +98,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	completions = make([]string, 0)
 	comps := &completions
 
-	components, _ := catalog.NewCatalogClient().ListDevfileComponents("")
+	components, _ := catalog.NewCatalogClient(filesystem.DefaultFs{}).ListDevfileComponents("")
 	for _, devfile := range components.Items {
 		if args.commands[devfile.Name] {
 			return nil

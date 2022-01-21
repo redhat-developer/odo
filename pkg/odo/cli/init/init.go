@@ -275,7 +275,7 @@ func (o *InitOptions) downloadStarterProject(devfile parser.DevfileObj, project 
 func NewCmdInit(name, fullName string) *cobra.Command {
 	backends := []params.ParamsBuilder{
 		&params.FlagsBuilder{},
-		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient()),
+		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{})),
 	}
 	prefClient, err := preference.NewClient()
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,7 +94,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 
 // NewCmdCatalogListComponents implements the odo catalog list components command
 func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
-	o := NewListComponentsOptions(catalog.NewCatalogClient())
+	o := NewListComponentsOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}))
 
 	var componentListCmd = &cobra.Command{
 		Use:         name,

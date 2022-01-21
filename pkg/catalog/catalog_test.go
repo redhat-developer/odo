@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestGetDevfileRegistries(t *testing.T) {
@@ -71,7 +72,7 @@ OdoSettings:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			catClient := NewCatalogClient()
+			catClient := NewCatalogClient(filesystem.NewFakeFs())
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
 				t.Errorf("Error message is %v", err)
