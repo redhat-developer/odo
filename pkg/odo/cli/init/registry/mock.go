@@ -7,6 +7,7 @@ package registry
 import (
 	reflect "reflect"
 
+	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	library "github.com/devfile/registry-support/registry-library/library"
 	gomock "github.com/golang/mock/gomock"
 	util "github.com/redhat-developer/odo/pkg/util"
@@ -48,6 +49,20 @@ func (m *MockClient) DownloadFileInMemory(params util.HTTPRequestParams) ([]byte
 func (mr *MockClientMockRecorder) DownloadFileInMemory(params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFileInMemory", reflect.TypeOf((*MockClient)(nil).DownloadFileInMemory), params)
+}
+
+// DownloadStarterProject mocks base method.
+func (m *MockClient) DownloadStarterProject(starterProject *v1alpha2.StarterProject, decryptedToken, contextDir string, verbose bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadStarterProject", starterProject, decryptedToken, contextDir, verbose)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DownloadStarterProject indicates an expected call of DownloadStarterProject.
+func (mr *MockClientMockRecorder) DownloadStarterProject(starterProject, decryptedToken, contextDir, verbose interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadStarterProject", reflect.TypeOf((*MockClient)(nil).DownloadStarterProject), starterProject, decryptedToken, contextDir, verbose)
 }
 
 // PullStackFromRegistry mocks base method.

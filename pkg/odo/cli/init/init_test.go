@@ -3,6 +3,9 @@ package init
 import (
 	"testing"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
@@ -233,12 +236,9 @@ func TestInitOptions_downloadFromRegistry(t *testing.T) {
 
 func TestInitOptions_downloadDirect(t *testing.T) {
 	type fields struct {
-		backends         []params.ParamsBuilder
-		fsys             func(fs filesystem.Filesystem) filesystem.Filesystem
-		preferenceClient preference.Client
-		registryClient   func(ctrl *gomock.Controller) registry.Client
-		InitParams       params.InitParams
-		destDir          string
+		fsys           func(fs filesystem.Filesystem) filesystem.Filesystem
+		registryClient func(ctrl *gomock.Controller) registry.Client
+		InitParams     params.InitParams
 	}
 	type args struct {
 		URL  string
@@ -255,7 +255,7 @@ func TestInitOptions_downloadDirect(t *testing.T) {
 			name: "download an existing file",
 			fields: fields{
 				fsys: func(fs filesystem.Filesystem) filesystem.Filesystem {
-					fs.WriteFile("/src/devfile.yaml", []byte("a content"), 0666)
+					_ = fs.WriteFile("/src/devfile.yaml", []byte("a content"), 0666)
 					return fs
 				},
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
@@ -368,6 +368,83 @@ func TestInitOptions_downloadDirect(t *testing.T) {
 			result := tt.want(fs)
 			if result != nil {
 				t.Errorf("unexpected error: %s", result)
+			}
+		})
+	}
+}
+
+func TestInitOptions_downloadStarterProject(t *testing.T) {
+	type fields struct {
+		registryClient func(ctrl *gomock.Controller) registry.Client
+	}
+	type args struct {
+		devfile func() parser.DevfileObj
+		project string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "starter project not found in devfile",
+			fields: fields{
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					return nil
+				},
+			},
+			args: args{
+				devfile: func() parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					devfile := parser.DevfileObj{
+						Data: devfileData,
+					}
+					return devfile
+				},
+				project: "notfound",
+			},
+			wantErr: true,
+		},
+		{
+			name: "starter project found in devfile",
+			fields: fields{
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					client.EXPECT().DownloadStarterProject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+					return client
+				},
+			},
+			args: args{
+				devfile: func() parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					projects := []v1alpha2.StarterProject{
+						{
+							Name: "starter1",
+						},
+						{
+							Name: "starter2",
+						},
+					}
+					_ = devfileData.AddStarterProjects(projects)
+					devfile := parser.DevfileObj{
+						Data: devfileData,
+					}
+					return devfile
+				},
+				project: "starter2",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			o := &InitOptions{
+				registryClient: tt.fields.registryClient(ctrl),
+			}
+			if err := o.downloadStarterProject(tt.args.devfile(), tt.args.project, "dest"); (err != nil) != tt.wantErr {
+				t.Errorf("InitOptions.downloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

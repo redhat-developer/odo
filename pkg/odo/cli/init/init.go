@@ -14,7 +14,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
@@ -276,7 +275,7 @@ func (o *InitOptions) downloadStarterProject(devfile parser.DevfileObj, project 
 		return fmt.Errorf("starter project %q does not exist in devfile", project)
 	}
 	downloadSpinner := log.Spinnerf("Downloading starter project %q", prj.Name)
-	err = component.DownloadStarterProject(&prj, "", dest, false)
+	err = o.registryClient.DownloadStarterProject(&prj, "", dest, false)
 	if err != nil {
 		downloadSpinner.End(false)
 		return err
