@@ -1,6 +1,6 @@
 ---
 title: odo storage
-sidebar_position: 7
+sidebar_position: 10
 ---
 odo lets users manage storage volumes attached to the components. A storage volume can be either an ephemeral volume using an `emptyDir` Kubernetes volume, or a [PVC](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim), which is a way for users to "claim" a persistent volume (such as a GCE PersistentDisk or an iSCSI volume) without understanding the details of the particular cloud environment. The persistent storage volume can be used to persist data across restarts and rebuilds of the component.
 
