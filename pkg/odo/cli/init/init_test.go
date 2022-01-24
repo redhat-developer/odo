@@ -1,6 +1,7 @@
 package init
 
 import (
+	"context"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -47,6 +48,7 @@ func TestInitOptions_Complete(t *testing.T) {
 			},
 			cmdlineExpects: func(mock *cmdline.MockCmdline) {
 				mock.EXPECT().GetFlags()
+				mock.EXPECT().Context().Return(context.Background())
 			},
 			wantErr: false,
 		},

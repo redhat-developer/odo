@@ -10,11 +10,21 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 		flags map[string]string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		want    InitParams
-		wantErr bool
+		name         string
+		fields       fields
+		wantAdequate bool
+		want         InitParams
+		wantErr      bool
 	}{
+		{
+			name: "no field defined",
+			fields: fields{
+				flags: map[string]string{},
+			},
+			wantAdequate: false,
+			wantErr:      false,
+			want:         InitParams{},
+		},
 		{
 			name: "all fields defined",
 			fields: fields{
@@ -26,7 +36,8 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 					FLAG_STARTER:          "astarter",
 				},
 			},
-			wantErr: false,
+			wantAdequate: true,
+			wantErr:      false,
 			want: InitParams{
 				Name:            "aname",
 				Devfile:         "adevfile",
@@ -39,7 +50,10 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &FlagsBuilder{}
-			o.IsAdequate(tt.fields.flags)
+			adequate := o.IsAdequate(tt.fields.flags)
+			if adequate != tt.wantAdequate {
+				t.Errorf("IsAdequate should return %v but returns %v", tt.wantAdequate, adequate)
+			}
 			got, err := o.ParamsBuild()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
