@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"io"
+	"k8s.io/utils/pointer"
 	"os"
 	"reflect"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -26,7 +28,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/generator"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -35,7 +36,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"k8s.io/utils/pointer"
 )
 
 const supervisorDStatusWaitTimeInterval = 1
@@ -532,13 +532,13 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		Containers:        containers,
 		Volumes:           allVolumes,
 		PodSelectorLabels: selectorLabels,
+		Replicas:          pointer.Int32Ptr(1),
 	}
 
 	deployment, err := generator.GetDeployment(a.Devfile, deployParams)
 	if err != nil {
 		return err
 	}
-	deployment.Spec.Replicas = pointer.Int32Ptr(1)
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
 	}

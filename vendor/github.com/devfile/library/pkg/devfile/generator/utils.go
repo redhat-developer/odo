@@ -233,6 +233,7 @@ func getPodTemplateSpec(podTemplateSpecParams podTemplateSpecParams) *corev1.Pod
 type deploymentSpecParams struct {
 	PodTemplateSpec   corev1.PodTemplateSpec
 	PodSelectorLabels map[string]string
+	Replicas          *int32
 }
 
 // getDeploymentSpec gets a deployment spec
@@ -245,6 +246,7 @@ func getDeploymentSpec(deploySpecParams deploymentSpecParams) *appsv1.Deployment
 			MatchLabels: deploySpecParams.PodSelectorLabels,
 		},
 		Template: deploySpecParams.PodTemplateSpec,
+		Replicas: deploySpecParams.Replicas,
 	}
 
 	return deploymentSpec

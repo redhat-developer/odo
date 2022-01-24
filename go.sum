@@ -262,12 +262,11 @@ github.com/deislabs/oras v0.8.1/go.mod h1:Mx0rMSbBNaNfY9hjpccEnxkOqJL6KGjtxNHPLC
 github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3/go.mod h1:zAg7JM8CkOJ43xKXIj7eRO9kmWm/TW578qo+oDO6tuM=
 github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=
 github.com/devfile/api/v2 v2.0.0-20210910153124-da620cd1a7a1/go.mod h1:kLX/nW93gigOHXK3NLeJL2fSS/sgEe+OHu8bo3aoOi4=
+github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c h1:sjghKUov/WT71dBreHYQcTgQctxHT/p4uAhUFdGQfSU=
 github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
-github.com/devfile/api/v2 v2.0.0-20220126144139-f6d7cd85a481 h1:G4trvnLOua7AsSetNa8k4u9VUNavPIwXa3CNfBwQwx4=
-github.com/devfile/api/v2 v2.0.0-20220126144139-f6d7cd85a481/go.mod h1:kLX/nW93gigOHXK3NLeJL2fSS/sgEe+OHu8bo3aoOi4=
 github.com/devfile/library v1.1.1-0.20210910214722-7c5ff63711ec/go.mod h1:svPWwWb+BP15SXCHl0dyOeE4Sohrjl5a2BaOzc/riLc=
-github.com/devfile/library v1.2.1-0.20220201022328-58ef0b78c0fe h1:IzpRD2XS7m7k+6lFLYjaFAPYy0CSv0861teFvzNFkdM=
-github.com/devfile/library v1.2.1-0.20220201022328-58ef0b78c0fe/go.mod h1:Fp8wxWPVA5pz8geGIp0DioGVgnZAdwyqsgohvRaR5rk=
+github.com/devfile/library v1.2.1-0.20220201144851-0749c7fa35a1 h1:cenRsPWEfoCvKit8AtYnPtVlxA5z9EyVDqK3JW62er4=
+github.com/devfile/library v1.2.1-0.20220201144851-0749c7fa35a1/go.mod h1:nZ9P4D8QxHdWe/czYx9sn+BxzsTOXMj/LAUfcqkvvuU=
 github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f h1:fKNUmoOPh7yAs69uMRZWHvev+m3e7T4jBL/hOXZB9ys=
 github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f/go.mod h1:bLGagbW2SFn7jo5+kUPlCMehIGqWkRtLKc5O0OyJMJM=
 github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2 h1:Rwuc0bdx8xSZWdIwXjAxaKYnZIWHneJmDAAZ6a5jXzY=

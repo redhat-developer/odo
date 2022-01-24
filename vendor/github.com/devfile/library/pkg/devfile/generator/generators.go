@@ -2,7 +2,6 @@ package generator
 
 import (
 	"fmt"
-
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -158,6 +157,7 @@ type DeploymentParams struct {
 	Containers        []corev1.Container
 	Volumes           []corev1.Volume
 	PodSelectorLabels map[string]string
+	Replicas          *int32
 }
 
 // GetDeployment gets a deployment object
@@ -173,6 +173,7 @@ func GetDeployment(devfileObj parser.DevfileObj, deployParams DeploymentParams) 
 	deploySpecParams := deploymentSpecParams{
 		PodTemplateSpec:   *getPodTemplateSpec(podTemplateSpecParams),
 		PodSelectorLabels: deployParams.PodSelectorLabels,
+		Replicas:          deployParams.Replicas,
 	}
 
 	containerAnnotations, err := getContainerAnnotations(devfileObj, common.DevfileOptions{})
