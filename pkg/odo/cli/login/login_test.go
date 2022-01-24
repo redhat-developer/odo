@@ -38,7 +38,7 @@ func TestLoginOptions_Complete(t *testing.T) {
 			cmdline := cmdline.NewMockCmdline(ctrl)
 
 			loginOptions := NewLoginOptions(nil)
-			loginOptions.Complete(cmdline, tt.args)
+			_ = loginOptions.Complete(cmdline, tt.args)
 
 			if loginOptions.server != tt.want {
 				t.Errorf("got %s; wanted %s", loginOptions.server, tt.want)
