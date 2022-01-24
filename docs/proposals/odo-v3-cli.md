@@ -1,5 +1,14 @@
 # odo v3 CLI
+
+## TODO:
+
+- [ ] define JSON outputs for each command
+
+
+# Table of Contents
 - [odo v3 CLI](#odo-v3-cli)
+  - [TODO:](#todo)
+- [Table of Contents](#table-of-contents)
   - [odo v2 commands that should be removed](#odo-v2-commands-that-should-be-removed)
   - [Command that won't change much in v3](#command-that-wont-change-much-in-v3)
   - [Commands that should be present in v3.0.0-alpha1](#commands-that-should-be-present-in-v300-alpha1)
@@ -15,32 +24,49 @@
       - [Interactive mode](#interactive-mode-1)
       - [Flags](#flags-1)
       - [Command behavior and error states](#command-behavior-and-error-states-1)
-    - [`odo build-images`](#odo-build-images)
+        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory)
+        - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet)
     - [`odo dev`](#odo-dev)
+      - [Interactive mode](#interactive-mode-2)
+      - [Flags](#flags-2)
+      - [Command behavior and error states](#command-behavior-and-error-states-2)
+        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-1)
+        - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-1)
     - [`odo list`](#odo-list)
+      - [`odo list components`](#odo-list-components)
+      - [Flags](#flags-3)
+      - [Command behavior and error states](#command-behavior-and-error-states-3)
+      - [`odo list services`](#odo-list-services)
+      - [`odo list endpoints`](#odo-list-endpoints)
+      - [`odo list bindings`](#odo-list-bindings)
     - [`odo preference`](#odo-preference)
     - [`odo project`](#odo-project)
     - [`odo registry`](#odo-registry)
     - [`odo describe`](#odo-describe)
     - [`odo exec`](#odo-exec)
     - [`odo status`](#odo-status)
+    - [`odo build-images`](#odo-build-images)
   - [Commands that will be added in v3.0.0-alpha2](#commands-that-will-be-added-in-v300-alpha2)
     - [`odo create`](#odo-create)
       - [`odo create binding`](#odo-create-binding)
       - [`odo create service`](#odo-create-service)
       - [`odo create endpoint`](#odo-create-endpoint)
-      - [`odo create storage`](#odo-create-storage)
-    - [`odo create url`](#odo-create-url)
+    - [`odo create component`](#odo-create-component)
+      - [Interactive mode](#interactive-mode-3)
+      - [Flags](#flags-4)
+      - [Command behavior and error states](#command-behavior-and-error-states-4)
+        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-2)
+        - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-2)
     - [`odo delete`](#odo-delete)
       - [`odo delete binding`](#odo-delete-binding)
       - [`odo delete service`](#odo-delete-service)
       - [`odo delete endpoint`](#odo-delete-endpoint)
-      - [`odo delete storage`](#odo-delete-storage)
+      - [`odo delete component`](#odo-delete-component)
     - [`odo list`](#odo-list-1)
       - [`odo list binding`](#odo-list-binding)
       - [`odo list service`](#odo-list-service)
       - [`odo list endpoint`](#odo-list-endpoint)
-      - [`odo list storage`](#odo-list-storage)
+      - [`odo list component`](#odo-list-component)
     - [`odo app`](#odo-app)
     - [`odo catalog`](#odo-catalog)
     - [`odo config`](#odo-config)
@@ -70,6 +96,7 @@ There are also some commands that are there since the original odo v1 and were o
 - `odo registry` will be replaced with `odo preference ....`?
 
 ## Command that won't change much in v3
+
 - `odo login`
 - `odo logout`
 - `odo preference` (maybe renamed to `odo config`? TODO: need to figure out right naming for configuring devfile component and configuring odo)
@@ -88,13 +115,14 @@ There are also some commands that are there since the original odo v1 and were o
 
 ### `odo login`
 
-todo
+`odo login` should work exactly the same way as `oc login` command. It should have the same arguments and flags.
 
 ### `odo logout`
 
-todo
+`odo login` should work exactly the same way as `oc login` command. It should have the same arguments and flags.
 
 ### `odo init`
+
 [#5297](https://github.com/redhat-developer/odo/issues/5297)
 
 #### Interactive mode
@@ -133,32 +161,36 @@ todo
 
 ##### Example
 ```
-$ odo init                                                                                                                       
-TODO: Intro text (Include  goal as well as the steps that they are going to take ( including terminology ))                        
-? Select language:  [Use arrows to move, type to filter]                                                                           
-> dotnet                                                                                                                           
-  go                                                                                                                               
-  java                                                                                                                             
-  javascript                                                                                                                       
-  typescript                                                                                                                       
-  php                                                                                                                              
-  python  
-? Select project type:  [Use arrows to move, type to filter]                                                                       
-  .NET 5.0                                                                                                                         
-> .NET 6.0                                                                                                                         
-  .NET Core 3.1                                                                                                                    
-  ** GO BACK ** (not implemented)      
-? Which starter project do you want to use?  [Use arrows to move, type to filter]                                                   
-> starter1                                                                                                                         
-  starter2                            
-? Enter component name: mydotnetapp  
+$ odo init
+TODO: Intro text (Include  goal as well as the steps that they are going to take ( including terminology ))
 
-⠏ Downloading "dotnet60". DONE                                                                                                     
-⠏ Downloading starter project "starter1" ... DONE                                                                                  
-Your new component "mydotnetapp" is ready in the current directory.                                                                
-To start editing your component, use “odo dev” and open this folder in your favorite IDE.                                            
-Changes will be directly reflected on the cluster.                                                                                 
-To deploy your component to a cluster use “odo deploy”.   
+? Select language:  [Use arrows to move, type to filter]
+> dotnet
+  go
+  java
+  javascript
+  typescript
+  php
+  python
+
+? Select project type:  [Use arrows to move, type to filter]
+  .NET 5.0
+> .NET 6.0
+  .NET Core 3.1
+  ** GO BACK ** (not implemented)
+
+? Which starter project do you want to use?  [Use arrows to move, type to filter]
+> starter1
+  starter2
+
+? Enter component name: mydotnetapp
+
+⠏ Downloading "dotnet60". DONE
+⠏ Downloading starter project "starter1" ... DONE
+Your new component "mydotnetapp" is ready in the current directory.
+To start editing your component, use “odo dev” and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+To deploy your component to a cluster use “odo deploy”.
 ```
 
 Proof of concept was implemented in https://github.com/kadel/odo-v3-prototype/blob/main/cmd/init.go
@@ -171,6 +203,8 @@ Proof of concept was implemented in https://github.com/kadel/odo-v3-prototype/bl
 - `--devfile-registry` - name of the devfile registry (as configured in `odo registry`). It can be used in combination with `--devfile`, but not with `--devfile-path` (optional)
 - `--starter` - name of the  starter project (optional)
 - `--devfile-path` - path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL (required if `--devfile` is not defined)
+- `-o` output information in a specified format (json).
+
 
 
 If no flag is specified it should enter interactive mode.
@@ -181,7 +215,7 @@ If even a single optional flag is specified then run in non-interactive mode and
 
 - the result of running `odo init` command should be local devfile.yaml saved in the current directory, and starter project extracted in the current directory (if user picked one)
 - running `odo init` in non-empty directory exits with error
-  
+
   ```
   The current directory is not empty. You can bootstrap new component only in empty directory.
   If you have existing code that you want to deploy use `odo deploy` or use `odo dev` command to quickly iterate on your component.
@@ -198,11 +232,59 @@ Deploying application (outer loop)
 [#5298](https://github.com/redhat-developer/odo/issues/5298)
 
 #### Interactive mode
-#### Flags
-#### Command behavior and error states
+```
+$ odo deploy
+There is no devfile.yaml in the current directory.
 
-### `odo build-images`
-mostly as it is in v2
+Based on the files in the current directory odo detected
+Language: Java
+Project type: SpringBoot
+
+? Is this correct? Yes
+
+Current component configuration:
+Opened ports:
+- 8080
+- 8084
+Environment variables:
+- FOO = bar
+- FOO1 = bar1
+
+? What configuration do you want change?  [Use arrows to move, type to filter]
+> NOTHING - configuration is correct
+  Delete port "8080"
+  Delete port "8084"
+  Add new port
+  Delete environment variable "FOO"
+  Delete environment variable "FOO1"
+  Add new environment variable
+
+⠏ Downloading "java-quarkus". DONE
+Deploying your component to cluster ...
+⠏ Building container image locally ... DONE
+⠏ Pushing image to container registry ... DONE
+⠏ Waiting for Kubernetes resources ... DONE
+Your component is running on cluster.
+You can access it at https://example.com
+```
+
+If there is no devfile in the current directory `odo` should use ([Alizer](https://github.com/redhat-developer/alizer/pull/55/)) to get corresponding Devfile for code base in the current directory.
+After the successful detection it will show  Language and Project Type information to users and ask for confirmation.
+If user answers that the information is not correct, odo should ask "Select language" and "Select project type" questions (see: `odo init` interactive mode).
+
+The configuration part helps users to modify most common configurations done on Devfiles.
+"? What configuration do you want change? " question is repeated over and over again until user confirms that the configuration is done and there is nothing else to change.
+
+#### Flags
+
+- `-o` output information in a specified format (json).
+
+
+
+#### Command behavior and error states
+##### When devfile exists in the current directory
+##### When there is no devfile in the current directory yet
+
 
 ### `odo dev`
 
@@ -210,15 +292,84 @@ Running the application on the cluster for **development** (inner loop)
 
 [#5299](https://github.com/redhat-developer/odo/issues/5298)
 
+#### Interactive mode
+```
+$ odo dev
+There is no devfile.yaml in the current directory.
+
+Based on the files in the current directory odo detected
+Language: Java
+Project type: SpringBoot
+
+? Is this correct? Yes
+
+Current component configuration:
+Opened ports:
+- 8080
+- 8084
+Environment variables:
+- FOO = bar
+- FOO1 = bar1
+
+? What configuration do you want change?  [Use arrows to move, type to filter]
+> NOTHING - configuration is correct
+  Delete port "8080"
+  Delete port "8084"
+  Add new port
+  Delete environment variable "FOO"
+  Delete environment variable "FOO1"
+  Add new environment variable
+
+
+⠏ Downloading "java-quarkus". DONE
+Starting your application on cluster in developer mode ...
+⠏ Waiting for Kubernetes resources ... DONE
+⠏ Syncing files into the container ... DONE
+⠏ Building your application in container on cluster ... DONE
+⠏ Execting the application ... DONE
+Your application is running on cluster.
+You can access it at https://example.com
+
+⠏ Watching for changes in the current directory ... DONE
+Change in main.java detected.
+⠏ Syncing files into the container ... DONE
+⠏ Reloading application ... DONE
+⠏ Watching for changes in the current directory ...
+```
+
+Questions and their behaviour is the same as for [`odo deploy`](#odo-deploy) command
+
+#### Flags
+
+- `-o` output information in a specified format (json).
+
+
+
+#### Command behavior and error states
+##### When devfile exists in the current directory
+##### When there is no devfile in the current directory yet
 
 ### `odo list`
 
 Listing "stuff" created by odo.
 
-- without arguments lists components in local Devfile and in cluster
-- `odo list services` list services defined in local devfile and in cluster
-- `odo list endpoints` list endpoints defined in local devfile and in cluster
-- `odo list bindings` list bindings defined in local devfile and in cluster 
+#### `odo list components`
+list devfile components deployed to the cluster
+
+
+#### Flags
+#### Command behavior and error states
+
+#### `odo list services`
+
+list services defined in local devfile and in cluster
+#### `odo list endpoints`
+
+ list endpoints defined in local devfile and in cluster
+#### `odo list bindings`
+
+list bindings defined in local devfile and in cluster
+
 
 
 ### `odo preference`
@@ -226,11 +377,11 @@ Listing "stuff" created by odo.
 Configures odo behavior like timeouts.
 - UpdateNotification  - keep
 - NamePrefix          - remove
-- Timeout             - add explanations  
+- Timeout             - add explanations
 - BuildTimeout        - remove
 - PushTimeout         - add explanations
 - Ephemeral           - keep
-- ConsentTelemetry    - keep 
+- ConsentTelemetry    - keep
 
 
 
@@ -238,7 +389,7 @@ Configures odo behavior like timeouts.
 mostly as it is
 
 ### `odo registry`
-mostly as it is just drop  support "github"  registry
+mostly as it is just drop support "github" registry
 
 ### `odo describe`
 TODO
@@ -249,19 +400,88 @@ mostly as it is
 ### `odo status`
 mostly as it is
 
+### `odo build-images`
+mostly as it is in v2
+
 ## Commands that will be added in v3.0.0-alpha2
 
 ### `odo create`
 
 #### `odo create binding`
 
+Generate new ServiceBinding. Based on the devfile existence save it to the devfile or just save it into the yaml file.
+
 #### `odo create service`
+
+Generate custom resource for operator backed service. Based on the devfile existence save it to the devfile or just save it into the yaml file.
 
 #### `odo create endpoint`
 
-#### `odo create storage`
+Create new endpoint (url) for. Saves the endpoint information to the `devfile.yaml`
 
-### `odo create url`
+
+### `odo create component`
+
+Create new Devfile component in the current directory.
+Some users might prefer creating components separately before running `odo dev` or `odo deploy`.
+But this command is mainly intended to be used by IDE plugins or scripts.
+
+
+#### Interactive mode
+```
+$ odo create
+
+Based on the files in the current directory odo detected
+Language: Java
+Project type: SpringBoot
+
+? Is this correct? Yes
+
+Current component configuration:
+Opened ports:
+- 8080
+- 8084
+Environment variables:
+- FOO = bar
+- FOO1 = bar1
+
+? What configuration do you want change?  [Use arrows to move, type to filter]
+> NOTHING - configuration is correct
+  Delete port "8080"
+  Delete port "8084"
+  Add new port
+  Delete environment variable "FOO"
+  Delete environment variable "FOO1"
+  Add new environment variable
+
+⠏ Downloading "java-quarkus". DONE
+
+Your component is ready in the current directory.
+To deploy it to the cluster you can run `odo deploy`.
+```
+
+The questions for interactive mode are identical to questions in `odo dev` and `odo deploy` command.
+
+#### Flags
+
+- `--name` - name of the component (required)
+- `-o` output information in a specified format (json).
+- `--devfile` - name of the devfile in devfile registry (required if `--devfile-path` is not defined)
+- `--devfile-registry` - name of the devfile registry (as configured in `odo registry`). It can be used in combination with `--devfile`, but not with `--devfile-path` (optional)
+- `--devfile-path` - path to a devfile. This is alternative to using devfile from Devfile registry. It can be local file system path or http(s) URL (required if `--devfile` is not defined)
+
+
+
+#### Command behavior and error states
+
+##### When devfile exists in the current directory
+
+Error out with the message: "Unable to create new component in the current directory. The current directory already contains `devfile.yaml` file."
+
+##### When there is no devfile in the current directory yet
+
+Based on the information provided by user download devfile.yaml and place it into the current directory.
+
 
 ### `odo delete`
 
@@ -271,7 +491,7 @@ mostly as it is
 
 #### `odo delete endpoint`
 
-#### `odo delete storage`
+#### `odo delete component`
 
 ### `odo list`
 
@@ -281,7 +501,7 @@ mostly as it is
 
 #### `odo list endpoint`
 
-#### `odo list storage`
+#### `odo list component`
 
 ### `odo app`
 TODO
