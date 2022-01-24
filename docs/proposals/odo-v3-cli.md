@@ -32,10 +32,13 @@
       - [Command behavior and error states](#command-behavior-and-error-states-2)
         - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-1)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-1)
-    - [`odo list`](#odo-list)
-      - [`odo list components`](#odo-list-components)
+      - [Interactive mode](#interactive-mode-3)
       - [Flags](#flags-3)
       - [Command behavior and error states](#command-behavior-and-error-states-3)
+    - [`odo list`](#odo-list)
+      - [`odo list components`](#odo-list-components)
+      - [Flags](#flags-4)
+      - [Command behavior and error states](#command-behavior-and-error-states-4)
       - [`odo list services`](#odo-list-services)
       - [`odo list endpoints`](#odo-list-endpoints)
       - [`odo list bindings`](#odo-list-bindings)
@@ -52,9 +55,9 @@
       - [`odo create service`](#odo-create-service)
       - [`odo create endpoint`](#odo-create-endpoint)
     - [`odo create component`](#odo-create-component)
-      - [Interactive mode](#interactive-mode-3)
-      - [Flags](#flags-4)
-      - [Command behavior and error states](#command-behavior-and-error-states-4)
+      - [Interactive mode](#interactive-mode-4)
+      - [Flags](#flags-5)
+      - [Command behavior and error states](#command-behavior-and-error-states-5)
         - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-2)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-2)
     - [`odo delete`](#odo-delete)
@@ -348,6 +351,10 @@ Questions and their behaviour is the same as for [`odo deploy`](#odo-deploy) com
 #### Command behavior and error states
 ##### When devfile exists in the current directory
 ##### When there is no devfile in the current directory yet
+
+#### Interactive mode
+#### Flags
+#### Command behavior and error states
 
 ### `odo list`
 
