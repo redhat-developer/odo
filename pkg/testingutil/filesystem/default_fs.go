@@ -92,6 +92,11 @@ func (DefaultFs) Remove(name string) error {
 	return os.Remove(name)
 }
 
+// Getwd via os.Getwd
+func (DefaultFs) Getwd() (dir string, err error) {
+	return os.Getwd()
+}
+
 // ReadFile via ioutil.ReadFile
 func (DefaultFs) ReadFile(filename string) ([]byte, error) {
 	return ioutil.ReadFile(filename)

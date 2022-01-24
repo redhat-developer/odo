@@ -125,6 +125,10 @@ func (fs *fakeFs) RemoveAll(path string) error {
 	return fs.a.RemoveAll(path)
 }
 
+func (fs *fakeFs) Getwd() (dir string, err error) {
+	return ".", nil
+}
+
 // Remove via afero.RemoveAll
 func (fs *fakeFs) Remove(name string) error {
 	return fs.a.Remove(name)

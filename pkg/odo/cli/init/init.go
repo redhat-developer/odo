@@ -64,7 +64,6 @@ func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem,
 		fsys:             fsys,
 		preferenceClient: prefClient,
 		registryClient:   registryClient,
-		contextDir:       ".",
 	}
 }
 
@@ -72,6 +71,11 @@ func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem,
 // either by using flags or interactively if no flag is passed
 // Complete will return an error immediately if the current working directory is not empty
 func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+
+	o.contextDir, err = o.fsys.Getwd()
+	if err != nil {
+		return err
+	}
 
 	empty, err := isEmpty(o.fsys, o.contextDir)
 	if err != nil {
