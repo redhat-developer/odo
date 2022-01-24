@@ -1,9 +1,13 @@
 package devfile
 
 import (
+	"io/ioutil"
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
+	"gopkg.in/yaml.v2"
 )
 
 var _ = Describe("odo devfile init command tests", func() {
@@ -37,6 +41,34 @@ var _ = Describe("odo devfile init command tests", func() {
 		It("should download a devfile.yaml file", func() {
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).To(Equal([]string{"devfile.yaml"}))
+		})
+	})
+
+	When("devfile contains parent URI", func() {
+		var originalKeyList []string
+		var srcDevfile string
+
+		BeforeEach(func() {
+			var err error
+			srcDevfile = helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-parent.yaml")
+			originalDevfileContent, err := ioutil.ReadFile(srcDevfile)
+			Expect(err).To(BeNil())
+			var content map[string]interface{}
+			Expect(yaml.Unmarshal(originalDevfileContent, &content)).To(BeNil())
+			for k := range content {
+				originalKeyList = append(originalKeyList, k)
+			}
+		})
+
+		It("should not replace the original devfile", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", srcDevfile).ShouldPass()
+			devfileContent, err := ioutil.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(BeNil())
+			var content map[string]interface{}
+			Expect(yaml.Unmarshal(devfileContent, &content)).To(BeNil())
+			for k := range content {
+				Expect(k).To(BeElementOf(originalKeyList))
+			}
 		})
 	})
 })
