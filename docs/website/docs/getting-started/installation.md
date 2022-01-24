@@ -3,51 +3,254 @@ title: Installation
 sidebar_position: 3
 ---
 
-odo can be used as a CLI tool and as an IDE plugin; it can be run on Linux, Windows and Mac systems.
+`odo` can be used as either a [CLI tool](/docs/getting-started/installation#cli-binary-installation) or an [IDE plugin](/docs/getting-started/installation#ide-installation) on Mac, Windows or Linux.
 
-## CLI Binary installation
-odo supports amd64 architecture for Linux, Mac and Windows.
-Additionally, it also supports amd64, arm64, s390x, and ppc64le architectures for Linux.
+## CLI installation
 
-See the [release page](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/) for more information.
+Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/). 
 
-### Installing odo on Linux/Mac
+For more information on the changes of each release, they can be viewed either on [GitHub](https://github.com/redhat-developer/odo/releases) or the [blog](/blog).
+
+### Linux
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs
+defaultValue="amd64"
+values={[
+{label: 'Intel / AMD 64', value: 'amd64'},
+{label: 'ARM 64', value: 'arm64'},
+{label: 'PowerPC', value: 'ppc64le'},
+{label: 'IBM Z', value: 's390x'},
+]}>
+
+<TabItem value="amd64">
+
+Installing `odo` on `amd64` architecture:
+
+1. Download the latest release from the mirror:
 ```shell
-OS="$(uname | tr '[:upper:]' '[:lower:]')"
-ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-$OS-$ARCH -o odo
-sudo install odo /usr/local/bin/
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-amd64 -o odo
 ```
 
-### Installing odo on Windows
-1. Download the [odo-windows-amd64.exe](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe) file.
-2. Rename the downloaded file to odo.exe and move it to a folder of choice, for example `C:\odo`.
-3. Add the location of odo.exe to `%PATH%` variable (refer to the steps below).
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-amd64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
 
-#### Setting the PATH variable in Windows 10
-1. Click **Search** and type `env` or `environment`.
-2. Select **Edit environment variables for your account**.
-3. Select **Path** from the **Variable** section and click **Edit**.
-4. Click **New**, add the location where you copied the odo binary (e.g. `C:\odo` in [Step 2 of Installation](#installing-odo-on-windows) into the field or click **Browse** and select the directory, and click **OK**.
+3. Install odo
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
 
-#### Setting the PATH variable in Windows 7/8
-1. Click **Start** and in the Search box types `Advanced System Settings`.
-2. Select **Advanced systems settings** and click the **Environment Variables** button at the bottom.
-3. Select the **Path** variable from the **System variables** section and click **Edit**.
-4. Scroll to the end of the **Variable value** and add `;` followed by the location where you copied the odo binary (e.g. `C:\odo` in [Step 2 of Installation](#installing-odo-on-windows) and click **OK**.
-5. Click **OK** to close the **Environment Variables** dialog.
-6. Click **OK** to close the **System Properties** dialog.
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
 
-## Installing odo in Visual Studio Code (VSCode)
-The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) uses both odo and oc binary to interact with Kubernetes or OpenShift cluster.
-1. Open VS Code.
-2. Launch VS Code Quick Open (Ctrl+P)
-3. Paste the following command:
-    ```shell
-     ext install redhat.vscode-openshift-connector
-    ```
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
 
-## Installing from source
+<TabItem value="arm64">
+
+Installing `odo` on `arm64` architecture:
+
+1. Download the latest release from the mirror:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-arm64 -o odo
+```
+
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-arm64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="ppc64le">
+
+Installing `odo` on `ppc64le` architecture:
+
+1. Download the latest release from the mirror:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-ppc64le -o odo
+```
+
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-ppc64le.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="s390x">
+
+Installing `odo` on `s390x` architecture:
+
+1. Download the latest release from the mirror:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-s390x -o odo
+```
+
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-s390x.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo
+```shell
+sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
+```
+
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+</Tabs>
+
+---
+
+### MacOS
+
+<Tabs
+defaultValue="intel"
+values={[
+{label: 'Intel', value: 'intel'},
+{label: 'Apple Silicon', value: 'arm'},
+]}>
+
+<TabItem value="intel">
+
+Installing `odo` on `amd64` architecture:
+
+1. Download the latest release from the mirror:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64 -o odo
+```
+
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo
+```shell
+chmod +x ./odo
+sudo mv ./odo /usr/local/bin/odo
+```
+
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+<TabItem value="arm">
+
+Installing `odo` on `arm64` architecture:
+
+1. Download the latest release from the mirror:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-arm64 -o odo
+```
+
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-arm64.sha256 -o odo.sha256
+echo "$(<odo.sha256)  odo" | shasum -a 256 --check
+```
+
+3. Install odo
+```shell
+chmod +x ./odo
+sudo mv ./odo /usr/local/bin/odo
+```
+
+4. (Optional) If you do not have root access, you can install `odo` to the local directory and add it to your `$PATH`:
+
+```shell
+mkdir -p $HOME/bin 
+cp ./odo $HOME/bin/odo
+export PATH=$PATH:$HOME/bin
+# (Optional) Add the $HOME/bin to your shell initialization file
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+```
+</TabItem>
+
+</Tabs>
+
+---
+
+### Windows
+
+1. Open a PowerShell terminal
+
+2. Download the latest release from the mirror:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe -o odo.exe
+```
+
+2. (Optional) Verify the downloaded binary with the SHA-256 sum:
+```shell
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+# Visually compare the output of both files
+Get-FileHash odo.exe
+type odo.exe.sha256
+```
+
+4. Add the binary to your `PATH`
+
+
+### Installing from source code
 1. Clone the repository and cd into it.
    ```shell
    git clone https://github.com/redhat-developer/odo.git
@@ -73,3 +276,14 @@ The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?item
    ```shell
    odo version
    ```
+
+## IDE Installation
+
+### Installing `odo` in Visual Studio Code (VSCode)
+The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) uses both `odo` and `oc` binary to interact with Kubernetes or OpenShift cluster.
+1. Open VS Code.
+2. Launch VS Code Quick Open (Ctrl+P)
+3. Paste the following command:
+    ```shell
+     ext install redhat.vscode-openshift-connector
+    ```
