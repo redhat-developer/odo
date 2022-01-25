@@ -24,24 +24,23 @@
       - [Interactive mode](#interactive-mode-1)
       - [Flags](#flags-1)
       - [Command behavior and error states](#command-behavior-and-error-states-1)
-        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet)
+        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory)
     - [`odo dev`](#odo-dev)
       - [Interactive mode](#interactive-mode-2)
       - [Flags](#flags-2)
       - [Command behavior and error states](#command-behavior-and-error-states-2)
-        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-1)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-1)
-      - [Interactive mode](#interactive-mode-3)
-      - [Flags](#flags-3)
-      - [Command behavior and error states](#command-behavior-and-error-states-3)
+        - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-1)
     - [`odo list`](#odo-list)
       - [`odo list components`](#odo-list-components)
-      - [Flags](#flags-4)
-      - [Command behavior and error states](#command-behavior-and-error-states-4)
-      - [`odo list services`](#odo-list-services)
+      - [Flags](#flags-3)
+        - [exmaple](#exmaple)
+      - [`odo list namespaces`](#odo-list-namespaces)
+        - [flags](#flags-4)
       - [`odo list endpoints`](#odo-list-endpoints)
       - [`odo list bindings`](#odo-list-bindings)
+      - [`odo list services`](#odo-list-services)
     - [`odo preference`](#odo-preference)
     - [`odo project`](#odo-project)
     - [`odo registry`](#odo-registry)
@@ -55,9 +54,9 @@
       - [`odo create service`](#odo-create-service)
       - [`odo create endpoint`](#odo-create-endpoint)
     - [`odo create component`](#odo-create-component)
-      - [Interactive mode](#interactive-mode-4)
+      - [Interactive mode](#interactive-mode-3)
       - [Flags](#flags-5)
-      - [Command behavior and error states](#command-behavior-and-error-states-5)
+      - [Command behavior and error states](#command-behavior-and-error-states-3)
         - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-2)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-2)
     - [`odo delete`](#odo-delete)
@@ -65,11 +64,6 @@
       - [`odo delete service`](#odo-delete-service)
       - [`odo delete endpoint`](#odo-delete-endpoint)
       - [`odo delete component`](#odo-delete-component)
-    - [`odo list`](#odo-list-1)
-      - [`odo list binding`](#odo-list-binding)
-      - [`odo list service`](#odo-list-service)
-      - [`odo list endpoint`](#odo-list-endpoint)
-      - [`odo list component`](#odo-list-component)
     - [`odo app`](#odo-app)
     - [`odo catalog`](#odo-catalog)
     - [`odo config`](#odo-config)
@@ -201,12 +195,12 @@ Proof of concept was implemented in https://github.com/kadel/odo-v3-prototype/bl
 
 
 #### Flags
-- `--name` - name of the component (required)
-- `--devfile` - name of the devfile in devfile registry (required if `--devfile-path` is not defined)
-- `--devfile-registry` - name of the devfile registry (as configured in `odo registry`). It can be used in combination with `--devfile`, but not with `--devfile-path` (optional)
-- `--starter` - name of the  starter project (optional)
-- `--devfile-path` - path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL (required if `--devfile` is not defined)
-- `-o` output information in a specified format (json).
+- `--name` (string) - name of the component (required)
+- `--devfile` (string) - name of the devfile in devfile registry (required if `--devfile-path` is not defined)
+- `--devfile-registry`  (string)- name of the devfile registry (as configured in `odo registry`). It can be used in combination with `--devfile`, but not with `--devfile-path` (optional)
+- `--starter`  (string) - name of the  starter project (optional)
+- `--devfile-path` (string) - path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL (required if `--devfile` is not defined)
+- `-o` (string) output information in a specified format (json).
 
 
 
@@ -280,13 +274,23 @@ The configuration part helps users to modify most common configurations done on 
 
 #### Flags
 
-- `-o` output information in a specified format (json).
+- `-o` (string) output information in a specified format (json).
 
 
 
 #### Command behavior and error states
-##### When devfile exists in the current directory
+
+The result of successful execution of `odo deploy` is Devfile component deployed in outer loop mode.
+
+
 ##### When there is no devfile in the current directory yet
+
+When no flags provided, starts in interactive mode to guide user through the devfile selection.
+When some flags provided it errors out: "No devfile.yaml in the current directory. Use `odo create component` to get devfile.yaml for your application first."
+
+##### When devfile exists in the current directory
+
+Deploy application in outer loop mode using the information form `devfile.yaml` in the current directory. 
 
 
 ### `odo dev`
@@ -338,45 +342,105 @@ Change in main.java detected.
 ⠏ Syncing files into the container ... DONE
 ⠏ Reloading application ... DONE
 ⠏ Watching for changes in the current directory ...
+
+Press Ctrl+c to exit and clean up resources from cluster.
+
+<ctrl+c>
+
+⠏ Cleaning up ... DONE
 ```
 
-Questions and their behaviour is the same as for [`odo deploy`](#odo-deploy) command
+Questions and their behavior is the same as for [`odo deploy`](#odo-deploy) command
 
 #### Flags
 
-- `-o` output information in a specified format (json).
-
-
+- `-o` (string) output information in a specified format (json).
+- `--watch` (boolean) Run command in watch mode. In this mode command is watching the current directory for file changes and automatically sync change to the container where it rebuilds and reload the application.
+  By default, this is `true` (`--watch=true`). You can disable watch using `--watch=false`
+- `--cleanup` (boolean). default is `true` when user presses `ctrl+c` it deletes all resource that it created on the cluster.
 
 #### Command behavior and error states
-##### When devfile exists in the current directory
+
+The result of successful execution of `odo dev` is Devfile component deployed in inner loop mode.
+By default command deletes all resources that it created before it exits. 
+
+When users runs command with `--cleanup=false` there will be no cleanup before existing. The message "Press Ctrl+c to exit and clean up resources from cluster." will be only "Press Ctrl+c to exit."
+
+If user executed `odo dev --cleanup=false` and then run this command again. The first line of the output should display warning: "Reusing already existing resources".
+
+
 ##### When there is no devfile in the current directory yet
 
-#### Interactive mode
-#### Flags
-#### Command behavior and error states
+When no flags provided, starts in interactive mode to guide user through the devfile selection.
+When some flags provided it errors out: "No devfile.yaml in the current directory. Use `odo create component` to get devfile.yaml for your application first."
+
+##### When devfile exists in the current directory
+
+Deploy application in inner loop mode using the information form `devfile.yaml` in the current directory. 
+
 
 ### `odo list`
 
 Listing "stuff" created by odo.
 
 #### `odo list components`
-list devfile components deployed to the cluster
+list devfile components deployed to the cluster in the current namespace.
 
 
 #### Flags
-#### Command behavior and error states
+- `--namespace` - list components from the given namespace instead of current namespace.
+- `--path` - find and list all components that are in a given path or in its subdirectories.
 
-#### `odo list services`
+##### exmaple
+```
+$ odo list
+Components in the "mynamspace" namespace:
 
-list services defined in local devfile and in cluster
+  NAME            APPLICATION    TYPE         MANAGED BY ODO   RUNNING IN
+* frontend        myapp          nodejs       Yes              Dev,Deploy
+  backend         myapp          springboot   Yes              Deploy
+  created-by-odc  asdf           python       No               Unknown
+```
+
+```
+$ odo list --path /home/user/my-components/
+Components present in the /home/user/my-components/ path
+
+  NAME            APPLICATION    TYPE         MANAGED BY ODO   RUNNING IN  PATH
+  frontend        myapp          nodejs       Yes              Dev         frontend
+  backend         myapp          springboot   Yes              Deploy      backend
+  backend         myapp          springboot   Yes              None        asdf
+
+```
+
+- row/component marked with `*` at the begging of the line is the one that is also in the current directory.
+- `TYPE` corresponds to the `langauge` field in `devfile.yaml` tools, this should also correspond to `odo.dev/project-type` label.
+- `RUNNING IN` indicates in what modes the component is running. `Dev` means the component is running in development mode (`odo dev`). `Deploy` indicates that the component is running in deploy mode (`odo deploy`), `None` means that the component is currently not running on cluster. `Unknown` indicates that odo can't detect in what mode is component running. `Unknown` will also be used for compoennt that are running on the cluster but are not managed by odo.
+- `PATH` column is displayed only if the command was executed with `--path` flag. It shows the path in which the component "lives". This is relative path to a given `--path`.
+
+
+
+#### `odo list namespaces`
+Lists all namespaces that user has access to.
+This is the same as `kubectl get namespace` or `oc projects`
+The output shoudl indicate the active namespace.
+
+##### flags
+- `-o json` Output information in json format
+
+
 #### `odo list endpoints`
+list endpoints defined in local devfile and in cluster
 
- list endpoints defined in local devfile and in cluster
 #### `odo list bindings`
+Will be implemented in v3.0.0-alpha2
 
 list bindings defined in local devfile and in cluster
 
+#### `odo list services`
+Will be implemented in v3.0.0-alpha2
+
+list services defined in local devfile and in cluster
 
 
 ### `odo preference`
@@ -415,10 +479,12 @@ mostly as it is in v2
 ### `odo create`
 
 #### `odo create binding`
+Will be implemented in v3.0.0-alpha2
 
 Generate new ServiceBinding. Based on the devfile existence save it to the devfile or just save it into the yaml file.
 
 #### `odo create service`
+Will be implemented in v3.0.0-alpha2
 
 Generate custom resource for operator backed service. Based on the devfile existence save it to the devfile or just save it into the yaml file.
 
@@ -493,22 +559,15 @@ Based on the information provided by user download devfile.yaml and place it int
 ### `odo delete`
 
 #### `odo delete binding`
+Will be implemented in v3.0.0-alpha2
 
 #### `odo delete service`
+Will be implemented in v3.0.0-alpha2
 
 #### `odo delete endpoint`
 
 #### `odo delete component`
 
-### `odo list`
-
-#### `odo list binding`
-
-#### `odo list service`
-
-#### `odo list endpoint`
-
-#### `odo list component`
 
 ### `odo app`
 TODO
