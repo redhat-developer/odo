@@ -60,6 +60,10 @@ mockgen -source=pkg/odo/cli/init/asker/interface.go \
     -package asker \
     -destination pkg/odo/cli/init/asker/mock.go
 
-mockgen -source=pkg/odo/cli/init/registry/interface.go \
+mockgen -source=pkg/init/interface.go \
+    -package init \
+    -destination pkg/init/mock.go
+
+mockgen -source=pkg/init/registry/interface.go \
     -package registry \
-    -destination pkg/odo/cli/init/registry/mock.go
+    -destination pkg/init/registry/mock.go

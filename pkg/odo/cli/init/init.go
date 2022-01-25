@@ -2,31 +2,26 @@ package init
 
 import (
 	"fmt"
-	"net/url"
 	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	_init "github.com/redhat-developer/odo/pkg/init"
+	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/registry"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/segment"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/kubectl/pkg/util/templates"
 )
@@ -47,8 +42,8 @@ type InitOptions struct {
 	fsys filesystem.Filesystem
 
 	// Clients
+	initClient       _init.Client
 	preferenceClient preference.Client
-	registryClient   registry.Client
 
 	// the parameters needed to run the init procedure
 	params.InitParams
@@ -58,12 +53,12 @@ type InitOptions struct {
 }
 
 // NewInitOptions creates a new InitOptions instance
-func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem, prefClient preference.Client, registryClient registry.Client) *InitOptions {
+func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem, initClient _init.Client, prefClient preference.Client) *InitOptions {
 	return &InitOptions{
 		backends:         backends,
 		fsys:             fsys,
+		initClient:       initClient,
 		preferenceClient: prefClient,
-		registryClient:   registryClient,
 	}
 }
 
@@ -139,9 +134,9 @@ func (o *InitOptions) Run() (err error) {
 
 	destDevfile := filepath.Join(o.contextDir, "devfile.yaml")
 	if o.InitParams.DevfilePath != "" {
-		err = o.downloadDirect(o.InitParams.DevfilePath, destDevfile)
+		err = o.initClient.DownloadDirect(o.InitParams.DevfilePath, destDevfile)
 	} else {
-		err = o.downloadFromRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.contextDir)
+		err = o.initClient.DownloadFromRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.contextDir)
 	}
 	if err != nil {
 		return fmt.Errorf("Unable to download devfile: %w", err)
@@ -155,7 +150,7 @@ func (o *InitOptions) Run() (err error) {
 
 	if o.InitParams.Starter != "" {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.downloadStarterProject(devfileObj, o.InitParams.Starter, o.contextDir)
+		err = o.initClient.DownloadStarterProject(devfileObj, o.InitParams.Starter, o.contextDir)
 		if err != nil {
 			return fmt.Errorf("unable to download starter project %q: %w", o.InitParams.Starter, err)
 		}
@@ -187,116 +182,11 @@ To deploy your component to a cluster use "odo deploy".`, o.InitParams.Name)
 	return nil
 }
 
-// downloadDirect downloads a devfile at the provided URL and saves it in dest
-func (o *InitOptions) downloadDirect(URL string, dest string) error {
-	parsedURL, err := url.Parse(URL)
-	if err != nil {
-		return err
-	}
-	if strings.HasPrefix(parsedURL.Scheme, "http") {
-		downloadSpinner := log.Spinnerf("Downloading devfile from %q", URL)
-		defer downloadSpinner.End(false)
-		params := util.HTTPRequestParams{
-			URL: URL,
-		}
-		devfileData, err := o.registryClient.DownloadFileInMemory(params)
-		if err != nil {
-			return err
-		}
-		err = o.fsys.WriteFile(dest, devfileData, 0644)
-		if err != nil {
-			return err
-		}
-		downloadSpinner.End(true)
-	} else {
-		downloadSpinner := log.Spinnerf("Copying devfile from %q", URL)
-		defer downloadSpinner.End(false)
-		content, err := o.fsys.ReadFile(URL)
-		if err != nil {
-			return err
-		}
-		info, err := o.fsys.Stat(URL)
-		if err != nil {
-			return err
-		}
-		err = o.fsys.WriteFile(dest, content, info.Mode().Perm())
-		if err != nil {
-			return err
-		}
-		downloadSpinner.End(true)
-	}
-
-	return nil
-}
-
-// downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
-// If registryName is empty, will try to download the devfile from the list of registries in preferences
-func (o *InitOptions) downloadFromRegistry(registryName string, devfile string, dest string) error {
-	var downloadSpinner *log.Status
-	var forceRegistry bool
-	if registryName == "" {
-		downloadSpinner = log.Spinnerf("Downloading devfile %q", devfile)
-		forceRegistry = false
-	} else {
-		downloadSpinner = log.Spinnerf("Downloading devfile %q from registry %q", devfile, registryName)
-		forceRegistry = true
-	}
-	defer downloadSpinner.End(false)
-
-	registries := o.preferenceClient.RegistryList()
-	var reg preference.Registry
-	for _, reg = range *registries {
-		if forceRegistry && reg.Name == registryName {
-			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
-			if err != nil {
-				return err
-			}
-			downloadSpinner.End(true)
-			return nil
-		} else if !forceRegistry {
-			err := o.registryClient.PullStackFromRegistry(reg.URL, devfile, dest, segment.GetRegistryOptions())
-			if err != nil {
-				continue
-			}
-			downloadSpinner.End(true)
-			return nil
-		}
-	}
-
-	return fmt.Errorf("unable to find the registry with name %q", devfile)
-}
-
-// downloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
-// WARNING: This will first remove all the content of dest.
-func (o *InitOptions) downloadStarterProject(devfile parser.DevfileObj, project string, dest string) error {
-	projects, err := devfile.Data.GetStarterProjects(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-	var prj v1alpha2.StarterProject
-	var found bool
-	for _, prj = range projects {
-		if prj.Name == project {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("starter project %q does not exist in devfile", project)
-	}
-	downloadSpinner := log.Spinnerf("Downloading starter project %q", prj.Name)
-	err = o.registryClient.DownloadStarterProject(&prj, "", dest, false)
-	if err != nil {
-		downloadSpinner.End(false)
-		return err
-	}
-	downloadSpinner.End(true)
-	return nil
-}
-
 // NewCmdInit implements the odo command
 func NewCmdInit(name, fullName string) *cobra.Command {
+	fsys := filesystem.DefaultFs{}
 	prefClient, err := preference.NewClient()
+	registryClient := registry.NewRegistryClient()
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
@@ -305,8 +195,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		&params.FlagsBuilder{},
 		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)),
 	}
-
-	o := NewInitOptions(backends, filesystem.DefaultFs{}, prefClient, registry.NewRegistryClient())
+	o := NewInitOptions(backends, fsys, _init.NewInitClient(fsys, prefClient, registryClient), prefClient)
 	initCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Init bootstraps a new project",
