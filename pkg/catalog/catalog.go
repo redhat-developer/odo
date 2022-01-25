@@ -26,12 +26,14 @@ import (
 )
 
 type CatalogClient struct {
-	fsys filesystem.Filesystem
+	fsys             filesystem.Filesystem
+	preferenceClient preference.Client
 }
 
-func NewCatalogClient(fsys filesystem.Filesystem) *CatalogClient {
+func NewCatalogClient(fsys filesystem.Filesystem, preferenceClient preference.Client) *CatalogClient {
 	return &CatalogClient{
-		fsys: fsys,
+		fsys:             fsys,
+		preferenceClient: preferenceClient,
 	}
 }
 
@@ -40,14 +42,9 @@ func NewCatalogClient(fsys filesystem.Filesystem) *CatalogClient {
 func (o *CatalogClient) GetDevfileRegistries(registryName string) ([]Registry, error) {
 	var devfileRegistries []Registry
 
-	cfg, err := preference.NewClient()
-	if err != nil {
-		return nil, err
-	}
-
 	hasName := len(registryName) != 0
-	if cfg.RegistryList() != nil {
-		registryList := *cfg.RegistryList()
+	if o.preferenceClient.RegistryList() != nil {
+		registryList := *o.preferenceClient.RegistryList()
 		// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
 		for i := len(registryList) - 1; i >= 0; i-- {
 			registry := registryList[i]
@@ -104,7 +101,7 @@ func (o *CatalogClient) ListDevfileComponents(registryName string) (DevfileCompo
 		registry := reg                 // Needed to prevent the lambda from capturing the value
 		registryPriority := regPriority // Needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			registryDevfiles, err := getRegistryDevfiles(registry)
+			registryDevfiles, err := getRegistryDevfiles(o.preferenceClient, registry)
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo registry update --help`)\n", registry.Name, err)
 				return
@@ -213,7 +210,7 @@ func convertURL(URL string) (string, error) {
 const indexPath = "/devfiles/index.json"
 
 // getRegistryDevfiles retrieves the registry's index devfile entries
-func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
+func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) ([]DevfileComponentType, error) {
 	if !strings.Contains(registry.URL, "github") {
 		// OCI-based registry
 		devfileIndex, err := registryLibrary.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
@@ -233,13 +230,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		URL: indexLink,
 	}
 
-	// TODO(feloy) Get from DI
-	cfg, err := preference.NewClient()
-	if err != nil {
-		return nil, err
-	}
-
-	secure := registryUtil.IsSecure(cfg, registry.Name)
+	secure := registryUtil.IsSecure(preferenceClient, registry.Name)
 	if secure {
 		token, e := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 		if e != nil {
@@ -248,7 +239,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 		request.Token = token
 	}
 
-	jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+	jsonBytes, err := util.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
 	}
@@ -260,7 +251,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 			log.Warning("Error while cleaning up cache dir.")
 		}
 		// we try once again
-		jsonBytes, err := util.HTTPGetRequest(request, cfg.GetRegistryCacheTime())
+		jsonBytes, err := util.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
 		}

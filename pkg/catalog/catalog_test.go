@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -72,7 +73,8 @@ OdoSettings:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			catClient := NewCatalogClient(filesystem.NewFakeFs())
+			prefClient, _ := preference.NewClient()
+			catClient := NewCatalogClient(filesystem.NewFakeFs(), prefClient)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
 				t.Errorf("Error message is %v", err)
@@ -146,7 +148,9 @@ func TestGetRegistryDevfiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getRegistryDevfiles(tt.registry)
+			ctrl := gomock.NewController(t)
+			prefClient := preference.NewMockClient(ctrl)
+			got, err := getRegistryDevfiles(prefClient, tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)

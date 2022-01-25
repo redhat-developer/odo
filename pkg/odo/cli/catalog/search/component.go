@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +70,11 @@ func (o *SearchComponentOptions) Run() error {
 
 // NewCmdCatalogSearchComponent implements the odo catalog search component command
 func NewCmdCatalogSearchComponent(name, fullName string) *cobra.Command {
-	o := NewSearchComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewSearchComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient))
 	return &cobra.Command{
 		Use:   name,
 		Short: "Search component type in catalog",

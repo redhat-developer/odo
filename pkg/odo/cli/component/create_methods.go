@@ -13,6 +13,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/pkg/errors"
@@ -262,7 +263,12 @@ func conflictCheckForDevfileFlag(args []string, registryName string) error {
 // if the registryName is "", then it returns devfiles of all the available registries
 func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
 	// TODO(feloy) Get from DI
-	catalogClient := catalog.NewCatalogClient(filesystem.DefaultFs{})
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	catalogClient := catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)
+
 	// Validate if the component type is available
 	if registryName != "" {
 		registryExistSpinner := log.Spinnerf("Checking if the registry %q exists", registryName)

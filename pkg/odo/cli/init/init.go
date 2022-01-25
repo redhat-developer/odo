@@ -296,13 +296,14 @@ func (o *InitOptions) downloadStarterProject(devfile parser.DevfileObj, project 
 
 // NewCmdInit implements the odo command
 func NewCmdInit(name, fullName string) *cobra.Command {
-	backends := []params.ParamsBuilder{
-		&params.FlagsBuilder{},
-		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{})),
-	}
 	prefClient, err := preference.NewClient()
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+
+	backends := []params.ParamsBuilder{
+		&params.FlagsBuilder{},
+		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)),
 	}
 
 	o := NewInitOptions(backends, filesystem.DefaultFs{}, prefClient, registry.NewRegistryClient())

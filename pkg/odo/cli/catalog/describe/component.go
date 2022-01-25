@@ -18,6 +18,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -150,7 +152,11 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 // NewCmdCatalogDescribeComponent implements the odo catalog describe component command
 func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
-	o := NewDescribeComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}))
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewDescribeComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient))
 	command := &cobra.Command{
 		Use:         name,
 		Short:       "Describe a component",

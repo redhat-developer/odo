@@ -4,6 +4,7 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/posener/complete"
@@ -11,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -98,7 +100,11 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	completions = make([]string, 0)
 	comps := &completions
 
-	components, _ := catalog.NewCatalogClient(filesystem.DefaultFs{}).ListDevfileComponents("")
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	components, _ := catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient).ListDevfileComponents("")
 	for _, devfile := range components.Items {
 		if args.commands[devfile.Name] {
 			return nil
