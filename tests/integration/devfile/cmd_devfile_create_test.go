@@ -14,7 +14,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	devfilelib "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -423,14 +422,10 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	When("a devfile is provided which has a starter that has its own devfile", func() {
 		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml"), filepath.Join(commonVar.Context, "..", "devfile.yaml"))
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", filepath.Join(commonVar.Context, "..", "devfile.yaml")).ShouldPass()
+			examplesPath := helper.GetExamplePath()
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", filepath.Join(examplesPath, "source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml")).ShouldPass()
 		})
 		It("should pass and keep the devfile in starter", func() {
-			devfileobj, err := devfilelib.ParseAndValidateFromFile(filepath.Join(commonVar.Context, "devfile.yaml"))
-			Expect(err).To(Not(HaveOccurred()))
-			Expect(devfileobj.Data.GetSchemaVersion()).To(Equal("2.2.0"))
-
 			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			Expect(err).To(Not(HaveOccurred()))
 			helper.MatchAllInOutput(devfileContent, []string{"outerloop-deploy", "deployk8s", "outerloop-build"})
