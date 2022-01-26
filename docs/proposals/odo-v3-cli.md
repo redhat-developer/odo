@@ -32,38 +32,50 @@
       - [Command behavior and error states](#command-behavior-and-error-states-2)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-1)
         - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-1)
+      - [Interactive mode](#interactive-mode-3)
+      - [Flags](#flags-3)
+      - [Command behavior and error states](#command-behavior-and-error-states-3)
+      - [Interactive mode](#interactive-mode-4)
+      - [Flags](#flags-4)
+      - [Command behavior and error states](#command-behavior-and-error-states-4)
     - [`odo list`](#odo-list)
       - [`odo list components`](#odo-list-components)
-      - [Flags](#flags-3)
+      - [Flags](#flags-5)
         - [exmaple](#exmaple)
       - [`odo list namespaces`](#odo-list-namespaces)
-        - [flags](#flags-4)
+        - [flags](#flags-6)
       - [`odo list endpoints`](#odo-list-endpoints)
+        - [flags](#flags-7)
       - [`odo list bindings`](#odo-list-bindings)
       - [`odo list services`](#odo-list-services)
     - [`odo preference`](#odo-preference)
-    - [`odo project`](#odo-project)
     - [`odo registry`](#odo-registry)
     - [`odo describe`](#odo-describe)
+      - [`odo describe component`](#odo-describe-component)
+        - [example](#example-1)
+      - [Flags](#flags-8)
+      - [`odo describe endpoint`](#odo-describe-endpoint)
+      - [`odo describe service`](#odo-describe-service)
+      - [`odo describe binding`](#odo-describe-binding)
     - [`odo exec`](#odo-exec)
     - [`odo status`](#odo-status)
     - [`odo build-images`](#odo-build-images)
-  - [Commands that will be added in v3.0.0-alpha2](#commands-that-will-be-added-in-v300-alpha2)
     - [`odo create`](#odo-create)
       - [`odo create binding`](#odo-create-binding)
       - [`odo create service`](#odo-create-service)
       - [`odo create endpoint`](#odo-create-endpoint)
     - [`odo create component`](#odo-create-component)
-      - [Interactive mode](#interactive-mode-3)
-      - [Flags](#flags-5)
-      - [Command behavior and error states](#command-behavior-and-error-states-3)
+      - [Interactive mode](#interactive-mode-5)
+      - [Flags](#flags-9)
+      - [Command behavior and error states](#command-behavior-and-error-states-5)
         - [When devfile exists in the current directory](#when-devfile-exists-in-the-current-directory-2)
         - [When there is no devfile in the current directory yet](#when-there-is-no-devfile-in-the-current-directory-yet-2)
     - [`odo delete`](#odo-delete)
+      - [`odo delete component`](#odo-delete-component)
+        - [flags](#flags-10)
+      - [`odo delete endpoint`](#odo-delete-endpoint)
       - [`odo delete binding`](#odo-delete-binding)
       - [`odo delete service`](#odo-delete-service)
-      - [`odo delete endpoint`](#odo-delete-endpoint)
-      - [`odo delete component`](#odo-delete-component)
     - [`odo app`](#odo-app)
     - [`odo catalog`](#odo-catalog)
     - [`odo config`](#odo-config)
@@ -379,6 +391,14 @@ When some flags provided it errors out: "No devfile.yaml in the current director
 Deploy application in inner loop mode using the information form `devfile.yaml` in the current directory. 
 
 
+#### Interactive mode
+#### Flags
+#### Command behavior and error states
+
+#### Interactive mode
+#### Flags
+#### Command behavior and error states
+
 ### `odo list`
 
 Listing "stuff" created by odo.
@@ -415,7 +435,7 @@ Components present in the /home/user/my-components/ path
 
 - row/component marked with `*` at the begging of the line is the one that is also in the current directory.
 - `TYPE` corresponds to the `langauge` field in `devfile.yaml` tools, this should also correspond to `odo.dev/project-type` label.
-- `RUNNING IN` indicates in what modes the component is running. `Dev` means the component is running in development mode (`odo dev`). `Deploy` indicates that the component is running in deploy mode (`odo deploy`), `None` means that the component is currently not running on cluster. `Unknown` indicates that odo can't detect in what mode is component running. `Unknown` will also be used for compoennt that are running on the cluster but are not managed by odo.
+- `RUNNING IN` indicates in what modes the component is running. `Dev` means the component is running in development mode (`odo dev`). `Deploy` indicates that the component is running in deploy mode (`odo deploy`), `None` means that the component is currently not running on cluster. `Unknown` indicates that odo can't detect in what mode is component running. `Unknown` will also be used for component that are running on the cluster but are not managed by odo.
 - `PATH` column is displayed only if the command was executed with `--path` flag. It shows the path in which the component "lives". This is relative path to a given `--path`.
 
 
@@ -423,14 +443,29 @@ Components present in the /home/user/my-components/ path
 #### `odo list namespaces`
 Lists all namespaces that user has access to.
 This is the same as `kubectl get namespace` or `oc projects`
-The output shoudl indicate the active namespace.
+The output should indicate the active namespace.
 
 ##### flags
 - `-o json` Output information in json format
 
 
 #### `odo list endpoints`
-list endpoints defined in local devfile and in cluster
+List endpoints defined in local devfile and in cluster
+
+```
+$ odo list endpoints
+Found the following URLs for component devfile-nodejs-deploy
+NAME            URL                       PORT     SECURE     KIND
+http-3000       <provided by cluster>     3000     false      route
+```
+
+The output is similar to v2 `odo url list` output. The only difference is that odo does't show `STATE` anymore.
+The reason is that `endpoints` are mainly used in inner loop style of deployment and with changes introduced in `odo dev` command (resources are deleted automaticaly when command is not running) the `STATE` doesn't make much sense anymore
+
+
+##### flags
+- `-o json` Output information in json format
+
 
 #### `odo list bindings`
 Will be implemented in v3.0.0-alpha2
@@ -446,6 +481,9 @@ list services defined in local devfile and in cluster
 ### `odo preference`
 
 Configures odo behavior like timeouts.
+
+The behavior is mostly the same as in v2. We can just remove some fields from the preference.
+
 - UpdateNotification  - keep
 - NamePrefix          - remove
 - Timeout             - add explanations
@@ -456,14 +494,61 @@ Configures odo behavior like timeouts.
 
 
 
-### `odo project`
-mostly as it is
-
 ### `odo registry`
 mostly as it is just drop support "github" registry
 
 ### `odo describe`
-TODO
+
+#### `odo describe component`
+
+Show detailed information about component.
+
+By default, it shows detail about component in the current directory.
+
+Alternatively users can use flags (`--component`, `--application`, `--namespace`) to specify existing component on the cluster and show information about it.
+
+To describe component from cluster the `--component` and `--application` flags are always required. `--namespace` is optional and if not specified it will use the current namespace as defined in `KUBECONFIG`.
+
+##### example
+```
+$ odo describe component
+
+Component Name: devfile-nodejs-deploy
+Type: nodejs
+Environment Variables:
+ · PROJECTS_ROOT=/projects
+ · PROJECT_SOURCE=/projects
+URLs:
+ · URL named http-3000 will be exposed via 3000
+Linked Services:
+ · PostgresCluster/hippo
+```
+
+
+#### Flags
+
+- `-o` (string) output information in a specified format (json).
+- `--component` name of the existing component on the cluster
+- `--application` name of the application on the clsuter
+- `--namespace` name of the cluster namespace.
+
+
+
+#### `odo describe endpoint`
+Will be implemented in v3.0.0-alpha2
+
+
+#### `odo describe service`
+Will be implemented in v3.0.0-alpha2
+
+Show details about running service
+
+#### `odo describe binding`
+Will be implemented in v3.0.0-alpha2
+
+show details about existing binding
+
+
 
 ### `odo exec`
 mostly as it is
@@ -474,7 +559,6 @@ mostly as it is
 ### `odo build-images`
 mostly as it is in v2
 
-## Commands that will be added in v3.0.0-alpha2
 
 ### `odo create`
 
@@ -495,10 +579,12 @@ Create new endpoint (url) for. Saves the endpoint information to the `devfile.ya
 
 ### `odo create component`
 
+Will be implemented in v3.0.0-alpha2
+
+
 Create new Devfile component in the current directory.
 Some users might prefer creating components separately before running `odo dev` or `odo deploy`.
 But this command is mainly intended to be used by IDE plugins or scripts.
-
 
 #### Interactive mode
 ```
@@ -558,16 +644,33 @@ Based on the information provided by user download devfile.yaml and place it int
 
 ### `odo delete`
 
+#### `odo delete component`
+Delete component.
+By default it deletes component from cluster (deletes all resources from both `odo dev` and `odo deploy` that were crated on the cluster that belong to the component) that in the current directory.
+
+Similarly to `odo describe component` this commands works in two modes.
+Without `--component` `--application` or `--namespace` it works with the component in the current directory.
+If user defines `--component` and `--application` than it works with the component that should exist on the cluster, and it should not touch local component even if the current directory is component directory.
+`--namespace` flag is optional, but it makes sense only together with `--component` and `--application`, if not used than it uses the current namespace as defined in `KUBECONFIG`.
+
+
+##### flags
+- `-o json` - show output in json format
+- `-f` `--force` - force deletion, don't ask for confirmation
+- `--component` - name of the existing component on the cluster
+- `--application` - name of the application that the component belongs to
+- `--namespace` - namespace
+
+
+
+
+#### `odo delete endpoint`
+
 #### `odo delete binding`
 Will be implemented in v3.0.0-alpha2
 
 #### `odo delete service`
 Will be implemented in v3.0.0-alpha2
-
-#### `odo delete endpoint`
-
-#### `odo delete component`
-
 
 ### `odo app`
 TODO
