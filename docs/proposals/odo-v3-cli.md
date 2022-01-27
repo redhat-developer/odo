@@ -47,10 +47,9 @@ There are also some commands that are there since the original odo v1 and were o
 - **[`odo logout`](odo-v3-cli/odo-login-logout.md)** - no changes required
 - **[`odo init`](odo-v3-cli/odo-init.md)** - new command
 - **[`odo dev`](odo-v3-cli/odo-dev.md)** - new command based on v2 `odo watch`
-- **[`odo registry`](odo-v3-cli/odo-registry.md)** - mostly as it is, just cleanup
 - **[`odo preference`](odo-v3-cli/odo-preference.md)** - mostly as it is, just cleanup
-- **[`odo config`](odo-v3-cli/odo-config.md)** -  needs to be reworked
-- **[`odo build-images`](odo-v3-cli/odo-build-images.md)** - no changes required
+- **[`odo config`](odo-v3-cli/odo-config.md)** - TODO needs to be reworked
+- **`odo build-images`** - no changes required
 - **`odo list`**
   - **[`component`](odo-v3-cli/odo-list-component.md)** - similar as v2 `odo list`, but flags and output needs to be reworked
   - **[`endpoint`](odo-v3-cli/odo-list-endpoint.md)** - similar as v2 `odo url list`, but flags and output needs to be reworked
@@ -59,12 +58,12 @@ There are also some commands that are there since the original odo v1 and were o
   - `service` - similar as v2 `odo service list`, but flags and output needs to be reworked
 - **`odo create`**
   - **[`component`](odo-v3-cli/odo-create-component.md)** - similar as v2 `odo create`, but flags and output needs to be reworked
-  - **[`endpoint`](odo-v3-cli/odo-create-endpoint.md)** - similar as v2 `odo url create`, but flags and output needs to be reworked
+  - **[`endpoint`](odo-v3-cli/odo-create-endpoint.md)** - TODO similar as v2 `odo url create`, but flags and output needs to be reworked
   - `binding` - similar as v2 `odo link`, but flags and output needs to be reworked
   - `service` - similar as v2 `odo service create`, but flags and output needs to be reworked
 - **`odo delete`**
   - **[`component`](odo-v3-cli/odo-delete-component.md)** - similar as v2 `odo delete`, but flags and output needs to be reworked
-  - **[`endpoint`](odo-v3-cli/odo-delete-endpoint.md)** - similar as v2 `odo url delete`, but flags and output needs to be reworked
+  - **[`endpoint`](odo-v3-cli/odo-delete-endpoint.md)** - TODO similar as v2 `odo url delete`, but flags and output needs to be reworked
   - `binding`  - similar as v2 `odo unlink`, but flags and output needs to be reworked
   - `service` - similar as v2 `odo service delete`, but flags and output needs to be reworked
 - odo describe
@@ -72,7 +71,7 @@ There are also some commands that are there since the original odo v1 and were o
   - `endpoint` - new command. Shows detailed information about existing endpoint.
   - `binding` - new command. Shows detailed information about existing binding
   - `service` - new command.  Shows detailed information about existing binding
-- **`odo catalog`** - command will the same as in v2
+- **`odo catalog`** - command will be the same as in v2
   - **`list`**
     - **`components`**
     - **`services`**
