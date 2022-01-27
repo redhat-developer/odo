@@ -38,11 +38,14 @@ var (
 	# Create a URL for the current component with a specific port
 	%[1]s --port 8080
 
+	# Create a URL of ingress kind 
+	%[1]s --port 8080 --ingress
+
 	# Create a URL with a specific name and port
 	%[1]s example --port 8080
 
-	# Create a URL of ingress kind for the current component with a host
-	%[1]s --port 8080 --host example.com --ingress
+	# Create a URL with a subdomain and hostname for example.domain.com
+	%[1]s example --port 8080 --host domain.com
 
 	# Create a secure URL for the current component
 	%[1]s --port 8080 --secure
@@ -216,7 +219,12 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	}
 	urlCreateCmd.Flags().IntVarP(&o.portFlag, "port", "", -1, "Port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().StringVar(&o.tlsSecretFlag, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
-	urlCreateCmd.Flags().StringVarP(&o.hostFlag, "host", "", "", "Cluster IP for this URL")
+	urlCreateCmd.Flags().StringVarP(&o.hostFlag, "host", "", "", "Cluster IP for this URL (alias \"--hostname\")")
+
+	// Alias for `--host` in case someone where to enter --hostname by mistake, and then mark it as hidden.
+	urlCreateCmd.Flags().StringVarP(&o.hostFlag, "hostname", "", "", "Alias for --host")
+	_ = urlCreateCmd.Flags().MarkHidden("hostname")
+
 	urlCreateCmd.Flags().BoolVar(&o.ingressFlag, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
 	urlCreateCmd.Flags().BoolVarP(&o.secureFlag, "secure", "", false, "Create a secure HTTPS URL")
 	urlCreateCmd.Flags().StringVarP(&o.pathFlag, "path", "", "", "path for this URL")
