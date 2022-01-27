@@ -223,7 +223,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 
 	// Alias for `--host` in case someone where to enter --hostname by mistake, and then mark it as hidden.
 	urlCreateCmd.Flags().StringVarP(&o.hostFlag, "hostname", "", "", "Alias for --host")
-	urlCreateCmd.Flags().MarkHidden("hostname")
+	_ = urlCreateCmd.Flags().MarkHidden("hostname")
 
 	urlCreateCmd.Flags().BoolVar(&o.ingressFlag, "ingress", false, "Create an Ingress instead of Route on OpenShift clusters")
 	urlCreateCmd.Flags().BoolVarP(&o.secureFlag, "secure", "", false, "Create a secure HTTPS URL")
