@@ -15,6 +15,10 @@ import (
 
 type KubernetesClient struct{}
 
+func NewKubernetesClient() *KubernetesClient {
+	return &KubernetesClient{}
+}
+
 // Login takes care of authentication part and returns error, if any
 func (o KubernetesClient) Login(server, username, password, token, caAuth string, skipTLS bool) error {
 	// Here we are grabbing the stdout output and then

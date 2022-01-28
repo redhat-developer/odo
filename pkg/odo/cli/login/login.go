@@ -84,7 +84,7 @@ func (o *LoginOptions) Run() (err error) {
 
 // NewCmdLogin implements the odo command
 func NewCmdLogin(name, fullName string) *cobra.Command {
-	loginClient := auth.KubernetesClient{}
+	loginClient := auth.NewKubernetesClient()
 	o := NewLoginOptions(loginClient)
 
 	loginCmd := &cobra.Command{
