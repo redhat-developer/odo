@@ -38,3 +38,7 @@ mockgen -source=pkg/project/project.go \
 mockgen -source=pkg/preference/preference.go \
     -package preference \
     -destination pkg/preference/mock.go
+
+mockgen -source=pkg/auth/interface.go \
+    -package auth \
+    -destination pkg/auth/mock.go

@@ -13,9 +13,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Login takes of authentication part and returns error if there any
-func Login(server, username, password, token, caAuth string, skipTLS bool) error {
+type KubernetesClient struct{}
 
+func NewKubernetesClient() *KubernetesClient {
+	return &KubernetesClient{}
+}
+
+// Login takes care of authentication part and returns error, if any
+func (o KubernetesClient) Login(server, username, password, token, caAuth string, skipTLS bool) error {
 	// Here we are grabbing the stdout output and then
 	// throwing it through "copyAndFilter" in order to get
 	// a correctly filtered result from `odo login`
@@ -45,9 +50,9 @@ func Login(server, username, password, token, caAuth string, skipTLS bool) error
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	kubeconfig, _ := kubeConfig.RawConfig()
+	rawKubeConfig, _ := kubeConfig.RawConfig()
 
-	a.StartingKubeConfig = &kubeconfig
+	a.StartingKubeConfig = &rawKubeConfig
 
 	// if server URL is not given as argument, we will look for current context from kubeconfig file
 	if len(a.Server) == 0 {
