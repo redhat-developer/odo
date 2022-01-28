@@ -55,7 +55,7 @@ There are also some commands that are there since the original odo v1 and were o
 mostly as it is, just cleanup
 - **[`odo config`](odo-v3-cli/odo-config.md)** - TODO needs to be reworked
 - **`odo build-images`** - no changes required
-- **`odo list`**
+- **`odo list`** - list everything. It combines all list outputs from all the subcommands, expect namespace.
   - **[`component`](odo-v3-cli/odo-list-component.md)** - similar as v2 `odo list`, but flags and output needs to be reworked
   - **[`endpoint`](odo-v3-cli/odo-list-endpoint.md)** - similar as v2 `odo url list`, but flags and output needs to be reworked
   - **[`namespace`](odo-v3-cli/odo-list-namespace.md)** -  similar as v2 `odo project list`

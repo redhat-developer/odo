@@ -18,7 +18,7 @@ Command should use registries as configured in `odo registry` command. If there 
 
 - `--name` (string) - name of the component (required)
 - `--devfile` (string) - name of the devfile in devfile registry (required if `--devfile-path` is not defined)
-- `--devfile-registry` - (string) name of the devfile registry (as configured in `odo registry`). It can be used in combination with `--devfile`, but not with `--devfile-path` (optional)
+- `--registry` - (string) name of the devfile registry (as configured in `odo registry`). It can be used in combination with `--devfile`, but not with `--devfile-path` (optional)
 - `--starter`  (string) - name of the  starter project (optional)
 - `--devfile-path` (string) - path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL (required if `--devfile` is not defined)
 - `-o` (string) output information in a specified format (json).
