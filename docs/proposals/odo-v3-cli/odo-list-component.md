@@ -9,23 +9,23 @@ list devfile components deployed to the cluster in the current namespace.
 
 ## example
 ```
-$ odo list
+$ odo list components
 Components in the "mynamspace" namespace:
 
-  NAME            APPLICATION    TYPE         MANAGED BY ODO   RUNNING IN
-* frontend        myapp          nodejs       Yes              Dev,Deploy
-  backend         myapp          springboot   Yes              Deploy
-  created-by-odc  asdf           python       No               Unknown
+  NAME            APPLICATION    TYPE         MANAGED BY   RUNNING IN
+* frontend        myapp          nodejs       odo              Dev,Deploy
+  backend         myapp          springboot   odo              Deploy
+  created-by-odc  asdf           python       Unknown          Unknown
 ```
 
 ```
-$ odo list --path /home/user/my-components/
+$ odo list components --path /home/user/my-components/
 Components present in the /home/user/my-components/ path
 
-  NAME            APPLICATION    TYPE         MANAGED BY ODO   RUNNING IN  PATH
-  frontend        myapp          nodejs       Yes              Dev         frontend
-  backend         myapp          springboot   Yes              Deploy      backend
-  backend         myapp          springboot   Yes              None        asdf
+  NAME            APPLICATION    TYPE         MANAGED B   RUNNING IN  PATH
+  frontend        myapp          nodejs       odo         Dev         frontend
+  backend         myapp          springboot   odo         Deploy      backend
+  backend         myapp          springboot   odo         None        asdf
 
 ```
 

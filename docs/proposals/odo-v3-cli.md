@@ -28,7 +28,7 @@ There are also some commands that are there since the original odo v1 and were o
 - `odo preference` - mostly as it is, with additional incorporation of  `odo registry`
 - `odo login` - as it is
 - `odo logout` - as it is
-- `odo build-images` - as it is
+- `odo build-images` - replaced with `odo build images`
 - `odo deploy` - with new interactive mode
 - `odo storage` -  removed, we can consider adding it back, but users can still add storage manuals into `devfile.yaml`
 - `odo exec` -  removed. We will need to rework this command later
@@ -53,14 +53,16 @@ There are also some commands that are there since the original odo v1 and were o
 - **[`odo deploy`](odo-v3-cli/odo-deploy.md)** - [#5298](https://github.com/redhat-developer/odo/issues/5298) - mostly as it is in v2, with new interactive mode and flags.
 - **[`odo preference`](odo-v3-cli/odo-preference.md)** -  [#5402](https://github.com/redhat-developer/odo/issues/5402)
 mostly as it is, just cleanup
-- **[`odo config`](odo-v3-cli/odo-config.md)** - TODO needs to be reworked
-- **`odo build-images`** - no changes required
+- [`odo config`](odo-v3-cli/odo-config.md) - TODO needs to be reworked
+- **`odo build`**
+  - **`image`** - the same as v2 `odo build-images`
 - **`odo list`** - list everything. It combines all list outputs from all the subcommands, expect namespace.
   - **[`component`](odo-v3-cli/odo-list-component.md)** - similar as v2 `odo list`, but flags and output needs to be reworked
   - **[`endpoint`](odo-v3-cli/odo-list-endpoint.md)** - similar as v2 `odo url list`, but flags and output needs to be reworked
   - **[`namespace`](odo-v3-cli/odo-list-namespace.md)** -  similar as v2 `odo project list`
   - `binding` - new command
   - `service` - similar as v2 `odo service list`, but flags and output needs to be reworked
+  - **`catalog`** - list all components and services `--type=components,services`  `--filter=java`
 - **`odo create`**
   - **[`component`](odo-v3-cli/odo-create-component.md)** - similar as v2 `odo create`, but flags and output needs to be reworked
   - **[`endpoint`](odo-v3-cli/odo-create-endpoint.md)** - TODO similar as v2 `odo url create`, but flags and output needs to be reworked
@@ -76,16 +78,7 @@ mostly as it is, just cleanup
   - `endpoint` - new command. Shows detailed information about existing endpoint.
   - `binding` - new command. Shows detailed information about existing binding
   - `service` - new command.  Shows detailed information about existing binding
-- **`odo catalog`** - command will be the same as in v2
-  - **`list`**
-    - **`components`**
-    - **`services`**
-  - **`describe`**
-    - **`component`**
-    - **`service`**
-  - **`search`**
-    - **`component`**
-    - **`service`**
+  - **`catalog`** - `--type=components,services`
 - **`odo version`** - as it is in v2
 - **`odo utils`** -  as it is in v2
 
