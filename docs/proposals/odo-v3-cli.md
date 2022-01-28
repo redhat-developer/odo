@@ -34,20 +34,25 @@ There are also some commands that are there since the original odo v1 and were o
 - `odo exec` -  removed. We will need to rework this command later
 
 
+
+
+## odo v3 CLI
+
 ### general rules for odo cli
 
 - Once even a single flag is provided it ruins in non-interactive mode. All required information needs to be provided via flags
 - If command is executed without flags it can enter interactive mode
 - every command should have `-o` flag to specify output format, and every command should support `-o json`
 
-
-## odo v3 CLI structure
+### commands in odo v3
 
 - **[`odo login`](odo-v3-cli/odo-login-logout.md)** - no changes required
 - **[`odo logout`](odo-v3-cli/odo-login-logout.md)** - no changes required
-- **[`odo init`](odo-v3-cli/odo-init.md)** - new command
-- **[`odo dev`](odo-v3-cli/odo-dev.md)** - new command based on v2 `odo watch`
-- **[`odo preference`](odo-v3-cli/odo-preference.md)** - mostly as it is, just cleanup
+- **[`odo init`](odo-v3-cli/odo-init.md)** - [#5297](https://github.com/redhat-developer/odo/issues/5297) new command
+- **[`odo dev`](odo-v3-cli/odo-dev.md)** - [#5299](https://github.com/redhat-developer/odo/issues/5299) new command based on v2 `odo watch`
+- **[`odo deploy`](odo-v3-cli/odo-deploy.md)** - [#5298](https://github.com/redhat-developer/odo/issues/5298) - mostly as it is in v2, with new interactive mode and flags.
+- **[`odo preference`](odo-v3-cli/odo-preference.md)** -  [#5402](https://github.com/redhat-developer/odo/issues/5402)
+mostly as it is, just cleanup
 - **[`odo config`](odo-v3-cli/odo-config.md)** - TODO needs to be reworked
 - **`odo build-images`** - no changes required
 - **`odo list`**
