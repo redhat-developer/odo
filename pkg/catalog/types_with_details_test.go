@@ -215,7 +215,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("TypesWithDetails.GetAtOrderedPosition() got1 = %v, want %v", got, tt.want)
+				t.Errorf("TypesWithDetails.GetAtOrderedPosition() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

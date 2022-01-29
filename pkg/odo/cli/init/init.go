@@ -1,6 +1,7 @@
 package init
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/utils/pointer"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -35,6 +37,9 @@ var initExample = templates.Examples(`
 `)
 
 type InitOptions struct {
+	// CMD context
+	ctx context.Context
+
 	// Backends to build init parameters
 	backends []params.ParamsBuilder
 
@@ -67,6 +72,8 @@ func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem,
 // Complete will return an error immediately if the current working directory is not empty
 func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
+	o.ctx = cmdline.Context()
+
 	o.contextDir, err = o.fsys.Getwd()
 	if err != nil {
 		return err
@@ -96,8 +103,6 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 	if !done {
 		odoutil.LogErrorAndExit(nil, "no backend found to build init parameters. This should not happen")
 	}
-
-	scontext.SetComponentType(cmdline.Context(), o.InitParams.Devfile)
 
 	return nil
 }
@@ -142,11 +147,12 @@ func (o *InitOptions) Run() (err error) {
 		return fmt.Errorf("Unable to download devfile: %w", err)
 	}
 
-	resolved := false
-	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: &resolved})
+	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: pointer.BoolPtr(false)})
 	if err != nil {
 		return err
 	}
+
+	scontext.SetComponentType(o.ctx, devfileObj.Data.GetMetadata().ProjectType)
 
 	if o.InitParams.Starter != "" {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
@@ -158,8 +164,7 @@ func (o *InitOptions) Run() (err error) {
 
 		// in case the starter project contains a devfile, read it again
 		if _, err = o.fsys.Stat(destDevfile); err == nil {
-			resolved := false
-			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: &resolved})
+			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: pointer.BoolPtr(false)})
 			if err != nil {
 				return err
 			}

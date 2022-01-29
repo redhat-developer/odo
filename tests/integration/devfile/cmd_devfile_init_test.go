@@ -23,14 +23,16 @@ var _ = Describe("odo devfile init command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	It("should fail when running odo init with incomplete flags", func() {
-		helper.Cmd("odo", "init", "--name", "aname").ShouldFail()
-	})
+	It("should fail", func() {
+		By("running odo init with incomplete flags", func() {
+			helper.Cmd("odo", "init", "--name", "aname").ShouldFail()
+		})
 
-	It("should fail and keep an empty directory when running odo init with wrong starter name", func() {
-		helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go", "--starter", "wrongname").ShouldFail()
-		files := helper.ListFilesInDir(commonVar.Context)
-		Expect(len(files)).To(Equal(0))
+		By("keeping an empty directory when running odo init with wrong starter name", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go", "--starter", "wrongname").ShouldFail()
+			files := helper.ListFilesInDir(commonVar.Context)
+			Expect(len(files)).To(Equal(0))
+		})
 	})
 
 	When("running odo init with valid flags", func() {
