@@ -56,7 +56,7 @@ func (ei *EnvInfo) ValidateStorage(storage localConfigProvider.LocalStorage) err
 		return nil
 	}
 
-	//check if specified container exists or not (if specified)
+	// check if specified container exists or not (if specified)
 	containerExists := false
 	containers, err := ei.GetContainers()
 	if err != nil {
@@ -91,7 +91,7 @@ func (ei *EnvInfo) GetStorage(name string) (*localConfigProvider.LocalStorage, e
 
 // CreateStorage sets the storage related information in the local configuration
 func (ei *EnvInfo) CreateStorage(storage localConfigProvider.LocalStorage) error {
-	//initialize volume mount and volume container
+	// initialize volume mount and volume container
 	vm := []devfilev1.VolumeMount{
 		{
 			Name: storage.Name,

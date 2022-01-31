@@ -619,7 +619,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			mockLocalConfig.EXPECT().GetName().Return(tt.fields.generic.componentName).AnyTimes()
 			mockLocalConfig.EXPECT().GetApplication().Return(tt.fields.generic.appName).AnyTimes()
 			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage, nil)
-
+			mockLocalConfig.EXPECT().Exists().Return(true)
 			tt.fields.generic.localConfigProvider = mockLocalConfig
 
 			k := kubernetesClient{

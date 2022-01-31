@@ -32,12 +32,13 @@ var _ = Describe("odo devfile describe command tests", func() {
 		var (
 			compName = "cmp-git"
 			compType = "django"
+			appName  = "testing"
 		)
 		BeforeEach(func() {
 			// Using Django example here because it helps to distinguish between language and projectType.
 			// With nodejs, both projectType and language is nodejs, but with python-django, django is the projectType and python is the language
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.Cmd("odo", "create", "python-django", compName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", "testing").ShouldPass()
+			helper.Cmd("odo", "create", "python-django", compName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-2", "--port", "4000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
@@ -96,6 +97,17 @@ var _ = Describe("odo devfile describe command tests", func() {
 			})
 			It("should describe the component correctly", func() {
 				checkDescribe("Pushed")
+			})
+			It("should describe the component correctly when run outside the context directory", func() {
+				By("getting human readable output", func() {
+					output := helper.Cmd("odo", "describe", compName, "--app", appName, "--project", commonVar.Project).ShouldPass().Out()
+					helper.MatchAllInOutput(output, []string{compName, compType})
+				})
+				By("getting json output", func() {
+					output := helper.Cmd("odo", "describe", compName, "--app", appName, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+					values := gjson.GetMany(output, "kind", "metadata.name", "spec.type", "status.state")
+					Expect(helper.GjsonMatcher(values, []string{"Component", compName, compType, "Pushed"})).To(Equal(true))
+				})
 			})
 		})
 	})

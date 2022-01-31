@@ -404,7 +404,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
 			mockLocalConfig.EXPECT().ListURLs().Return(tt.returnedLocalURLs, nil)
-
+			mockLocalConfig.EXPECT().Exists().Return(true)
 			fkclient, fkclientset := kclient.FakeNewWithIngressSupports(true, false)
 			fkclient.Namespace = "default"
 
