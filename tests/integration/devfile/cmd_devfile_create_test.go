@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"github.com/redhat-developer/odo/tests/helper"
 	"io/ioutil"
 	"os"
@@ -228,7 +229,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the component and extract the project in the specified subDir path", func() {
 				var found, notToBeFound int
-				helper.Cmd("odo", "create", "java", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
+				helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
 				pathsToValidate := map[string]bool{
 					filepath.Join(contextDevfile, "java", "com"):                                            true,
 					filepath.Join(contextDevfile, "java", "com", "example"):                                 true,
@@ -428,6 +429,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should pass and keep the devfile in starter", func() {
 			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			Expect(err).To(Not(HaveOccurred()))
+			fmt.Fprintf(GinkgoWriter, "Project : %s\nKubeconfig %s", commonVar.Project, os.Getenv("KUBECONFIG"))
 			helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "outerloop-deploy", "deployk8s", "outerloop-build"})
 		})
 	})
