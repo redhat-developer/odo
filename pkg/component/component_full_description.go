@@ -79,7 +79,7 @@ func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client
 
 // fillEmptyFields fills any fields that are empty in the ComponentFullDescription
 func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
-	// fix missing names in case it in not in description
+	// fix missing names in case it is in not in description
 	if len(cfd.Name) <= 0 {
 		cfd.Name = componentName
 	}
