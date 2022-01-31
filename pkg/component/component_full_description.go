@@ -47,36 +47,6 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
-// loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client kclient.ClientInterface, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
-	var storages storage.StorageList
-	var err error
-
-	// if component is pushed call ListWithState which gets storages from localconfig and cluster
-	// this result is already in mc readable form
-	if componentDesc.Status.State == StateTypePushed {
-		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:              client,
-			LocalConfigProvider: configProvider,
-		})
-
-		storages, err = storageClient.List()
-		if err != nil {
-			return err
-		}
-	} else {
-		// otherwise simply fetch storagelist locally
-		storageLocal, err := configProvider.ListStorage()
-		if err != nil {
-			return err
-		}
-		// convert to machine readable format
-		storages = storage.ConvertListLocalToMachine(storageLocal)
-	}
-	cfd.Spec.Storage = storages
-	return nil
-}
-
 // fillEmptyFields fills any fields that are empty in the ComponentFullDescription
 func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
 	// fix missing names in case it is in not in description
