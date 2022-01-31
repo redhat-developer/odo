@@ -9,7 +9,7 @@ When there is no devfile in the current directory yet and no flags provided, com
 When some flags wre provided and there is no devfile in current directory, command exits with error:
 ```
 No devfile.yaml in the current directory.
-Use `odo create component` to get devfile.yaml for your application first.
+Use `odo init component` to get devfile.yaml for your application first.
 ```
 
 When devfile exists in the current directory, deploy application in outer loop mode using the information from `devfile.yaml` in the current directory.

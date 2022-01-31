@@ -5,12 +5,6 @@
 
 The result of running `odo init` command should be local devfile.yaml saved in the current directory, and starter project extracted in the current directory (if user picked one)
 
-Running `odo init` in non-empty directory exits with error
-
-```
-The current directory is not empty. You can bootstrap new component only in empty directory.
-If you have existing code that you want to deploy use `odo deploy` or use `odo dev` command to quickly iterate on your component.
-```
 
 Command should use registries as configured in `odo registry` command. If there is multiple registries configured it should use all of them.
 

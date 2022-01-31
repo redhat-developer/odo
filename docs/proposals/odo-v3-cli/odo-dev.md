@@ -15,7 +15,7 @@ When there is no devfile in the current directory and no flags were provided com
 
 When some flags were provided and there is no devfile in the current directory command exits with error:
 ```
-No devfile.yaml in the current directory. Use `odo create component` to get devfile.yaml for your application."
+No devfile.yaml in the current directory. Use `odo init component` to get devfile.yaml for your application."
 ```
 
 When devfile exists in the current directory deploy application in inner loop mode using the information form `devfile.yaml` in the current directory.
@@ -27,6 +27,8 @@ When devfile exists in the current directory deploy application in inner loop mo
 - `--watch` (boolean) Run command in watch mode. In this mode command is watching the current directory for file changes and automatically sync change to the container where it rebuilds and reload the application.
   By default, this is `true` (`--watch=true`). You can disable watch using `--watch=false`
 - `--cleanup` (boolean). default is `true` when user presses `ctrl+c` it deletes all resource that it created on the cluster.
+
+**`--watch` and `--cleanup` flags will be added later. v3.0.0-alpha1 won't have those flags.**
 
 
 ## Interactive mode

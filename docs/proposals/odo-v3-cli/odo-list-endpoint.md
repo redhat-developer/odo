@@ -2,10 +2,6 @@
 # `odo list endpoint`
 List endpoints defined in local devfile and in cluster
 
-
-
-
-
 ## flags
 - `-o json` Output information in json format
 

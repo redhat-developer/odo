@@ -56,7 +56,7 @@ mostly as it is, just cleanup
 - [`odo config`](odo-v3-cli/odo-config.md) - TODO needs to be reworked
 - **`odo build`**
   - **`image`** - the same as v2 `odo build-images`
-- **`odo list`** - list everything. It combines all list outputs from all the subcommands, expect namespace.
+- **[`odo list`](odo-v3-cli/odo-list.md)** - list everything. It combines all list outputs from all the subcommands, except namespace.
   - **[`component`](odo-v3-cli/odo-list-component.md)** - similar as v2 `odo list`, but flags and output needs to be reworked
   - **[`endpoint`](odo-v3-cli/odo-list-endpoint.md)** - similar as v2 `odo url list`, but flags and output needs to be reworked
   - **[`namespace`](odo-v3-cli/odo-list-namespace.md)** -  similar as v2 `odo project list`
@@ -64,7 +64,6 @@ mostly as it is, just cleanup
   - `service` - similar as v2 `odo service list`, but flags and output needs to be reworked
   - **`catalog`** - list all components and services `--type=components,services`  `--filter=java`
 - **`odo create`**
-  - **[`component`](odo-v3-cli/odo-create-component.md)** - similar as v2 `odo create`, but flags and output needs to be reworked
   - **[`endpoint`](odo-v3-cli/odo-create-endpoint.md)** - TODO similar as v2 `odo url create`, but flags and output needs to be reworked
   - `binding` - similar as v2 `odo link`, but flags and output needs to be reworked
   - `service` - similar as v2 `odo service create`, but flags and output needs to be reworked

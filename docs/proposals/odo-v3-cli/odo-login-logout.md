@@ -6,4 +6,4 @@
 
 ## `odo logout`
 
-`odo login` should work exactly the same way as `oc login` command. It should have the same arguments and flags.
+`odo logout` should work exactly the same way as `oc logout` command. It should have the same arguments and flags.
