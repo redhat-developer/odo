@@ -187,7 +187,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 // List lists pvc based Storage and local Storage with respective states
 func (k kubernetesClient) List() (StorageList, error) {
-	if k.localConfigProvider == nil {
+	if !k.localConfigProvider.Exists() {
 		return StorageList{}, fmt.Errorf("no local config was provided")
 	}
 

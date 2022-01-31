@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	v1 "k8s.io/api/apps/v1"
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -46,39 +47,9 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
-// loadStoragesFromClientAndLocalConfig collects information about storages both locally and from the cluster.
-func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client kclient.ClientInterface, configProvider localConfigProvider.LocalConfigProvider, componentName string, applicationName string, componentDesc *Component) error {
-	var storages storage.StorageList
-	var err error
-
-	// if component is pushed call ListWithState which gets storages from localconfig and cluster
-	// this result is already in mc readable form
-	if componentDesc.Status.State == StateTypePushed {
-		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:              client,
-			LocalConfigProvider: configProvider,
-		})
-
-		storages, err = storageClient.List()
-		if err != nil {
-			return err
-		}
-	} else {
-		// otherwise simply fetch storagelist locally
-		storageLocal, err := configProvider.ListStorage()
-		if err != nil {
-			return err
-		}
-		// convert to machine readable format
-		storages = storage.ConvertListLocalToMachine(storageLocal)
-	}
-	cfd.Spec.Storage = storages
-	return nil
-}
-
 // fillEmptyFields fills any fields that are empty in the ComponentFullDescription
 func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
-	//fix missing names in case it in not in description
+	// fix missing names in case it is in not in description
 	if len(cfd.Name) <= 0 {
 		cfd.Name = componentName
 	}
@@ -128,6 +99,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 		return cfd, err
 	}
 	cfd.Status.State = state
+	var deployment *v1.Deployment
 	if state == StateTypePushed {
 		componentDescFromCluster, e := getRemoteComponentMetadata(client, componentName, applicationName, false, false)
 		if e != nil {
@@ -136,6 +108,12 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 		cfd.Spec.Env = componentDescFromCluster.Spec.Env
 		cfd.Spec.Type = componentDescFromCluster.Spec.Type
 		cfd.Status.LinkedServices = componentDescFromCluster.Status.LinkedServices
+		// Obtain the deployment to correctly instantiate the Storage and URL client and get information
+		deployment, err = client.GetOneDeployment(componentName, applicationName)
+		if err != nil {
+			// ideally the error should not occur since we have already established that the component exists on the cluster
+			return cfd, err
+		}
 	}
 
 	for _, link := range configLinks {
@@ -177,6 +155,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 		LocalConfigProvider: configProvider,
 		Client:              client,
 		IsRouteSupported:    routeSupported,
+		Deployment:          deployment,
 	})
 
 	urls, err = urlClient.List()
@@ -185,10 +164,21 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 	}
 	cfd.Spec.URL = urls
 
-	err = cfd.loadStoragesFromClientAndLocalConfig(client, configProvider, componentName, applicationName, &componentDesc)
+	// Obtain Storage information
+	var storages storage.StorageList
+	storageClient := storage.NewClient(storage.ClientOptions{
+		Client:              client,
+		LocalConfigProvider: envInfo,
+		Deployment:          deployment,
+	})
+
+	// We explicitly do not fill in Spec.Storage for describe because,
+	// it is essentially a list of Storage names, which seems redundant when the detailed StorageSpec is available
+	storages, err = storageClient.List()
 	if err != nil {
-		return cfd, err
+		log.Warningf("Storages couldn't not be retrieved: %v", err)
 	}
+	cfd.Spec.Storage = storages
 
 	return cfd, nil
 }
