@@ -3,7 +3,7 @@
 ## TODO:
 
 - [ ] define JSON outputs for each command
-
+- [ ] missing command for switching namespace
 
 Over the years of odo development we picked up a lot of commands.
 Odo v3 will introduce new commands (`odo dev` #5299, `odo init` #5297).
@@ -14,24 +14,63 @@ There are also some commands that are there since the original odo v1 and were o
 ## Changes from odo v2 command perspective
 
 
-- `odo component` **removed** every command from “odo component *” already exists as a root command.
-- `odo watch` replaced with [`odo dev`](odo-v3-cli/odo-dev.md)
-- `odo push`  replaced with [`odo dev`](odo-v3-cli/odo-dev.md)
-- `odo unlink`  replaced with [`odo delete binding`](odo-v3-cli/odo-delete-binding.md)
-- `odo link`  replaced with [`odo create binding`](odo-v3-cli/odo-create-binding.md)
-- `odo url`  replaced with [`odo create endpoint`](odo-v3-cli/odo-create-endpoint.md)
-- `odo test`  replaced `odo run test`
-- `odo service`  replaced with [`odo create service`](odo-v3-cli/odo-create-service.md)
-- `odo env` integrated with [`odo config`](odo-v3-cli/odo-config.md)
-- `odo debug` replaced with [`odo run debug`](odo-v3-cli/odo-run-debug.md)
-- `odo registry` removed, but the functionality will be added to [`odo preference`](odo-v3-cli/odo-preference.md)
-- `odo preference` - mostly as it is, with additional incorporation of  `odo registry`
-- `odo login` - as it is
-- `odo logout` - as it is
-- `odo build-images` - replaced with `odo build images`
-- `odo deploy` - with new interactive mode
-- `odo storage` -  removed, we can consider adding it back, but users can still add storage manuals into `devfile.yaml`
-- `odo exec` -  removed. We will need to rework this command later
+Commands can be removed from odo for now. Functionality of those commands won't be there for alpha1.
+- `app`
+- `config`
+- `debug`
+- `env`
+- `service`
+- `storage`
+- `test`
+- `unlink`
+- `status`
+- `log`
+- `link`
+- `exec`
+- `describe`
+- `component`
+  - `describe`
+  - `exec`
+  - `link`
+  - `log`
+  - `status`
+  - `test`
+  - `unlink`
+
+
+
+Commands whose functionality will be in alpha1 but the command will have a different name parameters.
+
+- `component` - as a root command this will be removed, for info about subcommand check their root level equivalents.
+  - `create`
+  - `delete`
+  - `list`
+  - `push`
+  - `watch`
+- `catalog` - new command will be `odo list catalog`
+- `preference` - mostly as it is just with cleanup and integration of `odo registry`
+- `registry` - integrated into `odo preference`
+- `watch` - new command will be `odo dev`
+- `build-images` - new command will be `odo build images`
+- `deploy` - mostly as it is just with some new flags
+- `url` - new commands will be `odo create/list/delete endpoint`
+- `push` - technically this will be in `odo dev`
+- `create` - new command will be `odo init` and also integrated into `odo dev` and  `odo deploy`
+- `delete` - new command will be `odo delete component`
+- `list` - this will be reworked, it will combine both `odo url list` and `odo list`
+- `project` - new command will be `odo list/delete/create namespace`
+
+
+Commmands that will remain as they are in v2
+- `login`
+- `logout`
+- `utils`
+- `version`
+
+
+
+
+
 
 
 
@@ -46,6 +85,7 @@ There are also some commands that are there since the original odo v1 and were o
 
 ### commands in odo v3
 
+
 - **[`odo login`](odo-v3-cli/odo-login-logout.md)** - no changes required
 - **[`odo logout`](odo-v3-cli/odo-login-logout.md)** - no changes required
 - **[`odo init`](odo-v3-cli/odo-init.md)** - [#5297](https://github.com/redhat-developer/odo/issues/5297) new command
@@ -57,9 +97,9 @@ mostly as it is, just cleanup
 - **`odo build`**
   - **`image`** - the same as v2 `odo build-images`
 - **[`odo list`](odo-v3-cli/odo-list.md)** - list everything. It combines all list outputs from all the subcommands, except namespace.
-  - **[`component`](odo-v3-cli/odo-list-component.md)** - similar as v2 `odo list`, but flags and output needs to be reworked
-  - **[`endpoint`](odo-v3-cli/odo-list-endpoint.md)** - similar as v2 `odo url list`, but flags and output needs to be reworked
-  - **[`namespace`](odo-v3-cli/odo-list-namespace.md)** -  similar as v2 `odo project list`
+  - [`component`](odo-v3-cli/odo-list-component.md) - similar as v2 `odo list`, but flags and output needs to be reworked
+  - [`endpoint`](odo-v3-cli/odo-list-endpoint.md) - similar as v2 `odo url list`, but flags and output needs to be reworked
+  - [`namespace`](odo-v3-cli/odo-list-namespace.md) -  similar as v2 `odo project list`
   - `binding` - new command
   - `service` - similar as v2 `odo service list`, but flags and output needs to be reworked
   - **`catalog`** - list all components and services `--type=components,services`  `--filter=java`
@@ -77,7 +117,8 @@ mostly as it is, just cleanup
   - `endpoint` - new command. Shows detailed information about existing endpoint.
   - `binding` - new command. Shows detailed information about existing binding
   - `service` - new command.  Shows detailed information about existing binding
-  - **`catalog`** - `--type=components,services`
+  - `catalog` - `--type=components,services`
+- `odo logs` - simplifed version of the `odo log` from v2
 - **`odo version`** - as it is in v2
 - **`odo utils`** -  as it is in v2
 
