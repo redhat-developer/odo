@@ -48,19 +48,27 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 	}
 
 	var deployment *v1.Deployment
+
 	// user has access to the cluster
-	if client != nil {
+	hasAccessToCluster := client != nil
+	// if local component is the same as user asked component
+	userMatchesDevfile := componentName == componentDesc.Name
+
+	if hasAccessToCluster {
 		var componentDescFromCluster Component
 		componentDescFromCluster, err = getRemoteComponentMetadata(client, componentName, applicationName, false, false)
+		// TODO: Move these to functions?
+		componentFoundInCluster := err == nil
+
 		// component was not found on the cluster
-		if err != nil {
+		if !componentFoundInCluster {
 			// if local component is not the same as user asked component,
 			// then return a simple component with user provided information with state as to Unknown
-			if componentName != componentDesc.Name {
+			if !userMatchesDevfile {
+				// TODO: Move this to function
 				componentDesc = Component{}
 				componentDesc.Status.State = StateTypeUnknown
-				componentDesc.fillEmptyFields(componentName, applicationName, projectName)
-				return &componentDesc, nil
+				devfileObj = parser.DevfileObj{}
 			} else {
 				// since local component and user asked component are same, we can assume that the component has not been pushed yet,
 				// hence set it's state to Not Pushed
@@ -72,7 +80,7 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 			// if the user asked component was found on the cluster, but is not the same as local component,
 			// then set local component obtained from the devfile to reflect the remote component;
 			// also nullify the devfileObj since it becomes irrelevant to the information user wants
-			if componentName != componentDesc.Name {
+			if !userMatchesDevfile {
 				componentDesc = componentDescFromCluster
 				devfileObj = parser.DevfileObj{}
 			} else {
@@ -97,18 +105,21 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 
 		// if local component is not the same as user asked component,
 		// then return a simple component with user provided information with state as to Unknown
-		if componentName != componentDesc.Name {
+		if !userMatchesDevfile {
 			componentDesc = Component{}
 			componentDesc.Status.State = StateTypeUnknown
-			componentDesc.fillEmptyFields(componentName, applicationName, projectName)
-			return &componentDesc, nil
 		} else {
 			// if the user asked component is same as the local component, then set it's status to Not Pushed
 			componentDesc.Status.State = StateTypeNotPushed
 		}
 	}
+
 	// Fill empty fields (especially APIVersion, and Kind)
 	componentDesc.fillEmptyFields(componentName, applicationName, projectName)
+
+	if componentDesc.Status.State == StateTypeUnknown {
+		return &componentDesc, nil
+	}
 
 	envInfo.SetDevfileObj(devfileObj)
 
