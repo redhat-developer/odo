@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"reflect"
 	"strings"
 
@@ -186,27 +187,62 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 }
 
 // List lists pvc based Storage and local Storage with respective states
+// if cluster data is available, get cluster Storage
+// if local data is available, get local Storage
+// if both cluster and local data is available, compare the two and return
+// if only cluster data is available, return it
+// if only local data is available, return it
 func (k kubernetesClient) List() (StorageList, error) {
-	if !k.localConfigProvider.Exists() {
-		return StorageList{}, fmt.Errorf("no local config was provided")
+	var err error
+	var storageList []Storage
+	var localConfigExists bool
+
+	// only assume localConfig accessible, if both the names match
+	if k.localConfigProvider.Exists() && k.componentName == k.localConfigProvider.GetName() {
+		localConfigExists = true
 	}
 
-	localConfigStorage, err := k.localConfigProvider.ListStorage()
-	if err != nil {
-		return StorageList{}, err
+	// if local data is available, get the local Storage
+	var localStorage StorageList
+	var localConfigStorage []localConfigProvider.LocalStorage
+
+	if localConfigExists {
+		localConfigStorage, err = k.localConfigProvider.ListStorage()
+		if err != nil {
+			return StorageList{}, err
+		}
+		localStorage = ConvertListLocalToMachine(localConfigStorage)
+
+		// if only local data is available, return it
+		if k.client == nil {
+			for _, storage := range localStorage.Items {
+				// since the cluster data is unavailable, the state is really unknown
+				storage.Status = StateTypeUnknown
+				storageList = append(storageList, storage)
+			}
+			return NewStorageList(storageList), nil
+		}
 	}
 
-	localStorage := ConvertListLocalToMachine(localConfigStorage)
+	// if the cluster data is available, get the cluster Storage
 	var clusterStorage StorageList
 	if k.client != nil {
 		clusterStorage, err = k.ListFromCluster()
 		if err != nil {
 			return StorageList{}, err
 		}
+		// if only cluster data is available, return it
+		if !localConfigExists {
+			for _, storage := range clusterStorage.Items {
+				// if only local data is available, return it
+				storage.Status = StateTypeUnknown
+				storageList = append(storageList, storage)
+			}
+			return NewStorageList(storageList), nil
+		}
 	}
 
-	var storageList []Storage
-
+	// if both cluster and local data is available, compare the two and return
 	// find the local storage which are in a pushed and not pushed state
 	for _, localStore := range localStorage.Items {
 		found := false

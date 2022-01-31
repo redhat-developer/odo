@@ -22,11 +22,10 @@ type Component struct {
 type ComponentSpec struct {
 	App         string            `json:"app,omitempty"`
 	Type        string            `json:"type,omitempty"`
-	Source      string            `json:"source,omitempty"`
 	URL         []string          `json:"url,omitempty"`
-	URLSpec     []url.URL         `json:"-"`
+	URLSpec     []url.URL         `json:"urlSpec,omitempty"`
 	Storage     []string          `json:"storage,omitempty"`
-	StorageSpec []storage.Storage `json:"-"`
+	StorageSpec []storage.Storage `json:"storageSpec,omitempty"`
 	Env         []corev1.EnvVar   `json:"env,omitempty"`
 	Ports       []string          `json:"ports,omitempty"`
 }

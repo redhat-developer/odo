@@ -125,7 +125,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the devfile component and show json output for non connected cluster", func() {
 			output := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json").WithEnv("KUBECONFIG=/no/such/path", "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
 			values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
-			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+			Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
 		})
 
 		When("the cluster is unreachable", func() {
@@ -156,7 +156,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			It("should successfully create the devfile component and show json output", func() {
 				output := helper.Cmd("odo", "create", "nodejs", "--context", newContext, "-o", "json").WithEnv("KUBECONFIG="+newKubeConfigPath, "GLOBALODOCONFIG="+os.Getenv("GLOBALODOCONFIG")).ShouldPass().Out()
 				values := gjson.GetMany(output, "kind", "metadata.name", "status.state")
-				Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Unknown"})).To(Equal(true))
+				Expect(helper.GjsonMatcher(values, []string{"Component", "nodejs", "Not Pushed"})).To(Equal(true))
 			})
 		})
 	})

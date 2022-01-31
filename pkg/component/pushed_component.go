@@ -222,6 +222,7 @@ func GetPushedComponent(c kclient.ClientInterface, componentName, applicationNam
 		Client:     c,
 		Deployment: d,
 	})
+
 	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c, storageClient, urlClient), nil
 }
 

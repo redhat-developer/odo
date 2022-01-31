@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/kylelemons/godebug/pretty"
 	"reflect"
 	"strings"
 	"testing"
@@ -351,6 +352,10 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 }
 
 func Test_kubernetesClient_List(t *testing.T) {
+	componentName := "nodejs"
+	appName := "app"
+	aDifferentCompName := "a-different-component"
+
 	type fields struct {
 		generic generic
 	}
@@ -362,13 +367,15 @@ func Test_kubernetesClient_List(t *testing.T) {
 		returnedLocalStorage []localConfigProvider.LocalStorage
 		returnedDeployments  *appsv1.DeploymentList
 		returnedPVCs         *corev1.PersistentVolumeClaimList
+		localConfigExists    bool
 	}{
 		{
-			name: "case 1: no volume on devfile and no pod on cluster",
+			name:              "case 1: no volume on devfile and no pod on cluster",
+			localConfigExists: true,
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{},
@@ -385,29 +392,30 @@ func Test_kubernetesClient_List(t *testing.T) {
 			name: "case 2: no volume on devfile and pod",
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{testingutil.CreateFakeContainer("container-0")},
+					*testingutil.CreateFakeDeploymentsWithContainers(componentName, []corev1.Container{testingutil.CreateFakeContainer("container-0")},
 						[]corev1.Container{}),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{},
 			},
-			want:    NewStorageList(nil),
-			wantErr: false,
+			want:              NewStorageList(nil),
+			wantErr:           false,
+			localConfigExists: true,
 		},
 		{
 			name: "case 3: same two volumes on cluster and devFile",
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{
@@ -426,7 +434,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
+					*testingutil.CreateFakeDeploymentsWithContainers(componentName, []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
@@ -436,22 +444,23 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
-					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-1"}),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-1"}),
 				},
 			},
 			want: NewStorageList([]Storage{
 				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypePushed, "container-0"),
 				generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), StateTypePushed, "container-0"),
 			}),
-			wantErr: false,
+			wantErr:           false,
+			localConfigExists: true,
 		},
 		{
 			name: "case 4: both volumes, present on the cluster and devFile, are different",
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{
@@ -470,7 +479,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
+					*testingutil.CreateFakeDeploymentsWithContainers(componentName, []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-00-vol", MountPath: "/data"},
 							{Name: "volume-11-vol", MountPath: "/path"},
@@ -480,8 +489,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-00", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-00"}),
-					*testingutil.FakePVC("volume-11", "10Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-11"}),
+					*testingutil.FakePVC("volume-00", "5Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-00"}),
+					*testingutil.FakePVC("volume-11", "10Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-11"}),
 				},
 			},
 			want: NewStorageList([]Storage{
@@ -490,14 +499,15 @@ func Test_kubernetesClient_List(t *testing.T) {
 				generateStorage(NewStorage("volume-00", "5Gi", "/data", nil), StateTypeLocallyDeleted, "container-0"),
 				generateStorage(NewStorage("volume-11", "10Gi", "/path", nil), StateTypeLocallyDeleted, "container-0"),
 			}),
-			wantErr: false,
+			wantErr:           false,
+			localConfigExists: true,
 		},
 		{
 			name: "case 5: two containers with different volumes but one container is not pushed",
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{
@@ -516,7 +526,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
+					*testingutil.CreateFakeDeploymentsWithContainers(componentName, []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 						}),
@@ -525,21 +535,22 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-0"}),
 				},
 			},
 			want: NewStorageList([]Storage{
 				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypePushed, "container-0"),
 				generateStorage(NewStorage("volume-1", "10Gi", "/data", nil), StateTypeNotPushed, "container-1"),
 			}),
-			wantErr: false,
+			wantErr:           false,
+			localConfigExists: true,
 		},
 		{
 			name: "case 6: two containers with different volumes on the cluster but one container is deleted locally",
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{
@@ -552,7 +563,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeploymentsWithContainers("nodejs", []corev1.Container{
+					*testingutil.CreateFakeDeploymentsWithContainers(componentName, []corev1.Container{
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-vol", MountPath: "/data"},
 						}),
@@ -564,21 +575,22 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
-					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": "nodejs", storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-0"}),
 				},
 			},
 			want: NewStorageList([]Storage{
 				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypePushed, "container-0"),
 				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypeLocallyDeleted, "container-1"),
 			}),
-			wantErr: false,
+			wantErr:           false,
+			localConfigExists: true,
 		},
 		{
 			name: "case 7: multiple pods are present on the cluster",
 			fields: fields{
 				generic: generic{
-					componentName: "nodejs",
-					appName:       "app",
+					componentName: componentName,
+					appName:       appName,
 				},
 			},
 			returnedLocalStorage: []localConfigProvider.LocalStorage{
@@ -591,13 +603,82 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeployment("nodejs"),
-					*testingutil.CreateFakeDeployment("nodejs"),
+					*testingutil.CreateFakeDeployment(componentName),
+					*testingutil.CreateFakeDeployment(componentName),
 				},
 			},
-			returnedPVCs: &corev1.PersistentVolumeClaimList{},
-			want:         StorageList{},
-			wantErr:      true,
+			returnedPVCs:      &corev1.PersistentVolumeClaimList{},
+			want:              StorageList{},
+			wantErr:           true,
+			localConfigExists: true,
+		},
+		{
+			name: "case 8: volume is present on the cluster, localConfig is inaccessible",
+			fields: fields{
+				generic: generic{
+					appName:             appName,
+					componentName:       componentName,
+					localConfigProvider: nil,
+				},
+			},
+			returnedLocalStorage: nil,
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers(componentName, []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-0-vol", MountPath: "/data"},
+							{Name: "volume-1-vol", MountPath: "/path"},
+						}),
+					}, []corev1.Container{}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-0", "5Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-0"}),
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": componentName, storageLabels.DevfileStorageLabel: "volume-1"}),
+				},
+			},
+			want: NewStorageList([]Storage{
+				generateStorage(NewStorage("volume-0", "5Gi", "/data", nil), StateTypeUnknown, "container-0"),
+				generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), StateTypeUnknown, "container-0"),
+			}),
+			wantErr:           false,
+			localConfigExists: false,
+		}, {
+			name: "Case 9: volume is present on the cluster, localConfig is accessible, but belongs to a different component",
+			fields: fields{
+				generic: generic{
+					appName:       appName,
+					componentName: aDifferentCompName,
+				},
+			},
+			wantErr: false,
+			returnedLocalStorage: []localConfigProvider.LocalStorage{
+				{
+					Name:      "volume-0",
+					Size:      "5Gi",
+					Path:      "/data",
+					Container: "container-0",
+				},
+			},
+			returnedDeployments: &appsv1.DeploymentList{
+				Items: []appsv1.Deployment{
+					*testingutil.CreateFakeDeploymentsWithContainers(aDifferentCompName, []corev1.Container{
+						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
+							{Name: "volume-1-vol", MountPath: "/path"},
+						}),
+					}, []corev1.Container{}),
+				},
+			},
+			returnedPVCs: &corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*testingutil.FakePVC("volume-1", "10Gi", map[string]string{"component": aDifferentCompName, storageLabels.DevfileStorageLabel: "volume-1"}),
+				},
+			},
+			want: NewStorageList([]Storage{
+				generateStorage(NewStorage("volume-1", "10Gi", "/path", nil), StateTypeUnknown, "container-0"),
+			}),
+			localConfigExists: true,
 		},
 	}
 	for _, tt := range tests {
@@ -616,10 +697,17 @@ func Test_kubernetesClient_List(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-			mockLocalConfig.EXPECT().GetName().Return(tt.fields.generic.componentName).AnyTimes()
+			mockLocalConfig.EXPECT().Exists().Return(tt.localConfigExists)
 			mockLocalConfig.EXPECT().GetApplication().Return(tt.fields.generic.appName).AnyTimes()
-			mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage, nil)
-			mockLocalConfig.EXPECT().Exists().Return(true)
+
+			// The following mocks are only required when local config exists, removing this check will raise a mockgen error
+			if tt.localConfigExists {
+				// This call is only required when the localConfig.GetName() matches k.componentName i.e. the component name for which List() is called
+				if tt.fields.generic.componentName == componentName {
+					mockLocalConfig.EXPECT().ListStorage().Return(tt.returnedLocalStorage, nil)
+				}
+				mockLocalConfig.EXPECT().GetName().Return(componentName)
+			}
 			tt.fields.generic.localConfigProvider = mockLocalConfig
 
 			k := kubernetesClient{
@@ -632,7 +720,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("List() got = %v, want %v", got, tt.want)
+				t.Errorf("unexpected output for List(): %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}

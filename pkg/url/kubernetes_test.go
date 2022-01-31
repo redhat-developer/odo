@@ -214,6 +214,7 @@ func Test_kubernetesClient_ListCluster(t *testing.T) {
 func Test_kubernetesClient_List(t *testing.T) {
 	componentName := "nodejs"
 	appName := "app"
+	aDifferentCompName := "a-different-component"
 
 	route0 := testingutil.GetSingleRoute("testRoute0", 8080, componentName, appName)
 	route1 := testingutil.GetSingleRoute("testRoute1", 8080, componentName, appName)
@@ -232,9 +233,11 @@ func Test_kubernetesClient_List(t *testing.T) {
 		returnedLocalURLs []localConfigProvider.LocalURL
 		want              URLList
 		wantErr           bool
+		localConfigExists bool
 	}{
 		{
-			name: "case 1: two urls in local config and none pushed",
+			name:              "case 1: two urls in local config and none pushed",
+			localConfigExists: true,
 			fields: fields{
 				generic: generic{
 					appName:       appName,
@@ -263,7 +266,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				getFakeURL("example-2", "example-2.com", 8080, "", "http", localConfigProvider.INGRESS, StateTypeNotPushed)}),
 		},
 		{
-			name: "case 2: two urls pushed but are deleted locally",
+			name:              "case 2: two urls pushed but are deleted locally",
+			localConfigExists: true,
 			fields: fields{
 				generic: generic{
 					appName:       appName,
@@ -284,7 +288,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 				getFakeURL("testRoute1", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeLocallyDeleted)}),
 		},
 		{
-			name: "case 3: two urls which are pushed",
+			name:              "case 3: two urls which are pushed",
+			localConfigExists: true,
 			fields: fields{
 				generic: generic{
 					appName:       appName,
@@ -325,7 +330,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 			}),
 		},
 		{
-			name: "case 4: three URLs with mixed states",
+			name:              "case 4: three URLs with mixed states",
+			localConfigExists: true,
 			fields: fields{
 				generic: generic{
 					appName:       appName,
@@ -367,7 +373,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 			}),
 		},
 		{
-			name: "case 5: ignore routes when route resources are not supported",
+			name:              "case 5: ignore routes when route resources are not supported",
+			localConfigExists: true,
 			fields: fields{
 				generic: generic{
 					appName:       appName,
@@ -396,6 +403,68 @@ func Test_kubernetesClient_List(t *testing.T) {
 				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeNotPushed),
 			}),
 		},
+		{
+			name: "case 6: one route/ingress resource is pushed, localConfig is inaccessible",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: componentName,
+				},
+				isRouteSupported: true,
+			},
+			returnedRoutes: routev1.RouteList{
+				Items: []routev1.Route{
+					route0,
+				},
+			},
+			returnedIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					ingress0,
+				},
+			},
+			returnedLocalURLs: nil,
+			want: NewURLList([]URL{
+				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeUnknown),
+				getFakeURL("testRoute0", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeUnknown),
+			}),
+			localConfigExists: false,
+		},
+		{
+			name: "case 7: one route/ingress resource is pushed, localConfig is accessible, but belongs to a different component",
+			fields: fields{
+				generic: generic{
+					appName:       "app",
+					componentName: aDifferentCompName,
+				},
+				isRouteSupported: true,
+			},
+			returnedRoutes: routev1.RouteList{
+				Items: []routev1.Route{
+					testingutil.GetSingleRoute("testRoute0", 8080, aDifferentCompName, appName),
+				},
+			},
+			returnedIngress: unions.KubernetesIngressList{
+				Items: []*unions.KubernetesIngress{
+					fake.GetSingleKubernetesIngress("testIngress0", aDifferentCompName, appName, true, false),
+				},
+			},
+			returnedLocalURLs: []localConfigProvider.LocalURL{
+				{
+					Name:     "testRoute1",
+					Port:     8080,
+					Secure:   false,
+					Path:     "/",
+					Protocol: "http",
+					Kind:     localConfigProvider.ROUTE,
+				},
+			},
+			want: NewURLList([]URL{
+				getFakeURL("testIngress0", "testIngress0.com", 8080, "/", "http", localConfigProvider.INGRESS, StateTypeUnknown),
+				getFakeURL("testRoute0", "example.com", 8080, "/", "http", localConfigProvider.ROUTE, StateTypeUnknown),
+			}),
+			wantErr:           false,
+			localConfigExists: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -403,8 +472,15 @@ func Test_kubernetesClient_List(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-			mockLocalConfig.EXPECT().ListURLs().Return(tt.returnedLocalURLs, nil)
-			mockLocalConfig.EXPECT().Exists().Return(true)
+			mockLocalConfig.EXPECT().Exists().Return(tt.localConfigExists)
+			// The following mocks are only required when local config exists, removing this check will raise a mockgen error
+			if tt.localConfigExists {
+				// This call is only required when the localConfig.GetName() matches k.componentName i.e. the component name for which List() is called
+				if tt.fields.generic.componentName == componentName {
+					mockLocalConfig.EXPECT().ListURLs().Return(tt.returnedLocalURLs, nil)
+				}
+				mockLocalConfig.EXPECT().GetName().Return(componentName)
+			}
 			fkclient, fkclientset := kclient.FakeNewWithIngressSupports(true, false)
 			fkclient.Namespace = "default"
 

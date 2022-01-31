@@ -153,12 +153,16 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel])
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
 
 		if !reflect.ValueOf(component).IsZero() {
+			// This is a workaround to avoid having Storage and URL specs in the JSON output;
+			// We do not want this information in the output; and JSON marshaller will omit this since it's empty
+			component.Spec.URLSpec = nil
+			component.Spec.StorageSpec = nil
 			components = append(components, component)
 		}
 
@@ -340,20 +344,8 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 	return false, nil
 }
 
-func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) State {
-	// first check if a deployment exists
-	c, err := GetPushedComponent(client, componentName, applicationName)
-	if err != nil {
-		return StateTypeUnknown
-	}
-	if c != nil {
-		return StateTypePushed
-	}
-	return StateTypeNotPushed
-}
-
 // GetComponent provides component definition
-func GetComponent(client kclient.ClientInterface, componentName string, applicationName string, projectName string) (component Component, err error) {
+func GetComponent(client kclient.ClientInterface, componentName string, applicationName string) (component Component, err error) {
 	return getRemoteComponentMetadata(client, componentName, applicationName, true, true)
 }
 
@@ -361,7 +353,7 @@ func GetComponent(client kclient.ClientInterface, componentName string, applicat
 func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil || fromCluster == nil {
-		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
+		return Component{}, fmt.Errorf("unable to get remote metadata for %s component, cause: %v", componentName, err)
 	}
 
 	// Component Type

@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/kylelemons/godebug/pretty"
 	"reflect"
 	"regexp"
 	"testing"
@@ -223,7 +224,7 @@ func TestList(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(tt.output, results) {
-				t.Errorf("expected output:\n%#v\n\ngot:\n%#v", tt.output, results)
+				t.Errorf("List() error, difference at %v", pretty.Compare(tt.output, results))
 			}
 		})
 	}

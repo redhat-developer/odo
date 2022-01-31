@@ -57,6 +57,8 @@ const (
 	StateTypeNotPushed = "Not Pushed"
 	// StateTypeLocallyDeleted means that URL was deleted from the local config, but it is still present on the cluster/container
 	StateTypeLocallyDeleted = "Locally Deleted"
+	// StateTypeUnknown means that URL is present on the cluster/container, but might not be present locally
+	StateTypeUnknown = "Unknown"
 )
 
 // NewURL gives machine readable URL definition

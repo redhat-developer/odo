@@ -24,6 +24,7 @@ type ComponentOptions struct {
 func (co *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 	if err != nil {
+		// TODO: add a check for ignorable errors.
 		co.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).IsOffline())
 		if err != nil {
 			return err

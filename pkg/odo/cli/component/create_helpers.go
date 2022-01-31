@@ -57,6 +57,6 @@ func (co *CreateOptions) DevfileJSON() error {
 	if err != nil {
 		return err
 	}
-	machineoutput.OutputSuccess(cfd.GetComponent())
+	machineoutput.OutputSuccess(cfd)
 	return nil
 }

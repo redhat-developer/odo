@@ -152,23 +152,22 @@ func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 	context := stringFlagLookup(cmd, "context")
 	component := stringFlagLookup(cmd, "component")
 	all, _ := strconv.ParseBool(stringFlagLookup(cmd, "all"))
-	// TODO: Move this to a method under DeleteOptions, similar to CreateOptions.checkConflictingFlags
-	if cmd.Name() == "delete" {
-		if cmd.HasParent() {
-			if cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component" {
-				var componentName string
-				if len(args) > 0 {
-					componentName = args[0]
-				}
-				if (context != "") && (project != "" || componentName != "") {
-					return fmt.Errorf("cannot provide --project or component name when --context is provided")
-				}
-				if project != "" && componentName == "" && app == "" {
-					return fmt.Errorf("cannot provide --project without --app and component name")
-				}
-				if all && ((componentName != "" && app != "" && project != "") || (componentName != "")) {
-					return fmt.Errorf("cannot provide --all when component name, --app and --project are provided")
-				}
+
+	if cmd.Name() == "delete" || cmd.Name() == "describe" {
+		if (cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component") && (cmd.Parent().Name() != "app") {
+			var componentName string
+			if len(args) > 0 {
+				componentName = args[0]
+			}
+			if (context != "") && (project != "" || componentName != "" || app != "") {
+				return fmt.Errorf("cannot provide --project, --app, or component name when --context is provided")
+			}
+			if componentName == "" && (app != "" || project != "") {
+				return fmt.Errorf("cannot provide --app or --project without a component name")
+			}
+
+			if all && ((componentName != "" && app != "" && project != "") || (componentName != "")) {
+				return fmt.Errorf("cannot provide --all when component name, --app and --project are provided")
 			}
 		}
 	}

@@ -69,25 +69,44 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	return NewURLList(clusterURLs), nil
 }
 
-// List lists both route/ingress based URLs and local URLs with respective states
+// List lists both route/ingress based URL and local URL with respective states
+// if cluster data is available, get cluster URL
+// if local data is available, get local URL
+// if both cluster and local data is available, compare the two for state and return
+// if only cluster data is available, return it
+// if only local data is available, return it
 func (k kubernetesClient) List() (URLList, error) {
-	// get the URLs present on the cluster
-	clusterURLMap := make(map[string]URL)
-	var clusterURLs URLList
 	var err error
+	var urls sortableURLs
+	var localConfigExists bool
+
+	// only assume localConfig accessible, if both the names match
+	if k.localConfigProvider.Exists() && k.componentName == k.localConfigProvider.GetName() {
+		localConfigExists = true
+	}
+
+	// if cluster data is available, get cluster URLs
+	var clusterURLs URLList
+
 	if k.client != nil {
 		clusterURLs, err = k.ListFromCluster()
 		if err != nil {
 			return URLList{}, errors.Wrap(err, "unable to list routes")
 		}
+		// if only cluster data is available, return cluster data
+		if !localConfigExists {
+			for _, url := range clusterURLs.Items {
+				// since the local data is unavailable, the state is really unknown
+				url.Status.State = StateTypeUnknown
+				urls = append(urls, url)
+			}
+			return NewURLList(urls), nil
+		}
 	}
 
-	for _, url := range clusterURLs.Items {
-		clusterURLMap[url.Name] = url
-	}
-
+	// if local data is available, get local URLs
 	localMap := make(map[string]URL)
-	if k.localConfigProvider.Exists() {
+	if localConfigExists {
 		// get the URLs present on the localConfigProvider
 		localURLS, err := k.localConfigProvider.ListURLs()
 		if err != nil {
@@ -107,12 +126,28 @@ func (k kubernetesClient) List() (URLList, error) {
 			}
 			localMap[url.Name] = localURL
 		}
+		// if only local data is available; return local data
+		if k.client == nil {
+			for _, localURL := range localMap {
+				// since the cluster data is unavailable, the state is really unknown
+				localURL.Status.State = StateTypeUnknown
+				urls = append(urls, localURL)
+			}
+			return NewURLList(urls), nil
+		}
 	}
+
+	// if both cluster and local data is available, compare the two as follows:
+	clusterURLMap := make(map[string]URL)
+	for _, url := range clusterURLs.Items {
+		clusterURLMap[url.Name] = url
+	}
+
+	// if both cluster and local data is available, compare the two as follows:
 
 	// find the URLs which are present on the cluster but not on the localConfigProvider
 	// if not found on the localConfigProvider, mark them as 'StateTypeLocallyDeleted'
 	// else mark them as 'StateTypePushed'
-	var urls sortableURLs
 	for URLName, clusterURL := range clusterURLMap {
 		_, found := localMap[URLName]
 		if found {

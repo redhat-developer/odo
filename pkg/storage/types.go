@@ -25,6 +25,8 @@ const (
 	StateTypeNotPushed = "Not Pushed"
 	// StateTypeLocallyDeleted means that Storage was deleted from the local config, but it is still present on the cluster
 	StateTypeLocallyDeleted = "Locally Deleted"
+	// StateTypeUnknown means that Storage is present on the cluster/container, but might not be present locally
+	StateTypeUnknown = "Unknown"
 )
 
 // StorageSpec indicates size and path of storage

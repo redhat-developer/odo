@@ -73,15 +73,10 @@ func CheckOutputFlag(outputFlag string) error {
 }
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(client kclient.ClientInterface, currentComponentName string, componentDesc component.Component, applicationName string, project string) error {
+func PrintComponentInfo(client kclient.ClientInterface, currentComponentName string, componentDesc component.Component, project string) error {
 
 	log.Describef("Component Name: ", currentComponentName)
 	log.Describef("Type: ", componentDesc.Spec.Type)
-
-	// Source
-	if componentDesc.Spec.Source != "" {
-		log.Describef("Source: ", componentDesc.Spec.Source)
-	}
 
 	// Env
 	if componentDesc.Spec.Env != nil {
