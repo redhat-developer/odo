@@ -151,6 +151,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		if util.CheckPathExists(envFilePath) {
 			return errors.New("this directory already contains a component")
 		} else if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+			//Check if the directory already contains a devfile when --devfile flag is passed
 			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 		} else if co.devfileMetadata.starter != "" && len(args) == 0 {
 			//if devfile already exists, then don't allow --starter
