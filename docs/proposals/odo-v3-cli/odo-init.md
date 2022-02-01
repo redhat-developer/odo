@@ -6,6 +6,13 @@
 The result of running `odo init` command should be local devfile.yaml saved in the current directory, and starter project extracted in the current directory (if user picked one)
 
 
+When devfile.yaml exists in the current directory command should exit with error:
+```
+Unable to create new component in the current directory.
+The current directory already contains `devfile.yaml` file.
+You can use `odo dev` or `odo deploy` to start your application on a cluster.
+```
+
 Command should use registries as configured in `odo registry` command. If there is multiple registries configured it should use all of them.
 
 ## Flags
@@ -21,6 +28,7 @@ If no flag is specified it should enter interactive mode.
 If even a single optional flag is specified then run in non-interactive mode and requires all required flags.
 
 ## Interactive mode
+### when executed in empty directory
 
 ```
 $ odo init
@@ -86,3 +94,45 @@ To deploy your component to a cluster use “odo deploy”.
 4. **"Enter component name:"**
     Name of the component. This should be saved in the local `devfile.yaml` as a value for `metadata.name` field.
 
+### When executed in non-empty directory
+
+```
+$ odo create
+
+Based on the files in the current directory odo detected
+Language: Java
+Project type: SpringBoot
+
+? Is this correct? Yes
+
+Current component configuration:
+Opened ports:
+- 8080
+- 8084
+Environment variables:
+- FOO = bar
+- FOO1 = bar1
+
+? What configuration do you want change?  [Use arrows to move, type to filter]
+> NOTHING - configuration is correct
+  Delete port "8080"
+  Delete port "8084"
+  Add new port
+  Delete environment variable "FOO"
+  Delete environment variable "FOO1"
+  Add new environment variable
+
+⠏ Downloading "java-quarkus". DONE
+
+Your component is ready in the current directory.
+To deploy it to the cluster you can run `odo deploy`.
+```
+
+
+If there is no devfile in the current directory `odo` should use ([Alizer](https://github.com/redhat-developer/alizer/pull/55/)) to get corresponding Devfile for code base in the current directory.
+After the successful detection it will show  Language and Project Type information to users and ask for confirmation.
+If user answers that the information is not correct, odo should ask "Select language" and "Select project type" questions (see: [`odo init`](odo-init.md) interactive mode).
+
+The configuration part helps users to modify most common configurations done on Devfiles.
+"? What configuration do you want change? " question is repeated over and over again until user confirms that the configuration is done and there is nothing else to change.
+You can find a naive approach trying to implemented this in odo v3 mockup https://github.com/kadel/odo-v3-prototype/blob/1614ef74a6afdd056d0f87e1e1fafb8275a08a27/cmd/utils.go#L117-L203 

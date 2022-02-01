@@ -50,10 +50,5 @@ Your component is running on cluster.
 You can access it at https://example.com
 ```
 
-If there is no devfile in the current directory `odo` should use ([Alizer](https://github.com/redhat-developer/alizer/pull/55/)) to get corresponding Devfile for code base in the current directory.
-After the successful detection it will show  Language and Project Type information to users and ask for confirmation.
-If user answers that the information is not correct, odo should ask "Select language" and "Select project type" questions (see: [`odo init`](odo-init.md) interactive mode).
 
-The configuration part helps users to modify most common configurations done on Devfiles.
-"? What configuration do you want change? " question is repeated over and over again until user confirms that the configuration is done and there is nothing else to change.
-
+Questions and their behavior is the same as in [`odo init`](odo-init.md) command executed in non-empty directory.

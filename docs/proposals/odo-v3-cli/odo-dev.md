@@ -21,6 +21,11 @@ No devfile.yaml in the current directory. Use `odo init component` to get devfil
 When devfile exists in the current directory deploy application in inner loop mode using the information form `devfile.yaml` in the current directory.
 
 
+`odo dev` commands sets up port-forwarding 
+localhost.
+
+
+
 ## Flags
 
 - `-o` (string) output information in a specified format (json).
@@ -66,8 +71,9 @@ Starting your application on cluster in developer mode ...
 ⠏ Syncing files into the container ... DONE
 ⠏ Building your application in container on cluster ... DONE
 ⠏ Execting the application ... DONE
+
 Your application is running on cluster.
-You can access it at https://example.com
+You can access it at https://localhost:3144
 
 ⠏ Watching for changes in the current directory ... DONE
 Change in main.java detected.
@@ -82,4 +88,4 @@ Press Ctrl+c to exit and clean up resources from cluster.
 ⠏ Cleaning up ... DONE
 ```
 
-Questions and their behavior is the same as for [`odo deploy`](odo-deploy.md) command
+Questions and their behavior is the same as in [`odo init`](odo-init.md) command executed in non-empty directory.
