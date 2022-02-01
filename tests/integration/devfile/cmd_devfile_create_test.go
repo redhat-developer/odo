@@ -424,8 +424,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		var dirLoc, kconfig, globalConfig string
 		BeforeEach(func() {
 			examplesPath := helper.GetExamplePath()
-			dirLoc = helper.CreateRandString(5)
-			helper.MakeDir(dirLoc)
+			dirLoc = helper.CreateNewContext()
 			kconfig = os.Getenv("KUBECONFIG")
 			globalConfig = os.Getenv("GLOBALODOCONFIG")
 			helper.CopyFile(kconfig, filepath.Join(dirLoc, "config"))
@@ -438,6 +437,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "outerloop-deploy", "deployk8s", "outerloop-build"})
 			helper.CopyFile(filepath.Join(dirLoc, "config"), kconfig)
 			helper.CopyFile(filepath.Join(dirLoc, "preference.yaml"), globalConfig)
+			helper.CreateNewContext()
 		})
 	})
 })

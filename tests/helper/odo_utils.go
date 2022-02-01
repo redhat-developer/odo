@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"math/rand"
 	"regexp"
 	"strings"
 
@@ -131,13 +130,4 @@ func GetMetadataFromDevfile(devfilePath string) devfilepkg.DevfileMetadata {
 	devObj, err := devfile.ParseAndValidateFromFile(devfilePath)
 	Expect(err).ToNot(HaveOccurred())
 	return devObj.Data.GetMetadata()
-}
-
-func CreateRandString(n int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
 }
