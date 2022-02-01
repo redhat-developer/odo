@@ -1,9 +1,9 @@
 ---
-title: Hands-on odo guide
+title: Quickstart Guide
 sidebar_position: 5
 ---
 
-# Hands-on Guide
+# Quickstart Guide
 
 In this guide, we will be using odo to create a to-do list application, with the following:
 * ReactJS for the frontend
@@ -99,7 +99,7 @@ Let's create the component below:
 ```shell
 cd ../backend
 odo create java-springboot backend
-odo url create --port 8080 --host <CLUSTER-HOSTNAME>.nip.io
+odo url create --port 8080 --host <CLUSTER-HOSTNAME>
 odo push
 ```
 

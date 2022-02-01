@@ -178,6 +178,32 @@ See [Verifying the Operator installation](#verifying-the-operator-installation) 
 
 ### Confirming your Ingress Controller functionality
 
-blahblahblah
+`odo` will use the *default* Ingress Controller. By default, when you install an Ingress Controller such as [NGINX Ingress](https://kubernetes.github.io/ingress-nginx/), it will *not* be set as the default.
+
+You must set it as the default Ingress Controller by modifying the annotation your IngressClass:
+```sh
+kubectl get IngressClass -A
+kubectl edit IngressClass/YOUR-INGRESS -n YOUR-NAMESPACE
+```
+
+And add the following annotation:
+```yaml
+annotation:
+  ingressclass.kubernetes.io/is-default-class: "true"
+```
 
 ### Confirming your Storage Provisioning functionality
+
+`odo` deploys with [Persistent Volume Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). By default, when you install a [StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/) such as [GlusterFS](https://kubernetes.io/docs/concepts/storage/storage-classes/#glusterfs), it will *not* be set as the default.
+
+You must set it as the default storage provisioner by modifying the annotation your StorageClass:
+```sh
+kubectl get StorageClass -A
+kubectl edit StorageClass/YOUR-STORAGE-CLASS -n YOUR-NAMESPACE
+```
+
+And add the following annotation:
+```yaml
+annotation:
+  storageclass.kubernetes.io/is-default-class: "true"
+```
