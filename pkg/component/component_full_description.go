@@ -57,18 +57,14 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 	if hasAccessToCluster {
 		var componentDescFromCluster Component
 		componentDescFromCluster, err = getRemoteComponentMetadata(client, componentName, applicationName, false, false)
-		// TODO: Move these to functions?
 		componentFoundInCluster := err == nil
 
 		// component was not found on the cluster
 		if !componentFoundInCluster {
-			// if local component is not the same as user asked component,
-			// then return a simple component with user provided information with state as to Unknown
+			// if local component is not the same as user asked component, then set the state to Unknown
 			if !userMatchesDevfile {
-				// TODO: Move this to function
 				componentDesc = Component{}
 				componentDesc.Status.State = StateTypeUnknown
-				devfileObj = parser.DevfileObj{}
 			} else {
 				// since local component and user asked component are same, we can assume that the component has not been pushed yet,
 				// hence set it's state to Not Pushed

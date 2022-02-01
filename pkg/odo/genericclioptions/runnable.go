@@ -160,31 +160,25 @@ func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 				componentName = args[0]
 			}
 			var msgArgs []string
-			if context != "" {
-				if project != "" {
-					msgArgs = append(msgArgs, "--project")
-				}
-				if app != "" {
-					msgArgs = append(msgArgs, "--app")
-				}
-				if componentName != "" {
-					msgArgs = append(msgArgs, "component name")
-				}
+			if project != "" {
+				msgArgs = append(msgArgs, "--project")
+			}
+			if app != "" {
+				msgArgs = append(msgArgs, "--app")
+			}
+			if componentName != "" {
+				msgArgs = append(msgArgs, "component name")
+			}
+
+			if context != "" && len(msgArgs) != 0 {
 				return fmt.Errorf("cannot provide %vwhen --context is provided", strings.Join(msgArgs, ", "))
 			}
 
-			if componentName == "" {
-				if app != "" {
-					msgArgs = append(msgArgs, "--app")
-				}
-				if project != "" {
-					msgArgs = append(msgArgs, "--project")
-				}
+			if componentName == "" && len(msgArgs) != 0 {
 				return fmt.Errorf("cannot provide %v without a component name", strings.Join(msgArgs, ", "))
 			}
-
-			if all && ((componentName != "" && app != "" && project != "") || (componentName != "")) {
-				return fmt.Errorf("cannot provide --all when component name, --app and --project are provided")
+			if all {
+				return fmt.Errorf("cannot provide --all when %v is provided", strings.Join(msgArgs, ", "))
 			}
 		}
 	}
