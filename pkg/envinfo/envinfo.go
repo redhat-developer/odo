@@ -1,3 +1,4 @@
+// envinfo package is DEPRECATED and will be removed during v3 implementation
 package envinfo
 
 import (

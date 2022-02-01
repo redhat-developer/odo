@@ -11,7 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/debug"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
-	"github.com/redhat-developer/odo/pkg/odo/cli/env"
 	_init "github.com/redhat-developer/odo/pkg/odo/cli/init"
 	"github.com/redhat-developer/odo/pkg/odo/cli/login"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
@@ -199,7 +198,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
 		registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
 		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
-		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
