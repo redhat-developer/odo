@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"fmt"
 	"github.com/redhat-developer/odo/tests/helper"
 	"io/ioutil"
 	"os"
@@ -422,15 +421,23 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	When("a devfile is provided which has a starter that has its own devfile", func() {
+		var dirLoc, kconfig, globalConfig string
 		BeforeEach(func() {
 			examplesPath := helper.GetExamplePath()
+			dirLoc = helper.CreateRandString(5)
+			helper.MakeDir(dirLoc)
+			kconfig = os.Getenv("KUBECONFIG")
+			globalConfig = os.Getenv("GLOBALODOCONFIG")
+			helper.CopyFile(kconfig, filepath.Join(dirLoc, "config"))
+			helper.CopyFile(globalConfig, filepath.Join(dirLoc, "preference.yaml"))
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--starter", "nodejs-starter", "--devfile", filepath.Join(examplesPath, "source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml")).ShouldPass()
 		})
 		It("should pass and keep the devfile in starter", func() {
 			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			Expect(err).To(Not(HaveOccurred()))
 			helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "outerloop-deploy", "deployk8s", "outerloop-build"})
-			fmt.Fprintf(GinkgoWriter, "end test Project : %s\nKubeconfig %s", commonVar.Project, os.Getenv("KUBECONFIG"))
+			helper.CopyFile(filepath.Join(dirLoc, "config"), kconfig)
+			helper.CopyFile(filepath.Join(dirLoc, "preference.yaml"), globalConfig)
 		})
 	})
 })

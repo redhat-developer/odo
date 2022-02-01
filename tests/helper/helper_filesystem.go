@@ -142,6 +142,12 @@ func CopyExample(exampleName string, targetDir string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+func CopyFile(src string, dest string) {
+	info, err := os.Stat(src)
+	Expect(err).To(Not(HaveOccurred()))
+	util.CopyFile(src, dest, info)
+}
+
 func CopyManifestFile(fileName, targetDst string) {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
