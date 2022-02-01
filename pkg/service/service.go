@@ -122,6 +122,34 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 	return allCRInstances, failedListingCR, nil
 }
 
+// ListSucceededClusterServiceVersions fetches a list of Operators from the cluster and
+// returns only those Operators which are successfully installed on the cluster
+func ListSucceededClusterServiceVersions(client kclient.ClientInterface) (*olm.ClusterServiceVersionList, error) {
+	var csvList olm.ClusterServiceVersionList
+
+	// first check for CSV support
+	csvSupport, err := client.IsCSVSupported()
+	if !csvSupport || err != nil {
+		return &csvList, err
+	}
+
+	allCsvs, err := client.ListClusterServiceVersions()
+	if err != nil {
+		return &csvList, err
+	}
+
+	// now let's filter only those csvs which are successfully installed
+	csvList.TypeMeta = allCsvs.TypeMeta
+	csvList.ListMeta = allCsvs.ListMeta
+	for _, csv := range allCsvs.Items {
+		if csv.Status.Phase == "Succeeded" {
+			csvList.Items = append(csvList.Items, csv)
+		}
+	}
+
+	return &csvList, nil
+}
+
 func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (string, string, string, error) {
 	var group, version, resource string
 

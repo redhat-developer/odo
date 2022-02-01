@@ -39,6 +39,27 @@ mockgen -source=pkg/preference/preference.go \
     -package preference \
     -destination pkg/preference/mock.go
 
+
 mockgen -source=pkg/auth/interface.go \
     -package auth \
     -destination pkg/auth/mock.go
+
+mockgen -source=pkg/odo/cli/init/params/interface.go \
+    -package params \
+    -destination pkg/odo/cli/init/params/mock.go
+
+mockgen -source=pkg/catalog/interface.go \
+    -package catalog \
+    -destination pkg/catalog/mock_catalog.go
+
+mockgen -source=pkg/odo/cli/init/asker/interface.go \
+    -package asker \
+    -destination pkg/odo/cli/init/asker/mock.go
+
+mockgen -source=pkg/init/interface.go \
+    -package init \
+    -destination pkg/init/mock.go
+
+mockgen -source=pkg/init/registry/interface.go \
+    -package registry \
+    -destination pkg/init/registry/mock.go

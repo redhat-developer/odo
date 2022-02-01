@@ -12,6 +12,9 @@ type Cmdline interface {
 	// GetWorkingdirectory returns tehe directory on which the command should execute
 	GetWorkingDirectory() (string, error)
 
+	// GetFlags returns a map of flags set
+	GetFlags() map[string]string
+
 	// FlagValue returns the value for a flag
 	FlagValue(flagName string) (string, error)
 

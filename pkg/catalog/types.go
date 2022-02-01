@@ -1,9 +1,5 @@
 package catalog
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
 // Registry is the main struct of devfile registry
 type Registry struct {
 	Name   string
@@ -28,22 +24,5 @@ type DevfileComponentTypeList struct {
 	Items             []DevfileComponentType
 }
 
-// ServiceType is the main struct for catalog services
-type ServiceType struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ServiceSpec `json:"spec,omitempty"`
-}
-
-// ServiceSpec is the spec for ServiceType
-type ServiceSpec struct {
-	Hidden   bool     `json:"hidden"`
-	PlanList []string `json:"planList"`
-}
-
-// ServiceTypeList lists all the ServiceType's
-type ServiceTypeList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ServiceType `json:"items"`
-}
+// TypesWithDetails is the list of project types in devfile registries, and their associated devfiles
+type TypesWithDetails map[string][]DevfileComponentType

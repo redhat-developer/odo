@@ -37,7 +37,7 @@ func decideAndDownloadStarterProject(devObj parser.DevfileObj, projectPassed str
 		return nil
 	}
 
-	return component.DownloadStarterProject(starterProject, token, contextDir)
+	return component.DownloadStarterProject(starterProject, token, contextDir, true)
 }
 
 // DevfileJSON creates the full json description of a devfile component is prints it

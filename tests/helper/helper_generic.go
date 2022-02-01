@@ -277,6 +277,8 @@ type CommonVar struct {
 	Project string
 	// Context is a new temporary directory
 	Context string
+	// ConfigDir is a new temporary directory
+	ConfigDir string
 	// CliRunner is program command (oc or kubectl runner) according to cluster
 	CliRunner CliRunner
 	// original values to get restored after the test is done
@@ -292,12 +294,13 @@ func CommonBeforeEach() CommonVar {
 
 	commonVar := CommonVar{}
 	commonVar.Context = CreateNewContext()
+	commonVar.ConfigDir = CreateNewContext()
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
 	commonVar.CliRunner = GetCliRunner()
-	LocalKubeconfigSet(commonVar.Context)
+	LocalKubeconfigSet(commonVar.ConfigDir)
 	commonVar.Project = commonVar.CliRunner.CreateRandNamespaceProject()
 	commonVar.OriginalWorkingDirectory = Getwd()
-	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.Context, "preference.yaml"))
+	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.ConfigDir, "preference.yaml"))
 	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
@@ -318,6 +321,7 @@ func CommonAfterEach(commonVar CommonVar) {
 
 	// delete the temporary context directory
 	DeleteDir(commonVar.Context)
+	DeleteDir(commonVar.ConfigDir)
 
 	os.Unsetenv("GLOBALODOCONFIG")
 }
