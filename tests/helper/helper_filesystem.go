@@ -145,7 +145,7 @@ func CopyExample(exampleName string, targetDir string) {
 func CopyFile(src string, dest string) {
 	info, err := os.Stat(src)
 	Expect(err).To(Not(HaveOccurred()))
-	err := util.CopyFile(src, dest, info)
+	err = util.CopyFile(src, dest, info)
 	Expect(err).To(Not(HaveOccurred()))
 }
 
