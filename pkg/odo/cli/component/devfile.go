@@ -2,12 +2,10 @@ package component
 
 import (
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -114,58 +112,6 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	return
 }
 
-// DevfileComponentLog fetch and display log from devfile components
-func (lo LogOptions) DevfileComponentLog() error {
-	devObj, err := devfile.ParseAndValidateFromFile(lo.GetDevfilePath())
-	if err != nil {
-		return err
-	}
-
-	componentName := lo.Context.EnvSpecificInfo.GetName()
-
-	var platformContext interface{}
-	kc := kubernetes.KubernetesContext{
-		Namespace: lo.KClient.GetCurrentNamespace(),
-	}
-	platformContext = kc
-
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.contextFlag, lo.GetApplication(), devObj, platformContext)
-
-	if err != nil {
-		return err
-	}
-
-	var command devfilev1.Command
-	if lo.debugFlag {
-		command, err = common.GetDebugCommand(devObj.Data, "")
-		if err != nil {
-			return err
-		}
-		if reflect.DeepEqual(devfilev1.Command{}, command) {
-			return errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
-		}
-
-	} else {
-		command, err = common.GetRunCommand(devObj.Data, "")
-		if err != nil {
-			return err
-		}
-	}
-
-	// Start or update the component
-	rd, err := devfileHandler.Log(lo.followFlag, command)
-	if err != nil {
-		log.Errorf(
-			"Failed to log component with name %s.\nError: %v",
-			componentName,
-			err,
-		)
-		return err
-	}
-
-	return util.DisplayLog(lo.followFlag, rd, os.Stdout, componentName, -1)
-}
-
 // DevfileUnDeploy undeploys the devfile kubernetes components
 func (do *DeleteOptions) DevfileUnDeploy() error {
 	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
@@ -207,42 +153,4 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	}
 
 	return devfileHandler.Delete(labels, do.showLogFlag, do.waitFlag)
-}
-
-// RunTestCommand runs the specific test command in devfile
-func (to *TestOptions) RunTestCommand() error {
-	componentName := to.Context.EnvSpecificInfo.GetName()
-
-	var platformContext interface{}
-	kc := kubernetes.KubernetesContext{
-		Namespace: to.KClient.GetCurrentNamespace(),
-	}
-	platformContext = kc
-
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.contextFlag, to.GetApplication(), to.devObj, platformContext)
-	if err != nil {
-		return err
-	}
-	return devfileHandler.Test(to.testCommandFlag, to.showLogFlag)
-}
-
-// DevfileComponentExec executes the given user command inside the component
-func (eo *ExecOptions) DevfileComponentExec(command []string) error {
-	devObj, err := devfile.ParseAndValidateFromFile(eo.componentOptions.GetDevfilePath())
-	if err != nil {
-		return err
-	}
-
-	componentName := eo.componentOptions.EnvSpecificInfo.GetName()
-
-	kc := kubernetes.KubernetesContext{
-		Namespace: eo.componentOptions.KClient.GetCurrentNamespace(),
-	}
-
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.contextFlag, eo.componentOptions.GetApplication(), devObj, kc)
-	if err != nil {
-		return err
-	}
-
-	return devfileHandler.Exec(command)
 }

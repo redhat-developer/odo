@@ -1,11 +1,9 @@
 package devfile
 
 import (
-	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	//We continued iterating on bracket pair guides. Horizontal lines now outline the scope of a bracket pair. Also, vertical lines now depend on the indentation of the code that is surrounded by the bracket pair.. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
@@ -57,22 +55,6 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 					helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", "true", "ingress"})
 				})
 			})
-		})
-	})
-
-	When("creating and pushing with --debug a nodejs component with debhug run", func() {
-		var projectDir string
-		BeforeEach(func() {
-			projectDir = filepath.Join(commonVar.Context, "projectDir")
-			helper.CopyExample(filepath.Join("source", "web-nodejs-sample"), projectDir)
-			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--context", projectDir, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml")).ShouldPass()
-			helper.Cmd("pwd").ShouldPass()
-			helper.Cmd("mv", fmt.Sprint(projectDir, "/devfile.yaml"), fmt.Sprint(projectDir, "/.devfile.yaml")).ShouldPass()
-			helper.Cmd("odo", "push", "--debug", "--context", projectDir).ShouldPass()
-		})
-		It("should log debug command output", func() {
-			output := helper.Cmd("odo", "log", "--debug", "--context", projectDir).ShouldPass().Out()
-			Expect(output).To(ContainSubstring("ODO_COMMAND_DEBUG"))
 		})
 	})
 })
