@@ -42,7 +42,7 @@ minikube addons enable ingress
 
 ### NGINX Ingress
 
-To enable the Ingress feature on a Kubernetes cluster _other than minikube_, we reccomended to use the [NGINX Ingress controller](https://kubernetes.github.io/ingress-nginx/deploy/).
+To enable the Ingress feature on a Kubernetes cluster _other than minikube_, we reccomend to use the [NGINX Ingress controller](https://kubernetes.github.io/ingress-nginx/deploy/).
 
 On the default installation method, you will need to set NGINX Ingress as your [default Ingress controller](https://kubernetes.github.io/ingress-nginx/#i-have-only-one-ingress-controller-in-my-cluster-what-should-i-do), so `odo` may deploy URLs correctly.
 
