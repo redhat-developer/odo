@@ -40,6 +40,7 @@ type Filesystem interface {
 	RemoveAll(path string) error
 	Remove(name string) error
 	Chmod(name string, mode os.FileMode) error
+	Getwd() (dir string, err error)
 
 	// from "io/ioutil"
 	ReadFile(filename string) ([]byte, error)

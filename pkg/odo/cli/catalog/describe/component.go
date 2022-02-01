@@ -18,6 +18,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -44,6 +47,9 @@ type DescribeComponentOptions struct {
 	// Context
 	*genericclioptions.Context
 
+	// Clients
+	catalogClient catalog.Client
+
 	// Parameters
 	componentName string
 
@@ -52,8 +58,10 @@ type DescribeComponentOptions struct {
 }
 
 // NewDescribeComponentOptions creates a new DescribeComponentOptions instance
-func NewDescribeComponentOptions() *DescribeComponentOptions {
-	return &DescribeComponentOptions{}
+func NewDescribeComponentOptions(catalogClient catalog.Client) *DescribeComponentOptions {
+	return &DescribeComponentOptions{
+		catalogClient: catalogClient,
+	}
 }
 
 // Complete completes DescribeComponentOptions after they've been created
@@ -65,7 +73,7 @@ func (o *DescribeComponentOptions) Complete(cmdline cmdline.Cmdline, args []stri
 		return err
 	}
 
-	catalogDevfileList, err := catalog.ListDevfileComponents("")
+	catalogDevfileList, err := o.catalogClient.ListDevfileComponents("")
 	if catalogDevfileList.DevfileRegistries == nil {
 		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 	}
@@ -144,7 +152,11 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 // NewCmdCatalogDescribeComponent implements the odo catalog describe component command
 func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
-	o := NewDescribeComponentOptions()
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewDescribeComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient))
 	command := &cobra.Command{
 		Use:         name,
 		Short:       "Describe a component",

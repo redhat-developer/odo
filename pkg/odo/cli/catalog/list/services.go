@@ -7,12 +7,12 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func (o *ServiceOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		return err
 	}
 
-	o.csvs, err = catalog.ListOperatorServices(o.KClient)
+	o.csvs, err = service.ListSucceededClusterServiceVersions(o.KClient)
 	if err != nil && !strings.Contains(err.Error(), "could not find specified operator") {
 		return err
 	}

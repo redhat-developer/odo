@@ -285,6 +285,20 @@ func (mr *MockClientMockRecorder) RegistryList() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryList", reflect.TypeOf((*MockClient)(nil).RegistryList))
 }
 
+// RegistryNameExists mocks base method.
+func (m *MockClient) RegistryNameExists(name string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryNameExists", name)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// RegistryNameExists indicates an expected call of RegistryNameExists.
+func (mr *MockClientMockRecorder) RegistryNameExists(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryNameExists", reflect.TypeOf((*MockClient)(nil).RegistryNameExists), name)
+}
+
 // SetConfiguration mocks base method.
 func (m *MockClient) SetConfiguration(parameter, value string) error {
 	m.ctrl.T.Helper()

@@ -437,6 +437,15 @@ func (c *preferenceInfo) RegistryList() *[]Registry {
 	return c.OdoSettings.RegistryList
 }
 
+func (c *preferenceInfo) RegistryNameExists(name string) bool {
+	for _, registry := range *c.RegistryList() {
+		if registry.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 // FormatSupportedParameters outputs supported parameters and their description
 func FormatSupportedParameters() (result string) {
 	for _, v := range GetSupportedParameters() {

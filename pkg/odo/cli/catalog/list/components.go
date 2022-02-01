@@ -11,7 +11,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
+
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,18 +29,23 @@ var componentsExample = `  # Get the supported components
 type ListComponentsOptions struct {
 	// No context needed
 
+	// Clients
+	catalogClient catalog.Client
+
 	// list of known devfiles
 	catalogDevfileList catalog.DevfileComponentTypeList
 }
 
 // NewListComponentsOptions creates a new ListComponentsOptions instance
-func NewListComponentsOptions() *ListComponentsOptions {
-	return &ListComponentsOptions{}
+func NewListComponentsOptions(catalogClient catalog.Client) *ListComponentsOptions {
+	return &ListComponentsOptions{
+		catalogClient: catalogClient,
+	}
 }
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+	o.catalogDevfileList, err = o.catalogClient.ListDevfileComponents("")
 	if err != nil {
 		return err
 	}
@@ -88,7 +97,11 @@ func (o *ListComponentsOptions) Run() (err error) {
 
 // NewCmdCatalogListComponents implements the odo catalog list components command
 func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
-	o := NewListComponentsOptions()
+	prefClient, err := preference.NewClient()
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+	}
+	o := NewListComponentsOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient))
 
 	var componentListCmd = &cobra.Command{
 		Use:         name,

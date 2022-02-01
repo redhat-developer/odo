@@ -23,6 +23,7 @@ type Client interface {
 	EphemeralSourceVolume() *bool
 	ConsentTelemetry() *bool
 	RegistryList() *[]Registry
+	RegistryNameExists(name string) bool
 
 	NewPreferenceList() PreferenceList
 }
