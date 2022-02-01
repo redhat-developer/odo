@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/unions"
+	"github.com/redhat-developer/odo/pkg/kclient/unions"
 
 	"github.com/golang/mock/gomock"
 	routev1 "github.com/openshift/api/route/v1"

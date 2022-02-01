@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/unions"
+	"github.com/redhat-developer/odo/pkg/kclient/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
