@@ -12,6 +12,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/component"
 	_init "github.com/redhat-developer/odo/pkg/init"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -101,7 +102,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 	}
 
 	if !done {
-		odoutil.LogErrorAndExit(nil, "no backend found to build init parameters. This should not happen")
+		odoutil.LogErrorAndExit(errors.New("no backend found to build init parameters. This should not happen"), "")
 	}
 
 	return nil
@@ -152,7 +153,7 @@ func (o *InitOptions) Run() (err error) {
 		return err
 	}
 
-	scontext.SetComponentType(o.ctx, devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	if o.InitParams.Starter != "" {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
@@ -197,7 +198,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	}
 
 	backends := []params.ParamsBuilder{
-		&params.FlagsBuilder{},
+		params.NewFlagsBuilder(),
 		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)),
 	}
 	o := NewInitOptions(backends, fsys, _init.NewInitClient(fsys, prefClient, registryClient), prefClient)

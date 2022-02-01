@@ -54,6 +54,9 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 			if adequate != tt.wantAdequate {
 				t.Errorf("IsAdequate should return %v but returns %v", tt.wantAdequate, adequate)
 			}
+			if !adequate {
+				return
+			}
 			got, err := o.ParamsBuild()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
