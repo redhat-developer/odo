@@ -20,7 +20,7 @@ At the end of the guide, you will be able to list, add and delete to-do items fr
 
 ## Clone the quickstart guide
 
-Clone the [quickstart](https://operatorhub.io/) repo from GitHub:
+Clone the [quickstart](https://github.com/odo-devfiles/odo-quickstart) repo from GitHub:
 ```shell
 git clone https://github.com/odo-devfiles/odo-quickstart
 cd odo-quickstart
