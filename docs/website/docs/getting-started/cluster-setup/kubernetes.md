@@ -19,7 +19,7 @@ This guide is helpful in setting up a development environment intended to be use
 ## Summary
 * An Ingress controller in order to use `odo url create`
 * Operator Lifecycle Manager in order to use `odo service create`
-* (Optional) Service Binding Operator in order to use `odo link create`
+* (Optional) Service Binding Operator in order to use `odo link`
 
 ## Installing an Ingress controller
 
