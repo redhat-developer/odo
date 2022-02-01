@@ -95,12 +95,10 @@ var _ = Describe("odo devfile app command tests", func() {
 			BeforeEach(func() {
 				context00 = helper.CreateNewContext()
 				component00 := helper.RandString(4)
-				storage00 := helper.RandString(4)
 				url00 := helper.RandString(4)
 
 				helper.Cmd("odo", "create", "--project", namespace, component00, "--context", context00, "--app", app0, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context00)
-				helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
 				helper.Cmd("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
 				helper.Cmd("odo", "push", "--context", context00).ShouldPass()
 
@@ -110,7 +108,6 @@ var _ = Describe("odo devfile app command tests", func() {
 					comp0:     component0,
 					comp00:    component00,
 					url00:     url00,
-					storage00: storage00,
 					namespace: namespace,
 				}
 			})
@@ -182,8 +179,8 @@ type testInfo struct {
 	// the name of the components belonging to the first app
 	comp0, comp00 string
 
-	// the url and storage belonging to one of the components in the first app
-	url00, storage00 string
+	// the url belonging to one of the components in the first app
+	url00 string
 
 	namespace string
 }
@@ -199,7 +196,7 @@ func runner(info testInfo) {
 	Expect(helper.IsJSON(stdOut)).To(BeTrue())
 
 	stdOut = helper.Cmd("odo", "app", "describe", info.app0, "--project", info.namespace).ShouldPass().Out()
-	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.storage00, info.url00, "http", "3000"})
+	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.url00, "http", "3000"})
 
 	// test the json output
 	stdOut = helper.Cmd("odo", "app", "describe", info.app0, "--project", info.namespace, "-o", "json").ShouldPass().Out()
@@ -208,7 +205,7 @@ func runner(info testInfo) {
 
 	// delete the app
 	stdOut = helper.Cmd("odo", "app", "delete", info.app0, "--project", info.namespace, "-f").ShouldPass().Out()
-	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.url00, info.storage00})
+	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.url00})
 
 	// test the list output again
 	stdOut = helper.Cmd("odo", "app", "list", "--project", info.namespace).ShouldPass().Out()

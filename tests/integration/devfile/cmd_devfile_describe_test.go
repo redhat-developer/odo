@@ -28,7 +28,7 @@ var _ = Describe("odo devfile describe command tests", func() {
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-	When("a component is created with storage and url", func() {
+	When("a component is created with url", func() {
 		var (
 			compName = "cmp-git"
 			compType = "django"
@@ -41,7 +41,6 @@ var _ = Describe("odo devfile describe command tests", func() {
 			helper.Cmd("odo", "create", "python-django", compName, "--project", commonVar.Project, "--context", commonVar.Context, "--app", appName).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-1", "--port", "3000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
 			helper.Cmd("odo", "url", "create", "url-2", "--port", "4000", "--host", "example.com", "--context", commonVar.Context).ShouldPass()
-			helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 		})
 		AfterEach(func() {
 			// odo delete requires changing directory because it does not work as intended with --context
@@ -57,13 +56,12 @@ var _ = Describe("odo devfile describe command tests", func() {
 				compType,
 				"url-1",
 				"url-2",
-				"storage-1",
 			})
 			By("checking describe works with json output", func() {
 				cmpDescribeJSON, err := helper.Unindented(helper.Cmd("odo", "describe", "-o", "json", "--context", commonVar.Context).ShouldPass().Out())
 				Expect(err).Should(BeNil())
-				valuesDes := gjson.GetMany(cmpDescribeJSON, "kind", "metadata.name", "status.state", "spec.urls.items.0.metadata.name", "spec.urls.items.0.spec.host", "spec.urls.items.1.metadata.name", "spec.urls.items.1.spec.host", "spec.storages.items.0.metadata.name", "spec.storages.items.0.spec.containerName")
-				expectedDes := []string{"Component", compName, status, "url-1", "url-1.example.com", "url-2", "url-2.example.com", "storage-1", "py-web"}
+				valuesDes := gjson.GetMany(cmpDescribeJSON, "kind", "metadata.name", "status.state", "spec.urls.items.0.metadata.name", "spec.urls.items.0.spec.host", "spec.urls.items.1.metadata.name", "spec.urls.items.1.spec.host")
+				expectedDes := []string{"Component", compName, status, "url-1", "url-1.example.com", "url-2", "url-2.example.com"}
 				Expect(helper.GjsonMatcher(valuesDes, expectedDes)).To(Equal(true))
 			})
 

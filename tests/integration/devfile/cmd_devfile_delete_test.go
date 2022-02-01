@@ -180,7 +180,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 					helper.Cmd("odo", "url", "create", "example-1", "--port", "3000").ShouldPass()
 					resourceTypes = append(resourceTypes, helper.ResourceTypeRoute)
 				}
-				helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 			})
 			When("the component is pushed", func() {
 				BeforeEach(func() {
@@ -227,11 +226,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 						{
 							ResourceType: helper.ResourceTypeService,
 							ResourceName: componentName,
-							Namespace:    commonVar.Project,
-						},
-						{
-							ResourceType: helper.ResourceTypePVC,
-							ResourceName: "storage-1",
 							Namespace:    commonVar.Project,
 						},
 						{
