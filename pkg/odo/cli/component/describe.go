@@ -10,7 +10,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
@@ -110,8 +109,6 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(describeCmd)
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(describeCmd)
 
 	return describeCmd
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -97,8 +96,6 @@ func NewCmdGet(name, fullName string) *cobra.Command {
 
 	//Adding `--project` flag
 	project.AddProjectFlag(componentGetCmd)
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentGetCmd)
 
 	return componentGetCmd
 }

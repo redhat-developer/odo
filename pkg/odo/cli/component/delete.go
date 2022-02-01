@@ -3,16 +3,16 @@ package component
 import (
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	"github.com/redhat-developer/odo/pkg/log"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -267,8 +267,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	// Adding `--project` flag
 	projectCmd.AddProjectFlag(componentDeleteCmd)
-	// Adding `--application` flag
-	appCmd.AddApplicationFlag(componentDeleteCmd)
 
 	return componentDeleteCmd
 }

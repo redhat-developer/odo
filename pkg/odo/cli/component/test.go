@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -97,8 +96,6 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	odoutil.AddContextFlag(testCmd, &to.contextFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(testCmd)
-	// Adding `--app` flag
-	appCmd.AddApplicationFlag(testCmd)
 	completion.RegisterCommandHandler(testCmd, completion.ComponentNameCompletionHandler)
 	return testCmd
 }

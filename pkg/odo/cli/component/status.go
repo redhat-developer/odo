@@ -10,7 +10,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -121,9 +120,6 @@ func NewCmdStatus(name, fullName string) *cobra.Command {
 	odoutil.AddContextFlag(statusCmd, &o.contextFlag)
 
 	statusCmd.Flags().BoolVarP(&o.followFlag, "follow", "f", false, "Follow the component and report all changes")
-
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(statusCmd)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(statusCmd)
