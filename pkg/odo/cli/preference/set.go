@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -44,6 +45,9 @@ func NewSetOptions(prefClient preference.Client) *SetOptions {
 	return &SetOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *SetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes SetOptions after they've been created

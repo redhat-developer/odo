@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -41,6 +42,9 @@ func NewProjectListOptions(prjClient project.Client) *ProjectListOptions {
 	return &ProjectListOptions{
 		prjClient: prjClient,
 	}
+}
+
+func (o *ProjectListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ProjectListOptions after they've been created

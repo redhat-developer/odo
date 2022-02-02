@@ -6,6 +6,7 @@ import (
 
 	util2 "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
 	// Third-party packages
 	"github.com/pkg/errors"
@@ -55,6 +56,9 @@ func NewAddOptions(prefClient preference.Client) *AddOptions {
 	return &AddOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *AddOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes AddOptions after they've been created

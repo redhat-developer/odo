@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/segment/context"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -52,6 +53,9 @@ func NewProjectSetOptions(prjClient project.Client) *ProjectSetOptions {
 	return &ProjectSetOptions{
 		prjClient: prjClient,
 	}
+}
+
+func (o *ProjectSetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ProjectSetOptions after they've been created

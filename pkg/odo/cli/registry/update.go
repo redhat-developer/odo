@@ -14,6 +14,7 @@ import (
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -52,6 +53,9 @@ func NewUpdateOptions(prefClient preference.Client) *UpdateOptions {
 	return &UpdateOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *UpdateOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes UpdateOptions after they've been created

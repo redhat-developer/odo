@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/zalando/go-keyring"
@@ -119,6 +120,9 @@ func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *C
 	return &CreateOptions{
 		PushOptions: NewPushOptions(prjClient, prefClient),
 	}
+}
+
+func (o *CreateOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {

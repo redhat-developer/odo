@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
@@ -48,6 +49,9 @@ func NewVersionOptions(prefClient preference.Client) *VersionOptions {
 	return &VersionOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *VersionOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes VersionOptions after they have been created

@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -51,6 +52,9 @@ func NewProjectCreateOptions(prjClient project.Client) *ProjectCreateOptions {
 	return &ProjectCreateOptions{
 		prjClient: prjClient,
 	}
+}
+
+func (o *ProjectCreateOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ProjectCreateOptions after they've been created

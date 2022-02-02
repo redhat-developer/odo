@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -39,6 +40,9 @@ func NewSearchComponentOptions(catalogClient catalog.Client) *SearchComponentOpt
 	return &SearchComponentOptions{
 		catalogClient: catalogClient,
 	}
+}
+
+func (o *SearchComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes SearchComponentOptions after they've been created

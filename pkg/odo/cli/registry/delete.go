@@ -14,6 +14,7 @@ import (
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -51,6 +52,9 @@ func NewDeleteOptions(prefClient preference.Client) *DeleteOptions {
 	return &DeleteOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *DeleteOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes DeleteOptions after they've been created

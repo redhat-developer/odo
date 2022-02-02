@@ -9,6 +9,7 @@ import (
 	_init "github.com/redhat-developer/odo/pkg/init"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -66,8 +67,13 @@ func TestInitOptions_Complete(t *testing.T) {
 			}
 			prefClient := preference.NewMockClient(ctrl)
 			initClient := _init.NewMockClient(ctrl)
-			o := NewInitOptions(backends, fsys, initClient, prefClient)
-
+			o := NewInitOptions()
+			o.SetClientset(&clientset.Clientset{
+				PreferenceClient: prefClient,
+				InitClient:       initClient,
+				FS:               fsys,
+			})
+			o.backends = backends
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			if tt.cmdlineExpects != nil {
 				tt.cmdlineExpects(cmdline)

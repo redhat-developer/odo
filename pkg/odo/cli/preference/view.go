@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
@@ -33,6 +34,9 @@ func NewViewOptions(prefClient preference.Client) *ViewOptions {
 	return &ViewOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *ViewOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ViewOptions after they've been created

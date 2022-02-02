@@ -21,6 +21,7 @@ import (
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -79,6 +80,9 @@ func NewPushOptions(prjClient project.Client, prefClient preference.Client) *Pus
 	return &PushOptions{
 		CommonPushOptions: NewCommonPushOptions(prjClient, prefClient),
 	}
+}
+
+func (o *PushOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // CompleteDevfilePath completes the devfile path from context

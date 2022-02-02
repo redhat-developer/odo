@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
 	util2 "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -71,6 +72,9 @@ type TerminalOptions struct {
 // NewTerminalOptions creates a new TerminalOptions instance
 func NewTerminalOptions() *TerminalOptions {
 	return &TerminalOptions{}
+}
+
+func (o *TerminalOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes TerminalOptions after they've been created

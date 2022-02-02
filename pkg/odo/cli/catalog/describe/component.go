@@ -18,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -62,6 +63,9 @@ func NewDescribeComponentOptions(catalogClient catalog.Client) *DescribeComponen
 	return &DescribeComponentOptions{
 		catalogClient: catalogClient,
 	}
+}
+
+func (o *DescribeComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes DescribeComponentOptions after they've been created

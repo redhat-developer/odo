@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/pkg/errors"
@@ -44,6 +45,9 @@ func NewUnsetOptions(prefClient preference.Client) *UnsetOptions {
 	return &UnsetOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *UnsetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes UnsetOptions after they've been created

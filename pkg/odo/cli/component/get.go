@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -35,6 +36,9 @@ type GetOptions struct {
 // NewGetOptions returns new instance of GetOptions
 func NewGetOptions() *GetOptions {
 	return &GetOptions{}
+}
+
+func (o *GetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes get args

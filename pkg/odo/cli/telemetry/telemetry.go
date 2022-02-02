@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -23,6 +24,9 @@ func NewTelemetryOptions(prefClient preference.Client) *TelemetryOptions {
 	return &TelemetryOptions{
 		prefClient: prefClient,
 	}
+}
+
+func (o *TelemetryOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *TelemetryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {

@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/auth"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -50,6 +51,9 @@ func NewLoginOptions(client auth.Client) *LoginOptions {
 	return &LoginOptions{
 		loginClient: client,
 	}
+}
+
+func (o *LoginOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes LoginOptions after they've been created

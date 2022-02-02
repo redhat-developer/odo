@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 
@@ -53,6 +54,9 @@ func NewProjectDeleteOptions(prjClient project.Client) *ProjectDeleteOptions {
 	return &ProjectDeleteOptions{
 		prjClient: prjClient,
 	}
+}
+
+func (o *ProjectDeleteOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ProjectDeleteOptions after they've been created
