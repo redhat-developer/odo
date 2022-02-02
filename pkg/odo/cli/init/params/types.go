@@ -23,13 +23,13 @@ type InitParams struct {
 
 func (o *InitParams) Validate(prefClient preference.Client) error {
 	if o.Name == "" {
-		return errors.New("name is required")
+		return errors.New("missing --name parameter: please add --name <name> to specify a name for the component")
 	}
 	if o.Devfile == "" && o.DevfilePath == "" {
-		return errors.New("either devfile or devfile-path should be set")
+		return errors.New("either --devfile or --devfile-path parameter should be specified")
 	}
 	if o.Devfile != "" && o.DevfilePath != "" {
-		return errors.New("only one of devfile or devfile-path should be set")
+		return errors.New("only one of --devfile or --devfile-path parameter should be specified")
 	}
 
 	if o.DevfileRegistry != "" && !prefClient.RegistryNameExists(o.DevfileRegistry) {
@@ -37,7 +37,7 @@ func (o *InitParams) Validate(prefClient preference.Client) error {
 	}
 
 	if o.DevfilePath != "" && o.DevfileRegistry != "" {
-		return errors.New("devfile-registry cannot be used with devfile-path")
+		return errors.New("--devfile-registry parameter cannot be used with --devfile-path")
 	}
 
 	err := util.ValidateK8sResourceName("name", o.Name)
