@@ -35,7 +35,22 @@ const RecommendedCommandName = "init"
 var initExample = templates.Examples(`
   # Boostrap a new component in interactive mode
   %[1]s
-`)
+
+  # Bootstrap a new component with a specific devfile from registry
+  %[1]s --name my-app --devfile nodejs
+  
+  # Bootstrap a new component with a specific devfile from a specific registry
+  %[1]s --name my-app --devfile nodejs --devfile-registry MyRegistry
+  
+  # Bootstrap a new component with a specific devfile from the local filesystem
+  %[1]s --name my-app --devfile-path $HOME/devfiles/nodejs/devfile.yaml
+  
+  # Bootstrap a new component with a specific devfile from the web
+  %[1]s --name my-app --devfile-path https://devfiles.example.com/nodejs/devfile.yaml
+
+  # Bootstrap a new component and download a starter project
+  %[1]s --name my-app --devfile nodejs --starter nodejs-starter
+  `)
 
 type InitOptions struct {
 	// CMD context
@@ -216,7 +231,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVar(&o.Name, params.FLAG_NAME, "", "name of the component to create")
 	initCmd.Flags().StringVar(&o.Devfile, params.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
 	initCmd.Flags().StringVar(&o.DevfileRegistry, params.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
-	initCmd.Flags().StringVar(&o.Starter, params.FLAG_STARTER, "", "name of the starter project")
+	initCmd.Flags().StringVar(&o.Starter, params.FLAG_STARTER, "", "name of the starter project. Available starter projects can be found with \"odo catalog describe component <devfile>\"")
 	initCmd.Flags().StringVar(&o.DevfilePath, params.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu
