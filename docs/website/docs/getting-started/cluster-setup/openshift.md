@@ -14,7 +14,7 @@ This guide is helpful in setting up a development environment intended to be use
 
 ## Summary
 * An Operator in order to use `odo service`
-* Service Binding Operator in order to use `odo link`
+* (Optional) Service Binding Operator in order to use `odo link`
 
 ## Installing an Operator
 
@@ -50,8 +50,11 @@ datadog-operator.v0.6.0             DatadogAgent, DatadogMetric, DatadogMonitor
 service-binding-operator.v0.9.1     ServiceBinding, ServiceBinding
 ```
 
-## Installing the Service Binding Operator
+## (Optional) Installing the Service Binding Operator
+
 `odo` uses [Service Binding Operator](https://operatorhub.io/operator/service-binding-operator) to provide the `odo link` feature which helps to connect an odo component to a service or another component.
+
+The Service Binding Operator is _optional_ and is used to provide extra metadata support for `odo` deployments.
 
 To install the Service Binding Operator from the OpenShift web console:
 1. Login to the OpenShift web console with admin, and navigate to Operators > OperatorHub.
