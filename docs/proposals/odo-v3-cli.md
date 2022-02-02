@@ -6,10 +6,11 @@
 
 ## Changes from odo v2 command perspective
 
-Commands can be removed from odo for now. Functionality of those commands won't be there for alpha1.
+Commands can be removed from odo for now. Functionality of those commands won't be there in alpha1.
 
 - `app`
 - `config`
+- `catalog`
 - `debug`
 - `env`
 - `service`
@@ -20,6 +21,7 @@ Commands can be removed from odo for now. Functionality of those commands won't 
 - `log`
 - `link`
 - `exec`
+- `url`
 - `describe`
 - `component`
   - `describe`
@@ -30,8 +32,7 @@ Commands can be removed from odo for now. Functionality of those commands won't 
   - `test`
   - `unlink`
 
-
-Commands whose functionality will be in alpha1 but the command will have a different name parameters.
+Commands with the functionality that will be in alpha1 but the command will have a different name parameters.
 
 - `component` - as a root command this will be removed, for info about subcommand check their root level equivalents.
   - `create`
@@ -39,13 +40,11 @@ Commands whose functionality will be in alpha1 but the command will have a diffe
   - `list`
   - `push`
   - `watch`
-- `catalog` - new command will be `odo list catalog`
 - `preference` - mostly as it is just with cleanup and integration of `odo registry`
 - `registry` - integrated into `odo preference`
 - `watch` - new command will be `odo dev`
 - `build-images` - new command will be `odo build images`
 - `deploy` - mostly as it is just with some new flags
-- `url` - new commands will be `odo create/list/delete endpoint`
 - `push` - technically this will be in `odo dev`
 - `create` - new command will be `odo init` and also integrated into `odo dev` and  `odo deploy`
 - `delete` - new command will be `odo delete component`
