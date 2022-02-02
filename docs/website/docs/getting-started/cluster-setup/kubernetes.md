@@ -14,16 +14,24 @@ This guide is helpful in setting up a development environment intended to be use
 * You have a Kubernetes cluster set up (such as [minikube](https://minikube.sigs.k8s.io/docs/start/))
 * You have admin privileges to the cluster
 
+**Important notes:** `odo` will use the __default__ ingress and storage provisioning on your cluster. If they have not been set correctly, see our [troubleshooting guide](/docs/getting-started/cluster-setup/kubernetes#troubleshooting) for more details.
+
 ## Summary
-* An Ingress Controller in order to use `odo url create`
+* An Ingress controller in order to use `odo url create`
 * Operator Lifecycle Manager in order to use `odo service create`
-* Service Binding Operator in order to use `odo link create`
+* (Optional) Service Binding Operator in order to use `odo link`
 
 ## Installing an Ingress controller
 
 Creating an Ingress controller is required to use the `odo url create` feature.
 
-This can be enabled by installing [an Ingress addon as per the Kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/) such as: the built-in one on [minikube](https://minikube.sigs.k8s.io/) or [nginx-ingress](https://kubernetes.github.io/ingress-nginx/).
+This can be enabled by installing [an Ingress addon as per the Kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/) such as: the built-in one on [minikube](https://minikube.sigs.k8s.io/) or [NGINX Ingress](https://kubernetes.github.io/ingress-nginx/).
+
+
+**IMPORTANT:** `odo` cannot specify an Ingress controller and will use the *default* Ingress controller. 
+
+
+If you are unable to access your components, check that your [default Ingress controller](https://kubernetes.github.io/ingress-nginx/#i-have-only-one-ingress-controller-in-my-cluster-what-should-i-do) has been set correctly.
 
 ### Minikube
 
@@ -32,13 +40,18 @@ To install an Ingress controller on a minikube cluster, enable the **ingress** a
 minikube addons enable ingress
 ````
 
-### Nginx Ingress and other Ingress controllers
+### NGINX Ingress
 
-To enable the Ingress feature on a Kubernetes cluster _other than minikube_, it is reccomended to use the [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/).
+To enable the Ingress feature on a Kubernetes cluster _other than minikube_, we reccomend to use the [NGINX Ingress controller](https://kubernetes.github.io/ingress-nginx/deploy/).
+
+On the default installation method, you will need to set NGINX Ingress as your [default Ingress controller](https://kubernetes.github.io/ingress-nginx/#i-have-only-one-ingress-controller-in-my-cluster-what-should-i-do), so `odo` may deploy URLs correctly.
+
+### Other Ingress controllers
 
 For a list of all available Ingress controllers see the [the Ingress controller documentation](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/).
 
 To learn more about enabling this feature on your cluster, see the [Ingress prerequisites](https://kubernetes.io/docs/concepts/services-networking/ingress/#prerequisites) on the official kubernetes documentation.
+
 
 ## Installing the Operator Lifecycle Manager (OLM)
 
@@ -48,7 +61,7 @@ The [Operator Lifecycle Manager (OLM)](https://olm.operatorframework.io/) is an 
 
 `odo` utilizes Operators in order to create and link services to applications.
 
-To install an Operator, we will first need to install OLM [(Operator Lifecycle Manager)](https://olm.operatorframework.io/) on the cluster:
+The following command will install OLM cluster-wide as well as create two new namespaces: `olm` and `operators`.
 
 ```shell
 curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.20.0/install.sh | bash -s v0.20.0
@@ -60,7 +73,7 @@ Note: Check the OLM [release page](https://github.com/operator-framework/operato
 
 ### Installing an Operator
 
-Installing an Operator allows you to install a service such as PostgreSQL, Redis or DataDog.
+Installing an Operator allows you to install a service such as Postgres, Redis or DataDog.
 
 To install an operator from the OperatorHub website:
 1. Visit the [OperatorHub](https://operatorhub.io) website.
@@ -130,9 +143,25 @@ The output may look similar to:
   kubectl delete pods/<operatorhubio-catalog-name> -n olm
   ```
 
-## Installing the Service Binding Operator
+### Checking to see if an Operator has been installed
+
+For this example, we will check the [PostgreSQL Operator](https://operatorhub.io/operator/postgresql) installation.
+
+Check `kubectl get csv` to see if your Operator exists:
+```shell
+$ kubectl get csv                         
+NAME                      DISPLAY                           VERSION   REPLACES                  PHASE
+postgresoperator.v5.0.3   Crunchy Postgres for Kubernetes   5.0.3     postgresoperator.v5.0.2   Succeeded
+```
+
+If the `PHASE` is something other than `Succeeded`, you won't see it in `odo catalog list services` output, and you won't be able to create a working Operator backed service out of it either. You will have to wait patiently until `PHASE` says `Suceeded`.
+
+
+## (Optional) Installing the Service Binding Operator
 
 `odo` uses [Service Binding Operator](https://operatorhub.io/operator/service-binding-operator) to provide the `odo link` feature which helps to connect an odo component to a service or another component.
+
+The Service Binding Operator is _optional_ and is used to provide extra metadata support for `odo` deployments.
 
 Operators can be installed in a specific namespace or across the cluster-wide.
 
@@ -144,3 +173,37 @@ Running the command will create the necessary resource in the `operators` namesp
 If you want to access this resource from other namespaces as well, add your target namespace to `.spec.targetNamespaces` list in the `service-binding-operator.yaml` file before running `kubectl create`.
 
 See [Verifying the Operator installation](#verifying-the-operator-installation) to ensure that the Operator was installed successfully.
+
+## Troubleshooting
+
+### Confirming your Ingress Controller functionality
+
+`odo` will use the *default* Ingress Controller. By default, when you install an Ingress Controller such as [NGINX Ingress](https://kubernetes.github.io/ingress-nginx/), it will *not* be set as the default.
+
+You must set it as the default Ingress Controller by modifying the annotation your IngressClass:
+```sh
+kubectl get IngressClass -A
+kubectl edit IngressClass/YOUR-INGRESS -n YOUR-NAMESPACE
+```
+
+And add the following annotation:
+```yaml
+annotation:
+  ingressclass.kubernetes.io/is-default-class: "true"
+```
+
+### Confirming your Storage Provisioning functionality
+
+`odo` deploys with [Persistent Volume Claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). By default, when you install a [StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/) such as [GlusterFS](https://kubernetes.io/docs/concepts/storage/storage-classes/#glusterfs), it will *not* be set as the default.
+
+You must set it as the default storage provisioner by modifying the annotation your StorageClass:
+```sh
+kubectl get StorageClass -A
+kubectl edit StorageClass/YOUR-STORAGE-CLASS -n YOUR-NAMESPACE
+```
+
+And add the following annotation:
+```yaml
+annotation:
+  storageclass.kubernetes.io/is-default-class: "true"
+```
