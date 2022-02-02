@@ -21,7 +21,7 @@ echo "RESULT: $RESULT"
 source .ibm/pipelines/functions.sh
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
 sshpass -p $WINDOWS_PASSWORD scp  -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:/tmp/${LOGFILE}   /tmp/${LOGFILE}
-save_logs "${LOGFILE}" "OpenShift Windows Tests"  $RESULT
+save_logs "${LOGFILE}" "Windows Tests (OCP)"  $RESULT
 
 # cleanup 
 sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP    -o StrictHostKeyChecking=no rm -rf /tmp/windows-test-script.ps1
