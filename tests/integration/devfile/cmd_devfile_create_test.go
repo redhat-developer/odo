@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"github.com/redhat-developer/odo/tests/helper"
 	"io/ioutil"
 	"os"
 	"path"
@@ -14,7 +15,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile create command tests", func() {
@@ -228,7 +228,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the component and extract the project in the specified subDir path", func() {
 				var found, notToBeFound int
-				helper.Cmd("odo", "create", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
+				helper.Cmd("odo", "create", "java-springboot", "--project", commonVar.Project, "--starter", "springbootproject").ShouldPass()
 				pathsToValidate := map[string]bool{
 					filepath.Join(contextDevfile, "java", "com"):                                            true,
 					filepath.Join(contextDevfile, "java", "com", "example"):                                 true,
@@ -407,6 +407,28 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should successfully create a devfile component", func() {
 			Expect(stdout).To(ContainSubstring("Please use `odo push` command to create the component with source deployed"))
+		})
+	})
+
+	When("there is already a devfile in the directory", func() {
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+		It("should fail with appropriate error when --starter is given to odo create", func() {
+			stderr := helper.Cmd("odo", "create", "--starter", "nodejs-starter", "--context", commonVar.Context, "--project", commonVar.Project).ShouldFail().Err()
+			Expect(stderr).To(ContainSubstring("already has a devfile so you cannot provide a starter"))
+		})
+	})
+
+	When("a devfile is provided which has a starter that has its own devfile", func() {
+		BeforeEach(func() {
+			examplesPath := helper.GetExamplePath()
+			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--starter", "nodejs-starter", "--devfile", filepath.Join(examplesPath, "source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml")).ShouldPass()
+		})
+		It("should pass and keep the devfile in starter", func() {
+			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(Not(HaveOccurred()))
+			helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "outerloop-deploy", "deployk8s", "outerloop-build"})
 		})
 	})
 })
