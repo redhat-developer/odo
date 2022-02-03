@@ -142,6 +142,9 @@ var _ = Describe("odo preference and config command tests", func() {
 		var ocRunner helper.OcRunner
 		var token string
 		BeforeEach(func() {
+			if helper.IsKubernetesCluster() {
+				Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
+			}
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 			ocRunner = helper.NewOcRunner("oc")
@@ -153,18 +156,12 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 		When("user is working with a devfile component", func() {
 			It("should set, list and delete config successfully", func() {
-				if helper.IsKubernetesCluster() {
-					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
-				}
 				helper.Cmd("odo", "config", "set", "--force", "--context", commonVar.Context, "Name", "foobar").ShouldPass()
 				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
 				Expect(configValue).To(ContainSubstring("foobar"))
 				helper.Cmd("odo", "config", "unset", "--force", "--context", commonVar.Context, "Name").ShouldPass()
 			})
 			It("should set, list and delete config envs successfully", func() {
-				if helper.IsKubernetesCluster() {
-					Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
-				}
 				multiLineContent := `line1
 line2
 line3`
