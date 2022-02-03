@@ -44,7 +44,6 @@ type CreateOptions struct {
 	envFlag     []string
 	nowFlag     bool
 	appFlag     string
-
 	interactive bool
 
 	// devfileName stores the "componentType" passed by user irrespective of it being a valid componentType
@@ -53,6 +52,7 @@ type CreateOptions struct {
 
 	createMethod    CreateMethod
 	devfileMetadata DevfileMetadata
+	stackName       string
 }
 
 // Path of user's own devfile, user specifies the path via --devfile flag
@@ -147,9 +147,18 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	}
 	// CONFLICT CHECK
 	// Check if a component exists
-	if util.CheckPathExists(envFilePath) && util.CheckPathExists(co.DevfilePath) {
-		return errors.New("this directory already contains a component")
+	if util.CheckPathExists(co.DevfilePath) {
+		if util.CheckPathExists(envFilePath) {
+			return errors.New("this directory already contains a component")
+		} else if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+			//Check if the directory already contains a devfile when --devfile flag is passed
+			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
+		} else if co.devfileMetadata.starter != "" && len(args) == 0 {
+			//if devfile already exists, then don't allow --starter
+			return fmt.Errorf("this directory already has a devfile so you cannot provide a starter. Please remove exisiting devfile and re-create")
+		}
 	}
+
 	// Check if there is a dangling env file; delete the env file if found
 	if util.CheckPathExists(envFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
@@ -158,10 +167,6 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		if err != nil {
 			return err
 		}
-	}
-	//Check if the directory already contains a devfile when --devfile flag is passed
-	if util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
-		return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 	}
 
 	// Initialize envinfo
@@ -223,7 +228,9 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	scontext.SetDevfileName(cmdline.Context(), co.devfileName)
 	// Adding component type to telemetry data
 	scontext.SetComponentType(cmdline.Context(), co.devfileMetadata.componentType)
-
+	if len(args) > 0 {
+		co.stackName = args[0]
+	}
 	return nil
 }
 
@@ -279,10 +286,13 @@ func (co *CreateOptions) Run() (err error) {
 		return errors.Wrap(err, "failed to download project for devfile component")
 	}
 
-	// TODO: We should not have to rewrite to the file. Fix the starter project.
-	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
-	if err != nil {
-		return err
+	//Check if the directory already contains a devfile when starter project is downloaded
+	if co.devfileMetadata.starter != "" && len(co.stackName) > 0 && !(util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value)) {
+		// TODO: We should not have to rewrite to the file. Fix the starter project.
+		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
+		if err != nil {
+			return err
+		}
 	}
 
 	// If user provided a custom name, re-write the devfile
