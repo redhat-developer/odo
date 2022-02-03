@@ -74,7 +74,7 @@ Commmands that will remain as they are in v2
 
 - **[`odo login`](odo-v3-cli/odo-login-logout.md)** - no changes required
 - **[`odo logout`](odo-v3-cli/odo-login-logout.md)** - no changes required
-- **[`odo init`](odo-v3-cli/odo-init.md)** - [#5297](https://github.com/redhat-developer/odo/issues/5297) [#](https://github.com/redhat-developer/odo/issues/5408) new command
+- **[`odo init`](odo-v3-cli/odo-init.md)** - [#5297](https://github.com/redhat-developer/odo/issues/5297) [#5408](https://github.com/redhat-developer/odo/issues/5408) new command
 - **[`odo dev`](odo-v3-cli/odo-dev.md)** - [#5299](https://github.com/redhat-developer/odo/issues/5299) new command based on v2 `odo watch`
 - **[`odo deploy`](odo-v3-cli/odo-deploy.md)** - [#5298](https://github.com/redhat-developer/odo/issues/5298) - mostly as it is in v2, with new interactive mode and flags.
 - **[`odo preference`](odo-v3-cli/odo-preference.md)** -  [#5402](https://github.com/redhat-developer/odo/issues/5402)
@@ -94,7 +94,7 @@ mostly as it is, just cleanup
 
 - [`odo login`](odo-v3-cli/odo-login-logout.md) - no changes required
 - [`odo logout`](odo-v3-cli/odo-login-logout.md) - no changes required
-- [`odo init`](odo-v3-cli/odo-init.md) - [#5297](https://github.com/redhat-developer/odo/issues/5297) [#](https://github.com/redhat-developer/odo/issues/5408) new command
+- [`odo init`](odo-v3-cli/odo-init.md) - [#5297](https://github.com/redhat-developer/odo/issues/5297) [#5408](https://github.com/redhat-developer/odo/issues/5408) new command
 - [`odo dev`](odo-v3-cli/odo-dev.md) - [#5299](https://github.com/redhat-developer/odo/issues/5299) new command based on v2 `odo watch`
 - [`odo deploy`](odo-v3-cli/odo-deploy.md) - [#5298](https://github.com/redhat-developer/odo/issues/5298) - mostly as it is in v2, with new interactive mode and flags.
 - [`odo preference`](odo-v3-cli/odo-preference.md) -  [#5402](https://github.com/redhat-developer/odo/issues/5402)
