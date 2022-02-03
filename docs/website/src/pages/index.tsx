@@ -32,7 +32,7 @@ export default function Home(): JSX.Element {
     Read the docs
               </Link>
               <Link className="button button--info" to="/docs/getting-started/quickstart">
-   Hands-on Guide 
+   Quickstart Guide 
               </Link>
               <span className={styles.indexCtasGitHubButtonWrapper}>
                 <iframe
