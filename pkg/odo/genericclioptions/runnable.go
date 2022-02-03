@@ -177,7 +177,7 @@ func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 			if componentName == "" && len(msgArgs) != 0 {
 				return fmt.Errorf("cannot provide %v without a component name", strings.Join(msgArgs, ", "))
 			}
-			if all {
+			if all && len(msgArgs) != 0 {
 				return fmt.Errorf("cannot provide --all when %v is provided", strings.Join(msgArgs, ", "))
 			}
 		}
