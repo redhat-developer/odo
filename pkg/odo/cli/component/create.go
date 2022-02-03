@@ -118,11 +118,8 @@ odo catalog list components
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
 	return &CreateOptions{
-		PushOptions: NewPushOptions(prjClient, prefClient),
+		PushOptions: NewPushOptions(),
 	}
-}
-
-func (o *CreateOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
@@ -217,7 +214,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	}()
 	// Set the starter project token if required
 	if co.devfileMetadata.starter != "" {
-		secure := registryUtil.IsSecure(co.prefClient, co.devfileMetadata.devfileRegistry.Name)
+		secure := registryUtil.IsSecure(co.clientset.PreferenceClient, co.devfileMetadata.devfileRegistry.Name)
 		if co.devfileMetadata.starterToken == "" && secure {
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
@@ -375,6 +372,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
+	clientset.Add(componentCreateCmd, clientset.PROJECT, clientset.PREFERENCE)
+
 	odoutil.AddContextFlag(componentCreateCmd, &co.contextFlag)
 	componentCreateCmd.Flags().StringSliceVarP(&co.portFlag, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.envFlag, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")

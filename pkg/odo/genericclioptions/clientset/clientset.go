@@ -19,6 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -29,14 +30,16 @@ const (
 	FILESYSTEM = "DEP_FILESYSTEM"
 	// pkg/init
 	INIT = "DEP_INIT"
-	// pkg/preference
-	PREFERENCE = "DEP_PREFERENCE"
-	// pkg/init/registry
-	REGISTRY = "DEP_REGISTRY"
 	// pkg/kclient, can be nil
 	KUBERNETES_NULLABLE = "DEP_KUBERNETES_NULLABLE"
 	// pkg/kclient
 	KUBERNETES = "DEP_KUBERNETES"
+	// pkg/preference
+	PREFERENCE = "DEP_PREFERENCE"
+	// pkg/project
+	PROJECT = "DEP_PROJECT"
+	// pkg/init/registry
+	REGISTRY = "DEP_REGISTRY"
 
 	/* Add key for new package here */
 )
@@ -44,18 +47,20 @@ const (
 // subdeps defines the sub-dependencies
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
+	APPLICATION: {KUBERNETES},
 	INIT:        {FILESYSTEM, PREFERENCE, REGISTRY},
-	APPLICATION: {KUBERNETES_NULLABLE},
+	PROJECT:     {KUBERNETES},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
+	ApplicationClient application.Client
 	FS                filesystem.Filesystem
 	InitClient        _init.Client
-	PreferenceClient  preference.Client
-	RegistryClient    registry.Client
 	KubernetesClient  kclient.ClientInterface
-	ApplicationClient application.Client
+	PreferenceClient  preference.Client
+	ProjectClient     project.Client
+	RegistryClient    registry.Client
 	/* Add client here */
 }
 
@@ -81,20 +86,10 @@ func isDefined(command *cobra.Command, dependency string) bool {
 func Fetch(command *cobra.Command) (*Clientset, error) {
 	dep := Clientset{}
 	var err error
-	if isDefined(command, PREFERENCE) {
-		dep.PreferenceClient, err = preference.NewClient()
-		if err != nil {
-			return nil, err
-		}
-	}
+
+	/* Without sub-dependencies */
 	if isDefined(command, FILESYSTEM) {
 		dep.FS = filesystem.DefaultFs{}
-	}
-	if isDefined(command, REGISTRY) {
-		dep.RegistryClient = registry.NewRegistryClient()
-	}
-	if isDefined(command, INIT) {
-		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
 	}
 	if isDefined(command, KUBERNETES) || isDefined(command, KUBERNETES_NULLABLE) {
 		dep.KubernetesClient, err = kclient.New()
@@ -102,8 +97,25 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 			return nil, err
 		}
 	}
+	if isDefined(command, PREFERENCE) {
+		dep.PreferenceClient, err = preference.NewClient()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if isDefined(command, REGISTRY) {
+		dep.RegistryClient = registry.NewRegistryClient()
+	}
+
+	/* With sub-dependencies */
 	if isDefined(command, APPLICATION) {
 		dep.ApplicationClient = application.NewClient(dep.KubernetesClient)
+	}
+	if isDefined(command, INIT) {
+		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
+	}
+	if isDefined(command, PROJECT) {
+		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

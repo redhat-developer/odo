@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/project"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -76,13 +74,10 @@ type PushOptions struct {
 
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
-func NewPushOptions(prjClient project.Client, prefClient preference.Client) *PushOptions {
+func NewPushOptions() *PushOptions {
 	return &PushOptions{
-		CommonPushOptions: NewCommonPushOptions(prjClient, prefClient),
+		CommonPushOptions: NewCommonPushOptions(),
 	}
-}
-
-func (o *PushOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // CompleteDevfilePath completes the devfile path from context
@@ -234,14 +229,7 @@ func (po *PushOptions) Run() (err error) {
 
 // NewCmdPush implements the push odo command
 func NewCmdPush(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	po := NewPushOptions(project.NewClient(kubclient), prefClient)
-
+	po := NewPushOptions()
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
 		Short:       "Push source code to a component",
@@ -253,6 +241,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(po, cmd, args)
 		},
 	}
+	clientset.Add(pushCmd, clientset.PROJECT, clientset.PREFERENCE)
 
 	odoutil.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.showFlag, "show-log", false, "If enabled, logs will be shown when built")
