@@ -5,26 +5,25 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
-type InitParams struct {
+type DevfileLocation struct {
 	// Name of the component to create (required)
-	Name string
+	//	Name string
 	// name of the Devfile in Devfile registry (required if --Devfile-path is not defined)
 	Devfile string
 	// name of the devfile registry (as configured in odo registry). It can be used in combination with --devfile, but not with --devfile-path (optional)
 	DevfileRegistry string
 	// name of the Starter project (optional)
-	Starter string
+	//	Starter string
 	// path to a devfile. This is alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL (required if --devfile is not defined)
 	DevfilePath string
 }
 
-func (o *InitParams) Validate(prefClient preference.Client) error {
-	if o.Name == "" {
-		return errors.New("missing --name parameter: please add --name <name> to specify a name for the component")
-	}
+func (o *DevfileLocation) Validate(prefClient preference.Client) error {
+	//	if o.Name == "" {
+	//		return errors.New("missing --name parameter: please add --name <name> to specify a name for the component")
+	//	}
 	if o.Devfile == "" && o.DevfilePath == "" {
 		return errors.New("either --devfile or --devfile-path parameter should be specified")
 	}
@@ -40,10 +39,10 @@ func (o *InitParams) Validate(prefClient preference.Client) error {
 		return errors.New("--devfile-registry parameter cannot be used with --devfile-path")
 	}
 
-	err := util.ValidateK8sResourceName("name", o.Name)
-	if err != nil {
-		return err
-	}
+	//	err := util.ValidateK8sResourceName("name", o.Name)
+	//	if err != nil {
+	//		return err
+	//	}
 
 	return nil
 }

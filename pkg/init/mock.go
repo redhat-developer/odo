@@ -9,6 +9,7 @@ import (
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
+	params "github.com/redhat-developer/odo/pkg/init/params"
 )
 
 // MockClient is a mock of Client interface.
@@ -34,32 +35,19 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// DownloadDirect mocks base method.
-func (m *MockClient) DownloadDirect(URL, dest string) error {
+// DownloadDevfile mocks base method.
+func (m *MockClient) DownloadDevfile(devfileLocation *params.DevfileLocation, destDir string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadDirect", URL, dest)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "DownloadDevfile", devfileLocation, destDir)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// DownloadDirect indicates an expected call of DownloadDirect.
-func (mr *MockClientMockRecorder) DownloadDirect(URL, dest interface{}) *gomock.Call {
+// DownloadDevfile indicates an expected call of DownloadDevfile.
+func (mr *MockClientMockRecorder) DownloadDevfile(devfileLocation, destDir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadDirect", reflect.TypeOf((*MockClient)(nil).DownloadDirect), URL, dest)
-}
-
-// DownloadFromRegistry mocks base method.
-func (m *MockClient) DownloadFromRegistry(registryName, devfile, dest string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadFromRegistry", registryName, devfile, dest)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DownloadFromRegistry indicates an expected call of DownloadFromRegistry.
-func (mr *MockClientMockRecorder) DownloadFromRegistry(registryName, devfile, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFromRegistry", reflect.TypeOf((*MockClient)(nil).DownloadFromRegistry), registryName, devfile, dest)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadDevfile", reflect.TypeOf((*MockClient)(nil).DownloadDevfile), devfileLocation, destDir)
 }
 
 // DownloadStarterProject mocks base method.
@@ -74,4 +62,19 @@ func (m *MockClient) DownloadStarterProject(devfile parser.DevfileObj, project, 
 func (mr *MockClientMockRecorder) DownloadStarterProject(devfile, project, dest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadStarterProject", reflect.TypeOf((*MockClient)(nil).DownloadStarterProject), devfile, project, dest)
+}
+
+// SelectDevfile mocks base method.
+func (m *MockClient) SelectDevfile(args map[string]string) (*params.DevfileLocation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectDevfile", args)
+	ret0, _ := ret[0].(*params.DevfileLocation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectDevfile indicates an expected call of SelectDevfile.
+func (mr *MockClientMockRecorder) SelectDevfile(args interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockClient)(nil).SelectDevfile), args)
 }

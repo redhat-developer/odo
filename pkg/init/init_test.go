@@ -2,15 +2,15 @@ package init
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
-
+	"github.com/redhat-developer/odo/pkg/init/params"
 	"github.com/redhat-developer/odo/pkg/init/registry"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -165,7 +165,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 				preferenceClient: tt.fields.preferenceClient(ctrl),
 				registryClient:   tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadFromRegistry(tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
+			if err := o.downloadFromRegistry(tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadFromRegistry() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -176,7 +176,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 	type fields struct {
 		fsys           func(fs filesystem.Filesystem) filesystem.Filesystem
 		registryClient func(ctrl *gomock.Controller) registry.Client
-		InitParams     params.InitParams
+		InitParams     params.DevfileLocation
 	}
 	type args struct {
 		URL  string
@@ -300,7 +300,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 				fsys:           tt.fields.fsys(fs),
 				registryClient: tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadDirect(tt.args.URL, tt.args.dest); (err != nil) != tt.wantErr {
+			if err := o.downloadDirect(tt.args.URL, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadDirect() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			result := tt.want(fs)
@@ -383,6 +383,65 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 			}
 			if err := o.DownloadStarterProject(tt.args.devfile(), tt.args.project, "dest"); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestInitClient_SelectDevfile(t *testing.T) {
+	initParams1 := params.DevfileLocation{
+		Devfile: "adevfile",
+	}
+	type fields struct {
+		backends         func(*gomock.Controller) []params.ParamsBuilder
+		fsys             filesystem.Filesystem
+		preferenceClient preference.Client
+		registryClient   registry.Client
+	}
+	type args struct {
+		flags map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *params.DevfileLocation
+		wantErr bool
+	}{
+		{
+			name: "second backend used",
+			fields: fields{
+				backends: func(ctrl *gomock.Controller) []params.ParamsBuilder {
+					b1 := params.NewMockParamsBuilder(ctrl)
+					b2 := params.NewMockParamsBuilder(ctrl)
+					b1.EXPECT().IsAdequate(gomock.Any()).Return(false)
+					b2.EXPECT().IsAdequate(gomock.Any()).Return(true)
+					b1.EXPECT().ParamsBuild().Times(0)
+					b2.EXPECT().ParamsBuild().Times(1).Return(&initParams1, nil)
+					return []params.ParamsBuilder{b1, b2}
+				},
+			},
+			want:    &initParams1,
+			wantErr: false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			o := &InitClient{
+				backends:         tt.fields.backends(ctrl),
+				fsys:             tt.fields.fsys,
+				preferenceClient: tt.fields.preferenceClient,
+				registryClient:   tt.fields.registryClient,
+			}
+			got, err := o.SelectDevfile(tt.args.flags)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InitClient.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InitClient.SelectDevfile() = %v, want %v", got, tt.want)
 			}
 		})
 	}

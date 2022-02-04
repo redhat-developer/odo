@@ -21,15 +21,13 @@ func (o *FlagsBuilder) IsAdequate(flags map[string]string) bool {
 	return len(flags) > 0
 }
 
-func (o *FlagsBuilder) ParamsBuild() (InitParams, error) {
+func (o *FlagsBuilder) ParamsBuild() (*DevfileLocation, error) {
 	if len(o.flags) == 0 {
 		util.LogErrorAndExit(errors.New("IsAdequate must be called and return true before to call ParamsBuild"), "")
 	}
-	return InitParams{
-		Name:            o.flags[FLAG_NAME],
+	return &DevfileLocation{
 		Devfile:         o.flags[FLAG_DEVFILE],
 		DevfileRegistry: o.flags[FLAG_DEVFILE_REGISTRY],
-		Starter:         o.flags[FLAG_STARTER],
 		DevfilePath:     o.flags[FLAG_DEVFILE_PATH],
 	}, nil
 }

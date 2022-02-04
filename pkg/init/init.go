@@ -1,14 +1,17 @@
 package init
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
+	"github.com/redhat-developer/odo/pkg/init/params"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -18,21 +21,42 @@ import (
 )
 
 type InitClient struct {
+	backends         []params.ParamsBuilder
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
 	registryClient   registry.Client
 }
 
-func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
+func NewInitClient(backends []params.ParamsBuilder, fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
 	return &InitClient{
+		backends:         backends,
 		fsys:             fsys,
 		preferenceClient: preferenceClient,
 		registryClient:   registryClient,
 	}
 }
 
-// DownloadDirect downloads a devfile at the provided URL and saves it in dest
-func (o *InitClient) DownloadDirect(URL string, dest string) error {
+// SelectDevfile returns information about a devfile to download
+func (o *InitClient) SelectDevfile(flags map[string]string) (*params.DevfileLocation, error) {
+	for _, backend := range o.backends {
+		if backend.IsAdequate(flags) {
+			return backend.ParamsBuild()
+		}
+	}
+	return nil, errors.New("no backend found to build init parameters. This should not happen")
+}
+
+func (o *InitClient) DownloadDevfile(devfileLocation *params.DevfileLocation, destDir string) (string, error) {
+	destDevfile := filepath.Join(destDir, "devfile.yaml")
+	if devfileLocation.DevfilePath != "" {
+		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
+	} else {
+		return destDevfile, o.downloadFromRegistry(devfileLocation.DevfileRegistry, devfileLocation.Devfile, destDir)
+	}
+}
+
+// downloadDirect downloads a devfile at the provided URL and saves it in dest
+func (o *InitClient) downloadDirect(URL string, dest string) error {
 	parsedURL, err := url.Parse(URL)
 	if err != nil {
 		return err
@@ -73,9 +97,9 @@ func (o *InitClient) DownloadDirect(URL string, dest string) error {
 	return nil
 }
 
-// DownloadFromRegistry downloads a devfile from the provided registry and saves it in dest
+// downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
 // If registryName is empty, will try to download the devfile from the list of registries in preferences
-func (o *InitClient) DownloadFromRegistry(registryName string, devfile string, dest string) error {
+func (o *InitClient) downloadFromRegistry(registryName string, devfile string, dest string) error {
 	var downloadSpinner *log.Status
 	var forceRegistry bool
 	if registryName == "" {

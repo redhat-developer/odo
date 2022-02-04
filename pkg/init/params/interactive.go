@@ -1,16 +1,13 @@
 package params
 
 import (
-	"fmt"
-
 	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
+	"github.com/redhat-developer/odo/pkg/init/asker"
 )
 
 const (
 	STATE_ASK_LANG = iota
 	STATE_ASK_TYPE
-	STATE_ASK_STARTER
 	STATE_END
 )
 
@@ -31,8 +28,8 @@ func (o *InteractiveBuilder) IsAdequate(flags map[string]string) bool {
 	return len(flags) == 0
 }
 
-func (o *InteractiveBuilder) ParamsBuild() (InitParams, error) {
-	result := InitParams{}
+func (o *InteractiveBuilder) ParamsBuild() (*DevfileLocation, error) {
+	result := &DevfileLocation{}
 	devfileEntries, _ := o.catalogClient.ListDevfileComponents("")
 
 	langs := devfileEntries.GetLanguages()
@@ -47,7 +44,7 @@ loop:
 		case STATE_ASK_LANG:
 			lang, err = o.asker.AskLanguage(langs)
 			if err != nil {
-				return InitParams{}, err
+				return nil, err
 			}
 			state = STATE_ASK_TYPE
 
@@ -56,7 +53,7 @@ loop:
 			var back bool
 			back, details, err = o.asker.AskType(types)
 			if err != nil {
-				return InitParams{}, err
+				return nil, err
 			}
 			if back {
 				state = STATE_ASK_LANG
@@ -64,29 +61,29 @@ loop:
 			}
 			result.DevfileRegistry = details.Registry.Name
 			result.Devfile = details.Name
-			state = STATE_ASK_STARTER
-
-		case STATE_ASK_STARTER:
-			projects, err := o.catalogClient.GetStarterProjectsNames(details)
-			if err != nil {
-				return InitParams{}, err
-			}
-			var back bool
-			back, result.Starter, err = o.asker.AskStarterProject(projects)
-			if err != nil {
-				return InitParams{}, err
-			}
-			if back {
-				state = STATE_ASK_TYPE
-				continue loop
-			}
-
-			result.Name, err = o.asker.AskName(fmt.Sprintf("my-%s-app", result.Devfile))
-			if err != nil {
-				return InitParams{}, err
-			}
 			state = STATE_END
 
+			//		case STATE_ASK_STARTER:
+			//			projects, err := o.catalogClient.GetStarterProjectsNames(details)
+			//			if err != nil {
+			//				return nil, err
+			//			}
+			//			var back bool
+			//			back, result.Starter, err = o.asker.AskStarterProject(projects)
+			//			if err != nil {
+			//				return nil, err
+			//			}
+			//			if back {
+			//				state = STATE_ASK_TYPE
+			//				continue loop
+			//			}
+			//
+			//			result.Name, err = o.asker.AskName(fmt.Sprintf("my-%s-app", result.Devfile))
+			//			if err != nil {
+			//				return nil, err
+			//			}
+			//			state = STATE_END
+			//
 		case STATE_END:
 			break loop
 		}

@@ -13,7 +13,7 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 		name         string
 		fields       fields
 		wantAdequate bool
-		want         InitParams
+		want         *DevfileLocation
 		wantErr      bool
 	}{
 		{
@@ -23,7 +23,7 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 			},
 			wantAdequate: false,
 			wantErr:      false,
-			want:         InitParams{},
+			want:         &DevfileLocation{},
 		},
 		{
 			name: "all fields defined",
@@ -38,12 +38,10 @@ func TestFlagsBuilder_ParamsBuild(t *testing.T) {
 			},
 			wantAdequate: true,
 			wantErr:      false,
-			want: InitParams{
-				Name:            "aname",
+			want: &DevfileLocation{
 				Devfile:         "adevfile",
 				DevfilePath:     "apath",
 				DevfileRegistry: "aregistry",
-				Starter:         "astarter",
 			},
 		},
 	}

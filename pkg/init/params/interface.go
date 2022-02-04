@@ -11,5 +11,5 @@ type ParamsBuilder interface {
 	// IsAdequate returns true if the implementation is able to build parameters, given the arguments passed to the command
 	IsAdequate(flags map[string]string) bool
 	// ParamsBuild returns parameters for init
-	ParamsBuild() (InitParams, error)
+	ParamsBuild() (*DevfileLocation, error)
 }

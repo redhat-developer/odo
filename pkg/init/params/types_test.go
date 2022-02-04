@@ -7,12 +7,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
-func Test_InitParams_Validate(t *testing.T) {
+func Test_DevfileLocation_Validate(t *testing.T) {
 	type fields struct {
-		name            string
 		devfile         string
 		devfileRegistry string
-		starter         string
 		devfilePath     string
 	}
 	tests := []struct {
@@ -23,23 +21,13 @@ func Test_InitParams_Validate(t *testing.T) {
 		wantErr            bool
 	}{
 		{
-			name: "no name passed",
-			fields: fields{
-				name: "",
-			},
-			wantErr: true,
-		},
-		{
-			name: "no devfile info passed",
-			fields: fields{
-				name: "aname",
-			},
+			name:    "no devfile info passed",
+			fields:  fields{},
 			wantErr: true,
 		},
 		{
 			name: "devfile passed with a single registry",
 			fields: fields{
-				name:    "aname",
 				devfile: "adevfile",
 			},
 			registryList: []preference.Registry{
@@ -53,7 +41,6 @@ func Test_InitParams_Validate(t *testing.T) {
 		{
 			name: "devfile and devfile-path passed",
 			fields: fields{
-				name:        "aname",
 				devfile:     "adevfile",
 				devfilePath: "apath",
 			},
@@ -62,7 +49,6 @@ func Test_InitParams_Validate(t *testing.T) {
 		{
 			name: "devfile and devfile-registry passed",
 			fields: fields{
-				name:            "aname",
 				devfile:         "adevfile",
 				devfileRegistry: "aregistry",
 			},
@@ -72,7 +58,6 @@ func Test_InitParams_Validate(t *testing.T) {
 		{
 			name: "devfile and devfile-registry passed with non existing registry",
 			fields: fields{
-				name:            "aname",
 				devfile:         "adevfile",
 				devfileRegistry: "aregistry",
 			},
@@ -82,28 +67,11 @@ func Test_InitParams_Validate(t *testing.T) {
 		{
 			name: "devfile-path and devfile-registry passed",
 			fields: fields{
-				name:            "aname",
 				devfilePath:     "apath",
 				devfileRegistry: "aregistry",
 			},
 			registryNameExists: true,
 			wantErr:            true,
-		},
-		{
-			name: "numeric name",
-			fields: fields{
-				name:    "1234",
-				devfile: "adevfile",
-			},
-			wantErr: true,
-		},
-		{
-			name: "non DNS name",
-			fields: fields{
-				name:    "WrongName",
-				devfile: "adevfile",
-			},
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -112,11 +80,9 @@ func Test_InitParams_Validate(t *testing.T) {
 			prefClient := preference.NewMockClient(ctrl)
 			prefClient.EXPECT().RegistryNameExists(gomock.Any()).Return(tt.registryNameExists).AnyTimes()
 			prefClient.EXPECT().RegistryList().Return(&tt.registryList).AnyTimes()
-			o := &InitParams{
-				Name:            tt.fields.name,
+			o := &DevfileLocation{
 				Devfile:         tt.fields.devfile,
 				DevfileRegistry: tt.fields.devfileRegistry,
-				Starter:         tt.fields.starter,
 				DevfilePath:     tt.fields.devfilePath,
 			}
 			if err := o.Validate(prefClient); (err != nil) != tt.wantErr {
