@@ -7,7 +7,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	_init "github.com/redhat-developer/odo/pkg/init"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -15,13 +14,10 @@ import (
 )
 
 func TestInitOptions_Complete(t *testing.T) {
-	type fields struct {
-		backends func(*gomock.Controller) []params.ParamsBuilder
-	}
 	tests := []struct {
 		name           string
-		fields         fields
 		cmdlineExpects func(*cmdline.MockCmdline)
+		initExpects    func(*_init.MockClient)
 		fsysPopulate   func(fsys filesystem.Filesystem)
 		wantErr        bool
 	}{
@@ -36,20 +32,16 @@ func TestInitOptions_Complete(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "second backend used",
-			fields: fields{
-				backends: func(ctrl *gomock.Controller) []params.ParamsBuilder {
-					b1 := params.NewMockParamsBuilder(ctrl)
-					b2 := params.NewMockParamsBuilder(ctrl)
-					b1.EXPECT().IsAdequate(gomock.Any()).Return(false)
-					b2.EXPECT().IsAdequate(gomock.Any()).Return(true)
-					b2.EXPECT().ParamsBuild().Times(1)
-					return []params.ParamsBuilder{b1, b2}
-				},
-			},
+			name: "directory empty",
 			cmdlineExpects: func(mock *cmdline.MockCmdline) {
-				mock.EXPECT().GetFlags()
 				mock.EXPECT().Context().Return(context.Background())
+				mock.EXPECT().GetFlags().Times(1)
+			},
+			initExpects: func(mock *_init.MockClient) {
+				mock.EXPECT().Validate(gomock.Any()).Times(1)
+				mock.EXPECT().SelectDevfile(gomock.Any()).Times(1)
+			},
+			fsysPopulate: func(fsys filesystem.Filesystem) {
 			},
 			wantErr: false,
 		},
@@ -61,10 +53,6 @@ func TestInitOptions_Complete(t *testing.T) {
 				tt.fsysPopulate(fsys)
 			}
 			ctrl := gomock.NewController(t)
-			var backends []params.ParamsBuilder
-			if tt.fields.backends != nil {
-				backends = tt.fields.backends(ctrl)
-			}
 			prefClient := preference.NewMockClient(ctrl)
 			initClient := _init.NewMockClient(ctrl)
 			o := NewInitOptions()
@@ -73,10 +61,12 @@ func TestInitOptions_Complete(t *testing.T) {
 				InitClient:       initClient,
 				FS:               fsys,
 			})
-			o.backends = backends
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			if tt.cmdlineExpects != nil {
 				tt.cmdlineExpects(cmdline)
+			}
+			if tt.initExpects != nil {
+				tt.initExpects(initClient)
 			}
 			if err := o.Complete(cmdline, []string{}); (err != nil) != tt.wantErr {
 				t.Errorf("InitOptions.Complete() error = %v, wantErr %v", err, tt.wantErr)
