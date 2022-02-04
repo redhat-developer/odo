@@ -39,13 +39,14 @@ const OdoRecommendedName = "odo"
 
 var (
 	// We do not use ktemplates.Normalize here as it messed up the newlines..
-	odoLong = `odo is a CLI tool for running OpenShift applications in a fast and automated manner.
-Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code.
-
-Find more information at https://github.com/redhat-developer/odo`
+	odoLong = `  __
+ /  \__     odo is a CLI tool for fast iterative application development
+ \__/  \    deployed immediately to your kubernetes cluster.
+ /  \__/    Find more information at https://odo.dev
+ \__/`
 
 	odoExample = ktemplates.Examples(`  # Creating and deploying a Node.js project
-  git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
+  git clone https://github.com/odo-devfiles/nodejs-ex && cd nodejs-ex
   %[1]s create nodejs
   %[1]s push
 
@@ -87,11 +88,12 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 
 Get started by creating a new application:
 
- git clone https://github.com/openshift/nodejs-ex && cd nodejs-ex
+ git clone https://github.com/odo-devfiles/nodejs-ex && cd nodejs-ex
  odo create nodejs
  odo push
 
-Your nodejs application has now been deployed. odo has pushed the source code, built the application and deployed it on OpenShift. 
+Your Node.JS application has now been deployed to Kubernetes. odo has pushed the source code, built the application and deployed it.
+
 You can now edit your code in real time and watch as odo automatically deploys your application.
 
  odo watch
