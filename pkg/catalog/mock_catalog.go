@@ -49,21 +49,6 @@ func (mr *MockClientMockRecorder) GetDevfileRegistries(registryName interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevfileRegistries", reflect.TypeOf((*MockClient)(nil).GetDevfileRegistries), registryName)
 }
 
-// GetStarterProjectsNames mocks base method.
-func (m *MockClient) GetStarterProjectsNames(details DevfileComponentType) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStarterProjectsNames", details)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetStarterProjectsNames indicates an expected call of GetStarterProjectsNames.
-func (mr *MockClientMockRecorder) GetStarterProjectsNames(details interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStarterProjectsNames", reflect.TypeOf((*MockClient)(nil).GetStarterProjectsNames), details)
-}
-
 // ListDevfileComponents mocks base method.
 func (m *MockClient) ListDevfileComponents(registryName string) (DevfileComponentTypeList, error) {
 	m.ctrl.T.Helper()

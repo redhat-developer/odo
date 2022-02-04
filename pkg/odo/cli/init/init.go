@@ -14,7 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	_init "github.com/redhat-developer/odo/pkg/init"
 	"github.com/redhat-developer/odo/pkg/init/asker"
-	"github.com/redhat-developer/odo/pkg/init/params"
+	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -62,14 +62,11 @@ type InitOptions struct {
 	initClient       _init.Client
 	preferenceClient preference.Client
 
+	// Flags passed to the command
+	flags map[string]string
+
 	// devfileLocation is the information needed to pull a devfile
-	devfileLocation *params.DevfileLocation
-
-	// starter is the name of the starter project to download
-	starter string
-
-	// componentName is the name of component to set in devfile
-	componentName string
+	devfileLocation *backend.DevfileLocation
 
 	// Destination directory
 	contextDir string
@@ -81,7 +78,7 @@ func NewInitOptions(fsys filesystem.Filesystem, initClient _init.Client, prefCli
 		fsys:             fsys,
 		initClient:       initClient,
 		preferenceClient: prefClient,
-		devfileLocation:  &params.DevfileLocation{},
+		devfileLocation:  &backend.DevfileLocation{},
 	}
 }
 
@@ -105,10 +102,15 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 		return errors.New("The current directory is not empty. You can bootstrap new component only in empty directory.\nIf you have existing code that you want to deploy use `odo deploy` or use `odo dev` command to quickly iterate on your component.")
 	}
 
-	flags := cmdline.GetFlags()
-	o.devfileLocation, err = o.initClient.SelectDevfile(flags)
+	o.flags = cmdline.GetFlags()
+
+	err = o.initClient.Validate(o.flags)
 	if err != nil {
-		odoutil.LogErrorAndExit(err, "")
+		return err
+	}
+	o.devfileLocation, err = o.initClient.SelectDevfile(o.flags)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -123,7 +125,7 @@ func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
 
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
-	return o.devfileLocation.Validate(o.preferenceClient)
+	return nil
 }
 
 // Run contains the logic for the odo command
@@ -155,11 +157,12 @@ func (o *InitOptions) Run() (err error) {
 
 	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
-	if o.starter != "" {
+	starterInfo, err := o.initClient.SelectStarterProject(devfileObj, o.flags)
+	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.initClient.DownloadStarterProject(devfileObj, o.starter, o.contextDir)
+		err = o.initClient.DownloadStarterProject(starterInfo, o.contextDir)
 		if err != nil {
-			return fmt.Errorf("unable to download starter project %q: %w", o.starter, err)
+			return fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
 		}
 		starterDownloaded = true
 
@@ -174,7 +177,7 @@ func (o *InitOptions) Run() (err error) {
 
 	// Set the name in the devfile *AND* writes the devfile back to the disk in case
 	// it has been removed and not replaced by the starter project
-	err = devfileObj.SetMetadataName(o.componentName)
+	err = o.initClient.PersonalizeName(devfileObj, o.flags)
 	if err != nil {
 		return fmt.Errorf("Failed to update the devfile's name: %w", err)
 	}
@@ -183,7 +186,7 @@ func (o *InitOptions) Run() (err error) {
 Your new component %q is ready in the current directory.
 To start editing your component, use "odo dev" and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".`, o.componentName)
+To deploy your component to a cluster use "odo deploy".`, devfileObj.Data.GetMetadata().Name)
 
 	return nil
 }
@@ -197,9 +200,9 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
 
-	backends := []params.ParamsBuilder{
-		params.NewFlagsBuilder(),
-		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)),
+	backends := []backend.InitBackend{
+		backend.NewFlagsBackend(prefClient),
+		backend.NewInteractiveBackend(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)),
 	}
 	o := NewInitOptions(fsys, _init.NewInitClient(backends, fsys, prefClient, registryClient), prefClient)
 	initCmd := &cobra.Command{
@@ -213,11 +216,11 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVar(&o.componentName, params.FLAG_NAME, "", "name of the component to create")
-	initCmd.Flags().StringVar(&o.devfileLocation.Devfile, params.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
-	initCmd.Flags().StringVar(&o.devfileLocation.DevfileRegistry, params.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
-	initCmd.Flags().StringVar(&o.starter, params.FLAG_STARTER, "", "name of the starter project. Available starter projects can be found with \"odo catalog describe component <devfile>\"")
-	initCmd.Flags().StringVar(&o.devfileLocation.DevfilePath, params.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
+	initCmd.Flags().String(backend.FLAG_NAME, "", "name of the component to create")
+	initCmd.Flags().String(backend.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
+	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project. Available starter projects can be found with \"odo catalog describe component <devfile>\"")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu
 	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

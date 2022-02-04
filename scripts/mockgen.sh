@@ -40,9 +40,9 @@ mockgen -source=pkg/auth/interface.go \
     -package auth \
     -destination pkg/auth/mock.go
 
-mockgen -source=pkg/init/params/interface.go \
-    -package params \
-    -destination pkg/init/params/mock.go
+mockgen -source=pkg/init/backend/interface.go \
+    -package backend \
+    -destination pkg/init/backend/mock.go
 
 mockgen -source=pkg/catalog/interface.go \
     -package catalog \

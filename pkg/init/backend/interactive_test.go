@@ -1,4 +1,4 @@
-package params
+package backend
 
 import (
 	"reflect"
@@ -10,7 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/init/asker"
 )
 
-func TestInteractiveBuilder_ParamsBuild(t *testing.T) {
+func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 	type fields struct {
 		buildAsker         func(ctrl *gomock.Controller) asker.Asker
 		buildCatalogClient func(ctrl *gomock.Controller) catalog.Client
@@ -77,11 +77,11 @@ func TestInteractiveBuilder_ParamsBuild(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			o := &InteractiveBuilder{
+			o := &InteractiveBackend{
 				asker:         tt.fields.buildAsker(ctrl),
 				catalogClient: tt.fields.buildCatalogClient(ctrl),
 			}
-			got, err := o.ParamsBuild()
+			_, got, err := o.SelectDevfile(map[string]string{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return

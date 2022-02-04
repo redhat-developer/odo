@@ -9,9 +9,8 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
-	"github.com/redhat-developer/odo/pkg/init/params"
+	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -21,13 +20,13 @@ import (
 )
 
 type InitClient struct {
-	backends         []params.ParamsBuilder
+	backends         []backend.InitBackend
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
 	registryClient   registry.Client
 }
 
-func NewInitClient(backends []params.ParamsBuilder, fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
+func NewInitClient(backends []backend.InitBackend, fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
 	return &InitClient{
 		backends:         backends,
 		fsys:             fsys,
@@ -36,17 +35,27 @@ func NewInitClient(backends []params.ParamsBuilder, fsys filesystem.Filesystem, 
 	}
 }
 
-// SelectDevfile returns information about a devfile to download
-func (o *InitClient) SelectDevfile(flags map[string]string) (*params.DevfileLocation, error) {
+func (o *InitClient) Validate(flags map[string]string) error {
 	for _, backend := range o.backends {
-		if backend.IsAdequate(flags) {
-			return backend.ParamsBuild()
+		err := backend.Validate(flags)
+		if err != nil {
+			return err
 		}
 	}
-	return nil, errors.New("no backend found to build init parameters. This should not happen")
+	return nil
 }
 
-func (o *InitClient) DownloadDevfile(devfileLocation *params.DevfileLocation, destDir string) (string, error) {
+func (o *InitClient) SelectDevfile(flags map[string]string) (*backend.DevfileLocation, error) {
+	for _, backend := range o.backends {
+		ok, location, err := backend.SelectDevfile(flags)
+		if ok {
+			return location, err
+		}
+	}
+	return nil, errors.New("no backend found to select a devfile. This should not happen")
+}
+
+func (o *InitClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
 	destDevfile := filepath.Join(destDir, "devfile.yaml")
 	if devfileLocation.DevfilePath != "" {
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
@@ -134,30 +143,33 @@ func (o *InitClient) downloadFromRegistry(registryName string, devfile string, d
 	return fmt.Errorf("unable to find the registry with name %q", devfile)
 }
 
-// DownloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
-// WARNING: This will first remove all the content of dest.
-func (o *InitClient) DownloadStarterProject(devfile parser.DevfileObj, project string, dest string) error {
-	projects, err := devfile.Data.GetStarterProjects(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-	var prj v1alpha2.StarterProject
-	var found bool
-	for _, prj = range projects {
-		if prj.Name == project {
-			found = true
-			break
+func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
+	for _, backend := range o.backends {
+		ok, starter, err := backend.SelectStarterProject(devfile, flags)
+		if ok {
+			return starter, err
 		}
 	}
-	if !found {
-		return fmt.Errorf("starter project %q does not exist in devfile", project)
-	}
-	downloadSpinner := log.Spinnerf("Downloading starter project %q", prj.Name)
-	err = o.registryClient.DownloadStarterProject(&prj, "", dest, false)
+	return nil, errors.New("no backend found to select starter project. This should not happen")
+}
+
+func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, dest string) error {
+	downloadSpinner := log.Spinnerf("Downloading starter project %q", starter.Name)
+	err := o.registryClient.DownloadStarterProject(starter, "", dest, false)
 	if err != nil {
 		downloadSpinner.End(false)
 		return err
 	}
 	downloadSpinner.End(true)
 	return nil
+}
+
+func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
+	for _, backend := range o.backends {
+		ok, err := backend.PersonalizeName(devfile, flags)
+		if ok {
+			return err
+		}
+	}
+	return errors.New("no backend found to personalize name. This should not happen")
 }

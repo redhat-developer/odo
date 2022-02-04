@@ -7,9 +7,8 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/init/params"
+	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -176,7 +175,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 	type fields struct {
 		fsys           func(fs filesystem.Filesystem) filesystem.Filesystem
 		registryClient func(ctrl *gomock.Controller) registry.Client
-		InitParams     params.DevfileLocation
+		InitParams     backend.DevfileLocation
 	}
 	type args struct {
 		URL  string
@@ -316,8 +315,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 		registryClient func(ctrl *gomock.Controller) registry.Client
 	}
 	type args struct {
-		devfile func() parser.DevfileObj
-		project string
+		project v1alpha2.StarterProject
 	}
 	tests := []struct {
 		name    string
@@ -326,26 +324,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "starter project not found in devfile",
-			fields: fields{
-				registryClient: func(ctrl *gomock.Controller) registry.Client {
-					return nil
-				},
-			},
-			args: args{
-				devfile: func() parser.DevfileObj {
-					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					devfile := parser.DevfileObj{
-						Data: devfileData,
-					}
-					return devfile
-				},
-				project: "notfound",
-			},
-			wantErr: true,
-		},
-		{
-			name: "starter project found in devfile",
+			name: "starter project defined",
 			fields: fields{
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
@@ -354,23 +333,9 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 				},
 			},
 			args: args{
-				devfile: func() parser.DevfileObj {
-					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					projects := []v1alpha2.StarterProject{
-						{
-							Name: "starter1",
-						},
-						{
-							Name: "starter2",
-						},
-					}
-					_ = devfileData.AddStarterProjects(projects)
-					devfile := parser.DevfileObj{
-						Data: devfileData,
-					}
-					return devfile
+				project: v1alpha2.StarterProject{
+					Name: "project1",
 				},
-				project: "starter2",
 			},
 			wantErr: false,
 		},
@@ -381,7 +346,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 			o := &InitClient{
 				registryClient: tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadStarterProject(tt.args.devfile(), tt.args.project, "dest"); (err != nil) != tt.wantErr {
+			if err := o.DownloadStarterProject(&tt.args.project, "dest"); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -389,11 +354,11 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 }
 
 func TestInitClient_SelectDevfile(t *testing.T) {
-	initParams1 := params.DevfileLocation{
+	initParams1 := backend.DevfileLocation{
 		Devfile: "adevfile",
 	}
 	type fields struct {
-		backends         func(*gomock.Controller) []params.ParamsBuilder
+		backends         func(*gomock.Controller) []backend.InitBackend
 		fsys             filesystem.Filesystem
 		preferenceClient preference.Client
 		registryClient   registry.Client
@@ -405,20 +370,20 @@ func TestInitClient_SelectDevfile(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *params.DevfileLocation
+		want    *backend.DevfileLocation
 		wantErr bool
 	}{
 		{
 			name: "second backend used",
 			fields: fields{
-				backends: func(ctrl *gomock.Controller) []params.ParamsBuilder {
-					b1 := params.NewMockParamsBuilder(ctrl)
-					b2 := params.NewMockParamsBuilder(ctrl)
-					b1.EXPECT().IsAdequate(gomock.Any()).Return(false)
-					b2.EXPECT().IsAdequate(gomock.Any()).Return(true)
-					b1.EXPECT().ParamsBuild().Times(0)
-					b2.EXPECT().ParamsBuild().Times(1).Return(&initParams1, nil)
-					return []params.ParamsBuilder{b1, b2}
+				backends: func(ctrl *gomock.Controller) []backend.InitBackend {
+					b1 := backend.NewMockInitBackend(ctrl)
+					b2 := backend.NewMockInitBackend(ctrl)
+					b3 := backend.NewMockInitBackend(ctrl)
+					b1.EXPECT().SelectDevfile(gomock.Any()).Times(1).Return(false, nil, nil)
+					b2.EXPECT().SelectDevfile(gomock.Any()).Times(1).Return(true, &initParams1, nil)
+					b3.EXPECT().SelectDevfile(gomock.Any()).Times(0)
+					return []backend.InitBackend{b1, b2, b3}
 				},
 			},
 			want:    &initParams1,
@@ -442,6 +407,180 @@ func TestInitClient_SelectDevfile(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("InitClient.SelectDevfile() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInitClient_SelectStarterProject(t *testing.T) {
+	starter1 := v1alpha2.StarterProject{
+		Name: "starter1",
+	}
+	type fields struct {
+		backends         func(*gomock.Controller) []backend.InitBackend
+		fsys             filesystem.Filesystem
+		preferenceClient preference.Client
+		registryClient   registry.Client
+	}
+	type args struct {
+		devfile parser.DevfileObj
+		flags   map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *v1alpha2.StarterProject
+		wantErr bool
+	}{
+		{
+			name: "second backend used",
+			fields: fields{
+				backends: func(ctrl *gomock.Controller) []backend.InitBackend {
+					b1 := backend.NewMockInitBackend(ctrl)
+					b2 := backend.NewMockInitBackend(ctrl)
+					b3 := backend.NewMockInitBackend(ctrl)
+					b1.EXPECT().SelectStarterProject(gomock.Any(), gomock.Any()).Times(1).Return(false, nil, nil)
+					b2.EXPECT().SelectStarterProject(gomock.Any(), gomock.Any()).Times(1).Return(true, &starter1, nil)
+					b3.EXPECT().SelectStarterProject(gomock.Any(), gomock.Any()).Times(0)
+					return []backend.InitBackend{b1, b2, b3}
+				},
+			},
+			want:    &starter1,
+			wantErr: false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			o := &InitClient{
+				backends:         tt.fields.backends(ctrl),
+				fsys:             tt.fields.fsys,
+				preferenceClient: tt.fields.preferenceClient,
+				registryClient:   tt.fields.registryClient,
+			}
+			got, err := o.SelectStarterProject(tt.args.devfile, tt.args.flags)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("InitClient.SelectStarterProject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InitClient.SelectStarterProject() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInitClient_PersonalizeName(t *testing.T) {
+	type fields struct {
+		backends         func(*gomock.Controller) []backend.InitBackend
+		fsys             filesystem.Filesystem
+		preferenceClient preference.Client
+		registryClient   registry.Client
+	}
+	type args struct {
+		devfile parser.DevfileObj
+		flags   map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "second backend used",
+			fields: fields{
+				backends: func(ctrl *gomock.Controller) []backend.InitBackend {
+					b1 := backend.NewMockInitBackend(ctrl)
+					b2 := backend.NewMockInitBackend(ctrl)
+					b3 := backend.NewMockInitBackend(ctrl)
+					b1.EXPECT().PersonalizeName(gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+					b2.EXPECT().PersonalizeName(gomock.Any(), gomock.Any()).Times(1).Return(true, nil)
+					b3.EXPECT().PersonalizeName(gomock.Any(), gomock.Any()).Times(0)
+					return []backend.InitBackend{b1, b2, b3}
+				},
+			},
+			wantErr: false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			o := &InitClient{
+				backends:         tt.fields.backends(ctrl),
+				fsys:             tt.fields.fsys,
+				preferenceClient: tt.fields.preferenceClient,
+				registryClient:   tt.fields.registryClient,
+			}
+			if err := o.PersonalizeName(tt.args.devfile, tt.args.flags); (err != nil) != tt.wantErr {
+				t.Errorf("InitClient.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestInitClient_Validate(t *testing.T) {
+	type fields struct {
+		backends         func(*gomock.Controller) []backend.InitBackend
+		fsys             filesystem.Filesystem
+		preferenceClient preference.Client
+		registryClient   registry.Client
+	}
+	type args struct {
+		flags map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "second backend fails to validate",
+			fields: fields{
+				backends: func(ctrl *gomock.Controller) []backend.InitBackend {
+					b1 := backend.NewMockInitBackend(ctrl)
+					b2 := backend.NewMockInitBackend(ctrl)
+					b3 := backend.NewMockInitBackend(ctrl)
+					b1.EXPECT().Validate(gomock.Any()).Times(1).Return(nil)
+					b2.EXPECT().Validate(gomock.Any()).Times(1).Return(errors.New("an error"))
+					b3.EXPECT().Validate(gomock.Any()).Times(0)
+					return []backend.InitBackend{b1, b2, b3}
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "all backend validate",
+			fields: fields{
+				backends: func(ctrl *gomock.Controller) []backend.InitBackend {
+					b1 := backend.NewMockInitBackend(ctrl)
+					b2 := backend.NewMockInitBackend(ctrl)
+					b3 := backend.NewMockInitBackend(ctrl)
+					b1.EXPECT().Validate(gomock.Any()).Times(1).Return(nil)
+					b2.EXPECT().Validate(gomock.Any()).Times(1).Return(nil)
+					b3.EXPECT().Validate(gomock.Any()).Times(1).Return(nil)
+					return []backend.InitBackend{b1, b2, b3}
+				},
+			},
+			wantErr: false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			o := &InitClient{
+				backends:         tt.fields.backends(ctrl),
+				fsys:             tt.fields.fsys,
+				preferenceClient: tt.fields.preferenceClient,
+				registryClient:   tt.fields.registryClient,
+			}
+			if err := o.Validate(tt.args.flags); (err != nil) != tt.wantErr {
+				t.Errorf("InitClient.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

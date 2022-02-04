@@ -47,9 +47,9 @@ func (o *Survey) AskType(types catalog.TypesWithDetails) (back bool, _ catalog.D
 	return false, compType, err
 }
 
-func (o *Survey) AskStarterProject(projects []string) (back bool, _ string, _ error) {
+func (o *Survey) AskStarterProject(projects []string) (bool, int, error) {
 	sort.Strings(projects)
-	projects = append(projects, "** NO STARTER PROJECT **", "** GO BACK **")
+	projects = append(projects, "** NO STARTER PROJECT **")
 	question := &survey.Select{
 		Message: "Which starter project do you want to use?",
 		Options: projects,
@@ -57,15 +57,12 @@ func (o *Survey) AskStarterProject(projects []string) (back bool, _ string, _ er
 	var answer int
 	err := survey.AskOne(question, &answer)
 	if err != nil {
-		return false, "", err
+		return false, 0, err
 	}
 	if answer == len(projects)-1 {
-		return true, "", nil
+		return false, 0, nil
 	}
-	if answer == len(projects)-2 {
-		return false, "", nil
-	}
-	return false, projects[answer], nil
+	return true, answer, nil
 }
 
 func (o *Survey) AskName(defaultName string) (string, error) {

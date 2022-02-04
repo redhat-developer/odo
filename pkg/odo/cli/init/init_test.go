@@ -37,6 +37,7 @@ func TestInitOptions_Complete(t *testing.T) {
 				mock.EXPECT().GetFlags().Times(1)
 			},
 			initExpects: func(mock *_init.MockClient) {
+				mock.EXPECT().Validate(gomock.Any()).Times(1)
 				mock.EXPECT().SelectDevfile(gomock.Any()).Times(1)
 			},
 			fsysPopulate: func(fsys filesystem.Filesystem) {

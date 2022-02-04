@@ -65,11 +65,11 @@ func (mr *MockAskerMockRecorder) AskName(defaultName interface{}) *gomock.Call {
 }
 
 // AskStarterProject mocks base method.
-func (m *MockAsker) AskStarterProject(projects []string) (bool, string, error) {
+func (m *MockAsker) AskStarterProject(projects []string) (bool, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AskStarterProject", projects)
 	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(string)
+	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
