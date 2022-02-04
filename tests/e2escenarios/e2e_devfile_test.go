@@ -1,10 +1,6 @@
 package e2escenarios
 
 import (
-	"fmt"
-	"strings"
-	"time"
-
 	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
@@ -45,21 +41,21 @@ var _ = Describe("odo devfile supported tests", func() {
 		helper.Cmd("odo", "push", "--context", projectDirPath).ShouldPass()
 		helper.Cmd("odo", "push", "--debug", "--context", projectDirPath).ShouldPass()
 
-		stopChannel := make(chan bool)
-		go func() {
-			helper.Cmd("odo", "debug", "port-forward", "--local-port", debugLocalPort, "--context", projectDirPath).WithTerminate(60*time.Second, stopChannel).ShouldRun()
-		}()
-
-		// Make sure that the debug information output, outputs correctly.
-		// We do *not* check the json output since the debugProcessID will be different each time.
-		helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
-			if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
-				strings.Contains(output, fmt.Sprintf(`"localPort": %s`, debugLocalPort)) {
-				return true
-			}
-			return false
-		})
-		stopChannel <- true
+		//		stopChannel := make(chan bool)
+		//		go func() {
+		//			helper.Cmd("odo", "debug", "port-forward", "--local-port", debugLocalPort, "--context", projectDirPath).WithTerminate(60*time.Second, stopChannel).ShouldRun()
+		//		}()
+		//
+		//		// Make sure that the debug information output, outputs correctly.
+		//		// We do *not* check the json output since the debugProcessID will be different each time.
+		//		helper.WaitForCmdOut("odo", []string{"debug", "info", "-o", "json", "--context", projectDirPath}, 1, false, func(output string) bool {
+		//			if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
+		//				strings.Contains(output, fmt.Sprintf(`"localPort": %s`, debugLocalPort)) {
+		//				return true
+		//			}
+		//			return false
+		//		})
+		//		stopChannel <- true
 	}
 
 	Context("odo debug support for devfile components", func() {
