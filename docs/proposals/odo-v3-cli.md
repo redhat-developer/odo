@@ -111,15 +111,17 @@ mostly as it is, just cleanup
   - **`catalog`** - list all components and services `--type=components,services`  `--filter=java`
 - **`odo create`**
   - **`namespace`**
+- **`odo add`**
   - **[`endpoint`](odo-v3-cli/odo-create-endpoint.md)** - TODO similar as v2 `odo url create`, but flags and output needs to be reworked
   - **`binding`** - similar as v2 `odo link`, but flags and output needs to be reworked
   - **`service`** - similar as v2 `odo service create`, but flags and output needs to be reworked
-- `odo delete`
-  - [`component`](odo-v3-cli/odo-delete-component.md) - similar as v2 `odo delete`, but flags and output needs to be reworked
-  - **`namespace`**
+- `odo remove`
   - **[`endpoint`](odo-v3-cli/odo-delete-endpoint.md)** - TODO similar as v2 `odo url delete`, but flags and output needs to be reworked
   - **`binding`**  - similar as v2 `odo unlink`, but flags and output needs to be reworked
   - **`service`** - similar as v2 `odo service delete`, but flags and output needs to be reworked
+- `odo delete`  
+- - [`component`](odo-v3-cli/odo-delete-component.md) - similar as v2 `odo delete`, but flags and output needs to be reworked
+  - **`namespace`**
 - **`odo set`**
   - **`namespace`** - the same as v2 `odo project set`
 - **odo describe**
