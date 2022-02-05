@@ -1,0 +1,22 @@
+Go:
+  configuration_files:
+    - "go.mod"
+    - "go.sum"
+  component: true
+Java:
+  configuration_files:
+    - "pom.xml"
+    - "build.gradle"
+  component: true
+JavaScript:
+  exclude_folders:
+    - "node_modules"
+  configuration_files:
+    - "package.json"
+  component: true
+Python:
+  component: true
+Rust:
+  configuration_files:
+    - "Cargo.toml"
+  component: true

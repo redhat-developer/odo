@@ -7,6 +7,8 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
+	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 )
@@ -32,6 +34,18 @@ func NewInteractiveBackend(asker asker.Asker, catalogClient catalog.Client) *Int
 
 func (o *InteractiveBackend) Validate(flags map[string]string) error {
 	return nil
+}
+
+// DetectFramework uses the anlizer library in order to detect the language
+// as well as framework and tool of a Devfile location
+// Passes in PATH and gets a function that contains strings describing the
+// directory's detected languages.
+func DetectFramework(path string) ([]language.Language, error) {
+	languages, err := recognizer.Analyze(path)
+	if err != nil {
+		return []language.Language{}, err
+	}
+	return languages, nil
 }
 
 func (o *InteractiveBackend) SelectDevfile(flags map[string]string) (bool, *DevfileLocation, error) {
