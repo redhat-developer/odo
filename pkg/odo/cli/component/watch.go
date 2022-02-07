@@ -127,8 +127,8 @@ func (wo *WatchOptions) Run() (err error) {
 	err = watch.DevfileWatchAndPush(
 		os.Stdout,
 		watch.WatchParameters{
-			//ComponentName: wo.EnvSpecificInfo.GetName(),
-			//ApplicationName:     wo.Context.GetApplication(),
+			ComponentName:       wo.EnvSpecificInfo.GetName(),
+			ApplicationName:     wo.Context.GetApplication(),
 			Path:                wo.sourcePath,
 			FileIgnores:         dfutil.GetAbsGlobExps(wo.sourcePath, wo.ignoreFlag),
 			PushDiffDelay:       wo.delayFlag,
