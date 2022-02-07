@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
@@ -36,6 +37,9 @@ var buildImagesExample = templates.Examples(`
 // NewLoginOptions creates a new LoginOptions instance
 func NewBuildImagesOptions() *BuildImagesOptions {
 	return &BuildImagesOptions{}
+}
+
+func (o *BuildImagesOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes LoginOptions after they've been created

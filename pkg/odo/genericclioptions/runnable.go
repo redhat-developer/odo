@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
@@ -33,6 +34,7 @@ import (
 )
 
 type Runnable interface {
+	SetClientset(clientset *clientset.Clientset)
 	Complete(cmdline cmdline.Cmdline, args []string) error
 	Validate() error
 	Run() error
@@ -81,6 +83,13 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 
 	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
 	util.LogErrorAndExit(checkConflictingFlags(cmd, args), "")
+
+	deps, err := clientset.Fetch(cmd)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	o.SetClientset(deps)
+
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
 	err = o.Complete(cmdline.NewCobra(cmd), args)

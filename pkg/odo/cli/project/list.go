@@ -6,11 +6,11 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -33,14 +33,16 @@ type ProjectListOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	prjClient project.Client
+	clientset *clientset.Clientset
 }
 
 // NewProjectListOptions creates a new ProjectListOptions instance
-func NewProjectListOptions(prjClient project.Client) *ProjectListOptions {
-	return &ProjectListOptions{
-		prjClient: prjClient,
-	}
+func NewProjectListOptions() *ProjectListOptions {
+	return &ProjectListOptions{}
+}
+
+func (o *ProjectListOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes ProjectListOptions after they've been created
@@ -56,7 +58,7 @@ func (plo *ProjectListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo project list command
 func (plo *ProjectListOptions) Run() error {
-	projects, err := plo.prjClient.List()
+	projects, err := plo.clientset.ProjectClient.List()
 	if err != nil {
 		return err
 	}
@@ -74,9 +76,7 @@ func (plo *ProjectListOptions) Run() error {
 
 // NewCmdProjectList implements the odo project list command.
 func NewCmdProjectList(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	o := NewProjectListOptions(project.NewClient(kubclient))
+	o := NewProjectListOptions()
 	projectListCmd := &cobra.Command{
 		Use:         name,
 		Short:       listLongDesc,
@@ -88,6 +88,7 @@ func NewCmdProjectList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(projectListCmd, clientset.PROJECT)
 	return projectListCmd
 }
 

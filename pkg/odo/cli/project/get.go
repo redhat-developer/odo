@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 
@@ -38,6 +39,9 @@ type ProjectGetOptions struct {
 // NewProjectGetOptions creates a ProjectGetOptions instance
 func NewProjectGetOptions() *ProjectGetOptions {
 	return &ProjectGetOptions{}
+}
+
+func (o *ProjectGetOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ProjectGetOptions after they've been created

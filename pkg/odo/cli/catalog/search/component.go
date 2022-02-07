@@ -3,13 +3,10 @@ package search
 import (
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
 	"github.com/spf13/cobra"
 )
@@ -25,7 +22,7 @@ type SearchComponentOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	catalogClient catalog.Client
+	clientset *clientset.Clientset
 
 	// Parameters
 	searchTerm string
@@ -35,10 +32,12 @@ type SearchComponentOptions struct {
 }
 
 // NewSearchComponentOptions creates a new SearchComponentOptions instance
-func NewSearchComponentOptions(catalogClient catalog.Client) *SearchComponentOptions {
-	return &SearchComponentOptions{
-		catalogClient: catalogClient,
-	}
+func NewSearchComponentOptions() *SearchComponentOptions {
+	return &SearchComponentOptions{}
+}
+
+func (o *SearchComponentOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes SearchComponentOptions after they've been created
@@ -49,7 +48,7 @@ func (o *SearchComponentOptions) Complete(cmdline cmdline.Cmdline, args []string
 	}
 	o.searchTerm = args[0]
 
-	o.components, err = o.catalogClient.SearchComponent(o.KClient, o.searchTerm)
+	o.components, err = o.clientset.CatalogClient.SearchComponent(o.KClient, o.searchTerm)
 	return err
 }
 
@@ -70,12 +69,8 @@ func (o *SearchComponentOptions) Run() error {
 
 // NewCmdCatalogSearchComponent implements the odo catalog search component command
 func NewCmdCatalogSearchComponent(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewSearchComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient))
-	return &cobra.Command{
+	o := NewSearchComponentOptions()
+	command := &cobra.Command{
 		Use:   name,
 		Short: "Search component type in catalog",
 		Long: `Search component type in catalog.
@@ -89,4 +84,6 @@ components.
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(command, clientset.CATALOG)
+	return command
 }

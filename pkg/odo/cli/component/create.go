@@ -6,11 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/zalando/go-keyring"
 
 	"github.com/devfile/library/pkg/devfile"
@@ -115,9 +113,9 @@ odo catalog list components
 %[1]s nodejs --app myapp --project myproject`)
 
 // NewCreateOptions returns new instance of CreateOptions
-func NewCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
+func NewCreateOptions() *CreateOptions {
 	return &CreateOptions{
-		PushOptions: NewPushOptions(prjClient, prefClient),
+		PushOptions: NewPushOptions(),
 	}
 }
 
@@ -213,7 +211,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	}()
 	// Set the starter project token if required
 	if co.devfileMetadata.starter != "" {
-		secure := registryUtil.IsSecure(co.prefClient, co.devfileMetadata.devfileRegistry.Name)
+		secure := registryUtil.IsSecure(co.clientset.PreferenceClient, co.devfileMetadata.devfileRegistry.Name)
 		if co.devfileMetadata.starterToken == "" && secure {
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
@@ -353,13 +351,7 @@ func (co *CreateOptions) Run() (err error) {
 
 // NewCmdCreate implements the create odo command
 func NewCmdCreate(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	co := NewCreateOptions(project.NewClient(kubclient), prefClient)
+	co := NewCreateOptions()
 	var componentCreateCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s <component_type> [component_name] [flags]", name),
 		Short:       "Create a new component",
@@ -371,6 +363,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
 	}
+	clientset.Add(componentCreateCmd, clientset.PROJECT, clientset.PREFERENCE)
+
 	odoutil.AddContextFlag(componentCreateCmd, &co.contextFlag)
 	componentCreateCmd.Flags().StringSliceVarP(&co.portFlag, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.envFlag, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")

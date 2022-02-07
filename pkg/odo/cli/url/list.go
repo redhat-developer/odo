@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -44,6 +45,9 @@ type ListOptions struct {
 // NewURLListOptions creates a new URLCreateOptions instance
 func NewURLListOptions() *ListOptions {
 	return &ListOptions{}
+}
+
+func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes ListOptions after they've been Listed

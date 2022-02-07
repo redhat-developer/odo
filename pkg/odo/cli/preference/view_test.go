@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 
 	"k8s.io/utils/pointer"
@@ -14,7 +15,10 @@ import (
 func TestView(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	prefClient := preference.NewMockClient(ctrl)
-	opts := NewViewOptions(prefClient)
+	opts := NewViewOptions()
+	opts.SetClientset(&clientset.Clientset{
+		PreferenceClient: prefClient,
+	})
 
 	cmdline := cmdline.NewMockCmdline(ctrl)
 

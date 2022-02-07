@@ -6,17 +6,15 @@ import (
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/url"
 
 	"github.com/redhat-developer/odo/pkg/util"
@@ -81,8 +79,8 @@ type CreateOptions struct {
 }
 
 // NewURLCreateOptions creates a new CreateOptions instance
-func NewURLCreateOptions(prjClient project.Client, prefClient preference.Client) *CreateOptions {
-	return &CreateOptions{PushOptions: clicomponent.NewPushOptions(prjClient, prefClient)}
+func NewURLCreateOptions() *CreateOptions {
+	return &CreateOptions{PushOptions: clicomponent.NewPushOptions()}
 }
 
 // Complete completes CreateOptions after they've been Created
@@ -199,13 +197,7 @@ func (o *CreateOptions) Run() (err error) {
 
 // NewCmdURLCreate implements the odo url create command.
 func NewCmdURLCreate(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewURLCreateOptions(project.NewClient(kubclient), prefClient)
+	o := NewURLCreateOptions()
 	urlCreateCmd := &cobra.Command{
 		Use:         name + " [url name]",
 		Short:       urlCreateShortDesc,
@@ -217,6 +209,8 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(urlCreateCmd, clientset.PROJECT, clientset.PREFERENCE)
+
 	urlCreateCmd.Flags().IntVarP(&o.portFlag, "port", "", -1, "Port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().StringVar(&o.tlsSecretFlag, "tls-secret", "", "TLS secret name for the url of the component if the user bring their own TLS secret")
 	urlCreateCmd.Flags().StringVarP(&o.hostFlag, "host", "", "", "Cluster IP for this URL (alias \"--hostname\")")

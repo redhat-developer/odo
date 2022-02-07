@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -29,7 +30,7 @@ var (
 // SetOptions encapsulates the options for the command
 type SetOptions struct {
 	// Clients
-	prefClient preference.Client
+	clientset *clientset.Clientset
 
 	// Flags
 	forceFlag bool
@@ -40,10 +41,12 @@ type SetOptions struct {
 }
 
 // NewSetOptions creates a new SetOptions instance
-func NewSetOptions(prefClient preference.Client) *SetOptions {
-	return &SetOptions{
-		prefClient: prefClient,
-	}
+func NewSetOptions() *SetOptions {
+	return &SetOptions{}
+}
+
+func (o *SetOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes SetOptions after they've been created
@@ -62,7 +65,7 @@ func (o *SetOptions) Validate() (err error) {
 func (o *SetOptions) Run() (err error) {
 
 	if !o.forceFlag {
-		if isSet := o.prefClient.IsSet(o.paramName); isSet {
+		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {
 			// TODO: could add a logic to check if the new value set by the user is not same as the current value
 			if !ui.Proceed(fmt.Sprintf("%v is already set. Do you want to override it in the config", o.paramName)) {
 				log.Info("Aborted by the user")
@@ -71,7 +74,7 @@ func (o *SetOptions) Run() (err error) {
 		}
 	}
 
-	err = o.prefClient.SetConfiguration(o.paramName, o.paramValue)
+	err = o.clientset.PreferenceClient.SetConfiguration(o.paramName, o.paramValue)
 	if err != nil {
 		return err
 	}
@@ -82,16 +85,16 @@ func (o *SetOptions) Run() (err error) {
 
 // NewCmdSet implements the config set odo command
 func NewCmdSet(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewSetOptions(prefClient)
+	o := NewSetOptions()
 	preferenceSetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Set a value in odo config file",
 		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters()),
 		Example: func(exampleString, fullName string) string {
+			prefClient, err := preference.NewClient()
+			if err != nil {
+				util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
+			}
 			properties := prefClient.NewPreferenceList()
 			for _, property := range properties.Items {
 				value := property.Default
@@ -115,6 +118,8 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(preferenceSetCmd, clientset.PREFERENCE)
+
 	preferenceSetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, set the preference directly")
 	return preferenceSetCmd
 }

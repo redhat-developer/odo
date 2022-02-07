@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -61,6 +62,9 @@ type WatchOptions struct {
 // NewWatchOptions returns new instance of WatchOptions
 func NewWatchOptions() *WatchOptions {
 	return &WatchOptions{}
+}
+
+func (o *WatchOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes watch args

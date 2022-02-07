@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -89,7 +90,10 @@ func TestCreate(t *testing.T) {
 
 			/* Mocks for Complete */
 			prjClient := project.NewMockClient(ctrl)
-			opts := NewProjectCreateOptions(prjClient)
+			opts := NewProjectCreateOptions()
+			opts.SetClientset(&clientset.Clientset{
+				ProjectClient: prjClient,
+			})
 
 			/* COMPLETE */
 			err = opts.Complete(cmdline, tt.args)
