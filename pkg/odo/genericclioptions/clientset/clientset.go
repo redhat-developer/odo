@@ -14,6 +14,7 @@ package clientset
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/catalog"
 	_init "github.com/redhat-developer/odo/pkg/init"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -23,8 +24,8 @@ import (
 )
 
 const (
-	// pkg/application
-	APPLICATION = "DEP_APPLICATION"
+	// pkg/catalog
+	CATALOG = "DEP_CATALOG"
 	// pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
 	// pkg/init
@@ -46,13 +47,14 @@ const (
 // subdeps defines the sub-dependencies
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
-	APPLICATION: {KUBERNETES},
-	INIT:        {FILESYSTEM, PREFERENCE, REGISTRY},
-	PROJECT:     {KUBERNETES},
+	CATALOG: {FILESYSTEM, PREFERENCE},
+	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY},
+	PROJECT: {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
+	CatalogClient    catalog.Client
 	FS               filesystem.Filesystem
 	InitClient       _init.Client
 	KubernetesClient kclient.ClientInterface
@@ -106,6 +108,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 
 	/* With sub-dependencies */
+	if isDefined(command, CATALOG) {
+		dep.CatalogClient = catalog.NewCatalogClient(dep.FS, dep.PreferenceClient)
+	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
 	}

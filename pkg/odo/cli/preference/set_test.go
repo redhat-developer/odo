@@ -5,13 +5,17 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 func TestSet(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	prefClient := preference.NewMockClient(ctrl)
-	opts := NewSetOptions(prefClient)
+	opts := NewSetOptions()
+	opts.SetClientset(&clientset.Clientset{
+		PreferenceClient: prefClient,
+	})
 	opts.forceFlag = true
 
 	cmdline := cmdline.NewMockCmdline(ctrl)

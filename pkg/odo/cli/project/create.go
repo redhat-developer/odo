@@ -3,7 +3,6 @@ package project
 import (
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -38,7 +37,7 @@ type ProjectCreateOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	prjClient project.Client
+	clientset *clientset.Clientset
 
 	// Parameters
 	projectName string
@@ -48,13 +47,12 @@ type ProjectCreateOptions struct {
 }
 
 // NewProjectCreateOptions creates a ProjectCreateOptions instance
-func NewProjectCreateOptions(prjClient project.Client) *ProjectCreateOptions {
-	return &ProjectCreateOptions{
-		prjClient: prjClient,
-	}
+func NewProjectCreateOptions() *ProjectCreateOptions {
+	return &ProjectCreateOptions{}
 }
 
 func (o *ProjectCreateOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes ProjectCreateOptions after they've been created
@@ -87,7 +85,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	}
 
 	// Create the project & end the spinner (if there is any..)
-	err = pco.prjClient.Create(pco.projectName, pco.waitFlag)
+	err = pco.clientset.ProjectClient.Create(pco.projectName, pco.waitFlag)
 	if err != nil {
 		return err
 	}
@@ -97,7 +95,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	log.Successf(successMessage)
 
 	// Set the current project when created
-	err = pco.prjClient.SetCurrent(pco.projectName)
+	err = pco.clientset.ProjectClient.SetCurrent(pco.projectName)
 	if err != nil {
 		return err
 	}
@@ -115,9 +113,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 
 // NewCmdProjectCreate creates the project create command
 func NewCmdProjectCreate(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	o := NewProjectCreateOptions(project.NewClient(kubclient))
+	o := NewProjectCreateOptions()
 
 	projectCreateCmd := &cobra.Command{
 		Use:         name,
@@ -130,6 +126,7 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(projectCreateCmd, clientset.PROJECT)
 
 	projectCreateCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the project is ready")
 	return projectCreateCmd

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -41,17 +40,16 @@ type VersionOptions struct {
 	// serverInfo contains the remote server information if the user asked for it, nil otherwise
 	serverInfo *kclient.ServerInfo
 
-	prefClient preference.Client
+	clientset *clientset.Clientset
 }
 
 // NewVersionOptions creates a new VersionOptions instance
-func NewVersionOptions(prefClient preference.Client) *VersionOptions {
-	return &VersionOptions{
-		prefClient: prefClient,
-	}
+func NewVersionOptions() *VersionOptions {
+	return &VersionOptions{}
 }
 
 func (o *VersionOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes VersionOptions after they have been created
@@ -63,8 +61,8 @@ func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		if err == nil {
 			// checking the value of timeout in preference
 			var timeout time.Duration
-			if o.prefClient != nil {
-				timeout = time.Duration(o.prefClient.GetTimeout()) * time.Second
+			if o.clientset.PreferenceClient != nil {
+				timeout = time.Duration(o.clientset.PreferenceClient.GetTimeout()) * time.Second
 			} else {
 				// the default timeout will be used
 				// when the value is not readable from preference
@@ -113,11 +111,7 @@ func (o *VersionOptions) Run() (err error) {
 
 // NewCmdVersion implements the version odo command
 func NewCmdVersion(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		klog.V(3).Info(errors.Wrap(err, "unable to read preference file"))
-	}
-	o := NewVersionOptions(prefClient)
+	o := NewVersionOptions()
 	// versionCmd represents the version command
 	var versionCmd = &cobra.Command{
 		Use:     name,
@@ -128,6 +122,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(versionCmd, clientset.PREFERENCE)
 
 	// Add a defined annotation in order to appear in the help menu
 	versionCmd.Annotations = map[string]string{"command": "utility"}

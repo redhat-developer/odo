@@ -15,8 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -34,7 +32,7 @@ var (
 // UpdateOptions encapsulates the options for the "odo registry update" command
 type UpdateOptions struct {
 	// Clients
-	prefClient preference.Client
+	clientset *clientset.Clientset
 
 	// Parameters
 	registryName string
@@ -49,13 +47,12 @@ type UpdateOptions struct {
 }
 
 // NewUpdateOptions creates a new UpdateOptions instance
-func NewUpdateOptions(prefClient preference.Client) *UpdateOptions {
-	return &UpdateOptions{
-		prefClient: prefClient,
-	}
+func NewUpdateOptions() *UpdateOptions {
+	return &UpdateOptions{}
 }
 
 func (o *UpdateOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes UpdateOptions after they've been created
@@ -84,7 +81,7 @@ func (o *UpdateOptions) Run() (err error) {
 	secureBeforeUpdate := false
 	secureAfterUpdate := false
 
-	secure := registryUtil.IsSecure(o.prefClient, o.registryName)
+	secure := registryUtil.IsSecure(o.clientset.PreferenceClient, o.registryName)
 	if secure {
 		secureBeforeUpdate = true
 	}
@@ -93,7 +90,7 @@ func (o *UpdateOptions) Run() (err error) {
 		secureAfterUpdate = true
 	}
 
-	err = o.prefClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, secureAfterUpdate)
+	err = o.clientset.PreferenceClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, secureAfterUpdate)
 	if err != nil {
 		return err
 	}
@@ -115,11 +112,7 @@ func (o *UpdateOptions) Run() (err error) {
 
 // NewCmdUpdate implements the "odo registry update" command
 func NewCmdUpdate(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewUpdateOptions(prefClient)
+	o := NewUpdateOptions()
 	registryUpdateCmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <registry name> <registry URL>", name),
 		Short:   updateLongDesc,
@@ -130,6 +123,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(registryUpdateCmd, clientset.PREFERENCE)
 
 	registryUpdateCmd.Flags().StringVar(&o.tokenFlag, "token", "", "Token to be used to access secure registry")
 	registryUpdateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, update the registry directly")

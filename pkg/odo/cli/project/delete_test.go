@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -109,7 +110,10 @@ func TestDelete(t *testing.T) {
 
 			/* Mocks for Complete */
 			prjClient := project.NewMockClient(ctrl)
-			opts := NewProjectDeleteOptions(prjClient)
+			opts := NewProjectDeleteOptions()
+			opts.SetClientset(&clientset.Clientset{
+				ProjectClient: prjClient,
+			})
 			opts.forceFlag = true
 
 			/* COMPLETE */

@@ -19,9 +19,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -49,7 +46,7 @@ type DescribeComponentOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	catalogClient catalog.Client
+	clientset *clientset.Clientset
 
 	// Parameters
 	componentName string
@@ -59,13 +56,12 @@ type DescribeComponentOptions struct {
 }
 
 // NewDescribeComponentOptions creates a new DescribeComponentOptions instance
-func NewDescribeComponentOptions(catalogClient catalog.Client) *DescribeComponentOptions {
-	return &DescribeComponentOptions{
-		catalogClient: catalogClient,
-	}
+func NewDescribeComponentOptions() *DescribeComponentOptions {
+	return &DescribeComponentOptions{}
 }
 
 func (o *DescribeComponentOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes DescribeComponentOptions after they've been created
@@ -77,7 +73,7 @@ func (o *DescribeComponentOptions) Complete(cmdline cmdline.Cmdline, args []stri
 		return err
 	}
 
-	catalogDevfileList, err := o.catalogClient.ListDevfileComponents("")
+	catalogDevfileList, err := o.clientset.CatalogClient.ListDevfileComponents("")
 	if catalogDevfileList.DevfileRegistries == nil {
 		log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 	}
@@ -156,11 +152,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 // NewCmdCatalogDescribeComponent implements the odo catalog describe component command
 func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewDescribeComponentOptions(catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient))
+	o := NewDescribeComponentOptions()
 	command := &cobra.Command{
 		Use:         name,
 		Short:       "Describe a component",
@@ -172,7 +164,7 @@ func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
+	clientset.Add(command, clientset.CATALOG)
 	return command
 }
 
