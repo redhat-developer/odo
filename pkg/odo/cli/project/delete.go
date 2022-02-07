@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 
@@ -38,7 +38,7 @@ type ProjectDeleteOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	prjClient project.Client
+	clientset *clientset.Clientset
 
 	// Parameters
 	projectName string
@@ -49,10 +49,12 @@ type ProjectDeleteOptions struct {
 }
 
 // NewProjectDeleteOptions creates a ProjectDeleteOptions instance
-func NewProjectDeleteOptions(prjClient project.Client) *ProjectDeleteOptions {
-	return &ProjectDeleteOptions{
-		prjClient: prjClient,
-	}
+func NewProjectDeleteOptions() *ProjectDeleteOptions {
+	return &ProjectDeleteOptions{}
+}
+
+func (o *ProjectDeleteOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes ProjectDeleteOptions after they've been created
@@ -65,7 +67,7 @@ func (pdo *ProjectDeleteOptions) Complete(cmdline cmdline.Cmdline, args []string
 // Validate validates the parameters of the ProjectDeleteOptions
 func (pdo *ProjectDeleteOptions) Validate() error {
 	// Validate existence of the project to be deleted
-	isValidProject, err := pdo.prjClient.Exists(pdo.projectName)
+	isValidProject, err := pdo.clientset.ProjectClient.Exists(pdo.projectName)
 	if kerrors.IsForbidden(err) {
 		return &odoerrors.Unauthorized{}
 	}
@@ -82,7 +84,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	s := &log.Status{}
 
 	// This to set the project in the file and runtime
-	err = pdo.prjClient.SetCurrent(pdo.projectName)
+	err = pdo.clientset.ProjectClient.SetCurrent(pdo.projectName)
 	if err != nil {
 		return err
 	}
@@ -103,7 +105,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 			defer s.End(false)
 		}
 
-		err := pdo.prjClient.Delete(pdo.projectName, pdo.waitFlag)
+		err := pdo.clientset.ProjectClient.Delete(pdo.projectName, pdo.waitFlag)
 		if err != nil {
 			return err
 		}
@@ -124,9 +126,7 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 
 // NewCmdProjectDelete creates the project delete command
 func NewCmdProjectDelete(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	o := NewProjectDeleteOptions(project.NewClient(kubclient))
+	o := NewProjectDeleteOptions()
 
 	projectDeleteCmd := &cobra.Command{
 		Use:         name,
@@ -139,6 +139,7 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(projectDeleteCmd, clientset.PROJECT)
 
 	projectDeleteCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait until the project has been completely deleted")
 	projectDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete project without prompting")

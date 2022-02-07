@@ -17,7 +17,7 @@ import (
 	util "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
@@ -35,16 +35,18 @@ var (
 // ListOptions encapsulates the options for "odo registry list" command
 type ListOptions struct {
 	// Clients
-	prefClient preference.Client
+	clientset *clientset.Clientset
 
 	printGitRegistryDeprecationWarning bool
 }
 
 // NewListOptions creates a new ListOptions instance
-func NewListOptions(prefClient preference.Client) *ListOptions {
-	return &ListOptions{
-		prefClient: prefClient,
-	}
+func NewListOptions() *ListOptions {
+	return &ListOptions{}
+}
+
+func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes ListOptions after they've been created
@@ -59,7 +61,7 @@ func (o *ListOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry list" command
 func (o *ListOptions) Run() (err error) {
-	registryList := o.prefClient.RegistryList()
+	registryList := o.clientset.PreferenceClient.RegistryList()
 	if registryList == nil || len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
 	}
@@ -101,11 +103,7 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 
 // NewCmdList implements the "odo registry list" command
 func NewCmdList(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewListOptions(prefClient)
+	o := NewListOptions()
 	registryListCmd := &cobra.Command{
 		Use:         name,
 		Short:       listDesc,
@@ -117,5 +115,6 @@ func NewCmdList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(registryListCmd, clientset.PREFERENCE)
 	return registryListCmd
 }

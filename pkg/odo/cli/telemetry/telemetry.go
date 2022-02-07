@@ -5,7 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
 	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/spf13/cobra"
@@ -15,14 +15,18 @@ import (
 const RecommendedCommandName = "telemetry"
 
 type TelemetryOptions struct {
-	prefClient    preference.Client
+	// clients
+	clientset *clientset.Clientset
+
 	telemetryData segment.TelemetryData
 }
 
-func NewTelemetryOptions(prefClient preference.Client) *TelemetryOptions {
-	return &TelemetryOptions{
-		prefClient: prefClient,
-	}
+func NewTelemetryOptions() *TelemetryOptions {
+	return &TelemetryOptions{}
+}
+
+func (o *TelemetryOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 func (o *TelemetryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
@@ -35,11 +39,11 @@ func (o *TelemetryOptions) Validate() (err error) {
 }
 
 func (o *TelemetryOptions) Run() (err error) {
-	if !segment.IsTelemetryEnabled(o.prefClient) {
+	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
 		return nil
 	}
 
-	segmentClient, err := segment.NewClient(o.prefClient)
+	segmentClient, err := segment.NewClient(o.clientset.PreferenceClient)
 	if err != nil {
 		klog.V(4).Infof("Cannot create a segment client. Will not send any data: %q", err)
 	}
@@ -54,8 +58,7 @@ func (o *TelemetryOptions) Run() (err error) {
 }
 
 func NewCmdTelemetry(name string) *cobra.Command {
-	prefClient, _ := preference.NewClient()
-	o := NewTelemetryOptions(prefClient)
+	o := NewTelemetryOptions()
 	telemetryCmd := &cobra.Command{
 		Use:                    name,
 		Short:                  "Collect and upload usage data.",
@@ -72,5 +75,6 @@ func NewCmdTelemetry(name string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(telemetryCmd, clientset.PREFERENCE)
 	return telemetryCmd
 }

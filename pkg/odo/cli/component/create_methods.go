@@ -90,7 +90,7 @@ func (icm InteractiveCreateMethod) FetchDevfileAndCreateComponent(co *CreateOpti
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag, co.prefClient)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag, co.clientset.PreferenceClient)
 }
 
 func (icm InteractiveCreateMethod) Rollback(devfile, componentContext string) {
@@ -124,7 +124,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 		componentName, err = createDefaultComponentName(
 			co.devfileMetadata.componentType,
 			co.contextFlag,
-			co.prefClient,
+			co.clientset.PreferenceClient,
 		)
 		if err != nil {
 			return err
@@ -135,7 +135,7 @@ func (dcm DirectCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, 
 	if err != nil {
 		return err
 	}
-	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag, co.prefClient)
+	return fetchDevfileFromRegistry(co.devfileMetadata.devfileRegistry, co.devfileMetadata.devfileLink, co.DevfilePath, co.devfileMetadata.componentType, co.contextFlag, co.clientset.PreferenceClient)
 }
 
 func (dcm DirectCreateMethod) Rollback(devfile, componentContext string) {
@@ -379,7 +379,7 @@ func getMetadataForExistingDevfile(co *CreateOptions, args []string) (componentN
 			componentName = devObj.GetMetadataName()
 		} else {
 			// default name
-			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.contextFlag, co.prefClient)
+			componentName, err = createDefaultComponentName(co.devfileMetadata.componentType, co.contextFlag, co.clientset.PreferenceClient)
 			if err != nil {
 				return "", "", err
 			}

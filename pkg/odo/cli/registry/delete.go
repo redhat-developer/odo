@@ -14,8 +14,7 @@ import (
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -33,7 +32,7 @@ var (
 // DeleteOptions encapsulates the options for the "odo registry delete" command
 type DeleteOptions struct {
 	// Clients
-	prefClient preference.Client
+	clientset *clientset.Clientset
 
 	// Parameters
 	registryName string
@@ -47,10 +46,12 @@ type DeleteOptions struct {
 }
 
 // NewDeleteOptions creates a new DeleteOptions instance
-func NewDeleteOptions(prefClient preference.Client) *DeleteOptions {
-	return &DeleteOptions{
-		prefClient: prefClient,
-	}
+func NewDeleteOptions() *DeleteOptions {
+	return &DeleteOptions{}
+}
+
+func (o *DeleteOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes DeleteOptions after they've been created
@@ -69,8 +70,8 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry delete" command
 func (o *DeleteOptions) Run() (err error) {
-	isSecure := registryUtil.IsSecure(o.prefClient, o.registryName)
-	err = o.prefClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
+	isSecure := registryUtil.IsSecure(o.clientset.PreferenceClient, o.registryName)
+	err = o.clientset.PreferenceClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
 	if err != nil {
 		return err
 	}
@@ -87,11 +88,7 @@ func (o *DeleteOptions) Run() (err error) {
 
 // NewCmdDelete implements the "odo registry delete" command
 func NewCmdDelete(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewDeleteOptions(prefClient)
+	o := NewDeleteOptions()
 	registryDeleteCmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <registry name>", name),
 		Short:   deleteLongDesc,
@@ -102,6 +99,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(registryDeleteCmd, clientset.PREFERENCE)
 
 	registryDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, delete the registry directly")
 

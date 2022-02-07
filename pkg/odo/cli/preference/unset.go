@@ -8,7 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -30,7 +30,7 @@ var (
 // UnsetOptions encapsulates the options for the command
 type UnsetOptions struct {
 	// Clients
-	prefClient preference.Client
+	clientset *clientset.Clientset
 
 	//Parameters
 	paramName string
@@ -40,10 +40,12 @@ type UnsetOptions struct {
 }
 
 // NewUnsetOptions creates a new UnsetOptions instance
-func NewUnsetOptions(prefClient preference.Client) *UnsetOptions {
-	return &UnsetOptions{
-		prefClient: prefClient,
-	}
+func NewUnsetOptions() *UnsetOptions {
+	return &UnsetOptions{}
+}
+
+func (o *UnsetOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes UnsetOptions after they've been created
@@ -62,7 +64,7 @@ func (o *UnsetOptions) Run() (err error) {
 
 	if !o.forceFlag {
 
-		if isSet := o.prefClient.IsSet(o.paramName); isSet {
+		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {
 			if !ui.Proceed(fmt.Sprintf("Do you want to unset %s in the preference", o.paramName)) {
 				log.Infof("Aborted by the user")
 				return nil
@@ -72,7 +74,7 @@ func (o *UnsetOptions) Run() (err error) {
 		}
 	}
 
-	err = o.prefClient.DeleteConfiguration(o.paramName)
+	err = o.clientset.PreferenceClient.DeleteConfiguration(o.paramName)
 	if err != nil {
 		return err
 	}
@@ -84,11 +86,7 @@ func (o *UnsetOptions) Run() (err error) {
 
 // NewCmdUnset implements the preference unset odo command
 func NewCmdUnset(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewUnsetOptions(prefClient)
+	o := NewUnsetOptions()
 	preferenceUnsetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Unset a value in odo preference file",
@@ -112,6 +110,8 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(preferenceUnsetCmd, clientset.PREFERENCE)
+
 	preferenceUnsetCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, unsetting the preference directly")
 
 	return preferenceUnsetCmd
