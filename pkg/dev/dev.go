@@ -1,8 +1,14 @@
 package dev
 
 import (
-	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilev2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/pkg/errors"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/watch"
 	"io"
@@ -21,24 +27,49 @@ func NewDev(client kclient.ClientInterface) *Dev {
 }
 
 // getComponents returns a slice of components to be started for inner loop
-func getComponents() (devfile.Component, error) {
-	var components devfile.Component
+func getComponents() (devfilev2.Component, error) {
+	var components devfilev2.Component
 	var err error
 	return components, err
 }
 
 // Start starts the resources on the Kubernetes cluster
-func (o *Dev) Start(devfileObj parser.DevfileObj, out io.Writer, path string) error {
+func (o *Dev) Start(devfileObj parser.DevfileObj, out io.Writer, path string, platformContext kubernetes.KubernetesContext) error {
 	var err error
-	// store the devfileObj so that we can reuse it in Cleanup
-	//o.devfileObj = devfileObj
-	watchParameters := watch.WatchParameters{
-		Path:            path,
-		ComponentName:   devfileObj.GetMetadataName(),
-		ApplicationName: "app",
-		ExtChan:         make(chan bool),
+
+	var adapter common.ComponentAdapter
+	adapter, err = adapters.NewComponentAdapter(devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext)
+	if err != nil {
+		return err
 	}
-	watch.WatchAndPush(o.client, out, watchParameters)
+
+	// store the devfileObj so that we can reuse it in Cleanup
+	// o.devfileObj = devfileObj
+	var envSpecificInfo *envinfo.EnvSpecificInfo
+	envSpecificInfo, err = envinfo.NewEnvSpecificInfo(path)
+	pushParameters := common.PushParameters{
+		EnvSpecificInfo: *envSpecificInfo,
+		Path:            path,
+	}
+
+	err = adapter.Push(pushParameters)
+	if err != nil {
+		return err
+	}
+
+	watchParameters := watch.WatchParameters{
+		Path:                path,
+		ComponentName:       devfileObj.GetMetadataName(),
+		ApplicationName:     "app",
+		ExtChan:             make(chan bool),
+		DevfileWatchHandler: regenerateAdapterAndPush,
+		EnvSpecificInfo:     envSpecificInfo,
+	}
+
+	err = watch.WatchAndPush(o.client, out, watchParameters)
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -46,4 +77,37 @@ func (o *Dev) Start(devfileObj parser.DevfileObj, out io.Writer, path string) er
 func (o *Dev) Cleanup() error {
 	var err error
 	return err
+}
+
+func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+	var adapter common.ComponentAdapter
+
+	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
+	if err != nil {
+		return errors.Wrapf(err, "unable to generate component from watch parameters")
+	}
+
+	err = adapter.Push(pushParams)
+	if err != nil {
+		return errors.Wrapf(err, "watch command was unable to push component")
+	}
+
+	return err
+}
+
+func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+
+	// Parse devfile and validate
+	devObj, err := devfile.ParseAndValidateFromFile("./devfile.yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	platformContext := kubernetes.KubernetesContext{
+		// TODO: find a better way, or get RID of KubernetesContext
+		Namespace: "myproject",
+	}
+
+	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+
 }

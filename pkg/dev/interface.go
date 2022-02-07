@@ -2,10 +2,11 @@ package dev
 
 import (
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"io"
 )
 
 type Client interface {
-	Start(parser.DevfileObj, io.Writer, string) error
+	Start(d parser.DevfileObj, w io.Writer, path string, platformContext kubernetes.KubernetesContext) error
 	Cleanup() error
 }
