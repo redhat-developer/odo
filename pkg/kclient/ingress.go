@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/unions"
+	"github.com/redhat-developer/odo/pkg/kclient/unions"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

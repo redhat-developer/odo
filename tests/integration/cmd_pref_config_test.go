@@ -44,28 +44,6 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 	})
 
-	Context("when running help for config command", func() {
-		It("should display the help", func() {
-			appHelp := helper.Cmd("odo", "config", "-h").ShouldPass().Out()
-			Expect(appHelp).To(ContainSubstring("Modifies odo specific configuration settings within the devfile or config file"))
-		})
-	})
-
-	When("running odo config view", func() {
-		It("should pass if devfile is present in current dir", func() {
-			helper.Chdir(commonVar.Context)
-			cmpName := helper.RandString(6)
-			helper.Cmd("odo", "create", cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-			out := helper.Cmd("odo", "config", "view").ShouldPass().Out()
-			helper.MatchAllInOutput(out, []string{"runtime", "Memory: 1024Mi"})
-		})
-
-		It("should fail if devfile not present in current dir", func() {
-			err := helper.Cmd("odo", "config", "view").ShouldFail().Err()
-			Expect(err).To(ContainSubstring("the current directory does not represent an odo component."))
-		})
-	})
-
 	Context("When viewing global config", func() {
 		var newContext string
 		// ConsentTelemetry is set to false in helper.CommonBeforeEach so that it does not prompt to set a value
@@ -135,40 +113,6 @@ var _ = Describe("odo preference and config command tests", func() {
 			values := gjson.GetMany(prefJSONOutput, "kind", "items.0.Description")
 			expected := []string{"PreferenceList", "Flag to control if an update notification is shown or not (Default: true)"}
 			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-		})
-	})
-
-	Context("when viewing local config without logging into the OpenShift cluster", func() {
-		var ocRunner helper.OcRunner
-		var token string
-		BeforeEach(func() {
-			if helper.IsKubernetesCluster() {
-				Skip("skipping for kubernetes until we can figure out how to simulate logged out state there")
-			}
-			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.Cmd("odo", "create", "nodejs", "--project", commonVar.Project, "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
-			ocRunner = helper.NewOcRunner("oc")
-			token = ocRunner.GetToken()
-			ocRunner.Logout()
-		})
-		AfterEach(func() {
-			ocRunner.LoginUsingToken(token)
-		})
-		When("user is working with a devfile component", func() {
-			It("should set, list and delete config successfully", func() {
-				helper.Cmd("odo", "config", "set", "--force", "--context", commonVar.Context, "Name", "foobar").ShouldPass()
-				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-				Expect(configValue).To(ContainSubstring("foobar"))
-				helper.Cmd("odo", "config", "unset", "--force", "--context", commonVar.Context, "Name").ShouldPass()
-			})
-			It("should set, list and delete config envs successfully", func() {
-				multiLineContent := `line1
-line2
-line3`
-				helper.Cmd("odo", "config", "set", "--force", "--env", "hello=world", "--env", "certif="+multiLineContent, "--context", commonVar.Context).ShouldPass()
-				configValue := helper.Cmd("odo", "config", "view", "--context", commonVar.Context).ShouldPass().Out()
-				helper.MatchAllInOutput(configValue, []string{"hello", "world", "line1", "line2", "line3"})
-			})
 		})
 	})
 

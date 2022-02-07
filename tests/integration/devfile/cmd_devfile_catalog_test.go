@@ -44,10 +44,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should succeed checking catalog for installed services", func() {
-		helper.Cmd("odo", "catalog", "list", "services").ShouldPass()
-	})
-
 	When("executing catalog list components", func() {
 
 		var output string
