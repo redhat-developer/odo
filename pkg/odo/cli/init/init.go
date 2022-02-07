@@ -13,15 +13,13 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
-	_init "github.com/redhat-developer/odo/pkg/init"
-	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
 	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -56,15 +54,10 @@ type InitOptions struct {
 	// CMD context
 	ctx context.Context
 
+	clientset *clientset.Clientset
+
 	// Backends to build init parameters
 	backends []params.ParamsBuilder
-
-	// filesystem on which command is running
-	fsys filesystem.Filesystem
-
-	// Clients
-	initClient       _init.Client
-	preferenceClient preference.Client
 
 	// the parameters needed to run the init procedure
 	params.InitParams
@@ -74,12 +67,15 @@ type InitOptions struct {
 }
 
 // NewInitOptions creates a new InitOptions instance
-func NewInitOptions(backends []params.ParamsBuilder, fsys filesystem.Filesystem, initClient _init.Client, prefClient preference.Client) *InitOptions {
-	return &InitOptions{
-		backends:         backends,
-		fsys:             fsys,
-		initClient:       initClient,
-		preferenceClient: prefClient,
+func NewInitOptions() *InitOptions {
+	return &InitOptions{}
+}
+
+func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
+	o.backends = []params.ParamsBuilder{
+		params.NewFlagsBuilder(),
+		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(clientset.FS, clientset.PreferenceClient)),
 	}
 }
 
@@ -90,12 +86,12 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 
 	o.ctx = cmdline.Context()
 
-	o.contextDir, err = o.fsys.Getwd()
+	o.contextDir, err = o.clientset.FS.Getwd()
 	if err != nil {
 		return err
 	}
 
-	empty, err := isEmpty(o.fsys, o.contextDir)
+	empty, err := isEmpty(o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
 	}
@@ -133,7 +129,7 @@ func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
 
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
-	return o.InitParams.Validate(o.preferenceClient)
+	return o.InitParams.Validate(o.clientset.PreferenceClient)
 }
 
 // Run contains the logic for the odo command
@@ -148,16 +144,16 @@ func (o *InitOptions) Run() (err error) {
 		if starterDownloaded {
 			err = fmt.Errorf("%w\nThe command failed after downloading the starter project. By security, the directory is not cleaned up.", err)
 		} else {
-			_ = o.fsys.Remove("devfile.yaml")
+			_ = o.clientset.FS.Remove("devfile.yaml")
 			err = fmt.Errorf("%w\nThe command failed, the devfile has been removed from current directory.", err)
 		}
 	}()
 
 	destDevfile := filepath.Join(o.contextDir, "devfile.yaml")
 	if o.InitParams.DevfilePath != "" {
-		err = o.initClient.DownloadDirect(o.InitParams.DevfilePath, destDevfile)
+		err = o.clientset.InitClient.DownloadDirect(o.InitParams.DevfilePath, destDevfile)
 	} else {
-		err = o.initClient.DownloadFromRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.contextDir)
+		err = o.clientset.InitClient.DownloadFromRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.contextDir)
 	}
 	if err != nil {
 		return fmt.Errorf("Unable to download devfile: %w", err)
@@ -172,14 +168,14 @@ func (o *InitOptions) Run() (err error) {
 
 	if o.InitParams.Starter != "" {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.initClient.DownloadStarterProject(devfileObj, o.InitParams.Starter, o.contextDir)
+		err = o.clientset.InitClient.DownloadStarterProject(devfileObj, o.InitParams.Starter, o.contextDir)
 		if err != nil {
 			return fmt.Errorf("unable to download starter project %q: %w", o.InitParams.Starter, err)
 		}
 		starterDownloaded = true
 
 		// in case the starter project contains a devfile, read it again
-		if _, err = o.fsys.Stat(destDevfile); err == nil {
+		if _, err = o.clientset.FS.Stat(destDevfile); err == nil {
 			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: pointer.BoolPtr(false)})
 			if err != nil {
 				return err
@@ -205,18 +201,8 @@ To deploy your component to a cluster use "odo deploy".`, o.InitParams.Name)
 
 // NewCmdInit implements the odo command
 func NewCmdInit(name, fullName string) *cobra.Command {
-	fsys := filesystem.DefaultFs{}
-	prefClient, err := preference.NewClient()
-	registryClient := registry.NewRegistryClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
 
-	backends := []params.ParamsBuilder{
-		params.NewFlagsBuilder(),
-		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)),
-	}
-	o := NewInitOptions(backends, fsys, _init.NewInitClient(fsys, prefClient, registryClient), prefClient)
+	o := NewInitOptions()
 	initCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Init bootstraps a new project",
@@ -227,6 +213,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(initCmd, clientset.PREFERENCE, clientset.FILESYSTEM, clientset.REGISTRY, clientset.INIT)
 
 	initCmd.Flags().StringVar(&o.Name, params.FLAG_NAME, "", "name of the component to create")
 	initCmd.Flags().StringVar(&o.Devfile, params.FLAG_DEVFILE, "", "name of the devfile in devfile registry")

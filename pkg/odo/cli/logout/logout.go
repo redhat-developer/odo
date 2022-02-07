@@ -6,6 +6,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -27,6 +28,9 @@ type LogoutOptions struct {
 // NewLogoutOptions creates a new LogoutOptions instance
 func NewLogoutOptions() *LogoutOptions {
 	return &LogoutOptions{}
+}
+
+func (o *LogoutOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 // Complete completes LogoutOptions after they've been created

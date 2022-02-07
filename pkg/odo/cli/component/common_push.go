@@ -10,9 +10,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -24,8 +23,7 @@ type CommonPushOptions struct {
 	*genericclioptions.Context
 
 	// Clients
-	prjClient  project.Client
-	prefClient preference.Client
+	clientset *clientset.Clientset
 
 	//Flags
 	// TODO(feloy) Fixme
@@ -38,11 +36,12 @@ type CommonPushOptions struct {
 }
 
 // NewCommonPushOptions instantiates a commonPushOptions object
-func NewCommonPushOptions(prjClient project.Client, prefClient preference.Client) *CommonPushOptions {
-	return &CommonPushOptions{
-		prjClient:  prjClient,
-		prefClient: prefClient,
-	}
+func NewCommonPushOptions() *CommonPushOptions {
+	return &CommonPushOptions{}
+}
+
+func (o *PushOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 //InitEnvInfoFromContext initializes envinfo from the context
@@ -72,12 +71,12 @@ func (cpo *CommonPushOptions) ResolveSrcAndConfigFlags() {
 func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 
 	// check if project exist
-	isPrjExists, err := cpo.prjClient.Exists(prjName)
+	isPrjExists, err := cpo.clientset.ProjectClient.Exists(prjName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
 	}
 	if !isPrjExists {
-		err = cpo.prjClient.Create(prjName, true)
+		err = cpo.clientset.ProjectClient.Create(prjName, true)
 		if err != nil {
 			return errors.Wrapf(
 				err,

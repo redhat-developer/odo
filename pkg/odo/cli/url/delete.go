@@ -3,16 +3,14 @@ package url
 import (
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -41,8 +39,8 @@ type DeleteOptions struct {
 }
 
 // NewURLDeleteOptions creates a new DeleteOptions instance
-func NewURLDeleteOptions(prjClient project.Client, prefClient preference.Client) *DeleteOptions {
-	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions(prjClient, prefClient)}
+func NewURLDeleteOptions() *DeleteOptions {
+	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions()}
 }
 
 // Complete completes DeleteOptions after they've been Deleted
@@ -107,13 +105,7 @@ func (o *DeleteOptions) Run() (err error) {
 
 // NewCmdURLDelete implements the odo url delete command.
 func NewCmdURLDelete(name, fullName string) *cobra.Command {
-	// The error is not handled at this point, it will be handled during Context creation
-	kubclient, _ := kclient.New()
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewURLDeleteOptions(project.NewClient(kubclient), prefClient)
+	o := NewURLDeleteOptions()
 	urlDeleteCmd := &cobra.Command{
 		Use:   name + " [url name]",
 		Short: urlDeleteShortDesc,
@@ -124,6 +116,8 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 		},
 		Example: fmt.Sprintf(urlDeleteExample, fullName),
 	}
+	clientset.Add(urlDeleteCmd, clientset.PROJECT, clientset.PREFERENCE)
+
 	urlDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete url without prompting")
 
 	o.AddContextFlag(urlDeleteCmd)

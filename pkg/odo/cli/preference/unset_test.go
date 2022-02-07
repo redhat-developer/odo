@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
@@ -32,7 +33,10 @@ func TestUnsetForce(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			opts := NewUnsetOptions(prefClient)
+			opts := NewUnsetOptions()
+			opts.SetClientset(&clientset.Clientset{
+				PreferenceClient: prefClient,
+			})
 			opts.forceFlag = tt.forceFlag
 
 			cmdline := cmdline.NewMockCmdline(ctrl)

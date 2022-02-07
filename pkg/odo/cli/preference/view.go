@@ -10,8 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -25,14 +24,16 @@ var viewExample = ktemplates.Examples(`# For viewing the current preference valu
 // ViewOptions encapsulates the options for the command
 type ViewOptions struct {
 	// Clients
-	prefClient preference.Client
+	clientset *clientset.Clientset
 }
 
 // NewViewOptions creates a new ViewOptions instance
-func NewViewOptions(prefClient preference.Client) *ViewOptions {
-	return &ViewOptions{
-		prefClient: prefClient,
-	}
+func NewViewOptions() *ViewOptions {
+	return &ViewOptions{}
+}
+
+func (o *ViewOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes ViewOptions after they've been created
@@ -49,20 +50,20 @@ func (o *ViewOptions) Validate() (err error) {
 func (o *ViewOptions) Run() (err error) {
 
 	if log.IsJSON() {
-		prefDef := o.prefClient.NewPreferenceList()
+		prefDef := o.clientset.PreferenceClient.NewPreferenceList()
 		machineoutput.OutputSuccess(prefDef)
 
 		return
 	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
-	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(o.prefClient.UpdateNotification()))
-	fmt.Fprintln(w, "NamePrefix", "\t", showBlankIfNil(o.prefClient.NamePrefix()))
-	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(o.prefClient.Timeout()))
-	fmt.Fprintln(w, "BuildTimeout", "\t", showBlankIfNil(o.prefClient.BuildTimeout()))
-	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(o.prefClient.PushTimeout()))
-	fmt.Fprintln(w, "Ephemeral", "\t", showBlankIfNil(o.prefClient.EphemeralSourceVolume()))
-	fmt.Fprintln(w, "ConsentTelemetry", "\t", showBlankIfNil(o.prefClient.ConsentTelemetry()))
+	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(o.clientset.PreferenceClient.UpdateNotification()))
+	fmt.Fprintln(w, "NamePrefix", "\t", showBlankIfNil(o.clientset.PreferenceClient.NamePrefix()))
+	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.Timeout()))
+	fmt.Fprintln(w, "BuildTimeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.BuildTimeout()))
+	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.PushTimeout()))
+	fmt.Fprintln(w, "Ephemeral", "\t", showBlankIfNil(o.clientset.PreferenceClient.EphemeralSourceVolume()))
+	fmt.Fprintln(w, "ConsentTelemetry", "\t", showBlankIfNil(o.clientset.PreferenceClient.ConsentTelemetry()))
 
 	w.Flush()
 	return
@@ -86,11 +87,7 @@ func showBlankIfNil(intf interface{}) interface{} {
 
 // NewCmdView implements the config view odo command
 func NewCmdView(name, fullName string) *cobra.Command {
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		util.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	o := NewViewOptions(prefClient)
+	o := NewViewOptions()
 	preferenceViewCmd := &cobra.Command{
 		Use:         name,
 		Short:       "View current preference values",
@@ -103,5 +100,6 @@ func NewCmdView(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(preferenceViewCmd, clientset.PREFERENCE)
 	return preferenceViewCmd
 }
