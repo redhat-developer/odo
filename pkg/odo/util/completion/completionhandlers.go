@@ -8,32 +8,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/posener/complete"
-	"github.com/redhat-developer/odo/pkg/application"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
-
-// AppCompletionHandler provides completion for the app commands
-var AppCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-
-	appClient := application.NewClient(context.KClient)
-	applications, err := appClient.List()
-	if err != nil {
-		return completions
-	}
-
-	for _, app := range applications {
-		if args.commands[app] {
-			return nil
-		}
-		completions = append(completions, app)
-	}
-	return
-}
 
 // FileCompletionHandler provides suggestions for files and directories
 var FileCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {

@@ -5,7 +5,6 @@ import (
 
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/redhat-developer/odo/pkg/odogenerator"
 	"k8s.io/api/extensions/v1beta1"
 	v1 "k8s.io/api/networking/v1"
 )
@@ -37,7 +36,7 @@ func NewGeneratedKubernetesIngress() *KubernetesIngress {
 //NewKubernetesIngressFromParams generates a new KubernetesIngress from the ingress params
 func NewKubernetesIngressFromParams(ingressParams generator.IngressParams) *KubernetesIngress {
 	ki := NewGeneratedKubernetesIngress()
-	ki.NetworkingV1Ingress = odogenerator.GetNetworkingV1Ingress(ingressParams)
+	ki.NetworkingV1Ingress = getNetworkingV1Ingress(ingressParams)
 	ki.ExtensionV1Beta1Ingress = generator.GetIngress(v1alpha2.Endpoint{}, ingressParams)
 	return ki
 }

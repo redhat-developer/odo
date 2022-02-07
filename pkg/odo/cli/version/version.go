@@ -13,7 +13,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
-	"github.com/redhat-developer/odo/pkg/notify"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -136,7 +135,7 @@ func NewCmdVersion(name, fullName string) *cobra.Command {
 
 // GetLatestReleaseInfo Gets information about the latest release
 func GetLatestReleaseInfo(info chan<- string) {
-	newTag, err := notify.CheckLatestReleaseTag(odoversion.VERSION)
+	newTag, err := checkLatestReleaseTag(odoversion.VERSION)
 	if err != nil {
 		// The error is intentionally not being handled because we don't want
 		// to stop the execution of the program because of this failure

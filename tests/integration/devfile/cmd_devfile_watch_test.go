@@ -242,17 +242,14 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing devbuild command", "Executing debugrun command"},
 			}
 			// odo watch and validate if we can port forward successfully
-			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
+			//			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
 
 			// check the --debug-command flag
-			watchFlag = "--debug-command debug"
 			odoV2Watch.StringsToBeMatched = []string{"Executing debug command"}
 
 			// odo watch and validate if we can port forward successfully
-			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
+			//			utils.OdoWatchWithDebug(odoV2Watch, commonVar.Context, watchFlag)
 
-			// revert to normal odo push
-			watchFlag = ""
 			output := helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 

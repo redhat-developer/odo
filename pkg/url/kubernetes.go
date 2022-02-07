@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/redhat-developer/odo/pkg/unions"
+	"github.com/redhat-developer/odo/pkg/kclient/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"

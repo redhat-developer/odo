@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
@@ -103,12 +102,6 @@ var _ = Describe("odo devfile create command tests", func() {
 			By("checking the devfile and env file exists", func() {
 				Expect(util.CheckPathExists(devfilePath)).Should(BeTrue())
 				Expect(util.CheckPathExists(envFilePath)).Should(BeTrue())
-			})
-
-			By("checking the auto generated name is displayed", func() {
-				output := helper.Cmd("odo", "env", "view", "--context", newContext, "-o", "json").ShouldPass().Out()
-				value := gjson.Get(output, "spec.name")
-				Expect(strings.TrimSpace(value.String())).To(ContainSubstring(strings.TrimSpace("nodejs-" + filepath.Base(strings.ToLower(newContext)))))
 			})
 		})
 

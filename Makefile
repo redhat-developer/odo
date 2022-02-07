@@ -297,10 +297,6 @@ vendor-update: ## Update vendoring
 openshiftci-presubmit-unittests:
 	./scripts/openshiftci-presubmit-unittests.sh
 
-.PHONY: test-operator-hub
-test-operator-hub: ## Run OperatorHub tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/operatorhub/
-
 .PHONY: test-cmd-devfile-describe
 test-cmd-devfile-describe:
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile describe command tests" tests/integration/devfile/

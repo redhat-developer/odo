@@ -69,7 +69,6 @@ git clone $REPO_URL odo && cd $WORKING_DIR/odo && git checkout "v$VERSION"
 #Run tests
 make test-integration-devfile
 make test-integration
-make test-operator-hub
 make test-e2e-all
 make test-cmd-project
 

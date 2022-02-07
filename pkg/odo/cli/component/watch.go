@@ -11,7 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -176,9 +175,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	// Adding context flag
 	odoutil.AddContextFlag(watchCmd, &wo.contextFlag)
-
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(watchCmd)
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(watchCmd)

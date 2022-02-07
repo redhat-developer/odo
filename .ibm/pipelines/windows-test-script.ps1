@@ -66,8 +66,6 @@ function Run-Test {
     Check-ExitCode $LASTEXITCODE
     make test-integration           | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
     Check-ExitCode $LASTEXITCODE
-    make test-operator-hub          | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
-    Check-ExitCode $LASTEXITCODE
     make test-cmd-login-logout      | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE
     Check-ExitCode $LASTEXITCODE
     make test-cmd-project           | tee -a  C:\Users\Administrator.ANSIBLE-TEST-VS\AppData\Local\Temp\$LOGFILE

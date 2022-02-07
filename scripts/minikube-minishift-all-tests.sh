@@ -13,7 +13,6 @@ SCRIPT_IDENTITY=${SCRIPT_IDENTITY:-"def-id"}
 
 # Integration tests
 shout "| Running integration Tests on MiniKube"
-make test-operator-hub
 make test-cmd-project
 make test-integration-devfile
 
