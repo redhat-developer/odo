@@ -1,4 +1,4 @@
-// clientset package is used to inject clients inside commands
+// Package clientset is used to inject clients inside commands
 //
 // To use this package:
 // From a command definition, use the `Add` function to declare the clients needed by the command
@@ -24,21 +24,21 @@ import (
 )
 
 const (
-	// pkg/catalog
+	// CATALOG instantiates client for pkg/catalog
 	CATALOG = "DEP_CATALOG"
-	// pkg/testingutil/filesystem
+	// FILESYSTEM instantiates client for pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
-	// pkg/init
+	// INIT instantiates client for pkg/init
 	INIT = "DEP_INIT"
-	// pkg/kclient, can be nil
+	// KUBERNETES_NULLABLE instantiates client for pkg/kclient, can be nil
 	KUBERNETES_NULLABLE = "DEP_KUBERNETES_NULLABLE"
-	// pkg/kclient
+	// KUBERNETES instantiates client for pkg/kclient
 	KUBERNETES = "DEP_KUBERNETES"
-	// pkg/preference
+	// PREFERENCE instantiates client for pkg/preference
 	PREFERENCE = "DEP_PREFERENCE"
-	// pkg/project
+	// PROJECT instantiates client for pkg/project
 	PROJECT = "DEP_PROJECT"
-	// pkg/init/registry
+	// REGISTRY instantiates client for pkg/init/registry
 	REGISTRY = "DEP_REGISTRY"
 
 	/* Add key for new package here */
