@@ -13,7 +13,7 @@ require (
 	github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2
 	github.com/fatih/color v1.10.0
 	github.com/frapposelli/wwhrd v0.4.0
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
@@ -46,6 +46,7 @@ require (
 	github.com/tidwall/gjson v1.9.3
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zalando/go-keyring v0.1.1
+	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a // indirect
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0

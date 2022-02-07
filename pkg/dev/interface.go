@@ -6,7 +6,6 @@ import (
 )
 
 type Client interface {
-	//GetComponents() (devfile.Component, error)
 	Start(parser.DevfileObj, io.Writer, string) error
 	Cleanup() error
 }
