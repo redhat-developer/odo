@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/unions"
+	"github.com/redhat-developer/odo/pkg/kclient/unions"
 	networkingv1 "k8s.io/api/networking/v1"
 
 	"github.com/devfile/library/pkg/devfile/generator"

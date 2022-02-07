@@ -19,7 +19,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -237,8 +236,6 @@ func NewCmdList(name, fullName string) *cobra.Command {
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentListCmd)
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentListCmd)
 
 	completion.RegisterCommandFlagHandler(componentListCmd, "path", completion.FileCompletionHandler)
 

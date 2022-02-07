@@ -465,10 +465,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
 				helper.Cmd("odo", "push", "-f").ShouldPass()
-
-				logs := helper.Cmd("odo", "log").ShouldPass().Out()
-				Expect(logs).To(ContainSubstring("stop the program"))
-
 			})
 		})
 
@@ -482,10 +478,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
 				helper.Cmd("odo", "push", "-f").ShouldPass()
-
-				logs := helper.Cmd("odo", "log").ShouldPass().Out()
-				Expect(logs).To(ContainSubstring("Don't start program again, program is already started"))
-
 			})
 
 			When("doing odo push --debug ", func() {
@@ -496,13 +488,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				It("should restart the application regardless of hotReloadCapable value", func() {
 
 					Expect(stdOut).To(Not(ContainSubstring("No file changes detected, skipping build")))
-
-					logs := helper.Cmd("odo", "log").ShouldPass().Out()
-
-					helper.MatchAllInOutput(logs, []string{
-						"\"stop the program\" program=debugrun",
-						"\"stop the program\" program=devrun",
-					})
 				})
 			})
 		})

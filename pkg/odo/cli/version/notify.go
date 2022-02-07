@@ -1,4 +1,4 @@
-package notify
+package version
 
 import (
 	"strings"
@@ -30,9 +30,9 @@ func getLatestReleaseTag() (string, error) {
 	return strings.TrimSuffix(string(body), "\n"), nil
 }
 
-// CheckLatestReleaseTag returns the latest release tag if a newer latest
+// checkLatestReleaseTag returns the latest release tag if a newer latest
 // release is available, else returns an empty string
-func CheckLatestReleaseTag(currentVersion string) (string, error) {
+func checkLatestReleaseTag(currentVersion string) (string, error) {
 	currentSemver, err := semver.Make(strings.TrimPrefix(currentVersion, "v"))
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to make semver from the current version: %v", currentVersion)

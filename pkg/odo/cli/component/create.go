@@ -21,7 +21,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
-	appCmd "github.com/redhat-developer/odo/pkg/odo/cli/application"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -394,8 +393,6 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	odoutil.AddNowFlag(componentCreateCmd, &co.nowFlag)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
-	//Adding `--application` flag
-	appCmd.AddApplicationFlag(componentCreateCmd)
 
 	completion.RegisterCommandHandler(componentCreateCmd, completion.CreateCompletionHandler)
 	completion.RegisterCommandFlagHandler(componentCreateCmd, "context", completion.FileCompletionHandler)

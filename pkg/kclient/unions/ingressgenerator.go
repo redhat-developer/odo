@@ -1,4 +1,4 @@
-package odogenerator
+package unions
 
 import (
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -54,7 +54,7 @@ func getNetworkingV1IngressSpec(ingressSpecParams generator.IngressSpecParams) *
 	return ingressSpec
 }
 
-func GetNetworkingV1Ingress(ingressParams generator.IngressParams) *v1.Ingress {
+func getNetworkingV1Ingress(ingressParams generator.IngressParams) *v1.Ingress {
 	var ip *v1.Ingress
 	ingressSpec := getNetworkingV1IngressSpec(ingressParams.IngressSpecParams)
 	ip = &v1.Ingress{

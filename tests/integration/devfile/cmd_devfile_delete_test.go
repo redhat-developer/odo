@@ -16,7 +16,6 @@ import (
 
 var _ = Describe("odo devfile delete command tests", func() {
 	const devfile = "devfile.yaml"
-	const appName = "app"
 	var devfilePath string
 	var componentName, invalidNamespace string
 
@@ -40,7 +39,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 	When("a component is created", func() {
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", componentName, "--project", commonVar.Project, "--app", appName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			helper.Cmd("odo", "create", componentName, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 		It("should delete the component", func() {
@@ -145,7 +144,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 						})
 						// Marked as pending because it does not work at the moment. It takes the component in current directory into account while deleting.
 						XIt("should delete with the component name", func() {
-							output := helper.Cmd("odo", "delete", firstComp, "--app", "app", "--project", commonVar.Project, "-f").ShouldPass().Out()
+							output := helper.Cmd("odo", "delete", firstComp, "--project", commonVar.Project, "-f").ShouldPass().Out()
 							Expect(output).ToNot(ContainSubstring(secondComp))
 							Expect(output).To(ContainSubstring(firstComp))
 						})
@@ -157,8 +156,8 @@ var _ = Describe("odo devfile delete command tests", func() {
 			By("--project flag")
 			helper.Cmd("odo", "delete", "--project", commonVar.Project, "-f").ShouldFail()
 
-			By("component name, --app, --project and --all flag")
-			helper.Cmd("odo", "delete", componentName, "--app", appName, "--project", commonVar.Project, "--all", "-f").ShouldFail()
+			By("component name, --project and --all flag")
+			helper.Cmd("odo", "delete", componentName, "--project", commonVar.Project, "--all", "-f").ShouldFail()
 
 			By("component name and --all flag")
 			helper.Cmd("odo", "delete", componentName, "--all", "-f").ShouldFail()
@@ -180,7 +179,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 					helper.Cmd("odo", "url", "create", "example-1", "--port", "3000").ShouldPass()
 					resourceTypes = append(resourceTypes, helper.ResourceTypeRoute)
 				}
-				helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
 			})
 			When("the component is pushed", func() {
 				BeforeEach(func() {
@@ -230,11 +228,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 							Namespace:    commonVar.Project,
 						},
 						{
-							ResourceType: helper.ResourceTypePVC,
-							ResourceName: "storage-1",
-							Namespace:    commonVar.Project,
-						},
-						{
 							ResourceType: helper.ResourceTypeRoute,
 							ResourceName: "example-1",
 							Namespace:    commonVar.Project,
@@ -268,7 +261,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 	When("the component is created in a non-existent project", func() {
 		invalidNamespace = "garbage"
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", componentName, "--project", invalidNamespace, "--app", appName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
+			helper.Cmd("odo", "create", componentName, "--project", invalidNamespace, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 		})
 		It("should let the user delete the local config files with -a flag", func() {
 			// DeleteLocalConfig appends -a flag

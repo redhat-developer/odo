@@ -13,7 +13,6 @@ cleanup_namespaces
     make install
     make test-integration
     make test-integration-devfile
-    make test-operator-hub
     make test-cmd-login-logout
     make test-cmd-project
     make test-e2e-devfile
