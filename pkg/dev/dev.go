@@ -20,8 +20,8 @@ func NewDev(client kclient.ClientInterface) *Dev {
 	return &Dev{client: client}
 }
 
-// GetComponents returns a slice of components to be started for inner loop
-func (o *Dev) GetComponents() (devfile.Component, error) {
+// getComponents returns a slice of components to be started for inner loop
+func getComponents() (devfile.Component, error) {
 	var components devfile.Component
 	var err error
 	return components, err
@@ -32,13 +32,13 @@ func (o *Dev) Start(devfileObj parser.DevfileObj, out io.Writer, path string) er
 	var err error
 	// store the devfileObj so that we can reuse it in Cleanup
 	//o.devfileObj = devfileObj
-	watchParamaters := watch.WatchParameters{
+	watchParameters := watch.WatchParameters{
 		Path:            path,
 		ComponentName:   devfileObj.GetMetadataName(),
 		ApplicationName: "app",
 		ExtChan:         make(chan bool),
 	}
-	watch.WatchAndPush(o.client, out, watchParamaters)
+	watch.WatchAndPush(o.client, out, watchParameters)
 	return err
 }
 

@@ -163,7 +163,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
-	klog.V(4).Infof("starting WatchAndPush, path: %s, component: , ignores %s", parameters.Path, parameters.FileIgnores)
+	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
 	// these variables must be accessed while holding the changeLock
 	// mutex as they are shared between goroutines to communicate
