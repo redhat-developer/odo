@@ -14,7 +14,6 @@ package clientset
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/redhat-developer/odo/pkg/application"
 	_init "github.com/redhat-developer/odo/pkg/init"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -54,13 +53,12 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
-	ApplicationClient application.Client
-	FS                filesystem.Filesystem
-	InitClient        _init.Client
-	KubernetesClient  kclient.ClientInterface
-	PreferenceClient  preference.Client
-	ProjectClient     project.Client
-	RegistryClient    registry.Client
+	FS               filesystem.Filesystem
+	InitClient       _init.Client
+	KubernetesClient kclient.ClientInterface
+	PreferenceClient preference.Client
+	ProjectClient    project.Client
+	RegistryClient   registry.Client
 	/* Add client here */
 }
 
@@ -108,9 +106,6 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 
 	/* With sub-dependencies */
-	if isDefined(command, APPLICATION) {
-		dep.ApplicationClient = application.NewClient(dep.KubernetesClient)
-	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
 	}
