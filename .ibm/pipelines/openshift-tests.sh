@@ -19,7 +19,8 @@ cleanup_namespaces
 ) |& tee "/tmp/${LOGFILE}"
 RESULT=${PIPESTATUS[0]}
 
-ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
+ibmcloud login --apikey "${API_KEY}" 
+ibmcloud target -r "${IBM_REGION}"
 save_logs "${LOGFILE}" "OpenShift Tests" ${RESULT}
 
 exit ${RESULT}
