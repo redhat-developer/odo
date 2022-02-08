@@ -15,7 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-//getPorts gets the ports from devfile
+// getPorts gets the ports from devfile
 func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 	var portList []string
 	containerComponents, err := ei.devfileObj.Data.GetDevfileContainerComponents(common.DevfileOptions{})
@@ -42,7 +42,7 @@ func (ei *EnvInfo) getPorts(container string) ([]string, error) {
 	return portList, nil
 }
 
-//GetContainerPorts returns list of the ports of specified container, if it exists
+// GetContainerPorts returns list of the ports of specified container, if it exists
 func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
 	if container == "" {
 		return nil, fmt.Errorf("please provide a container")
@@ -50,12 +50,12 @@ func (ei *EnvInfo) GetContainerPorts(container string) ([]string, error) {
 	return ei.getPorts(container)
 }
 
-//GetComponentPorts returns all unique ports declared in all the containers
+// GetComponentPorts returns all unique ports declared in all the containers
 func (ei *EnvInfo) GetComponentPorts() ([]string, error) {
 	return ei.getPorts("")
 }
 
-//checkValidPort checks and retrieves valid port from devfile when no port is specified
+// checkValidPort checks and retrieves valid port from devfile when no port is specified
 func (ei *EnvInfo) checkValidPort(url *localConfigProvider.LocalURL, portsOf string, ports []string) (err error) {
 	if url.Port == -1 {
 		if len(ports) > 1 {
@@ -191,7 +191,11 @@ func (ei *EnvInfo) ValidateURL(url localConfigProvider.LocalURL) error {
 		}
 		for _, endpoint := range component.Container.Endpoints {
 			if endpoint.Name == url.Name && !ei.updateURL {
-				return fmt.Errorf("url %v already exist in devfile endpoint entry under container %v", url.Name, component.Name)
+				return fmt.Errorf("url %v already exists in devfile endpoint entry under container %q", url.Name, component.Name)
+			}
+			// Check for a duplicate port entry
+			if endpoint.TargetPort == url.Port && !ei.updateURL {
+				return fmt.Errorf("port %v already exists in devfile endpoint entry under container %q", url.Port, component.Name)
 			}
 			containerPortMap[endpoint.TargetPort] = component.Name
 		}

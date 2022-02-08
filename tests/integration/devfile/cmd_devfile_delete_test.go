@@ -174,10 +174,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			resourceTypes := []string{helper.ResourceTypeDeployment, helper.ResourceTypePod, helper.ResourceTypeService, helper.ResourceTypeIngress, helper.ResourceTypePVC}
 
 			BeforeEach(func() {
-				helper.Cmd("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3000", "--ingress").ShouldPass()
+				helper.Cmd("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--port", "3030", "--ingress").ShouldPass()
 
 				if os.Getenv("KUBERNETES") != "true" {
-					helper.Cmd("odo", "url", "create", "example-1", "--port", "3000").ShouldPass()
+					helper.Cmd("odo", "url", "create", "example-1", "--port", "4000").ShouldPass()
 					resourceTypes = append(resourceTypes, helper.ResourceTypeRoute)
 				}
 				helper.Cmd("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", commonVar.Context).ShouldPass()
