@@ -5,6 +5,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	parsercontext "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/devfile/library/pkg/testingutil/filesystem"
+
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
@@ -32,11 +39,9 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 			name: "all fields defined",
 			fields: fields{
 				flags: map[string]string{
-					FLAG_NAME:             "aname",
 					FLAG_DEVFILE:          "adevfile",
 					FLAG_DEVFILE_PATH:     "apath",
 					FLAG_DEVFILE_REGISTRY: "aregistry",
-					FLAG_STARTER:          "astarter",
 				},
 			},
 			wantOk:  true,
@@ -203,6 +208,202 @@ func TestFlagsBackend_Validate(t *testing.T) {
 			}
 			if err := o.Validate(tt.args.flags); (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestFlagsBackend_SelectStarterProject(t *testing.T) {
+	type fields struct {
+		preferenceClient preference.Client
+	}
+	type args struct {
+		devfile func() parser.DevfileObj
+		flags   map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantOK  bool
+		want    *v1alpha2.StarterProject
+		wantErr bool
+	}{
+		{
+			name: "no flags",
+			args: args{
+				devfile: func() parser.DevfileObj {
+					return parser.DevfileObj{}
+				},
+				flags: map[string]string{},
+			},
+			wantOK:  false,
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "some flags, but not starter",
+			args: args{
+				devfile: func() parser.DevfileObj {
+					return parser.DevfileObj{}
+				},
+				flags: map[string]string{
+					"devfile": "adevfile",
+				},
+			},
+			wantOK:  true,
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "starter flag defined and starter exists",
+			args: args{
+				devfile: func() parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = devfileData.AddStarterProjects([]v1alpha2.StarterProject{
+						{
+							Name: "starter1",
+						},
+						{
+							Name: "starter2",
+						},
+						{
+							Name: "starter3",
+						},
+					})
+					return parser.DevfileObj{
+						Data: devfileData,
+					}
+				},
+				flags: map[string]string{
+					"devfile": "adevfile",
+					"starter": "starter2",
+				},
+			},
+			wantOK: true,
+			want: &v1alpha2.StarterProject{
+				Name: "starter2",
+			},
+			wantErr: false,
+		},
+		{
+			name: "starter flag defined and starter does not exist",
+			args: args{
+				devfile: func() parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = devfileData.AddStarterProjects([]v1alpha2.StarterProject{
+						{
+							Name: "starter1",
+						},
+						{
+							Name: "starter2",
+						},
+						{
+							Name: "starter3",
+						},
+					})
+					return parser.DevfileObj{
+						Data: devfileData,
+					}
+				},
+				flags: map[string]string{
+					"devfile": "adevfile",
+					"starter": "starter4",
+				},
+			},
+			wantOK:  true,
+			want:    nil,
+			wantErr: true,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &FlagsBackend{
+				preferenceClient: tt.fields.preferenceClient,
+			}
+			got, got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FlagsBackend.SelectStarterProject() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.wantOK {
+				t.Errorf("FlagsBackend.SelectStarterProject() got = %v, want %v", got, tt.wantOK)
+			}
+			if !reflect.DeepEqual(got1, tt.want) {
+				t.Errorf("FlagsBackend.SelectStarterProject() got1 = %v, want %v", got1, tt.want)
+			}
+		})
+	}
+}
+
+func TestFlagsBackend_PersonalizeName(t *testing.T) {
+	type fields struct {
+		preferenceClient preference.Client
+	}
+	type args struct {
+		devfile func(fs filesystem.Filesystem) parser.DevfileObj
+		flags   map[string]string
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		wantOK      bool
+		wantErr     bool
+		checkResult func(devfile parser.DevfileObj, args args) bool
+	}{
+		{
+			name: "no flags",
+			args: args{
+				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
+					return parser.DevfileObj{}
+				},
+				flags: map[string]string{},
+			},
+			wantOK:  false,
+			wantErr: false,
+		},
+		{
+			name: "name flag",
+			args: args{
+				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					obj := parser.DevfileObj{
+						Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
+						Data: devfileData,
+					}
+					return obj
+				},
+				flags: map[string]string{
+					"devfile": "adevfile",
+					"name":    "a-name",
+				},
+			},
+			wantOK:  true,
+			wantErr: false,
+			checkResult: func(devfile parser.DevfileObj, args args) bool {
+				return devfile.GetMetadataName() == args.flags["name"]
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &FlagsBackend{
+				preferenceClient: tt.fields.preferenceClient,
+			}
+			fs := filesystem.NewFakeFs()
+			devfile := tt.args.devfile(fs)
+			got, err := o.PersonalizeName(devfile, tt.args.flags)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("FlagsBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.wantOK {
+				t.Errorf("FlagsBackend.PersonalizeName() = %v, want %v", got, tt.wantOK)
+			}
+			if tt.checkResult != nil && !tt.checkResult(devfile, tt.args) {
+				t.Errorf("FlagsBackend.PersonalizeName(), checking result failed")
 			}
 		})
 	}
