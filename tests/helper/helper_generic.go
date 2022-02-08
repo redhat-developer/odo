@@ -344,7 +344,7 @@ func CommonAfterEach(commonVar CommonVar) {
 	y, m, d := now.Date()
 	testDate := strconv.Itoa(y) + "-" + strconv.Itoa(int(m)) + "-" + strconv.Itoa(d)
 	resultsRow = prNum + ", " + testDate + ", " + clusterType + ", " + commonVar.testFileName + ", " + commonVar.testCase + ", " + passedOrFailed + ", " + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
-	testResultsFile := filepath.Join("/", "tmp", "testRslts.txt")
+	testResultsFile := filepath.Join("/", "tmp", "testResults.txt")
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	fmt.Println("Row to add to file:", resultsRow)
 	fmt.Println("Test results file: ", testResultsFile)
