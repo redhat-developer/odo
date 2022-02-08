@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -328,12 +330,12 @@ func CommonAfterEach(commonVar CommonVar) {
 	var resultsRow string
 	prNum = os.Getenv("GIT_PR_NUMBER")
 	K8SorOcp = os.Getenv("KUBERNETES")
-	fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
-	fmt.Println("ComponentTexts: ", commonVar.testCase)
 	passedOrFailed := "PASSED"
 	if commonVar.testFailed {
 		passedOrFailed = "FAILED"
 	}
+	fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
+	fmt.Println("ComponentTexts: ", commonVar.testCase)
 	fmt.Println("testFailed: ", strconv.FormatBool(commonVar.testFailed))
 	fmt.Println("testDuration: ", commonVar.testDuration)
 	clusterType := "OCP"
@@ -347,6 +349,14 @@ func CommonAfterEach(commonVar CommonVar) {
 	testResultsFile := filepath.Join("/", "tmp", "testResults.txt")
 	if _, err := os.Stat(testResultsFile); errors.Is(err, os.ErrNotExist) {
 		fmt.Println("File does not exist:", testResultsFile)
+	}
+	files, err := ioutil.ReadDir("/tmp/")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		fmt.Println(file.Name(), file.IsDir())
 	}
 
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
