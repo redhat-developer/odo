@@ -76,6 +76,9 @@ func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map
 		return false, nil, nil
 	}
 	starter := flags[FLAG_STARTER]
+	if starter == "" {
+		return true, nil, nil
+	}
 	projects, err := devfile.Data.GetStarterProjects(common.DevfileOptions{})
 	if err != nil {
 		return true, nil, err

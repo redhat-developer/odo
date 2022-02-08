@@ -149,6 +149,9 @@ func (o *InitOptions) Run() (err error) {
 	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags)
+	if err != nil {
+		return err
+	}
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
 		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)

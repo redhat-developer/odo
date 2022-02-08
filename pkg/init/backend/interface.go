@@ -15,7 +15,7 @@ type InitBackend interface {
 	SelectDevfile(flags map[string]string) (ok bool, location *DevfileLocation, err error)
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
-	// depending on the flags
+	// depending on the flags. If not starter project is selected, a nil starter is returned
 	// ok is false if the backend cannot operate
 	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (ok bool, starter *v1alpha2.StarterProject, err error)
 
