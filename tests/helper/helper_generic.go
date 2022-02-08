@@ -346,15 +346,18 @@ func CommonAfterEach(commonVar CommonVar) {
 	resultsRow = prNum + ", " + testDate + ", " + clusterType + ", " + commonVar.testFileName + ", " + commonVar.testCase + ", " + passedOrFailed + ", " + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
 	testResultsFile := filepath.Join("/tmp", "testRslts.txt")
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	fmt.Println("Row to add to file:", resultsRow)
+	fmt.Println("Test results file: ", testResultsFile)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		panic(err)
 	}
 	defer f.Close()
 	if _, err = f.WriteString(resultsRow); err != nil {
+		fmt.Println("Error: ", err)
 		panic(err)
 	}
-	fmt.Println("Test results file: ", testResultsFile)
+
 	f.Close()
 
 	// delete the random project/namespace created in CommonBeforeEach
