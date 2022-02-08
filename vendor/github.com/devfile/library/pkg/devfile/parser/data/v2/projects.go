@@ -33,8 +33,9 @@ func (d *DevfileV2) GetProjects(options common.DevfileOptions) ([]v1.Project, er
 		if options.ProjectOptions.ProjectSourceType != "" && projectSourceType != options.ProjectOptions.ProjectSourceType {
 			continue
 		}
-
-		projects = append(projects, project)
+		if options.FilterByName == "" || project.Name == options.FilterByName {
+			projects = append(projects, project)
+		}
 	}
 
 	return projects, nil
@@ -118,7 +119,9 @@ func (d *DevfileV2) GetStarterProjects(options common.DevfileOptions) ([]v1.Star
 			continue
 		}
 
-		starterProjects = append(starterProjects, starterProject)
+		if options.FilterByName == "" || starterProject.Name == options.FilterByName {
+			starterProjects = append(starterProjects, starterProject)
+		}
 	}
 
 	return starterProjects, nil

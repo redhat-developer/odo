@@ -549,10 +549,16 @@ func setDefaults(d DevfileObj) (err error) {
 
 		} else if component.Kubernetes != nil {
 			endpoints = component.Kubernetes.Endpoints
-
+			if devfileVersion != string(data.APISchemaVersion200) && devfileVersion != string(data.APISchemaVersion210) {
+				val := component.Kubernetes.GetDeployByDefault()
+				component.Kubernetes.DeployByDefault = &val
+			}
 		} else if component.Openshift != nil {
-
 			endpoints = component.Openshift.Endpoints
+			if devfileVersion != string(data.APISchemaVersion200) && devfileVersion != string(data.APISchemaVersion210) {
+				val := component.Openshift.GetDeployByDefault()
+				component.Openshift.DeployByDefault = &val
+			}
 
 		} else if component.Volume != nil && devfileVersion != string(data.APISchemaVersion200) {
 			volume := component.Volume
@@ -565,6 +571,8 @@ func setDefaults(d DevfileObj) (err error) {
 				val := dockerImage.GetRootRequired()
 				dockerImage.RootRequired = &val
 			}
+			val := component.Image.GetAutoBuild()
+			component.Image.AutoBuild = &val
 		}
 
 		if endpoints != nil {

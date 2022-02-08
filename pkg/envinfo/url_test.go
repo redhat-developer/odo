@@ -520,11 +520,7 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 			fields: fields{
 				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
 				componentSettings: ComponentSettings{
-					URL: &[]localConfigProvider.LocalURL{
-						{
-							Name: "port-3030",
-						},
-					},
+					URL: &[]localConfigProvider.LocalURL{},
 				},
 			},
 			args: args{
@@ -615,6 +611,39 @@ func TestEnvInfo_ValidateURL(t *testing.T) {
 			},
 			updateURL: true,
 			wantErr:   false,
+		},
+		{
+			name: "case 14: create a new url with a port that already exists in a devfile endpoint",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
+				componentSettings: ComponentSettings{
+					URL: &[]localConfigProvider.LocalURL{},
+				},
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Name: "myport",
+					Port: 3000,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "case 15: update url with a port that already exists in a devfile endpoint",
+			fields: fields{
+				devfileObj: odoTestingUtil.GetTestDevfileObj(fs),
+				componentSettings: ComponentSettings{
+					URL: &[]localConfigProvider.LocalURL{},
+				},
+			},
+			args: args{
+				url: localConfigProvider.LocalURL{
+					Port: 3000,
+					Host: "something.com",
+				},
+			},
+			wantErr:   false,
+			updateURL: true,
 		},
 	}
 	for _, tt := range tests {
