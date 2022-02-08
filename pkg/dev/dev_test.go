@@ -10,7 +10,7 @@ import (
 )
 
 func TestDev_Start(t *testing.T) {
-	d := Dev{}
+	d := DevClient{}
 	//devfileObj, _ := devfile.ParseAndValidateFromFile("/home/dshah/src/odo/tests/examples/source/devfiles/nodejs/devfile.yaml")
 	//devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 	//devfileObj := parser.DevfileObj{
@@ -23,6 +23,6 @@ func TestDev_Start(t *testing.T) {
 	os.Chdir("/home/dshah/src/nodejs-ex")
 	devfileObj, _ := devfile.ParseAndValidateFromFile("./devfile.yaml")
 
-	err := d.Start(devfileObj, &out, path, platformContext)
+	err := d.Start(devfileObj, platformContext, path, &out)
 	log.Fatal(err)
 }

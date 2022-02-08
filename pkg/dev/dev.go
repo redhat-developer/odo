@@ -14,16 +14,19 @@ import (
 	"io"
 )
 
-var _ Client = (*Dev)(nil)
+// this causes compilation to fail if DevClient struct doesn't implement Client interface
+var _ Client = (*DevClient)(nil)
 
-type Dev struct {
+type DevClient struct {
 	client kclient.ClientInterface
 	// devfileObj is stored for Cleanup; ideally populated by Start method
 	//devfileObj parser.DevfileObj
 }
 
-func NewDev(client kclient.ClientInterface) *Dev {
-	return &Dev{client: client}
+func NewDevClient(client kclient.ClientInterface) *DevClient {
+	return &DevClient{
+		client: client,
+	}
 }
 
 // getComponents returns a slice of components to be started for inner loop
@@ -33,8 +36,9 @@ func getComponents() (devfilev2.Component, error) {
 	return components, err
 }
 
-// Start starts the resources on the Kubernetes cluster
-func (o *Dev) Start(devfileObj parser.DevfileObj, out io.Writer, path string, platformContext kubernetes.KubernetesContext) error {
+// Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container,
+// and watches it for any changes. It prints all the logs/output to out.
+func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, path string, out io.Writer) error {
 	var err error
 
 	var adapter common.ComponentAdapter
@@ -74,7 +78,7 @@ func (o *Dev) Start(devfileObj parser.DevfileObj, out io.Writer, path string, pl
 }
 
 // Cleanup cleans the resources created by Push
-func (o *Dev) Cleanup() error {
+func (o *DevClient) Cleanup() error {
 	var err error
 	return err
 }
