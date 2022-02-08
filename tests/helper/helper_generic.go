@@ -352,13 +352,10 @@ func CommonAfterEach(commonVar CommonVar) {
 		fmt.Println("Error: ", err)
 		panic(err)
 	}
-
 	defer f.Close()
-
 	if _, err = f.WriteString(resultsRow); err != nil {
 		panic(err)
 	}
-
 	f.Close()
 
 	// delete the random project/namespace created in CommonBeforeEach
