@@ -328,21 +328,19 @@ func CommonAfterEach(commonVar CommonVar) {
 	var resultsRow string
 	prNum = os.Getenv("GIT_PR_NUMBER")
 	K8SorOcp = os.Getenv("KUBERNETES")
-	// fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
-	//	fmt.Println("TestName: ", testFileName)
-	// fmt.Println("ComponentTexts: ", commonVar.testCase)
+	fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
+	fmt.Println("ComponentTexts: ", commonVar.testCase)
 	passedOrFailed := "PASSED"
 	if commonVar.testFailed {
 		passedOrFailed = "FAILED"
 	}
-	// fmt.Println("testFailed: ", strconv.FormatBool(commonVar.testFailed))
-	// fmt.Println("testDuration: ", commonVar.testDuration)
+	fmt.Println("testFailed: ", strconv.FormatBool(commonVar.testFailed))
+	fmt.Println("testDuration: ", commonVar.testDuration)
 	clusterType := "OCP"
 	if K8SorOcp == "KUBERNETES" {
 		clusterType = "KUBERNETES"
 	}
 	now := time.Now()
-	fmt.Println(now.Round(0))
 	y, m, d := now.Date()
 	testDate := strconv.Itoa(y) + "-" + strconv.Itoa(int(m)) + "-" + strconv.Itoa(d)
 	resultsRow = prNum + ", " + testDate + ", " + clusterType + ", " + commonVar.testFileName + ", " + commonVar.testCase + ", " + passedOrFailed + ", " + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
