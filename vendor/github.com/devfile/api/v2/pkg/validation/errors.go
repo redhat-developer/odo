@@ -96,7 +96,7 @@ func (e *InvalidEndpointError) Error() string {
 	if e.name != "" {
 		errMsg = fmt.Sprintf("devfile contains multiple endpoint entries with same name: %v", e.name)
 	} else if fmt.Sprint(e.port) != "" {
-		errMsg = fmt.Sprintf("devfile contains multiple containers with same TargetPort: %v", e.port)
+		errMsg = fmt.Sprintf("devfile contains multiple endpoint entries with same TargetPort: %v", e.port)
 	}
 
 	return errMsg

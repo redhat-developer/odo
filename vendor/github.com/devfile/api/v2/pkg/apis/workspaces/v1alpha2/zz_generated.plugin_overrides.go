@@ -123,7 +123,7 @@ type CommandUnionPluginOverride struct {
 	//
 	// When no `apply` command exist for a given component,
 	// it is assumed the component will be applied at devworkspace start
-	// by default.
+	// by default, unless `deployByDefault` for that component is set to false.
 	// +optional
 	Apply *ApplyCommandPluginOverride `json:"apply,omitempty"`
 
@@ -314,6 +314,7 @@ type EndpointPluginOverride struct {
 	Name string `json:"name"`
 
 	//  +optional
+	// The port number should be unique.
 	TargetPort int `json:"targetPort,omitempty"`
 
 	// Describes how the endpoint should be exposed on the network.
@@ -382,7 +383,14 @@ type EndpointPluginOverride struct {
 type K8sLikeComponentPluginOverride struct {
 	BaseComponentPluginOverride            `json:",inline"`
 	K8sLikeComponentLocationPluginOverride `json:",inline"`
-	Endpoints                              []EndpointPluginOverride `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
+	// Defines if the component should be deployed during startup.
+	//
+	// Default value is `false`
+	// +optional
+	DeployByDefault *bool `json:"deployByDefault,omitempty"`
+
+	Endpoints []EndpointPluginOverride `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
 // Volume that should be mounted to a component container
@@ -481,7 +489,7 @@ type K8sLikeComponentLocationPluginOverride struct {
 // +union
 type ImageUnionPluginOverride struct {
 
-	// +kubebuilder:validation:Enum=Dockerfile
+	// +kubebuilder:validation:Enum=Dockerfile;AutoBuild
 	// Type of image
 	//
 	// +unionDiscriminator
@@ -491,6 +499,12 @@ type ImageUnionPluginOverride struct {
 	// Allows specifying dockerfile type build
 	// +optional
 	Dockerfile *DockerfileImagePluginOverride `json:"dockerfile,omitempty"`
+
+	// Defines if the image should be built during startup.
+	//
+	// Default value is `false`
+	// +optional
+	AutoBuild *bool `json:"autoBuild,omitempty"`
 }
 
 type BaseCommandPluginOverride struct {

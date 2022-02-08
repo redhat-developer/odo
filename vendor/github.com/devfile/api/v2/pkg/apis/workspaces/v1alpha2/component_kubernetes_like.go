@@ -28,10 +28,19 @@ type K8sLikeComponentLocation struct {
 	Inlined string `json:"inlined,omitempty"`
 }
 
+// +devfile:getter:generate
 type K8sLikeComponent struct {
 	BaseComponent            `json:",inline"`
 	K8sLikeComponentLocation `json:",inline"`
-	Endpoints                []Endpoint `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+
+	// Defines if the component should be deployed during startup.
+	//
+	// Default value is `false`
+	// +optional
+	// +devfile:default:value=false
+	DeployByDefault *bool `json:"deployByDefault,omitempty"`
+
+	Endpoints []Endpoint `json:"endpoints,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
 // Component that allows partly importing Kubernetes resources into the devworkspace POD
