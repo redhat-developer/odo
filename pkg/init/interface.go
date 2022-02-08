@@ -1,3 +1,10 @@
+// Package init provides methods to initiate an odo project.
+// Most of the methods of the package get a `flags` parameter
+// representing the flags passed from the user through the command line.
+// Several backends are available to complete the operations, the backend
+// being chosen depending on the flags content:
+// - if no flags are passed, the `interactive` backend will be used
+// - if some flags are passed, the `flags` backend will be used.
 package init
 
 import (
@@ -27,6 +34,7 @@ type Client interface {
 	// WARNING: This will first remove all the content of dest.
 	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error
 
-	// PersonalizeName updates a devfile name, depending on the flags
+	// PersonalizeName updates a devfile name, depending on the flags.
+	// The method will modify the devfile content and save the devfile on disk
 	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
 }

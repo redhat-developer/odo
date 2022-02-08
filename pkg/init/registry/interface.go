@@ -1,3 +1,4 @@
+// package registry wraps various package level functions into a Client interface to be able to mock them
 package registry
 
 import (

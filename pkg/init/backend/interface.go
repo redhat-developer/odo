@@ -1,3 +1,6 @@
+// package backend provides different backends to initiate projects.
+// - `Flags` backend gets needed information from command line flags.
+// - `Interactive` backend interacts with the user to get needed information.
 package backend
 
 import (

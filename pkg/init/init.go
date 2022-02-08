@@ -41,6 +41,8 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 	}
 }
 
+// Validate calls Validate methods of all backends and returns the first error returned
+// or nil if all backends returns a nil error
 func (o *InitClient) Validate(flags map[string]string) error {
 	for _, backend := range o.backends {
 		err := backend.Validate(flags)
@@ -51,6 +53,8 @@ func (o *InitClient) Validate(flags map[string]string) error {
 	return nil
 }
 
+// SelectDevfile calls SelectDevfile methods of backends in order
+// and returns the result of the first method accepting to reply, based on flags
 func (o *InitClient) SelectDevfile(flags map[string]string) (*backend.DevfileLocation, error) {
 	for _, backend := range o.backends {
 		ok, location, err := backend.SelectDevfile(flags)
@@ -149,6 +153,8 @@ func (o *InitClient) downloadFromRegistry(registryName string, devfile string, d
 	return fmt.Errorf("unable to find the registry with name %q", devfile)
 }
 
+// SelectStarterProject calls SelectStarterProject methods of backends in order
+// and returns the result of the first method accepting to reply, based on flags
 func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
 	for _, backend := range o.backends {
 		ok, starter, err := backend.SelectStarterProject(devfile, flags)
@@ -170,6 +176,8 @@ func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, de
 	return nil
 }
 
+// PersonalizeName calls PersonalizeName methods of backends in order
+// and returns the result of the first method accepting to reply, based on flags
 func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	for _, backend := range o.backends {
 		ok, err := backend.PersonalizeName(devfile, flags)

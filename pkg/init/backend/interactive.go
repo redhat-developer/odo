@@ -17,7 +17,7 @@ const (
 	STATE_END
 )
 
-// InteractiveBackend is a backend that will ask information interactively
+// InteractiveBackend is a backend that will ask information interactively using the `asker` package
 type InteractiveBackend struct {
 	asker         asker.Asker
 	catalogClient catalog.Client
