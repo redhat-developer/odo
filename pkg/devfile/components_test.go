@@ -1,14 +1,12 @@
 package devfile
 
 import (
-	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -128,79 +126,6 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			}
 			if gotErr != tt.wantErr {
 				t.Errorf("Got error %v, expected %v\n", gotErr, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_addKubernetesComponent(t *testing.T) {
-
-	type args struct {
-		crd               string
-		name              string
-		componentContext  string
-		devfileObj        parser.DevfileObj
-		fs                devfileFileSystem.Filesystem
-		uriFolderExists   bool
-		fileAlreadyExists bool
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "case 1: the uri folder doesn't exist",
-			args: args{
-				crd:              "example",
-				name:             "redis-service",
-				componentContext: "/",
-			},
-		},
-		{
-			name: "case 2: the uri folder exist",
-			args: args{
-				crd:             "example",
-				name:            "redis-service",
-				uriFolderExists: true,
-			},
-		},
-		{
-			name: "case 3: the file already exists",
-			args: args{
-				crd:               "example",
-				name:              "redis-service",
-				uriFolderExists:   true,
-				fileAlreadyExists: true,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fs := devfileFileSystem.NewFakeFs()
-			tt.args.devfileObj = testingutil.GetTestDevfileObj(fs)
-			tt.args.fs = fs
-
-			if tt.args.uriFolderExists || tt.args.fileAlreadyExists {
-				err := fs.MkdirAll(consts.UriFolder, os.ModePerm)
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				defer os.RemoveAll(consts.UriFolder)
-			}
-
-			if tt.args.fileAlreadyExists {
-				testFileName, err := fs.Create(filepath.Join(consts.UriFolder, filePrefix+tt.args.name+".yaml"))
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-
-				defer os.RemoveAll(testFileName.Name())
-			}
-
-			if err := addKubernetesComponent(tt.args.crd, tt.args.name, tt.args.componentContext, tt.args.devfileObj, tt.args.fs); (err != nil) != tt.wantErr {
-				t.Errorf("addKubernetesComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

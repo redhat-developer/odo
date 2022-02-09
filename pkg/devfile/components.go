@@ -3,10 +3,7 @@ package devfile
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
-
-	"github.com/redhat-developer/odo/pkg/devfile/consts"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -75,50 +72,6 @@ func IsComponentDefined(name string, devfileObj parser.DevfileObj) (bool, error)
 		}
 	}
 	return false, nil
-}
-
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func AddKubernetesComponent(crd, name, componentContext string, devfile parser.DevfileObj) error {
-	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{})
-}
-
-// addKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem) error {
-	filePath := filepath.Join(componentContext, consts.UriFolder, filePrefix+name+".yaml")
-	if _, err := fs.Stat(filepath.Join(componentContext, consts.UriFolder)); os.IsNotExist(err) {
-		err = fs.MkdirAll(filepath.Join(componentContext, consts.UriFolder), os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := fs.Stat(filePath); !os.IsNotExist(err) {
-		return fmt.Errorf("the file %q already exists", filePath)
-	}
-
-	err := fs.WriteFile(filePath, []byte(crd), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = devfileObj.Data.AddComponents([]devfilev1.Component{{
-		Name: name,
-		ComponentUnion: devfilev1.ComponentUnion{
-			Kubernetes: &devfilev1.KubernetesComponent{
-				K8sLikeComponent: devfilev1.K8sLikeComponent{
-					BaseComponent: devfilev1.BaseComponent{},
-					K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-						Uri: filepath.Join(consts.UriFolder, filePrefix+name+".yaml"),
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
 }
 
 // DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
