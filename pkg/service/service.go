@@ -238,18 +238,6 @@ func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescr
 	return instances, nil
 }
 
-// IsOperatorServiceNameValid checks if the provided name follows
-// <service-type>/<service-name> format. For example: "EtcdCluster/example" is
-// a valid service name but "EtcdCluster/", "EtcdCluster", "example" aren't.
-func IsOperatorServiceNameValid(name string) (string, string, error) {
-	checkName := strings.SplitN(name, "/", 2)
-
-	if len(checkName) != 2 || checkName[0] == "" || checkName[1] == "" {
-		return "", "", fmt.Errorf("invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services", "EtcdCluster/example", "odo service list")
-	}
-	return checkName[0], checkName[1], nil
-}
-
 // OperatorSvcExists checks whether an Operator backed service with given name
 // exists or not. It takes 'serviceName' of the format
 // '<service-kind>/<service-name>'. For example: EtcdCluster/example.
