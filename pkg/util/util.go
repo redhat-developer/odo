@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"os/user"
 	"path"
@@ -38,7 +37,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/klog"
 )
@@ -63,13 +61,6 @@ const maxAllowedNamespacedStringLength = 63
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
-
-// ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
-type ResourceRequirementInfo struct {
-	ResourceType corev1.ResourceName
-	MinQty       resource.Quantity
-	MaxQty       resource.Quantity
-}
 
 // HTTPRequestParams holds parameters of forming http request
 type HTTPRequestParams struct {
@@ -230,60 +221,6 @@ func ExtractComponentType(namespacedVersionedComponentType string) string {
 	return s[0]
 }
 
-// ParseComponentImageName returns
-// 1. image name
-// 2. component type i.e, builder image name
-// 3. component name default value is component type else the user requested component name
-// 4. component version which is by default latest else version passed with builder image name
-func ParseComponentImageName(imageName string) (string, string, string, string) {
-	// We don't have to check it anymore, Args check made sure that args has at least one item
-	// and no more than two
-
-	// "Default" values
-	componentImageName := imageName
-	componentType := imageName
-	componentName := ExtractComponentType(componentType)
-	componentVersion := "latest"
-
-	// Check if componentType includes ":", if so, then we need to spit it into using versions
-	if strings.ContainsAny(componentType, ":") {
-		versionSplit := strings.Split(imageName, ":")
-		componentType = versionSplit[0]
-		componentName = ExtractComponentType(componentType)
-		componentVersion = versionSplit[1]
-	}
-	return componentImageName, componentType, componentName, componentVersion
-}
-
-// WIN represent the windows OS
-const WIN = "windows"
-
-// ReadFilePath Reads file path form URL file:///C:/path/to/file to C:\path\to\file
-func ReadFilePath(u *url.URL, os string) string {
-	location := u.Path
-	if os == WIN {
-		location = strings.Replace(u.Path, "/", "\\", -1)
-		location = location[1:]
-	}
-	return location
-}
-
-// ConvertKeyValueStringToMap converts String Slice of Parameters to a Map[String]string
-// Each value of the slice is expected to be in the key=value format
-// Values that do not conform to this "spec", will be ignored
-func ConvertKeyValueStringToMap(params []string) map[string]string {
-	result := make(map[string]string, len(params))
-	for _, param := range params {
-		str := strings.Split(param, "=")
-		if len(str) != 2 {
-			klog.Fatalf("Parameter %s is not in the expected key=value format", param)
-		} else {
-			result[str[0]] = str[1]
-		}
-	}
-	return result
-}
-
 // TruncateString truncates passed string to given length
 // Note: if -1 is passed, the original string is returned
 // if appendIfTrunicated is given, then it will be appended to trunicated
@@ -404,80 +341,6 @@ func removeNonAlphaSuffix(input string) string {
 	}
 	// in this case we return the smallest match which in the last element in the array
 	return matches[matchesLength-1]
-}
-
-// SliceDifference returns the values of s2 that do not exist in s1
-func SliceDifference(s1 []string, s2 []string) []string {
-	mb := map[string]bool{}
-	for _, x := range s1 {
-		mb[x] = true
-	}
-	difference := []string{}
-	for _, x := range s2 {
-		if _, ok := mb[x]; !ok {
-			difference = append(difference, x)
-		}
-	}
-	return difference
-}
-
-// OpenBrowser opens the URL within the users default browser
-func OpenBrowser(url string) error {
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// FetchResourceQuantity takes passed min, max and requested resource quantities and returns min and max resource requests
-func FetchResourceQuantity(resourceType corev1.ResourceName, min string, max string, request string) (*ResourceRequirementInfo, error) {
-	if min == "" && max == "" && request == "" {
-		return nil, nil
-	}
-	// If minimum and maximum both are passed they carry highest priority
-	// Otherwise, use the request as min and max
-	var minResource resource.Quantity
-	var maxResource resource.Quantity
-	if min != "" {
-		resourceVal, err := resource.ParseQuantity(min)
-		if err != nil {
-			return nil, err
-		}
-		minResource = resourceVal
-	}
-	if max != "" {
-		resourceVal, err := resource.ParseQuantity(max)
-		if err != nil {
-			return nil, err
-		}
-		maxResource = resourceVal
-	}
-	if request != "" && (min == "" || max == "") {
-		resourceVal, err := resource.ParseQuantity(request)
-		if err != nil {
-			return nil, err
-		}
-		minResource = resourceVal
-		maxResource = resourceVal
-	}
-	return &ResourceRequirementInfo{
-		ResourceType: resourceType,
-		MinQty:       minResource,
-		MaxQty:       maxResource,
-	}, nil
 }
 
 // CheckPathExists checks if a path exists or not
@@ -683,27 +546,6 @@ func CheckOutputFlag(outputFlag string) bool {
 	return false
 }
 
-// RemoveDuplicates goes through a string slice and removes all duplicates.
-// Reference: https://siongui.github.io/2018/04/14/go-remove-duplicates-from-slice-or-array/
-func RemoveDuplicates(s []string) []string {
-
-	// Make a map and go through each value to see if it's a duplicate or not
-	m := make(map[string]bool)
-	for _, item := range s {
-		if _, ok := m[item]; !ok {
-			m[item] = true
-		}
-	}
-
-	// Append to the unique string
-	var result []string
-	for item := range m {
-		result = append(result, item)
-	}
-	sort.Strings(result)
-	return result
-}
-
 // RemoveRelativePathFromFiles removes a specified path from a list of files
 func RemoveRelativePathFromFiles(files []string, path string) ([]string, error) {
 
@@ -888,13 +730,6 @@ func IsValidProjectDir(path string, devfilePath string) error {
 	}
 
 	return nil
-}
-
-// Converts Git ssh remote to https
-func ConvertGitSSHRemoteToHTTPS(remote string) string {
-	remote = strings.Replace(remote, ":", "/", 1)
-	remote = strings.Replace(remote, "git@", "https://", 1)
-	return remote
 }
 
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
@@ -1426,13 +1261,6 @@ func StartSignalWatcher(watchSignals []os.Signal, handle func(receivedSignal os.
 	os.Exit(1)
 }
 
-// CleanDir cleans the original folder during events like interrupted copy etc
-// it uses the default filesystem
-// it leaves the given files behind for later use
-func CleanDir(originalPath string, leaveBehindFiles map[string]bool) error {
-	return cleanDir(originalPath, leaveBehindFiles, filesystem.DefaultFs{})
-}
-
 // cleanDir cleans the original folder during events like interrupted copy etc
 // it leaves the given files behind for later use
 func cleanDir(originalPath string, leaveBehindFiles map[string]bool, fs filesystem.Filesystem) error {
@@ -1536,44 +1364,6 @@ func GetCommandStringFromEnvs(envVars []v1alpha2.EnvVar) string {
 		setEnvVariable = setEnvVariable + fmt.Sprintf(" %v=\"%v\"", envVar.Name, envVar.Value)
 	}
 	return setEnvVariable
-}
-
-//GetEnvWithDefault gets value of specified env if it is set, otherwise, it returns default value
-func GetEnvWithDefault(key string, defaultval string) string {
-	val := os.Getenv(key)
-	if val == "" {
-		return defaultval
-	}
-	return val
-}
-
-//IsInvalidKubeConfigError checks if specified error is due to invalid kubeconfig
-func IsInvalidKubeConfigError(err error) error {
-	if strings.Contains(err.Error(), "invalid configuration") {
-		return fmt.Errorf("invalid KUBECONFIG provided. Please point to a valid KUBECONFIG. You do not have to be logged in %w", err)
-	}
-	return nil
-}
-
-//CheckKubeConfigPath checks if specified `KUBECONFIG` value is a valid file i.e the path should exist and be a file
-//if env `KUBECONFIG` is set then that is used or default `KUBECONFIG` is checked
-func CheckKubeConfigPath() error {
-	kubeConfigPath := os.Getenv("KUBECONFIG")
-	if kubeConfigPath != "" {
-		f, err := os.Stat(kubeConfigPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %q which does no exist", kubeConfigPath)
-				return InvalidKubeconfigError
-			}
-			return err
-		}
-		if f.IsDir() {
-			klog.V(4).Infof("invalid kubeconfig path set, KUBECONFIG env was set to %q which is a directory", kubeConfigPath)
-			return InvalidKubeconfigError
-		}
-	}
-	return nil
 }
 
 // GetGitOriginPath gets the remote fetch URL from the given git repo

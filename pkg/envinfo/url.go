@@ -126,7 +126,7 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 			url.Name = foundURL.Name
 			ei.updateURL = true
 		} else {
-			url.Name = util.GetURLName(ei.GetName(), url.Port)
+			url.Name = getURLName(ei.GetName(), url.Port)
 		}
 	}
 
@@ -166,6 +166,14 @@ func (ei *EnvInfo) CompleteURL(url *localConfigProvider.LocalURL) error {
 	}
 
 	return nil
+}
+
+// getURLName returns a url name from the component name and the given port number
+func getURLName(componentName string, componentPort int) string {
+	if componentPort == -1 {
+		return componentName
+	}
+	return fmt.Sprintf("%v-%v", componentName, componentPort)
 }
 
 // ValidateURL validates the given URL
