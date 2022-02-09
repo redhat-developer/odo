@@ -322,7 +322,7 @@ func CommonBeforeEach() CommonVar {
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
-	// Get details about each test spec and adds it to local testResults.txt file
+	// Get details, including test result for each test spec and adds it to local testResults.txt file
 	var prNum string
 	var K8SorOcp string
 	var resultsRow string
@@ -332,10 +332,6 @@ func CommonAfterEach(commonVar CommonVar) {
 	if commonVar.testFailed {
 		passedOrFailed = "FAILED"
 	}
-	// fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
-	// fmt.Println("ComponentTexts: ", commonVar.testCase)
-	// fmt.Println("testFailed: ", strconv.FormatBool(commonVar.testFailed))
-	// fmt.Println("testDuration: ", commonVar.testDuration)
 	clusterType := "OCP"
 	if K8SorOcp == "KUBERNETES" {
 		clusterType = "KUBERNETES"
