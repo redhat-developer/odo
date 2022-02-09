@@ -92,25 +92,6 @@ func NewURLList(urls []URL) URLList {
 	}
 }
 
-// NewURLFromConfigURL creates a URL from a ConfigURL
-func NewURLFromConfigURL(configURL localConfigProvider.LocalURL) URL {
-	return URL{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       URLKind,
-			APIVersion: machineoutput.APIVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: configURL.Name,
-		},
-		Spec: URLSpec{
-			Port:   configURL.Port,
-			Secure: configURL.Secure,
-			Kind:   localConfigProvider.ROUTE,
-			Path:   "/",
-		},
-	}
-}
-
 // NewURLFromEnvinfoURL creates a URL from a EnvinfoURL
 func NewURLFromEnvinfoURL(envinfoURL localConfigProvider.LocalURL, serviceName string) URL {
 	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
@@ -227,17 +208,6 @@ func NewURLFromKubernetesIngress(ki *unions.KubernetesIngress, skipIfGenerated b
 		}
 	}
 	return u
-}
-
-// Get returns URL definition for given URL name
-func (urls URLList) Get(urlName string) URL {
-	for _, url := range urls.Items {
-		if url.Name == urlName {
-			return url
-		}
-	}
-	return URL{}
-
 }
 
 func (urls URLList) AreOutOfSync() bool {

@@ -53,12 +53,6 @@ type fsnotifyWatcher struct {
 
 var _ FSWatcher = &fsnotifyWatcher{}
 
-// NewFsnotifyWatcher returns an implementation of FSWatcher that continuously listens for
-// fsnotify events and calls the event handler as soon as an event is received.
-func NewFsnotifyWatcher() FSWatcher {
-	return &fsnotifyWatcher{}
-}
-
 func (w *fsnotifyWatcher) AddWatch(path string) error {
 	return w.watcher.Add(path)
 }

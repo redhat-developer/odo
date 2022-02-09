@@ -5,9 +5,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/spf13/cobra"
 )
 
@@ -68,11 +66,4 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return componentCmd
-}
-
-// AddComponentFlag adds a `component` flag to the given cobra command
-// Also adds a completion handler to the flag
-func AddComponentFlag(cmd *cobra.Command) {
-	cmd.Flags().String(util.ComponentFlagName, "", "Component, defaults to active component.")
-	completion.RegisterCommandFlagHandler(cmd, "component", completion.ComponentNameCompletionHandler)
 }

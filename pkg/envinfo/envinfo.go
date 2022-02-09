@@ -84,11 +84,6 @@ func getEnvInfoFile(envDir string) (string, string, error) {
 	return filepath.Join(envDir, ".odo", "env", envInfoFileName), location.DevfileLocation(envDir), nil
 }
 
-// New returns the EnvSpecificInfo
-func New() (*EnvSpecificInfo, error) {
-	return NewEnvSpecificInfo("")
-}
-
 // NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 	return newEnvSpecificInfo(envDir, filesystem.Get())

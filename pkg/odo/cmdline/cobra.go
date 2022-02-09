@@ -21,10 +21,6 @@ func NewCobra(cmd *cobra.Command) *Cobra {
 	}
 }
 
-func (o *Cobra) GetCmd() *cobra.Command {
-	return o.cmd
-}
-
 func (o *Cobra) Context() context.Context {
 	return o.cmd.Context()
 }

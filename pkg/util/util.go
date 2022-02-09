@@ -1171,11 +1171,6 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 
 }
 
-// CopyFileWithFs copies a single file from src to dst using the default filesystem
-func CopyFileWithFs(src, dst string) error {
-	return copyFileWithFs(src, dst, filesystem.DefaultFs{})
-}
-
 // copyFileWithFs copies a single file from src to dst
 func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 	var err error
@@ -1208,11 +1203,6 @@ func copyFileWithFs(src, dst string, fs filesystem.Filesystem) error {
 		return err
 	}
 	return fs.Chmod(dst, srcinfo.Mode())
-}
-
-// CopyDirWithFS copies a whole directory recursively with the default filesystem
-func CopyDirWithFS(src string, dst string) error {
-	return copyDirWithFS(src, dst, filesystem.DefaultFs{})
 }
 
 // copyDirWithFS copies a whole directory recursively

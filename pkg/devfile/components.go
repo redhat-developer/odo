@@ -3,7 +3,6 @@ package devfile
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
@@ -49,18 +48,4 @@ func GetKubernetesComponentsToPush(devfileObj parser.DevfileObj) ([]devfilev1.Co
 	}
 
 	return k8sComponents, err
-}
-
-// IsComponentDefined checks if a component with the given name is defined in a DevFile
-func IsComponentDefined(name string, devfileObj parser.DevfileObj) (bool, error) {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return false, err
-	}
-	for _, c := range components {
-		if c.Name == name {
-			return true, nil
-		}
-	}
-	return false, nil
 }
