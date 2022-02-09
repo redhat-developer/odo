@@ -95,14 +95,6 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 
 	o.flags = cmdline.GetFlags()
 
-	err = o.clientset.InitClient.Validate(o.flags)
-	if err != nil {
-		return err
-	}
-	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -116,6 +108,10 @@ func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
 
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
+	err := o.clientset.InitClient.Validate(o.flags)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -135,6 +131,11 @@ func (o *InitOptions) Run() (err error) {
 			err = fmt.Errorf("%w\nThe command failed, the devfile has been removed from current directory.", err)
 		}
 	}()
+
+	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags)
+	if err != nil {
+		return err
+	}
 
 	devfilePath, err := o.clientset.InitClient.DownloadDevfile(o.devfileLocation, o.contextDir)
 	if err != nil {

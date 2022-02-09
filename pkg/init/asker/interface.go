@@ -15,7 +15,7 @@ type Asker interface {
 
 	// AskStarterProject asks for an optional project, from a list of projects. If no project is selected, false is returned.
 	// Or the index of the selected project is returned
-	AskStarterProject(projects []string) (bool, int, error)
+	AskStarterProject(projects []string) (selected bool, _ int, _ error)
 
 	// AskName asks for a devfile component name
 	AskName(defaultName string) (string, error)
