@@ -238,50 +238,6 @@ func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescr
 	return instances, nil
 }
 
-// OperatorSvcExists checks whether an Operator backed service with given name
-// exists or not. It takes 'serviceName' of the format
-// '<service-kind>/<service-name>'. For example: EtcdCluster/example.
-// It doesn't bother about application since
-// https://github.com/redhat-developer/odo/issues/2801 is blocked
-func OperatorSvcExists(client kclient.ClientInterface, serviceName string) (bool, error) {
-	kind, name, err := SplitServiceKindName(serviceName)
-	if err != nil {
-		return false, errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
-	}
-
-	// Get the CSV (Operator) that provides the CR
-	csv, err := client.GetCSVWithCR(kind)
-	if err != nil {
-		return false, err
-	}
-
-	// Get the specific CR that matches "kind"
-	crs := client.GetCustomResourcesFromCSV(csv)
-
-	var cr *olm.CRDDescription
-	for _, custRes := range *crs {
-		c := custRes
-		if c.Kind == kind {
-			cr = &c
-			break
-		}
-	}
-
-	// Get instances of the specific CR
-	crInstances, err := GetCRInstances(client, cr)
-	if err != nil {
-		return false, err
-	}
-
-	for _, s := range crInstances.Items {
-		if s.GetKind() == kind && s.GetName() == name {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
 // SplitServiceKindName splits the service name provided for deletion by the
 // user. It has to be of the format <service-kind>/<service-name>. Example: EtcdCluster/myetcd
 func SplitServiceKindName(serviceName string) (string, string, error) {
