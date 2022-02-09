@@ -19,7 +19,6 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
@@ -122,107 +121,6 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 	return allCRInstances, failedListingCR, nil
 }
 
-// ListSucceededClusterServiceVersions fetches a list of Operators from the cluster and
-// returns only those Operators which are successfully installed on the cluster
-func ListSucceededClusterServiceVersions(client kclient.ClientInterface) (*olm.ClusterServiceVersionList, error) {
-	var csvList olm.ClusterServiceVersionList
-
-	// first check for CSV support
-	csvSupport, err := client.IsCSVSupported()
-	if !csvSupport || err != nil {
-		return &csvList, err
-	}
-
-	allCsvs, err := client.ListClusterServiceVersions()
-	if err != nil {
-		return &csvList, err
-	}
-
-	// now let's filter only those csvs which are successfully installed
-	csvList.TypeMeta = allCsvs.TypeMeta
-	csvList.ListMeta = allCsvs.ListMeta
-	for _, csv := range allCsvs.Items {
-		if csv.Status.Phase == "Succeeded" {
-			csvList.Items = append(csvList.Items, csv)
-		}
-	}
-
-	return &csvList, nil
-}
-
-func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (string, string, string, error) {
-	var group, version, resource string
-
-	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
-		custRes := customresource
-		if custRes.Kind == cr {
-			group, version, resource = kclient.GetGVRFromCR(&custRes)
-			return group, version, resource, nil
-		}
-	}
-	return "", "", "", fmt.Errorf("couldn't parse group, version, resource from Operator %q", csv.Name)
-}
-
-func GetGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
-	return getGVKFromCR(cr)
-}
-
-// getGVKFromCR parses and returns the values for group, version and resource
-// for a given Custom Resource (CR).
-func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
-	kind = cr.Kind
-	version = cr.Version
-
-	gr := strings.SplitN(cr.Name, ".", 2)
-	if len(gr) != 2 {
-		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
-		return
-	}
-	group = gr[1]
-
-	return
-}
-
-// GetAlmExample fetches the ALM example from an Operator's definition. This
-// example contains the example yaml to be used to spin up a service for a
-// given CR in an Operator
-func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almExample map[string]interface{}, err error) {
-	var almExamples []map[string]interface{}
-
-	val, ok := csv.Annotations["alm-examples"]
-	if ok {
-		err = json.Unmarshal([]byte(val), &almExamples)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to unmarshal alm-examples")
-		}
-	} else {
-		// There's no alm examples in the CSV's definition
-		return nil,
-			fmt.Errorf("could not find alm-examples in %q Operator's definition", cr)
-	}
-
-	almExample, err = getAlmExample(almExamples, cr, serviceType)
-	if err != nil {
-		return nil, err
-	}
-
-	return almExample, nil
-}
-
-// getAlmExample returns the alm-example for exact service of an Operator
-func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (map[string]interface{}, error) {
-	for _, example := range almExamples {
-		if example["kind"].(string) == crd {
-			// Remove metadata.namespace from example
-			if metadata, ok := example["metadata"].(map[string]interface{}); ok {
-				delete(metadata, "namespace")
-			}
-			return example, nil
-		}
-	}
-	return nil, errors.Errorf("could not find example yaml definition for %q service in %q Operator's definition.", crd, operator)
-}
-
 // GetCRInstances fetches and returns instances of the CR provided in the
 // "customResource" field. It also returns error (if any)
 func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
@@ -296,66 +194,6 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 			services = append(services, service.Kind+"/"+service.Name)
 		}
 	}
-	return services, nil
-}
-
-// ListDevfileServices returns the names of the services defined in a Devfile
-func ListDevfileServices(client kclient.ClientInterface, devfileObj parser.DevfileObj, componentContext string) (map[string]unstructured.Unstructured, error) {
-	return listDevfileServices(client, devfileObj, componentContext, devfilefs.DefaultFs{})
-}
-
-func listDevfileServices(client kclient.ClientInterface, devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) (map[string]unstructured.Unstructured, error) {
-	if devfileObj.Data == nil {
-		return nil, nil
-	}
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfile.KubernetesComponentType},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	csvSupported, err := client.IsCSVSupported()
-	if err != nil {
-		return nil, err
-	}
-	var operatorGVRList []meta.RESTMapping
-	if csvSupported {
-		operatorGVRList, err = client.GetOperatorGVRList()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	services := map[string]unstructured.Unstructured{}
-	for _, c := range components {
-		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, componentContext, fs)
-		if err != nil {
-			return nil, err
-		}
-		restMapping, err := client.GetRestMappingFromUnstructured(u)
-		if err != nil {
-			// getting a RestMapping would fail if there are no matches for the Kind field on the cluster
-			// this could be a case when an Operator backed service was added to devfile while working on a cluster
-			// that had the Operator installed but "odo service list" is run when that Operator is either no longer
-			// available or on a different cluster
-			services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
-			continue
-		}
-		var match bool
-		for _, i := range operatorGVRList {
-			if i.Resource == restMapping.Resource {
-				// if it's an Operator backed service, it will match; if it's Pod, Deployment, etc. it won't
-				match = true
-				break
-			}
-		}
-		if match {
-			services[strings.Join([]string{u.GetKind(), c.Name}, "/")] = u
-		}
-	}
-	// final list of services includes Operator backed services both supported and unsupported by the underlying k8s cluster
-	// but it doesn't include things like Pod, Deployment, etc.
 	return services, nil
 }
 

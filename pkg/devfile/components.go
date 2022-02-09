@@ -7,10 +7,6 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
-const (
-	filePrefix = "odo-service-"
-)
-
 // GetKubernetesComponentsToPush returns the list of Kubernetes components to push,
 // by getting the list of Kubernetes components and removing the ones
 // referenced from a command in the devfile

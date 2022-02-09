@@ -22,10 +22,6 @@ import (
 	"k8s.io/klog"
 )
 
-const (
-	apiVersion = "odo.dev/v1alpha1"
-)
-
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
 	// Detection of SBO has been removed from issue https://github.com/redhat-developer/odo/issues/5084
