@@ -1,15 +1,10 @@
 package devfile
 
 import (
-	"fmt"
-	"net/url"
-	"path/filepath"
-
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 )
 
 const (
@@ -72,48 +67,4 @@ func IsComponentDefined(name string, devfileObj parser.DevfileObj) (bool, error)
 		}
 	}
 	return false, nil
-}
-
-// DeleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func DeleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string) error {
-	return deleteKubernetesComponentFromDevfile(name, devfileObj, componentContext, devfilefs.DefaultFs{})
-}
-
-// deleteKubernetesComponentFromDevfile deletes an inlined Kubernetes component from devfile, if one exists
-func deleteKubernetesComponentFromDevfile(name string, devfileObj parser.DevfileObj, componentContext string, fs devfilefs.Filesystem) error {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	found := false
-	for _, c := range components {
-		if c.Name == name {
-			err = devfileObj.Data.DeleteComponent(c.Name)
-			if err != nil {
-				return err
-			}
-
-			if c.Kubernetes.Uri != "" {
-				parsedURL, err := url.Parse(c.Kubernetes.Uri)
-				if err != nil {
-					return err
-				}
-				if len(parsedURL.Host) == 0 || len(parsedURL.Scheme) == 0 {
-					err := fs.Remove(filepath.Join(componentContext, c.Kubernetes.Uri))
-					if err != nil {
-						return err
-					}
-				}
-			}
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return fmt.Errorf("could not find the service %q in devfile", name)
-	}
-
-	return devfileObj.WriteYamlDevfile()
 }

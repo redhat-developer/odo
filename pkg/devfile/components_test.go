@@ -1,19 +1,14 @@
 package devfile
 
 import (
-	"path/filepath"
 	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	devfiletesting "github.com/redhat-developer/odo/pkg/devfile/testing"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
-	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 )
 
@@ -126,95 +121,6 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 			}
 			if gotErr != tt.wantErr {
 				t.Errorf("Got error %v, expected %v\n", gotErr, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestDeleteKubernetesComponentFromDevfile(t *testing.T) {
-	fs := devfileFileSystem.NewFakeFs()
-
-	testFolderName := "someFolder"
-	testFileName, err := devfiletesting.SetupTestFolder(testFolderName, fs)
-	if err != nil {
-		t.Errorf("unexpected error : %v", err)
-		return
-	}
-
-	type args struct {
-		name       string
-		devfileObj parser.DevfileObj
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		want    []v1alpha2.Component
-	}{
-		{
-			name: "Case 1: Remove a CRD from devfile.yaml",
-			args: args{
-				name: "testName",
-				devfileObj: parser.DevfileObj{
-					Data: devfiletesting.GetDevfileData(t, []devfiletesting.InlinedComponent{
-						{
-							Name:    "testName",
-							Inlined: "test CRD",
-						},
-					}, nil),
-					Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				},
-			},
-			wantErr: false,
-			want:    []v1alpha2.Component{},
-		},
-		{
-			name: "Case 2: Remove a uri based component from devfile.yaml",
-			args: args{
-				name: "testName",
-				devfileObj: parser.DevfileObj{
-					Data: func() data.DevfileData {
-						devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-						if err != nil {
-							t.Error(err)
-						}
-						err = devfileData.AddComponents([]v1alpha2.Component{{
-							Name: "testName",
-							ComponentUnion: devfilev1.ComponentUnion{
-								Kubernetes: &devfilev1.KubernetesComponent{
-									K8sLikeComponent: devfilev1.K8sLikeComponent{
-										BaseComponent: devfilev1.BaseComponent{},
-										K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-											Uri: filepath.Join(consts.UriFolder, filepath.Base(testFileName.Name())),
-										},
-									},
-								},
-							},
-						},
-						})
-						if err != nil {
-							t.Error(err)
-						}
-						return devfileData
-					}(),
-					Ctx: devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				},
-			},
-			wantErr: false,
-			want:    []v1alpha2.Component{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := deleteKubernetesComponentFromDevfile(tt.args.name, tt.args.devfileObj, testFolderName, fs); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteKubernetesComponentFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			got, err := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
-			if err != nil {
-				t.Error(err)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetComponents() = %v, want %v", got, tt.want)
 			}
 		})
 	}
