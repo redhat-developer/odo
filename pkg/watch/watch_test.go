@@ -757,6 +757,7 @@ func TestWatchAndPush(t *testing.T) {
 			}
 
 			fkclient, _ := kclient.FakeNew()
+			wClient := NewWatchClient()
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
@@ -837,7 +838,7 @@ func TestWatchAndPush(t *testing.T) {
 				}),
 			}
 
-			err = WatchAndPush(
+			err = wClient.WatchAndPush(
 				fkclient,
 				os.Stdout,
 				watchParameters,

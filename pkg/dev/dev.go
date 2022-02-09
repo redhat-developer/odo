@@ -18,14 +18,16 @@ import (
 var _ Client = (*DevClient)(nil)
 
 type DevClient struct {
-	client kclient.ClientInterface
+	kubernetesClient kclient.ClientInterface
+	watchClient      watch.Client
 	// devfileObj is stored for Cleanup; ideally populated by Start method
 	//devfileObj parser.DevfileObj
 }
 
-func NewDevClient(client kclient.ClientInterface) *DevClient {
+func NewDevClient(kubernetesClient kclient.ClientInterface, watchClient watch.Client) *DevClient {
 	return &DevClient{
-		client: client,
+		kubernetesClient: kubernetesClient,
+		watchClient:      watchClient,
 	}
 }
 
@@ -70,7 +72,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		EnvSpecificInfo:     envSpecificInfo,
 	}
 
-	err = watch.WatchAndPush(o.client, out, watchParameters)
+	err = o.watchClient.WatchAndPush(o.kubernetesClient, out, watchParameters)
 	if err != nil {
 		return err
 	}

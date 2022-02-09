@@ -29,6 +29,8 @@ const (
 	CATALOG = "DEP_CATALOG"
 	// DEPLOY instantiates client for pkg/deploy
 	DEPLOY = "DEP_DEPLOY"
+	// DEV instantiates client for pkg/dev
+	DEV = "DEP_DEV"
 	// FILESYSTEM instantiates client for pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
 	// INIT instantiates client for pkg/init
@@ -43,6 +45,8 @@ const (
 	PROJECT = "DEP_PROJECT"
 	// REGISTRY instantiates client for pkg/init/registry
 	REGISTRY = "DEP_REGISTRY"
+	// WATCH instantiates client for pkg/watch
+	WATCH = "DEP_WATCH"
 
 	/* Add key for new package here */
 )
@@ -54,6 +58,7 @@ var subdeps map[string][]string = map[string][]string{
 	DEPLOY:  {KUBERNETES},
 	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
 	PROJECT: {KUBERNETES_NULLABLE},
+	DEV:     {KUBERNETES, WATCH},
 	/* Add sub-dependencies here, if any */
 }
 
