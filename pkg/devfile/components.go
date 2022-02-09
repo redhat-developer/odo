@@ -77,28 +77,6 @@ func IsComponentDefined(name string, devfileObj parser.DevfileObj) (bool, error)
 	return false, nil
 }
 
-// AddKubernetesComponentToDevfile adds a resource definition to devfile as an inlined Kubernetes component
-func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
-	err := devfileObj.Data.AddComponents([]devfilev1.Component{{
-		Name: name,
-		ComponentUnion: devfilev1.ComponentUnion{
-			Kubernetes: &devfilev1.KubernetesComponent{
-				K8sLikeComponent: devfilev1.K8sLikeComponent{
-					BaseComponent: devfilev1.BaseComponent{},
-					K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-						Inlined: crd,
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
 // AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
 func AddKubernetesComponent(crd, name, componentContext string, devfile parser.DevfileObj) error {
 	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{})

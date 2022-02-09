@@ -133,63 +133,6 @@ func TestGetKubernetesComponentsToPush(t *testing.T) {
 	}
 }
 
-func TestAddKubernetesComponentToDevfile(t *testing.T) {
-	fs := devfileFileSystem.NewFakeFs()
-
-	type args struct {
-		crd        string
-		name       string
-		devfileObj parser.DevfileObj
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		want    []v1alpha2.Component
-	}{
-		{
-			name: "Case 1: Add service CRD to devfile.yaml",
-			args: args{
-				crd:  "test CRD",
-				name: "testName",
-				devfileObj: parser.DevfileObj{
-					Data: devfiletesting.GetDevfileData(t, nil, nil),
-					Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
-				},
-			},
-			wantErr: false,
-			want: []v1alpha2.Component{{
-				Name: "testName",
-				ComponentUnion: devfilev1.ComponentUnion{
-					Kubernetes: &devfilev1.KubernetesComponent{
-						K8sLikeComponent: devfilev1.K8sLikeComponent{
-							BaseComponent: devfilev1.BaseComponent{},
-							K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-								Inlined: "test CRD",
-							},
-						},
-					},
-				},
-			},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := AddKubernetesComponentToDevfile(tt.args.crd, tt.args.name, tt.args.devfileObj); (err != nil) != tt.wantErr {
-				t.Errorf("AddKubernetesComponentToDevfile() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			got, err := tt.args.devfileObj.Data.GetComponents(common.DevfileOptions{})
-			if err != nil {
-				t.Error(err)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetComponents() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_addKubernetesComponent(t *testing.T) {
 
 	type args struct {
