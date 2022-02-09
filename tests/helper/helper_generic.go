@@ -322,7 +322,7 @@ func CommonBeforeEach() CommonVar {
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
-	// test output:
+	// Get details about each test spec and adds it to local testResults.txt file
 	var prNum string
 	var K8SorOcp string
 	var resultsRow string
@@ -332,10 +332,10 @@ func CommonAfterEach(commonVar CommonVar) {
 	if commonVar.testFailed {
 		passedOrFailed = "FAILED"
 	}
-	fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
-	fmt.Println("ComponentTexts: ", commonVar.testCase)
-	fmt.Println("testFailed: ", strconv.FormatBool(commonVar.testFailed))
-	fmt.Println("testDuration: ", commonVar.testDuration)
+	// fmt.Println("TestName: ", CurrentGinkgoTestDescription().FileName)
+	// fmt.Println("ComponentTexts: ", commonVar.testCase)
+	// fmt.Println("testFailed: ", strconv.FormatBool(commonVar.testFailed))
+	// fmt.Println("testDuration: ", commonVar.testDuration)
 	clusterType := "OCP"
 	if K8SorOcp == "KUBERNETES" {
 		clusterType = "KUBERNETES"
@@ -345,21 +345,8 @@ func CommonAfterEach(commonVar CommonVar) {
 	testDate := strconv.Itoa(y) + "-" + strconv.Itoa(int(m)) + "-" + strconv.Itoa(d)
 	resultsRow = prNum + ", " + testDate + ", " + clusterType + ", " + commonVar.testFileName + ", " + commonVar.testCase + ", " + passedOrFailed + ", " + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
 	testResultsFile := filepath.Join("/", "tmp", "testResults.txt")
-	// if _, err := os.Stat(testResultsFile); errors.Is(err, os.ErrNotExist) {
-	// 	fmt.Println("File does not exist:", testResultsFile)
-	// }
-	// files, err := ioutil.ReadDir("/tmp/")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// for _, file := range files {
-	// 	fmt.Println(file.Name(), file.IsDir())
-	// }
 
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	// fmt.Println("Row to add to file:", resultsRow)
-	// fmt.Println("Test results file: ", testResultsFile)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		panic(err)
