@@ -124,7 +124,8 @@ func (wo *WatchOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run() (err error) {
-	err = watch.DevfileWatchAndPush(
+	client := watch.NewWatchClient()
+	err = client.DevfileWatchAndPush(
 		os.Stdout,
 		watch.WatchParameters{
 			ComponentName:       wo.EnvSpecificInfo.GetName(),

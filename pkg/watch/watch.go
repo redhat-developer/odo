@@ -26,6 +26,12 @@ const (
 	PushErrorString = "Error occurred on Push"
 )
 
+type WatchClient struct{}
+
+func NewWatchClient() *WatchClient {
+	return &WatchClient{}
+}
+
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
 type WatchParameters struct {
 	// Name of component that is to be watched
@@ -160,7 +166,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	client: occlient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
-func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
+func (o *WatchClient) WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
@@ -422,8 +428,8 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 
 // DevfileWatchAndPush calls out to the WatchAndPush function.
 // As an occlient instance is not needed for devfile components, it sets it to nil
-func DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
-	return WatchAndPush(nil, out, parameters)
+func (o *WatchClient) DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
+	return o.WatchAndPush(nil, out, parameters)
 }
 
 func removeDuplicates(input []string) []string {
