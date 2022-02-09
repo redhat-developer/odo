@@ -17,7 +17,7 @@ import (
 
 const viewCommandName = "view"
 
-var viewExample = ktemplates.Examples(`# For viewing the current preference value
+var viewExample = ktemplates.Examples(`# View all set preference values 
    %[1]s
   `)
 
@@ -58,10 +58,9 @@ func (o *ViewOptions) Run() (err error) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(o.clientset.PreferenceClient.UpdateNotification()))
-	fmt.Fprintln(w, "NamePrefix", "\t", showBlankIfNil(o.clientset.PreferenceClient.NamePrefix()))
 	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.Timeout()))
-	fmt.Fprintln(w, "BuildTimeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.BuildTimeout()))
 	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.PushTimeout()))
+	fmt.Fprintln(w, "RegistryCacheTime", "\t", showBlankIfNil(o.clientset.PreferenceClient.RegistryCacheTime()))
 	fmt.Fprintln(w, "Ephemeral", "\t", showBlankIfNil(o.clientset.PreferenceClient.EphemeralSourceVolume()))
 	fmt.Fprintln(w, "ConsentTelemetry", "\t", showBlankIfNil(o.clientset.PreferenceClient.ConsentTelemetry()))
 

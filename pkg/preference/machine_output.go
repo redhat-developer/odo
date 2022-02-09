@@ -45,25 +45,11 @@ func toPreferenceItems(prefInfo preferenceInfo) []PreferenceItem {
 			Description: UpdateNotificationSettingDescription,
 		},
 		{
-			Name:        NamePrefixSetting,
-			Value:       settings.NamePrefix,
-			Default:     "",
-			Type:        getType(prefInfo.GetNamePrefix()),
-			Description: NamePrefixSettingDescription,
-		},
-		{
 			Name:        TimeoutSetting,
 			Value:       settings.Timeout,
 			Default:     DefaultTimeout,
 			Type:        getType(prefInfo.GetTimeout()),
 			Description: TimeoutSettingDescription,
-		},
-		{
-			Name:        BuildTimeoutSetting,
-			Value:       settings.BuildTimeout,
-			Default:     DefaultBuildTimeout,
-			Type:        getType(prefInfo.GetBuildTimeout()),
-			Description: BuildTimeoutSettingDescription,
 		},
 		{
 			Name:        PushTimeoutSetting,
@@ -73,11 +59,25 @@ func toPreferenceItems(prefInfo preferenceInfo) []PreferenceItem {
 			Description: PushTimeoutSettingDescription,
 		},
 		{
+			Name:        RegistryCacheTimeSetting,
+			Value:       settings.RegistryCacheTime,
+			Default:     DefaultRegistryCacheTime,
+			Type:        getType(prefInfo.GetRegistryCacheTime()),
+			Description: RegistryCacheTimeSettingDescription,
+		},
+		{
 			Name:        ConsentTelemetrySetting,
 			Value:       settings.ConsentTelemetry,
 			Default:     DefaultConsentTelemetrySetting,
 			Type:        getType(prefInfo.GetConsentTelemetry()),
-			Description: ConsentTelemetryDescription,
+			Description: ConsentTelemetrySettingDescription,
+		},
+		{
+			Name:        EphemeralSetting,
+			Value:       settings.Ephemeral,
+			Default:     DefaultEphemeralSetting,
+			Type:        getType(prefInfo.GetEphemeral()),
+			Description: EphemeralSettingDescription,
 		},
 	}
 }

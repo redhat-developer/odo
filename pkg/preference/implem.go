@@ -23,14 +23,8 @@ type odoSettings struct {
 	// Controls if an update notification is shown or not
 	UpdateNotification *bool `yaml:"UpdateNotification,omitempty"`
 
-	// Holds the prefix part of generated random application name
-	NamePrefix *string `yaml:"NamePrefix,omitempty"`
-
 	// Timeout for OpenShift server connection check
 	Timeout *int `yaml:"Timeout,omitempty"`
-
-	// BuildTimeout for OpenShift build timeout check
-	BuildTimeout *int `yaml:"BuildTimeout,omitempty"`
 
 	// PushTimeout for OpenShift pod timeout check
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
@@ -266,16 +260,6 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.Timeout = &typedval
 
-		case "buildtimeout":
-			typedval, err := strconv.Atoi(value)
-			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.Errorf("cannot set timeout to less than 0")
-			}
-			c.OdoSettings.BuildTimeout = &typedval
-
 		case "pushtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
@@ -302,10 +286,6 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.UpdateNotification = &val
-
-		//	TODO: should we add a validator here? What is the use of nameprefix?
-		case "nameprefix":
-			c.OdoSettings.NamePrefix = &value
 
 		case "ephemeral":
 			val, err := strconv.ParseBool(strings.ToLower(value))
@@ -363,12 +343,6 @@ func (c *preferenceInfo) GetTimeout() int {
 	return util.GetIntOrDefault(c.OdoSettings.Timeout, DefaultTimeout)
 }
 
-// GetBuildTimeout gets the value set by BuildTimeout
-func (c *preferenceInfo) GetBuildTimeout() int {
-	// default timeout value is 300
-	return util.GetIntOrDefault(c.OdoSettings.BuildTimeout, DefaultBuildTimeout)
-}
-
 // GetPushTimeout gets the value set by PushTimeout
 func (c *preferenceInfo) GetPushTimeout() int {
 	// default timeout value is 1
@@ -389,13 +363,7 @@ func (c *preferenceInfo) GetUpdateNotification() bool {
 // GetEphemeralSourceVolume returns the value of ephemeral from preferences
 // and if absent then returns default
 func (c *preferenceInfo) GetEphemeralSourceVolume() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSettings)
-}
-
-// GetNamePrefix returns the value of Prefix from preferences
-// and if absent then returns default
-func (c *preferenceInfo) GetNamePrefix() string {
-	return util.GetStringOrEmpty(c.OdoSettings.NamePrefix)
+	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
 }
 
 // GetConsentTelemetry returns the value of ConsentTelemetry from preferences
@@ -405,24 +373,31 @@ func (c *preferenceInfo) GetConsentTelemetry() bool {
 	return util.GetBoolOrDefault(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
 }
 
+// GetEphemeral returns the value of Ephemeral from preferences
+// and if absent then returns default
+// default value: true, ephemeral is enabled by default
+func (c *preferenceInfo) GetEphemeral() bool {
+	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
+}
+
 func (c *preferenceInfo) UpdateNotification() *bool {
 	return c.OdoSettings.UpdateNotification
 }
 
-func (c *preferenceInfo) NamePrefix() *string {
-	return c.OdoSettings.NamePrefix
+func (c *preferenceInfo) Ephemeral() *bool {
+	return c.OdoSettings.Ephemeral
 }
 
 func (c *preferenceInfo) Timeout() *int {
 	return c.OdoSettings.Timeout
 }
 
-func (c *preferenceInfo) BuildTimeout() *int {
-	return c.OdoSettings.BuildTimeout
-}
-
 func (c *preferenceInfo) PushTimeout() *int {
 	return c.OdoSettings.PushTimeout
+}
+
+func (c *preferenceInfo) RegistryCacheTime() *int {
+	return c.OdoSettings.RegistryCacheTime
 }
 
 func (c *preferenceInfo) EphemeralSourceVolume() *bool {

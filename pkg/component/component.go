@@ -70,17 +70,12 @@ func GetDefaultComponentName(cfg preference.Client, componentPath string, compon
 		existingComponentNames = append(existingComponentNames, component.Name)
 	}
 
-	// If there's no prefix in config file, or its value is empty string use safe default - the current directory along with component type
-	if cfg.NamePrefix() == nil || *cfg.NamePrefix() == "" {
-		prefix, err = GetComponentDir(componentPath)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to generate random component name")
-		}
-		prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
-	} else {
-		// Set the required prefix into componentName
-		prefix = *cfg.NamePrefix()
+	// Create a random generated name for the component to use within Kubernetes
+	prefix, err = GetComponentDir(componentPath)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to generate random component name")
 	}
+	prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 
 	// Generate unique name for the component using prefix and unique random suffix
 	componentName, err := util.GetRandomName(

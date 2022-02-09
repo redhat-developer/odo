@@ -92,9 +92,8 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Short: "Unset a value in odo preference file",
 		Long:  fmt.Sprintf(unsetLongDesc, preference.FormatSupportedParameters()),
 		Example: func(exampleString, fullName string) string {
-			for _, property := range preference.GetSupportedParameters() {
-				exampleString += fmt.Sprintf("\n  %s %s", fullName, property)
-			}
+			// Just show one example of how to unset a value.
+			exampleString += fmt.Sprintf("\n  %s %s", fullName, preference.GetSupportedParameters()[0])
 			return "\n" + exampleString
 		}(unsetExample, fullName),
 		Args: func(cmd *cobra.Command, args []string) error {

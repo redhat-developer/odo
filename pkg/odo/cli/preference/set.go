@@ -20,11 +20,10 @@ import (
 const setCommandName = "set"
 
 var (
-	setLongDesc = ktemplates.LongDesc(`Set an individual value in the odo preference file.
-
+	setLongDesc = ktemplates.LongDesc(`Set an individual value in the odo preference file.  
 %[1]s`)
 	setExample = ktemplates.Examples(`
-   # Set a preference value in the global preference`)
+   # All available preference values you can set`)
 )
 
 // SetOptions encapsulates the options for the command
@@ -88,7 +87,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	o := NewSetOptions()
 	preferenceSetCmd := &cobra.Command{
 		Use:   name,
-		Short: "Set a value in odo config file",
+		Short: "Set a value in the odo preference file",
 		Long:  fmt.Sprintf(setLongDesc, preference.FormatSupportedParameters()),
 		Example: func(exampleString, fullName string) string {
 			prefClient, err := preference.NewClient()

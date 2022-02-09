@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/zalando/go-keyring"

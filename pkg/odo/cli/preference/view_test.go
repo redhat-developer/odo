@@ -36,9 +36,8 @@ func TestView(t *testing.T) {
 	}
 
 	prefClient.EXPECT().UpdateNotification().Return(pointer.Bool(false))
-	prefClient.EXPECT().NamePrefix().Return(pointer.String("aprefix"))
 	prefClient.EXPECT().Timeout().Return(pointer.Int(10))
-	prefClient.EXPECT().BuildTimeout().Return(pointer.Int(10))
+	prefClient.EXPECT().RegistryCacheTime().Return(pointer.Int(240))
 	prefClient.EXPECT().PushTimeout().Return(pointer.Int(10))
 	prefClient.EXPECT().EphemeralSourceVolume().Return(pointer.Bool(false))
 	prefClient.EXPECT().ConsentTelemetry().Return(pointer.Bool(false))
