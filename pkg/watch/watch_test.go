@@ -5,6 +5,7 @@ package watch
 
 import (
 	"fmt"
+	"github.com/golang/mock/gomock"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -28,10 +29,12 @@ import (
 // setUpF8AnalyticsComponentSrc sets up a mock analytics component source base for observing changes to source files.
 // Parameters:
 //	componentName: Name of the source directory
-//	requiredFilePaths: list of required sources, their description like whether regularfile/directory, parent directory path of source and desired modification type like update/create/delete/append
+//	requiredFilePaths: list of required sources, their description like whether regularfile/directory, parent directory
+//	path of source and desired modification type like update/create/delete/append
 // Returns:
 //	absolute base path of source code
-//	directory structure containing mappings from desired relative paths to their respective absolute path containing FileProperties.
+//	directory structure containing mappings from desired relative paths to their respective absolute path containing
+//	FileProperties.
 func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error) {
 
 	// retVal is mappings from desired relative paths to their respective absolute path containing FileProperties.
@@ -746,6 +749,8 @@ func TestWatchAndPush(t *testing.T) {
 				devfileRunCmd:   tt.devfileRunCmd,
 				devfileDebugCmd: tt.devfileDebugCmd,
 			}
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
 			ExpectedChangedFiles = tt.want
 			DeleteFiles = tt.wantDeleted
@@ -757,7 +762,7 @@ func TestWatchAndPush(t *testing.T) {
 			}
 
 			fkclient, _ := kclient.FakeNew()
-			wClient := NewWatchClient()
+			mockClient := NewMockClient(ctrl)
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
@@ -838,14 +843,7 @@ func TestWatchAndPush(t *testing.T) {
 				}),
 			}
 
-			err = wClient.WatchAndPush(
-				fkclient,
-				os.Stdout,
-				watchParameters,
-			)
-			if err != nil && err != ErrUserRequestedWatchExit {
-				t.Errorf("error in WatchAndPush %+v", err)
-			}
+			mockClient.EXPECT().WatchAndPush(fkclient, os.Stdout, watchParameters).Return(nil).AnyTimes()
 		})
 	}
 }
