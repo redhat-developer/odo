@@ -45,7 +45,7 @@ var _ = Describe("odo devfile url command tests", func() {
 	})
 
 	When("creating a Nodejs component", func() {
-		stdout := ""
+		var stdout string
 
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
@@ -68,7 +68,7 @@ var _ = Describe("odo devfile url command tests", func() {
 		})
 
 		It("should not allow to create URL with duplicate port", func() {
-			stdout = helper.Cmd("odo", "url", "create", "--port", nodejsDevfilePort).ShouldFail().Err()
+			stdout = helper.Cmd("odo", "url", "create", url1, "--port", nodejsDevfilePort).ShouldFail().Err()
 			Expect(stdout).To(ContainSubstring("port 3000 already exists in devfile endpoint entry"))
 		})
 
