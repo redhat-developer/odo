@@ -1,7 +1,6 @@
 package init
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -22,47 +21,46 @@ import (
 )
 
 type InitClient struct {
-	backends         []backend.InitBackend
+	// Backends
+	flagsBackend       *backend.FlagsBackend
+	interactiveBackend *backend.InteractiveBackend
+
+	// Clients
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
 	registryClient   registry.Client
 }
 
 func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
-	backends := []backend.InitBackend{
-		backend.NewFlagsBackend(preferenceClient),
-		backend.NewInteractiveBackend(asker.NewSurveyAsker(), catalog.NewCatalogClient(fsys, preferenceClient)),
-	}
 	return &InitClient{
-		backends:         backends,
-		fsys:             fsys,
-		preferenceClient: preferenceClient,
-		registryClient:   registryClient,
+		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
+		interactiveBackend: backend.NewInteractiveBackend(asker.NewSurveyAsker(), catalog.NewCatalogClient(fsys, preferenceClient)),
+		fsys:               fsys,
+		preferenceClient:   preferenceClient,
+		registryClient:     registryClient,
 	}
 }
 
-// Validate calls Validate methods of all backends and returns the first error returned
-// or nil if all backends returns a nil error
+// Validate calls Validate method of the adequate backend
 func (o *InitClient) Validate(flags map[string]string) error {
-	for _, backend := range o.backends {
-		err := backend.Validate(flags)
-		if err != nil {
-			return err
-		}
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
 	}
-	return nil
+	return backend.Validate(flags)
 }
 
-// SelectDevfile calls SelectDevfile methods of backends in order
-// and returns the result of the first method accepting to reply, based on flags
+// SelectDevfile calls SelectDevfile methods of the adequate backend
 func (o *InitClient) SelectDevfile(flags map[string]string) (*backend.DevfileLocation, error) {
-	for _, backend := range o.backends {
-		ok, location, err := backend.SelectDevfile(flags)
-		if ok {
-			return location, err
-		}
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
 	}
-	return nil, errors.New("no backend found to select a devfile. This should not happen")
+	return backend.SelectDevfile(flags)
 }
 
 func (o *InitClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
@@ -153,16 +151,15 @@ func (o *InitClient) downloadFromRegistry(registryName string, devfile string, d
 	return fmt.Errorf("unable to find the registry with name %q", devfile)
 }
 
-// SelectStarterProject calls SelectStarterProject methods of backends in order
-// and returns the result of the first method accepting to reply, based on flags
+// SelectStarterProject calls SelectStarterProject methods of the adequate backend
 func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
-	for _, backend := range o.backends {
-		ok, starter, err := backend.SelectStarterProject(devfile, flags)
-		if ok {
-			return starter, err
-		}
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
 	}
-	return nil, errors.New("no backend found to select starter project. This should not happen")
+	return backend.SelectStarterProject(devfile, flags)
 }
 
 func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, dest string) error {
@@ -176,14 +173,14 @@ func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, de
 	return nil
 }
 
-// PersonalizeName calls PersonalizeName methods of backends in order
-// and returns the result of the first method accepting to reply, based on flags
+// PersonalizeName calls PersonalizeName methods of the adequate backend
 func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
-	for _, backend := range o.backends {
-		ok, err := backend.PersonalizeName(devfile, flags)
-		if ok {
-			return err
-		}
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
 	}
-	return errors.New("no backend found to personalize name. This should not happen")
+	err := backend.PersonalizeName(devfile, flags)
+	return err
 }

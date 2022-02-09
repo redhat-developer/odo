@@ -34,10 +34,7 @@ func (o *InteractiveBackend) Validate(flags map[string]string) error {
 	return nil
 }
 
-func (o *InteractiveBackend) SelectDevfile(flags map[string]string) (bool, *DevfileLocation, error) {
-	if len(flags) > 0 {
-		return false, nil, nil
-	}
+func (o *InteractiveBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
 	result := &DevfileLocation{}
 	devfileEntries, _ := o.catalogClient.ListDevfileComponents("")
 
@@ -53,7 +50,7 @@ loop:
 		case STATE_ASK_LANG:
 			lang, err = o.asker.AskLanguage(langs)
 			if err != nil {
-				return true, nil, err
+				return nil, err
 			}
 			state = STATE_ASK_TYPE
 
@@ -62,7 +59,7 @@ loop:
 			var back bool
 			back, details, err = o.asker.AskType(types)
 			if err != nil {
-				return true, nil, err
+				return nil, err
 			}
 			if back {
 				state = STATE_ASK_LANG
@@ -76,16 +73,13 @@ loop:
 		}
 	}
 
-	return true, result, nil
+	return result, nil
 }
 
-func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (bool, *v1alpha2.StarterProject, error) {
-	if len(flags) > 0 {
-		return false, nil, nil
-	}
+func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
 	starterProjects, err := devfile.Data.GetStarterProjects(parsercommon.DevfileOptions{})
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	names := make([]string, 0, len(starterProjects))
 	for _, starterProject := range starterProjects {
@@ -94,21 +88,18 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 
 	ok, starter, err := o.asker.AskStarterProject(names)
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	if !ok {
-		return true, nil, nil
+		return nil, nil
 	}
-	return true, &starterProjects[starter], nil
+	return &starterProjects[starter], nil
 }
 
-func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (bool, error) {
-	if len(flags) > 0 {
-		return false, nil
-	}
+func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	name, err := o.asker.AskName(fmt.Sprintf("my-%s-app", devfile.Data.GetMetadata().Name))
 	if err != nil {
-		return true, err
+		return err
 	}
-	return true, devfile.SetMetadataName(name)
+	return devfile.SetMetadataName(name)
 }

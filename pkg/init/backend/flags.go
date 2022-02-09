@@ -32,10 +32,6 @@ func NewFlagsBackend(preferenceClient preference.Client) *FlagsBackend {
 }
 
 func (o *FlagsBackend) Validate(flags map[string]string) error {
-	if len(flags) == 0 {
-		return nil
-	}
-
 	if flags[FLAG_NAME] == "" {
 		return errors.New("missing --name parameter: please add --name <name> to specify a name for the component")
 	}
@@ -61,41 +57,32 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 	return nil
 }
 
-func (o *FlagsBackend) SelectDevfile(flags map[string]string) (bool, *DevfileLocation, error) {
-	if len(flags) == 0 {
-		return false, nil, nil
-	}
-	return true, &DevfileLocation{
+func (o *FlagsBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
+	return &DevfileLocation{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],
 		DevfilePath:     flags[FLAG_DEVFILE_PATH],
 	}, nil
 }
 
-func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (bool, *v1alpha2.StarterProject, error) {
-	if len(flags) == 0 {
-		return false, nil, nil
-	}
+func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
 	starter := flags[FLAG_STARTER]
 	if starter == "" {
-		return true, nil, nil
+		return nil, nil
 	}
 	projects, err := devfile.Data.GetStarterProjects(common.DevfileOptions{})
 	if err != nil {
-		return true, nil, err
+		return nil, err
 	}
 	var prj v1alpha2.StarterProject
 	for _, prj = range projects {
 		if prj.Name == starter {
-			return true, &prj, nil
+			return &prj, nil
 		}
 	}
-	return true, nil, fmt.Errorf("starter project %q not found in devfile", starter)
+	return nil, fmt.Errorf("starter project %q not found in devfile", starter)
 }
 
-func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (bool, error) {
-	if len(flags) == 0 {
-		return false, nil
-	}
-	return true, devfile.SetMetadataName(flags[FLAG_NAME])
+func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
+	return devfile.SetMetadataName(flags[FLAG_NAME])
 }

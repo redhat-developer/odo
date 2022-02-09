@@ -87,7 +87,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				asker:         tt.fields.buildAsker(ctrl),
 				catalogClient: tt.fields.buildCatalogClient(ctrl),
 			}
-			_, got, err := o.SelectDevfile(map[string]string{})
+			got, err := o.SelectDevfile(map[string]string{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -112,27 +112,9 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		wantOK  bool
 		want    *v1alpha2.StarterProject
 		wantErr bool
 	}{
-		{
-			name: "some flags passed",
-			args: args{
-				devfile: func() parser.DevfileObj {
-					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					return parser.DevfileObj{
-						Data: devfileData,
-					}
-				},
-				flags: map[string]string{
-					"devfile": "adevfile",
-				},
-			},
-			wantOK:  false,
-			want:    nil,
-			wantErr: false,
-		},
 		{
 			name: "no flags, no starter selected",
 			fields: fields{
@@ -151,7 +133,6 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				},
 				flags: map[string]string{},
 			},
-			wantOK:  true,
 			want:    nil,
 			wantErr: false,
 		},
@@ -184,7 +165,6 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				},
 				flags: map[string]string{},
 			},
-			wantOK: true,
 			want: &v1alpha2.StarterProject{
 				Name: "starter2",
 			},
@@ -203,14 +183,12 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				asker:         askerClient,
 				catalogClient: tt.fields.catalogClient,
 			}
-			got, got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
+			got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBackend.SelectStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.wantOK {
-				t.Errorf("InteractiveBackend.SelectStarterProject() got = %v, wantOK %v", got, tt.wantOK)
-			}
+
 			if !reflect.DeepEqual(got1, tt.want) {
 				t.Errorf("InteractiveBackend.SelectStarterProject() got1 = %v, want %v", got1, tt.want)
 			}
@@ -231,7 +209,6 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 		name        string
 		fields      fields
 		args        args
-		want        bool
 		wantErr     bool
 		checkResult func(devfile parser.DevfileObj, args args) bool
 	}{
@@ -255,7 +232,6 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				},
 				flags: map[string]string{},
 			},
-			want:    true,
 			wantErr: false,
 			checkResult: func(devfile parser.DevfileObj, args args) bool {
 				return devfile.GetMetadataName() == "aname"
@@ -274,14 +250,12 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 			}
 			fs := filesystem.NewFakeFs()
 			devfile := tt.args.devfile(fs)
-			got, err := o.PersonalizeName(devfile, tt.args.flags)
+			err := o.PersonalizeName(devfile, tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("InteractiveBackend.PersonalizeName() = %v, want %v", got, tt.want)
-			}
+
 			if tt.checkResult != nil && !tt.checkResult(devfile, tt.args) {
 				t.Errorf("InteractiveBackend.PersonalizeName(), checking result failed")
 			}

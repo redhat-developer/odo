@@ -22,19 +22,9 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		wantOk  bool
 		want    *DevfileLocation
 		wantErr bool
 	}{
-		{
-			name: "no field defined",
-			fields: fields{
-				flags: map[string]string{},
-			},
-			wantOk:  false,
-			wantErr: false,
-			want:    nil,
-		},
 		{
 			name: "all fields defined",
 			fields: fields{
@@ -44,7 +34,6 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 					FLAG_DEVFILE_REGISTRY: "aregistry",
 				},
 			},
-			wantOk:  true,
 			wantErr: false,
 			want: &DevfileLocation{
 				Devfile:         "adevfile",
@@ -56,11 +45,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &FlagsBackend{}
-			ok, got, err := o.SelectDevfile(tt.fields.flags)
-			if ok != tt.wantOk {
-				t.Errorf("FlagsBackend.SelectDevfile() ok = %v, wantOk %v", ok, tt.wantOk)
-				return
-			}
+			got, err := o.SelectDevfile(tt.fields.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -86,13 +71,6 @@ func TestFlagsBackend_Validate(t *testing.T) {
 		registryList       []preference.Registry
 		wantErr            bool
 	}{
-		{
-			name: "no args",
-			args: args{
-				flags: map[string]string{},
-			},
-			wantErr: false,
-		},
 		{
 			name: "no name passed",
 			args: args{
@@ -225,22 +203,9 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		wantOK  bool
 		want    *v1alpha2.StarterProject
 		wantErr bool
 	}{
-		{
-			name: "no flags",
-			args: args{
-				devfile: func() parser.DevfileObj {
-					return parser.DevfileObj{}
-				},
-				flags: map[string]string{},
-			},
-			wantOK:  false,
-			want:    nil,
-			wantErr: false,
-		},
 		{
 			name: "some flags, but not starter",
 			args: args{
@@ -251,7 +216,6 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 					"devfile": "adevfile",
 				},
 			},
-			wantOK:  true,
 			want:    nil,
 			wantErr: false,
 		},
@@ -280,7 +244,6 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 					"starter": "starter2",
 				},
 			},
-			wantOK: true,
 			want: &v1alpha2.StarterProject{
 				Name: "starter2",
 			},
@@ -311,7 +274,6 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 					"starter": "starter4",
 				},
 			},
-			wantOK:  true,
 			want:    nil,
 			wantErr: true,
 		},
@@ -322,13 +284,10 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 			o := &FlagsBackend{
 				preferenceClient: tt.fields.preferenceClient,
 			}
-			got, got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
+			got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.SelectStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if got != tt.wantOK {
-				t.Errorf("FlagsBackend.SelectStarterProject() got = %v, want %v", got, tt.wantOK)
 			}
 			if !reflect.DeepEqual(got1, tt.want) {
 				t.Errorf("FlagsBackend.SelectStarterProject() got1 = %v, want %v", got1, tt.want)
@@ -349,21 +308,9 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 		name        string
 		fields      fields
 		args        args
-		wantOK      bool
 		wantErr     bool
 		checkResult func(devfile parser.DevfileObj, args args) bool
 	}{
-		{
-			name: "no flags",
-			args: args{
-				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
-					return parser.DevfileObj{}
-				},
-				flags: map[string]string{},
-			},
-			wantOK:  false,
-			wantErr: false,
-		},
 		{
 			name: "name flag",
 			args: args{
@@ -380,7 +327,6 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 					"name":    "a-name",
 				},
 			},
-			wantOK:  true,
 			wantErr: false,
 			checkResult: func(devfile parser.DevfileObj, args args) bool {
 				return devfile.GetMetadataName() == args.flags["name"]
@@ -394,13 +340,10 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 			}
 			fs := filesystem.NewFakeFs()
 			devfile := tt.args.devfile(fs)
-			got, err := o.PersonalizeName(devfile, tt.args.flags)
+			err := o.PersonalizeName(devfile, tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if got != tt.wantOK {
-				t.Errorf("FlagsBackend.PersonalizeName() = %v, want %v", got, tt.wantOK)
 			}
 			if tt.checkResult != nil && !tt.checkResult(devfile, tt.args) {
 				t.Errorf("FlagsBackend.PersonalizeName(), checking result failed")

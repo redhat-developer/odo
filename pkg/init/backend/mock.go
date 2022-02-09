@@ -36,12 +36,11 @@ func (m *MockInitBackend) EXPECT() *MockInitBackendMockRecorder {
 }
 
 // PersonalizeName mocks base method.
-func (m *MockInitBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (bool, error) {
+func (m *MockInitBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // PersonalizeName indicates an expected call of PersonalizeName.
@@ -51,13 +50,12 @@ func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{
 }
 
 // SelectDevfile mocks base method.
-func (m *MockInitBackend) SelectDevfile(flags map[string]string) (bool, *DevfileLocation, error) {
+func (m *MockInitBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", flags)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*DevfileLocation)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(*DevfileLocation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SelectDevfile indicates an expected call of SelectDevfile.
@@ -67,13 +65,12 @@ func (mr *MockInitBackendMockRecorder) SelectDevfile(flags interface{}) *gomock.
 }
 
 // SelectStarterProject mocks base method.
-func (m *MockInitBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (bool, *v1alpha2.StarterProject, error) {
+func (m *MockInitBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectStarterProject", devfile, flags)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*v1alpha2.StarterProject)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(*v1alpha2.StarterProject)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SelectStarterProject indicates an expected call of SelectStarterProject.
