@@ -415,50 +415,6 @@ func listDevfileServices(client kclient.ClientInterface, devfileObj parser.Devfi
 	return services, nil
 }
 
-// FindDevfileServiceBinding returns the name of the ServiceBinding defined in a Devfile matching kind and name
-func FindDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, context string) (string, bool, error) {
-	return findDevfileServiceBinding(devfileObj, kind, name, context, devfilefs.DefaultFs{})
-}
-
-func findDevfileServiceBinding(devfileObj parser.DevfileObj, kind string, name, context string, fs devfilefs.Filesystem) (string, bool, error) {
-	if devfileObj.Data == nil {
-		return "", false, nil
-	}
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfile.KubernetesComponentType},
-	})
-	if err != nil {
-		return "", false, err
-	}
-
-	for _, c := range components {
-		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, context, fs)
-		if err != nil {
-			return "", false, err
-		}
-		if isLinkResource(u.GetKind()) {
-			var sbr servicebinding.ServiceBinding
-			js, err := u.MarshalJSON()
-			if err != nil {
-				return "", false, err
-			}
-			err = json.Unmarshal(js, &sbr)
-			if err != nil {
-				return "", false, err
-			}
-			services := sbr.Spec.Services
-			if len(services) != 1 {
-				continue
-			}
-			service := services[0]
-			if service.Kind == kind && service.Name == name {
-				return u.GetName(), true, nil
-			}
-		}
-	}
-	return "", false, nil
-}
-
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
 func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, context string) error {
 	// check csv support before proceeding
