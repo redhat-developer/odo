@@ -67,3 +67,6 @@ mockgen -source=pkg/libdevfile/libdevfile.go \
     -package libdevfile \
     -destination pkg/libdevfile/handler_mock.go
 
+mockgen -source=pkg/watch/interface.go \
+    -package watch \
+    -destination pkg/watch/mock.go
