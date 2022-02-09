@@ -304,12 +304,6 @@ func (ei *EnvInfo) IsUserCreatedDevfile() bool {
 	return ei.componentSettings.UserCreatedDevfile
 }
 
-// SetUserCreatedDevfile sets the UserCreatedDevfile and writes to file
-func (esi *EnvSpecificInfo) SetUserCreatedDevfile(value bool) error {
-	esi.componentSettings.UserCreatedDevfile = value
-	return esi.writeToFile()
-}
-
 // GetRunMode returns the RunMode, returns default if nil
 func (ei *EnvInfo) GetRunMode() RUNMode {
 	if ei.componentSettings.RunMode == nil {
@@ -388,14 +382,6 @@ var (
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())
 )
-
-// FormatLocallySupportedParameters outputs supported parameters and their description
-func FormatLocallySupportedParameters() (result string) {
-	for _, v := range GetLocallySupportedParameters() {
-		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
-	}
-	return "\nAvailable Parameter in the local Env file:\n" + result
-}
 
 func asLocallySupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)

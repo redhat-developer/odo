@@ -33,18 +33,6 @@ func (m *MockLocalConfigProvider) EXPECT() *MockLocalConfigProviderMockRecorder 
 	return m.recorder
 }
 
-// CompleteStorage mocks base method.
-func (m *MockLocalConfigProvider) CompleteStorage(storage *LocalStorage) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "CompleteStorage", storage)
-}
-
-// CompleteStorage indicates an expected call of CompleteStorage.
-func (mr *MockLocalConfigProviderMockRecorder) CompleteStorage(storage interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).CompleteStorage), storage)
-}
-
 // CompleteURL mocks base method.
 func (m *MockLocalConfigProvider) CompleteURL(url *LocalURL) error {
 	m.ctrl.T.Helper()
@@ -59,20 +47,6 @@ func (mr *MockLocalConfigProviderMockRecorder) CompleteURL(url interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).CompleteURL), url)
 }
 
-// CreateStorage mocks base method.
-func (m *MockLocalConfigProvider) CreateStorage(storage LocalStorage) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateStorage", storage)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateStorage indicates an expected call of CreateStorage.
-func (mr *MockLocalConfigProviderMockRecorder) CreateStorage(storage interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).CreateStorage), storage)
-}
-
 // CreateURL mocks base method.
 func (m *MockLocalConfigProvider) CreateURL(url LocalURL) error {
 	m.ctrl.T.Helper()
@@ -85,20 +59,6 @@ func (m *MockLocalConfigProvider) CreateURL(url LocalURL) error {
 func (mr *MockLocalConfigProviderMockRecorder) CreateURL(url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).CreateURL), url)
-}
-
-// DeleteStorage mocks base method.
-func (m *MockLocalConfigProvider) DeleteStorage(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteStorage", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteStorage indicates an expected call of DeleteStorage.
-func (mr *MockLocalConfigProviderMockRecorder) DeleteStorage(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).DeleteStorage), name)
 }
 
 // DeleteURL mocks base method.
@@ -230,36 +190,6 @@ func (mr *MockLocalConfigProviderMockRecorder) GetNamespace() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetNamespace))
 }
 
-// GetStorage mocks base method.
-func (m *MockLocalConfigProvider) GetStorage(name string) (*LocalStorage, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStorage", name)
-	ret0, _ := ret[0].(*LocalStorage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetStorage indicates an expected call of GetStorage.
-func (mr *MockLocalConfigProviderMockRecorder) GetStorage(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetStorage), name)
-}
-
-// GetStorageMountPath mocks base method.
-func (m *MockLocalConfigProvider) GetStorageMountPath(storageName string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStorageMountPath", storageName)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetStorageMountPath indicates an expected call of GetStorageMountPath.
-func (mr *MockLocalConfigProviderMockRecorder) GetStorageMountPath(storageName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStorageMountPath", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetStorageMountPath), storageName)
-}
-
 // GetURL mocks base method.
 func (m *MockLocalConfigProvider) GetURL(name string) (*LocalURL, error) {
 	m.ctrl.T.Helper()
@@ -303,20 +233,6 @@ func (m *MockLocalConfigProvider) ListURLs() ([]LocalURL, error) {
 func (mr *MockLocalConfigProviderMockRecorder) ListURLs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListURLs", reflect.TypeOf((*MockLocalConfigProvider)(nil).ListURLs))
-}
-
-// ValidateStorage mocks base method.
-func (m *MockLocalConfigProvider) ValidateStorage(storage LocalStorage) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateStorage", storage)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ValidateStorage indicates an expected call of ValidateStorage.
-func (mr *MockLocalConfigProviderMockRecorder) ValidateStorage(storage interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).ValidateStorage), storage)
 }
 
 // ValidateURL mocks base method.
