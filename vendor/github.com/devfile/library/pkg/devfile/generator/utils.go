@@ -46,7 +46,12 @@ func convertPorts(endpoints []v1.Endpoint) []corev1.ContainerPort {
 		} else {
 			portProtocol = corev1.ProtocolTCP
 		}
-		name := fmt.Sprintf("%d-%s", portNumber, strings.ToLower(string(portProtocol)))
+		name := endpoint.Name
+		if len(name) > 15 {
+			// to be compatible with endpoint longer than 15 chars
+			name = fmt.Sprintf("port-%v", portNumber)
+		}
+
 		if _, exist := portMap[name]; !exist {
 			portMap[name] = true
 			containerPorts = append(containerPorts, corev1.ContainerPort{
@@ -268,7 +273,6 @@ func getServiceSpec(devfileObj parser.DevfileObj, selectorLabels map[string]stri
 			}
 			// if Exposure == none, should not create a service for that port
 			if !portExist && portExposureMap[int(port.ContainerPort)] != v1.NoneEndpointExposure {
-				port.Name = fmt.Sprintf("port-%v", port.ContainerPort)
 				containerPorts = append(containerPorts, port)
 			}
 		}

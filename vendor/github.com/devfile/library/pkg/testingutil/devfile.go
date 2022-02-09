@@ -126,7 +126,7 @@ type DockerImageValues struct {
 
 //GetDockerImageTestComponent returns a docker image component that is used for testing.
 //The parameters allow customization of the content.  If they are set to nil, then the properties will not be set
-func GetDockerImageTestComponent(div DockerImageValues, attr attributes.Attributes) v1.Component {
+func GetDockerImageTestComponent(div DockerImageValues, autobuild *bool, attr attributes.Attributes) v1.Component {
 	comp := v1.Component{
 		Name: "image",
 		ComponentUnion: v1.ComponentUnion{
@@ -134,6 +134,7 @@ func GetDockerImageTestComponent(div DockerImageValues, attr attributes.Attribut
 				Image: v1.Image{
 					ImageName: div.ImageName,
 					ImageUnion: v1.ImageUnion{
+						AutoBuild: autobuild,
 						Dockerfile: &v1.DockerfileImage{
 							DockerfileSrc: v1.DockerfileSrc{
 								Uri: div.Uri,

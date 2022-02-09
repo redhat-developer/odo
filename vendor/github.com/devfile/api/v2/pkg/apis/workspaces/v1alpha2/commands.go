@@ -92,7 +92,7 @@ type CommandUnion struct {
 	//
 	// When no `apply` command exist for a given component,
 	// it is assumed the component will be applied at devworkspace start
-	// by default.
+	// by default, unless `deployByDefault` for that component is set to false.
 	// +optional
 	Apply *ApplyCommand `json:"apply,omitempty"`
 

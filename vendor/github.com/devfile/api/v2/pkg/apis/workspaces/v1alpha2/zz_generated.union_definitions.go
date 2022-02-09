@@ -45,6 +45,7 @@ func (union *ImageUnion) Simplify() {
 // +k8s:deepcopy-gen=false
 type ImageUnionVisitor struct {
 	Dockerfile func(*DockerfileImage) error
+	AutoBuild  func(*bool) error
 }
 
 var dockerfileSrc reflect.Type = reflect.TypeOf(DockerfileSrcVisitor{})
@@ -267,6 +268,7 @@ func (union *ImageUnionParentOverride) Simplify() {
 // +k8s:deepcopy-gen=false
 type ImageUnionParentOverrideVisitor struct {
 	Dockerfile func(*DockerfileImageParentOverride) error
+	AutoBuild  func(*bool) error
 }
 
 var importReferenceUnionParentOverride reflect.Type = reflect.TypeOf(ImportReferenceUnionParentOverrideVisitor{})
@@ -398,6 +400,7 @@ func (union *ImageUnionPluginOverrideParentOverride) Simplify() {
 // +k8s:deepcopy-gen=false
 type ImageUnionPluginOverrideParentOverrideVisitor struct {
 	Dockerfile func(*DockerfileImagePluginOverrideParentOverride) error
+	AutoBuild  func(*bool) error
 }
 
 var dockerfileSrcPluginOverrideParentOverride reflect.Type = reflect.TypeOf(DockerfileSrcPluginOverrideParentOverrideVisitor{})
@@ -507,6 +510,7 @@ func (union *ImageUnionPluginOverride) Simplify() {
 // +k8s:deepcopy-gen=false
 type ImageUnionPluginOverrideVisitor struct {
 	Dockerfile func(*DockerfileImagePluginOverride) error
+	AutoBuild  func(*bool) error
 }
 
 var dockerfileSrcPluginOverride reflect.Type = reflect.TypeOf(DockerfileSrcPluginOverrideVisitor{})
