@@ -3,7 +3,6 @@ package ui
 import (
 	"os"
 
-	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 	"k8s.io/klog"
@@ -18,12 +17,6 @@ func HandleError(err error) {
 			klog.V(4).Infof("Encountered an error processing prompt: %v", err)
 		}
 	}
-}
-
-// GetValidatorFor returns an implementation specific validator for the given validatable to avoid type casting at each calling
-// site
-func GetValidatorFor(prop validation.Validatable) survey.Validator {
-	return survey.Validator(validation.GetValidatorFor(prop))
 }
 
 // Proceed displays a given message and asks the user if they want to proceed using the optionally specified Stdio instance (useful

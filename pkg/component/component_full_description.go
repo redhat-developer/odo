@@ -2,9 +2,8 @@ package component
 
 import (
 	"encoding/json"
-	"fmt"
+
 	v1 "k8s.io/api/apps/v1"
-	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
@@ -181,131 +180,6 @@ func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.
 	cfd.Spec.Storage = storages
 
 	return cfd, nil
-}
-
-// Print prints the complete information of component onto stdout (Note: long term this function should not need to access any parameters, but just print the information in struct)
-func (cfd *ComponentFullDescription) Print(client kclient.ClientInterface) error {
-	// TODO: remove the need to client here print should just deal with printing
-	log.Describef("Component Name: ", cfd.GetName())
-	log.Describef("Type: ", cfd.Spec.Type)
-
-	// Source
-	if cfd.Spec.Source != "" {
-		log.Describef("Source: ", cfd.Spec.Source)
-	}
-
-	// Env
-	if cfd.Spec.Env != nil {
-
-		// Retrieve all the environment variables
-		var output string
-		for _, env := range cfd.Spec.Env {
-			output += fmt.Sprintf(" · %v=%v\n", env.Name, env.Value)
-		}
-
-		// Cut off the last newline and output
-		if len(output) > 0 {
-			output = output[:len(output)-1]
-			log.Describef("Environment Variables:\n", output)
-		}
-
-	}
-
-	// Storage
-	if len(cfd.Spec.Storage.Items) > 0 {
-
-		// Gather the output
-		var output string
-		for _, store := range cfd.Spec.Storage.Items {
-			eph := ""
-			if store.Spec.Ephemeral != nil {
-				if *store.Spec.Ephemeral {
-					eph = " as ephemeral volume"
-				} else {
-					eph = " as persistent volume"
-				}
-			}
-			output += fmt.Sprintf(" · %v of size %v mounted to %v%s\n", store.Name, store.Spec.Size, store.Spec.Path, eph)
-		}
-
-		// Cut off the last newline and output
-		if len(output) > 0 {
-			output = output[:len(output)-1]
-			log.Describef("Storage:\n", output)
-		}
-
-	}
-
-	// URL
-	if len(cfd.Spec.URL.Items) > 0 {
-		var output string
-		// if the component is not pushed
-		for _, componentURL := range cfd.Spec.URL.Items {
-			if componentURL.Status.State == urlpkg.StateTypePushed {
-				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
-			} else {
-				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, componentURL.Spec.Port)
-			}
-		}
-
-		// Cut off the last newline and output
-		output = output[:len(output)-1]
-		log.Describef("URLs:\n", output)
-	}
-
-	// Linked services
-	if len(cfd.Status.LinkedServices) > 0 {
-
-		// Gather the output
-		var output string
-		for _, linkedService := range cfd.Status.LinkedServices {
-
-			if linkedService.SecretName == "" {
-				output += fmt.Sprintf(" · %s\n", linkedService.ServiceName)
-				continue
-			}
-
-			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetSecret(linkedService.SecretName, cfd.GetNamespace())
-			if err != nil {
-				return err
-			}
-
-			if len(secrets.Data) > 0 {
-				// Iterate through the secrets to throw in a string
-				var secretOutput string
-				for i := range secrets.Data {
-					if linkedService.MountVolume {
-						secretOutput += fmt.Sprintf("    · %v\n", filepath.ToSlash(filepath.Join(linkedService.MountPath, i)))
-					} else {
-						secretOutput += fmt.Sprintf("    · %v\n", i)
-					}
-				}
-
-				if len(secretOutput) > 0 {
-					// Cut off the last newline
-					secretOutput = secretOutput[:len(secretOutput)-1]
-					if linkedService.MountVolume {
-						output += fmt.Sprintf(" · %s\n   Files:\n%s\n", linkedService.ServiceName, secretOutput)
-					} else {
-						output += fmt.Sprintf(" · %s\n   Environment Variables:\n%s\n", linkedService.ServiceName, secretOutput)
-					}
-				}
-
-			} else {
-				output += fmt.Sprintf(" · %s\n", linkedService.SecretName)
-			}
-
-		}
-
-		if len(output) > 0 {
-			// Cut off the last newline and output
-			output = output[:len(output)-1]
-			log.Describef("Linked Services:\n", output)
-		}
-
-	}
-	return nil
 }
 
 // GetComponent returns a component representation

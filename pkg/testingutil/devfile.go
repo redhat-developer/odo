@@ -47,45 +47,6 @@ func GetFakeVolumeComponent(name, size string) v1.Component {
 
 }
 
-// GetFakeExecRunCommands returns fake commands for testing
-func GetFakeExecRunCommands() []v1.Command {
-	return []v1.Command{
-		{
-			CommandUnion: v1.CommandUnion{
-				Exec: &v1.ExecCommand{
-					LabeledCommand: v1.LabeledCommand{
-						BaseCommand: v1.BaseCommand{
-							Group: &v1.CommandGroup{
-								Kind:      v1.RunCommandGroupKind,
-								IsDefault: util.GetBoolPtr(true),
-							},
-						},
-					},
-					CommandLine: "ls -a",
-					Component:   "alias1",
-					WorkingDir:  "/root",
-				},
-			},
-		},
-	}
-}
-
-// GetFakeExecRunCommands returns a fake env for testing
-func GetFakeEnv(name, value string) v1.EnvVar {
-	return v1.EnvVar{
-		Name:  name,
-		Value: value,
-	}
-}
-
-// GetFakeVolumeMount returns a fake volume mount for testing
-func GetFakeVolumeMount(name, path string) v1.VolumeMount {
-	return v1.VolumeMount{
-		Name: name,
-		Path: path,
-	}
-}
-
 // GetTestDevfileObj returns a devfile object for testing
 func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
 	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))

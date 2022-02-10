@@ -11,9 +11,6 @@ const ComponentLabel = "app.kubernetes.io/instance"
 // ComponentTypeLabel is Kubernetes label that identifies the type of a component being used
 const ComponentTypeLabel = "app.kubernetes.io/name"
 
-// ComponentTypeVersion is a Kubernetes label that identifies the component version
-const ComponentTypeVersion = "app.openshift.io/runtime-version"
-
 const ComponentTypeAnnotation = "odo.dev/project-type"
 
 // GetLabels return labels that should be applied to every object for given component in active application

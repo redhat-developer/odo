@@ -17,14 +17,9 @@ import (
 	"github.com/go-openapi/spec"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-)
-
-const (
-	apiVersion = "odo.dev/v1alpha1"
 )
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
@@ -53,89 +48,10 @@ func (c *Client) ListClusterServiceVersions() (*olm.ClusterServiceVersionList, e
 	return csvs, nil
 }
 
-// GetClusterServiceVersion returns a particular CSV from a list of CSVs
-func (c *Client) GetClusterServiceVersion(name string) (olm.ClusterServiceVersion, error) {
-	csv, err := c.OperatorClient.ClusterServiceVersions(c.Namespace).Get(context.TODO(), name, v1.GetOptions{})
-	if err != nil {
-		return olm.ClusterServiceVersion{}, err
-	}
-	return *csv, nil
-}
-
 // GetCustomResourcesFromCSV returns a list of CRs provided by an operator/CSV.
 func (c *Client) GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]olm.CRDDescription {
 	// we will return a list of CRs owned by the csv
 	return &csv.Spec.CustomResourceDefinitions.Owned
-}
-
-// CheckCustomResourceInCSV checks if the custom resource is present in the CSV.
-func (c *Client) CheckCustomResourceInCSV(customResource string, csv *olm.ClusterServiceVersion) (bool, *olm.CRDDescription) {
-	var cr *olm.CRDDescription
-	hasCR := false
-	CRs := c.GetCustomResourcesFromCSV(csv)
-	for _, custRes := range *CRs {
-		c := custRes
-		if c.Kind == customResource {
-			cr = &c
-			hasCR = true
-			break
-		}
-	}
-	return hasCR, cr
-}
-
-// SearchClusterServiceVersionList searches for whether the operator/CSV contains
-// given keyword then return it
-func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServiceVersionList, error) {
-	var result []olm.ClusterServiceVersion
-	csvs, err := c.ListClusterServiceVersions()
-	if err != nil {
-		return &olm.ClusterServiceVersionList{}, errors.Wrap(err, "unable to list services")
-	}
-
-	// do a partial search in all the services
-	for _, service := range csvs.Items {
-		if strings.Contains(service.ObjectMeta.Name, name) {
-			result = append(result, service)
-		} else {
-			for _, crd := range service.Spec.CustomResourceDefinitions.Owned {
-				if name == crd.Kind {
-					result = append(result, service)
-				}
-			}
-		}
-	}
-
-	return &olm.ClusterServiceVersionList{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		Items: result,
-	}, nil
-}
-
-// GetCustomResource returns the CR matching the name
-func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, error) {
-	// Get all csvs in the namespace
-	csvs, err := c.ListClusterServiceVersions()
-	if err != nil {
-		return &olm.CRDDescription{}, err
-	}
-
-	// iterate of csvs to find if CR of our interest is provided by any of those
-	for _, csv := range csvs.Items {
-		clusSerVer := csv
-		crs := c.GetCustomResourcesFromCSV(&clusSerVer)
-
-		for _, cr := range *crs {
-			if cr.Kind == customResource {
-				return &cr, nil
-			}
-		}
-	}
-
-	return &olm.CRDDescription{}, fmt.Errorf("could not find a Custom Resource named %q in the namespace", customResource)
 }
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)
@@ -216,22 +132,6 @@ loopDefinitions:
 		return &spec, nil
 	}
 	return nil, nil
-}
-
-// GetCRDSpec returns the specs of a resource in an openAPIv2 format
-func (c *Client) GetCRDSpec(cr *olm.CRDDescription, resourceType string, resourceName string) (*spec.Schema, error) {
-
-	crd, err := c.GetResourceSpecDefinition(cr.Name, cr.Version, resourceName)
-
-	if err != nil {
-		log.Warning("Unable to get CRD specifications:", err)
-	}
-
-	if crd == nil {
-		crd = toOpenAPISpec(cr)
-	}
-
-	return crd, nil
 }
 
 // toOpenAPISpec transforms Spec descriptors from a CRD description to an OpenAPI schema

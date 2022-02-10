@@ -9,8 +9,3 @@ type Validatable struct {
 	// AdditionalValidators allows users to specify validators (in addition to default ones) to validate this Validatable's value
 	AdditionalValidators []Validator `json:"-"`
 }
-
-// AsValidatable allows avoiding type casts in client code
-func (v Validatable) AsValidatable() Validatable {
-	return v
-}

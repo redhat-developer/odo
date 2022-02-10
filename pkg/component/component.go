@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/devfile"
@@ -116,20 +115,6 @@ func ApplyConfig(client kclient.ClientInterface, envSpecificInfo envinfo.EnvSpec
 		URLClient:           urlClient,
 		IsRouteSupported:    isRouteSupported,
 	})
-}
-
-// GetComponentNames retrieves the names of the components in the specified application
-func GetComponentNames(client kclient.ClientInterface, applicationName string) ([]string, error) {
-	components, err := GetPushedComponents(client, applicationName)
-	if err != nil {
-		return []string{}, err
-	}
-	names := make([]string, 0, len(components))
-	for name := range components {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names, nil
 }
 
 // ListDevfileComponents returns the devfile component matching a selector.

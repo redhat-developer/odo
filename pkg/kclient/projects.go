@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 )
 
@@ -220,23 +219,4 @@ func (c *Client) IsProjectSupported() (bool, error) {
 // GetCurrentProjectName returns the current project name
 func (c *Client) GetCurrentProjectName() string {
 	return c.Namespace
-}
-
-// SetCurrentProject sets the given projectName to current project
-func (c *Client) SetCurrentProject(projectName string) error {
-	rawConfig, err := c.KubeConfig.RawConfig()
-	if err != nil {
-		return err
-	}
-
-	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = projectName
-
-	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
-	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", projectName)
-	}
-
-	// we set the current namespace to the current project as well
-	c.Namespace = projectName
-	return nil
 }
