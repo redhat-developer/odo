@@ -313,44 +313,44 @@ func CommonBeforeEach() CommonVar {
 	Expect(err).To(BeNil())
 	SetDefaultDevfileRegistryAsStaging()
 	// Ginkgo test related variables
-	commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
-	commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
-	commonVar.testFailed = CurrentGinkgoTestDescription().Failed
-	commonVar.testDuration = CurrentGinkgoTestDescription().Duration.Seconds()
+	// commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
+	// commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
+	// commonVar.testFailed = CurrentGinkgoTestDescription().Failed
+	// commonVar.testDuration = CurrentGinkgoTestDescription().Duration.Seconds()
 	return commonVar
 }
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
 	// Get details, including test result for each test spec and adds it to local testResults.txt file
+	// Ginkgo test related variables
+	commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
+	commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
+	commonVar.testFailed = CurrentGinkgoTestDescription().Failed
+	commonVar.testDuration = CurrentGinkgoTestDescription().Duration.Seconds()
+
 	var prNum string
-	var K8SorOcp string
 	var resultsRow string
 	prNum = os.Getenv("GIT_PR_NUMBER")
-	K8SorOcp = os.Getenv("KUBERNETES")
 	passedOrFailed := "PASSED"
 	if commonVar.testFailed {
 		passedOrFailed = "FAILED"
 	}
 	clusterType := "OCP"
-	if K8SorOcp == "KUBERNETES" {
+	if IsKubernetesCluster() {
 		clusterType = "KUBERNETES"
 	}
-	now := time.Now()
-	y, m, d := now.Date()
-	testDate := strconv.Itoa(y) + "-" + strconv.Itoa(int(m)) + "-" + strconv.Itoa(d)
+	testDate := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	resultsRow = prNum + ", " + testDate + ", " + clusterType + ", " + commonVar.testFileName + ", " + commonVar.testCase + ", " + passedOrFailed + ", " + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
 	testResultsFile := filepath.Join("/", "tmp", "testResults.txt")
 
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Println("Error: ", err)
-		panic(err)
 	}
 	defer f.Close()
 	if _, err = f.WriteString(resultsRow); err != nil {
 		fmt.Println("Error: ", err)
-		panic(err)
 	}
 
 	f.Close()
