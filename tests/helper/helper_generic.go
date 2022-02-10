@@ -312,11 +312,6 @@ func CommonBeforeEach() CommonVar {
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
 	SetDefaultDevfileRegistryAsStaging()
-	// Ginkgo test related variables
-	// commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
-	// commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
-	// commonVar.testFailed = CurrentGinkgoTestDescription().Failed
-	// commonVar.testDuration = CurrentGinkgoTestDescription().Duration.Seconds()
 	return commonVar
 }
 
