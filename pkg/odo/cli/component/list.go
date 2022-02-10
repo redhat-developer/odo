@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
+	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -100,7 +101,7 @@ func (lo *ListOptions) Validate() (err error) {
 
 	if util.CheckPathExists(lo.devfilePath) {
 		if lo.GetApplication() == "" && lo.KClient.GetCurrentNamespace() == "" {
-			return odoutil.ThrowContextError()
+			return throwContextError()
 		}
 		return nil
 	}
@@ -114,10 +115,16 @@ func (lo *ListOptions) Validate() (err error) {
 		app = lo.GetApplication()
 	}
 	if !lo.allAppsFlag && lo.pathFlag == "" && (project == "" || app == "") {
-		return odoutil.ThrowContextError()
+		return throwContextError()
 	}
 	return nil
 
+}
+
+// ThrowContextError prints a context error if application/project is not found
+func throwContextError() error {
+	return errors.Errorf(`Please specify the application name and project name
+Or use the command from inside a directory containing an odo component.`)
 }
 
 // Run has the logic to perform the required actions as part of command

@@ -113,98 +113,6 @@ func TestExtractComponentType(t *testing.T) {
 
 }
 
-func TestParseComponentImageName(t *testing.T) {
-
-	tests := []struct {
-		testName string
-		args     string
-		want1    string
-		want2    string
-		want3    string
-		want4    string
-	}{
-		{
-			testName: "Case1: Version not specified",
-			args:     "nodejs",
-			want1:    "nodejs",
-			want2:    "nodejs",
-			want3:    "nodejs",
-			want4:    "latest",
-		},
-		{
-			testName: "Case1: Version not specified",
-			args:     "python:3.5",
-			want1:    "python:3.5",
-			want2:    "python",
-			want3:    "python",
-			want4:    "3.5",
-		},
-	}
-
-	// Test that it "joins"
-
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-			got1, got2, got3, got4 := ParseComponentImageName(tt.args)
-			if tt.want1 != got1 {
-				t.Errorf("Expected imagename to be: %s, got %s", tt.want1, got1)
-			}
-			if tt.want2 != got2 {
-				t.Errorf("Expected component type to be: %s, got %s", tt.want2, got2)
-			}
-			if tt.want3 != got3 {
-				t.Errorf("Expected component name to be: %s, got %s", tt.want3, got3)
-			}
-			if tt.want4 != got4 {
-				t.Errorf("Expected component version to be: %s, got %s", tt.want4, got4)
-			}
-		})
-	}
-}
-
-func TestParametersAsMap(t *testing.T) {
-
-	tests := []struct {
-		testName    string
-		sliceInput  []string
-		expectedMap map[string]string
-	}{
-		{
-			testName:    "empty slice",
-			sliceInput:  []string{},
-			expectedMap: map[string]string{},
-		},
-		{
-			testName:   "slice with single element",
-			sliceInput: []string{"name=value"},
-			expectedMap: map[string]string{
-				"name": "value",
-			},
-		},
-		{
-			testName:   "slice with multiple elements",
-			sliceInput: []string{"name1=value1", "name2=value2", "name3=value3"},
-			expectedMap: map[string]string{
-				"name1": "value1",
-				"name2": "value2",
-				"name3": "value3",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-			resultingMap := ConvertKeyValueStringToMap(tt.sliceInput)
-			if !reflect.DeepEqual(tt.expectedMap, resultingMap) {
-				t.Errorf("Expected %s, got %s", tt.expectedMap, resultingMap)
-			}
-		})
-	}
-
-}
-
 func TestGetDNS1123Name(t *testing.T) {
 
 	tests := []struct {
@@ -433,49 +341,6 @@ func TestGenerateRandomString(t *testing.T) {
 			match := r.MatchString(name)
 			if !match {
 				t.Errorf("Randomly generated string %s which does not match regexp %s", name, fmt.Sprintf("[a-z]{%d}", tt.strLength))
-			}
-		})
-	}
-}
-
-func TestSliceDifference(t *testing.T) {
-	tests := []struct {
-		testName       string
-		slice1         []string
-		slice2         []string
-		expectedResult []string
-	}{
-		{
-			testName:       "Empty slices",
-			slice1:         []string{},
-			slice2:         []string{},
-			expectedResult: []string{},
-		},
-		{
-			testName:       "Single different slices",
-			slice1:         []string{"a"},
-			slice2:         []string{"b"},
-			expectedResult: []string{"b"},
-		},
-		{
-			testName:       "Single same slices",
-			slice1:         []string{"a"},
-			slice2:         []string{"a"},
-			expectedResult: []string{},
-		},
-		{
-			testName:       "Large slices with matching and non matching items",
-			slice1:         []string{"a", "b", "c", "d", "e"},
-			slice2:         []string{"e", "a", "u", "1", "d"},
-			expectedResult: []string{"u", "1"},
-		},
-	}
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-			result := SliceDifference(tt.slice1, tt.slice2)
-			if !reflect.DeepEqual(tt.expectedResult, result) {
-				t.Errorf("Expected %v, got %v", tt.expectedResult, result)
 			}
 		})
 	}
@@ -1036,44 +901,6 @@ func TestIsGlobExpMatch(t *testing.T) {
 	}
 }
 
-func TestRemoveDuplicate(t *testing.T) {
-	type args struct {
-		input  []string
-		output []string
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "Case 1 - Remove duplicates",
-			args: args{
-				input:  []string{"bar", "bar"},
-				output: []string{"bar"},
-			},
-		},
-		{
-			name: "Case 2 - Remove duplicates, none in array",
-			args: args{
-				input:  []string{"bar", "foo"},
-				output: []string{"bar", "foo"},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			// Run function RemoveDuplicate
-			output := RemoveDuplicates(tt.args.input)
-
-			if !(reflect.DeepEqual(output, tt.args.output)) {
-				t.Errorf("expected %v, got %v", tt.args.output, output)
-			}
-
-		})
-	}
-}
-
 func TestRemoveRelativePathFromFiles(t *testing.T) {
 	type args struct {
 		path   string
@@ -1421,29 +1248,6 @@ func TestValidateK8sResourceName(t *testing.T) {
 			got := err == nil
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got %t, want %t", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestConvertGitSSHRemotetoHTTPS(t *testing.T) {
-	tests := []struct {
-		name           string
-		url            string
-		expectedResult string
-	}{
-		{
-			name:           "Case 1: Git ssh url is valid",
-			url:            "git@github.com:che-samples/web-nodejs-sample.git",
-			expectedResult: "https://github.com/che-samples/web-nodejs-sample.git",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := ConvertGitSSHRemoteToHTTPS(tt.url)
-			if !reflect.DeepEqual(result, tt.expectedResult) {
-				t.Errorf("Got %s, want %s", result, tt.expectedResult)
 			}
 		})
 	}

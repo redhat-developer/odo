@@ -46,13 +46,6 @@ func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{Path: devfilePath})
 }
 
-// ParseAndValidateFromData parses devfile from []byte and does all the validation
-// if there are warning it logs them on stdout
-func ParseAndValidateFromData(data []byte) (parser.DevfileObj, error) {
-	return parseDevfile(parser.ParserArgs{Data: data})
-
-}
-
 // ParseAndValidateFromURL parses devfile from given url and does all the validation
 // if there are warning it logs them on stdout
 func ParseAndValidateFromURL(url string) (parser.DevfileObj, error) {

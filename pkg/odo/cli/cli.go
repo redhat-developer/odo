@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
 	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
@@ -172,8 +173,8 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
-	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", util.CapitalizeFlagDescriptions)
-	cobra.AddTemplateFunc("ModifyAdditionalFlags", util.ModifyAdditionalFlags)
+	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", capitalizeFlagDescriptions)
+	cobra.AddTemplateFunc("ModifyAdditionalFlags", modifyAdditionalFlags)
 
 	rootCmdList := append([]*cobra.Command{},
 		catalog.NewCmdCatalog(catalog.RecommendedCommandName, util.GetFullName(fullName, catalog.RecommendedCommandName)),
@@ -200,9 +201,50 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// Add all subcommands to base commands
 	rootCmd.AddCommand(rootCmdList...)
 
-	util.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
+	visitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
 	return rootCmd
+}
+
+// modifyAdditionalFlags modifies the flags and updates the descriptions
+// as well as changes whether or not machine readable output
+// has been passed in..
+//
+// Return the flag usages for the help output
+func modifyAdditionalFlags(cmd *cobra.Command) string {
+
+	// Hide the machine readable output if the command
+	// does not have the annotation.
+	machineOutput := cmd.Annotations["machineoutput"]
+	f := cmd.InheritedFlags()
+
+	f.VisitAll(func(f *pflag.Flag) {
+		// Remove json flag if machineoutput has not been passed in
+		if f.Name == "o" && machineOutput == "json" {
+			f.Hidden = false
+		}
+	})
+
+	return capitalizeFlagDescriptions(f)
+}
+
+// capitalizeFlagDescriptions adds capitalizations
+func capitalizeFlagDescriptions(f *pflag.FlagSet) string {
+	f.VisitAll(func(f *pflag.Flag) {
+		cap := []rune(f.Usage)
+		cap[0] = unicode.ToUpper(cap[0])
+		f.Usage = string(cap)
+	})
+	return f.FlagUsages()
+}
+
+// visitCommands visits each command within Cobra.
+// Adapted from: https://github.com/cppforlife/knctl/blob/612840d3c9729b1c57b20ca0450acab0d6eceeeb/pkg/knctl/cobrautil/misc.go#L23
+func visitCommands(cmd *cobra.Command, f func(*cobra.Command)) {
+	f(cmd)
+	for _, child := range cmd.Commands() {
+		visitCommands(child, f)
+	}
 }
 
 // reconfigureCmdWithSubcmd reconfigures each root command with a list of all subcommands and lists them

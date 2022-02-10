@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
@@ -153,10 +152,6 @@ func (d devfileComponent) GetName() string {
 	return d.d.Labels[componentlabels.ComponentLabel]
 }
 
-func (d devfileComponent) GetType() (string, error) {
-	return getType(d)
-}
-
 func getType(component provider) (string, error) {
 	if componentType, ok := component.GetAnnotations()[componentlabels.ComponentTypeAnnotation]; ok {
 		return componentType, nil
@@ -165,33 +160,6 @@ func getType(component provider) (string, error) {
 		return NotAvailable, nil
 	}
 	return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
-}
-
-// GetPushedComponents retrieves a map of PushedComponents from the cluster, keyed by their name
-func GetPushedComponents(c kclient.ClientInterface, applicationName string) (map[string]PushedComponent, error) {
-	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
-
-	deploymentList, err := c.ListDeployments(applicationSelector)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to list components")
-	}
-	res := make(map[string]PushedComponent, len(deploymentList.Items))
-	for _, d := range deploymentList.Items {
-		deployment := d
-		storageClient := storage.NewClient(storage.ClientOptions{
-			Client:     c,
-			Deployment: &deployment,
-		})
-
-		urlClient := url.NewClient(url.ClientOptions{
-			Client:     c,
-			Deployment: &deployment,
-		})
-		comp := newPushedComponent(applicationName, &devfileComponent{d: d}, c, storageClient, urlClient)
-		res[comp.GetName()] = comp
-	}
-
-	return res, nil
 }
 
 func newPushedComponent(applicationName string, p provider, c kclient.ClientInterface, storageClient storage.Client, urlClient url.Client) PushedComponent {

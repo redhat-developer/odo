@@ -41,16 +41,6 @@ func IntegerValidator(ans interface{}) error {
 	return fmt.Errorf("don't know how to convert %v into an integer", ans)
 }
 
-// NonNegativeValidator validates whether the given value is not negative or not
-func NonNegativeValidator(arg interface{}) error {
-	if s, ok := arg.(string); ok {
-		if strings.HasPrefix(s, "-") {
-			return fmt.Errorf("negative value is not acceptable")
-		}
-	}
-	return nil
-}
-
 // PathValidator validates whether the given path exists on the file system
 func PathValidator(path interface{}) error {
 	if s, ok := path.(string); ok {
@@ -104,13 +94,6 @@ func KeyEqValFormatValidator(portsStr interface{}) error {
 	}
 
 	return fmt.Errorf("can only validate strings, got %v", portsStr)
-}
-
-// GetValidatorFor retrieves a validator for the specified validatable, first validating its required state, then its value
-// based on type then any additional validators in the order specified by Validatable.AdditionalValidators
-func GetValidatorFor(prop Validatable) Validator {
-	v, _ := internalGetValidatorFor(prop)
-	return v
 }
 
 // internalGetValidatorFor exposed for testing purposes

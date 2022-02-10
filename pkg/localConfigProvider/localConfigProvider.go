@@ -69,13 +69,7 @@ type LocalConfigProvider interface {
 	GetComponentPorts() ([]string, error)
 	ListURLs() ([]LocalURL, error)
 
-	GetStorage(name string) (*LocalStorage, error)
-	CompleteStorage(storage *LocalStorage)
-	ValidateStorage(storage LocalStorage) error
-	CreateStorage(storage LocalStorage) error
-	DeleteStorage(name string) error
 	ListStorage() ([]LocalStorage, error)
-	GetStorageMountPath(storageName string) (string, error)
 
 	Exists() bool
 }

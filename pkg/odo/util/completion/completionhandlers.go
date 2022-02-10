@@ -2,8 +2,6 @@ package completion
 
 import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -43,36 +41,6 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 // URLCompletionHandler provides completion for the url commands
 var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	return
-}
-
-// StorageDeleteCompletionHandler provides storage name completion for storage delete
-var StorageDeleteCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-
-	envInfo, err := envinfo.New()
-	if err != nil {
-		return completions
-	}
-	devObj, err := devfile.ParseAndValidateFromFile(envInfo.GetDevfilePath())
-	if err != nil {
-		return completions
-	}
-	envInfo.SetDevfileObj(devObj)
-
-	storageList, err := envInfo.ListStorage()
-	if err != nil {
-		return completions
-	}
-
-	for _, storage := range storageList {
-		// we found the storage name in the list which means
-		// that the storage name has been already selected by the user so no need to suggest more
-		if args.commands[storage.Name] {
-			return nil
-		}
-		completions = append(completions, storage.Name)
-	}
-	return completions
 }
 
 // CreateCompletionHandler provides component type completion in odo create command

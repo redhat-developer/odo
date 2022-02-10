@@ -47,14 +47,6 @@ type GenericError struct {
 	Message           string `json:"message"`
 }
 
-// GenericSuccess same as above, but copy-and-pasted just in case
-// we change the output in the future
-type GenericSuccess struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Message           string `json:"message"`
-}
-
 // unindentedMutex prevents multiple JSON objects from being outputted simultaneously on the same line. This is only
 // required for OutputSuccessUnindented's 'unindented' JSON objects, since objects printed by other methods are not written from
 // multiple threads.

@@ -8,7 +8,3 @@ func Get() Filesystem {
 	}
 	return singleFs
 }
-
-func Set(fs Filesystem) {
-	singleFs = fs
-}

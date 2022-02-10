@@ -89,14 +89,9 @@ type ClientInterface interface {
 	IsServiceBindingSupported() (bool, error)
 	IsCSVSupported() (bool, error)
 	ListClusterServiceVersions() (*olm.ClusterServiceVersionList, error)
-	GetClusterServiceVersion(name string) (olm.ClusterServiceVersion, error)
 	GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]olm.CRDDescription
-	CheckCustomResourceInCSV(customResource string, csv *olm.ClusterServiceVersion) (bool, *olm.CRDDescription)
-	SearchClusterServiceVersionList(name string) (*olm.ClusterServiceVersionList, error)
-	GetCustomResource(customResource string) (*olm.CRDDescription, error)
 	GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error)
 	GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error)
-	GetCRDSpec(cr *olm.CRDDescription, resourceType string, resourceName string) (*spec.Schema, error)
 	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
 
@@ -136,7 +131,6 @@ type ClientInterface interface {
 	WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error)
 
 	// service.go
-	GetService(name string) (*corev1.Service, error)
 	CreateService(svc corev1.Service) (*corev1.Service, error)
 	UpdateService(svc corev1.Service) (*corev1.Service, error)
 	ListServices(selector string) ([]corev1.Service, error)

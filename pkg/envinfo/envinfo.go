@@ -84,11 +84,6 @@ func getEnvInfoFile(envDir string) (string, string, error) {
 	return filepath.Join(envDir, ".odo", "env", envInfoFileName), location.DevfileLocation(envDir), nil
 }
 
-// New returns the EnvSpecificInfo
-func New() (*EnvSpecificInfo, error) {
-	return NewEnvSpecificInfo("")
-}
-
 // NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 	return newEnvSpecificInfo(envDir, filesystem.Get())
@@ -304,12 +299,6 @@ func (ei *EnvInfo) IsUserCreatedDevfile() bool {
 	return ei.componentSettings.UserCreatedDevfile
 }
 
-// SetUserCreatedDevfile sets the UserCreatedDevfile and writes to file
-func (esi *EnvSpecificInfo) SetUserCreatedDevfile(value bool) error {
-	esi.componentSettings.UserCreatedDevfile = value
-	return esi.writeToFile()
-}
-
 // GetRunMode returns the RunMode, returns default if nil
 func (ei *EnvInfo) GetRunMode() RUNMode {
 	if ei.componentSettings.RunMode == nil {
@@ -388,14 +377,6 @@ var (
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())
 )
-
-// FormatLocallySupportedParameters outputs supported parameters and their description
-func FormatLocallySupportedParameters() (result string) {
-	for _, v := range GetLocallySupportedParameters() {
-		result = result + " " + v + " - " + supportedLocalParameterDescriptions[v] + "\n"
-	}
-	return "\nAvailable Parameter in the local Env file:\n" + result
-}
 
 func asLocallySupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)

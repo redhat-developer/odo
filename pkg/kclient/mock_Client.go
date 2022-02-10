@@ -67,21 +67,6 @@ func (mr *MockClientInterfaceMockRecorder) ApplyDeployment(deploy interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyDeployment", reflect.TypeOf((*MockClientInterface)(nil).ApplyDeployment), deploy)
 }
 
-// CheckCustomResourceInCSV mocks base method.
-func (m *MockClientInterface) CheckCustomResourceInCSV(customResource string, csv *v1alpha1.ClusterServiceVersion) (bool, *v1alpha1.CRDDescription) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckCustomResourceInCSV", customResource, csv)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(*v1alpha1.CRDDescription)
-	return ret0, ret1
-}
-
-// CheckCustomResourceInCSV indicates an expected call of CheckCustomResourceInCSV.
-func (mr *MockClientInterfaceMockRecorder) CheckCustomResourceInCSV(customResource, csv interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckCustomResourceInCSV", reflect.TypeOf((*MockClientInterface)(nil).CheckCustomResourceInCSV), customResource, csv)
-}
-
 // CollectEvents mocks base method.
 func (m *MockClientInterface) CollectEvents(selector string, events map[string]v12.Event, spinner *log.Status, quit <-chan int) {
 	m.ctrl.T.Helper()
@@ -456,21 +441,6 @@ func (mr *MockClientInterfaceMockRecorder) GetAndUpdateStorageOwnerReference(pvc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAndUpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).GetAndUpdateStorageOwnerReference), varargs...)
 }
 
-// GetCRDSpec mocks base method.
-func (m *MockClientInterface) GetCRDSpec(cr *v1alpha1.CRDDescription, resourceType, resourceName string) (*spec.Schema, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCRDSpec", cr, resourceType, resourceName)
-	ret0, _ := ret[0].(*spec.Schema)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCRDSpec indicates an expected call of GetCRDSpec.
-func (mr *MockClientInterfaceMockRecorder) GetCRDSpec(cr, resourceType, resourceName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCRDSpec", reflect.TypeOf((*MockClientInterface)(nil).GetCRDSpec), cr, resourceType, resourceName)
-}
-
 // GetCSVWithCR mocks base method.
 func (m *MockClientInterface) GetCSVWithCR(name string) (*v1alpha1.ClusterServiceVersion, error) {
 	m.ctrl.T.Helper()
@@ -514,21 +484,6 @@ func (mr *MockClientInterfaceMockRecorder) GetClientConfig() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientConfig", reflect.TypeOf((*MockClientInterface)(nil).GetClientConfig))
 }
 
-// GetClusterServiceVersion mocks base method.
-func (m *MockClientInterface) GetClusterServiceVersion(name string) (v1alpha1.ClusterServiceVersion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetClusterServiceVersion", name)
-	ret0, _ := ret[0].(v1alpha1.ClusterServiceVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetClusterServiceVersion indicates an expected call of GetClusterServiceVersion.
-func (mr *MockClientInterfaceMockRecorder) GetClusterServiceVersion(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterServiceVersion", reflect.TypeOf((*MockClientInterface)(nil).GetClusterServiceVersion), name)
-}
-
 // GetConfig mocks base method.
 func (m *MockClientInterface) GetConfig() clientcmd.ClientConfig {
 	m.ctrl.T.Helper()
@@ -569,21 +524,6 @@ func (m *MockClientInterface) GetCurrentProjectName() string {
 func (mr *MockClientInterfaceMockRecorder) GetCurrentProjectName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentProjectName", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentProjectName))
-}
-
-// GetCustomResource mocks base method.
-func (m *MockClientInterface) GetCustomResource(customResource string) (*v1alpha1.CRDDescription, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCustomResource", customResource)
-	ret0, _ := ret[0].(*v1alpha1.CRDDescription)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCustomResource indicates an expected call of GetCustomResource.
-func (mr *MockClientInterfaceMockRecorder) GetCustomResource(customResource interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomResource", reflect.TypeOf((*MockClientInterface)(nil).GetCustomResource), customResource)
 }
 
 // GetCustomResourcesFromCSV mocks base method.
@@ -1019,21 +959,6 @@ func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
 }
 
-// GetService mocks base method.
-func (m *MockClientInterface) GetService(name string) (*v12.Service, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetService", name)
-	ret0, _ := ret[0].(*v12.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetService indicates an expected call of GetService.
-func (mr *MockClientInterfaceMockRecorder) GetService(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetService", reflect.TypeOf((*MockClientInterface)(nil).GetService), name)
-}
-
 // IsCSVSupported mocks base method.
 func (m *MockClientInterface) IsCSVSupported() (bool, error) {
 	m.ctrl.T.Helper()
@@ -1314,21 +1239,6 @@ func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
 func (mr *MockClientInterfaceMockRecorder) RunLogout(stdout interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunLogout", reflect.TypeOf((*MockClientInterface)(nil).RunLogout), stdout)
-}
-
-// SearchClusterServiceVersionList mocks base method.
-func (m *MockClientInterface) SearchClusterServiceVersionList(name string) (*v1alpha1.ClusterServiceVersionList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchClusterServiceVersionList", name)
-	ret0, _ := ret[0].(*v1alpha1.ClusterServiceVersionList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SearchClusterServiceVersionList indicates an expected call of SearchClusterServiceVersionList.
-func (mr *MockClientInterfaceMockRecorder) SearchClusterServiceVersionList(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchClusterServiceVersionList", reflect.TypeOf((*MockClientInterface)(nil).SearchClusterServiceVersionList), name)
 }
 
 // SetCurrentNamespace mocks base method.

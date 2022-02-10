@@ -1,23 +1,8 @@
 package envinfo
 
 import (
-	"fmt"
-	"io"
-	"reflect"
-	"text/tabwriter"
-
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-type Info struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ComponentSettings `json:"spec"`
-}
-
-const InfoKind = "EnvInfo"
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
@@ -37,40 +22,4 @@ type ComponentSettings struct {
 
 	// RunMode indicates the mode of run used for a successful push
 	RunMode *RUNMode `yaml:"RunMode,omitempty" json:"runMode,omitempty"`
-}
-
-func NewInfo(cs ComponentSettings) Info {
-	return Info{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       InfoKind,
-			APIVersion: machineoutput.APIVersion,
-		},
-		Spec: cs,
-	}
-}
-
-func (o Info) Output(w io.Writer) {
-	wr := tabwriter.NewWriter(w, 5, 2, 2, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(wr, "PARAMETER NAME", "\t", "PARAMETER VALUE")
-	fmt.Fprintln(wr, "Name", "\t", o.Spec.Name)
-	fmt.Fprintln(wr, "Project", "\t", o.Spec.Project)
-	fmt.Fprintln(wr, "Application", "\t", o.Spec.AppName)
-	fmt.Fprintln(wr, "DebugPort", "\t", showBlankIfNil(o.Spec.DebugPort))
-	wr.Flush()
-}
-
-func showBlankIfNil(intf interface{}) interface{} {
-	value := reflect.ValueOf(intf)
-
-	// if the value is nil then we should return a blank string
-	if value.IsNil() {
-		return ""
-	}
-
-	// if it's a pointer then we should de-ref it because we cant de-ref an interface{}
-	if value.Kind() == reflect.Ptr {
-		return value.Elem().Interface()
-	}
-
-	return intf
 }

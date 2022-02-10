@@ -2,8 +2,9 @@ package search
 
 import (
 	"fmt"
+	"os"
+	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/catalog/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -63,7 +64,12 @@ func (o *SearchComponentOptions) Validate() error {
 
 // Run contains the logic for the command associated with SearchComponentOptions
 func (o *SearchComponentOptions) Run() error {
-	util.DisplayComponents(o.components)
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	fmt.Fprintln(w, "NAME")
+	for _, component := range o.components {
+		fmt.Fprintln(w, component)
+	}
+	w.Flush()
 	return nil
 }
 
