@@ -20,7 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/zalando/go-keyring"

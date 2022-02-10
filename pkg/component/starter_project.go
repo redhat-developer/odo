@@ -14,7 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/registry/util"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/pkg/errors"

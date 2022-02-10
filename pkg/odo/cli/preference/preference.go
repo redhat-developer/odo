@@ -3,6 +3,7 @@ package preference
 import (
 	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/preference/registry"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
 
@@ -19,9 +20,16 @@ var preferenceLongDesc = ktemplates.LongDesc(`Modifies odo specific configuratio
 
 // NewCmdPreference implements the utils config odo command
 func NewCmdPreference(name, fullName string) *cobra.Command {
+
+	// Main Commands
 	preferenceViewCmd := NewCmdView(viewCommandName, util.GetFullName(fullName, viewCommandName))
 	preferenceSetCmd := NewCmdSet(setCommandName, util.GetFullName(fullName, setCommandName))
 	preferenceUnsetCmd := NewCmdUnset(unsetCommandName, util.GetFullName(fullName, unsetCommandName))
+	registryCmd := registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName))
+
+	// Subcommands
+
+	// Set the examples
 	preferenceCmd := &cobra.Command{
 		Use:   name,
 		Short: "Modifies preference settings",
@@ -33,8 +41,10 @@ func NewCmdPreference(name, fullName string) *cobra.Command {
 		),
 	}
 
+	// Add the commands, help, usage and annotations
 	preferenceCmd.AddCommand(preferenceViewCmd, preferenceSetCmd)
 	preferenceCmd.AddCommand(preferenceUnsetCmd)
+	preferenceCmd.AddCommand(registryCmd)
 	preferenceCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	preferenceCmd.Annotations = map[string]string{"command": "main"}
 
