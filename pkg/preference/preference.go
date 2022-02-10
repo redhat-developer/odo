@@ -6,9 +6,7 @@ type Client interface {
 	DeleteConfiguration(parameter string) error
 
 	GetUpdateNotification() bool
-	GetNamePrefix() string
 	GetTimeout() int
-	GetBuildTimeout() int
 	GetPushTimeout() int
 	GetEphemeralSourceVolume() bool
 	GetConsentTelemetry() bool
@@ -16,10 +14,9 @@ type Client interface {
 	RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) error
 
 	UpdateNotification() *bool
-	NamePrefix() *string
 	Timeout() *int
-	BuildTimeout() *int
 	PushTimeout() *int
+	RegistryCacheTime() *int
 	EphemeralSourceVolume() *bool
 	ConsentTelemetry() *bool
 	RegistryList() *[]Registry

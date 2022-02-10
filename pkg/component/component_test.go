@@ -255,7 +255,6 @@ func TestGetDefaultComponentName(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			cfg := preference.NewMockClient(ctrl)
-			cfg.EXPECT().NamePrefix().Return(nil)
 
 			name, err := GetDefaultComponentName(cfg, tt.componentPath, tt.componentType, tt.existingComponents)
 			if (err != nil) != tt.wantErr {

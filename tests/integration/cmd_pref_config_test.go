@@ -58,7 +58,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 		It("should get the default global config keys", func() {
 			configOutput := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
-			preferences := []string{"UpdateNotification", "NamePrefix", "Timeout", "BuildTimeout", "PushTimeout", "Ephemeral", "ConsentTelemetry"}
+			preferences := []string{"UpdateNotification", "Timeout", "PushTimeout", "RegistryCacheTime", "Ephemeral", "ConsentTelemetry"}
 			helper.MatchAllInOutput(configOutput, preferences)
 			for _, key := range preferences {
 				value := helper.GetPreferenceValue(key)
@@ -73,11 +73,11 @@ var _ = Describe("odo preference and config command tests", func() {
 		}{
 			{"UpdateNotification", "false", "true", "foo"},
 			{"Timeout", "5", "6", "foo"},
-			{"NamePrefix", "foo", "bar", ""},
-			{"BuildTimeout", "5", "7", "foo"},
 			// !! Do not test ConsentTelemetry with true because it sends out the telemetry data and messes up the statistics !!
 			{"ConsentTelemetry", "false", "false", "foo"},
-			{"PushTimeout", "4", "6", "f00"},
+			{"PushTimeout", "4", "6", "foo"},
+			{"RegistryCacheTime", "4", "6", "foo"},
+			{"Ephemeral", "false", "true", "foo"},
 		}
 
 		It("should successfully updated", func() {
@@ -96,15 +96,6 @@ var _ = Describe("odo preference and config command tests", func() {
 			}
 			globalConfPath := os.Getenv("HOME")
 			os.RemoveAll(filepath.Join(globalConfPath, ".odo"))
-		})
-
-		It("should unsuccessfully update", func() {
-			for _, pref := range preferences {
-				// TODO: Remove this once we decide something on checking NamePrefix
-				if pref.name != "NamePrefix" {
-					helper.Cmd("odo", "preference", "set", "-f", pref.name, pref.invalidValue).ShouldFail()
-				}
-			}
 		})
 
 		It("should show json output", func() {
@@ -131,10 +122,10 @@ var _ = Describe("odo preference and config command tests", func() {
 			output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 
-			output = helper.Cmd("odo", "preference", "set", "buildtimeout", "5", "-f").ShouldPass().Out()
+			output = helper.Cmd("odo", "preference", "set", "timeout", "5", "-f").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 
-			output = helper.Cmd("odo", "preference", "unset", "buildtimeout", "-f").ShouldPass().Out()
+			output = helper.Cmd("odo", "preference", "unset", "timeout", "-f").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 	})

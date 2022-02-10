@@ -397,7 +397,7 @@ func VerifyResourcesToBeDeleted(runner CliRunner, resources []ResourceInfo) {
 func SetDefaultDevfileRegistryAsStaging() {
 	const registryName string = "DefaultDevfileRegistry"
 	const addRegistryURL string = "https://registry.stage.devfile.io"
-	Cmd("odo", "registry", "update", registryName, addRegistryURL, "-f").ShouldPass()
+	Cmd("odo", "preference", "registry", "update", registryName, addRegistryURL, "-f").ShouldPass()
 }
 
 // CopyAndCreate copies required source code and devfile to the given context directory, and creates a component

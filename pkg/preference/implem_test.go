@@ -70,62 +70,6 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestGetBuildTimeout(t *testing.T) {
-	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
-	zeroValue := 0
-	nonzeroValue := 5
-	tests := []struct {
-		name           string
-		existingConfig Preference
-		want           int
-	}{
-		{
-			name:           "Case 1: Validating default value from test case",
-			existingConfig: Preference{},
-			want:           300,
-		},
-
-		{
-			name: "Case 2: Validating value 0 from configuration",
-			existingConfig: Preference{
-				OdoSettings: odoSettings{
-					BuildTimeout: &zeroValue,
-				},
-			},
-			want: 0,
-		},
-
-		{
-			name: "Case 3: Validating value 5 from configuration",
-			existingConfig: Preference{
-				OdoSettings: odoSettings{
-					BuildTimeout: &nonzeroValue,
-				},
-			},
-			want: 5,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := newPreferenceInfo()
-			if err != nil {
-				t.Error(err)
-			}
-			cfg.Preference = tt.existingConfig
-
-			output := cfg.GetBuildTimeout()
-			if output != tt.want {
-				t.Errorf("GetBuildTimeout returned unexpected value\ngot: %d \nexpected: %d\n", output, tt.want)
-			}
-		})
-	}
-}
-
 func TestGetPushTimeout(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
@@ -358,15 +302,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 12: %s set to 50 with mixed case in parameter name", TimeoutSetting),
-			parameter:      "BuildTimeout",
-			value:          "50",
-			existingConfig: Preference{},
-			want:           50,
-			wantErr:        false,
-		},
-		{
-			name:           fmt.Sprintf("Case 13: %s set to 0", TimeoutSetting),
+			name:           fmt.Sprintf("Case 12: %s set to 0", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "0",
 			existingConfig: Preference{},
@@ -374,21 +310,14 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           fmt.Sprintf("Case 14: %s set to -1 with mixed case in parameter name", TimeoutSetting),
-			parameter:      "BuildTimeout",
-			value:          "-1",
-			existingConfig: Preference{},
-			wantErr:        true,
-		},
-		{
-			name:           fmt.Sprintf("Case 15: %s invalid value", TimeoutSetting),
+			name:           fmt.Sprintf("Case 13: %s invalid value", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "invalid",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 16: %s set to 99 with mixed case in parameter name", TimeoutSetting),
+			name:           fmt.Sprintf("Case 14: %s set to 99 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "PushTimeout",
 			value:          "99",
 			existingConfig: Preference{},
@@ -396,28 +325,28 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           "Case 17: set RegistryCacheTime to 1",
+			name:           "Case 15: set RegistryCacheTime to 1",
 			parameter:      "RegistryCacheTime",
 			value:          "1",
 			existingConfig: Preference{},
 			wantErr:        false,
 		},
 		{
-			name:           "Case 18: set RegistryCacheTime to non int value",
+			name:           "Case 16: set RegistryCacheTime to non int value",
 			parameter:      "RegistryCacheTime",
 			value:          "a",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 19: set %s to non bool value", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("Case 17: set %s to non bool value", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "123",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 20: set %s from nil to true", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("Case 18: set %s from nil to true", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -425,7 +354,7 @@ func TestSetConfiguration(t *testing.T) {
 			want:           true,
 		},
 		{
-			name:      fmt.Sprintf("Case 21: set %s from true to false", ConsentTelemetrySetting),
+			name:      fmt.Sprintf("Case 19: set %s from true to false", ConsentTelemetrySetting),
 			parameter: ConsentTelemetrySetting,
 			value:     "false",
 			existingConfig: Preference{

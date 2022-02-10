@@ -113,12 +113,12 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		var output string
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "registry", "add", "fake", "http://fake").ShouldPass()
+			helper.Cmd("odo", "preference", "registry", "add", "fake", "http://fake").ShouldPass()
 			output = helper.Cmd("odo", "catalog", "list", "components").ShouldPass().Out()
 		})
 
 		AfterEach(func() {
-			helper.Cmd("odo", "registry", "delete", "fake", "-f").ShouldPass()
+			helper.Cmd("odo", "preference", "registry", "delete", "fake", "-f").ShouldPass()
 		})
 
 		It("should list components from valid registry", func() {
@@ -139,7 +139,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		var output string
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			helper.Cmd("odo", "preference", "registry", "add", registryName, addRegistryURL).ShouldPass()
 			output = helper.Cmd("odo", "catalog", "describe", "component", "nodejs").ShouldPass().Out()
 
 		})
