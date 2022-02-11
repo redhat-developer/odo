@@ -5,12 +5,9 @@ import (
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
-
+	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/init/registry"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -165,7 +162,7 @@ func TestInitClient_downloadFromRegistry(t *testing.T) {
 				preferenceClient: tt.fields.preferenceClient(ctrl),
 				registryClient:   tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadFromRegistry(tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
+			if err := o.downloadFromRegistry(tt.args.registryName, tt.args.devfile, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadFromRegistry() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -176,7 +173,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 	type fields struct {
 		fsys           func(fs filesystem.Filesystem) filesystem.Filesystem
 		registryClient func(ctrl *gomock.Controller) registry.Client
-		InitParams     params.InitParams
+		InitParams     backend.DevfileLocation
 	}
 	type args struct {
 		URL  string
@@ -300,7 +297,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 				fsys:           tt.fields.fsys(fs),
 				registryClient: tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadDirect(tt.args.URL, tt.args.dest); (err != nil) != tt.wantErr {
+			if err := o.downloadDirect(tt.args.URL, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadDirect() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			result := tt.want(fs)
@@ -316,8 +313,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 		registryClient func(ctrl *gomock.Controller) registry.Client
 	}
 	type args struct {
-		devfile func() parser.DevfileObj
-		project string
+		project v1alpha2.StarterProject
 	}
 	tests := []struct {
 		name    string
@@ -326,26 +322,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "starter project not found in devfile",
-			fields: fields{
-				registryClient: func(ctrl *gomock.Controller) registry.Client {
-					return nil
-				},
-			},
-			args: args{
-				devfile: func() parser.DevfileObj {
-					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					devfile := parser.DevfileObj{
-						Data: devfileData,
-					}
-					return devfile
-				},
-				project: "notfound",
-			},
-			wantErr: true,
-		},
-		{
-			name: "starter project found in devfile",
+			name: "starter project defined",
 			fields: fields{
 				registryClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
@@ -354,23 +331,9 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 				},
 			},
 			args: args{
-				devfile: func() parser.DevfileObj {
-					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					projects := []v1alpha2.StarterProject{
-						{
-							Name: "starter1",
-						},
-						{
-							Name: "starter2",
-						},
-					}
-					_ = devfileData.AddStarterProjects(projects)
-					devfile := parser.DevfileObj{
-						Data: devfileData,
-					}
-					return devfile
+				project: v1alpha2.StarterProject{
+					Name: "project1",
 				},
-				project: "starter2",
 			},
 			wantErr: false,
 		},
@@ -381,7 +344,7 @@ func TestInitClient_downloadStarterProject(t *testing.T) {
 			o := &InitClient{
 				registryClient: tt.fields.registryClient(ctrl),
 			}
-			if err := o.DownloadStarterProject(tt.args.devfile(), tt.args.project, "dest"); (err != nil) != tt.wantErr {
+			if err := o.DownloadStarterProject(&tt.args.project, "dest"); (err != nil) != tt.wantErr {
 				t.Errorf("InitClient.downloadStarterProject() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

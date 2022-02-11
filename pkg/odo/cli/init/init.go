@@ -3,7 +3,6 @@ package init
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -11,11 +10,9 @@ import (
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/asker"
-	"github.com/redhat-developer/odo/pkg/odo/cli/init/params"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -54,13 +51,14 @@ type InitOptions struct {
 	// CMD context
 	ctx context.Context
 
+	// Clients
 	clientset *clientset.Clientset
 
-	// Backends to build init parameters
-	backends []params.ParamsBuilder
+	// Flags passed to the command
+	flags map[string]string
 
-	// the parameters needed to run the init procedure
-	params.InitParams
+	// devfileLocation is the information needed to pull a devfile
+	devfileLocation *backend.DevfileLocation
 
 	// Destination directory
 	contextDir string
@@ -73,10 +71,6 @@ func NewInitOptions() *InitOptions {
 
 func (o *InitOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
-	o.backends = []params.ParamsBuilder{
-		params.NewFlagsBuilder(),
-		params.NewInteractiveBuilder(asker.NewSurveyAsker(), catalog.NewCatalogClient(clientset.FS, clientset.PreferenceClient)),
-	}
 }
 
 // Complete will build the parameters for init, using different backends based on the flags set,
@@ -99,22 +93,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 		return errors.New("The current directory is not empty. You can bootstrap new component only in empty directory.\nIf you have existing code that you want to deploy use `odo deploy` or use `odo dev` command to quickly iterate on your component.")
 	}
 
-	flags := cmdline.GetFlags()
-	done := false
-	for _, backend := range o.backends {
-		if backend.IsAdequate(flags) {
-			o.InitParams, err = backend.ParamsBuild()
-			if err != nil {
-				return err
-			}
-			done = true
-			break
-		}
-	}
-
-	if !done {
-		odoutil.LogErrorAndExit(errors.New("no backend found to build init parameters. This should not happen"), "")
-	}
+	o.flags = cmdline.GetFlags()
 
 	return nil
 }
@@ -129,7 +108,11 @@ func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
 
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
-	return o.InitParams.Validate(o.clientset.PreferenceClient)
+	err := o.clientset.InitClient.Validate(o.flags)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Run contains the logic for the odo command
@@ -149,34 +132,38 @@ func (o *InitOptions) Run() (err error) {
 		}
 	}()
 
-	destDevfile := filepath.Join(o.contextDir, "devfile.yaml")
-	if o.InitParams.DevfilePath != "" {
-		err = o.clientset.InitClient.DownloadDirect(o.InitParams.DevfilePath, destDevfile)
-	} else {
-		err = o.clientset.InitClient.DownloadFromRegistry(o.InitParams.DevfileRegistry, o.InitParams.Devfile, o.contextDir)
+	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags)
+	if err != nil {
+		return err
 	}
+
+	devfilePath, err := o.clientset.InitClient.DownloadDevfile(o.devfileLocation, o.contextDir)
 	if err != nil {
 		return fmt.Errorf("Unable to download devfile: %w", err)
 	}
 
-	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: pointer.BoolPtr(false)})
+	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 	if err != nil {
 		return err
 	}
 
 	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
-	if o.InitParams.Starter != "" {
+	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags)
+	if err != nil {
+		return err
+	}
+	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.clientset.InitClient.DownloadStarterProject(devfileObj, o.InitParams.Starter, o.contextDir)
+		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
 		if err != nil {
-			return fmt.Errorf("unable to download starter project %q: %w", o.InitParams.Starter, err)
+			return fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
 		}
 		starterDownloaded = true
 
 		// in case the starter project contains a devfile, read it again
-		if _, err = o.clientset.FS.Stat(destDevfile); err == nil {
-			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: destDevfile, FlattenedDevfile: pointer.BoolPtr(false)})
+		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
+			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 			if err != nil {
 				return err
 			}
@@ -185,7 +172,7 @@ func (o *InitOptions) Run() (err error) {
 
 	// Set the name in the devfile *AND* writes the devfile back to the disk in case
 	// it has been removed and not replaced by the starter project
-	err = devfileObj.SetMetadataName(o.InitParams.Name)
+	err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
 	if err != nil {
 		return fmt.Errorf("Failed to update the devfile's name: %w", err)
 	}
@@ -194,7 +181,7 @@ func (o *InitOptions) Run() (err error) {
 Your new component %q is ready in the current directory.
 To start editing your component, use "odo dev" and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".`, o.InitParams.Name)
+To deploy your component to a cluster use "odo deploy".`, devfileObj.Data.GetMetadata().Name)
 
 	return nil
 }
@@ -215,11 +202,11 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	}
 	clientset.Add(initCmd, clientset.PREFERENCE, clientset.FILESYSTEM, clientset.REGISTRY, clientset.INIT)
 
-	initCmd.Flags().StringVar(&o.Name, params.FLAG_NAME, "", "name of the component to create")
-	initCmd.Flags().StringVar(&o.Devfile, params.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
-	initCmd.Flags().StringVar(&o.DevfileRegistry, params.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
-	initCmd.Flags().StringVar(&o.Starter, params.FLAG_STARTER, "", "name of the starter project. Available starter projects can be found with \"odo catalog describe component <devfile>\"")
-	initCmd.Flags().StringVar(&o.DevfilePath, params.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
+	initCmd.Flags().String(backend.FLAG_NAME, "", "name of the component to create")
+	initCmd.Flags().String(backend.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
+	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project. Available starter projects can be found with \"odo catalog describe component <devfile>\"")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu
 	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

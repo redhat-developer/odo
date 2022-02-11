@@ -40,17 +40,17 @@ mockgen -source=pkg/auth/interface.go \
     -package auth \
     -destination pkg/auth/mock.go
 
-mockgen -source=pkg/odo/cli/init/params/interface.go \
-    -package params \
-    -destination pkg/odo/cli/init/params/mock.go
+mockgen -source=pkg/init/backend/interface.go \
+    -package backend \
+    -destination pkg/init/backend/mock.go
 
 mockgen -source=pkg/catalog/interface.go \
     -package catalog \
     -destination pkg/catalog/mock_catalog.go
 
-mockgen -source=pkg/odo/cli/init/asker/interface.go \
+mockgen -source=pkg/init/asker/interface.go \
     -package asker \
-    -destination pkg/odo/cli/init/asker/mock.go
+    -destination pkg/init/asker/mock.go
 
 mockgen -source=pkg/init/interface.go \
     -package init \

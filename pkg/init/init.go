@@ -3,12 +3,15 @@ package init
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
+	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -18,6 +21,11 @@ import (
 )
 
 type InitClient struct {
+	// Backends
+	flagsBackend       *backend.FlagsBackend
+	interactiveBackend *backend.InteractiveBackend
+
+	// Clients
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
 	registryClient   registry.Client
@@ -25,14 +33,47 @@ type InitClient struct {
 
 func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
 	return &InitClient{
-		fsys:             fsys,
-		preferenceClient: preferenceClient,
-		registryClient:   registryClient,
+		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
+		interactiveBackend: backend.NewInteractiveBackend(asker.NewSurveyAsker(), catalog.NewCatalogClient(fsys, preferenceClient)),
+		fsys:               fsys,
+		preferenceClient:   preferenceClient,
+		registryClient:     registryClient,
 	}
 }
 
-// DownloadDirect downloads a devfile at the provided URL and saves it in dest
-func (o *InitClient) DownloadDirect(URL string, dest string) error {
+// Validate calls Validate method of the adequate backend
+func (o *InitClient) Validate(flags map[string]string) error {
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	return backend.Validate(flags)
+}
+
+// SelectDevfile calls SelectDevfile methods of the adequate backend
+func (o *InitClient) SelectDevfile(flags map[string]string) (*backend.DevfileLocation, error) {
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	return backend.SelectDevfile(flags)
+}
+
+func (o *InitClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
+	destDevfile := filepath.Join(destDir, "devfile.yaml")
+	if devfileLocation.DevfilePath != "" {
+		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
+	} else {
+		return destDevfile, o.downloadFromRegistry(devfileLocation.DevfileRegistry, devfileLocation.Devfile, destDir)
+	}
+}
+
+// downloadDirect downloads a devfile at the provided URL and saves it in dest
+func (o *InitClient) downloadDirect(URL string, dest string) error {
 	parsedURL, err := url.Parse(URL)
 	if err != nil {
 		return err
@@ -73,9 +114,9 @@ func (o *InitClient) DownloadDirect(URL string, dest string) error {
 	return nil
 }
 
-// DownloadFromRegistry downloads a devfile from the provided registry and saves it in dest
+// downloadFromRegistry downloads a devfile from the provided registry and saves it in dest
 // If registryName is empty, will try to download the devfile from the list of registries in preferences
-func (o *InitClient) DownloadFromRegistry(registryName string, devfile string, dest string) error {
+func (o *InitClient) downloadFromRegistry(registryName string, devfile string, dest string) error {
 	var downloadSpinner *log.Status
 	var forceRegistry bool
 	if registryName == "" {
@@ -110,30 +151,36 @@ func (o *InitClient) DownloadFromRegistry(registryName string, devfile string, d
 	return fmt.Errorf("unable to find the registry with name %q", devfile)
 }
 
-// DownloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
-// WARNING: This will first remove all the content of dest.
-func (o *InitClient) DownloadStarterProject(devfile parser.DevfileObj, project string, dest string) error {
-	projects, err := devfile.Data.GetStarterProjects(common.DevfileOptions{})
-	if err != nil {
-		return err
+// SelectStarterProject calls SelectStarterProject methods of the adequate backend
+func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
 	}
-	var prj v1alpha2.StarterProject
-	var found bool
-	for _, prj = range projects {
-		if prj.Name == project {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("starter project %q does not exist in devfile", project)
-	}
-	downloadSpinner := log.Spinnerf("Downloading starter project %q", prj.Name)
-	err = o.registryClient.DownloadStarterProject(&prj, "", dest, false)
+	return backend.SelectStarterProject(devfile, flags)
+}
+
+func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, dest string) error {
+	downloadSpinner := log.Spinnerf("Downloading starter project %q", starter.Name)
+	err := o.registryClient.DownloadStarterProject(starter, "", dest, false)
 	if err != nil {
 		downloadSpinner.End(false)
 		return err
 	}
 	downloadSpinner.End(true)
 	return nil
+}
+
+// PersonalizeName calls PersonalizeName methods of the adequate backend
+func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
+	var backend backend.InitBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	err := backend.PersonalizeName(devfile, flags)
+	return err
 }

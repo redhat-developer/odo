@@ -4,18 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/zalando/go-keyring"
 
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
@@ -121,37 +118,6 @@ func (o *CatalogClient) ListDevfileComponents(registryName string) (DevfileCompo
 	}
 
 	return *catalogDevfileList, nil
-}
-
-// GetStarterProjectsNames returns the list of starter projects in a devfile,
-// by temporarily downloading the devile
-func (o *CatalogClient) GetStarterProjectsNames(details DevfileComponentType) ([]string, error) {
-	tmpDir, err := o.fsys.TempDir("", "odoinit")
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = o.fsys.RemoveAll(tmpDir)
-	}()
-
-	err = registryLibrary.PullStackFromRegistry(details.Registry.URL, details.Name, tmpDir, segment.GetRegistryOptions())
-	if err != nil {
-		return nil, err
-	}
-
-	devObj, err := devfile.ParseAndValidateFromFile(filepath.Join(tmpDir, "devfile.yaml"))
-	if err != nil {
-		return nil, err
-	}
-	starterProjects, err := devObj.Data.GetStarterProjects(parsercommon.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-	names := make([]string, 0, len(starterProjects))
-	for _, starterProject := range starterProjects {
-		names = append(names, starterProject.Name)
-	}
-	return names, err
 }
 
 // SearchComponent searches for the component
