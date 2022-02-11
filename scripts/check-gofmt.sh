@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Why we are wrapping gofmt?
-# - ignore files in vendor direcotry
+# - ignore files in vendor directory
 # - gofmt doesn't exit with error code when there are errors
 
 GO_FILES=$(find . -path ./vendor -prune -o -name '*.go' -print)

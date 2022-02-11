@@ -100,7 +100,7 @@ func (po *PushOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	devfileExists := util.CheckPathExists(po.DevfilePath)
 
 	if !devfileExists {
-		return fmt.Errorf("the current direcotry doesn't contain a devfile")
+		return fmt.Errorf("the current directory doesn't contain a devfile")
 	}
 
 	po.Devfile, err = devfile.ParseAndValidateFromFile(po.DevfilePath)
@@ -256,7 +256,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().BoolVar(&po.debugFlag, "debug", false, "Runs the component in debug mode")
 	pushCmd.Flags().StringVar(&po.debugCommandFlag, "debug-command", "", "Devfile Debug Command to execute")
 
-	//Adding `--project` flag
+	// Adding `--project` flag
 	projectCmd.AddProjectFlag(pushCmd)
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
