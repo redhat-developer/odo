@@ -3,10 +3,12 @@ package init
 import (
 	"fmt"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	color "github.com/gookit/color"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -189,6 +191,8 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 }
 
 func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
+	var ports = []string{}
+	var envs = map[string]string{}
 	options := []string{
 		"NOTHING - configuration is correct",
 		"Add new port",
@@ -202,27 +206,115 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 	for _, component := range components {
 		if component.Container != nil {
 			for _, ep := range component.Container.Endpoints {
-				options = append(options, fmt.Sprintf("Delete port: %q", ep.TargetPort))
+				ports = append(ports, strconv.Itoa(ep.TargetPort))
+				options = append(options, fmt.Sprintf("Delete port: %q", strconv.Itoa(ep.TargetPort)))
 			}
 			for _, env := range component.Container.Env {
+				envs[env.Name] = env.Value
 				options = append(options, fmt.Sprintf("Delete environment variable %q", env.Name))
 			}
 		}
 	}
 
-	configChangeQuestion := &survey.Select{
-		Message: "What configuration do you want change?",
-		Default: options[0],
-		Options: options,
-	}
-	survey.AskOne(configChangeQuestion, &configChangeAnswer)
+	for configChangeAnswer != "NOTHING - configuration is correct" {
+		printConfiguration(ports, envs)
 
-	if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
-		re := regexp.MustCompile("\"(.*?)\"")
-		match := re.FindStringSubmatch(configChangeAnswer)
-		envToDelete := match[1]
-		devfileobj.RemoveEnvVars([]string{envToDelete})
-	}
+		configChangeQuestion := &survey.Select{
+			Message: "What configuration do you want change?",
+			Default: options[0],
+			Options: options,
+		}
 
+		err = survey.AskOne(configChangeQuestion, &configChangeAnswer, nil)
+		if err != nil {
+			return err
+		}
+
+		if strings.HasPrefix(configChangeAnswer, "Delete port") {
+			re := regexp.MustCompile("\"(.*?)\"")
+			match := re.FindStringSubmatch(configChangeAnswer)
+			portToDelete := match[1]
+
+			indexToDelete := -1
+			for i, port := range ports {
+				if port == portToDelete {
+					indexToDelete = i
+				}
+			}
+			if indexToDelete == -1 {
+				panic(fmt.Sprintf("unable to delete port %q, not found", portToDelete))
+			}
+			ports = append(ports[:indexToDelete], ports[indexToDelete+1:]...)
+			// Delete port from the devfile
+			err = devfileobj.SetPorts(ports...)
+			if err != nil {
+				return err
+			}
+			options = append(options, fmt.Sprintf("Delete port: %q", portToDelete))
+		} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
+			re := regexp.MustCompile("\"(.*?)\"")
+			match := re.FindStringSubmatch(configChangeAnswer)
+			envToDelete := match[1]
+			if _, ok := envs[envToDelete]; !ok {
+				panic(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
+			}
+			delete(envs, envToDelete)
+			err = devfileobj.RemoveEnvVars([]string{envToDelete})
+			if err != nil {
+				return err
+			}
+		} else if configChangeAnswer == "NOTHING - configuration is correct" {
+			// nothing to do
+		} else if configChangeAnswer == "Add new port" {
+			newPortQuestion := &survey.Input{
+				Message: "Enter port number:",
+			}
+			var newPortAnswer string
+			survey.AskOne(newPortQuestion, &newPortAnswer, survey.Required)
+			// Ensure the newPortAnswer is not already present; otherwise it will cause a duplicate endpoint error
+			ports = append(ports, newPortAnswer)
+			err = devfileobj.SetPorts(newPortAnswer)
+			if err != nil {
+				return err
+			}
+		} else if configChangeAnswer == "Add new environment variable" {
+			newEnvNameQuesion := &survey.Input{
+				Message: "Enter new environment variable name:",
+			}
+			var newEnvNameAnswer string
+			survey.AskOne(newEnvNameQuesion, &newEnvNameAnswer, survey.Required)
+			newEnvValueQuestion := &survey.Input{
+				Message: fmt.Sprintf("Enter value for %q environment variable:", newEnvNameAnswer),
+			}
+			var newEnvValueAnswer string
+			survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer, survey.Required)
+			envs[newEnvNameAnswer] = newEnvValueAnswer
+			err = devfileobj.AddEnvVars([]v1alpha2.EnvVar{
+				{
+					Name:  newEnvNameAnswer,
+					Value: newEnvValueAnswer,
+				},
+			})
+			if err != nil {
+				return err
+			}
+			options = append(options, fmt.Sprintf("Delete environment variable %q", newEnvNameAnswer))
+		} else {
+			return fmt.Errorf("Unknown configuration selected %q", configChangeAnswer)
+		}
+	}
 	return nil
+}
+
+func printConfiguration(ports []string, envs map[string]string) {
+	color.New(color.Bold, color.FgGreen).Println("Current component configuration:")
+	color.Greenln("Opened ports:")
+	for _, port := range ports {
+		color.New(color.Bold, color.FgWhite).Printf(" - %s\n", port)
+	}
+
+	color.Greenln("Environment variables:")
+	for key, value := range envs {
+		color.New(color.Bold, color.FgWhite).Printf(" - %s = %s\n", key, value)
+	}
 }
