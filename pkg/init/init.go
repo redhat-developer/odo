@@ -2,8 +2,11 @@ package init
 
 import (
 	"fmt"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"gopkg.in/AlecAivazis/survey.v1"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -183,4 +186,43 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 	}
 	err := backend.PersonalizeName(devfile, flags)
 	return err
+}
+
+func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
+	options := []string{
+		"NOTHING - configuration is correct",
+		"Add new port",
+		"Add new environment variable",
+	}
+	components, err := devfileobj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	var configChangeAnswer string
+	for _, component := range components {
+		if component.Container != nil {
+			for _, ep := range component.Container.Endpoints {
+				options = append(options, fmt.Sprintf("Delete port: %q", ep.TargetPort))
+			}
+			for _, env := range component.Container.Env {
+				options = append(options, fmt.Sprintf("Delete environment variable %q", env.Name))
+			}
+		}
+	}
+
+	configChangeQuestion := &survey.Select{
+		Message: "What configuration do you want change?",
+		Default: options[0],
+		Options: options,
+	}
+	survey.AskOne(configChangeQuestion, &configChangeAnswer)
+
+	if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
+		re := regexp.MustCompile("\"(.*?)\"")
+		match := re.FindStringSubmatch(configChangeAnswer)
+		envToDelete := match[1]
+		devfileobj.RemoveEnvVars([]string{envToDelete})
+	}
+
+	return nil
 }
