@@ -5,7 +5,8 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 )
 
 const (
@@ -17,12 +18,12 @@ const (
 // tag of the latest release
 func getLatestReleaseTag() (string, error) {
 
-	request := util.HTTPRequestParams{
+	request := dfutil.HTTPRequestParams{
 		URL: VersionFetchURL,
 	}
 
 	// Make request and cache response for 60 minutes
-	body, err := util.HTTPGetRequest(request, 60)
+	body, err := dfutil.HTTPGetRequest(request, 60)
 	if err != nil {
 		return "", errors.Wrap(err, "error getting latest release")
 	}

@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/pkg/util"
 )
 
 func TestCleanDefaultHTTPCacheDir(t *testing.T) {
 	fakeFs := filesystem.NewFakeFs()
 	filesToGenerate := 10
 	for i := 0; i < filesToGenerate; i++ {
-		err := fakeFs.WriteFile(filepath.Join(httpCacheDir, GenerateRandomString(10)), []byte(GenerateRandomString(10)), os.ModePerm)
+		err := fakeFs.WriteFile(filepath.Join(httpCacheDir, dfutil.GenerateRandomString(10)), []byte(dfutil.GenerateRandomString(10)), os.ModePerm)
 		if err != nil {
 			t.Error(err)
 		}

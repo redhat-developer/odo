@@ -16,13 +16,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/pkg/errors"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+
 	corev1 "k8s.io/api/core/v1"
 )
+
+// TODO(feloy) Move tests to devfile library
 
 func TestNamespaceOpenShiftObject(t *testing.T) {
 
@@ -58,7 +64,7 @@ func TestNamespaceOpenShiftObject(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			name, err := NamespaceOpenShiftObject(tt.componentName, tt.applicationName)
+			name, err := dfutil.NamespaceOpenShiftObject(tt.componentName, tt.applicationName)
 
 			if tt.wantErr && err == nil {
 				t.Errorf("Expected an error, got success")
@@ -104,7 +110,7 @@ func TestExtractComponentType(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			name := ExtractComponentType(tt.componentType)
+			name := dfutil.ExtractComponentType(tt.componentType)
 			if tt.want != name {
 				t.Errorf("Expected %s, got %s", tt.want, name)
 			}
@@ -224,7 +230,7 @@ func TestGetRandomName(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			name, err := GetRandomName(tt.args.prefix, -1, tt.args.existList, 3)
+			name, err := dfutil.GetRandomName(tt.args.prefix, -1, tt.args.existList, 3)
 			if err != nil {
 				t.Errorf("failed to generate a random name. Error %v", err)
 			}
@@ -336,7 +342,7 @@ func TestGenerateRandomString(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			name := GenerateRandomString(tt.strLength)
+			name := dfutil.GenerateRandomString(tt.strLength)
 			r, _ := regexp.Compile(fmt.Sprintf("[a-z]{%d}", tt.strLength))
 			match := r.MatchString(name)
 			if !match {
@@ -388,7 +394,7 @@ func TestGetAbsPath(t *testing.T) {
 				}
 				tt.absPath = absPath
 			}
-			result, err := GetAbsPath(tt.path)
+			result, err := dfutil.GetAbsPath(tt.path)
 			if result != tt.absPath {
 				t.Errorf("Expected %v, got %v", tt.absPath, result)
 			}
@@ -467,7 +473,7 @@ func TestGetHostWithPort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("Testing inputURL: %s", tt.inputURL), func(t *testing.T) {
-			got, err := GetHostWithPort(tt.inputURL)
+			got, err := dfutil.GetHostWithPort(tt.inputURL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getHostWithPort() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -614,7 +620,7 @@ func TestGetIgnoreRulesFromDirectory(t *testing.T) {
 			}
 		}
 
-		gotRules, err := GetIgnoreRulesFromDirectory(testDir)
+		gotRules, err := dfutil.GetIgnoreRulesFromDirectory(testDir)
 
 		if err == nil && !tt.wantErr {
 			if !reflect.DeepEqual(gotRules, tt.wantRules) {
@@ -663,7 +669,7 @@ func TestGetAbsGlobExps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			resultExps := GetAbsGlobExps(tt.directoryName, tt.inputRelativeGlobExps)
+			resultExps := dfutil.GetAbsGlobExps(tt.directoryName, tt.inputRelativeGlobExps)
 			if runtime.GOOS == "windows" {
 				for index, element := range resultExps {
 					resultExps[index] = filepath.ToSlash(element)
@@ -693,7 +699,7 @@ func TestGetSortedKeys(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			actual := GetSortedKeys(tt.input)
+			actual := dfutil.GetSortedKeys(tt.input)
 			if !reflect.DeepEqual(tt.expected, actual) {
 				t.Errorf("expected: %+v, got: %+v", tt.expected, actual)
 			}
@@ -727,7 +733,7 @@ func TestGetSplitValuesFromStr(t *testing.T) {
 	for _, tt := range tests {
 		t.Log("Running test: ", tt.testName)
 		t.Run(tt.testName, func(t *testing.T) {
-			actual := GetSplitValuesFromStr(tt.input)
+			actual := dfutil.GetSplitValuesFromStr(tt.input)
 			if !reflect.DeepEqual(tt.expected, actual) {
 				t.Errorf("expected: %+v, got: %+v", tt.expected, actual)
 			}
@@ -811,7 +817,7 @@ func TestGetContainerPortsFromStrings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ports, err := GetContainerPortsFromStrings(tt.ports)
+			ports, err := dfutil.GetContainerPortsFromStrings(tt.ports)
 			if err == nil && !tt.wantErr {
 				if !reflect.DeepEqual(tt.containerPorts, ports) {
 					t.Errorf("the ports are not matching, expected %#v, got %#v", tt.containerPorts, ports)
@@ -887,7 +893,7 @@ func TestIsGlobExpMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			matched, err := IsGlobExpMatch(tt.strToMatch, tt.globExps)
+			matched, err := dfutil.IsGlobExpMatch(tt.strToMatch, tt.globExps)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -935,7 +941,7 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Run function RemoveRelativePathFromFiles
-			output, err := RemoveRelativePathFromFiles(tt.args.input, tt.args.path)
+			output, err := dfutil.RemoveRelativePathFromFiles(tt.args.input, tt.args.path)
 			if runtime.GOOS == "windows" {
 				for index, element := range output {
 					output[index] = filepath.ToSlash(element)
@@ -968,7 +974,7 @@ func TestHTTPGetFreePort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HTTPGetFreePort()
+			got, err := dfutil.HTTPGetFreePort()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("HTTPGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1018,7 +1024,7 @@ func TestGetRemoteFilesMarkedForDeletion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			remoteFiles := GetRemoteFilesMarkedForDeletion(tt.files, tt.remotePath)
+			remoteFiles := dfutil.GetRemoteFilesMarkedForDeletion(tt.files, tt.remotePath)
 			if !reflect.DeepEqual(tt.want, remoteFiles) {
 				t.Errorf("Expected %s, got %s", tt.want, remoteFiles)
 			}
@@ -1059,10 +1065,10 @@ func TestHTTPGetRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := HTTPRequestParams{
+			request := dfutil.HTTPRequestParams{
 				URL: tt.url,
 			}
-			got, err := HTTPGetRequest(request, 0)
+			got, err := dfutil.HTTPGetRequest(request, 0)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1117,7 +1123,7 @@ func TestFilterIgnores(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filterChanged, filterDeleted := FilterIgnores(tt.changedFiles, tt.deletedFiles, tt.ignoredFiles)
+			filterChanged, filterDeleted := dfutil.FilterIgnores(tt.changedFiles, tt.deletedFiles, tt.ignoredFiles)
 
 			if !reflect.DeepEqual(tt.wantChangedFiles, filterChanged) {
 				t.Errorf("Expected %s, got %s", tt.wantChangedFiles, filterChanged)
@@ -1177,13 +1183,13 @@ func TestDownloadFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotErr := false
-			params := DownloadParams{
-				Request: HTTPRequestParams{
+			params := dfutil.DownloadParams{
+				Request: dfutil.HTTPRequestParams{
 					URL: tt.url,
 				},
 				Filepath: tt.filepath,
 			}
-			err := DownloadFile(params)
+			err := dfutil.DownloadFile(params)
 			if err != nil {
 				gotErr = true
 			}
@@ -1244,7 +1250,7 @@ func TestValidateK8sResourceName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateK8sResourceName(tt.key, tt.value)
+			err := dfutil.ValidateK8sResourceName(tt.key, tt.value)
 			got := err == nil
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got %t, want %t", got, tt.want)
@@ -1456,7 +1462,7 @@ func TestDownloadFileInMemory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data, err := DownloadFileInMemory(HTTPRequestParams{URL: tt.url})
+			data, err := DownloadFileInMemory(dfutil.HTTPRequestParams{URL: tt.url})
 			if tt.url != "invalid" && err != nil {
 				t.Errorf("Failed to download file with error %s", err)
 			}
@@ -1596,7 +1602,7 @@ func TestValidateFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotErr := false
-			err := ValidateFile(tt.filePath)
+			err := dfutil.ValidateFile(tt.filePath)
 			if err != nil {
 				gotErr = true
 			}
@@ -1655,7 +1661,7 @@ func TestCopyFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotErr := false
-			err = CopyFile(tt.srcPath, tt.dstPath, info)
+			err = dfutil.CopyFile(tt.srcPath, tt.dstPath, info)
 			if err != nil {
 				gotErr = true
 			}
@@ -1703,7 +1709,7 @@ func TestPathEqual(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := PathEqual(tt.firstPath, tt.secondPath)
+			got := dfutil.PathEqual(tt.firstPath, tt.secondPath)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %t, want %t", got, tt.want)
 			}

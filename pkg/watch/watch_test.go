@@ -16,11 +16,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
-	"github.com/redhat-developer/odo/pkg/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 )
 
 // setUpF8AnalyticsComponentSrc sets up a mock analytics component source base for observing changes to source files.
@@ -139,7 +141,7 @@ func mockDevFilePush(parameters common.PushParameters, _ WatchParameters) error 
 // commonChecks is the common checker for both the push handlers
 func commonChecks(path string, files []string, delFiles []string, globExps []string) error {
 	sort.Strings(globExps)
-	mockPush.globExps = util.GetAbsGlobExps(path, mockPush.globExps)
+	mockPush.globExps = dfutil.GetAbsGlobExps(path, mockPush.globExps)
 	sort.Strings(mockPush.globExps)
 	if !reflect.DeepEqual(globExps, mockPush.globExps) {
 		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush.globExps, globExps)
@@ -813,7 +815,7 @@ func TestWatchAndPush(t *testing.T) {
 				ComponentName: tt.componentName,
 				Path:          basePath,
 				// convert the glob expressions to absolute form for WatchAndPush to work properly
-				FileIgnores:     util.GetAbsGlobExps(basePath, tt.ignores),
+				FileIgnores:     dfutil.GetAbsGlobExps(basePath, tt.ignores),
 				StartChan:       StartChan,
 				ExtChan:         ExtChan,
 				PushDiffDelay:   tt.delayInterval,

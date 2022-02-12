@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	"github.com/redhat-developer/odo/pkg/log"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
@@ -21,6 +21,8 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -145,7 +147,7 @@ func (do *DeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			err = util.DeletePath(filepath.Join(do.contextFlag, util.DotOdoDirectory))
+			err = dfutil.DeletePath(filepath.Join(do.contextFlag, util.DotOdoDirectory))
 			if err != nil {
 				return err
 			}
@@ -175,7 +177,7 @@ func (do *DeleteOptions) Run() (err error) {
 					return err
 				}
 
-				empty, err := util.IsEmpty(filepath.Join(do.contextFlag, consts.UriFolder))
+				empty, err := dfutil.IsEmpty(filepath.Join(do.contextFlag, consts.UriFolder))
 				if err != nil && !os.IsNotExist(err) {
 					return err
 				}
@@ -187,7 +189,7 @@ func (do *DeleteOptions) Run() (err error) {
 					}
 				}
 
-				err = util.DeletePath(do.GetDevfilePath())
+				err = dfutil.DeletePath(do.GetDevfilePath())
 				if err != nil {
 					return err
 				}
@@ -215,7 +217,7 @@ func (do *DeleteOptions) Run() (err error) {
 				return err
 			}
 
-			empty, err := util.IsEmpty(filepath.Join(do.contextFlag, consts.UriFolder))
+			empty, err := dfutil.IsEmpty(filepath.Join(do.contextFlag, consts.UriFolder))
 			if err != nil && !os.IsNotExist(err) {
 				return err
 			}
@@ -227,7 +229,7 @@ func (do *DeleteOptions) Run() (err error) {
 				}
 			}
 
-			err = util.DeletePath(do.GetDevfilePath())
+			err = dfutil.DeletePath(do.GetDevfilePath())
 			if err != nil {
 				return err
 			}

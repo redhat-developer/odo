@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zalando/go-keyring"
 
+	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 
@@ -192,20 +193,20 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
-	request := util.HTTPRequestParams{
+	request := dfutil.HTTPRequestParams{
 		URL: indexLink,
 	}
 
 	secure := registryUtil.IsSecure(preferenceClient, registry.Name)
 	if secure {
-		token, e := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
+		token, e := keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 		if e != nil {
 			return nil, errors.Wrap(e, "unable to get secure registry credential from keyring")
 		}
 		request.Token = token
 	}
 
-	jsonBytes, err := util.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
+	jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
 	}
@@ -217,7 +218,7 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 			log.Warning("Error while cleaning up cache dir.")
 		}
 		// we try once again
-		jsonBytes, err := util.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
+		jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
 		}

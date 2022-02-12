@@ -18,6 +18,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -448,7 +449,7 @@ func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (stri
 		return "", err
 	}
 	if len(parsedURL.Host) != 0 && len(parsedURL.Scheme) != 0 {
-		params := util.HTTPRequestParams{
+		params := dfutil.HTTPRequestParams{
 			URL: uri,
 		}
 		dataBytes, err := util.DownloadFileInMemoryWithCache(params, 1)

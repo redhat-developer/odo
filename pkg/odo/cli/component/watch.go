@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -13,16 +15,15 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
-
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"k8s.io/klog"
-
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
-	"github.com/spf13/cobra"
+
+	dfutil "github.com/devfile/library/pkg/util"
+
+	"k8s.io/klog"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // WatchRecommendedCommandName is the recommended watch command name
@@ -74,7 +75,7 @@ func (wo *WatchOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		return err
 	}
 	// Set the source path to either the context or current working directory (if context not set)
-	wo.sourcePath, err = util.GetAbsPath(wo.contextFlag)
+	wo.sourcePath, err = dfutil.GetAbsPath(wo.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
@@ -128,7 +129,7 @@ func (wo *WatchOptions) Run() (err error) {
 			ComponentName:       wo.EnvSpecificInfo.GetName(),
 			ApplicationName:     wo.Context.GetApplication(),
 			Path:                wo.sourcePath,
-			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignoreFlag),
+			FileIgnores:         dfutil.GetAbsGlobExps(wo.sourcePath, wo.ignoreFlag),
 			PushDiffDelay:       wo.delayFlag,
 			StartChan:           nil,
 			ExtChan:             make(chan bool),

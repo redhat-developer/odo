@@ -2,6 +2,7 @@ package registry
 
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/devfile/registry-support/registry-library/library"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -20,7 +21,7 @@ func (o RegistryClient) PullStackFromRegistry(registry string, stack string, des
 }
 
 // DownloadFileInMemory uses the url to download the file and return bytes
-func (o RegistryClient) DownloadFileInMemory(params util.HTTPRequestParams) ([]byte, error) {
+func (o RegistryClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([]byte, error) {
 	return util.DownloadFileInMemory(params)
 }
 

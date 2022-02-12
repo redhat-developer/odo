@@ -6,13 +6,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/devfile/library/pkg/devfile/generator"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
-	"k8s.io/klog"
 
-	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // New instantiates a component adapter
@@ -79,7 +82,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 
 		changedFiles = pushParameters.WatchFiles
 		deletedFiles = pushParameters.WatchDeletedFiles
-		deletedFiles, err = util.RemoveRelativePathFromFiles(deletedFiles, pushParameters.Path)
+		deletedFiles, err = dfutil.RemoveRelativePathFromFiles(deletedFiles, pushParameters.Path)
 		if err != nil {
 			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 		}
@@ -91,7 +94,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		// Calculate the files to sync
 		// Tries to sync the deltas unless it is a forced push
 		// if it is a forced push (isForcePush) reset the index to do a full sync
-		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
+		absIgnoreRules := dfutil.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
 		if syncParameters.ComponentExists {
@@ -137,7 +140,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 
 		// apply the glob rules from the .gitignore/.odoignore file
 		// and ignore the files on which the rules apply and filter them out
-		filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
+		filesChangedFiltered, filesDeletedFiltered := dfutil.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
 		deletedFiles = append(filesDeletedFiltered, ret.RemoteDeleted...)
 		deletedFiles = append(deletedFiles, ret.RemoteDeleted...)
@@ -158,7 +161,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles),
+		dfutil.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles),
 		syncParameters.CompInfo,
 		ret,
 	)
@@ -180,7 +183,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
-	emptyDir, err := util.IsEmpty(path)
+	emptyDir, err := dfutil.IsEmpty(path)
 	if err != nil {
 		return errors.Wrapf(err, "unable to check directory: %s", path)
 	} else if emptyDir {
@@ -300,7 +303,7 @@ func getCmdToCreateSyncFolder(syncFolder string) []string {
 
 // getCmdToDeleteFiles returns the command used to delete the remote files on the container that are marked for deletion
 func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
-	rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
+	rmPaths := dfutil.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
 	klog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 

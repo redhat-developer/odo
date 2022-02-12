@@ -5,8 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/util"
 	"gopkg.in/AlecAivazis/survey.v1"
+
+	"github.com/redhat-developer/odo/pkg/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 )
 
 // NameValidator provides a Validator view of the ValidateName function.
@@ -62,7 +65,7 @@ func PathValidator(path interface{}) error {
 // 8080/tcp, 9090/udp
 func PortsValidator(portsStr interface{}) error {
 	if s, ok := portsStr.(string); ok {
-		_, err := util.GetContainerPortsFromStrings(util.GetSplitValuesFromStr(s))
+		_, err := dfutil.GetContainerPortsFromStrings(dfutil.GetSplitValuesFromStr(s))
 		if err != nil {
 			return err
 		}
@@ -78,7 +81,7 @@ func PortsValidator(portsStr interface{}) error {
 // PORT=8080,PATH=/health
 func KeyEqValFormatValidator(portsStr interface{}) error {
 	if s, ok := portsStr.(string); ok {
-		parts := util.GetSplitValuesFromStr(s)
+		parts := dfutil.GetSplitValuesFromStr(s)
 		for _, part := range parts {
 			kvParts := strings.Split(part, "=")
 			if len(kvParts) != 2 {

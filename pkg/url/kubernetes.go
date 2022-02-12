@@ -4,16 +4,20 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/redhat-developer/odo/pkg/kclient/unions"
-
-	"github.com/devfile/library/pkg/devfile/generator"
-	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
+
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/kclient/unions"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	urlLabels "github.com/redhat-developer/odo/pkg/url/labels"
 	"github.com/redhat-developer/odo/pkg/util"
+
+	"github.com/devfile/library/pkg/devfile/generator"
+	dfutil "github.com/devfile/library/pkg/util"
+
+	routev1 "github.com/openshift/api/route/v1"
+
 	appsV1 "k8s.io/api/apps/v1"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -262,7 +266,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 	}
 
 	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
-	ingressName, err := util.NamespaceOpenShiftObject(url.Name, suffix)
+	ingressName, err := dfutil.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
 		return "", err
 	}
@@ -297,7 +301,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	// as the host name, which is automatically created on openshift,
 	// can become more than 63 chars, which is invalid
 	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
-	routeName, err := util.NamespaceOpenShiftObject(url.Name, suffix)
+	routeName, err := dfutil.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}

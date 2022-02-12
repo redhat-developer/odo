@@ -12,6 +12,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"k8s.io/klog"
 )
 
@@ -86,7 +88,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 
 			if checkFileExistWithFS(fileName, fs) {
 
-				matched, err := util.IsGlobExpMatch(fileName, globExps)
+				matched, err := dfutil.IsGlobExpMatch(fileName, globExps)
 				if err != nil {
 					return err
 				}
@@ -99,7 +101,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 
 				// Yes, now that the file exists, now we need to get the absolute path.. if we don't, then when we pass in:
 				// 'odo push --context foobar' instead of 'odo push --context ~/foobar' it will NOT work..
-				fileAbsolutePath, err := util.GetAbsPath(fileName)
+				fileAbsolutePath, err := dfutil.GetAbsPath(fileName)
 				if err != nil {
 					return err
 				}

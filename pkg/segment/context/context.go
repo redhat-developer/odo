@@ -5,10 +5,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/util"
-
 	"github.com/pkg/errors"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
+
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"k8s.io/klog"
 )
 
@@ -47,7 +49,7 @@ func GetContextProperties(ctx context.Context) map[string]interface{} {
 
 // SetComponentType sets componentType property for telemetry data when a component is created/pushed
 func SetComponentType(ctx context.Context, value string) {
-	setContextProperty(ctx, ComponentType, util.ExtractComponentType(value))
+	setContextProperty(ctx, ComponentType, dfutil.ExtractComponentType(value))
 }
 
 // SetClusterType sets clusterType property for telemetry data when a component is pushed or a project is created/set

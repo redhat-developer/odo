@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -16,9 +20,6 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/url"
-
-	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -137,7 +138,7 @@ func (o *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 
 // Validate validates the CreateOptions based on completed values
 func (o *CreateOptions) Validate() (err error) {
-	if !util.CheckOutputFlag(o.GetOutputFlag()) {
+	if !dfutil.CheckOutputFlag(o.GetOutputFlag()) {
 		return fmt.Errorf("given output format %s is not supported", o.GetOutputFlag())
 	}
 
