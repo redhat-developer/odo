@@ -2,6 +2,7 @@ package envinfo
 
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
@@ -43,7 +44,7 @@ func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 					Name:      volumeMount.Name,
 					Size:      vol.Size,
 					Ephemeral: vol.Ephemeral,
-					Path:      GetVolumeMountPath(volumeMount),
+					Path:      generator.GetVolumeMountPath(volumeMount),
 					Container: component.Name,
 				})
 			}
@@ -51,15 +52,4 @@ func (ei *EnvInfo) ListStorage() ([]localConfigProvider.LocalStorage, error) {
 	}
 
 	return storageList, nil
-}
-
-// GetVolumeMountPath gets the volume mount's path.
-// To be moved to devfile/library.
-func GetVolumeMountPath(volumeMount devfilev1.VolumeMount) string {
-	// if there is no volume mount path, default to volume mount name as per devfile schema
-	if volumeMount.Path == "" {
-		volumeMount.Path = "/" + volumeMount.Name
-	}
-
-	return volumeMount.Path
 }

@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
@@ -76,7 +76,7 @@ func GetPersistentVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, co
 		for _, containerComp := range containerComponents {
 			for _, volumeMount := range containerComp.Container.VolumeMounts {
 				if volName == volumeMount.Name {
-					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], envinfo.GetVolumeMountPath(volumeMount))
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], generator.GetVolumeMountPath(volumeMount))
 				}
 			}
 		}
@@ -104,7 +104,7 @@ func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, con
 		for _, containerComp := range containerComponents {
 			for _, volumeMount := range containerComp.Container.VolumeMounts {
 				if volName == volumeMount.Name {
-					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], envinfo.GetVolumeMountPath(volumeMount))
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], generator.GetVolumeMountPath(volumeMount))
 				}
 			}
 		}
