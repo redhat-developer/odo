@@ -7,8 +7,8 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20201125194554-85d881c3777e
 	github.com/Xuanwo/go-locale v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/devfile/api/v2 v2.0.0-20220126144139-f6d7cd85a481
-	github.com/devfile/library v1.2.1-0.20220201022328-58ef0b78c0fe
+	github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c
+	github.com/devfile/library v1.2.1-0.20220201144851-0749c7fa35a1
 	github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f
 	github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2
 	github.com/fatih/color v1.10.0
@@ -76,5 +76,4 @@ replace (
 	k8s.io/component-helpers => k8s.io/component-helpers v0.0.0-20211006165314-dacad8cb3fcb
 	k8s.io/kubectl => github.com/openshift/kubernetes/staging/src/k8s.io/kubectl v0.0.0-20210831004331-1199c36daed6
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20211006171351-de75bc981086
-
 )
