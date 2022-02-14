@@ -5,12 +5,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/kylelemons/godebug/pretty"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/testingutil"
-	"github.com/kylelemons/godebug/pretty"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -1741,7 +1743,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 
 func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {
 	if len(id) == 0 {
-		id = fmt.Sprintf("%s-%s", "cmd", util.GenerateRandomString(10))
+		id = fmt.Sprintf("%s-%s", "cmd", dfutil.GenerateRandomString(10))
 	}
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}

@@ -6,8 +6,9 @@ import (
 	"net"
 	"time"
 
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
@@ -16,7 +17,7 @@ import (
 // isServerUp returns true if server is up and running
 // server parameter has to be a valid url
 func isServerUp(server string, timeout time.Duration) bool {
-	address, err := util.GetHostWithPort(server)
+	address, err := dfutil.GetHostWithPort(server)
 	if err != nil {
 		klog.V(3).Infof("Unable to parse url %s (%s)", server, err)
 	}

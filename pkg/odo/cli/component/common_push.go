@@ -4,16 +4,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/devfile/library/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
+
 	"k8s.io/klog"
 )
 
@@ -137,7 +140,7 @@ func GatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
 	}
 
 	// 2. Use the folder name as a last resort if nothing else exists
-	sourcePath, err := util.GetAbsPath(devfilePath)
+	sourcePath, err := dfutil.GetAbsPath(devfilePath)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to get source path")
 	}

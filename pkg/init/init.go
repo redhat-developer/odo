@@ -8,6 +8,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
@@ -17,7 +18,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type InitClient struct {
@@ -81,7 +81,7 @@ func (o *InitClient) downloadDirect(URL string, dest string) error {
 	if strings.HasPrefix(parsedURL.Scheme, "http") {
 		downloadSpinner := log.Spinnerf("Downloading devfile from %q", URL)
 		defer downloadSpinner.End(false)
-		params := util.HTTPRequestParams{
+		params := dfutil.HTTPRequestParams{
 			URL: URL,
 		}
 		devfileData, err := o.registryClient.DownloadFileInMemory(params)

@@ -4,11 +4,8 @@ import (
 	// Built-in packages
 	"fmt"
 
-	util2 "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-
 	// Third-party packages
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -16,7 +13,10 @@ import (
 
 	// odo packages
 	"github.com/redhat-developer/odo/pkg/log"
+	util2 "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -92,7 +92,7 @@ func (o *AddOptions) Run() (err error) {
 	}
 
 	if o.tokenFlag != "" {
-		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
+		err = keyring.Set(dfutil.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
 		if err != nil {
 			return errors.Wrap(err, "unable to store registry credential to keyring")
 		}

@@ -9,12 +9,15 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 // odoSettings holds all odo specific configurations
@@ -437,5 +440,5 @@ func asSupportedParameter(param string) (string, bool) {
 
 // GetSupportedParameters returns the name of the supported parameters
 func GetSupportedParameters() []string {
-	return util.GetSortedKeys(supportedParameterDescriptions)
+	return dfutil.GetSortedKeys(supportedParameterDescriptions)
 }

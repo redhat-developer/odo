@@ -17,9 +17,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
-	github.com/gobwas/glob v0.2.3
 	github.com/golang/mock v1.5.0
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
@@ -56,7 +54,7 @@ require (
 	k8s.io/cli-runtime v0.22.0-rc.0
 	k8s.io/client-go v0.22.2
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.10.0
+	k8s.io/klog/v2 v2.10.0 // indirect
 	k8s.io/kubectl v0.22.1
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/controller-runtime v0.10.2

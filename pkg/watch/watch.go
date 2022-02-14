@@ -8,13 +8,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/pkg/errors"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
 
-	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"k8s.io/klog"
 )
 
@@ -73,7 +76,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 	mode := file.Mode()
 	if mode.IsRegular() {
-		matched, e := util.IsGlobExpMatch(path, ignores)
+		matched, e := dfutil.IsGlobExpMatch(path, ignores)
 		if e != nil {
 			return errors.Wrapf(e, "unable to watcher on %s", path)
 		}
@@ -106,7 +109,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
-			matched, err := util.IsGlobExpMatch(newPath, ignores)
+			matched, err := dfutil.IsGlobExpMatch(newPath, ignores)
 			if err != nil {
 				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
 			}
@@ -124,7 +127,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	}
 	for _, folder := range folders {
 
-		if matched, _ := util.IsGlobExpMatch(folder, ignores); matched {
+		if matched, _ := dfutil.IsGlobExpMatch(folder, ignores); matched {
 			klog.V(4).Infof("ignoring watch for %s", folder)
 			continue
 		}
@@ -212,7 +215,7 @@ func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters Watc
 				// ignores paths because, when a directory that is ignored, is deleted,
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
-				matched, globErr := util.IsGlobExpMatch(event.Name, parameters.FileIgnores)
+				matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
 				klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
 				if globErr != nil {
 					watchError = errors.Wrap(globErr, "unable to watch changes")

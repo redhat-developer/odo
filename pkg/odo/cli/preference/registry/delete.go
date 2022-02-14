@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	// Third-party packages
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -15,7 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 const deleteCommandName = "delete"
@@ -77,7 +77,7 @@ func (o *DeleteOptions) Run() (err error) {
 	}
 
 	if isSecure {
-		err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
+		err = keyring.Delete(dfutil.CredentialPrefix+o.registryName, o.user)
 		if err != nil {
 			return errors.Wrap(err, "unable to delete registry credential from keyring")
 		}

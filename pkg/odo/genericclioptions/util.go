@@ -5,6 +5,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	pkgUtil "github.com/redhat-developer/odo/pkg/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 )
 
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
@@ -31,7 +33,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(cmdline cmdline.Cmdli
 // .git ignores; or find the .odoignore/.gitignore file in the directory and use that instead.
 func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 	if len(*ignores) == 0 {
-		rules, err := pkgUtil.GetIgnoreRulesFromDirectory(sourcePath)
+		rules, err := dfutil.GetIgnoreRulesFromDirectory(sourcePath)
 		if err != nil {
 			return err
 		}
@@ -40,12 +42,12 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 
 	indexFile := pkgUtil.GetIndexFileRelativeToContext()
 	// check if the ignores flag has the index file
-	if !pkgUtil.In(*ignores, indexFile) {
+	if !dfutil.In(*ignores, indexFile) {
 		*ignores = append(*ignores, indexFile)
 	}
 
 	// check if the ignores flag has the git dir
-	if !pkgUtil.In(*ignores, gitDirName) {
+	if !dfutil.In(*ignores, gitDirName) {
 		*ignores = append(*ignores, gitDirName)
 	}
 

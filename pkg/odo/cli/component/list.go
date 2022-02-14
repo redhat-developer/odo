@@ -8,25 +8,26 @@ import (
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/project"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/util"
 
+	dfutil "github.com/devfile/library/pkg/util"
+
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -79,7 +80,7 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	} else {
 		// here we use information from user's kubeconfig
 		// as odo list should work in a non-component directory too
-		if util.CheckKubeConfigExist() {
+		if dfutil.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
 			if err != nil {
@@ -107,7 +108,7 @@ func (lo *ListOptions) Validate() (err error) {
 	}
 	var project, app string
 
-	if !util.CheckKubeConfigExist() {
+	if !dfutil.CheckKubeConfigExist() {
 		project = lo.EnvSpecificInfo.GetNamespace()
 		app = lo.EnvSpecificInfo.GetApplication()
 	} else {

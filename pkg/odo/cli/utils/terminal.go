@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
-	util2 "github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -115,5 +117,5 @@ func NewCmdTerminal(name, fullName string) *cobra.Command {
 }
 
 func getSupportedShells() []string {
-	return util2.GetSortedKeys(supportedShells)
+	return dfutil.GetSortedKeys(supportedShells)
 }

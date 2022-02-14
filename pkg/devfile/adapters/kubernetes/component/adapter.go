@@ -8,34 +8,34 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/utils/pointer"
+	"github.com/pkg/errors"
 
-	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/service"
-	"github.com/redhat-developer/odo/pkg/util"
-
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog"
-
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
+	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
+	"github.com/redhat-developer/odo/pkg/util"
+
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/pkg/util"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
+	"k8s.io/utils/pointer"
 )
 
 const supervisorDStatusWaitTimeInterval = 1
@@ -146,12 +146,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	err = util.ValidateK8sResourceName("component name", a.ComponentName)
+	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
 	if err != nil {
 		return err
 	}
 
-	err = util.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
+	err = dfutil.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
 	if err != nil {
 		return err
 	}
@@ -457,7 +457,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	// This annotated value will later be used when listing the components; we do this to list/describe and stay inline with the component type value set in the devfile.
 	annotatedComponentType := component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
 	if annotatedComponentType != component.NotAvailable {
-		componentType = strings.TrimSuffix(util.ExtractComponentType(componentType), "-")
+		componentType = strings.TrimSuffix(dfutil.ExtractComponentType(componentType), "-")
 	}
 
 	labels := componentlabels.GetLabels(componentName, a.AppName, true)

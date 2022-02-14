@@ -17,16 +17,17 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/tests/helper/reporter"
 
+	dfutil "github.com/devfile/library/pkg/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/tidwall/gjson"
 )
 
 // RandString returns a random string of given length
 func RandString(n int) string {
-	return util.GenerateRandomString(n)
+	return dfutil.GenerateRandomString(n)
 }
 
 // WaitForCmdOut runs a command until it gets

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	// Third-party packages
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
@@ -96,12 +97,12 @@ func (o *UpdateOptions) Run() (err error) {
 	}
 
 	if secureAfterUpdate {
-		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
+		err = keyring.Set(dfutil.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
 		if err != nil {
 			return errors.Wrap(err, "unable to store registry credential to keyring")
 		}
 	} else if secureBeforeUpdate && !secureAfterUpdate {
-		err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
+		err = keyring.Delete(dfutil.CredentialPrefix+o.registryName, o.user)
 		if err != nil {
 			return errors.Wrap(err, "unable to delete registry credential from keyring")
 		}

@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	dfutil "github.com/devfile/library/pkg/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // CreateNewContext create new empty temporary directory
@@ -123,7 +124,7 @@ func CopyExampleFile(filePath, targetDst string) {
 	info, err := os.Stat(src)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = util.CopyFile(src, targetDst, info)
+	err = dfutil.CopyFile(src, targetDst, info)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -152,7 +153,7 @@ func CopyManifestFile(fileName, targetDst string) {
 	info, err := os.Stat(src)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = util.CopyFile(src, targetDst, info)
+	err = dfutil.CopyFile(src, targetDst, info)
 	Expect(err).NotTo(HaveOccurred())
 
 }
@@ -175,7 +176,7 @@ func CopyExampleDevFile(devfilePath, targetDst string) {
 	info, err := os.Stat(src)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = util.CopyFile(src, targetDst, info)
+	err = dfutil.CopyFile(src, targetDst, info)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -223,7 +224,7 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 		return err
 	}
 
-	return util.CopyFile(src, dst, info)
+	return dfutil.CopyFile(src, dst, info)
 }
 
 // CreateFileWithContent creates a file at the given path and writes the given content

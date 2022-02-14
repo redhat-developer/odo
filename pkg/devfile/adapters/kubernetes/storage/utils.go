@@ -4,21 +4,23 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
+	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/pkg/errors"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
-	"github.com/redhat-developer/odo/pkg/util"
+
+	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 // VolumeInfo is a struct to hold the pvc name and the volume name to create a volume.
@@ -74,7 +76,7 @@ func GetPersistentVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, co
 		for _, containerComp := range containerComponents {
 			for _, volumeMount := range containerComp.Container.VolumeMounts {
 				if volName == volumeMount.Name {
-					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], envinfo.GetVolumeMountPath(volumeMount))
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], generator.GetVolumeMountPath(volumeMount))
 				}
 			}
 		}
@@ -102,7 +104,7 @@ func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, con
 		for _, containerComp := range containerComponents {
 			for _, volumeMount := range containerComp.Container.VolumeMounts {
 				if volName == volumeMount.Name {
-					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], envinfo.GetVolumeMountPath(volumeMount))
+					containerNameToMountPaths[containerComp.Name] = append(containerNameToMountPaths[containerComp.Name], generator.GetVolumeMountPath(volumeMount))
 				}
 			}
 		}
@@ -178,7 +180,7 @@ func addVolumeMountToContainers(containers []corev1.Container, initContainers []
 
 // generateVolumeNameFromPVC generates a volume name based on the pvc name
 func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
-	volumeName, err = util.NamespaceOpenShiftObject(pvc, "vol")
+	volumeName, err = dfutil.NamespaceOpenShiftObject(pvc, "vol")
 	if err != nil {
 		return "", err
 	}

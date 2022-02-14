@@ -226,7 +226,6 @@ github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.14
 github.com/go-openapi/swag
 # github.com/gobwas/glob v0.2.3
-## explicit
 github.com/gobwas/glob
 github.com/gobwas/glob/compiler
 github.com/gobwas/glob/match
@@ -279,7 +278,6 @@ github.com/googleapis/gnostic/openapiv2
 # github.com/gookit/color v1.4.2
 github.com/gookit/color
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
-## explicit
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
 # github.com/hashicorp/errwrap v1.0.0

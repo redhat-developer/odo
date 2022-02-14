@@ -4,13 +4,13 @@ import (
 	"os"
 	"strings"
 
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/redhat-developer/odo/pkg/devfile"
 
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -57,7 +57,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	componentName := po.EnvSpecificInfo.GetName()
 
 	// Set the source path to either the context or current working directory (if context not set)
-	po.sourcePath, err = util.GetAbsPath(po.componentContext)
+	po.sourcePath, err = dfutil.GetAbsPath(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}

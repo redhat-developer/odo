@@ -6,24 +6,25 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
-	"github.com/redhat-developer/odo/pkg/segment"
-
-	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-
-	registryLibrary "github.com/devfile/registry-support/registry-library/library"
 	"github.com/pkg/errors"
+	"github.com/zalando/go-keyring"
+
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/component/ui"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/zalando/go-keyring"
+
+	dfutil "github.com/devfile/library/pkg/util"
+	registryLibrary "github.com/devfile/registry-support/registry-library/library"
+
 	"k8s.io/klog"
 )
 
@@ -152,7 +153,7 @@ func (ucdm UserCreatedDevfileMethod) CheckConflicts(co *CreateOptions, args []st
 		return &DevfileExistsExtraArgsError{len(args)}
 	}
 	//Check if the directory already contains a devfile when --devfile flag is passed
-	if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+	if co.devfileMetadata.devfilePath.value != "" && !dfutil.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 		return &DevfileExistsDevfileFlagError{}
 	}
 	return nil
@@ -186,7 +187,7 @@ func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", co.devfileMetadata.devfilePath.value)
 	defer devfileSpinner.End(false)
 
-	params := util.HTTPRequestParams{
+	params := dfutil.HTTPRequestParams{
 		URL:   co.devfileMetadata.devfilePath.value,
 		Token: co.devfileMetadata.token,
 	}
@@ -328,14 +329,14 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 	if registryUtil.IsGitBasedRegistry(registry.URL) {
 		registryUtil.PrintGitRegistryDeprecationWarning()
 
-		params := util.HTTPRequestParams{
+		params := dfutil.HTTPRequestParams{
 			URL: registry.URL + devfileLink,
 		}
 
 		secure := registryUtil.IsSecure(prefClient, registry.Name)
 		if secure {
 			var token string
-			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
+			token, err = keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 			if err != nil {
 				return errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
@@ -421,6 +422,6 @@ func deleteDevfile(devfile string) {
 func deleteOdoDir(componentContext string) {
 	odoDir := filepath.Join(componentContext, ".odo")
 	if util.CheckPathExists(odoDir) {
-		_ = util.DeletePath(odoDir)
+		_ = dfutil.DeletePath(odoDir)
 	}
 }

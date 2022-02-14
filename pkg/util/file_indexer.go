@@ -9,9 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devfile/library/pkg/util"
 	"github.com/pkg/errors"
+
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -137,7 +140,7 @@ func DeleteIndexFile(directory string) error {
 	} else if err != nil {
 		return err
 	}
-	return DeletePath(indexFile)
+	return dfutil.DeletePath(indexFile)
 }
 
 // IndexerRet is a struct that represent return value of RunIndexer function
@@ -293,7 +296,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 
 				// Yes, now that the file exists, now we need to get the absolute path.. if we don't, then when we pass in:
 				// 'odo push --context foobar' instead of 'odo push --context ~/foobar' it will NOT work..
-				fileAbsolutePath, err := util.GetAbsPath(fileName)
+				fileAbsolutePath, err := dfutil.GetAbsPath(fileName)
 				if err != nil {
 					return IndexerRet{}, err
 				}
@@ -357,12 +360,12 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				}
 			} else {
 				// check the *absolute* path to the file for glob rules
-				fileAbsolutePath, err := GetAbsPath(filepath.Join(directory, fileName))
+				fileAbsolutePath, err := dfutil.GetAbsPath(filepath.Join(directory, fileName))
 				if err != nil {
 					return ret, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
 				}
 
-				matched, err := util.IsGlobExpMatch(fileAbsolutePath, ignoreRules)
+				matched, err := dfutil.IsGlobExpMatch(fileAbsolutePath, ignoreRules)
 				if err != nil {
 					return IndexerRet{}, err
 				}
@@ -444,7 +447,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	for _, matchedPath := range matchedPathsDir {
 
 		// check if it matches a ignore rule
-		match, err := IsGlobExpMatch(matchedPath, ignoreRules)
+		match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
 		if err != nil {
 			return IndexerRet{}, err
 		}

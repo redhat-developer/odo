@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/odo/util"
-	pkgUtil "github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/odo/util"
+
+	dfutil "github.com/devfile/library/pkg/util"
 )
 
 type Cobra struct {
@@ -57,13 +59,13 @@ func (o *Cobra) GetWorkingDirectory() (string, error) {
 
 	// Grab the absolute path of the configuration
 	if contextDir != "" {
-		fAbs, err := pkgUtil.GetAbsPath(contextDir)
+		fAbs, err := dfutil.GetAbsPath(contextDir)
 		if err != nil {
 			return "", err
 		}
 		contextDir = fAbs
 	} else {
-		fAbs, err := pkgUtil.GetAbsPath(".")
+		fAbs, err := dfutil.GetAbsPath(".")
 		if err != nil {
 			return "", err
 		}

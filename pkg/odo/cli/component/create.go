@@ -6,26 +6,28 @@ import (
 	"path/filepath"
 	"strings"
 
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
-	"github.com/redhat-developer/odo/pkg/odo/cmdline"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/catalog"
 	odoDevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
+
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -147,7 +149,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	if util.CheckPathExists(co.DevfilePath) {
 		if util.CheckPathExists(envFilePath) {
 			return errors.New("this directory already contains a component")
-		} else if co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
+		} else if co.devfileMetadata.devfilePath.value != "" && !dfutil.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value) {
 			//Check if the directory already contains a devfile when --devfile flag is passed
 			return errors.New("this directory already contains a devfile, you can't specify devfile via --devfile")
 		} else if co.devfileMetadata.starter != "" && len(args) == 0 {
@@ -160,7 +162,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 	if util.CheckPathExists(envFilePath) && !util.CheckPathExists(co.DevfilePath) {
 		log.Warningf("Found a dangling env file without a devfile, overwriting it")
 		// Note: if the IF condition seems to have a side-effect, it is better to do the condition check separately, like below
-		err = util.DeletePath(envFilePath)
+		err = dfutil.DeletePath(envFilePath)
 		if err != nil {
 			return err
 		}
@@ -179,7 +181,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		co.createMethod = UserCreatedDevfileMethod{}
 	case co.devfileMetadata.devfilePath.value != "":
 		//co.devfileName = "" for user provided devfile
-		fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
+		fileErr := dfutil.ValidateFile(co.devfileMetadata.devfilePath.value)
 		urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 		if fileErr != nil && urlErr != nil {
 			return errors.Errorf("the devfile path you specify is invalid with either file error %q or url error %q", fileErr, urlErr)
@@ -214,7 +216,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		secure := registryUtil.IsSecure(co.clientset.PreferenceClient, co.devfileMetadata.devfileRegistry.Name)
 		if co.devfileMetadata.starterToken == "" && secure {
 			var token string
-			token, err = keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
+			token, err = keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 			if err != nil {
 				return errors.Wrap(err, "unable to get secure registry credential from keyring")
 			}
@@ -242,7 +244,7 @@ func (co *CreateOptions) Validate() (err error) {
 	spinner := log.Spinner("Validating if devfile name is correct")
 	defer spinner.End(false)
 
-	err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+	err = dfutil.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
 	if err != nil {
 		return err
 	}
@@ -284,7 +286,7 @@ func (co *CreateOptions) Run() (err error) {
 	}
 
 	//Check if the directory already contains a devfile when starter project is downloaded
-	if co.devfileMetadata.starter != "" && len(co.stackName) > 0 && !(util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value)) {
+	if co.devfileMetadata.starter != "" && len(co.stackName) > 0 && !(util.CheckPathExists(co.DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !dfutil.PathEqual(co.DevfilePath, co.devfileMetadata.devfilePath.value)) {
 		// TODO: We should not have to rewrite to the file. Fix the starter project.
 		err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 		if err != nil {
@@ -318,7 +320,7 @@ func (co *CreateOptions) Run() (err error) {
 	}
 
 	// Prepare .gitignore file
-	sourcePath, err := util.GetAbsPath(co.contextFlag)
+	sourcePath, err := dfutil.GetAbsPath(co.contextFlag)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
@@ -328,7 +330,7 @@ func (co *CreateOptions) Run() (err error) {
 		return err
 	}
 
-	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.contextFlag, EnvDirectory))
+	err = dfutil.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.contextFlag, EnvDirectory))
 	if err != nil {
 		return err
 	}

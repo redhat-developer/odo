@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/util"
-
 	"github.com/redhat-developer/odo/tests/helper"
+
+	dfutil "github.com/devfile/library/pkg/util"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -134,7 +134,7 @@ func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
 			}
 
 			if stringsMatched {
-				httpPort, err := util.HTTPGetFreePort()
+				httpPort, err := dfutil.HTTPGetFreePort()
 				Expect(err).NotTo(HaveOccurred())
 				freePort := strconv.Itoa(httpPort)
 

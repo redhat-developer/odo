@@ -8,25 +8,27 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/devfile/api/v2/pkg/devfile"
-
-	v1 "k8s.io/api/apps/v1"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/pkg/util"
+
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/service"
-
-	"github.com/pkg/errors"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/service"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
 	"github.com/redhat-developer/odo/pkg/util"
+
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -77,7 +79,7 @@ func GetDefaultComponentName(cfg preference.Client, componentPath string, compon
 	prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 
 	// Generate unique name for the component using prefix and unique random suffix
-	componentName, err := util.GetRandomName(
+	componentName, err := dfutil.GetRandomName(
 		fmt.Sprintf("%s-%s", componentType, prefix),
 		componentNameMaxLen,
 		existingComponentNames,
@@ -309,7 +311,7 @@ func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string)
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client kclient.ClientInterface, componentName, applicationName string) (bool, error) {
-	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	deploymentName, err := dfutil.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to create namespaced name")
 	}

@@ -8,16 +8,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog"
-
 	"github.com/redhat-developer/odo/pkg/util"
+
+	"k8s.io/klog"
 )
 
 type RUNMode string
@@ -203,7 +205,7 @@ func (esi *EnvSpecificInfo) DeleteEnvDirIfEmpty() error {
 
 // DeleteEnvInfoFile deletes the envinfo.yaml file if it exists
 func (esi *EnvSpecificInfo) DeleteEnvInfoFile() error {
-	return util.DeletePath(esi.Filename)
+	return dfutil.DeletePath(esi.Filename)
 }
 
 // IsSet uses reflection to get the parameter from the envinfo struct, currently
@@ -385,5 +387,5 @@ func asLocallySupportedParameter(param string) (string, bool) {
 
 // GetLocallySupportedParameters returns the name of the supported global parameters
 func GetLocallySupportedParameters() []string {
-	return util.GetSortedKeys(supportedLocalParameterDescriptions)
+	return dfutil.GetSortedKeys(supportedLocalParameterDescriptions)
 }
