@@ -68,20 +68,6 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)
 }
 
-// ExecuteDevfileCommand executes the devfile init, build and test command actions synchronously
-func (a GenericAdapter) ExecuteDevfileCommand(command devfilev1.Command, show bool) error {
-	commands, err := a.Devfile.Data.GetCommands(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	c, err := New(command, GetCommandsMap(commands), a)
-	if err != nil {
-		return err
-	}
-	return c.Execute(show)
-}
-
 // closeWriterAndWaitForAck closes the PipeWriter and then waits for a channel response from the ContainerOutputWriter (indicating that the reader had closed).
 // This ensures that we always get the full stderr/stdout output from the container process BEFORE we output the devfileCommandExecution event.
 func closeWriterAndWaitForAck(stdoutWriter *io.PipeWriter, stdoutChannel chan interface{}, stderrWriter *io.PipeWriter, stderrChannel chan interface{}) {

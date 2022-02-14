@@ -3,11 +3,12 @@ package component
 import (
 	"fmt"
 	"io"
-	"k8s.io/utils/pointer"
 	"os"
 	"reflect"
 	"strings"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/pkg/errors"
 
@@ -402,29 +403,6 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 	return nil
 }
 
-// Test runs the devfile test command
-func (a Adapter) Test(testCmd string, show bool) (err error) {
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
-	if err != nil {
-		return fmt.Errorf("error occurred while getting the pod: %w", err)
-	}
-	if pod.Status.Phase != corev1.PodRunning {
-		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
-	}
-
-	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
-
-	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
-	if err != nil {
-		return errors.Wrap(err, "failed to validate devfile test command")
-	}
-	err = a.ExecuteDevfileCommand(testCommand, show, false)
-	if err != nil {
-		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
-	}
-	return nil
-}
-
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string, appName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName, appName)
@@ -787,42 +765,6 @@ func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, t
 	return a.Client.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }
 
-// Deploy executes the 'deploy' command defined in a devfile
-func (a Adapter) Deploy() error {
-	deployCmd, err := a.getDeployCommand()
-	if err != nil {
-		return err
-	}
-
-	return a.ExecuteDevfileCommand(deployCmd, true, false)
-}
-
-// UnDeploy reverses the effect of the 'deploy' command defined in a devfile
-func (a Adapter) UnDeploy() error {
-	deployCmd, err := a.getDeployCommand()
-	if err != nil {
-		return err
-	}
-	return a.ExecuteDevfileCommand(deployCmd, true, true)
-}
-
-// ExecuteDevfileCommand executes the devfile command; if unexecute is set to true, it reverses the effect of Execute
-func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show, unexecute bool) error {
-	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	c, err := common.New(command, common.GetCommandsMap(commands), &a)
-	if err != nil {
-		return err
-	}
-	if unexecute {
-		return c.UnExecute()
-	}
-	return c.Execute(show)
-}
-
 // ApplyComponent 'applies' a devfile component
 func (a Adapter) ApplyComponent(componentName string) error {
 	cmp, err := a.getApplyComponent(componentName)
@@ -840,25 +782,6 @@ func (a Adapter) UnApplyComponent(componentName string) error {
 		return err
 	}
 	return cmp.UnApply(a.Context)
-}
-
-// getDeployCommand validates the deploy command and returns it
-func (a Adapter) getDeployCommand() (devfilev1.Command, error) {
-	deployGroupCmd, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
-		CommandOptions: parsercommon.CommandOptions{
-			CommandGroupKind: devfilev1.DeployCommandGroupKind,
-		},
-	})
-	if err != nil {
-		return devfilev1.Command{}, err
-	}
-	if len(deployGroupCmd) == 0 {
-		return devfilev1.Command{}, &NoDefaultDeployCommandFoundError{}
-	}
-	if len(deployGroupCmd) > 1 {
-		return devfilev1.Command{}, &MoreThanOneDefaultDeployCommandFoundError{}
-	}
-	return deployGroupCmd[0], nil
 }
 
 // getApplyComponent returns the 'Apply' command's component(kubernetes/image)
