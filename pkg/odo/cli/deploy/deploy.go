@@ -4,21 +4,31 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	img "github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-	"github.com/spf13/cobra"
+
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"
 )
@@ -122,16 +132,9 @@ func (o *DeployOptions) Validate() error {
 
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run() error {
-	platformContext := kubernetes.KubernetesContext{
-		Namespace: o.KClient.GetCurrentNamespace(),
-	}
-
-	devfileHandler, err := adapters.NewComponentAdapter(o.EnvSpecificInfo.GetName(), filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()), o.GetApplication(), o.EnvSpecificInfo.GetDevfileObj(), platformContext)
-	if err != nil {
-		return err
-	}
-
-	return devfileHandler.Deploy()
+	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	deployHandler := newDeployHandler(devfileObj, filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()), o.KClient, o.GetApplication())
+	return libdevfile.Deploy(devfileObj, deployHandler)
 }
 
 // NewCmdDeploy implements the odo command
@@ -153,4 +156,51 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	deployCmd.Annotations["command"] = "utility"
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return deployCmd
+}
+
+type deployHandler struct {
+	devfileObj parser.DevfileObj
+	path       string
+	kubeClient kclient.ClientInterface
+	appName    string
+}
+
+func newDeployHandler(devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string) *deployHandler {
+	return &deployHandler{
+		devfileObj: devfileObj,
+		path:       path,
+		kubeClient: kubeClient,
+		appName:    appName,
+	}
+}
+
+func (o *deployHandler) ApplyImage(image v1alpha2.Component) error {
+	fmt.Printf("Apply image %s\n", image.Name)
+	return img.BuildPushSpecificImage(o.devfileObj, o.path, image, true)
+}
+
+func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
+	fmt.Printf("Apply kubernetes %s\n", kubernetes.Name)
+	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
+	_, err := service.ValidateResourceExist(o.kubeClient, kubernetes, o.path)
+	if err != nil {
+		return err
+	}
+
+	labels := componentlabels.GetLabels(kubernetes.Name, o.appName, true)
+	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
+	if err != nil {
+		return err
+	}
+
+	log.Infof("\nDeploying Kubernetes %s: %s", u.GetKind(), u.GetName())
+	isOperatorBackedService, err := service.PushKubernetesResource(o.kubeClient, u, labels)
+	if err != nil {
+		return errors.Wrap(err, "failed to create service(s) associated with the component")
+	}
+	if isOperatorBackedService {
+		log.Successf("Kubernetes resource %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
+
+	}
+	return nil
 }
