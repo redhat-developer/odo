@@ -246,11 +246,17 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			}
 			ports = append(ports[:indexToDelete], ports[indexToDelete+1:]...)
 			// Delete port from the devfile
-			err = devfileobj.SetPorts(ports...)
+			err = RemovePort(devfileobj, portToDelete)
 			if err != nil {
 				return err
 			}
-			options = append(options, fmt.Sprintf("Delete port: %q", portToDelete))
+			// TODO: 	Delete port from the options
+			for i, opt := range options {
+				if opt == fmt.Sprintf("Delete port: %q", portToDelete) {
+					options = append(options[:i], options[i+1:]...)
+					break
+				}
+			}
 		} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
 			re := regexp.MustCompile("\"(.*?)\"")
 			match := re.FindStringSubmatch(configChangeAnswer)
@@ -263,8 +269,13 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			if err != nil {
 				return err
 			}
-		} else if configChangeAnswer == "NOTHING - configuration is correct" {
-			// nothing to do
+			// TODO:	Delete env from the options
+			for i, opt := range options {
+				if opt == fmt.Sprintf("Delete environment variable %q", envToDelete) {
+					options = append(options[:i], options[i+1:]...)
+					break
+				}
+			}
 		} else if configChangeAnswer == "Add new port" {
 			newPortQuestion := &survey.Input{
 				Message: "Enter port number:",
@@ -272,23 +283,33 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			var newPortAnswer string
 			survey.AskOne(newPortQuestion, &newPortAnswer, survey.Required)
 			// Ensure the newPortAnswer is not already present; otherwise it will cause a duplicate endpoint error
+			if duplicatePort(ports, newPortAnswer) {
+				color.Yellowln("Port already present. Moving on.")
+				continue
+			}
 			ports = append(ports, newPortAnswer)
 			err = devfileobj.SetPorts(newPortAnswer)
 			if err != nil {
 				return err
 			}
+			options = append(options, fmt.Sprintf("Delete port: %q", newPortAnswer))
 		} else if configChangeAnswer == "Add new environment variable" {
 			newEnvNameQuesion := &survey.Input{
 				Message: "Enter new environment variable name:",
 			}
+			// Ask for env name
 			var newEnvNameAnswer string
 			survey.AskOne(newEnvNameQuesion, &newEnvNameAnswer, survey.Required)
 			newEnvValueQuestion := &survey.Input{
 				Message: fmt.Sprintf("Enter value for %q environment variable:", newEnvNameAnswer),
 			}
+
+			// Ask for env value
 			var newEnvValueAnswer string
 			survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer, survey.Required)
 			envs[newEnvNameAnswer] = newEnvValueAnswer
+
+			// Write the env to devfile
 			err = devfileobj.AddEnvVars([]v1alpha2.EnvVar{
 				{
 					Name:  newEnvNameAnswer,
@@ -298,7 +319,10 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			if err != nil {
 				return err
 			}
+			// Append the env to list of options
 			options = append(options, fmt.Sprintf("Delete environment variable %q", newEnvNameAnswer))
+		} else if configChangeAnswer == "NOTHING - configuration is correct" {
+			// nothing to do
 		} else {
 			return fmt.Errorf("Unknown configuration selected %q", configChangeAnswer)
 		}
@@ -317,4 +341,34 @@ func printConfiguration(ports []string, envs map[string]string) {
 	for key, value := range envs {
 		color.New(color.Bold, color.FgWhite).Printf(" - %s = %s\n", key, value)
 	}
+}
+
+func duplicatePort(ports []string, port string) bool {
+	for _, p := range ports {
+		if p == port {
+			return true
+			// return fmt.Errorf("Port is already present; cannot use a duplicate port")
+		}
+	}
+	return false
+}
+
+func RemovePort(devfileObj parser.DevfileObj, portToRemove string) error {
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, component := range components {
+		if component.Container != nil {
+			for i, ep := range component.Container.Endpoints {
+				if strconv.Itoa(ep.TargetPort) == portToRemove {
+					component.Container.Endpoints = append(component.Container.Endpoints[:i], component.Container.Endpoints[i+1:]...)
+				}
+			}
+			devfileObj.Data.UpdateComponent(component)
+		}
+	}
+	return devfileObj.WriteYamlDevfile()
+
 }
