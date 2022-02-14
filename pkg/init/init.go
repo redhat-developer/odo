@@ -191,8 +191,11 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 }
 
 func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
-	var ports = []string{}
+	// var ports = []string{}
 	var envs = map[string]string{}
+	var portsMap = map[string][]string{}
+	var deletePortMessage = "Delete port (container: %q): %q"
+	var deleteEnvMessage = "Delete environment variable: %q"
 	options := []string{
 		"NOTHING - configuration is correct",
 		"Add new port",
@@ -202,22 +205,27 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 	if err != nil {
 		return err
 	}
-	var configChangeAnswer string
 	for _, component := range components {
 		if component.Container != nil {
 			for _, ep := range component.Container.Endpoints {
-				ports = append(ports, strconv.Itoa(ep.TargetPort))
-				options = append(options, fmt.Sprintf("Delete port: %q", strconv.Itoa(ep.TargetPort)))
+				if _, ok := portsMap[component.Name]; !ok {
+					portsMap[component.Name] = []string{strconv.Itoa(ep.TargetPort)}
+				} else {
+					portsMap[component.Name] = append(portsMap[component.Name], strconv.Itoa(ep.TargetPort))
+				}
+				// ports = append(ports, strconv.Itoa(ep.TargetPort))
+				options = append(options, fmt.Sprintf(deletePortMessage, component.Name, strconv.Itoa(ep.TargetPort)))
 			}
 			for _, env := range component.Container.Env {
 				envs[env.Name] = env.Value
-				options = append(options, fmt.Sprintf("Delete environment variable %q", env.Name))
+				options = append(options, fmt.Sprintf(deleteEnvMessage, env.Name))
 			}
 		}
 	}
 
+	var configChangeAnswer string
 	for configChangeAnswer != "NOTHING - configuration is correct" {
-		printConfiguration(ports, envs)
+		printConfiguration(portsMap, envs)
 
 		configChangeQuestion := &survey.Select{
 			Message: "What configuration do you want change?",
@@ -232,27 +240,28 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 
 		if strings.HasPrefix(configChangeAnswer, "Delete port") {
 			re := regexp.MustCompile("\"(.*?)\"")
-			match := re.FindStringSubmatch(configChangeAnswer)
-			portToDelete := match[1]
+			match := re.FindAllStringSubmatch(configChangeAnswer, -1)
+			containerName, portToDelete := match[0][1], match[1][1]
 
-			indexToDelete := -1
-			for i, port := range ports {
-				if port == portToDelete {
-					indexToDelete = i
-				}
+			if _, ok := portsMap[containerName]; !ok && !parser.InArray(portsMap[containerName], portToDelete) {
+				log.Warningf("unable to delete port %q, not found", portToDelete)
+				continue
 			}
-			if indexToDelete == -1 {
-				panic(fmt.Sprintf("unable to delete port %q, not found", portToDelete))
-			}
-			ports = append(ports[:indexToDelete], ports[indexToDelete+1:]...)
 			// Delete port from the devfile
-			err = RemovePort(devfileobj, portToDelete)
+			// err = RemovePort(devfileobj, portToDelete)
+			err = devfileobj.RemovePorts(map[string][]string{containerName: []string{portToDelete}})
 			if err != nil {
 				return err
 			}
-			// TODO: 	Delete port from the options
+			for i, port := range portsMap[containerName] {
+				if port == portToDelete {
+					portsMap[containerName] = append(portsMap[containerName][:i], portsMap[containerName][i+1:]...)
+					break
+				}
+			}
+			// Delete port from the options
 			for i, opt := range options {
-				if opt == fmt.Sprintf("Delete port: %q", portToDelete) {
+				if opt == fmt.Sprintf(deletePortMessage, containerName, portToDelete) {
 					options = append(options[:i], options[i+1:]...)
 					break
 				}
@@ -262,37 +271,49 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			match := re.FindStringSubmatch(configChangeAnswer)
 			envToDelete := match[1]
 			if _, ok := envs[envToDelete]; !ok {
-				panic(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
+				log.Warningf("unable to delete env %q, not found", envToDelete)
 			}
 			delete(envs, envToDelete)
 			err = devfileobj.RemoveEnvVars([]string{envToDelete})
 			if err != nil {
 				return err
 			}
-			// TODO:	Delete env from the options
+			// Delete env from the options
 			for i, opt := range options {
-				if opt == fmt.Sprintf("Delete environment variable %q", envToDelete) {
+				if opt == fmt.Sprintf(deleteEnvMessage, envToDelete) {
 					options = append(options[:i], options[i+1:]...)
 					break
 				}
 			}
 		} else if configChangeAnswer == "Add new port" {
+			var containers []string
+			for containerName, _ := range portsMap {
+				containers = append(containers, containerName)
+			}
+			containerNameQuestion := &survey.Select{
+				Message: "Enter container name: ",
+				Options: containers,
+			}
+			var containerNameAnswer string
+			survey.AskOne(containerNameQuestion, &containerNameAnswer, survey.Required)
+
 			newPortQuestion := &survey.Input{
 				Message: "Enter port number:",
 			}
 			var newPortAnswer string
 			survey.AskOne(newPortQuestion, &newPortAnswer, survey.Required)
-			// Ensure the newPortAnswer is not already present; otherwise it will cause a duplicate endpoint error
-			if duplicatePort(ports, newPortAnswer) {
-				color.Yellowln("Port already present. Moving on.")
+
+			// Ensure the newPortAnswer is not already present; otherwise it will cause a duplicate endpoint error while parsing the devfile
+			if parser.InArray(portsMap[containerNameAnswer], newPortAnswer) {
+				log.Warningf("Port is %q already present in container %q.", newPortAnswer, containerNameAnswer)
 				continue
 			}
-			ports = append(ports, newPortAnswer)
-			err = devfileobj.SetPorts(newPortAnswer)
+			portsMap[containerNameAnswer] = append(portsMap[containerNameAnswer], newPortAnswer)
+			err = devfileobj.SetPorts(map[string][]string{containerNameAnswer: []string{newPortAnswer}})
 			if err != nil {
 				return err
 			}
-			options = append(options, fmt.Sprintf("Delete port: %q", newPortAnswer))
+			options = append(options, fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer))
 		} else if configChangeAnswer == "Add new environment variable" {
 			newEnvNameQuesion := &survey.Input{
 				Message: "Enter new environment variable name:",
@@ -320,7 +341,7 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 				return err
 			}
 			// Append the env to list of options
-			options = append(options, fmt.Sprintf("Delete environment variable %q", newEnvNameAnswer))
+			options = append(options, fmt.Sprintf(deleteEnvMessage, newEnvNameAnswer))
 		} else if configChangeAnswer == "NOTHING - configuration is correct" {
 			// nothing to do
 		} else {
@@ -330,27 +351,20 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 	return nil
 }
 
-func printConfiguration(ports []string, envs map[string]string) {
+func printConfiguration(portsMap map[string][]string, envs map[string]string) {
 	color.New(color.Bold, color.FgGreen).Println("Current component configuration:")
 	color.Greenln("Opened ports:")
-	for _, port := range ports {
-		color.New(color.Bold, color.FgWhite).Printf(" - %s\n", port)
+	for containerName, ports := range portsMap {
+		color.New(color.Bold, color.FgWhite).Printf(" - Container %q:\n", containerName)
+		for _, port := range ports {
+			color.New(color.FgWhite).Printf("    · %s\n", port)
+		}
 	}
 
 	color.Greenln("Environment variables:")
 	for key, value := range envs {
 		color.New(color.Bold, color.FgWhite).Printf(" - %s = %s\n", key, value)
 	}
-}
-
-func duplicatePort(ports []string, port string) bool {
-	for _, p := range ports {
-		if p == port {
-			return true
-			// return fmt.Errorf("Port is already present; cannot use a duplicate port")
-		}
-	}
-	return false
 }
 
 func RemovePort(devfileObj parser.DevfileObj, portToRemove string) error {

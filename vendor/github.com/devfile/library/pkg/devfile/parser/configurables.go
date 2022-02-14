@@ -61,16 +61,16 @@ func (d DevfileObj) RemoveEnvVars(keys []string) (err error) {
 }
 
 // SetPorts converts ports to endpoints, adds to a devfile
-func (d DevfileObj) SetPorts(ports ...string) error {
+func (d DevfileObj) SetPorts(portsMap map[string][]string) error {
 	components, err := d.Data.GetComponents(common.DevfileOptions{})
 	if err != nil {
 		return err
 	}
-	endpoints, err := portsToEndpoints(ports...)
-	if err != nil {
-		return err
-	}
 	for _, component := range components {
+		endpoints, err := portsToEndpoints(portsMap[component.Name]...)
+		if err != nil {
+			return err
+		}
 		if component.Container != nil {
 			component.Container.Endpoints = addEndpoints(component.Container.Endpoints, endpoints)
 			d.Data.UpdateComponent(component)
@@ -80,14 +80,18 @@ func (d DevfileObj) SetPorts(ports ...string) error {
 }
 
 // RemovePorts removes all container endpoints from a devfile
-func (d DevfileObj) RemovePorts() error {
+// {"runtime": [8080, 9000], "wildfly": [1295]}
+func (d DevfileObj) RemovePorts(portsMap map[string][]string) error {
 	components, err := d.Data.GetComponents(common.DevfileOptions{})
 	if err != nil {
 		return err
 	}
 	for _, component := range components {
 		if component.Container != nil {
-			component.Container.Endpoints = []v1.Endpoint{}
+			component.Container.Endpoints, err = RemovePortsFromList(component.Container.Endpoints,portsMap[component.Name])
+			if err != nil {
+				return err
+			}
 			d.Data.UpdateComponent(component)
 		}
 	}
@@ -233,6 +237,36 @@ func GetContainerPortsFromStrings(ports []string) ([]corev1.ContainerPort, error
 	return containerPorts, nil
 }
 
+// RemovePortsFromList removes the ports based on the ports provided
+// and returns a new list of Endpoint
+func RemovePortsFromList(endpoints []v1.Endpoint, ports []string) ([]v1.Endpoint, error) {
+	// create an array of ports of the endpoints to easily search for port(s)
+	// to remove from the component
+	portList := []string{}
+	for _, ep := range endpoints{
+		portList = append(portList, strconv.Itoa(ep.TargetPort))
+	}
+
+	// now check if the port(s) requested for removal exists in
+	// the ports set for the component
+	for _, port := range ports{
+		if !InArray(portList, port){
+			return nil, fmt.Errorf("unable to find port %q in the component",port)
+		}
+	}
+
+	// finally, let's remove the port(s) requested by the user
+	newEndpointsList := []v1.Endpoint{}
+	for _, ep := range endpoints{
+		// if the port is in the ports we skip it
+		if InArray(ports, strconv.Itoa(ep.TargetPort)){
+			continue
+		}
+		newEndpointsList = append(newEndpointsList, ep)
+	}
+	return newEndpointsList, nil
+}
+
 // RemoveEnvVarsFromList removes the env variables based on the keys provided
 // and returns a new EnvVarList
 func RemoveEnvVarsFromList(envVarList []v1.EnvVar, keys []string) ([]v1.EnvVar, error) {
@@ -244,7 +278,7 @@ func RemoveEnvVarsFromList(envVarList []v1.EnvVar, keys []string) ([]v1.EnvVar, 
 	}
 
 	// now check if the environment variable(s) requested for removal exists in
-	// the env vars set for the component by odo
+	// the env vars set for the component
 	for _, key := range keys {
 		if !InArray(envVarListArray, key) {
 			return nil, fmt.Errorf("unable to find environment variable %s in the component", key)
