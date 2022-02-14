@@ -191,7 +191,6 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 }
 
 func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
-	// var ports = []string{}
 	var envs = map[string]string{}
 	var portsMap = map[string][]string{}
 	var deletePortMessage = "Delete port (container: %q): %q"
@@ -208,12 +207,7 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 	for _, component := range components {
 		if component.Container != nil {
 			for _, ep := range component.Container.Endpoints {
-				if _, ok := portsMap[component.Name]; !ok {
-					portsMap[component.Name] = []string{strconv.Itoa(ep.TargetPort)}
-				} else {
-					portsMap[component.Name] = append(portsMap[component.Name], strconv.Itoa(ep.TargetPort))
-				}
-				// ports = append(ports, strconv.Itoa(ep.TargetPort))
+				portsMap[component.Name] = append(portsMap[component.Name], strconv.Itoa(ep.TargetPort))
 				options = append(options, fmt.Sprintf(deletePortMessage, component.Name, strconv.Itoa(ep.TargetPort)))
 			}
 			for _, env := range component.Container.Env {
@@ -243,16 +237,16 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			match := re.FindAllStringSubmatch(configChangeAnswer, -1)
 			containerName, portToDelete := match[0][1], match[1][1]
 
-			if _, ok := portsMap[containerName]; !ok && !parser.InArray(portsMap[containerName], portToDelete) {
+			if !parser.InArray(portsMap[containerName], portToDelete) {
 				log.Warningf("unable to delete port %q, not found", portToDelete)
 				continue
 			}
 			// Delete port from the devfile
-			// err = RemovePort(devfileobj, portToDelete)
-			err = devfileobj.RemovePorts(map[string][]string{containerName: []string{portToDelete}})
+			err = devfileobj.RemovePorts(map[string][]string{containerName: {portToDelete}})
 			if err != nil {
 				return err
 			}
+			// Delete port from portsMap
 			for i, port := range portsMap[containerName] {
 				if port == portToDelete {
 					portsMap[containerName] = append(portsMap[containerName][:i], portsMap[containerName][i+1:]...)
@@ -273,11 +267,12 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			if _, ok := envs[envToDelete]; !ok {
 				log.Warningf("unable to delete env %q, not found", envToDelete)
 			}
-			delete(envs, envToDelete)
+
 			err = devfileobj.RemoveEnvVars([]string{envToDelete})
 			if err != nil {
 				return err
 			}
+			delete(envs, envToDelete)
 			// Delete env from the options
 			for i, opt := range options {
 				if opt == fmt.Sprintf(deleteEnvMessage, envToDelete) {
@@ -308,11 +303,13 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 				log.Warningf("Port is %q already present in container %q.", newPortAnswer, containerNameAnswer)
 				continue
 			}
-			portsMap[containerNameAnswer] = append(portsMap[containerNameAnswer], newPortAnswer)
+
+			// Add port
 			err = devfileobj.SetPorts(map[string][]string{containerNameAnswer: []string{newPortAnswer}})
 			if err != nil {
 				return err
 			}
+			portsMap[containerNameAnswer] = append(portsMap[containerNameAnswer], newPortAnswer)
 			options = append(options, fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer))
 		} else if configChangeAnswer == "Add new environment variable" {
 			newEnvNameQuesion := &survey.Input{
@@ -328,9 +325,8 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			// Ask for env value
 			var newEnvValueAnswer string
 			survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer, survey.Required)
-			envs[newEnvNameAnswer] = newEnvValueAnswer
 
-			// Write the env to devfile
+			// Add env var
 			err = devfileobj.AddEnvVars([]v1alpha2.EnvVar{
 				{
 					Name:  newEnvNameAnswer,
@@ -340,7 +336,7 @@ func (o *InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 			if err != nil {
 				return err
 			}
-			// Append the env to list of options
+			envs[newEnvNameAnswer] = newEnvValueAnswer
 			options = append(options, fmt.Sprintf(deleteEnvMessage, newEnvNameAnswer))
 		} else if configChangeAnswer == "NOTHING - configuration is correct" {
 			// nothing to do
@@ -365,24 +361,4 @@ func printConfiguration(portsMap map[string][]string, envs map[string]string) {
 	for key, value := range envs {
 		color.New(color.Bold, color.FgWhite).Printf(" - %s = %s\n", key, value)
 	}
-}
-
-func RemovePort(devfileObj parser.DevfileObj, portToRemove string) error {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, component := range components {
-		if component.Container != nil {
-			for i, ep := range component.Container.Endpoints {
-				if strconv.Itoa(ep.TargetPort) == portToRemove {
-					component.Container.Endpoints = append(component.Container.Endpoints[:i], component.Container.Endpoints[i+1:]...)
-				}
-			}
-			devfileObj.Data.UpdateComponent(component)
-		}
-	}
-	return devfileObj.WriteYamlDevfile()
-
 }
