@@ -10,8 +10,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/consts"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -22,6 +22,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 	"github.com/redhat-developer/odo/pkg/util"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"k8s.io/klog"
@@ -98,7 +99,7 @@ func (do *DeleteOptions) Run() (err error) {
 			err = do.DevfileUnDeploy()
 			if err != nil {
 				// if there is no component in the devfile to undeploy or if the devfile is non-existent, then skip the error log
-				if errors.Is(err, &component.NoDefaultDeployCommandFoundError{}) || !devfileExists {
+				if errors.Is(err, libdevfile.NewNoCommandFoundError(v1alpha2.DeployCommandGroupKind)) || !devfileExists {
 					log.Printf("no kubernetes component to un-deploy")
 				} else {
 					log.Errorf("error occurred while un-deploying, cause: %v", err)

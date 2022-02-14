@@ -5,7 +5,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 )
 
-// execCommand is a command implementation for non-composite commands
+// execCommand is a command implementation for exec commands
 type execCommand struct {
 	command    v1alpha2.Command
 	devfileObj parser.DevfileObj

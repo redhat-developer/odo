@@ -11,6 +11,7 @@ type component interface {
 	Apply(handler Handler) error
 }
 
+// newComponent creates a concrete component, based on its type
 func newComponent(devfileObj parser.DevfileObj, devfileCmp v1alpha2.Component) (component, error) {
 	var cmp component
 

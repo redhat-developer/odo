@@ -6,6 +6,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
+// NoCommandFoundError is returned when no command of the specified kind is found in devfile
 type NoCommandFoundError struct {
 	kind v1alpha2.CommandGroupKind
 }
@@ -19,6 +20,8 @@ func (e NoCommandFoundError) Error() string {
 	return fmt.Sprintf("no %s command found in devfile", e.kind)
 }
 
+// NoDefaultCommandFoundError is returned when several commands of the specified kind exist
+// but no one is the default one
 type NoDefaultCommandFoundError struct {
 	kind v1alpha2.CommandGroupKind
 }
@@ -32,6 +35,7 @@ func (e NoDefaultCommandFoundError) Error() string {
 	return fmt.Sprintf("no default %s command found in devfile", e.kind)
 }
 
+// MoreThanOneDefaultCommandFoundError is returned when several default commands of the specified kind exist
 type MoreThanOneDefaultCommandFoundError struct {
 	kind v1alpha2.CommandGroupKind
 }
@@ -43,36 +47,4 @@ func NewMoreThanOneDefaultCommandFoundError(kind v1alpha2.CommandGroupKind) More
 }
 func (e MoreThanOneDefaultCommandFoundError) Error() string {
 	return fmt.Sprintf("more than one default %s command found in devfile, this should not happen", e.kind)
-}
-
-type MalformedCommandError struct {
-	typ  v1alpha2.CommandType
-	name string
-}
-
-func NewMalformedCommandError(typ v1alpha2.CommandType, name string) MalformedCommandError {
-	return MalformedCommandError{
-		typ:  typ,
-		name: name,
-	}
-}
-
-func (e MalformedCommandError) Error() string {
-	return fmt.Sprintf("%s command %q is malformed", e.typ, e.name)
-}
-
-type MalformedComponentError struct {
-	typ  v1alpha2.ComponentType
-	name string
-}
-
-func NewMalformedComponentError(typ v1alpha2.ComponentType, name string) MalformedComponentError {
-	return MalformedComponentError{
-		typ:  typ,
-		name: name,
-	}
-}
-
-func (e MalformedComponentError) Error() string {
-	return fmt.Sprintf("%s component %q is malformed", e.typ, e.name)
 }

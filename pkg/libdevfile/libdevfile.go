@@ -59,7 +59,7 @@ func getDefaultCommand(devfileObj parser.DevfileObj, kind v1alpha2.CommandGroupK
 	return groupCmds[0], nil
 }
 
-// executeCommand executes a specific command of a devfile
+// executeCommand executes a specific command of a devfile using handler as backend
 func executeCommand(devfileObj parser.DevfileObj, command v1alpha2.Command, handler Handler) error {
 	cmd, err := newCommand(devfileObj, command)
 	if err != nil {

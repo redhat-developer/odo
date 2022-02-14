@@ -2,7 +2,6 @@ package libdevfile
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -29,8 +28,8 @@ func (o *compositeCommand) CheckValidity() error {
 	}
 	cmds := o.command.Composite.Commands
 	for _, cmd := range cmds {
-		if _, ok := allCommands[strings.ToLower(cmd)]; !ok {
-			return fmt.Errorf("composite command %q has command %v not found in devfile", cmd, o.command.Id)
+		if _, ok := allCommands[cmd]; !ok {
+			return fmt.Errorf("composite command %q references command %q not found in devfile", o.command.Id, cmd)
 		}
 	}
 	return nil

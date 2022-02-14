@@ -34,6 +34,10 @@ func (o *applyCommand) Execute(handler Handler) error {
 		return err
 	}
 
+	if len(devfileComponents) == 0 {
+		return fmt.Errorf("component %q does not exists", o.command.Apply.Component)
+	}
+
 	if len(devfileComponents) != 1 {
 		return fmt.Errorf("more than one component with the same name, should not happen")
 	}

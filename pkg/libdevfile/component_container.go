@@ -5,6 +5,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 )
 
+// containerComponent implements the component interface
 type containerComponent struct {
 	component  v1alpha2.Component
 	devfileObj parser.DevfileObj

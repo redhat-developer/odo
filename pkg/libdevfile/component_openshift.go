@@ -5,6 +5,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 )
 
+// openshiftComponent implements the component interface
 type openshiftComponent struct {
 	component  v1alpha2.Component
 	devfileObj parser.DevfileObj

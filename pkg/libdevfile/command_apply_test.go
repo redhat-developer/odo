@@ -35,7 +35,7 @@ func Test_applyCommand_Execute(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "execute an apply command",
 			fields: fields{
 				command: command1,
 				devfileObj: func() parser.DevfileObj {

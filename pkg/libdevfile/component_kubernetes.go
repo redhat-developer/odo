@@ -5,6 +5,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 )
 
+// kubernetesComponent implements the component interface
 type kubernetesComponent struct {
 	component  v1alpha2.Component
 	devfileObj parser.DevfileObj

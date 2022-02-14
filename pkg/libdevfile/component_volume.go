@@ -5,6 +5,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 )
 
+// volumeComponent implements the component interface
 type volumeComponent struct {
 	component  v1alpha2.Component
 	devfileObj parser.DevfileObj

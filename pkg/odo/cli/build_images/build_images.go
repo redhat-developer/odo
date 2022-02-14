@@ -2,6 +2,7 @@ package build_images
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -58,7 +59,9 @@ func (o *BuildImagesOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (o *BuildImagesOptions) Run() (err error) {
-	return image.BuildPushImages(o.Context, o.pushFlag)
+	devfileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+	path := filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+	return image.BuildPushImages(devfileObj, path, o.pushFlag)
 }
 
 // NewCmdLogin implements the odo command

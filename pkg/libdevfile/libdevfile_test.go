@@ -7,9 +7,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
-
+	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
-
 	"k8s.io/utils/pointer"
 )
 
@@ -163,6 +162,88 @@ func Test_getDefaultCommand(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getDefaultCommand() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDeploy(t *testing.T) {
+	deployDefault1 := generator.GetCompositeCommand(generator.CompositeCommandParams{
+		Kind:      v1alpha2.DeployCommandGroupKind,
+		Id:        "deploy-default-1",
+		IsDefault: pointer.BoolPtr(true),
+		Commands:  []string{"image-command", "deployment-command", "service-command"},
+	})
+	applyImageCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
+		Kind:      v1alpha2.DeployCommandGroupKind,
+		Id:        "image-command",
+		IsDefault: pointer.BoolPtr(false),
+		Component: "image-component",
+	})
+	applyDeploymentCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
+		Kind:      v1alpha2.DeployCommandGroupKind,
+		Id:        "deployment-command",
+		IsDefault: pointer.BoolPtr(false),
+		Component: "deployment-component",
+	})
+	applyServiceCommand := generator.GetApplyCommand(generator.ApplyCommandParams{
+		Kind:      v1alpha2.DeployCommandGroupKind,
+		Id:        "service-command",
+		IsDefault: pointer.BoolPtr(false),
+		Component: "service-component",
+	})
+
+	imageComponent := generator.GetImageComponent(generator.ImageComponentParams{
+		Name: "image-component",
+		Image: v1alpha2.Image{
+			ImageName: "an-image-name",
+		},
+	})
+	deploymentComponent := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+		Name:       "deployment-component",
+		Kubernetes: &v1alpha2.KubernetesComponent{},
+	})
+	serviceComponent := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+		Name:       "service-component",
+		Kubernetes: &v1alpha2.KubernetesComponent{},
+	})
+
+	type args struct {
+		devfileObj func() parser.DevfileObj
+		handler    func(ctrl *gomock.Controller) Handler
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "deploy an image and two kubernetes components",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddCommands([]v1alpha2.Command{deployDefault1, applyImageCommand, applyDeploymentCommand, applyServiceCommand})
+					_ = data.AddComponents([]v1alpha2.Component{imageComponent, deploymentComponent, serviceComponent})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				handler: func(ctrl *gomock.Controller) Handler {
+					h := NewMockHandler(ctrl)
+					h.EXPECT().ApplyImage(imageComponent)
+					h.EXPECT().ApplyKubernetes(deploymentComponent)
+					h.EXPECT().ApplyKubernetes(serviceComponent)
+					return h
+				},
+			},
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			if err := Deploy(tt.args.devfileObj(), tt.args.handler(ctrl)); (err != nil) != tt.wantErr {
+				t.Errorf("Deploy() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
