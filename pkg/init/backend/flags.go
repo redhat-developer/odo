@@ -86,3 +86,8 @@ func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map
 func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	return devfile.SetMetadataName(flags[FLAG_NAME])
 }
+
+// PersonalizeDevfileConfig updates the env vars, and URL endpoints
+func (o *FlagsBackend) PersonalizeDevfileConfig(devfile parser.DevfileObj) error {
+	return nil
+}
