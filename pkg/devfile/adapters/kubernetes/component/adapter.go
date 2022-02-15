@@ -388,7 +388,7 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 		log.Warningf("devfile command %q exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
 		log.Infof("Last %d lines of the component's log:", numberOfLines)
 
-		rd, err := a.Log(false, command)
+		rd, err := component.Log(a.Client, a.ComponentName, a.AppName, false, command)
 		if err != nil {
 			return err
 		}
@@ -401,11 +401,6 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 		log.Info("To get the full log output, please run 'odo log'")
 	}
 	return nil
-}
-
-// DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string, appName string) (bool, error) {
-	return utils.ComponentExists(a.Client, cmpName, appName)
 }
 
 func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
@@ -704,26 +699,9 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	return nil
 }
 
-// Log returns log from component
-func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
-
-	pod, err := component.GetOnePod(a.Client, a.ComponentName, a.AppName)
-	if err != nil {
-		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
-	}
-
-	if pod.Status.Phase != corev1.PodRunning {
-		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
-	}
-
-	containerName := command.Exec.Component
-
-	return a.Client.GetPodLogs(pod.Name, containerName, follow)
-}
-
 // Exec executes a command in the component
 func (a Adapter) Exec(command []string) error {
-	exists, err := utils.ComponentExists(a.Client, a.ComponentName, a.AppName)
+	exists, err := component.ComponentExists(a.Client, a.ComponentName, a.AppName)
 	if err != nil {
 		return err
 	}

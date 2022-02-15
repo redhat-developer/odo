@@ -1,8 +1,6 @@
 package common
 
 import (
-	"io"
-
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 )
 
@@ -10,8 +8,6 @@ import (
 type ComponentAdapter interface {
 	commandExecutor
 	Push(parameters PushParameters) error
-	DoesComponentExist(cmpName string, app string) (bool, error)
 	Delete(labels map[string]string, show bool, wait bool) error
 	CheckSupervisordCommandStatus(command devfilev1.Command) error
-	Log(follow bool, command devfilev1.Command) (io.ReadCloser, error)
 }

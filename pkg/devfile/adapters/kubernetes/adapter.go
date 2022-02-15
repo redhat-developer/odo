@@ -53,11 +53,6 @@ func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 	return nil
 }
 
-// DoesComponentExist returns true if a component with the specified name exists in the given app
-func (k Adapter) DoesComponentExist(cmpName, appName string) (bool, error) {
-	return k.componentAdapter.DoesComponentExist(cmpName, appName)
-}
-
 // Delete deletes the Kubernetes resources that correspond to the devfile
 func (k Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 
@@ -67,11 +62,6 @@ func (k Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	}
 
 	return nil
-}
-
-// Log shows log from component
-func (k Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
-	return k.componentAdapter.Log(follow, command)
 }
 
 func (k Adapter) ExecCMDInContainer(info common.ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {

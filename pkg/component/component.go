@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -30,6 +32,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 const componentRandomNamePartsMaxLen = 12
@@ -507,4 +510,31 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 // GetOnePod gets a pod using the component and app name
 func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
 	return client.GetOnePodFromSelector(componentlabels.GetSelector(componentName, appName))
+}
+
+// ComponentExists checks whether a deployment by the given name exists in the given app
+func ComponentExists(client kclient.ClientInterface, name string, app string) (bool, error) {
+	deployment, err := client.GetOneDeployment(name, app)
+	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
+		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)
+		return false, nil
+	}
+	return deployment != nil, err
+}
+
+// Log returns log from component
+func Log(client kclient.ClientInterface, componentName string, appName string, follow bool, command v1alpha2.Command) (io.ReadCloser, error) {
+
+	pod, err := GetOnePod(client, componentName, appName)
+	if err != nil {
+		return nil, errors.Errorf("the component %s doesn't exist on the cluster", componentName)
+	}
+
+	if pod.Status.Phase != corev1.PodRunning {
+		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+	}
+
+	containerName := command.Exec.Component
+
+	return client.GetPodLogs(pod.Name, containerName, follow)
 }
