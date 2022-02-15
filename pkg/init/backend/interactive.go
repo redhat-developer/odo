@@ -5,7 +5,6 @@ import (
 	"github.com/gookit/color"
 	"github.com/redhat-developer/odo/pkg/log"
 	"gopkg.in/AlecAivazis/survey.v1"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -137,6 +136,11 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 		}
 	}
 
+	var deleteMap = map[string][2]string{
+		"Delete port (container: \"runtime\": 8000": {"runtime", "8000"},
+		"Delete environment variable: \"A\"":        {"A"},
+	}
+
 	var configChangeAnswer string
 	for configChangeAnswer != "NOTHING - configuration is correct" {
 		printConfiguration(portsMap, envs)
@@ -153,9 +157,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 		}
 
 		if strings.HasPrefix(configChangeAnswer, "Delete port") {
-			re := regexp.MustCompile("\"(.*?)\"")
-			match := re.FindAllStringSubmatch(configChangeAnswer, -1)
-			containerName, portToDelete := match[0][1], match[1][1]
+			containerName, portToDelete := deleteMap[configChangeAnswer][0], deleteMap[configChangeAnswer][1]
 
 			if !parser.InArray(portsMap[containerName], portToDelete) {
 				log.Warningf("unable to delete port %q, not found", portToDelete)
@@ -180,10 +182,9 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 					break
 				}
 			}
+			delete(deleteMap, fmt.Sprintf(deletePortMessage, containerName, portToDelete))
 		} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
-			re := regexp.MustCompile("\"(.*?)\"")
-			match := re.FindStringSubmatch(configChangeAnswer)
-			envToDelete := match[1]
+			envToDelete := deleteMap[configChangeAnswer][0]
 			if _, ok := envs[envToDelete]; !ok {
 				log.Warningf("unable to delete env %q, not found", envToDelete)
 			}
@@ -200,6 +201,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 					break
 				}
 			}
+			delete(deleteMap, fmt.Sprintf(deleteEnvMessage, envToDelete))
 		} else if configChangeAnswer == "Add new port" {
 			var containers []string
 			for containerName, _ := range portsMap {
@@ -231,6 +233,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			}
 			portsMap[containerNameAnswer] = append(portsMap[containerNameAnswer], newPortAnswer)
 			options = append(options, fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer))
+			deleteMap[fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer)] = [2]string{containerNameAnswer, newPortAnswer}
 		} else if configChangeAnswer == "Add new environment variable" {
 			newEnvNameQuesion := &survey.Input{
 				Message: "Enter new environment variable name:",
@@ -258,6 +261,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			}
 			envs[newEnvNameAnswer] = newEnvValueAnswer
 			options = append(options, fmt.Sprintf(deleteEnvMessage, newEnvNameAnswer))
+			deleteMap[fmt.Sprintf(deleteEnvMessage, newEnvNameAnswer)] = [2]string{newEnvNameAnswer}
 		} else if configChangeAnswer == "NOTHING - configuration is correct" {
 			// nothing to do
 		} else {
