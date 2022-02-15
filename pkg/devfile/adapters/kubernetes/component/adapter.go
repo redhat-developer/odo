@@ -660,7 +660,7 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	podSpinner := log.Spinner("Checking status for component")
 	defer podSpinner.End(false)
 
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
+	pod, err := component.GetOnePod(a.Client, a.ComponentName, a.AppName)
 	if kerrors.IsForbidden(err) {
 		klog.V(2).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
@@ -707,7 +707,7 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 // Log returns log from component
 func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
 
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
+	pod, err := component.GetOnePod(a.Client, a.ComponentName, a.AppName)
 	if err != nil {
 		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
 	}
@@ -739,7 +739,7 @@ func (a Adapter) Exec(command []string) error {
 	containerName := runCommand.Exec.Component
 
 	// get the pod
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
+	pod, err := component.GetOnePod(a.Client, a.ComponentName, a.AppName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}

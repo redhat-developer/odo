@@ -503,3 +503,8 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 	}
 	return nil
 }
+
+// GetOnePod gets a pod using the component and app name
+func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
+	return client.GetOnePodFromSelector(componentlabels.GetSelector(componentName, appName))
+}
