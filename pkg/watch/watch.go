@@ -43,7 +43,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	//WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
@@ -342,9 +342,6 @@ func (o *WatchClient) WatchAndPush(client kclient.ClientInterface, out io.Writer
 
 						err = parameters.DevfileWatchHandler(pushParams, parameters)
 
-					} else {
-						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out,
-							changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 					}
 
 				} else {
@@ -368,11 +365,7 @@ func (o *WatchClient) WatchAndPush(client kclient.ClientInterface, out io.Writer
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams, parameters)
-					} else {
-						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out,
-							[]string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 					}
-
 				}
 				if err != nil {
 

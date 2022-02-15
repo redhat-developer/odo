@@ -20,8 +20,6 @@ var _ Client = (*DevClient)(nil)
 type DevClient struct {
 	kubernetesClient kclient.ClientInterface
 	watchClient      watch.Client
-	// devfileObj is stored for Cleanup; ideally populated by Start method
-	//devfileObj parser.DevfileObj
 }
 
 func NewDevClient(kubernetesClient kclient.ClientInterface, watchClient watch.Client) *DevClient {
