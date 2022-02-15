@@ -12,6 +12,7 @@
 package clientset
 
 import (
+	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
@@ -22,6 +23,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 const (
@@ -65,12 +67,14 @@ var subdeps map[string][]string = map[string][]string{
 type Clientset struct {
 	CatalogClient    catalog.Client
 	DeployClient     deploy.Client
+	DevClient        dev.Client
 	FS               filesystem.Filesystem
 	InitClient       _init.Client
 	KubernetesClient kclient.ClientInterface
 	PreferenceClient preference.Client
 	ProjectClient    project.Client
 	RegistryClient   registry.Client
+	WatchClient      watch.Client
 	/* Add client here */
 }
 
@@ -130,7 +134,12 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
-
+	if isDefined(command, WATCH) {
+		dep.WatchClient = watch.NewWatchClient()
+	}
+	if isDefined(command, DEV) {
+		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.WatchClient)
+	}
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
 	return &dep, nil
 }

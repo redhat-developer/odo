@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/dev"
 	"os"
 	"strings"
 	"unicode"
@@ -194,6 +195,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
 		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),
+		dev.NewCmdDev(dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands
