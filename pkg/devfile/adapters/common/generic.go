@@ -166,11 +166,3 @@ func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType de
 	}
 	return commands, nil
 }
-
-func (a GenericAdapter) ApplyComponent(component string) error {
-	return nil
-}
-
-func (a GenericAdapter) UnApplyComponent(component string) error {
-	return nil
-}

@@ -645,59 +645,6 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
-/*
-// Delete deletes the component
-func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
-	if labels == nil {
-		return fmt.Errorf("cannot delete with labels being nil")
-	}
-	log.Printf("Gathering information for component: %q", a.ComponentName)
-	podSpinner := log.Spinner("Checking status for component")
-	defer podSpinner.End(false)
-
-	pod, err := component.GetOnePod(a.Client, a.ComponentName, a.AppName)
-	if kerrors.IsForbidden(err) {
-		klog.V(2).Infof("Resource for %s forbidden", a.ComponentName)
-		// log the error if it failed to determine if the component exists due to insufficient RBACs
-		podSpinner.End(false)
-		log.Warningf("%v", err)
-		return nil
-	} else if e, ok := err.(*kclient.PodNotFoundError); ok {
-		podSpinner.End(false)
-		log.Warningf("%v", e)
-		return nil
-	} else if err != nil {
-		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
-	}
-
-	podSpinner.End(true)
-
-	// if there are preStop events, execute them before deleting the deployment
-	if libdevfile.HasPreStopEvents(a.Devfile) {
-		if pod.Status.Phase != corev1.PodRunning {
-			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
-		}
-		log.Infof("\nExecuting %s event commands for component %s", libdevfile.PreStop, a.ComponentName)
-		err = libdevfile.ExecPreStopEvents(a.Devfile, a.ComponentName, newExecHandler(a.Client, pod.Name, show))
-		if err != nil {
-			return err
-		}
-	}
-
-	log.Infof("\nDeleting component %s", a.ComponentName)
-	spinner := log.Spinner("Deleting Kubernetes resources for component")
-	defer spinner.End(false)
-
-	err = a.Client.Delete(labels, wait)
-	if err != nil {
-		return err
-	}
-
-	spinner.End(true)
-	log.Successf("Successfully deleted component")
-	return nil
-}*/
-
 func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	return a.Client.ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)
 }
@@ -705,48 +652,4 @@ func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []st
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
 func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.Client.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
-}
-
-// ApplyComponent 'applies' a devfile component
-func (a Adapter) ApplyComponent(componentName string) error {
-	cmp, err := a.getApplyComponent(componentName)
-	if err != nil {
-		return err
-	}
-
-	return cmp.Apply(a.Devfile, a.Context)
-}
-
-// UnApplyComponent un-'applies' a devfile component
-func (a Adapter) UnApplyComponent(componentName string) error {
-	cmp, err := a.getApplyComponent(componentName)
-	if err != nil {
-		return err
-	}
-	return cmp.UnApply(a.Context)
-}
-
-// getApplyComponent returns the 'Apply' command's component(kubernetes/image)
-func (a Adapter) getApplyComponent(componentName string) (componentToApply, error) {
-	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-	var component devfilev1.Component
-	var found bool
-	for _, component = range components {
-		if component.Name == componentName {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return nil, fmt.Errorf("component %q not found", componentName)
-	}
-
-	cmp, err := createComponent(a, component)
-	if err != nil {
-		return nil, err
-	}
-	return cmp, nil
 }

@@ -1,11 +1,8 @@
 package kubernetes
 
 import (
-	"io"
-
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/pkg/errors"
@@ -51,27 +48,4 @@ func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 	}
 
 	return nil
-}
-
-func (k Adapter) ExecCMDInContainer(info common.ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {
-	return k.componentAdapter.ExecCMDInContainer(info, cmd, stdOut, stdErr, stdIn, show)
-}
-func (k Adapter) Logger() machineoutput.MachineEventLoggingClient {
-	return k.componentAdapter.Logger()
-}
-
-func (k Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
-	return k.componentAdapter.ComponentInfo(command)
-}
-
-func (k Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
-	return k.componentAdapter.SupervisorComponentInfo(command)
-}
-
-func (k Adapter) ApplyComponent(component string) error {
-	return k.componentAdapter.ApplyComponent(component)
-}
-
-func (k Adapter) UnApplyComponent(component string) error {
-	return k.componentAdapter.UnApplyComponent(component)
 }

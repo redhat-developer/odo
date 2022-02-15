@@ -43,7 +43,7 @@ func New(devfile devfilev1.Command, knowCommands map[string]devfilev1.Command, e
 	} else if devfile.Exec != nil {
 		return newExecCommand(devfile, executor)
 	} else {
-		return newApplyCommand(devfile, executor)
+		return nil, errors.New("apply command not implemented")
 	}
 }
 

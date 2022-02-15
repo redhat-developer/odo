@@ -6,7 +6,6 @@ import (
 
 // ComponentAdapter defines the functions that platform-specific adapters must implement
 type ComponentAdapter interface {
-	commandExecutor
 	Push(parameters PushParameters) error
 	CheckSupervisordCommandStatus(command devfilev1.Command) error
 }
