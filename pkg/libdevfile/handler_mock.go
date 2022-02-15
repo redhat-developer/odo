@@ -61,3 +61,17 @@ func (mr *MockHandlerMockRecorder) ApplyKubernetes(kubernetes interface{}) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyKubernetes", reflect.TypeOf((*MockHandler)(nil).ApplyKubernetes), kubernetes)
 }
+
+// Execute mocks base method.
+func (m *MockHandler) Execute(command v1alpha2.Command) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Execute", command)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Execute indicates an expected call of Execute.
+func (mr *MockHandlerMockRecorder) Execute(command interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockHandler)(nil).Execute), command)
+}

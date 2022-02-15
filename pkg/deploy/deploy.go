@@ -76,3 +76,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	}
 	return nil
 }
+
+func (o *deployHandler) Execute(command v1alpha2.Command) error {
+	return errors.New("Exec command is not implemented for Deploy")
+}

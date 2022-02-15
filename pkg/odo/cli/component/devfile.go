@@ -179,3 +179,7 @@ func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	// Un-deploy the K8s manifest
 	return o.kubeClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
 }
+
+func (o *undeployHandler) Execute(command v1alpha2.Command) error {
+	return errors.New("Exec command is not implemented for Deploy")
+}

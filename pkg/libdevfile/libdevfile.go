@@ -1,6 +1,8 @@
 package libdevfile
 
 import (
+	"fmt"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -9,6 +11,7 @@ import (
 type Handler interface {
 	ApplyImage(image v1alpha2.Component) error
 	ApplyKubernetes(kubernetes v1alpha2.Component) error
+	Execute(command v1alpha2.Command) error
 }
 
 // Deploy executes the default Deploy command of the devfile
@@ -66,4 +69,53 @@ func executeCommand(devfileObj parser.DevfileObj, command v1alpha2.Command, hand
 		return err
 	}
 	return cmd.Execute(handler)
+}
+
+func HasPostStartEvents(devfileObj parser.DevfileObj) bool {
+	postStartEvents := devfileObj.Data.GetEvents().PostStart
+	return len(postStartEvents) > 0
+}
+
+func HasPreStopEvents(devfileObj parser.DevfileObj) bool {
+	preStopEvents := devfileObj.Data.GetEvents().PreStop
+	return len(preStopEvents) > 0
+}
+
+func ExecPostStartEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
+	postStartEvents := devfileObj.Data.GetEvents().PostStart
+	return execDevfileEvent(devfileObj, componentName, postStartEvents, PostStart, handler)
+}
+
+func ExecPreStopEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
+	preStopEvents := devfileObj.Data.GetEvents().PreStop
+	return execDevfileEvent(devfileObj, componentName, preStopEvents, PreStop, handler)
+}
+
+// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
+// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
+// in the command
+func execDevfileEvent(devfileObj parser.DevfileObj, componentName string, events []string, eventType DevfileEventType, handler Handler) error {
+	if len(events) > 0 {
+		commandMap, err := allCommandsMap(devfileObj)
+		if err != nil {
+			return err
+		}
+		for _, commandName := range events {
+			command, ok := commandMap[commandName]
+			if !ok {
+				return fmt.Errorf("unable to find devfile command %q", commandName)
+			}
+
+			c, err := newCommand(devfileObj, command)
+			if err != nil {
+				return err
+			}
+			// Execute command in container
+			err = c.Execute(handler)
+			if err != nil {
+				return fmt.Errorf("unable to execute devfile command %q: %w", commandName, err)
+			}
+		}
+	}
+	return nil
 }

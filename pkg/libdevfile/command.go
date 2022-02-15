@@ -1,6 +1,8 @@
 package libdevfile
 
 import (
+	"strings"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -52,7 +54,7 @@ func allCommandsMap(devfileObj parser.DevfileObj) (map[string]v1alpha2.Command, 
 
 	commandMap := make(map[string]v1alpha2.Command, len(commands))
 	for _, command := range commands {
-		commandMap[command.Id] = command
+		commandMap[strings.ToLower(command.Id)] = command
 	}
 	return commandMap, nil
 }

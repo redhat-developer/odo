@@ -21,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
@@ -312,12 +313,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	postStartEvents := a.Devfile.Data.GetEvents().PostStart
-	if !componentExists && len(postStartEvents) > 0 {
-		err = a.ExecDevfileEvent(postStartEvents, common.PostStart, parameters.Show)
+	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
+		log.Infof("\nExecuting %s event commands for component %s", string(libdevfile.PostStart), a.ComponentName)
+		err = libdevfile.ExecPostStartEvents(a.Devfile, a.ComponentName, newExecHandler(a.Client, a.pod.Name, parameters.Show))
 		if err != nil {
 			return err
-
 		}
 	}
 
@@ -673,13 +673,12 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	podSpinner.End(true)
 
 	// if there are preStop events, execute them before deleting the deployment
-	preStopEvents := a.Devfile.Data.GetEvents().PreStop
-	if len(preStopEvents) > 0 {
+	if libdevfile.HasPreStopEvents(a.Devfile) {
 		if pod.Status.Phase != corev1.PodRunning {
 			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
 		}
-
-		err = a.ExecDevfileEvent(preStopEvents, common.PreStop, show)
+		log.Infof("\nExecuting %s event commands for component %s", libdevfile.PreStop, a.ComponentName)
+		err = libdevfile.ExecPreStopEvents(a.Devfile, a.ComponentName, newExecHandler(a.Client, pod.Name, show))
 		if err != nil {
 			return err
 		}
@@ -697,41 +696,6 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	spinner.End(true)
 	log.Successf("Successfully deleted component")
 	return nil
-}
-
-// Exec executes a command in the component
-func (a Adapter) Exec(command []string) error {
-	exists, err := component.ComponentExists(a.Client, a.ComponentName, a.AppName)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
-	}
-
-	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
-	if err != nil {
-		return err
-	}
-	containerName := runCommand.Exec.Component
-
-	// get the pod
-	pod, err := component.GetOnePod(a.Client, a.ComponentName, a.AppName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-	}
-
-	if pod.Status.Phase != corev1.PodRunning {
-		return fmt.Errorf("unable to exec as the component is not running. Current status=%v", pod.Status.Phase)
-	}
-
-	componentInfo := common.ComponentInfo{
-		PodName:       pod.Name,
-		ContainerName: containerName,
-	}
-
-	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
 }
 
 func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {

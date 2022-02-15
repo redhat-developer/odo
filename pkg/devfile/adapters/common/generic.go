@@ -2,12 +2,10 @@ package common
 
 import (
 	"io"
-	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
@@ -51,21 +49,12 @@ func (a GenericAdapter) Logger() machineoutput.MachineEventLoggingClient {
 	return a.logger
 }
 
-func (a *GenericAdapter) SetLogger(loggingClient machineoutput.MachineEventLoggingClient) {
-	a.logger = loggingClient
-}
-
 func (a GenericAdapter) ComponentInfo(command devfilev1.Command) (ComponentInfo, error) {
 	return a.componentInfo(command)
 }
 
 func (a GenericAdapter) SupervisorComponentInfo(command devfilev1.Command) (ComponentInfo, error) {
 	return a.supervisordComponentInfo(command)
-}
-
-// ExecuteCommand simply calls exec.ExecuteCommand using the GenericAdapter's client
-func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
-	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)
 }
 
 // closeWriterAndWaitForAck closes the PipeWriter and then waits for a channel response from the ContainerOutputWriter (indicating that the reader had closed).
@@ -176,39 +165,6 @@ func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType de
 		}
 	}
 	return commands, nil
-}
-
-// ExecDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
-// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
-// in the command
-func (a GenericAdapter) ExecDevfileEvent(events []string, eventType DevfileEventType, show bool) error {
-	if len(events) > 0 {
-		log.Infof("\nExecuting %s event commands for component %s", string(eventType), a.ComponentName)
-		commands, err := a.Devfile.Data.GetCommands(common.DevfileOptions{})
-		if err != nil {
-			return err
-		}
-
-		commandMap := GetCommandsMap(commands)
-		for _, commandName := range events {
-			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command, ok := commandMap[strings.ToLower(commandName)]
-			if !ok {
-				return errors.New("unable to find devfile command " + commandName)
-			}
-
-			c, err := New(command, commandMap, a)
-			if err != nil {
-				return err
-			}
-			// Execute command in container
-			err = c.Execute(show)
-			if err != nil {
-				return errors.Wrapf(err, "unable to execute devfile command %s", commandName)
-			}
-		}
-	}
-	return nil
 }
 
 func (a GenericAdapter) ApplyComponent(component string) error {

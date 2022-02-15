@@ -25,7 +25,7 @@ func (o *execCommand) CheckValidity() error {
 }
 
 func (o *execCommand) Execute(handler Handler) error {
-	return nil
+	return handler.Execute(o.command)
 }
 
 func (o *execCommand) UnExecute() error {

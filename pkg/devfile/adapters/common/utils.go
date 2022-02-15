@@ -21,11 +21,6 @@ type PredefinedDevfileCommands string
 type DevfileEventType string
 
 const (
-	// DefaultDevfileInitCommand is a predefined devfile command for init
-	DefaultDevfileInitCommand PredefinedDevfileCommands = "devinit"
-
-	// DefaultDevfileBuildCommand is a predefined devfile command for build
-	DefaultDevfileBuildCommand PredefinedDevfileCommands = "devbuild"
 
 	// DefaultDevfileRunCommand is a predefined devfile command for run
 	DefaultDevfileRunCommand PredefinedDevfileCommands = "devrun"
@@ -39,9 +34,6 @@ const (
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
 	defaultBootstrapperImage = "registry.access.redhat.com/ocp-tools-4/odo-init-container-rhel8:1.1.11"
-
-	// SupervisordControlCommand sub command which stands for control
-	SupervisordControlCommand = "ctl"
 
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
 	SupervisordVolumeName = "odo-supervisord-shared-data"
@@ -61,17 +53,8 @@ const (
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I and Devfile builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
 
-	// BinBash The path to sh executable
-	BinBash = "/bin/sh"
-
-	// DefaultVolumeSize Default volume size for volumes defined in a devfile
-	DefaultVolumeSize = "1Gi"
-
 	// EnvProjectsRoot is the env defined for project mount in a component container when component's mountSources=true
 	EnvProjectsRoot = "PROJECTS_ROOT"
-
-	// EnvProjectsSrc is the env defined for path to the project source in a component container
-	EnvProjectsSrc = "PROJECT_SOURCE"
 
 	// EnvOdoCommandRunWorkingDir is the env defined in the runtime component container which holds the work dir for the run command
 	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
@@ -93,25 +76,7 @@ const (
 
 	// SupervisordCtlSubCommand is the supervisord sub command ctl
 	SupervisordCtlSubCommand = "ctl"
-
-	// PreStart is a devfile event
-	PreStart DevfileEventType = "preStart"
-
-	// PostStart is a devfile event
-	PostStart DevfileEventType = "postStart"
-
-	// PreStop is a devfile event
-	PreStop DevfileEventType = "preStop"
-
-	// PostStop is a devfile event
-	PostStop DevfileEventType = "postStop"
 )
-
-// CommandNames is a struct to store the default and adapter names for devfile commands
-type CommandNames struct {
-	DefaultName string
-	AdapterName string
-}
 
 // GetBootstrapperImage returns the odo-init bootstrapper image
 func GetBootstrapperImage() string {
