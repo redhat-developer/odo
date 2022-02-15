@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/gookit/color"
 	"github.com/redhat-developer/odo/pkg/log"
-	"gopkg.in/AlecAivazis/survey.v1"
 	"strconv"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -119,6 +119,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 		"Add new port",
 		"Add new environment variable",
 	}
+	options2 := [][2]string{{""}, {""}, {""}}
 	components, err := devfileobj.Data.GetComponents(parsercommon.DevfileOptions{})
 	if err != nil {
 		return err
@@ -128,20 +129,18 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			for _, ep := range component.Container.Endpoints {
 				portsMap[component.Name] = append(portsMap[component.Name], strconv.Itoa(ep.TargetPort))
 				options = append(options, fmt.Sprintf(deletePortMessage, component.Name, strconv.Itoa(ep.TargetPort)))
+				options2 = append(options2, [2]string{component.Name, strconv.Itoa(ep.TargetPort)})
 			}
 			for _, env := range component.Container.Env {
 				envs[env.Name] = env.Value
 				options = append(options, fmt.Sprintf(deleteEnvMessage, env.Name))
+				options2 = append(options2, [2]string{env.Name})
 			}
 		}
 	}
 
-	var deleteMap = map[string][2]string{
-		"Delete port (container: \"runtime\": 8000": {"runtime", "8000"},
-		"Delete environment variable: \"A\"":        {"A"},
-	}
-
 	var configChangeAnswer string
+	var configChangeIndex int
 	for configChangeAnswer != "NOTHING - configuration is correct" {
 		printConfiguration(portsMap, envs)
 
@@ -151,14 +150,14 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			Options: options,
 		}
 
-		err = survey.AskOne(configChangeQuestion, &configChangeAnswer, nil)
+		err = survey.AskOne(configChangeQuestion, &configChangeIndex)
 		if err != nil {
 			return err
 		}
+		configChangeAnswer = options[configChangeIndex]
 
 		if strings.HasPrefix(configChangeAnswer, "Delete port") {
-			containerName, portToDelete := deleteMap[configChangeAnswer][0], deleteMap[configChangeAnswer][1]
-
+			containerName, portToDelete := options2[configChangeIndex][0], options2[configChangeIndex][1]
 			if !parser.InArray(portsMap[containerName], portToDelete) {
 				log.Warningf("unable to delete port %q, not found", portToDelete)
 				continue
@@ -179,12 +178,12 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			for i, opt := range options {
 				if opt == fmt.Sprintf(deletePortMessage, containerName, portToDelete) {
 					options = append(options[:i], options[i+1:]...)
+					options2 = append(options2[:i], options2[i+1:]...)
 					break
 				}
 			}
-			delete(deleteMap, fmt.Sprintf(deletePortMessage, containerName, portToDelete))
 		} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
-			envToDelete := deleteMap[configChangeAnswer][0]
+			envToDelete := options2[configChangeIndex][0]
 			if _, ok := envs[envToDelete]; !ok {
 				log.Warningf("unable to delete env %q, not found", envToDelete)
 			}
@@ -198,10 +197,10 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			for i, opt := range options {
 				if opt == fmt.Sprintf(deleteEnvMessage, envToDelete) {
 					options = append(options[:i], options[i+1:]...)
+					options2 = append(options2[:i], options2[i+1:]...)
 					break
 				}
 			}
-			delete(deleteMap, fmt.Sprintf(deleteEnvMessage, envToDelete))
 		} else if configChangeAnswer == "Add new port" {
 			var containers []string
 			for containerName, _ := range portsMap {
@@ -212,13 +211,13 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 				Options: containers,
 			}
 			var containerNameAnswer string
-			survey.AskOne(containerNameQuestion, &containerNameAnswer, survey.Required)
+			survey.AskOne(containerNameQuestion, &containerNameAnswer)
 
 			newPortQuestion := &survey.Input{
 				Message: "Enter port number:",
 			}
 			var newPortAnswer string
-			survey.AskOne(newPortQuestion, &newPortAnswer, survey.Required)
+			survey.AskOne(newPortQuestion, &newPortAnswer)
 
 			// Ensure the newPortAnswer is not already present; otherwise it will cause a duplicate endpoint error while parsing the devfile
 			if parser.InArray(portsMap[containerNameAnswer], newPortAnswer) {
@@ -233,21 +232,21 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			}
 			portsMap[containerNameAnswer] = append(portsMap[containerNameAnswer], newPortAnswer)
 			options = append(options, fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer))
-			deleteMap[fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer)] = [2]string{containerNameAnswer, newPortAnswer}
+			options2 = append(options2, [2]string{containerNameAnswer, newPortAnswer})
 		} else if configChangeAnswer == "Add new environment variable" {
 			newEnvNameQuesion := &survey.Input{
 				Message: "Enter new environment variable name:",
 			}
 			// Ask for env name
 			var newEnvNameAnswer string
-			survey.AskOne(newEnvNameQuesion, &newEnvNameAnswer, survey.Required)
+			survey.AskOne(newEnvNameQuesion, &newEnvNameAnswer)
 			newEnvValueQuestion := &survey.Input{
 				Message: fmt.Sprintf("Enter value for %q environment variable:", newEnvNameAnswer),
 			}
 
 			// Ask for env value
 			var newEnvValueAnswer string
-			survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer, survey.Required)
+			survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer)
 
 			// Add env var
 			err = devfileobj.AddEnvVars([]v1alpha2.EnvVar{
@@ -261,7 +260,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			}
 			envs[newEnvNameAnswer] = newEnvValueAnswer
 			options = append(options, fmt.Sprintf(deleteEnvMessage, newEnvNameAnswer))
-			deleteMap[fmt.Sprintf(deleteEnvMessage, newEnvNameAnswer)] = [2]string{newEnvNameAnswer}
+			options2 = append(options2, [2]string{newEnvNameAnswer})
 		} else if configChangeAnswer == "NOTHING - configuration is correct" {
 			// nothing to do
 		} else {
