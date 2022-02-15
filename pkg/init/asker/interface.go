@@ -19,4 +19,13 @@ type Asker interface {
 
 	// AskName asks for a devfile component name
 	AskName(defaultName string) (string, error)
+
+	// AskPersonalizeConfiguration asks the configuration user wants to change
+	AskPersonalizeConfiguration(options []string) (configChangeAnswer string, configChangeIndex int, err error)
+
+	// AskAddPort asks the container name and port that user wants to add
+	AskAddPort(containers []string) (containerNameAnswer, newPortAnswer string, err error)
+
+	// AskAddEnvVar asks the key and value for env var
+	AskAddEnvVar() (newEnvNameAnswer, newEnvValueAnswer string, err error)
 }

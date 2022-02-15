@@ -1,9 +1,9 @@
 package asker
 
 import (
-	"sort"
-
+	"fmt"
 	"github.com/AlecAivazis/survey/v2"
+	"sort"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 )
@@ -76,4 +76,56 @@ func (o *Survey) AskName(defaultName string) (string, error) {
 		return "", err
 	}
 	return answer, nil
+}
+
+func (o *Survey) AskAddPort(containers []string) (containerNameAnswer, newPortAnswer string, err error) {
+	containerNameQuestion := &survey.Select{
+		Message: "Enter container name: ",
+		Options: containers,
+	}
+	err = survey.AskOne(containerNameQuestion, &containerNameAnswer)
+	if err != nil {
+		return
+	}
+	newPortQuestion := &survey.Input{
+		Message: "Enter port number:",
+	}
+	err = survey.AskOne(newPortQuestion, &newPortAnswer)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (o *Survey) AskAddEnvVar() (newEnvNameAnswer, newEnvValueAnswer string, err error) {
+	newEnvNameQuesion := &survey.Input{
+		Message: "Enter new environment variable name:",
+	}
+	// Ask for env name
+	survey.AskOne(newEnvNameQuesion, &newEnvNameAnswer)
+	newEnvValueQuestion := &survey.Input{
+		Message: fmt.Sprintf("Enter value for %q environment variable:", newEnvNameAnswer),
+	}
+
+	// Ask for env value
+	err = survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (o *Survey) AskPersonalizeConfiguration(options []string) (configChangeAnswer string, configChangeIndex int, err error) {
+	configChangeQuestion := &survey.Select{
+		Message: "What configuration do you want change?",
+		Default: options[0],
+		Options: options,
+	}
+
+	err = survey.AskOne(configChangeQuestion, &configChangeIndex)
+	if err != nil {
+		return
+	}
+	configChangeAnswer = options[configChangeIndex]
+	return
 }

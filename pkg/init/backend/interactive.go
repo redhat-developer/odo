@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -109,7 +108,19 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 	return devfile.SetMetadataName(name)
 }
 
+// type devfileConfig struct {
+// 	// ops will be add or remove
+// 	Ops string
+// 	// kind will be port or env var
+// 	Kind string
+// 	// key will be container name in case of port ops, and env var key in case of env var
+// 	Key string
+// 	// value will be an array of ports in case of port ops, and env var value in case of env var
+// 	Value string
+// }
+
 func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
+	// var d devfileConfig
 	var envs = map[string]string{}
 	var portsMap = map[string][]string{}
 	var deletePortMessage = "Delete port (container: %q): %q"
@@ -144,17 +155,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 	for configChangeAnswer != "NOTHING - configuration is correct" {
 		printConfiguration(portsMap, envs)
 
-		configChangeQuestion := &survey.Select{
-			Message: "What configuration do you want change?",
-			Default: options[0],
-			Options: options,
-		}
-
-		err = survey.AskOne(configChangeQuestion, &configChangeIndex)
-		if err != nil {
-			return err
-		}
-		configChangeAnswer = options[configChangeIndex]
+		configChangeAnswer, configChangeIndex, err = o.asker.AskPersonalizeConfiguration(options)
 
 		if strings.HasPrefix(configChangeAnswer, "Delete port") {
 			containerName, portToDelete := options2[configChangeIndex][0], options2[configChangeIndex][1]
@@ -162,6 +163,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 				log.Warningf("unable to delete port %q, not found", portToDelete)
 				continue
 			}
+
 			// Delete port from the devfile
 			err = devfileobj.RemovePorts(map[string][]string{containerName: {portToDelete}})
 			if err != nil {
@@ -183,6 +185,12 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 				}
 			}
 		} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
+			// d = devfileConfig{
+			// 	Ops:   "Delete",
+			// 	Kind:  "EnvVar",
+			// 	Key:   "",
+			// 	Value: "",
+			// }
 			envToDelete := options2[configChangeIndex][0]
 			if _, ok := envs[envToDelete]; !ok {
 				log.Warningf("unable to delete env %q, not found", envToDelete)
@@ -203,22 +211,14 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			}
 		} else if configChangeAnswer == "Add new port" {
 			var containers []string
+			var containerNameAnswer, newPortAnswer string
 			for containerName, _ := range portsMap {
 				containers = append(containers, containerName)
 			}
-			containerNameQuestion := &survey.Select{
-				Message: "Enter container name: ",
-				Options: containers,
+			containerNameAnswer, newPortAnswer, err = o.asker.AskAddPort(containers)
+			if err != nil {
+				return err
 			}
-			var containerNameAnswer string
-			survey.AskOne(containerNameQuestion, &containerNameAnswer)
-
-			newPortQuestion := &survey.Input{
-				Message: "Enter port number:",
-			}
-			var newPortAnswer string
-			survey.AskOne(newPortQuestion, &newPortAnswer)
-
 			// Ensure the newPortAnswer is not already present; otherwise it will cause a duplicate endpoint error while parsing the devfile
 			if parser.InArray(portsMap[containerNameAnswer], newPortAnswer) {
 				log.Warningf("Port is %q already present in container %q.", newPortAnswer, containerNameAnswer)
@@ -234,19 +234,8 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 			options = append(options, fmt.Sprintf(deletePortMessage, containerNameAnswer, newPortAnswer))
 			options2 = append(options2, [2]string{containerNameAnswer, newPortAnswer})
 		} else if configChangeAnswer == "Add new environment variable" {
-			newEnvNameQuesion := &survey.Input{
-				Message: "Enter new environment variable name:",
-			}
-			// Ask for env name
-			var newEnvNameAnswer string
-			survey.AskOne(newEnvNameQuesion, &newEnvNameAnswer)
-			newEnvValueQuestion := &survey.Input{
-				Message: fmt.Sprintf("Enter value for %q environment variable:", newEnvNameAnswer),
-			}
-
-			// Ask for env value
-			var newEnvValueAnswer string
-			survey.AskOne(newEnvValueQuestion, &newEnvValueAnswer)
+			var newEnvNameAnswer, newEnvValueAnswer string
+			newEnvNameAnswer, newEnvValueAnswer, err = o.asker.AskAddEnvVar()
 
 			// Add env var
 			err = devfileobj.AddEnvVars([]v1alpha2.EnvVar{
