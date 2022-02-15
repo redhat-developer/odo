@@ -22,6 +22,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
+	gitignore "github.com/monochromegane/go-gitignore"
 	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -30,6 +31,18 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"k8s.io/klog"
+)
+
+//TODO remove placeholder once actual function is done
+func NewGitignore() *gitignore.IgnoreMatcher {
+	return nil
+}
+
+const (
+	HTTPRequestTimeout    = 30 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
+	ResponseHeaderTimeout = 30 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
+	ModeReadWriteFile     = 0600             // default Permission for a file
+	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
 )
 
 var httpCacheDir = filepath.Join(os.TempDir(), "odohttpcache")
