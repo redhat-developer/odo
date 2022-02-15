@@ -35,7 +35,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -315,7 +314,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
 		log.Infof("\nExecuting %s event commands for component %s", string(libdevfile.PostStart), a.ComponentName)
-		err = libdevfile.ExecPostStartEvents(a.Devfile, a.ComponentName, newExecHandler(a.Client, a.pod.Name, parameters.Show))
+		err = libdevfile.ExecPostStartEvents(a.Devfile, a.ComponentName, component.NewExecHandler(a.Client, a.pod.Name, parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -646,6 +645,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
+/*
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	if labels == nil {
@@ -696,7 +696,7 @@ func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
 	spinner.End(true)
 	log.Successf("Successfully deleted component")
 	return nil
-}
+}*/
 
 func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	return a.Client.ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)

@@ -53,17 +53,6 @@ func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 	return nil
 }
 
-// Delete deletes the Kubernetes resources that correspond to the devfile
-func (k Adapter) Delete(labels map[string]string, show bool, wait bool) error {
-
-	err := k.componentAdapter.Delete(labels, show, wait)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (k Adapter) ExecCMDInContainer(info common.ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {
 	return k.componentAdapter.ExecCMDInContainer(info, cmd, stdOut, stdErr, stdIn, show)
 }

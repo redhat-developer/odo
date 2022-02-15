@@ -22,7 +22,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
@@ -32,6 +34,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 )
 
@@ -537,4 +540,56 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 	containerName := command.Exec.Component
 
 	return client.GetPodLogs(pod.Name, containerName, follow)
+}
+
+// Delete deletes the component
+func Delete(kubeClient kclient.ClientInterface, devfileObj parser.DevfileObj, componentName string, appName string, labels map[string]string, show bool, wait bool) error {
+	if labels == nil {
+		return fmt.Errorf("cannot delete with labels being nil")
+	}
+	log.Printf("Gathering information for component: %q", componentName)
+	podSpinner := log.Spinner("Checking status for component")
+	defer podSpinner.End(false)
+
+	pod, err := GetOnePod(kubeClient, componentName, appName)
+	if kerrors.IsForbidden(err) {
+		klog.V(2).Infof("Resource for %s forbidden", componentName)
+		// log the error if it failed to determine if the component exists due to insufficient RBACs
+		podSpinner.End(false)
+		log.Warningf("%v", err)
+		return nil
+	} else if e, ok := err.(*kclient.PodNotFoundError); ok {
+		podSpinner.End(false)
+		log.Warningf("%v", e)
+		return nil
+	} else if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", componentName)
+	}
+
+	podSpinner.End(true)
+
+	// if there are preStop events, execute them before deleting the deployment
+	if libdevfile.HasPreStopEvents(devfileObj) {
+		if pod.Status.Phase != corev1.PodRunning {
+			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", componentName)
+		}
+		log.Infof("\nExecuting %s event commands for component %s", libdevfile.PreStop, componentName)
+		err = libdevfile.ExecPreStopEvents(devfileObj, componentName, NewExecHandler(kubeClient, pod.Name, show))
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Infof("\nDeleting component %s", componentName)
+	spinner := log.Spinner("Deleting Kubernetes resources for component")
+	defer spinner.End(false)
+
+	err = kubeClient.Delete(labels, wait)
+	if err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
 }

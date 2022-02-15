@@ -11,6 +11,7 @@ import (
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	dfutil "github.com/devfile/library/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -131,20 +132,9 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	if err != nil {
 		return err
 	}
-
 	componentName := do.EnvSpecificInfo.GetName()
-
-	kc := kubernetes.KubernetesContext{
-		Namespace: do.KClient.GetCurrentNamespace(),
-	}
-
 	labels := componentlabels.GetLabels(componentName, do.EnvSpecificInfo.GetApplication(), false)
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.contextFlag, do.GetApplication(), devObj, kc)
-	if err != nil {
-		return err
-	}
-
-	return devfileHandler.Delete(labels, do.showLogFlag, do.waitFlag)
+	return component.Delete(do.KClient, devObj, componentName, do.GetApplication(), labels, do.showLogFlag, do.waitFlag)
 }
 
 type undeployHandler struct {

@@ -23,7 +23,7 @@ type execHandler struct {
 
 const ShellExecutable string = "/bin/sh"
 
-func newExecHandler(kubeClient kclient.ClientInterface, podName string, show bool) *execHandler {
+func NewExecHandler(kubeClient kclient.ClientInterface, podName string, show bool) *execHandler {
 	return &execHandler{
 		kubeClient: kubeClient,
 		podName:    podName,

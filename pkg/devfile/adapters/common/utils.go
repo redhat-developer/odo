@@ -17,9 +17,6 @@ import (
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
 type PredefinedDevfileCommands string
 
-// DevfileEventType encapsulates constants for devfile events
-type DevfileEventType string
-
 const (
 
 	// DefaultDevfileRunCommand is a predefined devfile command for run

@@ -8,6 +8,5 @@ import (
 type ComponentAdapter interface {
 	commandExecutor
 	Push(parameters PushParameters) error
-	Delete(labels map[string]string, show bool, wait bool) error
 	CheckSupervisordCommandStatus(command devfilev1.Command) error
 }

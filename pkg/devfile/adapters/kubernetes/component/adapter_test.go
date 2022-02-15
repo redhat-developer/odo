@@ -461,6 +461,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 
 }
 
+// TODO move to pkg/component
 func TestAdapterDelete(t *testing.T) {
 	type args struct {
 		labels map[string]string
@@ -570,8 +571,6 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, fkclientset := kclient.FakeNew()
 
-			a := New(adapterCtx, fkclient, nil)
-
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
 					return true, nil, errors.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
@@ -590,7 +589,7 @@ func TestAdapterDelete(t *testing.T) {
 				return true, tt.existingPod, nil
 			})
 
-			if err := a.Delete(tt.args.labels, false, false); (err != nil) != tt.wantErr {
+			if err := component.Delete(fkclient, devObj, tt.componentName, "app", tt.args.labels, false, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
