@@ -33,6 +33,16 @@ var _ = Describe("odo devfile init command tests", func() {
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(len(files)).To(Equal(0))
 		})
+		By("running odo init in a directory containing a devfile.yaml", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			err := helper.Cmd("odo", "init").ShouldFail().Err()
+			Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
+		})
+		By("running odo init in a directory containing a .devfile.yaml", func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
+			err := helper.Cmd("odo", "init").ShouldFail().Err()
+			Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
+		})
 	})
 
 	When("running odo init with valid flags", func() {
@@ -43,6 +53,19 @@ var _ = Describe("odo devfile init command tests", func() {
 		It("should download a devfile.yaml file", func() {
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).To(Equal([]string{"devfile.yaml"}))
+		})
+	})
+
+	When("running odo init from a directory with sources", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+		})
+		It("should work without --starter flag", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass()
+		})
+		It("should not accept --starter flag", func() {
+			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go", "--starter", "go-starter").ShouldFail().Err()
+			Expect(err).To(ContainSubstring("--starter parameter cannot be used when the directory is not empty"))
 		})
 	})
 
