@@ -48,7 +48,7 @@ const (
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
 	CATALOG: {FILESYSTEM, PREFERENCE},
-	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY},
+	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
 	PROJECT: {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
@@ -112,7 +112,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.CatalogClient = catalog.NewCatalogClient(dep.FS, dep.PreferenceClient)
 	}
 	if isDefined(command, INIT) {
-		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
+		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.CatalogClient)
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)

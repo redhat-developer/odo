@@ -19,4 +19,7 @@ type Asker interface {
 
 	// AskName asks for a devfile component name
 	AskName(defaultName string) (string, error)
+
+	// AskCorrect asks for confirmation
+	AskCorrect() (bool, error)
 }

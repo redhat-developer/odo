@@ -187,20 +187,6 @@ func (mr *MockClientMockRecorder) NewPreferenceList() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewPreferenceList", reflect.TypeOf((*MockClient)(nil).NewPreferenceList))
 }
 
-// RegistryCacheTime mocks base method.
-func (m *MockClient) RegistryCacheTime() *int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryCacheTime")
-	ret0, _ := ret[0].(*int)
-	return ret0
-}
-
-// RegistryCacheTime indicates an expected call of RegistryCacheTime.
-func (mr *MockClientMockRecorder) RegistryCacheTime() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryCacheTime", reflect.TypeOf((*MockClient)(nil).RegistryCacheTime))
-}
-
 // PushTimeout mocks base method.
 func (m *MockClient) PushTimeout() *int {
 	m.ctrl.T.Helper()
@@ -213,6 +199,20 @@ func (m *MockClient) PushTimeout() *int {
 func (mr *MockClientMockRecorder) PushTimeout() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushTimeout", reflect.TypeOf((*MockClient)(nil).PushTimeout))
+}
+
+// RegistryCacheTime mocks base method.
+func (m *MockClient) RegistryCacheTime() *int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryCacheTime")
+	ret0, _ := ret[0].(*int)
+	return ret0
+}
+
+// RegistryCacheTime indicates an expected call of RegistryCacheTime.
+func (mr *MockClientMockRecorder) RegistryCacheTime() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryCacheTime", reflect.TypeOf((*MockClient)(nil).RegistryCacheTime))
 }
 
 // RegistryHandler mocks base method.

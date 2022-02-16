@@ -1,6 +1,7 @@
 package init
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/init/registry"
@@ -24,43 +26,71 @@ type InitClient struct {
 	// Backends
 	flagsBackend       *backend.FlagsBackend
 	interactiveBackend *backend.InteractiveBackend
+	alizerBackend      *backend.AlizerBackend
 
 	// Clients
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
 	registryClient   registry.Client
+	catalogClient    catalog.Client
 }
 
-func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
+func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client, catalogClient catalog.Client) *InitClient {
+	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
+	askerClient := asker.NewSurveyAsker()
 	return &InitClient{
 		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
-		interactiveBackend: backend.NewInteractiveBackend(asker.NewSurveyAsker(), catalog.NewCatalogClient(fsys, preferenceClient)),
+		interactiveBackend: backend.NewInteractiveBackend(askerClient, catalogClient),
+		alizerBackend:      backend.NewAlizerBackend(askerClient, catalogClient),
 		fsys:               fsys,
 		preferenceClient:   preferenceClient,
 		registryClient:     registryClient,
+		catalogClient:      catalogClient,
 	}
 }
 
 // Validate calls Validate method of the adequate backend
-func (o *InitClient) Validate(flags map[string]string) error {
+func (o *InitClient) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	var backend backend.InitBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.Validate(flags)
+	return backend.Validate(flags, fs, dir)
 }
 
 // SelectDevfile calls SelectDevfile methods of the adequate backend
-func (o *InitClient) SelectDevfile(flags map[string]string) (*backend.DevfileLocation, error) {
+func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error) {
 	var backend backend.InitBackend
-	if len(flags) == 0 {
+
+	empty, err := location.DirIsEmpty(fs, dir)
+	if err != nil {
+		return nil, err
+	}
+	if empty && len(flags) == 0 {
 		backend = o.interactiveBackend
+	} else if len(flags) == 0 {
+		backend = o.alizerBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.SelectDevfile(flags)
+	location, err := backend.SelectDevfile(flags, fs, dir)
+	if err != nil {
+		return nil, err
+	}
+
+	// If Alizer failed to determine the devfile, run interactively
+	if location == nil {
+		if backend == o.alizerBackend {
+			backend = o.interactiveBackend
+			return backend.SelectDevfile(flags, fs, dir)
+		} else {
+			return nil, errors.New("unable to determine the devfile location")
+		}
+	}
+
+	return location, err
 }
 
 func (o *InitClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
@@ -152,10 +182,17 @@ func (o *InitClient) downloadFromRegistry(registryName string, devfile string, d
 }
 
 // SelectStarterProject calls SelectStarterProject methods of the adequate backend
-func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
+func (o *InitClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error) {
 	var backend backend.InitBackend
-	if len(flags) == 0 {
+
+	onlyDevfile, err := location.DirContainsOnlyDevfile(fs, dir)
+	if err != nil {
+		return nil, err
+	}
+	if onlyDevfile && len(flags) == 0 {
 		backend = o.interactiveBackend
+	} else if len(flags) == 0 {
+		backend = o.alizerBackend
 	} else {
 		backend = o.flagsBackend
 	}

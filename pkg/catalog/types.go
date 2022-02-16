@@ -16,6 +16,7 @@ type DevfileComponentType struct {
 	Registry    Registry
 	Language    string
 	Tags        []string
+	ProjectType string
 }
 
 // DevfileComponentTypeList lists all the DevfileComponentType's

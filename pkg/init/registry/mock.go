@@ -7,11 +7,10 @@ package registry
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
-
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	dfutil "github.com/devfile/library/pkg/util"
+	util "github.com/devfile/library/pkg/util"
 	library "github.com/devfile/registry-support/registry-library/library"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClient is a mock of Client interface.
@@ -38,7 +37,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DownloadFileInMemory mocks base method.
-func (m *MockClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([]byte, error) {
+func (m *MockClient) DownloadFileInMemory(params util.HTTPRequestParams) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadFileInMemory", params)
 	ret0, _ := ret[0].([]byte)

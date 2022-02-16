@@ -16,78 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/init/asker"
 )
 
-func TestDetectFramework(t *testing.T) {
-	type args struct {
-		path string
-	}
-	tests := []struct {
-		name             string
-		args             args
-		wantedLanguage   string
-		wantedTools      []string
-		wantedFrameworks []string
-		wantErr          bool
-	}{
-		{
-			name: "Case 1 - Detect Node.JS example",
-			args: args{
-				path: GetTestProjectPath("nodejs"),
-			},
-			wantedLanguage:   "javascript",
-			wantedTools:      []string{"nodejs"},
-			wantedFrameworks: []string{},
-			wantErr:          false,
-		},
-		{
-			name: "Case 2 - Detect java openjdk example",
-			args: args{
-				path: GetTestProjectPath("openjdk"),
-			},
-			wantedLanguage:   "java",
-			wantedTools:      []string{"maven"},
-			wantedFrameworks: []string{},
-			wantErr:          false,
-		},
-		{
-			name: "Case 3 - Detect python example",
-			args: args{
-				path: GetTestProjectPath("python"),
-			},
-			wantedLanguage:   "python",
-			wantedTools:      []string{},
-			wantedFrameworks: []string{},
-			wantErr:          false,
-		},
-		{
-			name: "Case 3 - Detect java wildfly example",
-			args: args{
-				path: GetTestProjectPath("wildfly"),
-			},
-			wantedLanguage:   "java",
-			wantedTools:      []string{},
-			wantedFrameworks: []string{},
-			wantErr:          false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			// Run function DetectFramework
-			languages, err := DetectFramework(tt.args.path)
-
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !hasWantedLanguage(languages, tt.wantedLanguage, tt.wantedTools, tt.wantedFrameworks) {
-				t.Errorf("Expected: Language: %s, Tools: %s, Framework: %s\nGot: %+v", tt.wantedLanguage, tt.wantedTools, tt.wantedFrameworks, languages)
-			}
-
-		})
-	}
-}
-
 func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 	type fields struct {
 		buildAsker         func(ctrl *gomock.Controller) asker.Asker
@@ -156,10 +84,10 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			o := &InteractiveBackend{
-				asker:         tt.fields.buildAsker(ctrl),
+				askerClient:   tt.fields.buildAsker(ctrl),
 				catalogClient: tt.fields.buildCatalogClient(ctrl),
 			}
-			got, err := o.SelectDevfile(map[string]string{})
+			got, err := o.SelectDevfile(map[string]string{}, nil, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -252,7 +180,7 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				askerClient = tt.fields.asker(ctrl)
 			}
 			o := &InteractiveBackend{
-				asker:         askerClient,
+				askerClient:   askerClient,
 				catalogClient: tt.fields.catalogClient,
 			}
 			got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
@@ -317,7 +245,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				askerClient = tt.fields.asker(ctrl)
 			}
 			o := &InteractiveBackend{
-				asker:         askerClient,
+				askerClient:   askerClient,
 				catalogClient: tt.fields.catalogClient,
 			}
 			fs := filesystem.NewFakeFs()

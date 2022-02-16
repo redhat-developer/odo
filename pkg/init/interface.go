@@ -12,15 +12,17 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/init/backend"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type Client interface {
 	// Validate checks for each backend if flags are valid
-	Validate(flags map[string]string) error
+	Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error
 
-	// SelectDevfile returns information about a devfile selected based on the flags, or
+	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
+	// or based on the flags if the directory is empty, or
 	// interactively if flags is empty
-	SelectDevfile(flags map[string]string) (*backend.DevfileLocation, error)
+	SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error)
 
 	// DownloadDevfile downloads a devfile given its location information and a destination directory
 	// and returns the path of the downloaded file
@@ -28,7 +30,7 @@ type Client interface {
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
 	// depending on the flags. If not starter project is selected, a nil starter is returned
-	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error)
+	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error)
 
 	// DownloadStarterProject downloads the starter project referenced in devfile and stores it in dest directory
 	// WARNING: This will first remove all the content of dest.
