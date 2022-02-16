@@ -16,10 +16,27 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/redhat-developer/alizer/go/pkg/schema"
 )
+
+func GetFilesByRegex(filePaths *[]string, regexFile string) []string {
+	matchedPaths := []string{}
+	for _, path := range *filePaths {
+		if isPathOfWantedRegex(path, regexFile) {
+			matchedPaths = append(matchedPaths, path)
+		}
+	}
+	return matchedPaths
+}
+
+func isPathOfWantedRegex(path string, regexFile string) bool {
+	_, file := filepath.Split(path)
+	matched, _ := regexp.MatchString(regexFile, file)
+	return matched
+}
 
 func GetFile(filePaths *[]string, wantedFile string) string {
 	for _, path := range *filePaths {
@@ -41,22 +58,35 @@ func HasFile(files *[]string, wantedFile string) bool {
 
 func IsPathOfWantedFile(path string, wantedFile string) bool {
 	_, file := filepath.Split(path)
-	return file == wantedFile
+	return strings.EqualFold(file, wantedFile)
 }
 
-func IsTagInFile(file string, tag string) bool {
+func IsTagInFile(file string, tag string) (bool, error) {
 	contentInByte, err := ioutil.ReadFile(file)
 	if err != nil {
-		return false
+		return false, err
 	}
 	content := string(contentInByte)
-	return strings.Contains(content, tag)
+	return strings.Contains(content, tag), nil
 }
 
-func IsTagInPomXMLFile(file string, tag string) bool {
-	xmlFile, err := os.Open(file)
+func IsTagInPomXMLFile(pomFilePath string, tag string) (bool, error) {
+	pom, err := GetPomFileContent(pomFilePath)
 	if err != nil {
-		return false
+		return false, err
+	}
+	for _, dependency := range pom.Dependencies.Dependency {
+		if strings.Contains(dependency.GroupId, tag) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func GetPomFileContent(pomFilePath string) (schema.Pom, error) {
+	xmlFile, err := os.Open(pomFilePath)
+	if err != nil {
+		return schema.Pom{}, err
 	}
 	byteValue, _ := ioutil.ReadAll(xmlFile)
 
@@ -64,12 +94,7 @@ func IsTagInPomXMLFile(file string, tag string) bool {
 	xml.Unmarshal(byteValue, &pom)
 
 	defer xmlFile.Close()
-	for _, dependency := range pom.Dependencies.Dependency {
-		if strings.Contains(dependency.GroupId, tag) {
-			return true
-		}
-	}
-	return false
+	return pom, nil
 }
 
 func IsTagInPackageJsonFile(file string, tag string) bool {
@@ -97,4 +122,14 @@ func AddToArrayIfValueExist(arr *[]string, val string) {
 	if val != "" {
 		*arr = append(*arr, val)
 	}
+}
+
+func Contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }

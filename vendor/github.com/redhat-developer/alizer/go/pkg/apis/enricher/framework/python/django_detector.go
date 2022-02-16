@@ -29,7 +29,7 @@ func (d DjangoDetector) DoFrameworkDetection(language *language.Language, files 
 	utils.AddToArrayIfValueExist(&djangoFiles, wsgiPy)
 	utils.AddToArrayIfValueExist(&djangoFiles, asgiPy)
 
-	if hasFramework(files, "from django.") {
+	if hasFramework(&djangoFiles, "from django.") {
 		language.Frameworks = append(language.Frameworks, "Django")
 	}
 }

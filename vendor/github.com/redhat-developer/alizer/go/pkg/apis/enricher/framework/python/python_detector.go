@@ -16,7 +16,7 @@ import (
 
 func hasFramework(files *[]string, tag string) bool {
 	for _, file := range *files {
-		if utils.IsTagInFile(file, tag) {
+		if hasTag, _ := utils.IsTagInFile(file, tag); hasTag {
 			return true
 		}
 	}

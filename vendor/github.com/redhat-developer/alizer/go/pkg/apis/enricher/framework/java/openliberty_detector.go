@@ -17,7 +17,7 @@ import (
 type OpenLibertyDetector struct{}
 
 func (o OpenLibertyDetector) DoFrameworkDetection(language *language.Language, config string) {
-	if hasFramework(config, "io.openliberty") {
+	if hasFwk, _ := hasFramework(config, "io.openliberty"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "OpenLiberty")
 	}
 }

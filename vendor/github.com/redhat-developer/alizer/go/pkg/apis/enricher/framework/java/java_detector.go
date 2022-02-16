@@ -14,7 +14,7 @@ import (
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
-func hasFramework(configFile string, tag string) bool {
+func hasFramework(configFile string, tag string) (bool, error) {
 	if utils.IsPathOfWantedFile(configFile, "build.gradle") {
 		return utils.IsTagInFile(configFile, tag)
 	} else {

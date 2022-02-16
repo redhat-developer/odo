@@ -17,7 +17,7 @@ import (
 type QuarkusDetector struct{}
 
 func (q QuarkusDetector) DoFrameworkDetection(language *language.Language, config string) {
-	if hasFramework(config, "io.quarkus") {
+	if hasFwk, _ := hasFramework(config, "io.quarkus"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Quarkus")
 	}
 }

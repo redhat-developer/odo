@@ -515,9 +515,11 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/redhat-developer/alizer/go v0.0.0-20220204121940-dec463ed3af3
+# github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae
 ## explicit
 github.com/redhat-developer/alizer/go/pkg/apis/enricher
+github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/dotnet
+github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/go
 github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/java
 github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/javascript/nodejs
 github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/python
@@ -644,7 +646,10 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
-# golang.org/x/mod v0.4.2
+# golang.org/x/mod v0.5.1
+golang.org/x/mod/internal/lazyregexp
+golang.org/x/mod/modfile
+golang.org/x/mod/module
 golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 golang.org/x/net/context

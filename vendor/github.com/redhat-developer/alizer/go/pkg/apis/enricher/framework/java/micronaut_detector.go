@@ -17,7 +17,7 @@ import (
 type MicronautDetector struct{}
 
 func (m MicronautDetector) DoFrameworkDetection(language *language.Language, config string) {
-	if hasFramework(config, "io.micronaut") {
+	if hasFwk, _ := hasFramework(config, "io.micronaut"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Micronaut")
 	}
 }

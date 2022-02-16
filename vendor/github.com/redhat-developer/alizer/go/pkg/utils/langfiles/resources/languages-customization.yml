@@ -1,3 +1,17 @@
+C#:
+  aliases:
+    - "dotnet"
+  configuration_files:
+    - ".*\\.\\w+proj"
+    - "appsettings.json"
+  component: true
+F#:
+  aliases:
+    - "dotnet"
+  configuration_files:
+    - ".*\\.\\w+proj"
+    - "appsettings.json"
+  component: true
 Go:
   configuration_files:
     - "go.mod"
@@ -19,4 +33,11 @@ Python:
 Rust:
   configuration_files:
     - "Cargo.toml"
+  component: true
+Visual Basic .NET:
+  aliases:
+    - "dotnet"
+  configuration_files:
+    - ".*\\.\\w+proj"
+    - "appsettings.json"
   component: true

@@ -29,13 +29,21 @@ func SelectDevFileFromTypes(path string, devFileTypes []DevFileType) (DevFileTyp
 	if err != nil {
 		return DevFileType{}, err
 	}
+	devfile, err := SelectDevFileUsingLanguagesFromTypes(languages, devFileTypes)
+	if err != nil {
+		return DevFileType{}, errors.New("No valid devfile found for project in " + path)
+	}
+	return devfile, nil
+}
+
+func SelectDevFileUsingLanguagesFromTypes(languages []language.Language, devFileTypes []DevFileType) (DevFileType, error) {
 	for _, language := range languages {
 		devfile, err := selectDevFileByLanguage(language, devFileTypes)
 		if err == nil {
 			return devfile, nil
 		}
 	}
-	return DevFileType{}, errors.New("No valid devfile found for project in " + path)
+	return DevFileType{}, errors.New("no valid devfile found by using those languages")
 }
 
 func selectDevFileByLanguage(language language.Language, devFileTypes []DevFileType) (DevFileType, error) {

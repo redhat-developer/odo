@@ -11,13 +11,16 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"strings"
+
+	"golang.org/x/mod/modfile"
 )
 
-type SpringDetector struct{}
-
-func (s SpringDetector) DoFrameworkDetection(language *language.Language, config string) {
-	if hasFwk, _ := hasFramework(config, "org.springframework"); hasFwk {
-		language.Frameworks = append(language.Frameworks, "Spring")
+func hasFramework(modules []*modfile.Require, tag string) bool {
+	for _, module := range modules {
+		if strings.EqualFold(module.Mod.Path, tag) || strings.HasPrefix(module.Mod.Path, tag) {
+			return true
+		}
 	}
+	return false
 }

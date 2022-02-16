@@ -13,16 +13,20 @@ package langfiles
 import (
 	"embed"
 	"errors"
+	"strings"
 
 	"github.com/redhat-developer/alizer/go/pkg/schema"
 	"gopkg.in/yaml.v3"
 )
 
 type LanguageItem struct {
-	Name    string
-	Aliases []string
-	Kind    string
-	Group   string
+	Name               string
+	Aliases            []string
+	Kind               string
+	Group              string
+	ConfigurationFiles []string
+	ExcludeFolders     []string
+	Component          bool
 }
 
 type LanguageFile struct {
@@ -57,6 +61,7 @@ func create() *LanguageFile {
 			Kind:    properties.Type,
 			Group:   properties.Group,
 		}
+		customizeLanguage(&languageItem)
 		languages[name] = languageItem
 		extensions := properties.Extensions
 		for _, ext := range extensions {
@@ -72,12 +77,32 @@ func create() *LanguageFile {
 	}
 }
 
+func customizeLanguage(languageItem *LanguageItem) {
+	languagesCustomizations := getLanguageCustomizations()
+	if customization, hasCustomization := languagesCustomizations[(*languageItem).Name]; hasCustomization {
+		(*languageItem).ConfigurationFiles = customization.ConfigurationFiles
+		(*languageItem).ExcludeFolders = customization.ExcludeFolders
+		(*languageItem).Component = customization.Component
+	}
+}
+
 func getLanguagesProperties() schema.LanguagesProperties {
 	yamlFile, err := res.ReadFile("resources/languages.yml")
 	if err != nil {
 		return schema.LanguagesProperties{}
 	}
 	var data schema.LanguagesProperties
+	yaml.Unmarshal(yamlFile, &data)
+	return data
+}
+
+func getLanguageCustomizations() schema.LanguagesCustomizations {
+	yamlFile, err := res.ReadFile("resources/languages-customization.yml")
+	if err != nil {
+		return schema.LanguagesCustomizations{}
+	}
+
+	var data schema.LanguagesCustomizations
 	yaml.Unmarshal(yamlFile, &data)
 	return data
 }
@@ -93,4 +118,35 @@ func (l *LanguageFile) GetLanguageByName(name string) (LanguageItem, error) {
 		}
 	}
 	return LanguageItem{}, errors.New("no language found with this name")
+}
+
+func (l *LanguageFile) GetLanguageByAlias(alias string) (LanguageItem, error) {
+	for _, langItem := range l.languages {
+		for _, aliasItem := range langItem.Aliases {
+			if strings.EqualFold(alias, aliasItem) {
+				return langItem, nil
+			}
+		}
+	}
+	return LanguageItem{}, errors.New("no language found with this alias")
+}
+
+func (l *LanguageFile) GetLanguageByNameOrAlias(name string) (LanguageItem, error) {
+	langItem, err := l.GetLanguageByName(name)
+	if err == nil {
+		return langItem, nil
+	}
+
+	return l.GetLanguageByAlias(name)
+}
+
+func (l *LanguageFile) GetConfigurationPerLanguageMapping() map[string]string {
+	configurationPerLanguage := make(map[string]string)
+	for langName, langItem := range l.languages {
+		configurationFiles := langItem.ConfigurationFiles
+		for _, configFile := range configurationFiles {
+			configurationPerLanguage[configFile] = langName
+		}
+	}
+	return configurationPerLanguage
 }

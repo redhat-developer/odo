@@ -21,6 +21,7 @@ type JavaScriptEnricher struct{}
 func getJavaScriptFrameworkDetectors() []FrameworkDetectorWithConfigFile {
 	return []FrameworkDetectorWithConfigFile{
 		&framework.ExpressDetector{},
+		&framework.ReactJsDetector{},
 	}
 }
 
@@ -35,6 +36,10 @@ func (j JavaScriptEnricher) DoEnrichLanguage(language *language.Language, files 
 		language.Tools = []string{"NodeJs"}
 		detectJavaScriptFrameworks(language, packageJson)
 	}
+}
+
+func (j JavaScriptEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
+	return IsConfigurationValidForLanguage(language, config)
 }
 
 func detectJavaScriptFrameworks(language *language.Language, configFile string) {

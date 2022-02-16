@@ -21,4 +21,7 @@ type Pom struct {
 			Scope      string `xml:"scope"`
 		} `xml:"dependency"`
 	} `xml:"dependencies"`
+	Modules struct {
+		Module string `xml:"module"`
+	} `xml:"modules,omitempty"`
 }

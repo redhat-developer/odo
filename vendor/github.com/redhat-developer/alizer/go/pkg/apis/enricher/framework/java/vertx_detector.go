@@ -17,7 +17,7 @@ import (
 type VertxDetector struct{}
 
 func (v VertxDetector) DoFrameworkDetection(language *language.Language, config string) {
-	if hasFramework(config, "io.vertx") {
+	if hasFwk, _ := hasFramework(config, "io.vertx"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Vertx")
 	}
 }

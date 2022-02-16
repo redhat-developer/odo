@@ -25,3 +25,11 @@ type LanguageProperties struct {
 }
 
 type LanguagesProperties map[string]LanguageProperties
+
+type LanguageCustomization struct {
+	ConfigurationFiles []string `yaml:"configuration_files"`
+	Component          bool     `yaml:"component"`
+	ExcludeFolders     []string `yaml:"exclude_folders,omitempty"`
+}
+
+type LanguagesCustomizations map[string]LanguageCustomization

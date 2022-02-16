@@ -32,6 +32,10 @@ func (p PythonEnricher) DoEnrichLanguage(language *language.Language, files *[]s
 	detectPythonFrameworks(language, files)
 }
 
+func (p PythonEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
+	return IsConfigurationValidForLanguage(language, config)
+}
+
 func detectPythonFrameworks(language *language.Language, files *[]string) {
 	for _, detector := range getPythonFrameworkDetectors() {
 		detector.DoFrameworkDetection(language, files)
