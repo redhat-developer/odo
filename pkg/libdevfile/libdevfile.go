@@ -16,12 +16,12 @@ type Handler interface {
 
 // Deploy executes the default Deploy command of the devfile
 func Deploy(devfileObj parser.DevfileObj, handler Handler) error {
-	devfileCommand, err := getDefaultCommand(devfileObj, v1alpha2.DeployCommandGroupKind)
+	deployCommand, err := getDefaultCommand(devfileObj, v1alpha2.DeployCommandGroupKind)
 	if err != nil {
 		return err
 	}
 
-	return executeCommand(devfileObj, devfileCommand, handler)
+	return executeCommand(devfileObj, deployCommand, handler)
 }
 
 // getDefaultCommand returns the default command of the given kind in the devfile.
@@ -83,18 +83,18 @@ func HasPreStopEvents(devfileObj parser.DevfileObj) bool {
 
 func ExecPostStartEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
 	postStartEvents := devfileObj.Data.GetEvents().PostStart
-	return execDevfileEvent(devfileObj, componentName, postStartEvents, PostStart, handler)
+	return execDevfileEvent(devfileObj, postStartEvents, handler)
 }
 
 func ExecPreStopEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
 	preStopEvents := devfileObj.Data.GetEvents().PreStop
-	return execDevfileEvent(devfileObj, componentName, preStopEvents, PreStop, handler)
+	return execDevfileEvent(devfileObj, preStopEvents, handler)
 }
 
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
-func execDevfileEvent(devfileObj parser.DevfileObj, componentName string, events []string, eventType DevfileEventType, handler Handler) error {
+func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Handler) error {
 	if len(events) > 0 {
 		commandMap, err := allCommandsMap(devfileObj)
 		if err != nil {

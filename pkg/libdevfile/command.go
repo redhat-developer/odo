@@ -56,5 +56,6 @@ func allCommandsMap(devfileObj parser.DevfileObj) (map[string]v1alpha2.Command, 
 	for _, command := range commands {
 		commandMap[strings.ToLower(command.Id)] = command
 	}
+
 	return commandMap, nil
 }
