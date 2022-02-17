@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/monochromegane/go-gitignore"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -444,13 +445,20 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileChanged := make(map[string]bool)
 	fileRemoteChanged := make(map[string]bool)
 
+	var ignoreMatcher gitignore.IgnoreMatcher
+	ignoreMatcher, err = GetIgnoreMatcherFromRules(pathOptions.directory, ignoreRules)
+	if err != nil {
+		return IndexerRet{}, fmt.Errorf("could not create ignore matcher: %w", err)
+	}
+
 	for _, matchedPath := range matchedPathsDir {
 
 		// check if it matches a ignore rule
-		match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
-		if err != nil {
-			return IndexerRet{}, err
-		}
+		match := ignoreMatcher.Match(matchedPath, false)
+		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
+		//if err != nil {
+		//	return IndexerRet{}, err
+		//}
 		// the folder matches a glob rule and thus should be skipped
 		if match {
 			return IndexerRet{}, nil
