@@ -111,6 +111,11 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
+	// TODO: Add validation for duplicate port
+	// TODO: Get rid of regex
+	// TODO: Add tests
+	// TODO: Add mock methods
+	// TODO: Print live configuration
 	var config = asker.DevfileConfiguration{}
 	components, err := devfileobj.Data.GetComponents(parsercommon.DevfileOptions{})
 	if err != nil {
@@ -169,7 +174,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				if indexToDelete == -1 {
 					log.Warningf(fmt.Sprintf("unable to delete port %q, not found", portToDelete))
 				}
-				err = devfileobj.RemovePorts(map[string][]string{containerName: {portToDelete}})
+				err = devfileobj.Data.RemovePorts(map[string][]string{selectContainerAnswer: {portToDelete}})
 				if err != nil {
 					return err
 				}
@@ -182,11 +187,20 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				if _, ok := selectedContainer.Envs[envToDelete]; !ok {
 					log.Warningf(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
 				}
+				err = devfileobj.Data.RemoveEnvVars(map[string][]string{selectContainerAnswer: {envToDelete}})
+				if err != nil {
+					return err
+				}
 				delete(selectedContainer.Envs, envToDelete)
+
 			} else if configChangeAnswer == "NOTHING - configuration is correct" {
 				// nothing to do
 			} else if configChangeAnswer == "Add new port" {
 				newPort, err := o.asker.AskAddPort()
+				if err != nil {
+					return err
+				}
+				err = devfileobj.Data.SetPorts(map[string][]string{selectContainerAnswer: {newPort}})
 				if err != nil {
 					return err
 				}
@@ -196,13 +210,20 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				if err != nil {
 					return err
 				}
+				err = devfileobj.Data.AddEnvVars(map[string][]v1alpha2.EnvVar{selectContainerAnswer: {{
+					Name:  newEnvNameAnswer,
+					Value: newEnvValueAnswer,
+				}}})
+				if err != nil {
+					return err
+				}
 				selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
 			} else {
 				return fmt.Errorf("Unknown configuration selected %q", configChangeAnswer)
 			}
 		}
 	}
-	return nil
+	return devfileobj.WriteYamlDevfile()
 }
 
 func PrintConfiguration(config asker.DevfileConfiguration) {
