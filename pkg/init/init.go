@@ -221,3 +221,7 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 	err := backend.PersonalizeName(devfile, flags)
 	return err
 }
+
+func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
+	return o.interactiveBackend.PersonalizeDevfileconfig(devfileobj)
+}

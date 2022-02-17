@@ -2,10 +2,15 @@ package backend
 
 import (
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/log"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
@@ -103,4 +108,118 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 		return err
 	}
 	return devfile.SetMetadataName(name)
+}
+
+func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
+	var config = asker.DevfileConfiguration{}
+	components, err := devfileobj.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return err
+	}
+	for _, component := range components {
+		var ports = []string{}
+		var envMap = map[string]string{}
+		if component.Container != nil {
+			for _, ep := range component.Container.Endpoints {
+				ports = append(ports, strconv.Itoa(ep.TargetPort))
+			}
+			for _, env := range component.Container.Env {
+				envMap[env.Name] = env.Value
+			}
+		}
+		config[component.Name] = asker.ContainerConfiguration{
+			Ports: ports,
+			Envs:  envMap,
+		}
+	}
+	var selectContainerAnswer string
+	containerOptions := config.GetContainers()
+	containerOptions = append(containerOptions, "NONE - configuration is correct")
+
+	for selectContainerAnswer != "NONE - configuration is correct" {
+		PrintConfiguration(config)
+		selectContainerAnswer, err = o.asker.AskContainerName(containerOptions)
+		if err != nil {
+			return err
+		}
+
+		selectedContainer := config[selectContainerAnswer]
+		if selectContainerAnswer == "NONE - configuration is correct" {
+			break
+		}
+
+		var configChangeAnswer string
+		for configChangeAnswer != "NOTHING - configuration is correct" {
+			configChangeAnswer, err = o.asker.AskPersonalizeConfiguration(selectedContainer)
+			if err != nil {
+				return err
+			}
+
+			if strings.HasPrefix(configChangeAnswer, "Delete port") {
+				re := regexp.MustCompile("\"(.*?)\"")
+				match := re.FindStringSubmatch(configChangeAnswer)
+				portToDelete := match[1]
+
+				indexToDelete := -1
+				for i, port := range selectedContainer.Ports {
+					if port == portToDelete {
+						indexToDelete = i
+					}
+				}
+				if indexToDelete == -1 {
+					log.Warningf(fmt.Sprintf("unable to delete port %q, not found", portToDelete))
+				}
+				err = devfileobj.RemovePorts(map[string][]string{containerName: {portToDelete}})
+				if err != nil {
+					return err
+				}
+				selectedContainer.Ports = append(selectedContainer.Ports[:indexToDelete], selectedContainer.Ports[indexToDelete+1:]...)
+
+			} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
+				re := regexp.MustCompile("\"(.*?)\"")
+				match := re.FindStringSubmatch(configChangeAnswer)
+				envToDelete := match[1]
+				if _, ok := selectedContainer.Envs[envToDelete]; !ok {
+					log.Warningf(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
+				}
+				delete(selectedContainer.Envs, envToDelete)
+			} else if configChangeAnswer == "NOTHING - configuration is correct" {
+				// nothing to do
+			} else if configChangeAnswer == "Add new port" {
+				newPort, err := o.asker.AskAddPort()
+				if err != nil {
+					return err
+				}
+				selectedContainer.Ports = append(selectedContainer.Ports, newPort)
+			} else if configChangeAnswer == "Add new environment variable" {
+				newEnvNameAnswer, newEnvValueAnswer, err := o.asker.AskAddEnvVar()
+				if err != nil {
+					return err
+				}
+				selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
+			} else {
+				return fmt.Errorf("Unknown configuration selected %q", configChangeAnswer)
+			}
+		}
+	}
+	return nil
+}
+
+func PrintConfiguration(config asker.DevfileConfiguration) {
+	color.New(color.Bold, color.FgGreen).Println("Current component configuration:")
+
+	for key, container := range config {
+
+		color.Green("Container %q:", key)
+		color.Green("  Opened ports:")
+		for _, port := range container.Ports {
+
+			color.New(color.Bold, color.FgWhite).Printf("   - %s\n", port)
+		}
+
+		color.Green("  Environment variables:")
+		for key, value := range container.Envs {
+			color.New(color.Bold, color.FgWhite).Printf("   - %s = %s\n", key, value)
+		}
+	}
 }
