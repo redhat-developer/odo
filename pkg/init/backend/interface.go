@@ -11,7 +11,7 @@ import (
 
 // InitBackend is a specialized backend for steps of initiating a project, based on various input (either from CLI flags or interactively from user)
 type InitBackend interface {
-	// Validate returns an error if it does not validate the flags basde on the directory content
+	// Validate returns an error if it does not validate the flags based on the directory content
 	Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error
 
 	// SelectDevfile selects a devfile and returns its location information, depending on the flags

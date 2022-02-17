@@ -61,10 +61,10 @@ var _ = Describe("odo devfile init command tests", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 		})
 		It("should work without --starter flag", func() {
-			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass()
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs").ShouldPass()
 		})
 		It("should not accept --starter flag", func() {
-			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go", "--starter", "go-starter").ShouldFail().Err()
+			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--starter", "nodejs-starter").ShouldFail().Err()
 			Expect(err).To(ContainSubstring("--starter parameter cannot be used when the directory is not empty"))
 		})
 	})
