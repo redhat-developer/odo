@@ -39,6 +39,8 @@ type Filesystem interface {
 	Chtimes(name string, atime time.Time, mtime time.Time) error
 	RemoveAll(path string) error
 	Remove(name string) error
+	Chmod(name string, mode os.FileMode) error
+	Getwd() (dir string, err error)
 
 	// from "io/ioutil"
 	ReadFile(filename string) ([]byte, error)
@@ -58,5 +60,6 @@ type File interface {
 	WriteString(s string) (n int, err error)
 	Sync() error
 	Close() error
+	Read(b []byte) (n int, err error)
 	Readdir(n int) ([]os.FileInfo, error)
 }
