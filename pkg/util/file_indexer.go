@@ -446,15 +446,15 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileRemoteChanged := make(map[string]bool)
 
 	var ignoreMatcher gitignore.IgnoreMatcher
-	ignoreMatcher, err = GetIgnoreMatcherFromRules(pathOptions.directory, ignoreRules)
-	if err != nil {
-		return IndexerRet{}, fmt.Errorf("could not create ignore matcher: %w", err)
-	}
+	ignoreMatcher = GetIgnoreMatcherFromRules(pathOptions.directory, ignoreRules)
 
 	for _, matchedPath := range matchedPathsDir {
-
+		stat, err := os.Stat(matchedPath)
+		if err != nil {
+			return IndexerRet{}, err
+		}
 		// check if it matches a ignore rule
-		match := ignoreMatcher.Match(matchedPath, false)
+		match := ignoreMatcher.Match(matchedPath, stat.IsDir())
 		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
 		//if err != nil {
 		//	return IndexerRet{}, err
@@ -462,11 +462,6 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		// the folder matches a glob rule and thus should be skipped
 		if match {
 			return IndexerRet{}, nil
-		}
-
-		stat, err := os.Stat(matchedPath)
-		if err != nil {
-			return IndexerRet{}, err
 		}
 
 		if joinedRelPath != "." {
