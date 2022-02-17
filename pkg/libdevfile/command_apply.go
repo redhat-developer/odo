@@ -1,8 +1,6 @@
 package libdevfile
 
 import (
-	"fmt"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -35,11 +33,11 @@ func (o *applyCommand) Execute(handler Handler) error {
 	}
 
 	if len(devfileComponents) == 0 {
-		return fmt.Errorf("component %q does not exists", o.command.Apply.Component)
+		return NewComponentNotExistError(o.command.Apply.Component)
 	}
 
 	if len(devfileComponents) != 1 {
-		return fmt.Errorf("more than one component with the same name, should not happen")
+		return NewComponentsWithSameNameError()
 	}
 
 	component, err := newComponent(o.devfileObj, devfileComponents[0])
@@ -48,8 +46,4 @@ func (o *applyCommand) Execute(handler Handler) error {
 	}
 
 	return component.Apply(handler)
-}
-
-func (o *applyCommand) UnExecute() error {
-	return nil
 }

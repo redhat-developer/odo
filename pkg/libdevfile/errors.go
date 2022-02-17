@@ -48,3 +48,28 @@ func NewMoreThanOneDefaultCommandFoundError(kind v1alpha2.CommandGroupKind) More
 func (e MoreThanOneDefaultCommandFoundError) Error() string {
 	return fmt.Sprintf("more than one default %s command found in devfile, this should not happen", e.kind)
 }
+
+// ComponentNotExistError is returned when a component referenced in a command or component does not exist
+type ComponentNotExistError struct {
+	name string
+}
+
+func NewComponentNotExistError(name string) ComponentNotExistError {
+	return ComponentNotExistError{
+		name: name,
+	}
+}
+
+func (e ComponentNotExistError) Error() string {
+	return fmt.Sprintf("component %q does not exists", e.name)
+}
+
+type ComponentsWithSameNameError struct{}
+
+func NewComponentsWithSameNameError() ComponentsWithSameNameError {
+	return ComponentsWithSameNameError{}
+}
+
+func (e ComponentsWithSameNameError) Error() string {
+	return "more than one component with the same name, should not happen"
+}

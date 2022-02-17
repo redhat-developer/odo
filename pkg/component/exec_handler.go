@@ -57,23 +57,21 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 }
 
 func getCmdline(command v1alpha2.Command) []string {
-	exe := command.Exec
-
 	// deal with environment variables
 	var cmdLine string
-	setEnvVariable := util.GetCommandStringFromEnvs(exe.Env)
+	setEnvVariable := util.GetCommandStringFromEnvs(command.Exec.Env)
 
 	if setEnvVariable == "" {
-		cmdLine = exe.CommandLine
+		cmdLine = command.Exec.CommandLine
 	} else {
-		cmdLine = setEnvVariable + " && " + exe.CommandLine
+		cmdLine = setEnvVariable + " && " + command.Exec.CommandLine
 	}
 
 	// Change to the workdir and execute the command
 	var cmd []string
-	if exe.WorkingDir != "" {
+	if command.Exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmd = []string{ShellExecutable, "-c", "cd " + exe.WorkingDir + " && " + cmdLine}
+		cmd = []string{ShellExecutable, "-c", "cd " + command.Exec.WorkingDir + " && " + cmdLine}
 	} else {
 		cmd = []string{ShellExecutable, "-c", cmdLine}
 	}

@@ -54,7 +54,3 @@ func (o *compositeCommand) Execute(handler Handler) error {
 	}
 	return nil
 }
-
-func (o *compositeCommand) UnExecute() error {
-	return nil
-}

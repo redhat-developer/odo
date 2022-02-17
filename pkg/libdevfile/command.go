@@ -12,7 +12,6 @@ import (
 type command interface {
 	CheckValidity() error
 	Execute(handler Handler) error
-	UnExecute() error
 }
 
 // newCommand returns a command implementation, depending on the type of the command
@@ -39,7 +38,7 @@ func newCommand(devfileObj parser.DevfileObj, devfileCmd v1alpha2.Command) (comm
 		cmd = newExecCommand(devfileObj, devfileCmd)
 	}
 
-	if err := cmd.CheckValidity(); err != nil {
+	if err = cmd.CheckValidity(); err != nil {
 		return nil, err
 	}
 	return cmd, nil

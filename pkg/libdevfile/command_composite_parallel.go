@@ -64,7 +64,3 @@ func (o *parallelCompositeCommand) Execute(handler Handler) error {
 	}
 	return nil
 }
-
-func (p *parallelCompositeCommand) UnExecute() error {
-	return nil
-}
