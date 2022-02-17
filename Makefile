@@ -265,6 +265,7 @@ test-cmd-debug: ## Run odo debug command tests
 .PHONY: test-integration
 test-integration: ## Run command's integration tests irrespective of service catalog status in the cluster.
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/
+	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/interactive/
 
 .PHONY: test-integration-devfile
 test-integration-devfile: ## Run devfile integration tests
