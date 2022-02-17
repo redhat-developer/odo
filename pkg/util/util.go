@@ -8,7 +8,6 @@ import (
 	"hash/adler32"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"os/signal"
@@ -113,39 +112,8 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }
 
-func GetIgnoreMatcherFromRules(context string, rules []string) (gitignore.IgnoreMatcher, error) {
-	tmpIgnoreDir := os.TempDir()
-	tmpFile := filepath.Join(tmpIgnoreDir, ".ignore")
-
-	file, err := os.OpenFile(tmpFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to write to temp ignore file")
-		log.Fatalf("failed creating file: %s", err)
-	}
-
-	datawriter := bufio.NewWriter(file)
-
-	for _, data := range rules {
-		_, _ = datawriter.WriteString(data + "\n")
-	}
-	err = datawriter.Flush()
-	if err != nil {
-		return nil, err
-	}
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
-	file2, err := os.OpenFile(tmpFile, os.O_RDONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
-	err = file2.Close()
-	if err != nil {
-		return nil, err
-	}
-	return gitignore.NewGitIgnore(context, tmpFile)
+func GetIgnoreMatcherFromRules(context string, rules []string) gitignore.IgnoreMatcher {
+	return gitignore.NewGitIgnoreFromReader(context, strings.NewReader(strings.Join(rules, "\n")))
 }
 
 // NamespaceKubernetesObjectWithTrim hyphenates applicationName and componentName
