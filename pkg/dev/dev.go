@@ -38,7 +38,7 @@ func getComponents() (devfilev2.Component, error) {
 
 // Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container,
 // and watches it for any changes. It prints all the logs/output to out.
-func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, path string, out io.Writer) error {
+func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, out io.Writer) error {
 	var err error
 
 	var adapter common.ComponentAdapter
@@ -68,6 +68,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		ExtChan:             make(chan bool),
 		DevfileWatchHandler: regenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
+		FileIgnores:         ignorePaths,
 	}
 
 	err = o.watchClient.WatchAndPush(o.kubernetesClient, out, watchParameters)
