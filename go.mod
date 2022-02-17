@@ -18,7 +18,9 @@ require (
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.5.0
-	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
+	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
+	github.com/hinshun/vt10x v0.0.0-20220127042424-3ca73d0126d7
+	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.8
