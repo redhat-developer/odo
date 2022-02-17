@@ -2,6 +2,7 @@ package dev
 
 import (
 	"fmt"
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -29,6 +30,9 @@ type DevOptions struct {
 
 	// Clients
 	clientset *clientset.Clientset
+
+	// Variables
+	ignorePaths []string
 }
 
 func NewDevOptions() *DevOptions {
@@ -77,6 +81,18 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 			return errors.Wrap(err, "failed to update project in env.yaml file")
 		}
 	}
+
+	ignores := &[]string{}
+	err = genericclioptions.ApplyIgnore(ignores, o.contextFlag)
+	if err != nil {
+		return err
+	}
+	sourcePath, err := dfutil.GetAbsPath(o.contextFlag)
+	if err != nil {
+		return errors.Wrap(err, "unable to get source path")
+	}
+
+	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, *ignores)
 	return nil
 }
 
@@ -92,7 +108,7 @@ func (o *DevOptions) Run() error {
 	}
 	var path = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, path, os.Stdout)
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, os.Stdout)
 	return err
 }
 
