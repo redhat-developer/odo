@@ -129,16 +129,22 @@ func GetIgnoreMatcherFromRules(context string, rules []string) (gitignore.Ignore
 	for _, data := range rules {
 		_, _ = datawriter.WriteString(data + "\n")
 	}
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
 	err = datawriter.Flush()
 	if err != nil {
 		return nil, err
 	}
+	err = file.Close()
+	if err != nil {
+		return nil, err
+	}
 	file2, err := os.OpenFile(tmpFile, os.O_RDONLY, 0644)
-	defer file2.Close()
+	if err != nil {
+		return nil, err
+	}
+	err = file2.Close()
+	if err != nil {
+		return nil, err
+	}
 	return gitignore.NewGitIgnore(context, tmpFile)
 }
 
