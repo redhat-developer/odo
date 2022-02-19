@@ -35,7 +35,7 @@ metadata:
   displayName: Python
   icon: https://www.python.org/static/community_logos/python-logo-generic.svg
   language: python
-  name: python-prj1-api-cajf
+  name: language
   projectType: python
   tags:
   - Python

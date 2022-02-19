@@ -42,7 +42,7 @@ metadata:
   globalMemoryLimit: 2674Mi
   icon: https://spring.io/images/projects/spring-edf462fec682b9d48cf628eaf9e19521.svg
   language: java
-  name: java-springboot-springboot-zbgd
+  name: language
   projectType: spring
   tags:
   - Java
