@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
@@ -18,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/utils/pointer"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -66,9 +69,20 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 			return err2
 		}
 
-		_, err2 = o.clientset.InitClient.DownloadDevfile(devfileLocation, cwd)
+		devfilePath, err2 := o.clientset.InitClient.DownloadDevfile(devfileLocation, cwd)
 		if err2 != nil {
 			return fmt.Errorf("unable to download devfile: %w", err2)
+		}
+
+		devfileObj, _, err2 := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
+		if err2 != nil {
+			return fmt.Errorf("unable to download devfile: %w", err2)
+		}
+
+		// Set the name in the devfile and writes the devfile back to the disk
+		err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
+		if err != nil {
+			return fmt.Errorf("failed to update the devfile's name: %w", err)
 		}
 
 	}
