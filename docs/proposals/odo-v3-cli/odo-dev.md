@@ -7,7 +7,7 @@ Running the application on the cluster for **development** (inner loop)
 The result of successful execution of `odo dev` is Devfile component deployed in inner loop mode.
 **By default command deletes all resources that it created before it exits.**
 
-When users runs command with `--cleanup=false` there will be no cleanup before existing. The message "Press Ctrl+c to exit and clean up resources from cluster." will be only "Press Ctrl+c to exit."
+When users runs command with `--cleanup=false` there will be no cleanup before exiting. The message "Press Ctrl+c to exit and clean up resources from cluster." will be only "Press Ctrl+c to exit."
 
 If user executed `odo dev --cleanup=false` and then run this command again. The first line of the output should display warning: "Reusing already existing resources".
 
@@ -18,7 +18,7 @@ When some flags were provided and there is no devfile in the current directory c
 No devfile.yaml in the current directory. Use `odo init component` to get devfile.yaml for your application."
 ```
 
-When devfile exists in the current directory deploy application in inner loop mode using the information form `devfile.yaml` in the current directory.
+When devfile exists in the current directory deploy application in inner loop mode using the information from `devfile.yaml` in the current directory.
 
 
 `odo dev` commands sets up port-forwarding 

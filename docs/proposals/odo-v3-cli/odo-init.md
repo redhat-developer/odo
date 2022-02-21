@@ -97,7 +97,7 @@ To deploy your component to a cluster use “odo deploy”.
 ### When executed in non-empty directory
 
 ```
-$ odo create
+$ odo init
 
 Based on the files in the current directory odo detected
 Language: Java
