@@ -241,7 +241,7 @@ func TestNew(t *testing.T) {
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
 				},
 			},
-			expectedErr: "",
+			expectedErr: "no devfile found",
 			expected: Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
