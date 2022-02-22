@@ -28,7 +28,7 @@ type Asker interface {
 	AskContainerName(containers []string) (string, error)
 
 	// AskPersonalizeConfiguration asks the configuration user wants to change
-	AskPersonalizeConfiguration(configuration ContainerConfiguration) (string, error)
+	AskPersonalizeConfiguration(configuration ContainerConfiguration) (ContainerMap, error)
 
 	// AskAddEnvVar asks the key and value for env var
 	AskAddEnvVar() (string, string, error)

@@ -2,9 +2,9 @@ package asker
 
 import (
 	"fmt"
-	"sort"
-
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/redhat-developer/odo/pkg/log"
+	"sort"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 )
@@ -93,31 +93,50 @@ func (o *Survey) AskCorrect() (bool, error) {
 }
 
 // AskPersonalizeConfiguration asks the configuration user wants to change
-func (o *Survey) AskPersonalizeConfiguration(configuration ContainerConfiguration) (string, error) {
+func (o *Survey) AskPersonalizeConfiguration(configuration ContainerConfiguration) (ContainerMap, error) {
 	options := []string{
 		"NOTHING - configuration is correct",
 	}
+	tracker := []ContainerMap{{Ops: "Nothing"}}
 	for _, port := range configuration.Ports {
 		options = append(options, fmt.Sprintf("Delete port %q", port))
+		tracker = append(tracker, ContainerMap{
+			Ops:  "Delete",
+			Kind: "Port",
+			Key:  port,
+		})
 	}
 	options = append(options, "Add new port")
+	tracker = append(tracker, ContainerMap{
+		Ops:  "Add",
+		Kind: "Port",
+	})
 
 	for key := range configuration.Envs {
 		options = append(options, fmt.Sprintf("Delete environment variable %q", key))
+		tracker = append(tracker, ContainerMap{
+			Ops:  "Delete",
+			Kind: "EnvVar",
+			Key:  key,
+		})
 	}
 	options = append(options, "Add new environment variable")
+	tracker = append(tracker, ContainerMap{
+		Ops:  "Add",
+		Kind: "EnvVar",
+	})
 
 	configChangeQuestion := &survey.Select{
 		Message: "What configuration do you want change?",
 		Default: options[0],
 		Options: options,
 	}
-	var configChangeAnswer string
-	err := survey.AskOne(configChangeQuestion, &configChangeAnswer)
+	var configChangeIndex int
+	err := survey.AskOne(configChangeQuestion, &configChangeIndex)
 	if err != nil {
-		return "", err
+		return ContainerMap{}, err
 	}
-	return configChangeAnswer, nil
+	return tracker[configChangeIndex], nil
 }
 
 // AskAddEnvVar asks the key and value for env var
@@ -147,6 +166,7 @@ func (o *Survey) AskAddPort() (string, error) {
 		Message: "Enter port number:",
 	}
 	var newPortAnswer string
+	log.Warning("Please ensure that you do not add a duplicate port number")
 	err := survey.AskOne(newPortQuestion, &newPortAnswer)
 	if err != nil {
 		return "", err
@@ -171,6 +191,12 @@ func (o *Survey) AskContainerName(containers []string) (string, error) {
 type ContainerConfiguration struct {
 	Ports []string
 	Envs  map[string]string
+}
+
+type ContainerMap struct {
+	Ops  string
+	Kind string
+	Key  string
 }
 
 // key is container name

@@ -2,15 +2,12 @@ package backend
 
 import (
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/log"
-	"regexp"
-	"strconv"
-	"strings"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/fatih/color"
+	"github.com/redhat-developer/odo/pkg/log"
+	"strconv"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
@@ -111,11 +108,8 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
-	// TODO: Add validation for duplicate port
-	// TODO: Get rid of regex
 	// TODO: Add tests
 	// TODO: Add mock methods
-	// TODO: Print live configuration
 	var config = asker.DevfileConfiguration{}
 	components, err := devfileobj.Data.GetComponents(parsercommon.DevfileOptions{})
 	if err != nil {
@@ -125,6 +119,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 		var ports = []string{}
 		var envMap = map[string]string{}
 		if component.Container != nil {
+			// Fix this for component that are not a container
 			for _, ep := range component.Container.Endpoints {
 				ports = append(ports, strconv.Itoa(ep.TargetPort))
 			}
@@ -153,18 +148,16 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 			break
 		}
 
-		var configChangeAnswer string
-		for configChangeAnswer != "NOTHING - configuration is correct" {
-			configChangeAnswer, err = o.asker.AskPersonalizeConfiguration(selectedContainer)
+		var configOps asker.ContainerMap
+		for configOps.Ops != "Nothing" {
+			configOps, err = o.asker.AskPersonalizeConfiguration(selectedContainer)
 			if err != nil {
 				return err
 			}
 
-			if strings.HasPrefix(configChangeAnswer, "Delete port") {
-				re := regexp.MustCompile("\"(.*?)\"")
-				match := re.FindStringSubmatch(configChangeAnswer)
-				portToDelete := match[1]
+			if configOps.Ops == "Delete" && configOps.Kind == "Port" {
 
+				portToDelete := configOps.Key
 				indexToDelete := -1
 				for i, port := range selectedContainer.Ports {
 					if port == portToDelete {
@@ -179,11 +172,9 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					return err
 				}
 				selectedContainer.Ports = append(selectedContainer.Ports[:indexToDelete], selectedContainer.Ports[indexToDelete+1:]...)
+			} else if configOps.Ops == "Delete" && configOps.Kind == "EnvVar" {
 
-			} else if strings.HasPrefix(configChangeAnswer, "Delete environment variable") {
-				re := regexp.MustCompile("\"(.*?)\"")
-				match := re.FindStringSubmatch(configChangeAnswer)
-				envToDelete := match[1]
+				envToDelete := configOps.Key
 				if _, ok := selectedContainer.Envs[envToDelete]; !ok {
 					log.Warningf(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
 				}
@@ -193,20 +184,24 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				}
 				delete(selectedContainer.Envs, envToDelete)
 
-			} else if configChangeAnswer == "NOTHING - configuration is correct" {
-				// nothing to do
-			} else if configChangeAnswer == "Add new port" {
-				newPort, err := o.asker.AskAddPort()
+			} else if configOps.Ops == "Add" && configOps.Kind == "Port" {
+
+				var newPort string
+				newPort, err = o.asker.AskAddPort()
 				if err != nil {
 					return err
 				}
+
 				err = devfileobj.Data.SetPorts(map[string][]string{selectContainerAnswer: {newPort}})
 				if err != nil {
 					return err
 				}
 				selectedContainer.Ports = append(selectedContainer.Ports, newPort)
-			} else if configChangeAnswer == "Add new environment variable" {
-				newEnvNameAnswer, newEnvValueAnswer, err := o.asker.AskAddEnvVar()
+
+			} else if configOps.Ops == "Add" && configOps.Kind == "EnvVar" {
+
+				var newEnvNameAnswer, newEnvValueAnswer string
+				newEnvNameAnswer, newEnvValueAnswer, err = o.asker.AskAddEnvVar()
 				if err != nil {
 					return err
 				}
@@ -218,9 +213,14 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					return err
 				}
 				selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
+
+			} else if configOps.Ops == "Nothing" {
+				// nothing to do
 			} else {
-				return fmt.Errorf("Unknown configuration selected %q", configChangeAnswer)
+				return fmt.Errorf("Unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
 			}
+			// Update the current configuration
+			config[selectContainerAnswer] = selectedContainer
 		}
 	}
 	return devfileobj.WriteYamlDevfile()
@@ -243,4 +243,13 @@ func PrintConfiguration(config asker.DevfileConfiguration) {
 			color.New(color.Bold, color.FgWhite).Printf("   - %s = %s\n", key, value)
 		}
 	}
+}
+
+func InArray(arr []string, element string) bool {
+	for _, ele := range arr {
+		if ele == element {
+			return true
+		}
+	}
+	return false
 }
