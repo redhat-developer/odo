@@ -119,3 +119,17 @@ func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeName), devfile, flags)
 >>>>>>> 0e8e1f54d (Run mockgen script)
 }
+
+// PersonalizeDevfileconfig mocks base method
+func (m *MockInitBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PersonalizeDevfileconfig", devfileobj)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PersonalizeDevfileconfig indicates an expected call of PersonalizeDevfileconfig
+func (mr *MockInitBackendMockRecorder) PersonalizeDevfileconfig(devfileobj interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeDevfileconfig", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeDevfileconfig), devfileobj)
+}
