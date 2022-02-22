@@ -168,6 +168,7 @@ func (o *InitOptions) Run() (err error) {
 		}
 	}
 
+	// TODO: Remove this; only to be called when the directory is non-empty
 	// Set the name in the devfile *AND* writes the devfile back to the disk in case
 	// it has been removed and not replaced by the starter project
 	err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
