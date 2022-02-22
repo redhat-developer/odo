@@ -71,21 +71,7 @@ Commmands that will remain as they are in v2
 
 ### CLI structure for v3.0.0-alpha1
 
-
-- **[`odo login`](odo-v3-cli/odo-login-logout.md)** - no changes required
-- **[`odo logout`](odo-v3-cli/odo-login-logout.md)** - no changes required
-- **[`odo init`](odo-v3-cli/odo-init.md)** - [#5297](https://github.com/redhat-developer/odo/issues/5297) [#5408](https://github.com/redhat-developer/odo/issues/5408) new command
-- **[`odo dev`](odo-v3-cli/odo-dev.md)** - [#5299](https://github.com/redhat-developer/odo/issues/5299) new command based on v2 `odo watch`
-- **[`odo deploy`](odo-v3-cli/odo-deploy.md)** - [#5298](https://github.com/redhat-developer/odo/issues/5298) - mostly as it is in v2, with new interactive mode and flags.
-- **[`odo preference`](odo-v3-cli/odo-preference.md)** -  [#5402](https://github.com/redhat-developer/odo/issues/5402)
-mostly as it is, just cleanup
-- **`odo build`**
-  - **`image`** - the same as v2 `odo build-images`
-- **[`odo list`](odo-v3-cli/odo-list.md)** - list everything. It combines all list outputs from all the subcommands, except namespace.
-- **`odo delete`**
-  - **[`component`](odo-v3-cli/odo-delete-component.md)** - similar as v2 `odo delete`, but flags and output needs to be reworked
-- **`odo version`** - as it is in v2
-- **`odo utils`** -  as it is in v2
+moved to https://github.com/redhat-developer/odo/issues/5312
 
 
 
