@@ -120,7 +120,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 
 	for selectContainerAnswer != "NONE - configuration is correct" {
 		PrintConfiguration(config)
-		selectContainerAnswer, err = o.asker.AskContainerName(containerOptions)
+		selectContainerAnswer, err = o.askerClient.AskContainerName(containerOptions)
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 
 		var configOps asker.OperationOnContainer
 		for configOps.Ops != "Nothing" {
-			configOps, err = o.asker.AskPersonalizeConfiguration(selectedContainer)
+			configOps, err = o.askerClient.AskPersonalizeConfiguration(selectedContainer)
 			if err != nil {
 				return err
 			}
@@ -168,7 +168,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 
 			case configOps.Ops == "Add" && configOps.Kind == "Port":
 				var newPort string
-				newPort, err = o.asker.AskAddPort()
+				newPort, err = o.askerClient.AskAddPort()
 				if err != nil {
 					return err
 				}
@@ -182,7 +182,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 			case configOps.Ops == "Add" && configOps.Kind == "EnvVar":
 
 				var newEnvNameAnswer, newEnvValueAnswer string
-				newEnvNameAnswer, newEnvValueAnswer, err = o.asker.AskAddEnvVar()
+				newEnvNameAnswer, newEnvValueAnswer, err = o.askerClient.AskAddEnvVar()
 				if err != nil {
 					return err
 				}
@@ -236,7 +236,7 @@ func getPortsAndEnvVar(obj parser.DevfileObj) (asker.DevfileConfiguration, error
 		var ports = []string{}
 		var envMap = map[string]string{}
 		if component.Container != nil {
-			// Fix this for component that are not a container
+			// TODO: Fix this for component that are not a container
 			for _, ep := range component.Container.Endpoints {
 				ports = append(ports, strconv.Itoa(ep.TargetPort))
 			}

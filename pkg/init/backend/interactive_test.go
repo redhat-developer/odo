@@ -490,7 +490,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 			}
 
 			o := &InteractiveBackend{
-				asker:         askerClient,
+				askerClient:   askerClient,
 				catalogClient: tt.fields.catalogClient,
 			}
 			if err = o.PersonalizeDevfileconfig(devfile); (err != nil) != tt.wantErr {

@@ -223,5 +223,6 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 }
 
 func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error {
+	// TODO: Add check; if the current directory is empty, then do not personalize devfile
 	return o.interactiveBackend.PersonalizeDevfileconfig(devfileobj)
 }
