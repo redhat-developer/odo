@@ -10,9 +10,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercontext "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
-	"github.com/devfile/library/pkg/testingutil/filesystem"
+	dffilesystem "github.com/devfile/library/pkg/testingutil/filesystem"
 
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestFlagsBackend_SelectDevfile(t *testing.T) {
@@ -45,7 +46,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			o := &FlagsBackend{}
-			got, err := o.SelectDevfile(tt.fields.flags)
+			got, err := o.SelectDevfile(tt.fields.flags, nil, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.SelectDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -62,6 +63,8 @@ func TestFlagsBackend_Validate(t *testing.T) {
 	}
 	type args struct {
 		flags map[string]string
+		fsys  func() filesystem.Filesystem
+		dir   string
 	}
 	tests := []struct {
 		name               string
@@ -77,6 +80,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 				flags: map[string]string{
 					"name": "",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			wantErr: true,
 		},
@@ -86,6 +95,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 				flags: map[string]string{
 					"name": "aname",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			wantErr: true,
 		},
@@ -96,6 +111,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"name":    "aname",
 					"devfile": "adevfile",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			registryList: []preference.Registry{
 				{
@@ -113,6 +134,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"devfile":      "adevfile",
 					"devfile-path": "apath",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			wantErr: true,
 		},
@@ -124,6 +151,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"devfile":          "adevfile",
 					"devfile-registry": "aregistry",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			registryNameExists: true,
 			wantErr:            false,
@@ -136,6 +169,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"devfile":          "adevfile",
 					"devfile-registry": "aregistry",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			registryNameExists: false,
 			wantErr:            true,
@@ -148,6 +187,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"devfile-path":     "apath",
 					"devfile-registry": "aregistry",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			registryNameExists: true,
 			wantErr:            true,
@@ -159,6 +204,12 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"name":    "1234",
 					"devfile": "adevfile",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			wantErr: true,
 		},
@@ -169,6 +220,47 @@ func TestFlagsBackend_Validate(t *testing.T) {
 					"name":    "WrongName",
 					"devfile": "adevfile",
 				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
+			},
+			wantErr: true,
+		},
+		{
+			name: "starter flag with an empty directory",
+			args: args{
+				flags: map[string]string{
+					"name":    "aname",
+					"devfile": "adevfile",
+					"starter": "astarter",
+				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					return fs
+				},
+				dir: "/tmp",
+			},
+			wantErr: false,
+		},
+		{
+			name: "starter flag with a non empty directory",
+			args: args{
+				flags: map[string]string{
+					"name":    "aname",
+					"devfile": "adevfile",
+					"starter": "astarter",
+				},
+				fsys: func() filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					_ = fs.MkdirAll("/tmp", 0644)
+					_ = fs.WriteFile("/tmp/main.go", []byte("package main"), 0644)
+					return fs
+				},
+				dir: "/tmp",
 			},
 			wantErr: true,
 		},
@@ -184,7 +276,7 @@ func TestFlagsBackend_Validate(t *testing.T) {
 			o := &FlagsBackend{
 				preferenceClient: prefClient,
 			}
-			if err := o.Validate(tt.args.flags); (err != nil) != tt.wantErr {
+			if err := o.Validate(tt.args.flags, tt.args.fsys(), tt.args.dir); (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -259,9 +351,6 @@ func TestFlagsBackend_SelectStarterProject(t *testing.T) {
 							Name: "starter1",
 						},
 						{
-							Name: "starter2",
-						},
-						{
 							Name: "starter3",
 						},
 					})
@@ -301,7 +390,7 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 		preferenceClient preference.Client
 	}
 	type args struct {
-		devfile func(fs filesystem.Filesystem) parser.DevfileObj
+		devfile func(fs dffilesystem.Filesystem) parser.DevfileObj
 		flags   map[string]string
 	}
 	tests := []struct {
@@ -314,7 +403,7 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 		{
 			name: "name flag",
 			args: args{
-				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
+				devfile: func(fs dffilesystem.Filesystem) parser.DevfileObj {
 					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
 					obj := parser.DevfileObj{
 						Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
@@ -338,7 +427,7 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 			o := &FlagsBackend{
 				preferenceClient: tt.fields.preferenceClient,
 			}
-			fs := filesystem.NewFakeFs()
+			fs := dffilesystem.NewFakeFs()
 			devfile := tt.args.devfile(fs)
 			err := o.PersonalizeName(devfile, tt.args.flags)
 			if (err != nil) != tt.wantErr {

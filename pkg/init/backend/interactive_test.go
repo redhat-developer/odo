@@ -84,10 +84,10 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			o := &InteractiveBackend{
-				asker:         tt.fields.buildAsker(ctrl),
+				askerClient:   tt.fields.buildAsker(ctrl),
 				catalogClient: tt.fields.buildCatalogClient(ctrl),
 			}
-			got, err := o.SelectDevfile(map[string]string{})
+			got, err := o.SelectDevfile(map[string]string{}, nil, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBuilder.ParamsBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -180,7 +180,7 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				askerClient = tt.fields.asker(ctrl)
 			}
 			o := &InteractiveBackend{
-				asker:         askerClient,
+				askerClient:   askerClient,
 				catalogClient: tt.fields.catalogClient,
 			}
 			got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
@@ -245,7 +245,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				askerClient = tt.fields.asker(ctrl)
 			}
 			o := &InteractiveBackend{
-				asker:         askerClient,
+				askerClient:   askerClient,
 				catalogClient: tt.fields.catalogClient,
 			}
 			fs := filesystem.NewFakeFs()

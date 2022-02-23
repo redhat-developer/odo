@@ -9,6 +9,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 const (
@@ -19,22 +20,22 @@ const (
 
 // InteractiveBackend is a backend that will ask information interactively using the `asker` package
 type InteractiveBackend struct {
-	asker         asker.Asker
+	askerClient   asker.Asker
 	catalogClient catalog.Client
 }
 
-func NewInteractiveBackend(asker asker.Asker, catalogClient catalog.Client) *InteractiveBackend {
+func NewInteractiveBackend(askerClient asker.Asker, catalogClient catalog.Client) *InteractiveBackend {
 	return &InteractiveBackend{
-		asker:         asker,
+		askerClient:   askerClient,
 		catalogClient: catalogClient,
 	}
 }
 
-func (o *InteractiveBackend) Validate(flags map[string]string) error {
+func (o *InteractiveBackend) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	return nil
 }
 
-func (o *InteractiveBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
+func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*DevfileLocation, error) {
 	result := &DevfileLocation{}
 	devfileEntries, _ := o.catalogClient.ListDevfileComponents("")
 
@@ -48,7 +49,7 @@ loop:
 		switch state {
 
 		case STATE_ASK_LANG:
-			lang, err = o.asker.AskLanguage(langs)
+			lang, err = o.askerClient.AskLanguage(langs)
 			if err != nil {
 				return nil, err
 			}
@@ -57,7 +58,7 @@ loop:
 		case STATE_ASK_TYPE:
 			types := devfileEntries.GetProjectTypes(lang)
 			var back bool
-			back, details, err = o.asker.AskType(types)
+			back, details, err = o.askerClient.AskType(types)
 			if err != nil {
 				return nil, err
 			}
@@ -86,7 +87,7 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 		names = append(names, starterProject.Name)
 	}
 
-	ok, starter, err := o.asker.AskStarterProject(names)
+	ok, starter, err := o.askerClient.AskStarterProject(names)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 }
 
 func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
-	name, err := o.asker.AskName(fmt.Sprintf("my-%s-app", devfile.Data.GetMetadata().Name))
+	name, err := o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.Data.GetMetadata().Name))
 	if err != nil {
 		return err
 	}

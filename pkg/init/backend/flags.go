@@ -9,7 +9,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 const (
@@ -31,7 +33,7 @@ func NewFlagsBackend(preferenceClient preference.Client) *FlagsBackend {
 	}
 }
 
-func (o *FlagsBackend) Validate(flags map[string]string) error {
+func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	if flags[FLAG_NAME] == "" {
 		return errors.New("missing --name parameter: please add --name <name> to specify a name for the component")
 	}
@@ -54,10 +56,19 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 	if err != nil {
 		return err
 	}
+
+	empty, err := location.DirIsEmpty(fs, dir)
+	if err != nil {
+		return err
+	}
+	if !empty && flags[FLAG_STARTER] != "" {
+		return errors.New("--starter parameter cannot be used when the directory is not empty")
+	}
+
 	return nil
 }
 
-func (o *FlagsBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
+func (o *FlagsBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*DevfileLocation, error) {
 	return &DevfileLocation{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],

@@ -10,6 +10,7 @@ import (
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
+	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // MockInitBackend is a mock of InitBackend interface.
@@ -50,18 +51,18 @@ func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{
 }
 
 // SelectDevfile mocks base method.
-func (m *MockInitBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
+func (m *MockInitBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*DevfileLocation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectDevfile", flags)
+	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
 	ret0, _ := ret[0].(*DevfileLocation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectDevfile indicates an expected call of SelectDevfile.
-func (mr *MockInitBackendMockRecorder) SelectDevfile(flags interface{}) *gomock.Call {
+func (mr *MockInitBackendMockRecorder) SelectDevfile(flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockInitBackend)(nil).SelectDevfile), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockInitBackend)(nil).SelectDevfile), flags, fs, dir)
 }
 
 // SelectStarterProject mocks base method.
@@ -80,15 +81,15 @@ func (mr *MockInitBackendMockRecorder) SelectStarterProject(devfile, flags inter
 }
 
 // Validate mocks base method.
-func (m *MockInitBackend) Validate(flags map[string]string) error {
+func (m *MockInitBackend) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags)
+	ret := m.ctrl.Call(m, "Validate", flags, fs, dir)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Validate indicates an expected call of Validate.
-func (mr *MockInitBackendMockRecorder) Validate(flags interface{}) *gomock.Call {
+func (mr *MockInitBackendMockRecorder) Validate(flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockInitBackend)(nil).Validate), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockInitBackend)(nil).Validate), flags, fs, dir)
 }

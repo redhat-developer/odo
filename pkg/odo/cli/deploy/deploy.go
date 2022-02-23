@@ -2,19 +2,25 @@ package deploy
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/utils/pointer"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -24,6 +30,9 @@ const RecommendedCommandName = "deploy"
 type DeployOptions struct {
 	// Context
 	*genericclioptions.Context
+
+	// Clients
+	clientset *clientset.Clientset
 
 	// Flags
 	contextFlag string
@@ -40,10 +49,43 @@ func NewDeployOptions() *DeployOptions {
 }
 
 func (o *DeployOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, cwd)
+	if err != nil {
+		return err
+	}
+	if !containsDevfile {
+		devfileLocation, err2 := o.clientset.InitClient.SelectDevfile(map[string]string{}, o.clientset.FS, cwd)
+		if err2 != nil {
+			return err2
+		}
+
+		devfilePath, err2 := o.clientset.InitClient.DownloadDevfile(devfileLocation, cwd)
+		if err2 != nil {
+			return fmt.Errorf("unable to download devfile: %w", err2)
+		}
+
+		devfileObj, _, err2 := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
+		if err2 != nil {
+			return fmt.Errorf("unable to download devfile: %w", err2)
+		}
+
+		// Set the name in the devfile and writes the devfile back to the disk
+		err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
+		if err != nil {
+			return fmt.Errorf("failed to update the devfile's name: %w", err)
+		}
+
+	}
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
@@ -105,10 +147,10 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	clientset.Add(deployCmd, clientset.INIT)
 
 	// Add a defined annotation in order to appear in the help menu
-	deployCmd.Annotations = map[string]string{"command": "utility"}
+	deployCmd.Annotations["command"] = "utility"
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	odoutil.AddContextFlag(deployCmd, &o.contextFlag)
 	return deployCmd
 }

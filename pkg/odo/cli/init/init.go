@@ -2,15 +2,16 @@ package init
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -18,7 +19,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"
@@ -85,30 +85,23 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 		return err
 	}
 
-	empty, err := isEmpty(o.clientset.FS, o.contextDir)
-	if err != nil {
-		return err
-	}
-	if !empty {
-		return errors.New("The current directory is not empty. You can bootstrap new component only in empty directory.\nIf you have existing code that you want to deploy use `odo deploy` or use `odo dev` command to quickly iterate on your component.")
-	}
-
 	o.flags = cmdline.GetFlags()
 
 	return nil
 }
 
-func isEmpty(fsys filesystem.Filesystem, path string) (bool, error) {
-	files, err := fsys.ReadDir(path)
-	if err != nil {
-		return false, err
-	}
-	return len(files) == 0, nil
-}
-
 // Validate validates the InitOptions based on completed values
 func (o *InitOptions) Validate() error {
-	err := o.clientset.InitClient.Validate(o.flags)
+
+	devfilePresent, err := location.DirectoryContainsDevfile(o.clientset.FS, o.contextDir)
+	if err != nil {
+		return err
+	}
+	if devfilePresent {
+		return errors.New("a devfile already exists in the current directory")
+	}
+
+	err = o.clientset.InitClient.Validate(o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
 	}
@@ -125,21 +118,21 @@ func (o *InitOptions) Run() (err error) {
 			return
 		}
 		if starterDownloaded {
-			err = fmt.Errorf("%w\nThe command failed after downloading the starter project. By security, the directory is not cleaned up.", err)
+			err = fmt.Errorf("%w\nthe command failed after downloading the starter project. By security, the directory is not cleaned up", err)
 		} else {
 			_ = o.clientset.FS.Remove("devfile.yaml")
-			err = fmt.Errorf("%w\nThe command failed, the devfile has been removed from current directory.", err)
+			err = fmt.Errorf("%w\nthe command failed, the devfile has been removed from current directory", err)
 		}
 	}()
 
-	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags)
+	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
 	}
 
 	devfilePath, err := o.clientset.InitClient.DownloadDevfile(o.devfileLocation, o.contextDir)
 	if err != nil {
-		return fmt.Errorf("Unable to download devfile: %w", err)
+		return fmt.Errorf("unable to download devfile: %w", err)
 	}
 
 	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
@@ -149,7 +142,7 @@ func (o *InitOptions) Run() (err error) {
 
 	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
-	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags)
+	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
 	}

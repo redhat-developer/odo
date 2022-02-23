@@ -242,6 +242,7 @@ func createRegistryDevfiles(registry Registry, devfileIndex []indexSchema.Schema
 			Registry:    registry,
 			Language:    devfileIndexEntry.Language,
 			Tags:        devfileIndexEntry.Tags,
+			ProjectType: devfileIndexEntry.ProjectType,
 		}
 		registryDevfiles = append(registryDevfiles, stackDevfile)
 	}

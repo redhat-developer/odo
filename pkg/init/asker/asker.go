@@ -77,3 +77,16 @@ func (o *Survey) AskName(defaultName string) (string, error) {
 	}
 	return answer, nil
 }
+
+func (o *Survey) AskCorrect() (bool, error) {
+	question := &survey.Confirm{
+		Message: "Is this correct?",
+		Default: true,
+	}
+	var answer bool
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return false, err
+	}
+	return answer, nil
+}

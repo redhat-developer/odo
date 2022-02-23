@@ -1,6 +1,7 @@
 package genericclioptions
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -133,18 +134,22 @@ func New(parameters CreateParameters) (*Context, error) {
 	}
 
 	ctx.devfilePath = location.DevfileLocation(parameters.componentContext)
-	isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
-	if parameters.devfile && isDevfile {
-		// Parse devfile and validate
-		devObj, err := devfile.ParseAndValidateFromFile(ctx.devfilePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
+	if parameters.devfile {
+		isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
+		if isDevfile {
+			// Parse devfile and validate
+			devObj, err := devfile.ParseAndValidateFromFile(ctx.devfilePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
+			}
+			err = validate.ValidateDevfileData(devObj.Data)
+			if err != nil {
+				return nil, err
+			}
+			ctx.EnvSpecificInfo.SetDevfileObj(devObj)
+		} else {
+			return nil, errors.New("no devfile found")
 		}
-		err = validate.ValidateDevfileData(devObj.Data)
-		if err != nil {
-			return nil, err
-		}
-		ctx.EnvSpecificInfo.SetDevfileObj(devObj)
 	}
 
 	return &Context{
