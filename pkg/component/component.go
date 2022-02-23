@@ -3,6 +3,7 @@ package component
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -20,7 +22,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
@@ -30,6 +34,8 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/klog"
 )
 
 const componentRandomNamePartsMaxLen = 12
@@ -501,5 +507,89 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 	for i, linkedSecret := range linkedSecrets {
 		linkedSecrets[i].ServiceName = serviceBindings[linkedSecret.SecretName]
 	}
+	return nil
+}
+
+// GetOnePod gets a pod using the component and app name
+func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
+	return client.GetOnePodFromSelector(componentlabels.GetSelector(componentName, appName))
+}
+
+// ComponentExists checks whether a deployment by the given name exists in the given app
+func ComponentExists(client kclient.ClientInterface, name string, app string) (bool, error) {
+	deployment, err := client.GetOneDeployment(name, app)
+	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
+		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)
+		return false, nil
+	}
+	return deployment != nil, err
+}
+
+// Log returns log from component
+func Log(client kclient.ClientInterface, componentName string, appName string, follow bool, command v1alpha2.Command) (io.ReadCloser, error) {
+
+	pod, err := GetOnePod(client, componentName, appName)
+	if err != nil {
+		return nil, errors.Errorf("the component %s doesn't exist on the cluster", componentName)
+	}
+
+	if pod.Status.Phase != corev1.PodRunning {
+		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+	}
+
+	containerName := command.Exec.Component
+
+	return client.GetPodLogs(pod.Name, containerName, follow)
+}
+
+// Delete deletes the component
+func Delete(kubeClient kclient.ClientInterface, devfileObj parser.DevfileObj, componentName string, appName string, labels map[string]string, show bool, wait bool) error {
+	if labels == nil {
+		return fmt.Errorf("cannot delete with labels being nil")
+	}
+	log.Printf("Gathering information for component: %q", componentName)
+	podSpinner := log.Spinner("Checking status for component")
+	defer podSpinner.End(false)
+
+	pod, err := GetOnePod(kubeClient, componentName, appName)
+	if kerrors.IsForbidden(err) {
+		klog.V(2).Infof("Resource for %s forbidden", componentName)
+		// log the error if it failed to determine if the component exists due to insufficient RBACs
+		podSpinner.End(false)
+		log.Warningf("%v", err)
+		return nil
+	} else if e, ok := err.(*kclient.PodNotFoundError); ok {
+		podSpinner.End(false)
+		log.Warningf("%v", e)
+		return nil
+	} else if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", componentName)
+	}
+
+	podSpinner.End(true)
+
+	// if there are preStop events, execute them before deleting the deployment
+	if libdevfile.HasPreStopEvents(devfileObj) {
+		if pod.Status.Phase != corev1.PodRunning {
+			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", componentName)
+		}
+		log.Infof("\nExecuting %s event commands for component %s", libdevfile.PreStop, componentName)
+		err = libdevfile.ExecPreStopEvents(devfileObj, componentName, NewExecHandler(kubeClient, pod.Name, show))
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Infof("\nDeleting component %s", componentName)
+	spinner := log.Spinner("Deleting Kubernetes resources for component")
+	defer spinner.End(false)
+
+	err = kubeClient.Delete(labels, wait)
+	if err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
 	return nil
 }

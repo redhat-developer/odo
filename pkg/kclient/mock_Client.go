@@ -734,21 +734,6 @@ func (mr *MockClientInterfaceMockRecorder) GetOneIngressFromSelector(selector in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneIngressFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneIngressFromSelector), selector)
 }
 
-// GetOnePod mocks base method.
-func (m *MockClientInterface) GetOnePod(componentName, appName string) (*v12.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOnePod", componentName, appName)
-	ret0, _ := ret[0].(*v12.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOnePod indicates an expected call of GetOnePod.
-func (mr *MockClientInterfaceMockRecorder) GetOnePod(componentName, appName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnePod", reflect.TypeOf((*MockClientInterface)(nil).GetOnePod), componentName, appName)
-}
-
 // GetOnePodFromSelector mocks base method.
 func (m *MockClientInterface) GetOnePodFromSelector(selector string) (*v12.Pod, error) {
 	m.ctrl.T.Helper()

@@ -35,7 +35,6 @@ mockgen -source=pkg/preference/preference.go \
     -package preference \
     -destination pkg/preference/mock.go
 
-
 mockgen -source=pkg/auth/interface.go \
     -package auth \
     -destination pkg/auth/mock.go
@@ -59,3 +58,12 @@ mockgen -source=pkg/init/interface.go \
 mockgen -source=pkg/init/registry/interface.go \
     -package registry \
     -destination pkg/init/registry/mock.go
+
+mockgen -source=pkg/deploy/interface.go \
+    -package deploy \
+    -destination pkg/deploy/mock.go
+
+mockgen -source=pkg/libdevfile/libdevfile.go \
+    -package libdevfile \
+    -destination pkg/libdevfile/handler_mock.go
+

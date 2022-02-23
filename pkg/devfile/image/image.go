@@ -5,12 +5,10 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 )
 
 // Backend is in interface that must be implemented by container runtimes
@@ -27,14 +25,13 @@ var lookPathCmd = exec.LookPath
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(ctx *genericclioptions.Context, push bool) error {
+func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error {
 
 	backend, err := selectBackend()
 	if err != nil {
 		return err
 	}
 
-	devfileObj := ctx.EnvSpecificInfo.GetDevfileObj()
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: devfile.ImageComponentType},
 	})
@@ -42,10 +39,8 @@ func BuildPushImages(ctx *genericclioptions.Context, push bool) error {
 		return err
 	}
 
-	devfilePath := filepath.Dir(ctx.EnvSpecificInfo.GetDevfilePath())
-
 	for _, component := range components {
-		err = buildPushImage(backend, component.Image, devfilePath, push)
+		err = buildPushImage(backend, component.Image, path, push)
 		if err != nil {
 			return err
 		}

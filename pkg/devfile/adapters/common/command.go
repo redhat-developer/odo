@@ -43,7 +43,7 @@ func New(devfile devfilev1.Command, knowCommands map[string]devfilev1.Command, e
 	} else if devfile.Exec != nil {
 		return newExecCommand(devfile, executor)
 	} else {
-		return newApplyCommand(devfile, executor)
+		return nil, errors.New("apply command not implemented")
 	}
 }
 
@@ -151,11 +151,6 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand devf
 // GetTestCommand iterates through the components in the devfile and returns the test command
 func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand devfilev1.Command, err error) {
 	return getCommand(data, devfileTestCmd, devfilev1.TestCommandGroupKind)
-}
-
-// GetDeployCommand iterates through the components in the devfile and returns the deploy command
-func GetDeployCommand(data data.DevfileData, devfileDeployCmd string) (deployCommand devfilev1.Command, err error) {
-	return getCommand(data, devfileDeployCmd, devfilev1.DeployCommandGroupKind)
 }
 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,

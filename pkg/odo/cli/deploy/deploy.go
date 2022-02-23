@@ -5,11 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -18,7 +19,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-	"github.com/spf13/cobra"
+
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"
 )
@@ -122,16 +123,10 @@ func (o *DeployOptions) Validate() error {
 
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run() error {
-	platformContext := kubernetes.KubernetesContext{
-		Namespace: o.KClient.GetCurrentNamespace(),
-	}
-
-	devfileHandler, err := adapters.NewComponentAdapter(o.EnvSpecificInfo.GetName(), filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()), o.GetApplication(), o.EnvSpecificInfo.GetDevfileObj(), platformContext)
-	if err != nil {
-		return err
-	}
-
-	return devfileHandler.Deploy()
+	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
+	appName := o.GetApplication()
+	return o.clientset.DeployClient.Deploy(devfileObj, path, appName)
 }
 
 // NewCmdDeploy implements the odo command
@@ -147,7 +142,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(deployCmd, clientset.INIT)
+	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY)
 
 	// Add a defined annotation in order to appear in the help menu
 	deployCmd.Annotations["command"] = "utility"

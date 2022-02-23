@@ -5,7 +5,6 @@ import (
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/storage"
@@ -41,16 +40,6 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 			},
 		},
 	}
-}
-
-// ComponentExists checks whether a deployment by the given name exists in the given app
-func ComponentExists(client kclient.ClientInterface, name string, app string) (bool, error) {
-	deployment, err := client.GetOneDeployment(name, app)
-	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
-		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)
-		return false, nil
-	}
-	return deployment != nil, err
 }
 
 // isEnvPresent checks if the env variable is present in an array of env variables

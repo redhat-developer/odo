@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -86,7 +87,7 @@ func TestComponentExists(t *testing.T) {
 			})
 
 			// Verify that a component with the specified name exists
-			componentExists, err := ComponentExists(fkclient, tt.getComponentName, tt.appName)
+			componentExists, err := component.ComponentExists(fkclient, tt.getComponentName, tt.appName)
 			if !tt.wantErr && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else if !tt.wantErr && componentExists != tt.want {

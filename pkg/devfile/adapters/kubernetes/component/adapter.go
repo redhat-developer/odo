@@ -3,11 +3,12 @@ package component
 import (
 	"fmt"
 	"io"
-	"k8s.io/utils/pointer"
 	"os"
 	"reflect"
 	"strings"
 	"time"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/pkg/errors"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
@@ -33,7 +35,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -311,12 +312,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	postStartEvents := a.Devfile.Data.GetEvents().PostStart
-	if !componentExists && len(postStartEvents) > 0 {
-		err = a.ExecDevfileEvent(postStartEvents, common.PostStart, parameters.Show)
+	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
+		log.Infof("\nExecuting %s event commands for component %s", string(libdevfile.PostStart), a.ComponentName)
+		err = libdevfile.ExecPostStartEvents(a.Devfile, a.ComponentName, component.NewExecHandler(a.Client, a.pod.Name, parameters.Show))
 		if err != nil {
 			return err
-
 		}
 	}
 
@@ -387,7 +387,7 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 		log.Warningf("devfile command %q exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
 		log.Infof("Last %d lines of the component's log:", numberOfLines)
 
-		rd, err := a.Log(false, command)
+		rd, err := component.Log(a.Client, a.ComponentName, a.AppName, false, command)
 		if err != nil {
 			return err
 		}
@@ -400,34 +400,6 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 		log.Info("To get the full log output, please run 'odo log'")
 	}
 	return nil
-}
-
-// Test runs the devfile test command
-func (a Adapter) Test(testCmd string, show bool) (err error) {
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
-	if err != nil {
-		return fmt.Errorf("error occurred while getting the pod: %w", err)
-	}
-	if pod.Status.Phase != corev1.PodRunning {
-		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
-	}
-
-	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
-
-	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
-	if err != nil {
-		return errors.Wrap(err, "failed to validate devfile test command")
-	}
-	err = a.ExecuteDevfileCommand(testCommand, show, false)
-	if err != nil {
-		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
-	}
-	return nil
-}
-
-// DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string, appName string) (bool, error) {
-	return utils.ComponentExists(a.Client, cmpName, appName)
 }
 
 func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
@@ -673,111 +645,6 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
-// Delete deletes the component
-func (a Adapter) Delete(labels map[string]string, show bool, wait bool) error {
-	if labels == nil {
-		return fmt.Errorf("cannot delete with labels being nil")
-	}
-	log.Printf("Gathering information for component: %q", a.ComponentName)
-	podSpinner := log.Spinner("Checking status for component")
-	defer podSpinner.End(false)
-
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
-	if kerrors.IsForbidden(err) {
-		klog.V(2).Infof("Resource for %s forbidden", a.ComponentName)
-		// log the error if it failed to determine if the component exists due to insufficient RBACs
-		podSpinner.End(false)
-		log.Warningf("%v", err)
-		return nil
-	} else if e, ok := err.(*kclient.PodNotFoundError); ok {
-		podSpinner.End(false)
-		log.Warningf("%v", e)
-		return nil
-	} else if err != nil {
-		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
-	}
-
-	podSpinner.End(true)
-
-	// if there are preStop events, execute them before deleting the deployment
-	preStopEvents := a.Devfile.Data.GetEvents().PreStop
-	if len(preStopEvents) > 0 {
-		if pod.Status.Phase != corev1.PodRunning {
-			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
-		}
-
-		err = a.ExecDevfileEvent(preStopEvents, common.PreStop, show)
-		if err != nil {
-			return err
-		}
-	}
-
-	log.Infof("\nDeleting component %s", a.ComponentName)
-	spinner := log.Spinner("Deleting Kubernetes resources for component")
-	defer spinner.End(false)
-
-	err = a.Client.Delete(labels, wait)
-	if err != nil {
-		return err
-	}
-
-	spinner.End(true)
-	log.Successf("Successfully deleted component")
-	return nil
-}
-
-// Log returns log from component
-func (a Adapter) Log(follow bool, command devfilev1.Command) (io.ReadCloser, error) {
-
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
-	if err != nil {
-		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
-	}
-
-	if pod.Status.Phase != corev1.PodRunning {
-		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
-	}
-
-	containerName := command.Exec.Component
-
-	return a.Client.GetPodLogs(pod.Name, containerName, follow)
-}
-
-// Exec executes a command in the component
-func (a Adapter) Exec(command []string) error {
-	exists, err := utils.ComponentExists(a.Client, a.ComponentName, a.AppName)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
-	}
-
-	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
-	if err != nil {
-		return err
-	}
-	containerName := runCommand.Exec.Component
-
-	// get the pod
-	pod, err := a.Client.GetOnePod(a.ComponentName, a.AppName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-	}
-
-	if pod.Status.Phase != corev1.PodRunning {
-		return fmt.Errorf("unable to exec as the component is not running. Current status=%v", pod.Status.Phase)
-	}
-
-	componentInfo := common.ComponentInfo{
-		PodName:       pod.Name,
-		ContainerName: containerName,
-	}
-
-	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
-}
-
 func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	return a.Client.ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)
 }
@@ -785,103 +652,4 @@ func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []st
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
 func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.Client.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
-}
-
-// Deploy executes the 'deploy' command defined in a devfile
-func (a Adapter) Deploy() error {
-	deployCmd, err := a.getDeployCommand()
-	if err != nil {
-		return err
-	}
-
-	return a.ExecuteDevfileCommand(deployCmd, true, false)
-}
-
-// UnDeploy reverses the effect of the 'deploy' command defined in a devfile
-func (a Adapter) UnDeploy() error {
-	deployCmd, err := a.getDeployCommand()
-	if err != nil {
-		return err
-	}
-	return a.ExecuteDevfileCommand(deployCmd, true, true)
-}
-
-// ExecuteDevfileCommand executes the devfile command; if unexecute is set to true, it reverses the effect of Execute
-func (a Adapter) ExecuteDevfileCommand(command devfilev1.Command, show, unexecute bool) error {
-	commands, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{})
-	if err != nil {
-		return err
-	}
-
-	c, err := common.New(command, common.GetCommandsMap(commands), &a)
-	if err != nil {
-		return err
-	}
-	if unexecute {
-		return c.UnExecute()
-	}
-	return c.Execute(show)
-}
-
-// ApplyComponent 'applies' a devfile component
-func (a Adapter) ApplyComponent(componentName string) error {
-	cmp, err := a.getApplyComponent(componentName)
-	if err != nil {
-		return err
-	}
-
-	return cmp.Apply(a.Devfile, a.Context)
-}
-
-// UnApplyComponent un-'applies' a devfile component
-func (a Adapter) UnApplyComponent(componentName string) error {
-	cmp, err := a.getApplyComponent(componentName)
-	if err != nil {
-		return err
-	}
-	return cmp.UnApply(a.Context)
-}
-
-// getDeployCommand validates the deploy command and returns it
-func (a Adapter) getDeployCommand() (devfilev1.Command, error) {
-	deployGroupCmd, err := a.Devfile.Data.GetCommands(parsercommon.DevfileOptions{
-		CommandOptions: parsercommon.CommandOptions{
-			CommandGroupKind: devfilev1.DeployCommandGroupKind,
-		},
-	})
-	if err != nil {
-		return devfilev1.Command{}, err
-	}
-	if len(deployGroupCmd) == 0 {
-		return devfilev1.Command{}, &NoDefaultDeployCommandFoundError{}
-	}
-	if len(deployGroupCmd) > 1 {
-		return devfilev1.Command{}, &MoreThanOneDefaultDeployCommandFoundError{}
-	}
-	return deployGroupCmd[0], nil
-}
-
-// getApplyComponent returns the 'Apply' command's component(kubernetes/image)
-func (a Adapter) getApplyComponent(componentName string) (componentToApply, error) {
-	components, err := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
-	if err != nil {
-		return nil, err
-	}
-	var component devfilev1.Component
-	var found bool
-	for _, component = range components {
-		if component.Name == componentName {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return nil, fmt.Errorf("component %q not found", componentName)
-	}
-
-	cmp, err := createComponent(a, component)
-	if err != nil {
-		return nil, err
-	}
-	return cmp, nil
 }

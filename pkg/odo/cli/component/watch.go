@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -111,7 +112,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	if wo.debugCommandFlag != "" && wo.EnvSpecificInfo != nil && wo.EnvSpecificInfo.GetRunMode() != envinfo.Debug {
 		return fmt.Errorf("please start the component in debug mode using `odo push --debug` to use the --debug-command flag")
 	}
-	exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.EnvSpecificInfo.GetName(), wo.GetApplication())
+	exists, err := component.ComponentExists(wo.KClient, wo.EnvSpecificInfo.GetName(), wo.GetApplication())
 	if err != nil {
 		return err
 	}

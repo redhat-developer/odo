@@ -2,21 +2,28 @@ package component
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
-	dfutil "github.com/devfile/library/pkg/util"
-	"github.com/redhat-developer/odo/pkg/devfile"
-
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/pkg/util"
+
+	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/service"
 )
 
 // DevfilePush has the logic to perform the required actions for a given devfile
@@ -114,23 +121,9 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 // DevfileUnDeploy undeploys the devfile kubernetes components
 func (do *DeleteOptions) DevfileUnDeploy() error {
-	devObj, err := devfile.ParseAndValidateFromFile(do.GetDevfilePath())
-	if err != nil {
-		return err
-	}
-
-	componentName := do.EnvSpecificInfo.GetName()
-
-	kc := kubernetes.KubernetesContext{
-		Namespace: do.KClient.GetCurrentNamespace(),
-	}
-
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.contextFlag, do.GetApplication(), devObj, kc)
-	if err != nil {
-		return err
-	}
-
-	return devfileHandler.UnDeploy()
+	devfileObj := do.EnvSpecificInfo.GetDevfileObj()
+	undeployHandler := newUndeployHandler(filepath.Dir(do.EnvSpecificInfo.GetDevfilePath()), do.KClient)
+	return libdevfile.Deploy(devfileObj, undeployHandler)
 }
 
 // DevfileComponentDelete deletes the devfile component
@@ -139,18 +132,44 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	if err != nil {
 		return err
 	}
-
 	componentName := do.EnvSpecificInfo.GetName()
-
-	kc := kubernetes.KubernetesContext{
-		Namespace: do.KClient.GetCurrentNamespace(),
-	}
-
 	labels := componentlabels.GetLabels(componentName, do.EnvSpecificInfo.GetApplication(), false)
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.contextFlag, do.GetApplication(), devObj, kc)
+	return component.Delete(do.KClient, devObj, componentName, do.GetApplication(), labels, do.showLogFlag, do.waitFlag)
+}
+
+type undeployHandler struct {
+	path       string
+	kubeClient kclient.ClientInterface
+}
+
+func newUndeployHandler(path string, kubeClient kclient.ClientInterface) *undeployHandler {
+	return &undeployHandler{
+		path:       path,
+		kubeClient: kubeClient,
+	}
+}
+
+func (o *undeployHandler) ApplyImage(image v1alpha2.Component) error {
+	return nil
+}
+
+func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
+	// Parse the component's Kubernetes manifest
+	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}
 
-	return devfileHandler.Delete(labels, do.showLogFlag, do.waitFlag)
+	// Get the REST mappings
+	gvr, err := o.kubeClient.GetRestMappingFromUnstructured(u)
+	if err != nil {
+		return err
+	}
+	log.Printf("Un-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
+	// Un-deploy the K8s manifest
+	return o.kubeClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
+}
+
+func (o *undeployHandler) Execute(command v1alpha2.Command) error {
+	return errors.New("Exec command is not implemented for Deploy")
 }
