@@ -136,67 +136,68 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 			if err != nil {
 				return err
 			}
-			switch {
-			case configOps.Ops == "Delete" && configOps.Kind == "Port":
-
-				portToDelete := configOps.Key
-				indexToDelete := -1
-				for i, port := range selectedContainer.Ports {
-					if port == portToDelete {
-						indexToDelete = i
+			switch configOps.Ops {
+			case "Add":
+				switch configOps.Kind {
+				case "Port":
+					var newPort string
+					newPort, err = o.askerClient.AskAddPort()
+					if err != nil {
+						return err
 					}
-				}
-				if indexToDelete == -1 {
-					log.Warningf(fmt.Sprintf("unable to delete port %q, not found", portToDelete))
-				}
-				err = devfileobj.Data.RemovePorts(map[string][]string{selectContainerAnswer: {portToDelete}})
-				if err != nil {
-					return err
-				}
-				selectedContainer.Ports = append(selectedContainer.Ports[:indexToDelete], selectedContainer.Ports[indexToDelete+1:]...)
 
-			case configOps.Ops == "Delete" && configOps.Kind == "EnvVar":
-				envToDelete := configOps.Key
-				if _, ok := selectedContainer.Envs[envToDelete]; !ok {
-					log.Warningf(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
-				}
-				err = devfileobj.Data.RemoveEnvVars(map[string][]string{selectContainerAnswer: {envToDelete}})
-				if err != nil {
-					return err
-				}
-				delete(selectedContainer.Envs, envToDelete)
+					err = devfileobj.Data.SetPorts(map[string][]string{selectContainerAnswer: {newPort}})
+					if err != nil {
+						return err
+					}
+					selectedContainer.Ports = append(selectedContainer.Ports, newPort)
 
-			case configOps.Ops == "Add" && configOps.Kind == "Port":
-				var newPort string
-				newPort, err = o.askerClient.AskAddPort()
-				if err != nil {
-					return err
+				case "EnvVar":
+					var newEnvNameAnswer, newEnvValueAnswer string
+					newEnvNameAnswer, newEnvValueAnswer, err = o.askerClient.AskAddEnvVar()
+					if err != nil {
+						return err
+					}
+					err = devfileobj.Data.AddEnvVars(map[string][]v1alpha2.EnvVar{selectContainerAnswer: {{
+						Name:  newEnvNameAnswer,
+						Value: newEnvValueAnswer,
+					}}})
+					if err != nil {
+						return err
+					}
+					selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
 				}
+			case "Delete":
+				switch configOps.Kind {
+				case "Port":
+					portToDelete := configOps.Key
+					indexToDelete := -1
+					for i, port := range selectedContainer.Ports {
+						if port == portToDelete {
+							indexToDelete = i
+						}
+					}
+					if indexToDelete == -1 {
+						log.Warningf(fmt.Sprintf("unable to delete port %q, not found", portToDelete))
+					}
+					err = devfileobj.Data.RemovePorts(map[string][]string{selectContainerAnswer: {portToDelete}})
+					if err != nil {
+						return err
+					}
+					selectedContainer.Ports = append(selectedContainer.Ports[:indexToDelete], selectedContainer.Ports[indexToDelete+1:]...)
 
-				err = devfileobj.Data.SetPorts(map[string][]string{selectContainerAnswer: {newPort}})
-				if err != nil {
-					return err
+				case "EnvVar":
+					envToDelete := configOps.Key
+					if _, ok := selectedContainer.Envs[envToDelete]; !ok {
+						log.Warningf(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
+					}
+					err = devfileobj.Data.RemoveEnvVars(map[string][]string{selectContainerAnswer: {envToDelete}})
+					if err != nil {
+						return err
+					}
+					delete(selectedContainer.Envs, envToDelete)
 				}
-				selectedContainer.Ports = append(selectedContainer.Ports, newPort)
-
-			case configOps.Ops == "Add" && configOps.Kind == "EnvVar":
-
-				var newEnvNameAnswer, newEnvValueAnswer string
-				newEnvNameAnswer, newEnvValueAnswer, err = o.askerClient.AskAddEnvVar()
-				if err != nil {
-					return err
-				}
-				err = devfileobj.Data.AddEnvVars(map[string][]v1alpha2.EnvVar{selectContainerAnswer: {{
-					Name:  newEnvNameAnswer,
-					Value: newEnvValueAnswer,
-				}}})
-				if err != nil {
-					return err
-				}
-				selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
-
-			case configOps.Ops == "Nothing":
-				continue
+			case "Nothing":
 			default:
 				return fmt.Errorf("Unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
 			}

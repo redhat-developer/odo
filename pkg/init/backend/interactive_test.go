@@ -307,7 +307,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 				key: "5000",
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
 					ports := []string{"7000", "8000"}
-					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					envVars := []v1alpha2.EnvVar{{Name: "env1", Value: "val1"}, {Name: "env2", Value: "val2"}}
 					return getDevfileData(fs, container1, ports, envVars)
 				},
 			},
@@ -345,7 +345,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
 					ports := []string{"7000", "8000"}
-					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					envVars := []v1alpha2.EnvVar{{Name: "env1", Value: "val1"}, {Name: "env2", Value: "val2"}}
 					return getDevfileData(fs, container1, ports, envVars)
 				},
 				key: "env3",
@@ -380,7 +380,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
 					ports := []string{"7000", "8000"}
-					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					envVars := []v1alpha2.EnvVar{{Name: "env1", Value: "val1"}, {Name: "env2", Value: "val2"}}
 					return getDevfileData(fs, container1, ports, envVars)
 				},
 				key:   "7000",
@@ -418,7 +418,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
 					ports := []string{"7000", "8000"}
-					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					envVars := []v1alpha2.EnvVar{{Name: "env1", Value: "val1"}, {Name: "env2", Value: "val2"}}
 					return getDevfileData(fs, container1, ports, envVars)
 				},
 				key:   "env2",
@@ -449,7 +449,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
 					ports := []string{"7000", "8000"}
-					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					envVars := []v1alpha2.EnvVar{{Name: "env1", Value: "val1"}, {Name: "env2", Value: "val2"}}
 					return getDevfileData(fs, container1, ports, envVars)
 				},
 				key:   "",

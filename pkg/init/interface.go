@@ -41,5 +41,5 @@ type Client interface {
 	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
 
 	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
-	PersonalizeDevfileConfig(devfileobj parser.DevfileObj) error
+	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error
 }
