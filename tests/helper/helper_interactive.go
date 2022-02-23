@@ -8,6 +8,7 @@ import (
 	"github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
 	"github.com/kr/pty"
+	. "github.com/onsi/gomega"
 )
 
 //func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
@@ -48,4 +49,15 @@ func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Con
 	c.Tty().Close()
 
 	return buf.String(), err
+}
+
+func SendLine(c *expect.Console, line string) {
+	_, err := c.SendLine(line)
+	Expect(err).ShouldNot(HaveOccurred())
+}
+
+func ExpectString(c *expect.Console, line string) string {
+	res, err := c.ExpectString(line)
+	Expect(err).ShouldNot(HaveOccurred())
+	return res
 }

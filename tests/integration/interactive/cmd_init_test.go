@@ -3,7 +3,6 @@ package interactive
 import (
 	"bytes"
 	"fmt"
-	"os"
 
 	"github.com/Netflix/go-expect"
 	. "github.com/onsi/ginkgo"
@@ -18,7 +17,7 @@ var _ = Describe("odo login and logout command tests", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
-		os.Chdir(commonVar.Context)
+		helper.Chdir(commonVar.Context)
 	})
 
 	// // Clean up after the test
@@ -31,30 +30,45 @@ var _ = Describe("odo login and logout command tests", func() {
 		Command := []string{"odo", "init"}
 		output, err := helper.RunInteractive(commonVar, Command, func(c *expect.Console, output *bytes.Buffer) error {
 
-			res, err := c.ExpectString("Select language")
-			if err != nil {
-				return err
-			}
+			// res, err := c.ExpectString("Select language")
+			// if err != nil {
+			// 	return err
+			// }
+			res := helper.ExpectString(c, "Select language")
 			fmt.Fprintln(output, res)
-			c.SendLine("go")
-			res, err = c.ExpectString("Select project type")
+
+			// _, err = c.SendLine("go")
+			// if err != nil {
+			// 	return err
+			// }
+			helper.SendLine(c, "go")
+			res, err := c.ExpectString("Select project type")
 			if err != nil {
 				return err
 			}
 			fmt.Fprintln(output, res)
 			c.SendLine("\n")
+			if err != nil {
+				return err
+			}
 			res, err = c.ExpectString("Which starter project do you want to use")
 			if err != nil {
 				return err
 			}
 			fmt.Fprintln(output, res)
 			c.SendLine("\n")
+			if err != nil {
+				return err
+			}
 			res, err = c.ExpectString("Enter component name")
 			if err != nil {
 				return err
 			}
 			fmt.Fprintln(output, res)
 			c.SendLine("my-go-app")
+			if err != nil {
+				return err
+			}
 			res, err = c.ExpectString("Your new component \"my-go-app\" is ready in the current directory.")
 			if err != nil {
 				return err
