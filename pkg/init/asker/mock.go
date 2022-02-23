@@ -130,10 +130,10 @@ func (mr *MockAskerMockRecorder) AskContainerName(containers interface{}) *gomoc
 }
 
 // AskPersonalizeConfiguration mocks base method
-func (m *MockAsker) AskPersonalizeConfiguration(configuration ContainerConfiguration) (ContainerMap, error) {
+func (m *MockAsker) AskPersonalizeConfiguration(configuration ContainerConfiguration) (OperationOnContainer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AskPersonalizeConfiguration", configuration)
-	ret0, _ := ret[0].(ContainerMap)
+	ret0, _ := ret[0].(OperationOnContainer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
