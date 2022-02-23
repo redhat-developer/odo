@@ -8,11 +8,8 @@ import (
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
-<<<<<<< HEAD
 	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-=======
 	reflect "reflect"
->>>>>>> 0e8e1f54d (Run mockgen script)
 )
 
 // MockInitBackend is a mock of InitBackend interface
@@ -39,26 +36,21 @@ func (m *MockInitBackend) EXPECT() *MockInitBackendMockRecorder {
 }
 
 // Validate mocks base method
-func (m *MockInitBackend) Validate(flags map[string]string) error {
+func (m *MockInitBackend) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags)
+	ret := m.ctrl.Call(m, "Validate", flags, fs, dir)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Validate indicates an expected call of Validate
-func (mr *MockInitBackendMockRecorder) Validate(flags interface{}) *gomock.Call {
+func (mr *MockInitBackendMockRecorder) Validate(flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockInitBackend)(nil).Validate), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockInitBackend)(nil).Validate), flags, fs, dir)
 }
 
-<<<<<<< HEAD
-// SelectDevfile mocks base method.
-func (m *MockInitBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*DevfileLocation, error) {
-=======
 // SelectDevfile mocks base method
-func (m *MockInitBackend) SelectDevfile(flags map[string]string) (*DevfileLocation, error) {
->>>>>>> 0e8e1f54d (Run mockgen script)
+func (m *MockInitBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*DevfileLocation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
 	ret0, _ := ret[0].(*DevfileLocation)
@@ -66,13 +58,8 @@ func (m *MockInitBackend) SelectDevfile(flags map[string]string) (*DevfileLocati
 	return ret0, ret1
 }
 
-<<<<<<< HEAD
-// SelectDevfile indicates an expected call of SelectDevfile.
-func (mr *MockInitBackendMockRecorder) SelectDevfile(flags, fs, dir interface{}) *gomock.Call {
-=======
 // SelectDevfile indicates an expected call of SelectDevfile
-func (mr *MockInitBackendMockRecorder) SelectDevfile(flags interface{}) *gomock.Call {
->>>>>>> 0e8e1f54d (Run mockgen script)
+func (mr *MockInitBackendMockRecorder) SelectDevfile(flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockInitBackend)(nil).SelectDevfile), flags, fs, dir)
 }
@@ -92,32 +79,18 @@ func (mr *MockInitBackendMockRecorder) SelectStarterProject(devfile, flags inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectStarterProject", reflect.TypeOf((*MockInitBackend)(nil).SelectStarterProject), devfile, flags)
 }
 
-<<<<<<< HEAD
-// Validate mocks base method.
-func (m *MockInitBackend) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags, fs, dir)
-=======
 // PersonalizeName mocks base method
 func (m *MockInitBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
->>>>>>> 0e8e1f54d (Run mockgen script)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-<<<<<<< HEAD
-// Validate indicates an expected call of Validate.
-func (mr *MockInitBackendMockRecorder) Validate(flags, fs, dir interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockInitBackend)(nil).Validate), flags, fs, dir)
-=======
 // PersonalizeName indicates an expected call of PersonalizeName
 func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeName), devfile, flags)
->>>>>>> 0e8e1f54d (Run mockgen script)
 }
 
 // PersonalizeDevfileconfig mocks base method

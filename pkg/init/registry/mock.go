@@ -5,19 +5,11 @@
 package registry
 
 import (
-<<<<<<< HEAD
-	reflect "reflect"
-
-=======
->>>>>>> 0e8e1f54d (Run mockgen script)
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	util "github.com/devfile/library/pkg/util"
 	library "github.com/devfile/registry-support/registry-library/library"
 	gomock "github.com/golang/mock/gomock"
-<<<<<<< HEAD
-=======
 	reflect "reflect"
->>>>>>> 0e8e1f54d (Run mockgen script)
 )
 
 // MockClient is a mock of Client interface
@@ -43,40 +35,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-<<<<<<< HEAD
-// DownloadFileInMemory mocks base method.
-func (m *MockClient) DownloadFileInMemory(params util.HTTPRequestParams) ([]byte, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadFileInMemory", params)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DownloadFileInMemory indicates an expected call of DownloadFileInMemory.
-func (mr *MockClientMockRecorder) DownloadFileInMemory(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFileInMemory", reflect.TypeOf((*MockClient)(nil).DownloadFileInMemory), params)
-}
-
-// DownloadStarterProject mocks base method.
-func (m *MockClient) DownloadStarterProject(starterProject *v1alpha2.StarterProject, decryptedToken, contextDir string, verbose bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadStarterProject", starterProject, decryptedToken, contextDir, verbose)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DownloadStarterProject indicates an expected call of DownloadStarterProject.
-func (mr *MockClientMockRecorder) DownloadStarterProject(starterProject, decryptedToken, contextDir, verbose interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadStarterProject", reflect.TypeOf((*MockClient)(nil).DownloadStarterProject), starterProject, decryptedToken, contextDir, verbose)
-}
-
-// PullStackFromRegistry mocks base method.
-=======
 // PullStackFromRegistry mocks base method
->>>>>>> 0e8e1f54d (Run mockgen script)
 func (m *MockClient) PullStackFromRegistry(registry, stack, destDir string, options library.RegistryOptions) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PullStackFromRegistry", registry, stack, destDir, options)

@@ -5,13 +5,12 @@
 package init
 
 import (
-	reflect "reflect"
-
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	backend "github.com/redhat-developer/odo/pkg/init/backend"
 	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	reflect "reflect"
 )
 
 // MockClient is a mock of Client interface
@@ -38,34 +37,20 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Validate mocks base method
-func (m *MockClient) Validate(flags map[string]string) error {
+func (m *MockClient) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags)
+	ret := m.ctrl.Call(m, "Validate", flags, fs, dir)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Validate indicates an expected call of Validate
-func (mr *MockClientMockRecorder) Validate(flags interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Validate(flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockClient)(nil).Validate), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockClient)(nil).Validate), flags, fs, dir)
 }
 
-// PersonalizeName mocks base method.
-func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// PersonalizeName indicates an expected call of PersonalizeName.
-func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockClient)(nil).PersonalizeName), devfile, flags)
-}
-
-// SelectDevfile mocks base method.
+// SelectDevfile mocks base method
 func (m *MockClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
@@ -74,16 +59,12 @@ func (m *MockClient) SelectDevfile(flags map[string]string, fs filesystem.Filesy
 	return ret0, ret1
 }
 
-// SelectDevfile indicates an expected call of SelectDevfile.
+// SelectDevfile indicates an expected call of SelectDevfile
 func (mr *MockClientMockRecorder) SelectDevfile(flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDevfile", reflect.TypeOf((*MockClient)(nil).SelectDevfile), flags, fs, dir)
 }
 
-<<<<<<< HEAD
-// SelectStarterProject mocks base method.
-func (m *MockClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error) {
-=======
 // DownloadDevfile mocks base method
 func (m *MockClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
 	m.ctrl.T.Helper()
@@ -100,8 +81,7 @@ func (mr *MockClientMockRecorder) DownloadDevfile(devfileLocation, destDir inter
 }
 
 // SelectStarterProject mocks base method
-func (m *MockClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (*v1alpha2.StarterProject, error) {
->>>>>>> 0e8e1f54d (Run mockgen script)
+func (m *MockClient) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (*v1alpha2.StarterProject, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectStarterProject", devfile, flags, fs, dir)
 	ret0, _ := ret[0].(*v1alpha2.StarterProject)
@@ -109,33 +89,20 @@ func (m *MockClient) SelectStarterProject(devfile parser.DevfileObj, flags map[s
 	return ret0, ret1
 }
 
-// SelectStarterProject indicates an expected call of SelectStarterProject.
+// SelectStarterProject indicates an expected call of SelectStarterProject
 func (mr *MockClientMockRecorder) SelectStarterProject(devfile, flags, fs, dir interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectStarterProject", reflect.TypeOf((*MockClient)(nil).SelectStarterProject), devfile, flags, fs, dir)
 }
 
-<<<<<<< HEAD
-// Validate mocks base method.
-func (m *MockClient) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags, fs, dir)
-=======
 // DownloadStarterProject mocks base method
 func (m *MockClient) DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadStarterProject", project, dest)
->>>>>>> 0e8e1f54d (Run mockgen script)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-<<<<<<< HEAD
-// Validate indicates an expected call of Validate.
-func (mr *MockClientMockRecorder) Validate(flags, fs, dir interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockClient)(nil).Validate), flags, fs, dir)
-=======
 // DownloadStarterProject indicates an expected call of DownloadStarterProject
 func (mr *MockClientMockRecorder) DownloadStarterProject(project, dest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -168,5 +135,4 @@ func (m *MockClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) erro
 func (mr *MockClientMockRecorder) PersonalizeDevfileConfig(devfileobj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeDevfileConfig", reflect.TypeOf((*MockClient)(nil).PersonalizeDevfileConfig), devfileobj)
->>>>>>> 0e8e1f54d (Run mockgen script)
 }

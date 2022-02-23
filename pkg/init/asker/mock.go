@@ -33,26 +33,7 @@ func (m *MockAsker) EXPECT() *MockAskerMockRecorder {
 	return m.recorder
 }
 
-<<<<<<< HEAD
-// AskCorrect mocks base method.
-func (m *MockAsker) AskCorrect() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AskCorrect")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AskCorrect indicates an expected call of AskCorrect.
-func (mr *MockAskerMockRecorder) AskCorrect() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskCorrect", reflect.TypeOf((*MockAsker)(nil).AskCorrect))
-}
-
-// AskLanguage mocks base method.
-=======
 // AskLanguage mocks base method
->>>>>>> 0e8e1f54d (Run mockgen script)
 func (m *MockAsker) AskLanguage(langs []string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AskLanguage", langs)
@@ -112,6 +93,21 @@ func (m *MockAsker) AskName(defaultName string) (string, error) {
 func (mr *MockAskerMockRecorder) AskName(defaultName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskName", reflect.TypeOf((*MockAsker)(nil).AskName), defaultName)
+}
+
+// AskCorrect mocks base method
+func (m *MockAsker) AskCorrect() (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AskCorrect")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AskCorrect indicates an expected call of AskCorrect
+func (mr *MockAskerMockRecorder) AskCorrect() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskCorrect", reflect.TypeOf((*MockAsker)(nil).AskCorrect))
 }
 
 // AskContainerName mocks base method
