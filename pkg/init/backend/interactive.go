@@ -109,29 +109,11 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 
 func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
 	// TODO: Add tests
-	// TODO: Add mock methods
-	var config = asker.DevfileConfiguration{}
-	components, err := devfileobj.Data.GetComponents(parsercommon.DevfileOptions{})
+	config, err := getPortsAndEnvVar(devfileobj)
 	if err != nil {
 		return err
 	}
-	for _, component := range components {
-		var ports = []string{}
-		var envMap = map[string]string{}
-		if component.Container != nil {
-			// Fix this for component that are not a container
-			for _, ep := range component.Container.Endpoints {
-				ports = append(ports, strconv.Itoa(ep.TargetPort))
-			}
-			for _, env := range component.Container.Env {
-				envMap[env.Name] = env.Value
-			}
-		}
-		config[component.Name] = asker.ContainerConfiguration{
-			Ports: ports,
-			Envs:  envMap,
-		}
-	}
+
 	var selectContainerAnswer string
 	containerOptions := config.GetContainers()
 	containerOptions = append(containerOptions, "NONE - configuration is correct")
@@ -148,14 +130,14 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 			break
 		}
 
-		var configOps asker.ContainerMap
+		var configOps asker.OperationOnContainer
 		for configOps.Ops != "Nothing" {
 			configOps, err = o.asker.AskPersonalizeConfiguration(selectedContainer)
 			if err != nil {
 				return err
 			}
-
-			if configOps.Ops == "Delete" && configOps.Kind == "Port" {
+			switch {
+			case configOps.Ops == "Delete" && configOps.Kind == "Port":
 
 				portToDelete := configOps.Key
 				indexToDelete := -1
@@ -172,8 +154,8 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					return err
 				}
 				selectedContainer.Ports = append(selectedContainer.Ports[:indexToDelete], selectedContainer.Ports[indexToDelete+1:]...)
-			} else if configOps.Ops == "Delete" && configOps.Kind == "EnvVar" {
 
+			case configOps.Ops == "Delete" && configOps.Kind == "EnvVar":
 				envToDelete := configOps.Key
 				if _, ok := selectedContainer.Envs[envToDelete]; !ok {
 					log.Warningf(fmt.Sprintf("unable to delete env %q, not found", envToDelete))
@@ -184,8 +166,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				}
 				delete(selectedContainer.Envs, envToDelete)
 
-			} else if configOps.Ops == "Add" && configOps.Kind == "Port" {
-
+			case configOps.Ops == "Add" && configOps.Kind == "Port":
 				var newPort string
 				newPort, err = o.asker.AskAddPort()
 				if err != nil {
@@ -198,7 +179,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				}
 				selectedContainer.Ports = append(selectedContainer.Ports, newPort)
 
-			} else if configOps.Ops == "Add" && configOps.Kind == "EnvVar" {
+			case configOps.Ops == "Add" && configOps.Kind == "EnvVar":
 
 				var newEnvNameAnswer, newEnvValueAnswer string
 				newEnvNameAnswer, newEnvValueAnswer, err = o.asker.AskAddEnvVar()
@@ -214,9 +195,9 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 				}
 				selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
 
-			} else if configOps.Ops == "Nothing" {
-				// nothing to do
-			} else {
+			case configOps.Ops == "Nothing":
+				continue
+			default:
 				return fmt.Errorf("Unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
 			}
 			// Update the current configuration
@@ -245,11 +226,28 @@ func PrintConfiguration(config asker.DevfileConfiguration) {
 	}
 }
 
-func InArray(arr []string, element string) bool {
-	for _, ele := range arr {
-		if ele == element {
-			return true
+func getPortsAndEnvVar(obj parser.DevfileObj) (asker.DevfileConfiguration, error) {
+	var config = asker.DevfileConfiguration{}
+	components, err := obj.Data.GetComponents(parsercommon.DevfileOptions{})
+	if err != nil {
+		return config, err
+	}
+	for _, component := range components {
+		var ports = []string{}
+		var envMap = map[string]string{}
+		if component.Container != nil {
+			// Fix this for component that are not a container
+			for _, ep := range component.Container.Endpoints {
+				ports = append(ports, strconv.Itoa(ep.TargetPort))
+			}
+			for _, env := range component.Container.Env {
+				envMap[env.Name] = env.Value
+			}
+		}
+		config[component.Name] = asker.ContainerConfiguration{
+			Ports: ports,
+			Envs:  envMap,
 		}
 	}
-	return false
+	return config, nil
 }

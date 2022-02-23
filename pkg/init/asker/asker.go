@@ -93,39 +93,8 @@ func (o *Survey) AskCorrect() (bool, error) {
 }
 
 // AskPersonalizeConfiguration asks the configuration user wants to change
-func (o *Survey) AskPersonalizeConfiguration(configuration ContainerConfiguration) (ContainerMap, error) {
-	options := []string{
-		"NOTHING - configuration is correct",
-	}
-	tracker := []ContainerMap{{Ops: "Nothing"}}
-	for _, port := range configuration.Ports {
-		options = append(options, fmt.Sprintf("Delete port %q", port))
-		tracker = append(tracker, ContainerMap{
-			Ops:  "Delete",
-			Kind: "Port",
-			Key:  port,
-		})
-	}
-	options = append(options, "Add new port")
-	tracker = append(tracker, ContainerMap{
-		Ops:  "Add",
-		Kind: "Port",
-	})
-
-	for key := range configuration.Envs {
-		options = append(options, fmt.Sprintf("Delete environment variable %q", key))
-		tracker = append(tracker, ContainerMap{
-			Ops:  "Delete",
-			Kind: "EnvVar",
-			Key:  key,
-		})
-	}
-	options = append(options, "Add new environment variable")
-	tracker = append(tracker, ContainerMap{
-		Ops:  "Add",
-		Kind: "EnvVar",
-	})
-
+func (o *Survey) AskPersonalizeConfiguration(configuration ContainerConfiguration) (OperationOnContainer, error) {
+	options, tracker := buildPersonalizedConfigurationOptions(configuration)
 	configChangeQuestion := &survey.Select{
 		Message: "What configuration do you want change?",
 		Default: options[0],
@@ -134,7 +103,7 @@ func (o *Survey) AskPersonalizeConfiguration(configuration ContainerConfiguratio
 	var configChangeIndex int
 	err := survey.AskOne(configChangeQuestion, &configChangeIndex)
 	if err != nil {
-		return ContainerMap{}, err
+		return OperationOnContainer{}, err
 	}
 	return tracker[configChangeIndex], nil
 }
@@ -188,24 +157,50 @@ func (o *Survey) AskContainerName(containers []string) (string, error) {
 	return selectContainerAnswer, nil
 }
 
-type ContainerConfiguration struct {
-	Ports []string
-	Envs  map[string]string
-}
-
-type ContainerMap struct {
-	Ops  string
-	Kind string
-	Key  string
-}
-
-// key is container name
-type DevfileConfiguration map[string]ContainerConfiguration
-
 func (dc *DevfileConfiguration) GetContainers() []string {
 	keys := []string{}
 	for k := range *dc {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func buildPersonalizedConfigurationOptions(configuration ContainerConfiguration) (options []string, tracker []OperationOnContainer) {
+	options = []string{
+		"NOTHING - configuration is correct",
+	}
+	// track the option selected by the user without relying on the UI message
+	tracker = []OperationOnContainer{{Ops: "Nothing"}}
+
+	// Add available ports
+	for _, port := range configuration.Ports {
+		options = append(options, fmt.Sprintf("Delete port %q", port))
+		tracker = append(tracker, OperationOnContainer{
+			Ops:  "Delete",
+			Kind: "Port",
+			Key:  port,
+		})
+	}
+	options = append(options, "Add new port")
+	tracker = append(tracker, OperationOnContainer{
+		Ops:  "Add",
+		Kind: "Port",
+	})
+
+	// Add available env vars
+	for key := range configuration.Envs {
+		options = append(options, fmt.Sprintf("Delete environment variable %q", key))
+		tracker = append(tracker, OperationOnContainer{
+			Ops:  "Delete",
+			Kind: "EnvVar",
+			Key:  key,
+		})
+	}
+	options = append(options, "Add new environment variable")
+	tracker = append(tracker, OperationOnContainer{
+		Ops:  "Add",
+		Kind: "EnvVar",
+	})
+
+	return
 }
