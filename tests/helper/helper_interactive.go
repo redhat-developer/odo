@@ -3,7 +3,6 @@ package helper
 import (
 	"bytes"
 	"log"
-	"os"
 	"os/exec"
 
 	"github.com/Netflix/go-expect"
@@ -12,12 +11,7 @@ import (
 )
 
 //func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
-func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Console, *bytes.Buffer) (bytes.Buffer, error)) (string, error) {
-
-	// tmpdir, _ := ioutil.TempDir("", "")
-	os.Chdir(commonVar.Context)
-	// fmt.Println(tmpdir)
-	// defer os.RemoveAll(tmpdir)
+func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Console, *bytes.Buffer) error) (string, error) {
 
 	ptm, pts, err := pty.Open()
 	if err != nil {
@@ -30,10 +24,8 @@ func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Con
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer c.Close()
 
-	//cmd := exec.Command("odo", "init")
 	cmd := exec.Command(command[0], command[1:]...)
 	cmd.Stdin = c.Tty()
 	cmd.Stdout = c.Tty()
@@ -44,24 +36,10 @@ func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Con
 	}
 
 	buf := new(bytes.Buffer)
-	//var output string
-	res, err := test(c, buf)
+	err = test(c, buf)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// for i := 0; i < len(interVar.SendOntty); i++ {
-	// 	res, err := c.ExpectString(interVar.ExpectFromtty[i])
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	fmt.Fprintln(buf, res)
-	// 	c.SendLine(interVar.SendOntty[i])
-	// }
-	// res, err := c.ExpectString(interVar.ExpectFromtty[len(interVar.ExpectFromtty)-1])
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Fprintln(buf, res)
 	err = cmd.Wait()
 	if err != nil {
 		log.Fatal(err)
@@ -69,5 +47,5 @@ func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Con
 	// Close the slave end of the pty, and read the remaining bytes from the master end.
 	c.Tty().Close()
 
-	return res.String(), err
+	return buf.String(), err
 }
