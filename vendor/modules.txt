@@ -571,9 +571,7 @@ github.com/spf13/cobra
 ## explicit
 github.com/spf13/pflag
 # github.com/stretchr/testify v1.7.0
-## explicit
 github.com/stretchr/testify/assert
-github.com/stretchr/testify/require
 # github.com/tidwall/gjson v1.9.3
 ## explicit
 github.com/tidwall/gjson

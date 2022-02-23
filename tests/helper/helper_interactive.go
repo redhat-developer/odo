@@ -2,7 +2,6 @@ package helper
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -12,15 +11,8 @@ import (
 	"github.com/kr/pty"
 )
 
-type Interactive struct {
-	Command       []string
-	ExpectFromtty []string
-	SendOntty     []string
-	err           error
-}
-
 //func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
-func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
+func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Console, *bytes.Buffer) (bytes.Buffer, error)) (string, error) {
 
 	// tmpdir, _ := ioutil.TempDir("", "")
 	os.Chdir(commonVar.Context)
@@ -42,7 +34,7 @@ func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
 	defer c.Close()
 
 	//cmd := exec.Command("odo", "init")
-	cmd := exec.Command(interVar.Command[0], interVar.Command[1:]...)
+	cmd := exec.Command(command[0], command[1:]...)
 	cmd.Stdin = c.Tty()
 	cmd.Stdout = c.Tty()
 	cmd.Stderr = c.Tty()
@@ -52,19 +44,24 @@ func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
 	}
 
 	buf := new(bytes.Buffer)
-	for i := 0; i < len(interVar.SendOntty); i++ {
-		res, err := c.ExpectString(interVar.ExpectFromtty[i])
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Fprintln(buf, res)
-		c.SendLine(interVar.SendOntty[i])
-	}
-	res, err := c.ExpectString(interVar.ExpectFromtty[len(interVar.ExpectFromtty)-1])
+	//var output string
+	res, err := test(c, buf)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintln(buf, res)
+	// for i := 0; i < len(interVar.SendOntty); i++ {
+	// 	res, err := c.ExpectString(interVar.ExpectFromtty[i])
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	fmt.Fprintln(buf, res)
+	// 	c.SendLine(interVar.SendOntty[i])
+	// }
+	// res, err := c.ExpectString(interVar.ExpectFromtty[len(interVar.ExpectFromtty)-1])
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Fprintln(buf, res)
 	err = cmd.Wait()
 	if err != nil {
 		log.Fatal(err)
@@ -72,6 +69,5 @@ func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
 	// Close the slave end of the pty, and read the remaining bytes from the master end.
 	c.Tty().Close()
 
-	fmt.Println(buf, err)
-	return buf.String(), err
+	return res.String(), err
 }

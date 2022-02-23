@@ -18,7 +18,6 @@ require (
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.5.0
-	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 	github.com/hinshun/vt10x v0.0.0-20220127042424-3ca73d0126d7
 	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
@@ -43,7 +42,6 @@ require (
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/gjson v1.9.3
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zalando/go-keyring v0.1.1
