@@ -47,7 +47,7 @@ var _ = Describe("odo login and logout command tests", func() {
 				return err
 			}
 			fmt.Fprintln(output, res)
-			c.SendLine("\n")
+			_, err = c.SendLine("\n")
 			if err != nil {
 				return err
 			}
@@ -56,7 +56,7 @@ var _ = Describe("odo login and logout command tests", func() {
 				return err
 			}
 			fmt.Fprintln(output, res)
-			c.SendLine("\n")
+			_, err = c.SendLine("\n")
 			if err != nil {
 				return err
 			}
@@ -65,7 +65,7 @@ var _ = Describe("odo login and logout command tests", func() {
 				return err
 			}
 			fmt.Fprintln(output, res)
-			c.SendLine("my-go-app")
+			_, err = c.SendLine("my-go-app")
 			if err != nil {
 				return err
 			}
