@@ -856,7 +856,25 @@ func (a Adapter) getDeployCommand() (devfilev1.Command, error) {
 		return devfilev1.Command{}, &NoDefaultDeployCommandFoundError{}
 	}
 	if len(deployGroupCmd) > 1 {
-		return devfilev1.Command{}, &MoreThanOneDefaultDeployCommandFoundError{}
+		var found bool
+		var foundGroupCmd devfilev1.Command
+		for _, groupCmd := range deployGroupCmd {
+			group := parsercommon.GetGroup(groupCmd)
+			if group == nil {
+				continue
+			}
+			if group.IsDefault != nil && *group.IsDefault {
+				if found {
+					return devfilev1.Command{}, &MoreThanOneDefaultDeployCommandFoundError{}
+				}
+				found = true
+				foundGroupCmd = groupCmd
+			}
+		}
+		if !found {
+			return devfilev1.Command{}, &NoDefaultDeployCommandFoundError{}
+		}
+		return foundGroupCmd, nil
 	}
 	return deployGroupCmd[0], nil
 }
