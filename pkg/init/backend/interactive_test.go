@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"github.com/redhat-developer/odo/pkg/testingutil"
 	"reflect"
 	"testing"
 
@@ -261,4 +262,261 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
+	container1 := "runtime"
+
+	type fields struct {
+		asker         func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker
+		catalogClient catalog.Client
+	}
+	type args struct {
+		devfileobj func(fs filesystem.Filesystem) parser.DevfileObj
+		key        string
+		value      string
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		wantErr     bool
+		checkResult func(config asker.ContainerConfiguration, key string, value string) bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "Add new port",
+			fields: fields{
+				asker: func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return(container1, nil)
+					containerConfig := configuration[container1]
+					selectContainer := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{
+						Ops:  "Add",
+						Kind: "Port",
+					}, nil).MaxTimes(1)
+					addPort := client.EXPECT().AskAddPort().Return("5000", nil).After(selectContainer)
+					containerConfig.Ports = append(containerConfig.Ports, "5000")
+					containerConfigDone := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{Ops: "Nothing"}, nil).After(addPort)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
+					return client
+				},
+				catalogClient: nil,
+			},
+			args: args{
+				key: "5000",
+				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
+					ports := []string{"7000", "8000"}
+					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					return getDevfileData(fs, container1, ports, envVars)
+				},
+			},
+			wantErr: false,
+			checkResult: func(config asker.ContainerConfiguration, key string, value string) bool {
+				for _, port := range config.Ports {
+					if port == key {
+						return true
+					}
+				}
+				return false
+			},
+		},
+		{
+			name: "Add new environment variable",
+			fields: fields{
+				asker: func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					askContainerName := client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return(container1, nil)
+					containerConfig := configuration[container1]
+					selectContainer := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{
+						Ops:  "Add",
+						Kind: "EnvVar",
+					}, nil).After(askContainerName)
+					key, val := "env3", "val3"
+					addPort := client.EXPECT().AskAddEnvVar().Return(key, val, nil).After(selectContainer)
+					// containerConfig.Ports = append(containerConfig.Ports, "5000")
+					containerConfig.Envs[key] = val
+					containerConfigDone := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{Ops: "Nothing"}, nil).After(addPort)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
+					return client
+				},
+				catalogClient: nil,
+			},
+			args: args{
+				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
+					ports := []string{"7000", "8000"}
+					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					return getDevfileData(fs, container1, ports, envVars)
+				},
+				key: "env3",
+			},
+			wantErr: false,
+			checkResult: func(config asker.ContainerConfiguration, key string, value string) bool {
+				if val, ok := config.Envs[key]; ok && val == value {
+					return true
+				}
+				return false
+			},
+		},
+		{
+			name: "Delete port",
+			fields: fields{
+				asker: func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return(container1, nil)
+					containerConfig := configuration[container1]
+					selectContainer := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{
+						Ops:  "Delete",
+						Kind: "Port",
+						Key:  "7000",
+					}, nil).MaxTimes(1)
+					containerConfig.Ports = []string{"8000"}
+					containerConfigDone := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{Ops: "Nothing"}, nil).After(selectContainer)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
+					return client
+				},
+				catalogClient: nil,
+			},
+			args: args{
+				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
+					ports := []string{"7000", "8000"}
+					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					return getDevfileData(fs, container1, ports, envVars)
+				},
+				key:   "7000",
+				value: "",
+			},
+			checkResult: func(config asker.ContainerConfiguration, key string, value string) bool {
+				for _, port := range config.Ports {
+					if port == key {
+						return false
+					}
+				}
+				return true
+			},
+			wantErr: false,
+		},
+		{
+			name: "Delete environment variable",
+			fields: fields{
+				asker: func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return(container1, nil)
+					containerConfig := configuration[container1]
+					selectContainer := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{
+						Ops:  "Delete",
+						Kind: "EnvVar",
+						Key:  "env2",
+					}, nil).MaxTimes(1)
+					delete(containerConfig.Envs, "env2")
+					containerConfigDone := client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{Ops: "Nothing"}, nil).After(selectContainer)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
+					return client
+				},
+				catalogClient: nil,
+			},
+			args: args{
+				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
+					ports := []string{"7000", "8000"}
+					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					return getDevfileData(fs, container1, ports, envVars)
+				},
+				key:   "env2",
+				value: "",
+			},
+			wantErr: false,
+			checkResult: func(config asker.ContainerConfiguration, key string, value string) bool {
+				if _, ok := config.Envs[key]; ok {
+					return false
+				}
+				return true
+			},
+		},
+		{
+			name: "None - Configuration is correct",
+			fields: fields{
+				asker: func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return(container1, nil)
+					containerConfig := configuration[container1]
+					client.EXPECT().AskPersonalizeConfiguration(containerConfig).Return(asker.OperationOnContainer{
+						Ops: "Nothing",
+					}, nil).MaxTimes(1)
+					return client
+				},
+				catalogClient: nil,
+			},
+			args: args{
+				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
+					ports := []string{"7000", "8000"}
+					envVars := []v1alpha2.EnvVar{{"env1", "val1"}, {"env2", "val2"}}
+					return getDevfileData(fs, container1, ports, envVars)
+				},
+				key:   "",
+				value: "",
+			},
+			wantErr: false,
+			checkResult: func(config asker.ContainerConfiguration, key string, value string) bool {
+				checkConfig := asker.ContainerConfiguration{
+					Ports: []string{"7000", "8000"},
+					Envs:  map[string]string{"env1": "val1", "env2": "val2"},
+				}
+				if !reflect.DeepEqual(config, checkConfig) {
+					return false
+				}
+				return true
+			},
+		},
+		{
+			name:    "Multiple Containers are present",
+			fields:  fields{},
+			args:    args{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := filesystem.NewFakeFs()
+			devfile := tt.args.devfileobj(fs)
+			config, err := getPortsAndEnvVar(devfile)
+			if err != nil {
+				t.Errorf("getPortsAndEnvVar() error = %v", err)
+			}
+
+			ctrl := gomock.NewController(t)
+			var askerClient asker.Asker
+			if tt.fields.asker != nil {
+				askerClient = tt.fields.asker(ctrl, config)
+			}
+
+			o := &InteractiveBackend{
+				asker:         askerClient,
+				catalogClient: tt.fields.catalogClient,
+			}
+			if err = o.PersonalizeDevfileconfig(devfile); (err != nil) != tt.wantErr {
+				t.Errorf("PersonalizeDevfileconfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			config, err = getPortsAndEnvVar(devfile)
+			if err != nil {
+				t.Errorf("getPortsAndEnvVar() error = %v", err)
+			}
+			if tt.checkResult != nil && !tt.checkResult(config[container1], tt.args.key, tt.args.value) {
+				t.Errorf("InteractiveBackend.PersonalizeName(), checking result failed")
+			}
+		})
+	}
+}
+
+func getDevfileData(fs filesystem.Filesystem, containerName string, ports []string, envVars []v1alpha2.EnvVar) parser.DevfileObj {
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+	_ = devfileData.AddComponents([]v1alpha2.Component{
+		testingutil.GetFakeContainerComponent(containerName),
+	})
+	obj := parser.DevfileObj{
+		Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
+		Data: devfileData,
+	}
+	_ = obj.SetPorts(map[string][]string{containerName: ports})
+	_ = obj.AddEnvVars(map[string][]v1alpha2.EnvVar{containerName: envVars})
+	return obj
 }
