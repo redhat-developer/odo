@@ -7,6 +7,7 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/log"
+	"sort"
 	"strconv"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
@@ -211,12 +212,18 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 func PrintConfiguration(config asker.DevfileConfiguration) {
 	color.New(color.Bold, color.FgGreen).Println("Current component configuration:")
 
-	for key, container := range config {
+	var keys []string
+	for key := range config {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
 
+	for _, key := range keys {
+		container := config[key]
 		color.Green("Container %q:", key)
 		color.Green("  Opened ports:")
-		for _, port := range container.Ports {
 
+		for _, port := range container.Ports {
 			color.New(color.Bold, color.FgWhite).Printf("   - %s\n", port)
 		}
 
