@@ -8,5 +8,5 @@ import (
 
 type Client interface {
 	Start(d parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, w io.Writer) error
-	Cleanup() error
+	Cleanup(parser.DevfileObj) error
 }

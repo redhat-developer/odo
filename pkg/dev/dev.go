@@ -1,9 +1,9 @@
 package dev
 
 import (
-	devfilev2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -29,13 +29,6 @@ func NewDevClient(kubernetesClient kclient.ClientInterface, watchClient watch.Cl
 	}
 }
 
-// getComponents returns a slice of components to be started for inner loop
-func getComponents() (devfilev2.Component, error) {
-	var components devfilev2.Component
-	var err error
-	return components, err
-}
-
 // Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container,
 // and watches it for any changes. It prints all the logs/output to out.
 func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, out io.Writer) error {
@@ -47,8 +40,6 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		return err
 	}
 
-	// store the devfileObj so that we can reuse it in Cleanup
-	// o.devfileObj = devfileObj
 	var envSpecificInfo *envinfo.EnvSpecificInfo
 	envSpecificInfo, err = envinfo.NewEnvSpecificInfo(path)
 	pushParameters := common.PushParameters{
@@ -71,16 +62,22 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		FileIgnores:         ignorePaths,
 	}
 
-	err = o.watchClient.WatchAndPush(o.kubernetesClient, out, watchParameters)
+	err = o.watchClient.WatchAndPush(out, watchParameters)
 	if err != nil {
 		return err
 	}
 	return err
 }
 
-// Cleanup cleans the resources created by Push
-func (o *DevClient) Cleanup() error {
+// Cleanup cleans the resources created by Start by deleting the Kubernetes Deployment matching the .metadata.name
+// in the devfileObj. It silently fails if it can't find a matching Deployment because it's possible that a Deployment
+// was never created as user hit Ctrl+C before odo could create one.
+func (o *DevClient) Cleanup(devfileObj parser.DevfileObj) error {
 	var err error
+	err = o.kubernetesClient.DeleteDeployment(componentlabels.GetLabels(devfileObj.GetMetadataName(), "app", false))
+	if err != nil {
+		return err
+	}
 	return err
 }
 

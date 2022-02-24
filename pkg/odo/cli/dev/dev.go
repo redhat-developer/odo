@@ -15,7 +15,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -25,14 +27,12 @@ type DevOptions struct {
 	// Context
 	*genericclioptions.Context
 
-	// Flags
-	contextFlag string
-
 	// Clients
 	clientset *clientset.Clientset
 
 	// Variables
 	ignorePaths []string
+	stopChannel chan struct{}
 }
 
 func NewDevOptions() *DevOptions {
@@ -51,7 +51,7 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return fmt.Errorf("the current directory doesn't contain a devfile")
 	}
 
-	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextFlag)
+	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
@@ -83,16 +83,17 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	}
 
 	ignores := &[]string{}
-	err = genericclioptions.ApplyIgnore(ignores, o.contextFlag)
+	err = genericclioptions.ApplyIgnore(ignores, "")
 	if err != nil {
 		return err
 	}
-	sourcePath, err := dfutil.GetAbsPath(o.contextFlag)
+	sourcePath, err := dfutil.GetAbsPath("")
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
 
 	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, *ignores)
+	o.stopChannel = make(chan struct{}, 1)
 	return nil
 }
 
@@ -108,7 +109,24 @@ func (o *DevOptions) Run() error {
 	}
 	var path = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT)
+	//defer signal.Stop(signals)
+
 	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, os.Stdout)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (o *DevOptions) HandleSignal() error {
+	var err error
+	err = o.clientset.DevClient.Cleanup(o.Context.EnvSpecificInfo.GetDevfileObj())
+	if err != nil {
+		return err
+	}
 	return err
 }
 
@@ -130,7 +148,6 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 	devCmd.Annotations = map[string]string{"command": "utility"}
 	clientset.Add(devCmd, clientset.DEV)
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	odoutil.AddContextFlag(devCmd, &o.contextFlag)
 
 	return devCmd
 }

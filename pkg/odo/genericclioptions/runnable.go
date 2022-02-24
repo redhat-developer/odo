@@ -33,6 +33,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type SignalHandler interface {
+	HandleSignal() error
+}
+
 type Runnable interface {
 	SetClientset(clientset *clientset.Clientset)
 	Complete(cmdline cmdline.Cmdline, args []string) error
@@ -73,6 +77,12 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
 	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignal os.Signal) {
+		if handler, ok := o.(SignalHandler); ok {
+			err = handler.HandleSignal()
+			if err != nil {
+				log.Errorf("failed to delete resources from Kubernetes cluster: %v", err)
+			}
+		}
 		scontext.SetSignal(cmd.Context(), receivedSignal)
 		startTelemetry(cmd, errors.Wrapf(terminal.InterruptErr, "user interrupted the command execution"), startTime)
 	})

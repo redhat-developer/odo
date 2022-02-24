@@ -58,9 +58,9 @@ const (
 var subdeps map[string][]string = map[string][]string{
 	CATALOG: {FILESYSTEM, PREFERENCE},
 	DEPLOY:  {KUBERNETES},
+	DEV:     {KUBERNETES, WATCH},
 	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
 	PROJECT: {KUBERNETES_NULLABLE},
-	DEV:     {KUBERNETES, WATCH},
 	/* Add sub-dependencies here, if any */
 }
 

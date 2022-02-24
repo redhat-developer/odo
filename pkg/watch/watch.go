@@ -13,7 +13,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -166,7 +165,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	client: occlient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
-func (o *WatchClient) WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
+func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
@@ -422,7 +421,7 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 // DevfileWatchAndPush calls out to the WatchAndPush function.
 // As an occlient instance is not needed for devfile components, it sets it to nil
 func (o *WatchClient) DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
-	return o.WatchAndPush(nil, out, parameters)
+	return o.WatchAndPush(out, parameters)
 }
 
 func removeDuplicates(input []string) []string {
