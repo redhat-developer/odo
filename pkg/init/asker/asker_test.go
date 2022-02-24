@@ -21,28 +21,40 @@ func Test_buildPersonalizedConfigurationOptions(t *testing.T) {
 				Ports: []string{},
 				Envs:  map[string]string{},
 			}},
-			wantOptions: []string{"NOTHING - configuration is correct", "Add new port", "Add new environment variable"},
-			wantTracker: []OperationOnContainer{{
-				Ops:  "Nothing",
-				Kind: "",
-				Key:  "",
-			}, {
-				Ops:  "Add",
-				Kind: "Port",
-				Key:  "",
-			}, {
-				Ops:  "Add",
-				Kind: "EnvVar",
-				Key:  "",
-			}},
+			wantOptions: []string{
+				"NOTHING - configuration is correct",
+				"Add new port",
+				"Add new environment variable",
+			},
+			wantTracker: []OperationOnContainer{
+				{
+					Ops:  "Nothing",
+					Kind: "",
+					Key:  "",
+				}, {
+					Ops:  "Add",
+					Kind: "Port",
+					Key:  "",
+				}, {
+					Ops:  "Add",
+					Kind: "EnvVar",
+					Key:  "",
+				}},
 		},
 		{
 			name: "all options",
 			args: args{configuration: ContainerConfiguration{
 				Ports: []string{"7000", "8000"},
-				Envs:  map[string]string{"env1": "env2"},
+				Envs:  map[string]string{"foo": "bar"},
 			}},
-			wantOptions: []string{"NOTHING - configuration is correct", "Delete port \"7000\"", "Delete port \"8000\"", "Add new port", "Delete environment variable \"env1\"", "Add new environment variable"},
+			wantOptions: []string{
+				"NOTHING - configuration is correct",
+				"Delete port \"7000\"",
+				"Delete port \"8000\"",
+				"Add new port",
+				"Delete environment variable \"foo\"",
+				"Add new environment variable",
+			},
 			wantTracker: []OperationOnContainer{
 				{
 					Ops:  "Nothing",
@@ -63,7 +75,7 @@ func Test_buildPersonalizedConfigurationOptions(t *testing.T) {
 				}, {
 					Ops:  "Delete",
 					Kind: "EnvVar",
-					Key:  "env1",
+					Key:  "foo",
 				}, {
 					Ops:  "Add",
 					Kind: "EnvVar",
