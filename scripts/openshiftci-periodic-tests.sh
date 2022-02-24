@@ -6,15 +6,15 @@ set -e
 set -x
 
 # check if devfiles are updated and if so, update and test them
-check_devfile() {
-    NOTEQUAL= false
+check_and_run_devfileTest() {
+    NOTEQUAL=false
     # Languages for which devfiles preset in examples dir
-    LANGUAGES=('nodejs' 'python' 'springboot')
+    LANGUAGES=('python' 'nodejs' 'springboot')
 
     for LANGUAGE in "${LANGUAGES[@]}"; do
         Example_devfile_path=./tests/examples/source/devfiles/$LANGUAGE/devfile-registry.yaml
         TEMPDIR=$(mktemp -d)
-# download devfiles with odo
+        # download devfiles with odo
         if [[ $LANGUAGE == "springboot" ]]; then
             odo create java-$LANGUAGE language --context $TEMPDIR
         else
@@ -22,21 +22,13 @@ check_devfile() {
         fi
 
         Devfile_path=$TEMPDIR/devfile.yaml
-# check if devfiles differ then the one in examples dir
-        diff $Devfile_path $Example_devfile_path
-        if [ $? != 0 ] ; then # $status is 0 if the files are the same
-            echo "$LANGUAGE Devfile is not same as example"
-            # copy if devfile differs
-            cp $Devfile_path $Example_devfile_path
-            NOTEQUAL= true
-        fi
+        # check if devfiles differ then the one in examples dir
+        diff $Devfile_path $Example_devfile_path || NOTEQUAL=true && cp $Devfile_path $Example_devfile_path
 
     done
 
     if [ $NOTEQUAL == true ]; then
-        return -1
-    else
-        return 0
+        make test-integration-devfile || error=true
     fi
 }
 
@@ -47,6 +39,7 @@ mkdir -p $GOPATH/bin
 make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+error=false 
 
 # Copy kubeconfig to temporary kubeconfig file
 # Read and Write permission to temporary kubeconfig file
@@ -61,11 +54,8 @@ oc login -u developer -p password@123
 # Check login user name for debugging purpose
 oc whoami
 
-# Integration tests
-check_devfile
-if [[ $? == -1 ]]; then
-    make test-integration-devfile || error=true
-fi
+# # Integration tests
+check_and_run_devfileTest
 
 make test-operator-hub || error=true
 
