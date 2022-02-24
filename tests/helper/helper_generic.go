@@ -342,13 +342,13 @@ func CommonAfterEach(commonVar CommonVar) {
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Println("Error: ", err)
+	} else {
+		defer f.Close()
+		if _, err = f.WriteString(resultsRow); err != nil {
+			fmt.Println("Error: ", err)
+		}
+		f.Close()
 	}
-	defer f.Close()
-	if _, err = f.WriteString(resultsRow); err != nil {
-		fmt.Println("Error: ", err)
-	}
-
-	f.Close()
 
 	// delete the random project/namespace created in CommonBeforeEach
 	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
