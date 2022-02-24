@@ -454,7 +454,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 			return IndexerRet{}, err
 		}
 		// check if it matches a ignore rule
-		match := ignoreMatcher.Match(matchedPath, stat.IsDir())
+		match := ignoreMatcher.Match(matchedPath, false)
 		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
 		//if err != nil {
 		//	return IndexerRet{}, err
@@ -481,7 +481,8 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 
 		if stat.IsDir() {
 
-			if stat.Name() == DotOdoDirectory || stat.Name() == ".git" {
+			match1 := ignoreMatcher.Match(matchedPath, true)
+			if stat.Name() == DotOdoDirectory || stat.Name() == ".git" || match1 {
 				return IndexerRet{}, nil
 			}
 
