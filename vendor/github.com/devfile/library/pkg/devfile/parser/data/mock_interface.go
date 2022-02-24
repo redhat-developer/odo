@@ -550,3 +550,59 @@ func (mr *MockDevfileDataMockRecorder) UpdateStarterProject(project interface{})
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStarterProject", reflect.TypeOf((*MockDevfileData)(nil).UpdateStarterProject), project)
 }
+
+// RemoveEnvVars mocks base method
+func (m *MockDevfileData) RemoveEnvVars(containerEnvMap map[string][]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveEnvVars", containerEnvMap)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveEnvVars indicates an expected call of RemoveEnvVars
+func (mr *MockDevfileDataMockRecorder) RemoveEnvVars(containerEnvMap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveEnvVars", reflect.TypeOf((*MockDevfileData)(nil).RemoveEnvVars), containerEnvMap)
+}
+
+// SetPorts mocks base method
+func (m *MockDevfileData) SetPorts(containerPortsMap map[string][]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetPorts", containerPortsMap)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetPorts indicates an expected call of SetPorts
+func (mr *MockDevfileDataMockRecorder) SetPorts(containerPortsMap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPorts", reflect.TypeOf((*MockDevfileData)(nil).SetPorts), containerPortsMap)
+}
+
+// AddEnvVars mocks base method
+func (m *MockDevfileData) AddEnvVars(containerEnvMap map[string][]v1alpha2.EnvVar) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddEnvVars", containerEnvMap)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddEnvVars indicates an expected call of AddEnvVars
+func (mr *MockDevfileDataMockRecorder) AddEnvVars(containerEnvMap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEnvVars", reflect.TypeOf((*MockDevfileData)(nil).AddEnvVars), containerEnvMap)
+}
+
+// RemovePorts mocks base method
+func (m *MockDevfileData) RemovePorts(containerPortsMap map[string][]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemovePorts", containerPortsMap)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemovePorts indicates an expected call of RemovePorts
+func (mr *MockDevfileDataMockRecorder) RemovePorts(containerPortsMap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemovePorts", reflect.TypeOf((*MockDevfileData)(nil).RemovePorts), containerPortsMap)
+}

@@ -125,9 +125,18 @@ func (fs *fakeFs) RemoveAll(path string) error {
 	return fs.a.RemoveAll(path)
 }
 
+func (fs *fakeFs) Getwd() (dir string, err error) {
+	return ".", nil
+}
+
 // Remove via afero.RemoveAll
 func (fs *fakeFs) Remove(name string) error {
 	return fs.a.Remove(name)
+}
+
+// Chmod via afero.Chmod
+func (fs *fakeFs) Chmod(name string, mode os.FileMode) error {
+	return fs.a.Chmod(name, mode)
 }
 
 // fakeFile implements File; for use with fakeFs
@@ -162,4 +171,8 @@ func (file *fakeFile) Close() error {
 
 func (file *fakeFile) Readdir(n int) ([]os.FileInfo, error) {
 	return file.file.Readdir(n)
+}
+
+func (file *fakeFile) Read(b []byte) (n int, err error) {
+	return file.file.Read(b)
 }

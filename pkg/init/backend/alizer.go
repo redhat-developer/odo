@@ -90,3 +90,7 @@ func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags ma
 func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	return nil
 }
+
+func (o *AlizerBackend) PersonalizeDevfileconfig(devfile parser.DevfileObj) error {
+	return nil
+}

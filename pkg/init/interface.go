@@ -39,4 +39,7 @@ type Client interface {
 	// PersonalizeName updates a devfile name, depending on the flags.
 	// The method will modify the devfile content and save the devfile on disk
 	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
+
+	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
+	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error
 }

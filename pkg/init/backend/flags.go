@@ -97,3 +97,7 @@ func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map
 func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
 	return devfile.SetMetadataName(flags[FLAG_NAME])
 }
+
+func (o FlagsBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
+	return nil
+}

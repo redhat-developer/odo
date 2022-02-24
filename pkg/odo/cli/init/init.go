@@ -142,6 +142,11 @@ func (o *InitOptions) Run() (err error) {
 
 	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
+	err = o.clientset.InitClient.PersonalizeDevfileConfig(devfileObj, o.flags, o.clientset.FS, o.contextDir)
+	if err != nil {
+		return fmt.Errorf("Failed to configure devfile: %w", err)
+	}
+
 	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err

@@ -82,4 +82,10 @@ type DevfileData interface {
 
 	GetDevfileContainerComponents(common.DevfileOptions) ([]v1.Component, error)
 	GetDevfileVolumeComponents(common.DevfileOptions) ([]v1.Component, error)
+
+	// containers
+	RemoveEnvVars(containerEnvMap map[string][]string) error
+	SetPorts(containerPortsMap map[string][]string) error
+	AddEnvVars(containerEnvMap map[string][]v1.EnvVar) error
+	RemovePorts(containerPortsMap map[string][]string) error
 }

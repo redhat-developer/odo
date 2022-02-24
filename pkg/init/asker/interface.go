@@ -2,7 +2,9 @@
 // needed to initiate a project.
 package asker
 
-import "github.com/redhat-developer/odo/pkg/catalog"
+import (
+	"github.com/redhat-developer/odo/pkg/catalog"
+)
 
 // Asker interactively asks for information to the user
 type Asker interface {
@@ -22,4 +24,29 @@ type Asker interface {
 
 	// AskCorrect asks for confirmation
 	AskCorrect() (bool, error)
+
+	AskContainerName(containers []string) (string, error)
+
+	// AskPersonalizeConfiguration asks the configuration user wants to change
+	AskPersonalizeConfiguration(configuration ContainerConfiguration) (OperationOnContainer, error)
+
+	// AskAddEnvVar asks the key and value for env var
+	AskAddEnvVar() (string, string, error)
+
+	// AskAddPort asks the container name and port that user wants to add
+	AskAddPort() (string, error)
 }
+
+type ContainerConfiguration struct {
+	Ports []string
+	Envs  map[string]string
+}
+
+type OperationOnContainer struct {
+	Ops  string
+	Kind string
+	Key  string
+}
+
+// key is container name
+type DevfileConfiguration map[string]ContainerConfiguration
