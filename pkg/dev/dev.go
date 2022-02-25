@@ -43,6 +43,9 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 
 	var envSpecificInfo *envinfo.EnvSpecificInfo
 	envSpecificInfo, err = envinfo.NewEnvSpecificInfo(path)
+	if err != nil {
+		return err
+	}
 	pushParameters := common.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
 		Path:            path,
