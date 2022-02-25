@@ -25,9 +25,6 @@ type DevOptions struct {
 	// Context
 	*genericclioptions.Context
 
-	// Flags
-	contextFlag string
-
 	// Clients
 	clientset *clientset.Clientset
 
@@ -51,9 +48,9 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to create context: %v", err)
 	}
 
 	devfileExists := util.CheckPathExists(o.Context.GetDevfilePath())
@@ -61,7 +58,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return fmt.Errorf("the current directory doesn't contain a devfile")
 	}
 
-	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextFlag)
+	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
@@ -83,11 +80,11 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	}
 
 	ignores := &[]string{}
-	err = genericclioptions.ApplyIgnore(ignores, o.contextFlag)
+	err = genericclioptions.ApplyIgnore(ignores, "")
 	if err != nil {
 		return err
 	}
-	sourcePath, err := dfutil.GetAbsPath(o.contextFlag)
+	sourcePath, err := dfutil.GetAbsPath("")
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
@@ -130,7 +127,6 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 	devCmd.Annotations = map[string]string{"command": "utility"}
 	clientset.Add(devCmd, clientset.DEV)
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	odoutil.AddContextFlag(devCmd, &o.contextFlag)
 
 	return devCmd
 }
