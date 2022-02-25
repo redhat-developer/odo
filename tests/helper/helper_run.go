@@ -30,7 +30,7 @@ func CmdRunner(program string, args ...string) *gexec.Session {
 	return session
 }
 
-// WaitForOutputToContain waits for for the session stdout output to contain a particular substring
+// WaitForOutputToContain waits for the session stdout output to contain a particular substring
 func WaitForOutputToContain(substring string, timeoutInSeconds int, intervalInSeconds int, session *gexec.Session) {
 
 	Eventually(func() string {
