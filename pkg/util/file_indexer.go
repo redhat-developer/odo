@@ -47,7 +47,7 @@ type FileData struct {
 }
 
 // ReadFileIndex tries to read the odo index file from the given location and returns the data from the file
-// if no such file is present, it means the folder hasn't been walked and thus returns a empty list
+// if no such file is present, it means the folder hasn't been walked and thus returns an empty list
 func ReadFileIndex(filePath string) (*FileIndex, error) {
 	// Read operation
 	var fi FileIndex

@@ -1,7 +1,6 @@
 package dev
 
 import (
-	devfilev2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -12,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/watch"
 	"io"
+	"k8s.io/klog/v2"
 )
 
 // this causes compilation to fail if DevClient struct doesn't implement Client interface
@@ -29,26 +29,18 @@ func NewDevClient(kubernetesClient kclient.ClientInterface, watchClient watch.Cl
 	}
 }
 
-// getComponents returns a slice of components to be started for inner loop
-func getComponents() (devfilev2.Component, error) {
-	var components devfilev2.Component
-	var err error
-	return components, err
-}
-
 // Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container,
 // and watches it for any changes. It prints all the logs/output to out.
 func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, out io.Writer) error {
 	var err error
 
 	var adapter common.ComponentAdapter
+	klog.V(4).Infoln("Creating new adapter")
 	adapter, err = adapters.NewComponentAdapter(devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext)
 	if err != nil {
 		return err
 	}
 
-	// store the devfileObj so that we can reuse it in Cleanup
-	// o.devfileObj = devfileObj
 	var envSpecificInfo *envinfo.EnvSpecificInfo
 	envSpecificInfo, err = envinfo.NewEnvSpecificInfo(path)
 	pushParameters := common.PushParameters{
@@ -56,10 +48,12 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		Path:            path,
 	}
 
+	klog.V(4).Infoln("Creating inner-loop resources for the component")
 	err = adapter.Push(pushParameters)
 	if err != nil {
 		return err
 	}
+	klog.V(4).Infoln("Successfully created inner-loop resourcs")
 
 	watchParameters := watch.WatchParameters{
 		Path:                path,
@@ -102,15 +96,14 @@ func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watc
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
-	// Parse devfile and validate
+	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
 	devObj, err := devfile.ParseAndValidateFromFile("./devfile.yaml")
 	if err != nil {
 		return nil, err
 	}
 
 	platformContext := kubernetes.KubernetesContext{
-		// TODO: find a better way, or get RID of KubernetesContext
-		Namespace: "myproject",
+		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
