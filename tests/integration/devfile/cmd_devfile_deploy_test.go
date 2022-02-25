@@ -30,7 +30,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 		})
 		AfterEach(func() {
-			helper.Cmd("odo", "delete", "-a").ShouldPass()
+			helper.Cmd("odo", "v2delete", "-a").ShouldPass()
 		})
 		It("should run odo deploy", func() {
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
@@ -52,7 +52,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-two-deploy-commands.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 		})
 		AfterEach(func() {
-			helper.Cmd("odo", "delete", "-a").ShouldPass()
+			helper.Cmd("odo", "v2delete", "-a").ShouldPass()
 		})
 		It("should run odo deploy", func() {
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()

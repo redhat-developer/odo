@@ -162,7 +162,7 @@ func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 	component := stringFlagLookup(cmd, "component")
 	all, _ := strconv.ParseBool(stringFlagLookup(cmd, "all"))
 	// TODO: Move this to a method under DeleteOptions, similar to CreateOptions.checkConflictingFlags
-	if cmd.Name() == "delete" {
+	if cmd.Name() == "v2delete" {
 		if cmd.HasParent() {
 			if cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component" {
 				var componentName string

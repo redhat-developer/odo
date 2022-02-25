@@ -30,7 +30,7 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 
 		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 		if err != nil {
-			if cmdline.GetParentName() != "project" && !(cmdline.GetName() == "delete" && cmdline.IsFlagSet("all")) {
+			if cmdline.GetParentName() != "project" && !(cmdline.GetName() == "v2delete" && cmdline.IsFlagSet("all")) {
 				return err
 			}
 		}

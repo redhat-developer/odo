@@ -13,7 +13,7 @@ import (
 // errFormatForCommand must contain one %s
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(cmdline cmdline.Cmdline, errFormatForCommand string) error {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-	if cmdline.GetParentName() != "project" && (cmdline.GetName() == "create" || (cmdline.GetName() == "delete" && !cmdline.IsFlagSet("all"))) {
+	if cmdline.GetParentName() != "project" && (cmdline.GetName() == "create" || (cmdline.GetName() == "v2delete" && !cmdline.IsFlagSet("all"))) {
 		return fmt.Errorf(errFormatForCommand, cmdline.GetRootName())
 	}
 	return nil
@@ -23,7 +23,7 @@ func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(cmdline cmdline.Cmdline, e
 // compare to checkProjectCreateOrDeleteOnlyOnInvalidNamespace, no %s is needed
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespaceNoFmt(cmdline cmdline.Cmdline, errFormatForCommand string) error {
 	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
-	if cmdline.GetParentName() != "project" && (cmdline.GetName() == "create" || cmdline.GetName() == "push" || (cmdline.GetName() == "delete" && !cmdline.IsFlagSet("all"))) {
+	if cmdline.GetParentName() != "project" && (cmdline.GetName() == "create" || cmdline.GetName() == "push" || (cmdline.GetName() == "v2delete" && !cmdline.IsFlagSet("all"))) {
 		return fmt.Errorf(errFormatForCommand)
 	}
 	return nil

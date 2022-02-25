@@ -1,12 +1,13 @@
 package devfile
 
 import (
-	"github.com/redhat-developer/odo/tests/helper"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+
+	"github.com/redhat-developer/odo/tests/helper"
 
 	"github.com/tidwall/gjson"
 	"gopkg.in/yaml.v2"
@@ -259,7 +260,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
 		})
 		AfterEach(func() {
-			helper.Cmd("odo", "delete", "-af").ShouldPass()
+			helper.Cmd("odo", "v2delete", "-af").ShouldPass()
 		})
 		It("should successfully create the devfile component", func() {
 			helper.Cmd("odo", "create", "nodejs").ShouldPass()

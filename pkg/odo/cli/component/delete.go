@@ -249,11 +249,12 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	do := NewDeleteOptions()
 
 	var componentDeleteCmd = &cobra.Command{
-		Use:     fmt.Sprintf("%s <component_name>", name),
-		Short:   "Delete component",
-		Long:    "Delete component.",
-		Example: fmt.Sprintf(deleteExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Use:         fmt.Sprintf("%s <component_name>", name),
+		Short:       "Delete component",
+		Long:        "Delete component.",
+		Example:     fmt.Sprintf(deleteExample, fullName),
+		Args:        cobra.MaximumNArgs(1),
+		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
 		},
