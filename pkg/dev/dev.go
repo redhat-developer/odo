@@ -1,8 +1,8 @@
 package dev
 
 import (
+	"fmt"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -83,12 +83,12 @@ func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watc
 
 	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
 	if err != nil {
-		return errors.Wrapf(err, "unable to generate component from watch parameters")
+		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
 	err = adapter.Push(pushParams)
 	if err != nil {
-		return errors.Wrapf(err, "watch command was unable to push component")
+		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
 
 	return err

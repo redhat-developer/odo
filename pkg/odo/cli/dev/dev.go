@@ -3,7 +3,6 @@ package dev
 import (
 	"fmt"
 	dfutil "github.com/devfile/library/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -66,16 +65,16 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		var cmpName string
 		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
 		if err != nil {
-			return errors.Wrap(err, "unable to retrieve component name")
+			return fmt.Errorf("unable to retrieve component name: %w", err)
 		}
 		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
 		if err != nil {
-			return errors.Wrap(err, "failed to write new env.yaml file")
+			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
 	} else if envFileInfo.GetComponentSettings().Project != o.GetProject() {
 		err = envFileInfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
-			return errors.Wrap(err, "failed to update project in env.yaml file")
+			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
 	}
 
@@ -86,7 +85,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	}
 	sourcePath, err := dfutil.GetAbsPath("")
 	if err != nil {
-		return errors.Wrap(err, "unable to get source path")
+		return fmt.Errorf("unable to get source path: %w", err)
 	}
 
 	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, *ignores)
