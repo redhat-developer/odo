@@ -6,8 +6,6 @@ import (
 )
 
 type Client interface {
-	// TODO: Add docs
-	DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error
-	// TODO: Add docs
+	// WatchAndPush watches the component under the context directory and triggers Push if there are any changes
 	WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error
 }

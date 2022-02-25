@@ -36,7 +36,7 @@ func NewDevOptions() *DevOptions {
 }
 
 var devExample = templates.Examples(`
-	# Deploy components to the development cluster
+	# Deploy component to the development cluster
 	%[1]s
 `)
 
