@@ -762,7 +762,7 @@ func TestWatchAndPush(t *testing.T) {
 			}
 
 			fkclient, _ := kclient.FakeNew()
-			mockClient := NewMockClient(ctrl)
+			watchClient := NewWatchClient()
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
@@ -843,7 +843,14 @@ func TestWatchAndPush(t *testing.T) {
 				}),
 			}
 
-			mockClient.EXPECT().WatchAndPush(fkclient, os.Stdout, watchParameters).Return(nil).AnyTimes()
+			err = watchClient.WatchAndPush(
+				fkclient,
+				os.Stdout,
+				watchParameters,
+			)
+			if err != nil && err != ErrUserRequestedWatchExit {
+				t.Errorf("error in WatchAndPush %+v", err)
+			}
 		})
 	}
 }
