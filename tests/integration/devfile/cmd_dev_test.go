@@ -27,7 +27,7 @@ var _ = Describe("odo dev command tests", func() {
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		//helper.CommonAfterEach(commonVar)
+		helper.CommonAfterEach(commonVar)
 	})
 
 	When("a component is bootstrapped and pushed", func() {
