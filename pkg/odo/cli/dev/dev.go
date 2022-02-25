@@ -12,6 +12,7 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
+	"io"
 	"k8s.io/kubectl/pkg/util/templates"
 	"os"
 	"path/filepath"
@@ -29,10 +30,13 @@ type DevOptions struct {
 
 	// Variables
 	ignorePaths []string
+	out         io.Writer
 }
 
 func NewDevOptions() *DevOptions {
-	return &DevOptions{}
+	return &DevOptions{
+		out: os.Stdout,
+	}
 }
 
 var devExample = templates.Examples(`
@@ -54,8 +58,9 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	devfileExists := util.CheckPathExists(o.Context.GetDevfilePath())
 	if !devfileExists {
-		return fmt.Errorf("the current directory doesn't contain a devfile")
+		return fmt.Errorf("there is no devfile.yaml in the current directory")
 	}
+	fmt.Fprintf(o.out, "Using devfile.yaml from the current directory.\n")
 
 	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
@@ -104,6 +109,7 @@ func (o *DevOptions) Run() error {
 	}
 	var path = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 
+	fmt.Fprintf(o.out, "Starting your application on cluster in developer mode\n")
 	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, os.Stdout)
 	return err
 }

@@ -35,20 +35,6 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// DevfileWatchAndPush mocks base method.
-func (m *MockClient) DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DevfileWatchAndPush", out, parameters)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DevfileWatchAndPush indicates an expected call of DevfileWatchAndPush.
-func (mr *MockClientMockRecorder) DevfileWatchAndPush(out, parameters interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DevfileWatchAndPush", reflect.TypeOf((*MockClient)(nil).DevfileWatchAndPush), out, parameters)
-}
-
 // WatchAndPush mocks base method.
 func (m *MockClient) WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
 	m.ctrl.T.Helper()

@@ -2,7 +2,6 @@ package kclient
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -21,7 +20,7 @@ const (
 
 // CollectEvents collects events in a Goroutine by manipulating a spinner.
 // We don't care about the error (it's usually ran in a go routine), so erroring out is not needed.
-func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
+func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int) {
 
 	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
 	eventWatcher, err := c.KubeClient.CoreV1().Events(c.Namespace).Watch(context.TODO(), metav1.ListOptions{})
@@ -52,8 +51,6 @@ func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, 
 						newEvent := e
 						(events)[e.Name] = *newEvent
 						klog.V(3).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
-						// Change the spinner message to show the warning
-						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s", e.Count, e.Reason))
 					}
 
 				}

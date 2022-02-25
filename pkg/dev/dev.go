@@ -57,6 +57,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		return err
 	}
 	klog.V(4).Infoln("Successfully created inner-loop resourcs")
+	fmt.Fprintf(out, "\nYour application is running on cluster.\n ")
 
 	watchParameters := watch.WatchParameters{
 		Path:                path,

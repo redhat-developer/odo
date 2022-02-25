@@ -12,8 +12,6 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/log"
-
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,8 +101,9 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 			}
 		}
 
-		name := u.GetName()
-		log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
+		// uncomment/modify when service linking is enabled in v3
+		//name := u.GetName()
+		//log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
 		restartNeeded = true
 	}
 
@@ -117,13 +116,14 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 			return false, err
 
 		}
-
-		log.Successf("Deleted link %q using Service Binding Operator on the cluster; component will be restarted", key)
+		// uncomment/modify when service linking is enabled in v3
+		// log.Successf("Deleted link %q using Service Binding Operator on the cluster; component will be restarted", key)
 		restartNeeded = true
 	}
 
 	if !restartNeeded {
-		log.Success("Links are in sync with the cluster, no changes are required")
+		// uncomment/modify when service linking is enabled in v3
+		// log.Success("Links are in sync with the cluster, no changes are required")
 	}
 	return restartNeeded, nil
 }
@@ -228,7 +228,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 				return false, err
 			}
 			restartRequired = true
-			log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
+			// uncomment/modify when service linking is enabled in v3
+			//log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
 		}
 	}
 
@@ -321,14 +322,16 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 				return false, err
 			}
 			restartRequired = true
-			log.Successf("Created link %q on the cluster; component will be restarted", linkName)
+			// uncomment/modify when service linking is enabled in v3
+			//log.Successf("Created link %q on the cluster; component will be restarted", linkName)
 		}
 	}
 
 	if restartRequired {
 		return true, nil
 	} else {
-		log.Success("Links are in sync with the cluster, no changes are required")
+		// uncomment/modify when service linking is enabled in v3
+		//log.Success("Links are in sync with the cluster, no changes are required")
 	}
 
 	return false, nil

@@ -10,7 +10,6 @@ import (
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -238,7 +237,8 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 			delete(deployed, u.GetKind()+"/"+u.GetName())
 		}
 		if isOperatorBackedService {
-			log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
+			// uncomment/modify when service support is enabled in v3
+			// log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
 		}
 		madeChange = true
 	}
@@ -253,14 +253,15 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 				return err
 
 			}
-
-			log.Successf("Deleted service %q from the cluster", key)
+			// uncomment/modify when service support is enabled in v3
+			//log.Successf("Deleted service %q from the cluster", key)
 			madeChange = true
 		}
 	}
 
 	if !madeChange {
-		log.Success("Services are in sync with the cluster, no changes are required")
+		// uncomment/modify when service support is enabled in v3
+		//log.Success("Services are in sync with the cluster, no changes are required")
 	}
 
 	return nil

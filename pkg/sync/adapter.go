@@ -12,7 +12,6 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
@@ -96,16 +95,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		// if it is a forced push (isForcePush) reset the index to do a full sync
 		absIgnoreRules := dfutil.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
-		var s *log.Status
-		if syncParameters.ComponentExists {
-			s = log.Spinner("Checking file changes for pushing")
-		} else {
-			// if the component doesn't exist, we don't check for changes in the files
-			// thus we show a different message
-			s = log.Spinner("Checking files for pushing")
-		}
-		defer s.End(false)
-
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
 		odoFolder := filepath.Join(pushParameters.Path, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
@@ -128,7 +117,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		// Run the indexer and find the modified/added/deleted/renamed files
 		var err error
 		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, syncParameters.Files)
-		s.End(true)
 
 		if err != nil {
 			return false, errors.Wrap(err, "unable to run indexer")
@@ -191,9 +179,6 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	}
 
 	// Sync the files to the pod
-	s := log.Spinner("Syncing files to the component")
-	defer s.End(false)
-
 	syncFolder := compInfo.SyncFolder
 
 	if syncFolder != generator.DevfileSourceVolumeMount {
@@ -218,8 +203,6 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if !isForcePush {
 		if len(files) == 0 && len(delFiles) == 0 {
-			// nothing to push
-			s.End(true)
 			return nil
 		}
 	}
@@ -228,11 +211,9 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
-			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
 		}
 	}
-	s.End(true)
 
 	return nil
 }

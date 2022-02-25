@@ -15,7 +15,6 @@ import (
 	v10 "github.com/openshift/api/route/v1"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	unions "github.com/redhat-developer/odo/pkg/kclient/unions"
-	log "github.com/redhat-developer/odo/pkg/log"
 	v11 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
@@ -68,15 +67,15 @@ func (mr *MockClientInterfaceMockRecorder) ApplyDeployment(deploy interface{}) *
 }
 
 // CollectEvents mocks base method.
-func (m *MockClientInterface) CollectEvents(selector string, events map[string]v12.Event, spinner *log.Status, quit <-chan int) {
+func (m *MockClientInterface) CollectEvents(selector string, events map[string]v12.Event, quit <-chan int) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "CollectEvents", selector, events, spinner, quit)
+	m.ctrl.Call(m, "CollectEvents", selector, events, quit)
 }
 
 // CollectEvents indicates an expected call of CollectEvents.
-func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, spinner, quit interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, spinner, quit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, quit)
 }
 
 // CreateDeployment mocks base method.

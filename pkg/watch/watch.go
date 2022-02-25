@@ -300,7 +300,7 @@ func (o *WatchClient) WatchAndPush(client kclient.ClientInterface, out io.Writer
 			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
 				fmt.Fprintf(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal\n")
 			}
-			fmt.Fprintf(out, "Waiting for something to change in %s\n", parameters.Path)
+			fmt.Fprintf(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit and clean up resources from cluster.\n", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.
@@ -313,7 +313,7 @@ func (o *WatchClient) WatchAndPush(client kclient.ClientInterface, out io.Writer
 			deletedPaths = removeDuplicates(deletedPaths)
 
 			for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
-				fmt.Fprintf(out, "File %s changed\n", file)
+				fmt.Fprintf(out, "\n\nFile %s changed\n", file)
 			}
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
 				fmt.Fprintf(out, "Pushing files...\n")

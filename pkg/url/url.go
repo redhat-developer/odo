@@ -8,7 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/log"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/klog"
 )
@@ -78,15 +77,11 @@ func Push(parameters PushParameters) error {
 	// get the local URLs
 	for _, url := range localConfigProviderURLs {
 		if !parameters.IsRouteSupported && url.Kind == localConfigProvider.ROUTE {
-			// display warning since Host info is missing
-			log.Warningf("Unable to create ingress, missing host information for Endpoint %v, please check instructions on URL creation (refer `odo url create --help`)\n", url.Name)
 			continue
 		}
 
 		urlLOCAL[url.Name] = NewURLFromLocalURL(url)
 	}
-
-	log.Info("\nApplying URL changes")
 
 	urlCLUSTER := make(map[string]URL)
 
@@ -99,8 +94,6 @@ func Push(parameters PushParameters) error {
 	for _, url := range urlList.Items {
 		urlCLUSTER[url.Name] = url
 	}
-
-	urlChange := false
 
 	// find URLs to delete
 	for urlName, urlSpec := range urlCLUSTER {
@@ -143,28 +136,9 @@ func Push(parameters PushParameters) error {
 			if err != nil {
 				return err
 			}
-			log.Successf("URL %s successfully deleted", urlName)
-			urlChange = true
 			delete(urlCLUSTER, urlName)
 			continue
 		}
-	}
-
-	// find URLs to create
-	for urlName, urlInfo := range urlLOCAL {
-		_, ok := urlCLUSTER[urlName]
-		if !ok {
-			host, err := parameters.URLClient.Create(urlInfo)
-			if err != nil {
-				return err
-			}
-			log.Successf("URL %s: %s%s created", urlName, host, urlInfo.Spec.Path)
-			urlChange = true
-		}
-	}
-
-	if !urlChange {
-		log.Success("URLs are synced with the cluster, no changes are required.")
 	}
 
 	return nil

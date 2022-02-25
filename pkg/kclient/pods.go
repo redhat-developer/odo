@@ -80,7 +80,7 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 						spinner = log.Spinner(waitMessage)
 						// Collect all the events in a separate go routine
 						quit := make(chan int)
-						go c.CollectEvents(selector, failedEvents, spinner, quit)
+						go c.CollectEvents(selector, failedEvents, quit)
 						defer close(quit)
 					}
 				}
