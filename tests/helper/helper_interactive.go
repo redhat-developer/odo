@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os/exec"
+	"runtime"
 
 	"github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
@@ -60,4 +61,13 @@ func ExpectString(c *expect.Console, line string) string {
 	res, err := c.ExpectString(line)
 	Expect(err).ShouldNot(HaveOccurred())
 	return res
+}
+
+// CheckIfSupported checks if the current OS is supported for Interactive testing
+func CheckIfSupported() bool {
+	if runtime.GOOS == "windows" {
+		log.Println("Skipping!")
+		return false
+	}
+	return true
 }
