@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -61,22 +60,22 @@ var _ = Describe("odo link and unlink command tests", func() {
 		}
 
 		// createAndPush: creates component, a URL for it and deploys it
-		var createAndPush = func(compType string, compName string, contextDir string) {
-			helper.CopyExample(filepath.Join("source", compType), contextDir)
-			helper.Cmd("odo", "create", compName, "--context", contextDir, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", compType, "devfile-registry.yaml")).ShouldPass()
-			helper.Cmd("odo", "url", "create", "--port", "8080", "--context", contextDir).ShouldPass()
+		var createAndPush = func(compType string, compName string, contextDir string, starterName string) {
+			// Download the starter project since the ones present locally are not downloaded from staging repository, and hence fail
+			helper.Cmd("odo", "create", compName, "--context", contextDir, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", compType, "devfile-registry.yaml"), "--starter", starterName).ShouldPass()
+			// helper.Cmd("odo", "url", "create", "--port", "9000", "--context", contextDir).ShouldPass()
 			helper.Cmd("odo", "push", "--context", contextDir).ShouldPass()
 		}
 
 		BeforeEach(func() {
 			frontendComp = fmt.Sprintf("frontend-%v", helper.RandString(3))
 			frontendContext = helper.CreateNewContext()
-			createAndPush("nodejs", frontendComp, frontendContext)
+			createAndPush("nodejs", frontendComp, frontendContext, "nodejs-starter")
 			frontendURL = helper.DetermineRouteURL(frontendContext)
 
 			backendComp = fmt.Sprintf("backend-%v", helper.RandString(3))
 			backendContext = helper.CreateNewContext()
-			createAndPush("python", backendComp, backendContext)
+			createAndPush("python", backendComp, backendContext, "python-example")
 		})
 
 		AfterEach(func() {
@@ -101,11 +100,12 @@ var _ = Describe("odo link and unlink command tests", func() {
 			When("the link is pushed", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "push", "--context", frontendContext).ShouldPass()
+					frontendURL = helper.DetermineRouteURL(frontendContext)
 				})
 				It("should ensure that the proper envFrom entry was created", func() {
 					envFromOutput := commonVar.CliRunner.GetEnvFromEntry(frontendComp, "app", commonVar.Project)
 					Expect(envFromOutput).To(ContainSubstring(backendComp))
-					helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
+					helper.HttpWaitFor(frontendURL, "Hello from Node.js Starter Application!", 20, 1)
 				})
 				It("should find the link and environment variables in odo describe", func() {
 					checkDescribe(frontendContext, backendComp, true, false)

@@ -101,7 +101,7 @@ var _ = Describe("odo devfile app command tests", func() {
 				helper.Cmd("odo", "create", "--project", namespace, component00, "--context", context00, "--app", app0, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context00)
 				helper.Cmd("odo", "storage", "create", storage00, "--path", "/data", "--size", "1Gi", "--context", context00).ShouldPass()
-				helper.Cmd("odo", "url", "create", url00, "--port", "3000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
+				helper.Cmd("odo", "url", "create", url00, "--port", "2000", "--context", context00, "--host", "com", "--ingress").ShouldPass()
 				helper.Cmd("odo", "push", "--context", context00).ShouldPass()
 
 				info = testInfo{
@@ -199,7 +199,7 @@ func runner(info testInfo) {
 	Expect(helper.IsJSON(stdOut)).To(BeTrue())
 
 	stdOut = helper.Cmd("odo", "app", "describe", info.app0, "--project", info.namespace).ShouldPass().Out()
-	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.storage00, info.url00, "http", "3000"})
+	helper.MatchAllInOutput(stdOut, []string{info.app0, info.comp0, info.comp00, info.storage00, info.url00, "http", "2000"})
 
 	// test the json output
 	stdOut = helper.Cmd("odo", "app", "describe", info.app0, "--project", info.namespace, "-o", "json").ShouldPass().Out()
