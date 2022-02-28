@@ -67,3 +67,10 @@ mockgen -source=pkg/libdevfile/libdevfile.go \
     -package libdevfile \
     -destination pkg/libdevfile/handler_mock.go
 
+mockgen -source=pkg/component/delete/interface.go \
+    -package delete \
+    -destination pkg/component/delete/mock.go
+
+mockgen -source=pkg/component/delete/undeploy_handler.go \
+    -package delete \
+    -destination pkg/component/delete/mock_handler.go

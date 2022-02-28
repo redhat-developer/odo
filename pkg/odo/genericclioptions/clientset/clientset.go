@@ -12,6 +12,7 @@
 package clientset
 
 import (
+	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
@@ -44,6 +45,9 @@ const (
 	// REGISTRY instantiates client for pkg/init/registry
 	REGISTRY = "DEP_REGISTRY"
 
+	// DELETE instantiates client for pkg/component/delete
+	DELETE = "DEP_DELETE"
+
 	/* Add key for new package here */
 )
 
@@ -66,6 +70,7 @@ type Clientset struct {
 	PreferenceClient preference.Client
 	ProjectClient    project.Client
 	RegistryClient   registry.Client
+	DeleteClient     _delete.Client
 	/* Add client here */
 }
 
@@ -124,6 +129,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
+	}
+	if isDefined(command, DELETE) {
+		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
