@@ -20,7 +20,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -761,7 +760,6 @@ func TestWatchAndPush(t *testing.T) {
 				t.Errorf("failed to setup test environment. Error %v", err)
 			}
 
-			fkclient, _ := kclient.FakeNew()
 			watchClient := NewWatchClient()
 
 			// Clear all the created temporary files
@@ -844,7 +842,6 @@ func TestWatchAndPush(t *testing.T) {
 			}
 
 			err = watchClient.WatchAndPush(
-				fkclient,
 				os.Stdout,
 				watchParameters,
 			)

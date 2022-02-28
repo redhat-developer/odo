@@ -418,12 +418,6 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 	return ignoreEvent
 }
 
-// DevfileWatchAndPush calls out to the WatchAndPush function.
-// As an occlient instance is not needed for devfile components, it sets it to nil
-func (o *WatchClient) DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
-	return o.WatchAndPush(out, parameters)
-}
-
 func removeDuplicates(input []string) []string {
 	valueMap := map[string]string{}
 	for _, str := range input {

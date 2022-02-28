@@ -6,7 +6,6 @@ import (
 	"testing"
 	time "time"
 
-	"github.com/redhat-developer/odo/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -56,11 +55,9 @@ func TestCollectEvents(t *testing.T) {
 				return true, fakeEventWatch, nil
 			})
 
-			// Create a test spinner / variables / quit variable for the go channel
-			spinner := log.Spinner("Test spinner")
 			events := make(map[string]corev1.Event)
 			quit := make(chan int)
-			go fakeClient.CollectEvents(podSelector, events, spinner, quit)
+			go fakeClient.CollectEvents(podSelector, events, quit)
 
 			// Sleep in order to make sure we actually collect some events
 			time.Sleep(2 * time.Second)

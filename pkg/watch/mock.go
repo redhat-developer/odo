@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	kclient "github.com/redhat-developer/odo/pkg/kclient"
 )
 
 // MockClient is a mock of Client interface.
@@ -36,15 +35,15 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // WatchAndPush mocks base method.
-func (m *MockClient) WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
+func (m *MockClient) WatchAndPush(out io.Writer, parameters WatchParameters) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WatchAndPush", client, out, parameters)
+	ret := m.ctrl.Call(m, "WatchAndPush", out, parameters)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WatchAndPush indicates an expected call of WatchAndPush.
-func (mr *MockClientMockRecorder) WatchAndPush(client, out, parameters interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) WatchAndPush(out, parameters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAndPush", reflect.TypeOf((*MockClient)(nil).WatchAndPush), client, out, parameters)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAndPush", reflect.TypeOf((*MockClient)(nil).WatchAndPush), out, parameters)
 }

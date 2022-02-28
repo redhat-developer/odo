@@ -69,7 +69,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		FileIgnores:         ignorePaths,
 	}
 
-	err = o.watchClient.WatchAndPush(o.kubernetesClient, out, watchParameters)
+	err = o.watchClient.WatchAndPush(out, watchParameters)
 	if err != nil {
 		return err
 	}
