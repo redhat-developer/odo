@@ -10,7 +10,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"io"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -55,28 +54,28 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
-
-	devfileExists := util.CheckPathExists(o.Context.GetDevfilePath())
-	if !devfileExists {
-		return fmt.Errorf("there is no devfile.yaml in the current directory")
-	}
 	fmt.Fprintf(o.out, "Using devfile.yaml from the current directory.\n")
 
 	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
+
 	if !envFileInfo.Exists() {
+		// if env.yaml doesn't exist, get component name from the devfile.yaml
 		var cmpName string
 		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
 		if err != nil {
 			return fmt.Errorf("unable to retrieve component name: %w", err)
 		}
+		// create env.yaml file with component, project/namespace and application info
+		// TODO - store only namespace into env.yaml, we don't want to track component or application name via env.yaml
 		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
 		if err != nil {
 			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
 	} else if envFileInfo.GetComponentSettings().Project != o.GetProject() {
+		// set namespace if the evn.yaml exists; that's the only piece we care about in env.yaml
 		err = envFileInfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
 			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
@@ -128,9 +127,9 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 		},
 	}
 
-	// Add a defined annotation in order to appear in the help menu
-	devCmd.Annotations = map[string]string{"command": "utility"}
 	clientset.Add(devCmd, clientset.DEV)
+	// Add a defined annotation in order to appear in the help menu
+	devCmd.Annotations["command"] = "utility"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return devCmd

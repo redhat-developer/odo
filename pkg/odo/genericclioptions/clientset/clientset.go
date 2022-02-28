@@ -120,6 +120,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, REGISTRY) {
 		dep.RegistryClient = registry.NewRegistryClient()
 	}
+	if isDefined(command, WATCH) {
+		dep.WatchClient = watch.NewWatchClient()
+	}
 
 	/* With sub-dependencies */
 	if isDefined(command, CATALOG) {
@@ -133,9 +136,6 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
-	}
-	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient()
 	}
 	if isDefined(command, DEV) {
 		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.WatchClient)
