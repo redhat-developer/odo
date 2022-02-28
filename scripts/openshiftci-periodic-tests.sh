@@ -24,9 +24,10 @@ check_and_run_devfileTest() {
         Devfile_path=$TEMPDIR/devfile.yaml
         set +e
         # check if devfiles differ then the one in examples dir
-        diff $Devfile_path $Example_devfile_path || NOTEQUAL="true" 
+        diff $Devfile_path $Example_devfile_path
         set -e 
-        if NOTEQUAL="true"; then
+        if [[ $? == 1 ]]; then
+            NOTEQUAL="true"
             echo "Devfile for $LANGUAGE is not equal to the one in examples dir"
             cp $Devfile_path $Example_devfile_path
         fi
