@@ -82,17 +82,21 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		}
 	}
 
+	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
+	// 1. create an empty string slice to which paths like .gitignore, .odo/odo-file-index.json, etc. will be added
 	ignores := &[]string{}
 	err = genericclioptions.ApplyIgnore(ignores, "")
 	if err != nil {
 		return err
 	}
+	// 2. get absolute path of pwd/cwd
 	sourcePath, err := dfutil.GetAbsPath("")
 	if err != nil {
 		return fmt.Errorf("unable to get source path: %w", err)
 	}
-
+	// 3. combine 1 & 2 so as to have absolute paths of all files to be ignored
 	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, *ignores)
+
 	return nil
 }
 

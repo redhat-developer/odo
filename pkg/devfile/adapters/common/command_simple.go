@@ -64,9 +64,9 @@ func newOverriddenExecCommand(command devfilev1.Command, executor commandExecuto
 	var msg string
 	switch command.Exec.Group.Kind {
 	case "build":
-		msg = fmt.Sprintf("Building your application in container on cluster")
+		msg = "Building your application in container on cluster"
 	case "run":
-		msg = fmt.Sprintf("Executing the application")
+		msg = "Executing the application"
 	default:
 		msg = fmt.Sprintf("Executing %s command %q", command.Id, originalCmd)
 	}

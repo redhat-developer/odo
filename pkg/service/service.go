@@ -229,16 +229,8 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 			return er
 		}
 
-		isOperatorBackedService, er := PushKubernetesResource(client, u, labels)
-		if er != nil {
-			return er
-		}
 		if csvSupported {
 			delete(deployed, u.GetKind()+"/"+u.GetName())
-		}
-		if isOperatorBackedService {
-			// uncomment/modify when service support is enabled in v3
-			// log.Successf("Created service %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
 		}
 		madeChange = true
 	}
@@ -253,8 +245,6 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 				return err
 
 			}
-			// uncomment/modify when service support is enabled in v3
-			//log.Successf("Deleted service %q from the cluster", key)
 			madeChange = true
 		}
 	}

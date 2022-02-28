@@ -121,10 +121,6 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 		restartNeeded = true
 	}
 
-	if !restartNeeded {
-		// uncomment/modify when service linking is enabled in v3
-		// log.Success("Links are in sync with the cluster, no changes are required")
-	}
 	return restartNeeded, nil
 }
 
@@ -329,11 +325,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 
 	if restartRequired {
 		return true, nil
-	} else {
-		// uncomment/modify when service linking is enabled in v3
-		//log.Success("Links are in sync with the cluster, no changes are required")
 	}
-
+	
 	return false, nil
 }
 
