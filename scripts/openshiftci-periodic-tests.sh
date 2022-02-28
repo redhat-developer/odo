@@ -7,7 +7,7 @@ set -x
 
 # check if devfiles are updated and if so, update and test them
 check_and_run_devfileTest() {
-    NOTEQUAL=false
+    NOTEQUAL="false"
     # Languages for which devfiles preset in examples dir
     LANGUAGES=('python' 'nodejs' 'springboot')
 
@@ -22,12 +22,17 @@ check_and_run_devfileTest() {
         fi
 
         Devfile_path=$TEMPDIR/devfile.yaml
+        set +e
         # check if devfiles differ then the one in examples dir
-        diff $Devfile_path $Example_devfile_path || NOTEQUAL=true && cp $Devfile_path $Example_devfile_path
-
+        diff $Devfile_path $Example_devfile_path || NOTEQUAL="true" 
+        set -e 
+        if NOTEQUAL="true"; then
+            echo "Devfile for $LANGUAGE is not equal to the one in examples dir"
+            cp $Devfile_path $Example_devfile_path
+        fi
     done
 
-    if [ $NOTEQUAL == true ]; then
+    if [ "$NOTEQUAL" == "true" ]; then
         make test-integration-devfile || error=true
     fi
 }
