@@ -59,10 +59,9 @@ Example:
 $ odo preference view
 PARAMETER             CURRENT_VALUE
 UpdateNotification
-NamePrefix
 Timeout
-BuildTimeout
 PushTimeout
+RegistryCacheTime
 Ephemeral
 ConsentTelemetry
 ```
@@ -94,12 +93,12 @@ Unsetting a preference key sets it to an empty value in the preference file. odo
 
 ### Preference Key Table
 
-| Preference            | Description                                                               | Default                   |
-| --------------------- | ------------------------------------------------------------------------- | ------------------------- |
-| UpdateNotification    | Control whether a notification to update odo is shown                     | True                      |
-| NamePrefix            | Set a default name prefix for an odo resource (component, storage, etc)   | Current directory name    |
-| Timeout               | Timeout for OpenShift server connection check                             | 1 second                  |
-| BuildTimeout          | Timeout for waiting for a build of the git component to complete          | 300 seconds               |
-| PushTimeout           | Timeout for waiting for a component to start                              | 240 seconds               |
-| Ephemeral             | Control whether odo should create a emptyDir volume to store source code  | True                      |
-| ConsentTelemetry      | Control whether odo can collect telemetry for the user's odo usage        | False                     |
+| Preference         | Description                                                                    | Default                |
+|--------------------|--------------------------------------------------------------------------------|------------------------|
+| UpdateNotification | Control whether a notification to update odo is shown                          | True                   |
+| NamePrefix         | Set a default name prefix for an odo resource (component, storage, etc)        | Current directory name |
+| Timeout            | Timeout for Kubernetes server connection check                                 | 1 second               |
+| PushTimeout        | Timeout for waiting for a component to start                                   | 240 seconds            |
+| RegistryCacheTime  | For how long (in minutes) odo will cache information from the Devfile registry | 4 Minutes              |
+| Ephemeral          | Control whether odo should create a emptyDir volume to store source code       | True                   |
+| ConsentTelemetry   | Control whether odo can collect telemetry for the user's odo usage             | False                  |

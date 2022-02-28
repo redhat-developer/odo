@@ -49,6 +49,11 @@ module.exports = {
           label: 'GitHub',
           position: 'right',
         },
+                {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
       ],
     },
     footer: {
@@ -117,16 +122,29 @@ module.exports = {
       '@docusaurus/preset-classic',
       {
         docs: {
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: '2.5.0',
+              badge: true,
+            },
+            '3.0.0': {
+              label: '3.0.0 (Alpha 1) 🚧',
+              path: '3.0.0',
+              badge: true,
+              banner: 'unreleased',
+            },
+          },
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/redhat-developer/odo/edit/main/website/',
+          'https://github.com/redhat-developer/odo/edit/main/website/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-            'https://github.com/redhat-developer/odo/edit/main/website/blog/',
+          'https://github.com/redhat-developer/odo/edit/main/website/blog/',
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
           postsPerPage: 5,

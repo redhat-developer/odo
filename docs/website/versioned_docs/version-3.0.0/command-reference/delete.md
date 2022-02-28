@@ -1,6 +1,6 @@
 ---
 title: odo delete
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 `odo delete` command is useful for deleting resources that are managed by odo.

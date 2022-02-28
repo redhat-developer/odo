@@ -41,11 +41,11 @@ Note: Since operator [Dev4Devs PostgreSQL Operator](https://operatorhub.io/opera
 
 1. Create custom CatalogSource
 ```shell  
-oc apply -f https://raw.githubusercontent.com/redhat-developer/odo/main/website/manifests/catalog-source-$(uname -m).yaml
+oc apply -f https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/manifests/catalog-source-$(uname -m).yaml
 ```
 2. Install PostgreSQL Operator from custom CatalogSource
 ```shell
-oc create -f https://raw.githubusercontent.com/redhat-developer/odo/main/website/manifests/postgresql-operator-dev4devs-com-IBM-Z-P.yaml
+oc create -f https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/manifests/postgresql-operator-dev4devs-com-IBM-Z-P.yaml
 ```
 </details>
 
@@ -91,29 +91,6 @@ In this example we will use odo to manage a sample [Java JPA MicroService applic
     ```shell
     odo push --show-log
     ```
-   **Troubleshooting**:
-   The Open Liberty image used by this application is relatively large(~850 MB), and depending on your internet connection, it might fail to download within the BuildTimeout set by odo; default timeout is 300 seconds.
-   ```shell
-   $ odo push   
-   Validation
-   ✓  Validating the devfile [45508ns]
-   
-   Updating services
-   ✓  Services and Links are in sync with the cluster, no changes are required
-   
-   Creating Kubernetes resources for component mysboproj
-   ✗  Waiting for component to start [5m]
-   ✗  Failed to start component with name "mysboproj". Error: Failed to create the component: error while waiting for deployment rollout: timeout while waiting for mysboproj-app deployment roll out
-   ```
-
-   In case this step fails due to a timeout, consider increasing the Build Timeout:
-   ```shell
-   odo preference set BuildTimeout 600
-   ```
-   Deploy the application to the cluster again:
-   ```shell
-   odo push --show-log -f
-   ```
 5. The application is now deployed to the cluster - you can view the status of the cluster, and the application test results by streaming the cluster logs of the component that we pushed to the cluster in the previous step.
     ```shell
     odo log --follow

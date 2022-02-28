@@ -1,6 +1,6 @@
 ---
 title: odo link
-sidebar_position: 4
+sidebar_position: 7
 ---
 
 `odo link` command helps link an odo component to an Operator backed service or another odo component. It does this by using [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator). At the time of writing this, odo makes use of the Service Binding library and not the Operator itself to achieve the desired functionality.
