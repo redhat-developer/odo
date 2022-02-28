@@ -43,10 +43,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 		It("should delete the component", func() {
-			helper.Cmd("odo", "delete", "-f").ShouldPass()
+			helper.Cmd("odo", "v2delete", "-f").ShouldPass()
 		})
 		It("should delete the component, env, odo folders and odo-index-file.json with --all flag", func() {
-			stdOut := helper.Cmd("odo", "delete", "-f", "--all").ShouldPass().Out()
+			stdOut := helper.Cmd("odo", "v2delete", "-f", "--all").ShouldPass().Out()
 
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(files).To(Not(ContainElement(".odo")))
@@ -62,15 +62,15 @@ var _ = Describe("odo devfile delete command tests", func() {
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 			})
 			It("should successfully delete the deploy resources with --deploy flag", func() {
-				stdOut := helper.Cmd("odo", "delete", "--deploy", "-f").ShouldPass().Out()
+				stdOut := helper.Cmd("odo", "v2delete", "--deploy", "-f").ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring(undeploymentMessage))
 			})
 			It("should successfully delete the deploy resources", func() {
-				stdOut := helper.Cmd("odo", "delete", "-a", "-f").ShouldPass().Out()
+				stdOut := helper.Cmd("odo", "v2delete", "-a", "-f").ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring(undeploymentMessage))
 			})
 			It("should successfully delete the component, but the deployed resources should remain intact", func() {
-				stdOut := helper.Cmd("odo", "delete", "-f").ShouldPass().Out()
+				stdOut := helper.Cmd("odo", "v2delete", "-f").ShouldPass().Out()
 				Expect(stdOut).ToNot(ContainSubstring(undeploymentMessage))
 			})
 			When("outside the context directory", func() {
@@ -81,7 +81,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 					helper.Chdir(commonVar.Context)
 				})
 				It("should successfully undeploy", func() {
-					helper.Cmd("odo", "delete", "--deploy", "-f", "--context", commonVar.Context).ShouldPass()
+					helper.Cmd("odo", "v2delete", "--deploy", "-f", "--context", commonVar.Context).ShouldPass()
 				})
 			})
 
@@ -92,7 +92,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			})
 			It("should delete the component, env, odo folders and odo-index-file.json with --all flag", func() {
-				stdOut := helper.Cmd("odo", "delete", "-f", "--all").ShouldPass().Out()
+				stdOut := helper.Cmd("odo", "v2delete", "-f", "--all").ShouldPass().Out()
 
 				files := helper.ListFilesInDir(commonVar.Context)
 				Expect(files).To(Not(ContainElement(".odo")))
@@ -124,13 +124,13 @@ var _ = Describe("odo devfile delete command tests", func() {
 							helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 						})
 						It("should delete the context directory's component", func() {
-							output := helper.Cmd("odo", "delete", "--context", firstDir, "-f").ShouldPass().Out()
+							output := helper.Cmd("odo", "v2delete", "--context", firstDir, "-f").ShouldPass().Out()
 							Expect(output).To(ContainSubstring(firstComp))
 							Expect(output).ToNot(ContainSubstring(secondComp))
 						})
 
 						It("should delete all the config files and component of the context directory with --all flag", func() {
-							output := helper.Cmd("odo", "delete", "--all", "--context", firstDir, "-f").ShouldPass().Out()
+							output := helper.Cmd("odo", "v2delete", "--all", "--context", firstDir, "-f").ShouldPass().Out()
 							Expect(output).ToNot(ContainSubstring(secondComp))
 							Expect(output).To(ContainSubstring(firstComp))
 
@@ -144,7 +144,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 						})
 						// Marked as pending because it does not work at the moment. It takes the component in current directory into account while deleting.
 						XIt("should delete with the component name", func() {
-							output := helper.Cmd("odo", "delete", firstComp, "--project", commonVar.Project, "-f").ShouldPass().Out()
+							output := helper.Cmd("odo", "v2delete", firstComp, "--project", commonVar.Project, "-f").ShouldPass().Out()
 							Expect(output).ToNot(ContainSubstring(secondComp))
 							Expect(output).To(ContainSubstring(firstComp))
 						})
@@ -154,19 +154,19 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 		It("should throw an error on an invalid delete command", func() {
 			By("--project flag")
-			helper.Cmd("odo", "delete", "--project", commonVar.Project, "-f").ShouldFail()
+			helper.Cmd("odo", "v2delete", "--project", commonVar.Project, "-f").ShouldFail()
 
 			By("component name, --project and --all flag")
-			helper.Cmd("odo", "delete", componentName, "--project", commonVar.Project, "--all", "-f").ShouldFail()
+			helper.Cmd("odo", "v2delete", componentName, "--project", commonVar.Project, "--all", "-f").ShouldFail()
 
 			By("component name and --all flag")
-			helper.Cmd("odo", "delete", componentName, "--all", "-f").ShouldFail()
+			helper.Cmd("odo", "v2delete", componentName, "--all", "-f").ShouldFail()
 
 			By("component name and --context flag")
-			helper.Cmd("odo", "delete", componentName, "--context", commonVar.Context, "-f").ShouldFail()
+			helper.Cmd("odo", "v2delete", componentName, "--context", commonVar.Context, "-f").ShouldFail()
 
 			By("--project and --context flag")
-			helper.Cmd("odo", "delete", "--project", commonVar.Project, "--context", commonVar.Context, "-f").ShouldFail()
+			helper.Cmd("odo", "v2delete", "--project", commonVar.Project, "--context", commonVar.Context, "-f").ShouldFail()
 		})
 
 		When("the component has resources attached to it", func() {
@@ -185,7 +185,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 				})
 				It("should delete the component and its owned resources", func() {
-					helper.Cmd("odo", "delete", "-f").ShouldPass()
+					helper.Cmd("odo", "v2delete", "-f").ShouldPass()
 
 					for _, resourceType := range resourceTypes {
 						commonVar.CliRunner.WaitAndCheckForExistence(resourceType, commonVar.Project, 1)
@@ -197,7 +197,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 					Expect(podName).NotTo(BeEmpty())
 
 					// delete with --wait flag
-					helper.Cmd("odo", "delete", "-f", "-w", "--context", commonVar.Context).ShouldPass()
+					helper.Cmd("odo", "v2delete", "-f", "-w", "--context", commonVar.Context).ShouldPass()
 
 					// Deployment and Pod should be deleted
 					helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
@@ -246,7 +246,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 				})
 				It("should execute the preStop events", func() {
-					output := helper.Cmd("odo", "delete", "-f").ShouldPass().Out()
+					output := helper.Cmd("odo", "v2delete", "-f").ShouldPass().Out()
 					helper.MatchAllInOutput(output, []string{
 						fmt.Sprintf("Executing preStop event commands for component %s", componentName),
 						"Executing myprestop command",
@@ -265,7 +265,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 		It("should let the user delete the local config files with -a flag", func() {
 			// DeleteLocalConfig appends -a flag
-			utils.DeleteLocalConfig("delete")
+			utils.DeleteLocalConfig("v2delete")
 		})
 		When("deleting outside a component directory", func() {
 			BeforeEach(func() {
@@ -277,7 +277,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			})
 			It("should let the user delete the local config files with --context flag", func() {
 				// DeleteLocalConfig appends -a flag
-				utils.DeleteLocalConfig("delete", "--context", commonVar.Context)
+				utils.DeleteLocalConfig("v2delete", "--context", commonVar.Context)
 			})
 		})
 	})
@@ -291,7 +291,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should successfully delete devfile", func() {
 			// devfile was copied to top level
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
-			helper.Cmd("odo", "delete", "--all", "-f").ShouldPass()
+			helper.Cmd("odo", "v2delete", "--all", "-f").ShouldPass()
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeFalse())
 		})
 	})
@@ -303,7 +303,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 		It("should not delete the devfile", func() {
 			// devfile was copied to top level
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
-			helper.Cmd("odo", "delete", "--all", "-f").ShouldPass()
+			helper.Cmd("odo", "v2delete", "--all", "-f").ShouldPass()
 			Expect(helper.VerifyFileExists(path.Join(commonVar.Context, devfile))).To(BeTrue())
 		})
 	})

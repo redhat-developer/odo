@@ -30,7 +30,7 @@ import (
 )
 
 // DeleteRecommendedCommandName is the recommended delete command name
-const DeleteRecommendedCommandName = "delete"
+const DeleteRecommendedCommandName = "v2delete"
 
 var deleteExample = ktemplates.Examples(`
 # Delete the component present in the current directory from the cluster
