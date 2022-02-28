@@ -76,7 +76,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
 
 	// Get the Kubernetes component
-	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}

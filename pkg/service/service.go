@@ -3,27 +3,21 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
-	"path/filepath"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"strings"
-
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	dfutil "github.com/devfile/library/pkg/util"
-
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
-	"github.com/ghodss/yaml"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/pkg/errors"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -167,7 +161,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 	}
 	var services []string
 	for _, c := range components {
-		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, context, fs)
+		u, err := libdevfile.GetK8sComponentAsUnstructured(c.Kubernetes, context, fs)
 		if err != nil {
 			return nil, err
 		}
@@ -222,7 +216,7 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
-		u, er := GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
+		u, er := libdevfile.GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
 		if er != nil {
 			return er
 		}
@@ -295,25 +289,6 @@ func isOperatorBackedService(client kclient.ClientInterface, u unstructured.Unst
 	return false, nil
 }
 
-// GetK8sComponentAsUnstructured parses the Inlined/URI K8s of the devfile K8s component
-func GetK8sComponentAsUnstructured(component *devfile.KubernetesComponent, context string, fs devfilefs.Filesystem) (unstructured.Unstructured, error) {
-	strCRD := component.Inlined
-	var err error
-	if component.Uri != "" {
-		strCRD, err = getDataFromURI(component.Uri, context, fs)
-		if err != nil {
-			return unstructured.Unstructured{}, err
-		}
-	}
-
-	// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
-	u := unstructured.Unstructured{}
-	if err = yaml.Unmarshal([]byte(strCRD), &u.Object); err != nil {
-		return unstructured.Unstructured{}, err
-	}
-	return u, nil
-}
-
 func mergeMaps(maps ...map[string]string) map[string]string {
 	mergedMaps := map[string]string{}
 
@@ -362,7 +337,7 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		u, err := GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
+		u, err := libdevfile.GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return err
 		}
@@ -422,32 +397,6 @@ func createOperatorService(client kclient.ClientInterface, u unstructured.Unstru
 	return err
 }
 
-// getDataFromURI gets the data from the given URI
-// if the uri is a local path, we use the componentContext to complete the local path
-func getDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (string, error) {
-
-	parsedURL, err := url.Parse(uri)
-	if err != nil {
-		return "", err
-	}
-	if len(parsedURL.Host) != 0 && len(parsedURL.Scheme) != 0 {
-		params := dfutil.HTTPRequestParams{
-			URL: uri,
-		}
-		dataBytes, err := util.DownloadFileInMemoryWithCache(params, 1)
-		if err != nil {
-			return "", err
-		}
-		return string(dataBytes), nil
-	} else {
-		dataBytes, err := fs.ReadFile(filepath.Join(componentContext, uri))
-		if err != nil {
-			return "", err
-		}
-		return string(dataBytes), nil
-	}
-}
-
 // ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
 func ValidateResourcesExist(client kclient.ClientInterface, k8sComponents []devfile.Component, context string) error {
 	if len(k8sComponents) == 0 {
@@ -475,7 +424,7 @@ func ValidateResourcesExist(client kclient.ClientInterface, k8sComponents []devf
 
 func ValidateResourceExist(client kclient.ClientInterface, k8sComponent devfile.Component, context string) (kindErr string, err error) {
 	// get the string representation of the YAML definition of a CRD
-	u, err := GetK8sComponentAsUnstructured(k8sComponent.Kubernetes, context, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(k8sComponent.Kubernetes, context, devfilefs.DefaultFs{})
 	if err != nil {
 		return "", err
 	}

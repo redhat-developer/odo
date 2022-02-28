@@ -27,10 +27,8 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -460,141 +458,6 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		})
 	}
 
-}
-
-// TODO move to pkg/component
-func TestAdapterDelete(t *testing.T) {
-	type args struct {
-		labels map[string]string
-	}
-
-	emptyPods := &corev1.PodList{
-		Items: []corev1.Pod{},
-	}
-
-	tests := []struct {
-		name            string
-		args            args
-		existingPod     *corev1.PodList
-		componentName   string
-		componentExists bool
-		wantErr         bool
-	}{
-		{
-			name: "case 1: component exists and given labels are valid",
-			args: args{labels: map[string]string{
-				"component": "component",
-			}},
-			existingPod: &corev1.PodList{
-				Items: []corev1.Pod{
-					*odoTestingUtil.CreateFakePod("component", "component"),
-				},
-			},
-			componentName:   "component",
-			componentExists: true,
-			wantErr:         false,
-		},
-		{
-			name: "case 2: component exists and given labels are not valid",
-			args: args{labels: nil},
-			existingPod: &corev1.PodList{
-				Items: []corev1.Pod{
-					*odoTestingUtil.CreateFakePod("component", "component"),
-				},
-			},
-			componentName:   "component",
-			componentExists: true,
-			wantErr:         true,
-		},
-		{
-			name: "case 3: component doesn't exists",
-			args: args{labels: map[string]string{
-				"component": "component",
-			}},
-			existingPod: &corev1.PodList{
-				Items: []corev1.Pod{
-					*odoTestingUtil.CreateFakePod("component", "component"),
-				},
-			},
-			componentName:   "nocomponent",
-			componentExists: false,
-			wantErr:         false,
-		},
-		{
-			name: "case 4: resource forbidden",
-			args: args{labels: map[string]string{
-				"component": "component",
-			}},
-			existingPod: &corev1.PodList{
-				Items: []corev1.Pod{
-					*odoTestingUtil.CreateFakePod("component", "component"),
-				},
-			},
-			componentName:   "resourceforbidden",
-			componentExists: false,
-			wantErr:         false,
-		},
-		{
-			name: "case 5: component check error",
-			args: args{labels: map[string]string{
-				"component": "component",
-			}},
-			existingPod: &corev1.PodList{
-				Items: []corev1.Pod{
-					*odoTestingUtil.CreateFakePod("component", "component"),
-				},
-			},
-			componentName:   "componenterror",
-			componentExists: true,
-			wantErr:         true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-					if err != nil {
-						t.Error(err)
-					}
-					return devfileData
-				}(),
-			}
-
-			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: tt.componentName,
-				Devfile:       devObj,
-			}
-
-			if !tt.componentExists {
-				adapterCtx.ComponentName = "doesNotExists"
-			}
-
-			fkclient, fkclientset := kclient.FakeNew()
-
-			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
-					return true, nil, errors.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
-				}
-				return true, nil, nil
-			})
-
-			fkclientset.Kubernetes.PrependReactor("list", "pods", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				if tt.componentName == "nocomponent" {
-					return true, emptyPods, &kclient.PodNotFoundError{Selector: "somegarbage"}
-				} else if tt.componentName == "resourceforbidden" {
-					return true, emptyPods, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
-				} else if tt.componentName == "componenterror" {
-					return true, emptyPods, errors.Errorf("pod check error")
-				}
-				return true, tt.existingPod, nil
-			})
-
-			if err := component.Delete(fkclient, devObj, tt.componentName, "app", tt.args.labels, false, false); (err != nil) != tt.wantErr {
-				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
 }
 
 func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {

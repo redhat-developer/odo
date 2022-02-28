@@ -320,7 +320,7 @@ func TestNew(t *testing.T) {
 				populateWorkingDir: func(fs filesystem.Filesystem) {
 				},
 			},
-			expectedErr: "the current directory does not represent an odo component",
+			expectedErr: "The current directory does not represent an odo component",
 		},
 	}
 
@@ -350,8 +350,8 @@ func TestNew(t *testing.T) {
 
 			// Fake fs
 			// TODO(feloy) Unable to use memory FS because of devfile.ParseDevfileAndValidate not accepting FS parameter
-			//mockFs := filesystem.NewFakeFs()
-			//filesystem.Set(mockFs)
+			// mockFs := filesystem.NewFakeFs()
+			// filesystem.Set(mockFs)
 			tt.input.populateWorkingDir(filesystem.DefaultFs{})
 
 			// Fake odo Kube client

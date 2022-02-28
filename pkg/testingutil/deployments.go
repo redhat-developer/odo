@@ -15,8 +15,8 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 
 	deployment := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
-			APIVersion: "odo.dev/v1alpha1",
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,

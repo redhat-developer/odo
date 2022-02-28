@@ -96,6 +96,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		}
 	}
 
+	// this ensures that odo deploy uses the namespace set in env.yaml
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 	return
 }

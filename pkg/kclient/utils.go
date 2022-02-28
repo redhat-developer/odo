@@ -1,6 +1,8 @@
 package kclient
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/json"
 	"strconv"
 	"strings"
 
@@ -74,4 +76,18 @@ func GetGVRFromCR(cr *olm.CRDDescription) (string, string, string) {
 	group = gr[1]
 
 	return group, version, resource
+}
+
+// ConvertK8sResourceToUnstructured converts any K8s resource to unstructured.Unstructured format
+func ConvertK8sResourceToUnstructured(resource interface{}) (unstructuredResource unstructured.Unstructured, err error) {
+	var data []byte
+	data, err = json.Marshal(&resource)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(data, &unstructuredResource.Object)
+	if err != nil {
+		return
+	}
+	return unstructuredResource, nil
 }

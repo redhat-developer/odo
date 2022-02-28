@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"hash/adler32"
 	"io"
 	"io/ioutil"
@@ -164,7 +165,7 @@ func removeNonAlphaPrefix(input string) string {
 }
 
 func removeNonAlphaSuffix(input string) string {
-	suffixRegex := regexp.MustCompile("^(.*?)[^a-zA-Z0-9]+$") //regex that strips all trailing non alpha-numeric chars
+	suffixRegex := regexp.MustCompile("^(.*?)[^a-zA-Z0-9]+$") // regex that strips all trailing non alpha-numeric chars
 	matches := suffixRegex.FindStringSubmatch(input)
 	matchesLength := len(matches)
 	if matchesLength == 0 {
@@ -404,6 +405,31 @@ func ValidateURL(sourceURL string) error {
 	}
 
 	return nil
+}
+
+// GetDataFromURI gets the data from the given URI
+// if the uri is a local path, we use the componentContext to complete the local path
+func GetDataFromURI(uri, componentContext string, fs devfilefs.Filesystem) (string, error) {
+	parsedURL, err := url.Parse(uri)
+	if err != nil {
+		return "", err
+	}
+	if len(parsedURL.Host) != 0 && len(parsedURL.Scheme) != 0 {
+		params := dfutil.HTTPRequestParams{
+			URL: uri,
+		}
+		dataBytes, err := DownloadFileInMemoryWithCache(params, 1)
+		if err != nil {
+			return "", err
+		}
+		return string(dataBytes), nil
+	} else {
+		dataBytes, err := fs.ReadFile(filepath.Join(componentContext, uri))
+		if err != nil {
+			return "", err
+		}
+		return string(dataBytes), nil
+	}
 }
 
 // sliceContainsString checks for existence of given string in given slice

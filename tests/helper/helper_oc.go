@@ -79,9 +79,9 @@ func (oc OcRunner) GetFirstURL(component string, app string, project string) str
 	return ""
 }
 
-//StatFileInPodContainer returns stat result of filepath in a container of a pod of given component, in a given app, in a given project.
-//It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
-//in it anyway
+// StatFileInPodContainer returns stat result of filepath in a container of a pod of given component, in a given app, in a given project.
+// It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
+// in it anyway
 func StatFileInPodContainer(runner CliRunner, cmpName, containerName, appName, project, filepath string) string {
 	podName := runner.GetRunningPodNameByComponent(cmpName, project)
 	var result string
@@ -91,7 +91,7 @@ func StatFileInPodContainer(runner CliRunner, cmpName, containerName, appName, p
 		project,
 		[]string{"stat", filepath},
 		func(cmdOp string, err error) bool {
-			//strip out access info as
+			// strip out access info as
 			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
 			// 2. We are not interested in Access info anyway.
 			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
@@ -337,21 +337,21 @@ func (oc OcRunner) VerifyResourceToBeDeleted(ri ResourceInfo) {
 	Expect(deletedOrMarkedToDelete()).To(BeTrue())
 }
 
-// CreateRandNamespaceProject create new project
-func (oc OcRunner) CreateRandNamespaceProject() string {
+// CreateAndSetRandNamespaceProject create and set new project
+func (oc OcRunner) CreateAndSetRandNamespaceProject() string {
 	projectName := SetProjectName()
-	oc.createRandNamespaceProject(projectName)
+	oc.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }
 
-// CreateRandNamespaceProjectOfLength creates a new project with name of length i
-func (oc OcRunner) CreateRandNamespaceProjectOfLength(i int) string {
+// CreateAndSetRandNamespaceProjectOfLength creates a new project with name of length i and sets it to the current context
+func (oc OcRunner) CreateAndSetRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
-	oc.createRandNamespaceProject(projectName)
+	oc.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }
 
-func (oc OcRunner) createRandNamespaceProject(projectName string) string {
+func (oc OcRunner) createAndSetRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
@@ -387,7 +387,7 @@ func (oc OcRunner) DeletePod(podName string, namespace string) {
 	Cmd(oc.path, "delete", "pod", "--namespace", namespace, podName).ShouldPass()
 }
 
-//GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
+// GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
 func (oc OcRunner) GetAllPodsInNs(namespace string) string {
 	args := []string{"get", "pods", "-n", namespace}
 	noResourcesMsg := fmt.Sprintf("No resources found in %s namespace", namespace)
@@ -397,9 +397,9 @@ func (oc OcRunner) GetAllPodsInNs(namespace string) string {
 	return Cmd(oc.path, args...).ShouldPass().Out()
 }
 
-//StatFileInPod returns stat result of filepath in pod of given component, in a given app, in a given project.
-//It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
-//in it anyway
+// StatFileInPod returns stat result of filepath in pod of given component, in a given app, in a given project.
+// It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
+// in it anyway
 func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) string {
 	var result string
 	oc.CheckCmdOpInRemoteCmpPod(
@@ -408,7 +408,7 @@ func (oc OcRunner) StatFileInPod(cmpName, appName, project, filepath string) str
 		project,
 		[]string{"stat", filepath},
 		func(cmdOp string, err error) bool {
-			//strip out access info as
+			// strip out access info as
 			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
 			// 2. We are not interested in Access info anyway.
 			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
@@ -522,7 +522,7 @@ func (oc OcRunner) AddSecret(comvar CommonVar) {
 
 // doAsAdmin logins as admin to perform some task that requires admin privileges
 func (oc OcRunner) doAsAdmin(clusterType string) string {
-	//save token for developer
+	// save token for developer
 	token := oc.GetToken()
 	if clusterType == "PSI" || clusterType == "IBM" {
 
@@ -530,14 +530,14 @@ func (oc OcRunner) doAsAdmin(clusterType string) string {
 		if adminToken != "" {
 			ibmcloudAdminToken := os.Getenv("IBMC_ADMIN_LOGIN_APIKEY")
 			cluster := os.Getenv("IBMC_OCP47_SERVER")
-			//login ibmcloud
+			// login ibmcloud
 			Cmd("ibmcloud", "login", "--apikey", ibmcloudAdminToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
-			//login as admin in cluster
+			// login as admin in cluster
 			Cmd(oc.path, "login", "--token=", adminToken, "--server=", cluster)
 		} else {
 			pass := os.Getenv("OCP4X_KUBEADMIN_PASSWORD")
 			cluster := os.Getenv("OCP4X_API_URL")
-			//login as kubeadmin
+			// login as kubeadmin
 			Cmd(oc.path, "login", "-u", "kubeadmin", "-p", pass, cluster).ShouldPass()
 		}
 	}
@@ -550,7 +550,7 @@ func (oc OcRunner) doAsDeveloper(token, clusterType string) {
 	if clusterType == "IBM" {
 		ibmcloudDeveloperToken := os.Getenv("IBMC_DEVELOPER_LOGIN_APIKEY")
 		Cmd("ibmcloud", "login", "--apikey", ibmcloudDeveloperToken, "-r", "eu-de", "-g", "Developer-CI-and-QE")
-		//login as developer using token
+		// login as developer using token
 	}
 	oc.LoginUsingToken(token)
 }
