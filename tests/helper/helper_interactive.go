@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-//func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
 func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Console, *bytes.Buffer)) (string, error) {
 
 	ptm, pts, err := pty.Open()
@@ -29,7 +28,9 @@ func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Con
 	}
 	defer c.Close()
 
+	// execute the command
 	cmd := exec.Command(command[0], command[1:]...)
+	// setup stdin, stdout and stderr
 	cmd.Stdin = c.Tty()
 	cmd.Stdout = c.Tty()
 	cmd.Stderr = c.Tty()

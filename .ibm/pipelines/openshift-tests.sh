@@ -12,6 +12,7 @@ cleanup_namespaces
     set -e
     make install
     make test-integration
+    make test-integration-interactive
     make test-integration-devfile
     make test-cmd-login-logout
     make test-cmd-project
