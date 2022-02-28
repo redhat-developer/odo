@@ -1,3 +1,5 @@
+// +build linux darwin dragonfly solaris openbsd netbsd freebsd
+
 package interactive
 
 import (
@@ -10,7 +12,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo login and logout command tests", func() {
+var _ = Describe("odo init interactive command tests", func() {
 
 	var commonVar helper.CommonVar
 
@@ -26,67 +28,34 @@ var _ = Describe("odo login and logout command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	Context("Running odo init in interactive mode", func() {
-		BeforeEach(func() {
-			if helper.CheckIfSupported() {
-				Skip("Skipping test as interactive mode is not supported on this platform")
-			}
+	It("should download correct devfile", func() {
+
+		Command := []string{"odo", "init"}
+		output, err := helper.RunInteractive(commonVar, Command, func(c *expect.Console, output *bytes.Buffer) {
+
+			res := helper.ExpectString(c, "Select language")
+			fmt.Fprintln(output, res)
+			helper.SendLine(c, "go")
+
+			res = helper.ExpectString(c, "Select project type")
+			fmt.Fprintln(output, res)
+			helper.SendLine(c, "\n")
+
+			res = helper.ExpectString(c, "Which starter project do you want to use")
+			fmt.Fprintln(output, res)
+			helper.SendLine(c, "\n")
+
+			res = helper.ExpectString(c, "Enter component name")
+			fmt.Fprintln(output, res)
+			helper.SendLine(c, "my-go-app")
+
+			res = helper.ExpectString(c, "Your new component \"my-go-app\" is ready in the current directory.")
+			fmt.Fprintln(output, res)
+
 		})
-		It("should download correct devfile", func() {
 
-			Command := []string{"odo", "init"}
-			output, err := helper.RunInteractive(commonVar, Command, func(c *expect.Console, output *bytes.Buffer) error {
-
-				// res, err := c.ExpectString("Select language")
-				// if err != nil {
-				// 	return err
-				// }
-				res := helper.ExpectString(c, "Select language")
-				fmt.Fprintln(output, res)
-
-				// _, err = c.SendLine("go")
-				// if err != nil {
-				// 	return err
-				// }
-				helper.SendLine(c, "go")
-				res, err := c.ExpectString("Select project type")
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(output, res)
-				_, err = c.SendLine("\n")
-				if err != nil {
-					return err
-				}
-				res, err = c.ExpectString("Which starter project do you want to use")
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(output, res)
-				_, err = c.SendLine("\n")
-				if err != nil {
-					return err
-				}
-				res, err = c.ExpectString("Enter component name")
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(output, res)
-				_, err = c.SendLine("my-go-app")
-				if err != nil {
-					return err
-				}
-				res, err = c.ExpectString("Your new component \"my-go-app\" is ready in the current directory.")
-				if err != nil {
-					return err
-				}
-				fmt.Fprintln(output, res)
-				return nil
-			})
-
-			Expect(err).To(BeNil())
-			Expect(output).To(ContainSubstring("Your new component \"my-go-app\" is ready in the current directory."))
-			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
-		})
+		Expect(err).To(BeNil())
+		Expect(output).To(ContainSubstring("Your new component \"my-go-app\" is ready in the current directory."))
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 })

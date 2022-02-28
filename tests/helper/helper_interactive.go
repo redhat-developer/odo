@@ -1,10 +1,11 @@
+// +build linux darwin dragonfly solaris openbsd netbsd freebsd
+
 package helper
 
 import (
 	"bytes"
 	"log"
 	"os/exec"
-	"runtime"
 
 	"github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
@@ -13,7 +14,7 @@ import (
 )
 
 //func RunInteractive(commonVar CommonVar, interVar Interactive) (string, error) {
-func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Console, *bytes.Buffer) error) (string, error) {
+func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Console, *bytes.Buffer)) (string, error) {
 
 	ptm, pts, err := pty.Open()
 	if err != nil {
@@ -38,7 +39,7 @@ func RunInteractive(commonVar CommonVar, command []string, test func(*expect.Con
 	}
 
 	buf := new(bytes.Buffer)
-	err = test(c, buf)
+	test(c, buf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,13 +62,4 @@ func ExpectString(c *expect.Console, line string) string {
 	res, err := c.ExpectString(line)
 	Expect(err).ShouldNot(HaveOccurred())
 	return res
-}
-
-// CheckIfSupported checks if the current OS is supported for Interactive testing
-func CheckIfSupported() bool {
-	if runtime.GOOS == "windows" {
-		log.Println("Skipping!")
-		return false
-	}
-	return true
 }
