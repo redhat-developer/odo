@@ -57,7 +57,6 @@ var _ = Describe("odo dev command tests", func() {
 
 			// Change some other file B
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
-			helper.WaitForOutputToContain("Executing devrun command", 180, 10, session)
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 

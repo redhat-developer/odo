@@ -326,7 +326,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 	if restartRequired {
 		return true, nil
 	}
-	
+
 	return false, nil
 }
 
