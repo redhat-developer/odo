@@ -685,13 +685,10 @@ var _ = Describe("odo devfile push command tests", func() {
 	})
 
 	When("Create and push java-springboot component", func() {
-
-		var output string
-
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 		})
 		It("should execute default build and run commands correctly", func() {
 
@@ -884,7 +881,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath+"/server")
 			helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
 
-			stdOut = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 		})
 	})
 

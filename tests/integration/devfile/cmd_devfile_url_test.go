@@ -347,12 +347,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			})
 
 			When("doing odo push twice and doing url list", func() {
-				var pushstdout string
-
 				BeforeEach(func() {
 					helper.Cmd("odo", "url", "create", url1, "--port", url1Port).ShouldPass()
 					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-					pushstdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 					stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
 				})
 
