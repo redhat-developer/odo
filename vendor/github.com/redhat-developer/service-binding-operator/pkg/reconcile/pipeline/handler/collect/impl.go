@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	olmv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/apis"
 	"github.com/redhat-developer/service-binding-operator/pkg/binding"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
@@ -18,6 +17,7 @@ import (
 )
 
 var DataNotMap = errors.New("Returned data are not a map, skip collecting")
+var ErrorValueNotFound = errors.New("Value not found in map")
 
 const (
 	ErrorReadingServicesReason   = "ErrorReadingServices"
@@ -25,6 +25,9 @@ const (
 	ErrorReadingDescriptorReason = "ErrorReadingDescriptor"
 	ErrorReadingBindingReason    = "ErrorReadingBinding"
 	ErrorReadingSecret           = "ErrorReadingSecret"
+
+	ValueNotFound     = "ValueNotFound"
+	InvalidAnnotation = "InvalidAnnotation"
 )
 
 func PreFlight(ctx pipeline.Context) {
@@ -52,7 +55,7 @@ func BindingDefinitions(ctx pipeline.Context) {
 				return
 			}
 			if descr != nil {
-				util.MergeMaps(anns, bindingAnnotations(descr))
+				util.MergeMaps(anns, descr.BindingAnnotations())
 			}
 			util.MergeMaps(anns, crd.Resource().GetAnnotations())
 		}
@@ -62,9 +65,14 @@ func BindingDefinitions(ctx pipeline.Context) {
 		for k, v := range anns {
 			definition, err := makeBindingDefinition(k, v, ctx)
 			if err != nil {
-				continue
+				condition := notCollectionReadyCond(InvalidAnnotation, fmt.Errorf("Failed to create binding definition from \"%v: %v\": %v", k, v, err))
+				ctx.SetCondition(condition)
+				ctx.Error(err)
+				ctx.StopProcessing()
 			}
-			service.AddBindingDef(definition)
+			if definition != nil {
+				service.AddBindingDef(definition)
+			}
 		}
 	}
 }
@@ -92,8 +100,6 @@ func BindingItems(ctx pipeline.Context) {
 		}
 	}
 }
-
-const ProvisionedServiceAnnotationKey = "service.binding/provisioned-service"
 
 func ProvisionedService(ctx pipeline.Context) {
 	services, _ := ctx.Services()
@@ -123,7 +129,7 @@ func ProvisionedService(ctx pipeline.Context) {
 			if crd == nil {
 				continue
 			}
-			v, ok := crd.Resource().GetAnnotations()[ProvisionedServiceAnnotationKey]
+			v, ok := crd.Resource().GetAnnotations()[binding.ProvisionedServiceAnnotationKey]
 			if ok && v == "true" {
 				requestRetry(ctx, ErrorReadingBindingReason, fmt.Errorf("CRD of service %v/%v indicates provisioned service, but no secret name provided under .status.binding.name", res.GetNamespace(), res.GetName()))
 				return
@@ -249,7 +255,15 @@ func collectItems(prefix string, ctx pipeline.Context, service pipeline.Service,
 			p = ""
 		}
 		for _, n := range v.MapKeys() {
-			collectItems(p, ctx, service, n, v.MapIndex(n).Interface())
+			if mapVal := v.MapIndex(n).Interface(); mapVal != nil {
+				collectItems(p, ctx, service, n, mapVal)
+			} else {
+				condition := notCollectionReadyCond(ValueNotFound, fmt.Errorf("Value for key %v_%v not found", prefix+k.String(), n.String()))
+				ctx.SetCondition(condition)
+				ctx.Error(ErrorValueNotFound)
+				ctx.StopProcessing()
+				return
+			}
 		}
 	case reflect.Slice:
 		for i := 0; i < v.Len(); i++ {
@@ -278,59 +292,4 @@ func makeBindingDefinition(key string, value string, ctx pipeline.Context) (bind
 		func(namespace string, name string) (*unstructured.Unstructured, error) {
 			return ctx.ReadSecret(namespace, name)
 		}).Build()
-}
-
-func bindingAnnotations(crdDescription *olmv1alpha1.CRDDescription) map[string]string {
-	anns := make(map[string]string)
-	for _, sd := range crdDescription.StatusDescriptors {
-		objectType := getObjectType(sd.XDescriptors)
-		for _, xd := range sd.XDescriptors {
-			loadDescriptor(anns, sd.Path, xd, "status", objectType)
-		}
-	}
-
-	for _, sd := range crdDescription.SpecDescriptors {
-		objectType := getObjectType(sd.XDescriptors)
-		for _, xd := range sd.XDescriptors {
-			loadDescriptor(anns, sd.Path, xd, "spec", objectType)
-		}
-	}
-	return anns
-}
-
-func getObjectType(descriptors []string) string {
-	typeAnno := "urn:alm:descriptor:io.kubernetes:"
-	for _, desc := range descriptors {
-		if strings.HasPrefix(desc, typeAnno) {
-			return strings.TrimPrefix(desc, typeAnno)
-		}
-	}
-	return ""
-}
-
-func loadDescriptor(anns map[string]string, path string, descriptor string, root string, objectType string) {
-	if !strings.HasPrefix(descriptor, binding.AnnotationPrefix) {
-		return
-	}
-
-	keys := strings.Split(descriptor, ":")
-	key := binding.AnnotationPrefix
-	value := ""
-
-	if len(keys) > 1 {
-		key += "/" + keys[1]
-	} else {
-		key += "/" + path
-	}
-
-	p := []string{fmt.Sprintf("path={.%s.%s}", root, path)}
-	if len(keys) > 1 {
-		p = append(p, keys[2:]...)
-	}
-	if objectType != "" {
-		p = append(p, []string{fmt.Sprintf("objectType=%s", objectType)}...)
-	}
-
-	value += strings.Join(p, ",")
-	anns[key] = value
 }

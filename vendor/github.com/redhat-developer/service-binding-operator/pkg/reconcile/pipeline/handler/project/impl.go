@@ -28,8 +28,14 @@ func PreFlightCheck(mandatoryBindingKeys ...string) func(pipeline.Context) {
 			ctx.StopProcessing()
 			return
 		}
+		items := ctx.BindingItems()
+		if len(items) == 0 {
+			err := errors.New("no binding data to project")
+			ctx.RetryProcessing(err)
+			ctx.SetCondition(apis.Conditions().NotInjectionReady().Reason(apis.NoBindingDataReason).Msg(err.Error()).Build())
+			return
+		}
 		if len(mandatoryBindingKeys) > 0 {
-			items := ctx.BindingItems()
 			itemMap := items.AsMap()
 			for _, bk := range mandatoryBindingKeys {
 				if _, found := itemMap[bk]; !found {
@@ -368,13 +374,8 @@ func mountPath(container map[string]interface{}, ctx pipeline.Context) (string, 
 		}
 	}
 
-	mp := ctx.MountPath()
-	if mp == "" {
-		bindingRoot = "/bindings"
-		mp = path.Join(bindingRoot, ctx.BindingName())
-	} else {
-		return mp, nil
-	}
+	bindingRoot = "/bindings"
+	mp := path.Join(bindingRoot, ctx.BindingName())
 
 	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&corev1.EnvVar{
 		Name:  bindingRootEnvVar,
@@ -383,7 +384,7 @@ func mountPath(container map[string]interface{}, ctx pipeline.Context) (string, 
 	if err != nil {
 		return "", err
 	}
-	envs = append(envs, u)
+
 	if found {
 		container["env"] = append(envs, u)
 	} else {

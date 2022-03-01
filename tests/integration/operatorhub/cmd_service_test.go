@@ -169,6 +169,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							"-p", "kubernetesConfig.serviceType=ClusterIP",
 							"-p", "kubernetesConfig.resources.requests.cpu=100m",
 							"-p", "kubernetesConfig.resources.requests.memory=128Mi",
+							"-p", "kubernetesConfig.redisSecret.name=redis-secret",
+							"-p", "kubernetesConfig.redisSecret.key=password",
 							"--context", commonVar.Context).ShouldPass().Out()
 
 					})
@@ -263,7 +265,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("a Redis instance is created with no name and inlined flag is used", func() {
+				XWhen("a Redis instance is created with no name and inlined flag is used", func() {
 					var stdOut string
 					BeforeEach(func() {
 						stdOut = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), "--project", commonVar.Project, "--inlined").ShouldPass().Out()
@@ -391,15 +393,15 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("a Redis instance is created with a specific name", func() {
+				When("a Redis instance is created with a specific name from file", func() {
 
 					var name string
 					var svcFullName string
 
 					BeforeEach(func() {
-						name = helper.RandString(6)
+						name = "redis"
 						svcFullName = strings.Join([]string{"Redis", name}, "/")
-						helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), name, "--project", commonVar.Project).ShouldPass()
+						helper.Cmd("odo", "service", "create", "--from-file", helper.GetExamplePath("operators", "redis.yaml"), "--context", commonVar.Context).ShouldPass()
 					})
 
 					AfterEach(func() {
@@ -410,7 +412,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 						devfilePath := filepath.Join(commonVar.Context, "devfile.yaml")
 						content, err := ioutil.ReadFile(devfilePath)
 						Expect(err).To(BeNil())
-						matchInOutput := []string{"redis", "Redis", "inlined"}
+						matchInOutput := []string{"Redis", "inlined"}
 						helper.DontMatchAllInOutput(string(content), matchInOutput)
 					})
 
@@ -526,7 +528,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					})
 				})
 
-				When("a Redis instance is created with a specific name and json output", func() {
+				When("a Redis instance is created from file with a specific name and json output", func() {
 
 					var name string
 					var svcFullName string
@@ -553,9 +555,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 					}
 
 					BeforeEach(func() {
-						name = helper.RandString(6)
+						name = "redis"
 						svcFullName = strings.Join([]string{"Redis", name}, "/")
-						output = helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
+						output = helper.Cmd("odo", "service", "create", "--from-file", helper.GetExamplePath("operators", "redis.yaml"), "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
 					})
 
 					AfterEach(func() {
@@ -578,7 +580,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 							descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
 						})
 
-						It("should display valid information in output of create command", func() {
+						It("should display valid information in output of describe command", func() {
 							By("displaying service information", func() {
 								testServiceInfo(name, descOutput)
 							})
@@ -601,7 +603,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 								descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
 							})
 
-							It("should display valid information in output of create command", func() {
+							It("should display valid information in output of describe command", func() {
 								By("displaying service information", func() {
 									testServiceInfo(name, descOutput)
 								})
@@ -623,7 +625,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 									descOutput = helper.Cmd("odo", "service", "describe", "Redis/"+name, "--project", commonVar.Project, "-o", "json").ShouldPass().Out()
 								})
 
-								It("should display valid information in output of create command", func() {
+								It("should display valid information in output of describe command", func() {
 									By("displaying service information", func() {
 										testServiceInfo(name, descOutput)
 									})

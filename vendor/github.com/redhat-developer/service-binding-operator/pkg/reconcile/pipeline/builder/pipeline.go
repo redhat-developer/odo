@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"fmt"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/collect"
 	"github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/mapping"
@@ -15,14 +16,20 @@ type impl struct {
 	handlers    []pipeline.Handler
 }
 
-func (i *impl) Process(binding interface{}) (bool, error) {
+func (i *impl) Process(binding interface{}) (retry bool, err error) {
+	defer func() {
+		if perr := recover(); perr != nil {
+			retry = true
+			err = fmt.Errorf("panic occurred: %v", perr)
+		}
+	}()
 	ctx, err := i.ctxProvider.Get(binding)
 	if err != nil {
 		return false, err
 	}
 	var status pipeline.FlowStatus
 	for _, h := range i.handlers {
-		h.Handle(ctx)
+		invokeHandler(h, ctx)
 		status = ctx.FlowStatus()
 		if status.Stop {
 			break
@@ -59,6 +66,15 @@ func (b *builder) Build() pipeline.Pipeline {
 
 func Builder() *builder {
 	return &builder{}
+}
+
+func invokeHandler(h pipeline.Handler, ctx pipeline.Context) {
+	defer func() {
+		if err := recover(); err != nil {
+			ctx.RetryProcessing(fmt.Errorf("panic occurred: %v", err))
+		}
+	}()
+	h.Handle(ctx)
 }
 
 var defaultFlow = []pipeline.Handler{

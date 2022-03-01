@@ -3,7 +3,6 @@ package devfile
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -109,8 +108,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 			helper.Cmd("mv", "devfile.yaml", ".devfile.yaml").ShouldPass()
 		})
 		When("creating a service", func() {
-			var redisOperator string
-			var operandName string
+			operandName := "redis"
 			var odoArgs []string
 			var operators []string
 			BeforeEach(func() {
@@ -122,10 +120,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 					})
 				}
 				commonVar.CliRunner.CreateSecret("redis-secret", "password", commonVar.Project)
-				operators := helper.Cmd("odo", "catalog", "list", "services").ShouldPass().Out()
-				redisOperator = regexp.MustCompile(`redis-operator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
-				operandName = helper.RandString(10)
-				helper.Cmd("odo", "service", "create", fmt.Sprintf("%s/Redis", redisOperator), operandName, "--context", commonVar.Context).ShouldPass()
+				helper.Cmd("odo", "service", "create", "--from-file", helper.GetExamplePath("operators", "redis.yaml"), "--context", commonVar.Context).ShouldPass()
 			})
 
 			AfterEach(func() {
