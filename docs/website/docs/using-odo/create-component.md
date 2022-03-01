@@ -118,7 +118,7 @@ Besides creating a component for an existing code, you could also use "starter p
 
 Starter projects are example projects developed by the community to showcase the usability of devfiles. An odo user can use these starter projects by running `odo create` command in an empty directory.
 
-### Starer projects in interactive mode
+### Starter projects in interactive mode
 
 To interactively create a Java Spring Boot component using the starter project, you can follow the below steps:
 ```shell
