@@ -9,7 +9,6 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -71,16 +70,7 @@ func (o *ComponentOptions) Run() error {
 
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
-	selector := componentlabels.GetSelector(o.name, "app")
-	// TODO add managed-by=odo
-	list, err := o.clientset.KubernetesClient.GetAllResourcesFromSelector(selector, o.clientset.KubernetesClient.GetCurrentNamespace())
-	if err != nil {
-		return err
-	}
-	for _, resource := range list {
-		fmt.Printf("%s.%s\n", resource.GetKind(), resource.GetName())
-	}
-	return nil
+	return o.clientset.DeleteClient.DeleteResources(o.name, o.clientset.KubernetesClient.GetCurrentNamespace())
 }
 
 // deleteDevfileComponent deletes a component defined by the devfile in the current directory

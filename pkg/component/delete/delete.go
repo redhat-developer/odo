@@ -2,17 +2,22 @@ package delete
 
 import (
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/pkg/errors"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
+
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 )
@@ -85,6 +90,48 @@ func (do *DeleteComponentClient) DeleteComponent(devfileObj parser.DevfileObj, c
 	}
 
 	return nil
+}
+
+// DeleteResources deletes Kubernetes resources from cluster in namespace for a given odo component
+// It only deletes resources not owned by another resource of the component, letting the garbage collector do its job
+func (do *DeleteComponentClient) DeleteResources(componentName string, namespace string) error {
+	selector := componentlabels.GetSelector(componentName, "app")
+	// TODO add managed-by=odo
+	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
+	if err != nil {
+		return err
+	}
+	for _, resource := range list {
+		referenced := false
+		for _, ownerRef := range resource.GetOwnerReferences() {
+			if references(list, ownerRef) {
+				referenced = true
+				break
+			}
+		}
+		if !referenced {
+			fmt.Printf("%s.%s\n", resource.GetKind(), resource.GetName())
+			gvr, err := do.kubeClient.GetRestMappingFromUnstructured(resource)
+			if err != nil {
+				return err
+			}
+			err = do.kubeClient.DeleteDynamicResource(resource.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func references(list []unstructured.Unstructured, ownerRef metav1.OwnerReference) bool {
+	for _, resource := range list {
+		if ownerRef.APIVersion == resource.GetAPIVersion() && ownerRef.Kind == resource.GetKind() && ownerRef.Name == resource.GetName() {
+			return true
+		}
+	}
+	return false
 }
 
 // getPod returns a pod, and an error based on the component name and app name;

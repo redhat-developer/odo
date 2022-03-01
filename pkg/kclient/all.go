@@ -19,12 +19,8 @@ import (
 
 func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error) {
 	apis, err := findAPIs(c.discoveryClient)
-
 	if err != nil {
 		return nil, err
-	}
-	for _, api := range apis.list {
-		fmt.Printf("%s.%s.%s\n", api.gv.Group, api.gv.Version, api.r.Name)
 	}
 	return getAllResources(c.DynamicClient, apis.list, ns, selector)
 }

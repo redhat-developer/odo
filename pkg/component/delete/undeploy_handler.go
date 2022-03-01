@@ -2,12 +2,13 @@ package delete
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"k8s.io/klog"
-	"strings"
 )
 
 type undeployHandler struct {
@@ -43,7 +44,7 @@ func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	err = o.kubeClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			klog.V(3).Infof("Resource for %s not found; cause: %w", u.GetName(), err)
+			klog.V(3).Infof("Resource for %s not found; cause: %v", u.GetName(), err)
 			return nil
 		}
 	}

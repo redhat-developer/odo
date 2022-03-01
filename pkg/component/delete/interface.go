@@ -9,4 +9,5 @@ type Client interface {
 	ListKubernetesComponents(devfileObj parser.DevfileObj, path string) ([]unstructured.Unstructured, error)
 	UnDeploy(devfileObj parser.DevfileObj, path string) error
 	DeleteComponent(devfileObj parser.DevfileObj, componentName string) error
+	DeleteResources(name string, namespace string) error
 }
