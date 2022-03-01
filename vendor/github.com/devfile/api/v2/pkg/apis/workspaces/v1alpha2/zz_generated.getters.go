@@ -20,9 +20,19 @@ func (in *Container) GetDedicatedPod() bool {
 	return getBoolOrDefault(in.DedicatedPod, false)
 }
 
+// GetAutoBuild returns the value of the boolean property.  If unset, it's the default value specified in the devfile:default:value marker
+func (in *ImageUnion) GetAutoBuild() bool {
+	return getBoolOrDefault(in.AutoBuild, false)
+}
+
 // GetRootRequired returns the value of the boolean property.  If unset, it's the default value specified in the devfile:default:value marker
 func (in *Dockerfile) GetRootRequired() bool {
 	return getBoolOrDefault(in.RootRequired, false)
+}
+
+// GetDeployByDefault returns the value of the boolean property.  If unset, it's the default value specified in the devfile:default:value marker
+func (in *K8sLikeComponent) GetDeployByDefault() bool {
+	return getBoolOrDefault(in.DeployByDefault, false)
 }
 
 // GetEphemeral returns the value of the boolean property.  If unset, it's the default value specified in the devfile:default:value marker

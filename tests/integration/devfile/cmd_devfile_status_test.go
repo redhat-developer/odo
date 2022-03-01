@@ -38,7 +38,7 @@ var _ = Describe("odo devfile status command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	//Function used to test context: "Verify URL status is correctly reported"
+	// Function used to test context: "Verify URL status is correctly reported"
 	testCombo := func(ingress bool, secure bool, name string) {
 		defer GinkgoRecover()
 		It("Verify that odo component status detects the URL status: "+name, func() {
@@ -48,7 +48,7 @@ var _ = Describe("odo devfile status command tests", func() {
 			}
 			urlHost := helper.RandString(12) + ".com"
 
-			urlParams := []string{"url", "create", "my-url", "--port", "3000"}
+			urlParams := []string{"url", "create", "my-url", "--port", "4000"}
 			if secure {
 				urlParams = append(urlParams, "--secure")
 			}
