@@ -61,9 +61,8 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 		// createAndPush: creates component, a URL for it and deploys it
 		var createAndPush = func(compType string, compName string, contextDir string, starterName string) {
-			// Download the starter project since the ones present locally are not downloaded from staging repository, and hence fail
+			// Download the starter project since the ones present locally are not downloaded from the same registry(staging) as devfile-registry.yaml, and will fail
 			helper.Cmd("odo", "create", compName, "--context", contextDir, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", compType, "devfile-registry.yaml"), "--starter", starterName).ShouldPass()
-			// helper.Cmd("odo", "url", "create", "--port", "9000", "--context", contextDir).ShouldPass()
 			helper.Cmd("odo", "push", "--context", contextDir).ShouldPass()
 		}
 
