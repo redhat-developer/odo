@@ -22,16 +22,16 @@ var _ = Describe("odo init interactive command tests", func() {
 		helper.Chdir(commonVar.Context)
 	})
 
-	// // Clean up after the test
-	// // This is run after every Spec (It)
+	// Clean up after the test
+	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
 	It("should download correct devfile", func() {
 
-		Command := []string{"odo", "init"}
-		output, err := helper.RunInteractive(commonVar, Command, func(c *expect.Console, output *bytes.Buffer) {
+		command := []string{"odo", "init"}
+		output, err := helper.RunInteractive(command, func(c *expect.Console, output *bytes.Buffer) {
 
 			res := helper.ExpectString(c, "Select language")
 			fmt.Fprintln(output, res)
