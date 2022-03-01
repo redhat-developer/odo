@@ -18,7 +18,7 @@ require (
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.5.0
-	github.com/hinshun/vt10x v0.0.0-20220127042424-3ca73d0126d7
+	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
@@ -77,3 +77,5 @@ replace (
 	k8s.io/kubectl => github.com/openshift/kubernetes/staging/src/k8s.io/kubectl v0.0.0-20210831004331-1199c36daed6
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20211006171351-de75bc981086
 )
+
+replace github.com/kr/pty => github.com/creack/pty v1.1.18-0.20220131133352-edfd13da2a92

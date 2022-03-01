@@ -1,3 +1,3 @@
-module github.com/kr/pty
+module github.com/creack/pty
 
-go 1.12
+go 1.13

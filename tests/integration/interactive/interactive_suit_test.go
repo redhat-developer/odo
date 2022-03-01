@@ -1,4 +1,3 @@
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
 //go:build !race
 // +build !race
 
