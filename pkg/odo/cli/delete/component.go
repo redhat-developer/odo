@@ -5,7 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -57,15 +58,20 @@ func (o *ComponentOptions) Run() error {
 
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
-	selector := componentlabels.GetSelector(o.name, "app")
-	// TODO add managed-by=odo
-	list, err := o.clientset.KubernetesClient.GetAllResourcesFromSelector(selector, o.clientset.KubernetesClient.GetCurrentNamespace())
+	list, err := o.clientset.DeleteClient.ListResourcesToDelete(o.name, o.clientset.KubernetesClient.GetCurrentNamespace())
 	if err != nil {
 		return err
 	}
+	// TODO display resources to delete
+	log.Info("The following resources will be deleted: ")
 	for _, resource := range list {
-		fmt.Printf("%s.%s\n", resource.GetKind(), resource.GetName())
+		fmt.Printf("\t%s: %s\n", resource.GetKind(), resource.GetName())
 	}
+	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
+		return o.clientset.DeleteClient.DeleteResources(list)
+	}
+
+	log.Error("Aborting deletion of component")
 	return nil
 }
 
