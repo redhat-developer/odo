@@ -5,7 +5,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"k8s.io/klog"
 	"strings"
 )
@@ -28,7 +28,7 @@ func (o *undeployHandler) ApplyImage(image v1alpha2.Component) error {
 
 func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	// Parse the component's Kubernetes manifest
-	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}

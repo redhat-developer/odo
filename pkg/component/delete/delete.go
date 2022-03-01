@@ -10,7 +10,6 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/service"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -35,7 +34,7 @@ func (o *DeleteComponentClient) ListKubernetesComponents(devfileObj parser.Devfi
 	var u unstructured.Unstructured
 	for _, component := range components {
 		if component.Kubernetes != nil {
-			u, err = service.GetK8sComponentAsUnstructured(component.Kubernetes, path, devfilefs.DefaultFs{})
+			u, err = libdevfile.GetK8sComponentAsUnstructured(component.Kubernetes, path, devfilefs.DefaultFs{})
 			if err != nil {
 				return
 			}

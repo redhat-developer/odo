@@ -60,7 +60,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	}
 
 	labels := componentlabels.GetLabels(kubernetes.Name, o.appName, true)
-	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}

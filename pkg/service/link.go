@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/util"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -65,7 +66,7 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
 		if c.Kubernetes.Uri != "" {
-			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			strCRD, err = util.GetDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
 			if err != nil {
 				return false, err
 			}
@@ -154,7 +155,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		// get the string representation of the YAML definition of a CRD
 		strCRD := c.Kubernetes.Inlined
 		if c.Kubernetes.Uri != "" {
-			strCRD, err = getDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
+			strCRD, err = util.GetDataFromURI(c.Kubernetes.Uri, context, devfilefs.DefaultFs{})
 			if err != nil {
 				return false, err
 			}

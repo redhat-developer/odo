@@ -23,7 +23,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	"github.com/redhat-developer/odo/pkg/service"
 )
 
 // DevfilePush has the logic to perform the required actions for a given devfile
@@ -156,7 +155,7 @@ func (o *undeployHandler) ApplyImage(image v1alpha2.Component) error {
 
 func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	// Parse the component's Kubernetes manifest
-	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}
