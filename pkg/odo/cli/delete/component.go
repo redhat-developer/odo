@@ -2,6 +2,8 @@ package delete
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -11,7 +13,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/spf13/cobra"
-	"path/filepath"
 )
 
 // ComponentRecommendedCommandName is the recommended component sub-command name
@@ -20,6 +21,9 @@ const ComponentRecommendedCommandName = "component"
 type ComponentOptions struct {
 	// name of the component to delete, optional
 	name string
+
+	// namespace on which to find the component to delete, optional, defaults to current namespace
+	namespace string
 
 	// forceFlag forces deletion
 	forceFlag bool
@@ -41,12 +45,14 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	createParameters := genericclioptions.NewCreateParameters(cmdline)
 	if o.name == "" {
-		createParameters = createParameters.NeedDevfile("")
+		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+		return err
 	}
-	o.Context, err = genericclioptions.New(createParameters)
-	return err
+	if o.namespace != "" {
+		o.clientset.KubernetesClient.SetNamespace(o.namespace)
+	}
+	return nil
 }
 
 func (o *ComponentOptions) Validate() (err error) {
@@ -126,6 +132,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		},
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
+	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kube config is used")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	clientset.Add(componentCmd, clientset.DELETE_COMPONENT)
 
