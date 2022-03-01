@@ -141,5 +141,16 @@ func Push(parameters PushParameters) error {
 		}
 	}
 
+	// find URLs to create
+	for urlName, urlInfo := range urlLOCAL {
+		_, ok := urlCLUSTER[urlName]
+		if !ok {
+			_, err := parameters.URLClient.Create(urlInfo)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }

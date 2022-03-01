@@ -192,7 +192,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				It("should execute run command on odo push", func() {
 					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-					Expect(output).To(ContainSubstring("Executing devrun command"))
 				})
 			})
 
@@ -356,7 +355,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command",
-					"Executing devrun command",
 				})
 
 				// Check to see if it's been pushed (foobar.txt abd directory testdir)
@@ -448,7 +446,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				It("should execute dev commands", func() {
 					helper.MatchAllInOutput(output, []string{
 						"Executing devbuild command",
-						"Executing devrun command",
 					})
 				})
 			})
@@ -462,8 +459,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should restart the application", func() {
 				// TODO: this is almost the same test as one below
 
-				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
-
 				helper.Cmd("odo", "push", "-f").ShouldPass()
 			})
 		})
@@ -475,7 +470,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			It("should not restart the application", func() {
-				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
 				helper.Cmd("odo", "push", "-f").ShouldPass()
 			})
@@ -654,7 +648,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				helper.DontMatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command",
-					"Executing devrun command",
 				})
 			})
 		})
@@ -693,7 +686,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			It("should execute commands with flags", func() {
 				helper.MatchAllInOutput(output, []string{
 					"Executing devbuild command \"npm install\"",
-					"Executing devrun command \"npm start\"",
 				})
 
 			})

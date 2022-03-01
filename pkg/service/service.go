@@ -220,8 +220,6 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 		}
 	}
 
-	madeChange := false
-
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
 		u, er := GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
@@ -232,7 +230,6 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 		if csvSupported {
 			delete(deployed, u.GetKind()+"/"+u.GetName())
 		}
-		madeChange = true
 	}
 
 	if csvSupported {
@@ -245,13 +242,7 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 				return err
 
 			}
-			madeChange = true
 		}
-	}
-
-	if !madeChange {
-		// uncomment/modify when service support is enabled in v3
-		//log.Success("Services are in sync with the cluster, no changes are required")
 	}
 
 	return nil
