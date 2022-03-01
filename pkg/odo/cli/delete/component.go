@@ -41,7 +41,11 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+	createParameters := genericclioptions.NewCreateParameters(cmdline)
+	if o.name != "" {
+		createParameters = createParameters.NeedDevfile("")
+	}
+	o.Context, err = genericclioptions.New(createParameters)
 	return err
 }
 
@@ -104,7 +108,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
-	clientset.Add(componentCmd, clientset.DELETE)
+	clientset.Add(componentCmd, clientset.DELETE_COMPONENT)
 
 	return componentCmd
 }

@@ -45,8 +45,8 @@ const (
 	// REGISTRY instantiates client for pkg/init/registry
 	REGISTRY = "DEP_REGISTRY"
 
-	// DELETE instantiates client for pkg/component/delete
-	DELETE = "DEP_DELETE"
+	// DELETE_COMPONENT instantiates client for pkg/component/delete
+	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 
 	/* Add key for new package here */
 )
@@ -54,10 +54,11 @@ const (
 // subdeps defines the sub-dependencies
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
-	CATALOG: {FILESYSTEM, PREFERENCE},
-	DEPLOY:  {KUBERNETES},
-	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
-	PROJECT: {KUBERNETES_NULLABLE},
+	CATALOG:          {FILESYSTEM, PREFERENCE},
+	DEPLOY:           {KUBERNETES},
+	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
+	PROJECT:          {KUBERNETES_NULLABLE},
+	DELETE_COMPONENT: {KUBERNETES},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -130,7 +131,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
-	if isDefined(command, DELETE) {
+	if isDefined(command, DELETE_COMPONENT) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient)
 	}
 
