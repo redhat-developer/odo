@@ -85,7 +85,7 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
 		// delete innerloop resources
 		spinner := log.Spinner("Deleting Devfile component")
-		defer spinner.End(false)
+
 		err = o.clientset.DeleteClient.DeleteComponent(devfileObj, componentName)
 		if err != nil {
 			log.Errorf("error occurred while deleting component, cause: %v", err)
@@ -94,12 +94,12 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 
 		// delete outerloop resources
 		spinner = log.Spinner("Deleting Kubernetes resources")
-		defer spinner.End(false)
+
 		err = o.clientset.DeleteClient.UnDeploy(devfileObj, filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()))
 		if err != nil {
 			// if there is no component in the devfile to undeploy or if the devfile is non-existent, then skip the error log
 			if !errors.Is(err, libdevfile.NewNoCommandFoundError(v1alpha2.DeployCommandGroupKind)) {
-				log.Errorf("error occurred while un-deploying, cause: %v", err)
+				log.Errorf("Error occurred while un-deploying, cause: %v", err)
 			}
 		}
 

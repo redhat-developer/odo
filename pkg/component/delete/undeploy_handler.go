@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/service"
 	"k8s.io/klog"
+	"strings"
 )
 
 type undeployHandler struct {
@@ -39,7 +40,14 @@ func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	}
 	klog.V(4).Infof("Un-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
 	// Un-deploy the K8s manifest
-	return o.kubeClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
+	err = o.kubeClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			klog.V(3).Infof("Resource for %s not found; cause: %w", u.GetName(), err)
+			return nil
+		}
+	}
+	return err
 }
 
 func (o *undeployHandler) Execute(command v1alpha2.Command) error {

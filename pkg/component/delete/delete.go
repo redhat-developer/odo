@@ -97,7 +97,7 @@ func (o DeleteComponentClient) getPod(componentName, appName string) (pod *corev
 			klog.V(3).Infof("Resource for %s forbidden", componentName)
 			return pod, nil
 		} else if e, ok := err.(*kclient.PodNotFoundError); ok {
-			klog.V(3).Infof("Resource for %s not found; cause: %w", componentName, e)
+			klog.V(3).Infof("Resource for %s not found; cause: %v", componentName, e)
 			return pod, nil
 		}
 		return pod, errors.Wrapf(err, "unable to determine if component %s exists", componentName)
