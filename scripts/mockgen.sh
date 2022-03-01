@@ -70,3 +70,7 @@ mockgen -source=pkg/libdevfile/libdevfile.go \
 mockgen -source=pkg/watch/interface.go \
     -package watch \
     -destination pkg/watch/mock.go
+
+mockgen -source=pkg/component/delete/interface.go \
+    -package delete \
+    -destination pkg/component/delete/mock.go
