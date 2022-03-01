@@ -25,8 +25,7 @@ import (
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
 	// Detection of SBO has been removed from issue https://github.com/redhat-developer/odo/issues/5084
-	return false, nil
-	//	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
+	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
 }
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster

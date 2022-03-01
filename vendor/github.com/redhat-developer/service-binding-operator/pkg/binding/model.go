@@ -12,7 +12,7 @@ type model struct {
 	objectType  objectType
 	sourceKey   string
 	sourceValue string
-	bindAs      BindingType
+	value       string
 }
 
 func (m *model) isStringElementType() bool {
@@ -58,9 +58,14 @@ func newModel(annotationValue string) (*model, error) {
 	// assert PathModelKey is present
 	path, found := raw[pathModelKey]
 	if !found {
+		if len(raw) == 0 {
+			return &model{
+				value: annotationValue,
+			}, nil
+		}
 		return nil, fmt.Errorf("path not found: %q", annotationValue)
 	}
-	if !strings.HasPrefix(path, "{") || !strings.HasSuffix(path, "}") {
+	if n := strings.Count(path, "{"); n == 0 || n != strings.Count(path, "}") {
 		return nil, fmt.Errorf("path has invalid syntax: %q", path)
 	}
 
@@ -120,6 +125,5 @@ func newModel(annotationValue string) (*model, error) {
 		objectType:  objType,
 		sourceValue: sourceValue,
 		sourceKey:   sourceKey,
-		bindAs:      TypeEnvVar,
 	}, nil
 }

@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha2 contains API Schema definitions for the spec v1alpha2 API group
+// Package v1alpha3 contains API Schema definitions for the spec v1alpha3 API group
 // +kubebuilder:object:generate=true
-// +groupName=service.binding
-package v1alpha2
+// +groupName=servicebinding.io
+package v1alpha3
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "service.binding", Version: "v1alpha2"}
+	GroupVersion = schema.GroupVersion{Group: "servicebinding.io", Version: "v1alpha3"}
 
 	GroupVersionResource = GroupVersion.WithResource("servicebindings")
 

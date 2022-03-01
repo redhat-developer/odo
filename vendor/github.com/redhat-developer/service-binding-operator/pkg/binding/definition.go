@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -56,6 +55,7 @@ func (d *definition) GetPath() string {
 
 type stringDefinition struct {
 	outputName string
+	value      string
 	definition
 }
 
@@ -64,6 +64,13 @@ var _ Definition = (*stringDefinition)(nil)
 func (d *stringDefinition) Apply(u *unstructured.Unstructured) (Value, error) {
 	if d.outputName == "" {
 		return nil, fmt.Errorf("cannot use generic service.binding annotation for string elements, need to specify binding key like service.binding/foo")
+	}
+	if d.value != "" {
+		return &value{
+			v: map[string]interface{}{
+				d.outputName: d.value,
+			},
+		}, nil
 	}
 	val, err := getValuesByJSONPath(u.Object, d.path)
 	if err != nil {
@@ -159,7 +166,7 @@ func (d *mapFromDataFieldDefinition) Apply(u *unstructured.Unstructured) (Value,
 	if len(res) != 1 {
 		return nil, fmt.Errorf("only one value should be returned for %v but we got %v", d.path, res)
 	}
-	resourceName := res[0].Elem().String()
+	resourceName := fmt.Sprintf("%v", res[0].Interface())
 
 	var otherObj *unstructured.Unstructured
 	if d.objectType == secretObjectType {

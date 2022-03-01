@@ -528,18 +528,20 @@ github.com/redhat-developer/alizer/go/pkg/apis/recognizer
 github.com/redhat-developer/alizer/go/pkg/schema
 github.com/redhat-developer/alizer/go/pkg/utils
 github.com/redhat-developer/alizer/go/pkg/utils/langfiles
-# github.com/redhat-developer/service-binding-operator v0.9.0
+# github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
 ## explicit
 github.com/redhat-developer/service-binding-operator/apis
 github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1
-github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha2
+github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3
 github.com/redhat-developer/service-binding-operator/pkg/binding
+github.com/redhat-developer/service-binding-operator/pkg/binding/registry
 github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes
 github.com/redhat-developer/service-binding-operator/pkg/converter
 github.com/redhat-developer/service-binding-operator/pkg/naming
 github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline
 github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/builder
 github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context
+github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/context/service
 github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/collect
 github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/mapping
 github.com/redhat-developer/service-binding-operator/pkg/reconcile/pipeline/handler/naming

@@ -1,10 +1,9 @@
 package binding
 
 import (
-	"fmt"
-	"reflect"
-
 	"k8s.io/client-go/util/jsonpath"
+	"reflect"
+	"strings"
 )
 
 // getValuesByJSONPath returns values from the given map matching the provided JSONPath
@@ -23,7 +22,13 @@ func getValuesByJSONPath(obj map[string]interface{}, path string) ([]reflect.Val
 		return nil, err
 	}
 	if len(result) > 1 {
-		return nil, fmt.Errorf("more than one item found in the result: %v", result)
+		w := strings.Builder{}
+		for i := range result {
+			if err := j.PrintResults(&w, result[i]); err != nil {
+				return nil, err
+			}
+		}
+		return []reflect.Value{reflect.ValueOf(w.String())}, nil
 	}
 	return result[0], nil
 }
