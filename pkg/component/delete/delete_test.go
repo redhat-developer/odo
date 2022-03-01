@@ -10,6 +10,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
@@ -229,6 +230,40 @@ func TestAdapterDelete(t *testing.T) {
 
 			if err := component.Delete(fkclient, devObj, tt.componentName, "app", tt.args.labels, false, false); (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDeleteComponentClient_ListKubernetesComponents(t *testing.T) {
+	type fields struct {
+		kubeClient kclient.ClientInterface
+	}
+	type args struct {
+		devfileObj parser.DevfileObj
+		path       string
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		args     args
+		wantList []unstructured.Unstructured
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &DeleteComponentClient{
+				kubeClient: tt.fields.kubeClient,
+			}
+			gotList, err := o.ListKubernetesComponents(tt.args.devfileObj, tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ListKubernetesComponents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotList, tt.wantList) {
+				t.Errorf("ListKubernetesComponents() gotList = %v, want %v", gotList, tt.wantList)
 			}
 		})
 	}

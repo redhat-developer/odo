@@ -42,7 +42,7 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	createParameters := genericclioptions.NewCreateParameters(cmdline)
-	if o.name != "" {
+	if o.name == "" {
 		createParameters = createParameters.NeedDevfile("")
 	}
 	o.Context, err = genericclioptions.New(createParameters)
@@ -67,25 +67,44 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 
 // deleteDevfileComponent deletes a component defined by the devfile in the current directory
 func (o *ComponentOptions) deleteDevfileComponent() error {
-	// TODO: Print all the resources that will be deleted.
-
+	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	componentName := o.EnvSpecificInfo.GetName()
 
-	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", componentName)) {
+	// TODO: Print all the resources that will be deleted.
+	log.Info("The following components will be deleted: ")
+	log.Printf("Devfile Component: %v", componentName)
+	log.Printf("Kubernetes Resources:")
+	resources, err := o.clientset.DeleteClient.ListKubernetesComponents(devfileObj, filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()))
+	if err != nil {
+		return fmt.Errorf("Failed to gather resources for deletion: %w", err)
+	}
+	for _, resource := range resources {
+		fmt.Println("\t", resource.GetKind(), ":", resource.GetName())
+	}
+
+	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
+		// delete innerloop resources
+		spinner := log.Spinner("Deleting Devfile component")
+		defer spinner.End(false)
+		err = o.clientset.DeleteClient.DeleteComponent(devfileObj, componentName)
+		if err != nil {
+			log.Errorf("error occurred while deleting component, cause: %v", err)
+		}
+		spinner.End(true)
+
 		// delete outerloop resources
-		devfileObj := o.EnvSpecificInfo.GetDevfileObj()
-		err := o.clientset.DeleteClient.UnDeploy(devfileObj, filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()))
+		spinner = log.Spinner("Deleting Kubernetes resources")
+		defer spinner.End(false)
+		err = o.clientset.DeleteClient.UnDeploy(devfileObj, filepath.Dir(o.EnvSpecificInfo.GetDevfilePath()))
 		if err != nil {
 			// if there is no component in the devfile to undeploy or if the devfile is non-existent, then skip the error log
 			if !errors.Is(err, libdevfile.NewNoCommandFoundError(v1alpha2.DeployCommandGroupKind)) {
 				log.Errorf("error occurred while un-deploying, cause: %v", err)
 			}
 		}
-		// delete innerloop resources
-		err = o.clientset.DeleteClient.DeleteComponent(devfileObj, componentName)
-		if err != nil {
-			log.Errorf("error occurred while deleting component, cause: %v", err)
-		}
+
+		spinner.End(true)
+		log.Successf("Successfully deleted component")
 	} else {
 		log.Error("Aborting deletion of component")
 	}

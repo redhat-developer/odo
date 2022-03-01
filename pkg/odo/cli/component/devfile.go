@@ -137,6 +137,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	return component.Delete(do.KClient, devObj, componentName, do.GetApplication(), labels, do.showLogFlag, do.waitFlag)
 }
 
+// TODO: Delete this type
 type undeployHandler struct {
 	path       string
 	kubeClient kclient.ClientInterface

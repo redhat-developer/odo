@@ -5,8 +5,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/service"
+	"k8s.io/klog"
 )
 
 type undeployHandler struct {
@@ -37,7 +37,7 @@ func (o *undeployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Un-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
+	klog.V(4).Infof("Un-deploying the Kubernetes %s: %s", u.GetKind(), u.GetName())
 	// Un-deploy the K8s manifest
 	return o.kubeClient.DeleteDynamicResource(u.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
 }
