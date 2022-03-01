@@ -26,6 +26,9 @@ import (
 
 type ClientInterface interface {
 
+	// all.go
+	GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error)
+
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
 	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)

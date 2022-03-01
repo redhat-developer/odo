@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/spf13/cobra"
 )
 
 // ComponentRecommendedCommandName is the recommended component sub-command name
@@ -68,6 +71,15 @@ func (o *ComponentOptions) Run() error {
 
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
+	selector := componentlabels.GetSelector(o.name, "app")
+	// TODO add managed-by=odo
+	list, err := o.clientset.KubernetesClient.GetAllResourcesFromSelector(selector, o.clientset.KubernetesClient.GetCurrentNamespace())
+	if err != nil {
+		return err
+	}
+	for _, resource := range list {
+		fmt.Printf("%s.%s\n", resource.GetKind(), resource.GetName())
+	}
 	return nil
 }
 
@@ -134,7 +146,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
 	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kube config is used")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
-	clientset.Add(componentCmd, clientset.DELETE_COMPONENT)
+	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES)
 
 	return componentCmd
 }
