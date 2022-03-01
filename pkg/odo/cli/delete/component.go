@@ -14,6 +14,15 @@ const ComponentRecommendedCommandName = "component"
 type ComponentOptions struct {
 	// name of the component to delete, optional
 	name string
+
+	// namespace on which to find the component to delete, optional, defaults to current namespace
+	namespace string
+
+	// forceFlag forces deletion
+	forceFlag bool
+
+	// Clients
+	clientset *clientset.Clientset
 }
 
 // NewComponentOptions returns new instance of ComponentOptions
@@ -25,6 +34,9 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+	if o.namespace != "" {
+		o.clientset.KubernetesClient.SetNamespace(o.namespace)
+	}
 	return nil
 }
 
@@ -64,6 +76,9 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 		},
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
+	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kube config is used")
+	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
+	clientset.Add(componentCmd, clientset.DELETE_COMPONENT)
 
 	return componentCmd
 }
