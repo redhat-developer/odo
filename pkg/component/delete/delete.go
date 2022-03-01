@@ -2,6 +2,7 @@ package delete
 
 import (
 	"fmt"
+	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
@@ -27,7 +28,9 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 }
 
 func (o *DeleteComponentClient) ListKubernetesComponents(devfileObj parser.DevfileObj, path string) (list []unstructured.Unstructured, err error) {
-	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{})
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: devfile.KubernetesComponentType},
+	})
 	if err != nil {
 		return
 	}
