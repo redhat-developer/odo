@@ -21,7 +21,6 @@ save_logs() {
     ibmcloud cos upload --bucket "${IBM_BUCKET}" --key "${LOGFILE}.html" --file "/tmp/${LOGFILE}.html"
     ibmcloud cos upload --bucket "${IBM_BUCKET}" --key "${LOGFILE}.txt" --file "/tmp/${LOGFILE}.txt"
 
-    echo -n ${GITHUB_TOKEN} | gh auth login --with-token
     BASE_URL="https://s3.${IBM_REGION}.cloud-object-storage.appdomain.cloud/${IBM_BUCKET}"
     if [[ $RESULT == "0" ]]; then
         STATUS="successfully"
