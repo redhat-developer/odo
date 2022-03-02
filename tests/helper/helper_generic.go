@@ -343,11 +343,14 @@ func CommonAfterEach(commonVar CommonVar) {
 	if err != nil {
 		fmt.Println("Error: ", err)
 	} else {
-		defer f.Close()
-		if _, err = f.WriteString(resultsRow); err != nil {
+		f.Close()
+		_, err = f.WriteString(resultsRow)
+		if err != nil {
 			fmt.Println("Error: ", err)
 		}
-		f.Close()
+		if err = f.Close(); err != nil {
+			fmt.Println("Error: ", err)
+		}
 	}
 
 	// delete the random project/namespace created in CommonBeforeEach
