@@ -40,7 +40,7 @@ var _ = Describe("odo dev command tests", func() {
 			session := helper.CmdRunner("odo", "dev")
 			defer session.Kill()
 			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: build", "kind: run")
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 			helper.WaitForOutputToContain(watch.PushErrorString, 180, 10, session)
 		})
 		It("should use the index information from previous push operation", func() {

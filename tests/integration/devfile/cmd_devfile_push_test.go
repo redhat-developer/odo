@@ -29,7 +29,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		//helper.CommonAfterEach(commonVar)
+		helper.CommonAfterEach(commonVar)
 	})
 
 	When("creating a nodejs component", func() {
