@@ -46,7 +46,7 @@ metadata:
   displayName: Node.js Runtime
   icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
   language: javascript
-  name: nodejs-prj1-api-abhz
+  name: language
   projectType: nodejs
   tags:
   - NodeJS

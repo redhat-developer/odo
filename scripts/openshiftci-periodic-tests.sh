@@ -5,6 +5,39 @@ set -e
 # show commands
 set -x
 
+# check if devfiles are updated and if so, update and test them
+check_and_run_devfileTest() {
+    NOTEQUAL="false"
+    # Languages for which devfiles preset in examples dir
+    LANGUAGES=('python' 'nodejs' 'springboot')
+
+    for LANGUAGE in "${LANGUAGES[@]}"; do
+        Example_devfile_path=./tests/examples/source/devfiles/$LANGUAGE/devfile-registry.yaml
+        TEMPDIR=$(mktemp -d)
+        # download devfiles with odo
+        if [[ $LANGUAGE == "springboot" ]]; then
+            odo create java-$LANGUAGE language --context $TEMPDIR
+        else
+            odo create $LANGUAGE language --context $TEMPDIR
+        fi
+
+        Devfile_path=$TEMPDIR/devfile.yaml
+        set +e
+        # check if devfiles differ then the one in examples dir
+        diff $Devfile_path $Example_devfile_path
+        set -e 
+        if [[ $? == 1 ]]; then
+            NOTEQUAL="true"
+            echo "Devfile for $LANGUAGE is not equal to the one in examples dir"
+            cp $Devfile_path $Example_devfile_path
+        fi
+    done
+
+    if [ "$NOTEQUAL" == "true" ]; then
+        make test-integration-devfile || error=true
+    fi
+}
+
 export CI="openshift"
 make configure-installer-tests-cluster
 make bin
@@ -12,6 +45,7 @@ mkdir -p $GOPATH/bin
 make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
+error=false 
 
 # Copy kubeconfig to temporary kubeconfig file
 # Read and Write permission to temporary kubeconfig file
@@ -26,20 +60,15 @@ oc login -u developer -p password@123
 # Check login user name for debugging purpose
 oc whoami
 
-# Integration tests
-make test-integration || error=true
-make test-integration-devfile || error=true
-make test-cmd-login-logout || error=true
-make test-cmd-project || error=true
-make test-operator-hub || error=true
+# # Integration tests
+check_and_run_devfileTest
 
-# E2e tests
-make test-e2e-all || error=true
+make test-operator-hub || error=true
 
 if [ $error ]; then
     exit -1
 fi
 
-cp -r reports tests/reports $ARTIFACT_DIR 
+cp -r reports tests/reports $ARTIFACT_DIR
 
 oc logout

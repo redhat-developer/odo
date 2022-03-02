@@ -33,9 +33,9 @@ components:
 metadata:
   description: Python Stack with Python 3.7
   displayName: Python
-  icon: https://www.python.org/static/community_logos/python-logo-generic.svg
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/python.svg
   language: python
-  name: python-prj1-api-cajf
+  name: language
   projectType: python
   tags:
   - Python
