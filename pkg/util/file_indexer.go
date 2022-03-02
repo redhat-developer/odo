@@ -447,6 +447,11 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileRemoteChanged := make(map[string]bool)
 
 	var ignoreMatcher gitignore.IgnoreMatcher
+	fmt.Println("**********************\nIgnore Rules: ")
+	for _, it := range ignoreRules {
+		fmt.Println(it)
+	}
+	fmt.Println("************************")
 	ignoreMatcher = GetIgnoreMatcherFromRules(pathOptions.directory, ignoreRules)
 
 	for _, matchedPath := range matchedPathsDir {
@@ -463,6 +468,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		//}
 		// the folder matches a glob rule and thus should be skipped
 		//TODO remove debug
+		fmt.Println("***************************************************************************")
 		fmt.Printf("Directory: %s File name: %s Is Dir: %s full match path: %s Matched: %s\n", pathOptions.directory, stat.Name(), strconv.FormatBool(stat.IsDir()), matchedPath, strconv.FormatBool(match))
 		if match {
 			return IndexerRet{}, nil
