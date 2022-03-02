@@ -13,6 +13,15 @@ const ComponentTypeLabel = "app.kubernetes.io/name"
 
 const ComponentTypeAnnotation = "odo.dev/project-type"
 
+// ComponentDeployLabel ...
+const ComponentDeployLabel = "Deploy"
+
+// ComponentModeLabel ...
+const ComponentModeLabel = "odo.dev/mode"
+
+// ComponentProjectTypeLabel ...
+const ComponentProjectTypeLabel = "odo.dev/project-type"
+
 // GetLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
 // if you are creating something use additional=true

@@ -264,14 +264,9 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 		return false, err
 	}
 
-	// add labels to the CRD before creation
+	// Add all passed in labels to the deployment regardless if it's an operator or not
 	existingLabels := u.GetLabels()
-	if isOp {
-		u.SetLabels(mergeLabels(existingLabels, labels))
-	} else {
-		// Kubernetes built-in resource; only set managed-by label to it
-		u.SetLabels(mergeLabels(existingLabels, map[string]string{"app.kubernetes.io/managed-by": "odo"}))
-	}
+	u.SetLabels(mergeLabels(existingLabels, labels))
 
 	err = createOperatorService(client, u)
 	return isOp, err
