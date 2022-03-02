@@ -63,6 +63,7 @@ func (o *ComponentOptions) Run() error {
 
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
+	log.Info("Searching resources to delete, please wait...")
 	list, err := o.clientset.DeleteClient.ListResourcesToDelete(o.name, o.clientset.KubernetesClient.GetCurrentNamespace())
 	if err != nil {
 		return err
