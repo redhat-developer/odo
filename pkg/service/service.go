@@ -226,7 +226,10 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 		if er != nil {
 			return er
 		}
-
+		_, er = PushKubernetesResource(client, u, labels)
+		if er != nil {
+			return er
+		}
 		if csvSupported {
 			delete(deployed, u.GetKind()+"/"+u.GetName())
 		}

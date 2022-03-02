@@ -58,7 +58,7 @@ const (
 var subdeps map[string][]string = map[string][]string{
 	CATALOG: {FILESYSTEM, PREFERENCE},
 	DEPLOY:  {KUBERNETES},
-	DEV:     {KUBERNETES, WATCH},
+	DEV:     {WATCH},
 	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
 	PROJECT: {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
@@ -138,7 +138,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
 	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.WatchClient)
+		dep.DevClient = dev.NewDevClient(dep.WatchClient)
 	}
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
 	return &dep, nil

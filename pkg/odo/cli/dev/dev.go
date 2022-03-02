@@ -2,6 +2,10 @@ package dev
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -11,10 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
-	"io"
 	"k8s.io/kubectl/pkg/util/templates"
-	"os"
-	"path/filepath"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -54,7 +55,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
-	fmt.Fprintf(o.out, "Using devfile.yaml from the current directory.\n")
+	fmt.Fprintf(o.out, "Using %s from the current directory.\n", o.Context.GetDevfilePath())
 
 	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
@@ -84,8 +85,8 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
 	// 1. create an empty string slice to which paths like .gitignore, .odo/odo-file-index.json, etc. will be added
-	ignores := &[]string{}
-	err = genericclioptions.ApplyIgnore(ignores, "")
+	var ignores []string
+	err = genericclioptions.ApplyIgnore(&ignores, "")
 	if err != nil {
 		return err
 	}
@@ -94,8 +95,8 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to get source path: %w", err)
 	}
-	// 3. combine 1 & 2 so as to have absolute paths of all files to be ignored
-	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, *ignores)
+	// 3. combine 1 & 2 to have absolute paths of all files to be ignored
+	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, ignores)
 
 	return nil
 }

@@ -2,15 +2,15 @@ package dev
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/watch"
-	"io"
 	"k8s.io/klog/v2"
 )
 
@@ -18,14 +18,12 @@ import (
 var _ Client = (*DevClient)(nil)
 
 type DevClient struct {
-	kubernetesClient kclient.ClientInterface
-	watchClient      watch.Client
+	watchClient watch.Client
 }
 
-func NewDevClient(kubernetesClient kclient.ClientInterface, watchClient watch.Client) *DevClient {
+func NewDevClient(watchClient watch.Client) *DevClient {
 	return &DevClient{
-		kubernetesClient: kubernetesClient,
-		watchClient:      watchClient,
+		watchClient: watchClient,
 	}
 }
 
@@ -69,11 +67,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		FileIgnores:         ignorePaths,
 	}
 
-	err = o.watchClient.WatchAndPush(out, watchParameters)
-	if err != nil {
-		return err
-	}
-	return err
+	return o.watchClient.WatchAndPush(out, watchParameters)
 }
 
 // Cleanup cleans the resources created by Push
@@ -95,7 +89,7 @@ func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watc
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
 
-	return err
+	return nil
 }
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
