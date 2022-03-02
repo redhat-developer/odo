@@ -1,6 +1,3 @@
-//go:build amd64
-//+build amd64
-
 // Created by cgo -godefs - DO NOT EDIT
 // cgo -godefs types.go
 

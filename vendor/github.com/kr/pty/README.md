@@ -4,13 +4,9 @@ Pty is a Go package for using unix pseudo-terminals.
 
 ## Install
 
-```sh
-go get github.com/creack/pty
-```
+    go get github.com/kr/pty
 
-## Examples
-
-Note that those examples are for demonstration purpose only, to showcase how to use the library. They are not meant to be used in any kind of production environment.
+## Example
 
 ### Command
 
@@ -18,11 +14,10 @@ Note that those examples are for demonstration purpose only, to showcase how to 
 package main
 
 import (
+	"github.com/kr/pty"
 	"io"
 	"os"
 	"os/exec"
-
-	"github.com/creack/pty"
 )
 
 func main() {
@@ -55,8 +50,8 @@ import (
         "os/signal"
         "syscall"
 
-        "github.com/creack/pty"
-        "golang.org/x/term"
+        "github.com/kr/pty"
+        "golang.org/x/crypto/ssh/terminal"
 )
 
 func test() error {
@@ -82,17 +77,15 @@ func test() error {
                 }
         }()
         ch <- syscall.SIGWINCH // Initial resize.
-        defer func() { signal.Stop(ch); close(ch) }() // Cleanup signals when done.
 
         // Set stdin in raw mode.
-        oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+        oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
         if err != nil {
                 panic(err)
         }
-        defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
+        defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
 
         // Copy stdin to the pty and the pty to stdout.
-        // NOTE: The goroutine will keep reading until the next keystroke before returning.
         go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
         _, _ = io.Copy(os.Stdout, ptmx)
 

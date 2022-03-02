@@ -1,6 +1,5 @@
-//go:build (386 || amd64 || arm || arm64 || mips64) && openbsd
-//+build openbsd
-//+build 386 amd64 arm arm64 mips64
+// Created by cgo -godefs - DO NOT EDIT
+// cgo -godefs types_openbsd.go
 
 package pty
 

@@ -1,6 +1,3 @@
-//go:build amd64 && dragonfly
-//+build amd64,dragonfly
-
 // Created by cgo -godefs - DO NOT EDIT
 // cgo -godefs types_dragonfly.go
 

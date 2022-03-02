@@ -286,7 +286,7 @@ github.com/hashicorp/errwrap
 github.com/hashicorp/go-multierror
 # github.com/hashicorp/go-version v1.3.0
 github.com/hashicorp/go-version
-# github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
+# github.com/hinshun/vt10x v0.0.0-20220127042424-3ca73d0126d7
 ## explicit
 github.com/hinshun/vt10x
 # github.com/hpcloud/tail v1.0.0
@@ -311,7 +311,7 @@ github.com/json-iterator/go
 github.com/kballard/go-shellquote
 # github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351
 github.com/kevinburke/ssh_config
-# github.com/kr/pty v1.1.5 => github.com/creack/pty v1.1.18-0.20220131133352-edfd13da2a92
+# github.com/kr/pty v1.1.5
 ## explicit
 github.com/kr/pty
 # github.com/kubernetes-sigs/service-catalog v0.3.1
@@ -1250,4 +1250,3 @@ sigs.k8s.io/yaml
 # k8s.io/component-helpers => k8s.io/component-helpers v0.0.0-20211006165314-dacad8cb3fcb
 # k8s.io/kubectl => github.com/openshift/kubernetes/staging/src/k8s.io/kubectl v0.0.0-20210831004331-1199c36daed6
 # k8s.io/metrics => k8s.io/metrics v0.0.0-20211006171351-de75bc981086
-# github.com/kr/pty => github.com/creack/pty v1.1.18-0.20220131133352-edfd13da2a92

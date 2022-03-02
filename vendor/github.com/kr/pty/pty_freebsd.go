@@ -1,6 +1,3 @@
-//go:build freebsd
-//+build freebsd
-
 package pty
 
 import (
