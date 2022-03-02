@@ -318,7 +318,7 @@ func CommonBeforeEach() CommonVar {
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
 	// Get details, including test result for each test spec and adds it to local testResults.txt file
-	// Ginkgo test related variables
+	// Ginkgo test related variables.
 	commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
 	commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
 	commonVar.testFailed = CurrentGinkgoTestDescription().Failed
