@@ -18,12 +18,12 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 	}
 }
 
-// DeleteResources deletes Kubernetes resources from cluster in namespace for a given odo component
-// It only deletes resources not owned by another resource of the component, letting the garbage collector do its job
+// ListResourcesToDelete lists Kubernetes resources from cluster in namespace for a given odo component
+// It only returns resources not owned by another resource of the component, letting the garbage collector do its job
 func (do *DeleteComponentClient) ListResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
 	selector := componentlabels.GetSelector(componentName, "app")
-	// TODO add managed-by=odo
+	// TODO(feloy) add managed-by=odo
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -44,18 +44,20 @@ func (do *DeleteComponentClient) ListResourcesToDelete(componentName string, nam
 	return result, nil
 }
 
-func (do *DeleteComponentClient) DeleteResources(resources []unstructured.Unstructured) error {
+func (do *DeleteComponentClient) DeleteResources(resources []unstructured.Unstructured) []unstructured.Unstructured {
+	var failed []unstructured.Unstructured
 	for _, resource := range resources {
 		gvr, err := do.kubeClient.GetRestMappingFromUnstructured(resource)
 		if err != nil {
-			// TODO
+			failed = append(failed, resource)
+			continue
 		}
 		err = do.kubeClient.DeleteDynamicResource(resource.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
 		if err != nil {
-			// TODO
+			failed = append(failed, resource)
 		}
 	}
-	return nil
+	return failed
 }
 
 // references returns true if ownerRef references a resource in the list

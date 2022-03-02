@@ -35,9 +35,14 @@ func NewComponentOptions() *ComponentOptions {
 }
 
 func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+	if o.name == "" {
+		// TODO #5478
+		return nil
+	}
 	if o.namespace != "" {
 		o.clientset.KubernetesClient.SetNamespace(o.namespace)
 	}
@@ -62,13 +67,20 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 	if err != nil {
 		return err
 	}
-	// TODO display resources to delete
+	if len(list) == 0 {
+		log.Infof("No resource found for component %s\n", o.name)
+		return nil
+	}
 	log.Info("The following resources will be deleted: ")
 	for _, resource := range list {
 		fmt.Printf("\t%s: %s\n", resource.GetKind(), resource.GetName())
 	}
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
-		return o.clientset.DeleteClient.DeleteResources(list)
+		failed := o.clientset.DeleteClient.DeleteResources(list)
+		for _, fail := range failed {
+			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+		}
+		return nil
 	}
 
 	log.Error("Aborting deletion of component")
