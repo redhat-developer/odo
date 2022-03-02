@@ -26,6 +26,11 @@ import (
 
 type ClientInterface interface {
 
+	// all.go
+
+	// GetAllResourcesFromSelector returns all resources of any kind (including CRs) matching the given label selector
+	GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error)
+
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
 	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)
