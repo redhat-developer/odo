@@ -35,8 +35,6 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-			//output := helper.Cmd("odo", "dev").ShouldPass().Out()
-			//Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 		It("should show validation errors if the devfile is incorrect", func() {
 			session := helper.CmdRunner("odo", "dev")
@@ -65,14 +63,13 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(execResult).To(ContainSubstring(fileAText))
 		})
 		It("ensure that index information is updated", func() {
-			indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
-			Expect(err).ToNot(HaveOccurred())
-
 			// watch that project
 			session := helper.CmdRunner("odo", "dev")
 			defer session.Kill()
 
 			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+			indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
+			Expect(err).ToNot(HaveOccurred())
 
 			// Create a new file A
 			fileAPath, _ := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
