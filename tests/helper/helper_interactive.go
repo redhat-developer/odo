@@ -44,9 +44,6 @@ func RunInteractive(command []string, test func(*expect.Console, *bytes.Buffer))
 
 	buf := new(bytes.Buffer)
 	test(c, buf)
-	if err != nil {
-		log.Fatal(err)
-	}
 	err = cmd.Wait()
 	if err != nil {
 		log.Fatal(err)
