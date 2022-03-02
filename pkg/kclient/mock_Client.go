@@ -422,6 +422,21 @@ func (mr *MockClientInterfaceMockRecorder) GeneratePortForwardReq(podName interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GeneratePortForwardReq", reflect.TypeOf((*MockClientInterface)(nil).GeneratePortForwardReq), podName)
 }
 
+// GetAllResourcesFromSelector mocks base method.
+func (m *MockClientInterface) GetAllResourcesFromSelector(selector, ns string) ([]unstructured.Unstructured, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllResourcesFromSelector", selector, ns)
+	ret0, _ := ret[0].([]unstructured.Unstructured)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllResourcesFromSelector indicates an expected call of GetAllResourcesFromSelector.
+func (mr *MockClientInterfaceMockRecorder) GetAllResourcesFromSelector(selector, ns interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResourcesFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetAllResourcesFromSelector), selector, ns)
+}
+
 // GetAndUpdateStorageOwnerReference mocks base method.
 func (m *MockClientInterface) GetAndUpdateStorageOwnerReference(pvc *v12.PersistentVolumeClaim, ownerReference ...v13.OwnerReference) error {
 	m.ctrl.T.Helper()
