@@ -29,6 +29,7 @@ oc whoami
 # Integration tests
 make test-integration || error=true
 make test-integration-devfile || error=true
+make test-integration-interactive || error=true
 make test-cmd-login-logout || error=true
 make test-cmd-project || error=true
 
