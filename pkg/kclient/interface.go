@@ -12,7 +12,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/redhat-developer/odo/pkg/kclient/unions"
-	"github.com/redhat-developer/odo/pkg/log"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,7 +54,7 @@ type ClientInterface interface {
 	IsDeploymentExtensionsV1Beta1() (bool, error)
 
 	// events.go
-	CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int)
+	CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int)
 
 	// ingress.go
 	GetOneIngressFromSelector(selector string) (*unions.KubernetesIngress, error)
@@ -101,7 +100,7 @@ type ClientInterface interface {
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
 
 	// pods.go
-	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string, pushTimeout time.Duration) (*corev1.Pod, error)
+	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, pushTimeout time.Duration) (*corev1.Pod, error)
 	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 	ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)

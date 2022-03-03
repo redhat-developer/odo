@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -62,6 +61,16 @@ func newOverriddenExecCommand(command devfilev1.Command, executor commandExecuto
 	}
 
 	originalCmd := command.Exec.CommandLine
+	var msg string
+	switch command.Exec.Group.Kind {
+	case "build":
+		msg = "Building your application in container on cluster"
+	case "run":
+		msg = "Executing the application"
+	default:
+		msg = fmt.Sprintf("Executing %s command %q", command.Id, originalCmd)
+	}
+
 	return &execCommand{
 		info:        info,
 		adapter:     executor,
@@ -70,7 +79,7 @@ func newOverriddenExecCommand(command devfilev1.Command, executor commandExecuto
 		component:   command.Exec.Component,
 		originalCmd: originalCmd,
 		group:       convertGroupKindToString(command.Exec),
-		msg:         fmt.Sprintf("Executing %s command %q", command.Id, originalCmd),
+		msg:         msg,
 	}, nil
 }
 

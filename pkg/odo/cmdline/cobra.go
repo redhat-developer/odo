@@ -85,7 +85,7 @@ func (o *Cobra) FlagValueIfSet(flagName string) string {
 	return flag
 }
 
-// checkIfConfigurationNeeded checks against a set of commands that do *NOT* need configuration.
+// CheckIfConfigurationNeeded checks against a set of commands that do *NOT* need configuration.
 func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 	// Here we will check for parent commands, if the match a certain criteria, we will skip
 	// using the configuration.
@@ -149,7 +149,10 @@ func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 		if o.cmd.Name() == "deploy" {
 			return true, nil
 		}
-
+		// Case 12 : if command is dev
+		if o.cmd.Name() == "dev" {
+			return true, nil
+		}
 	} else {
 		return true, nil
 	}

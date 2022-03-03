@@ -57,7 +57,7 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, "Waiting for component to start", time.Duration(a.prefClient.GetPushTimeout())*time.Second)
+		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, time.Duration(a.prefClient.GetPushTimeout())*time.Second)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 		}
@@ -144,9 +144,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	// Validate the devfile build and run commands
-	log.Info("\nValidation")
-	s := log.Spinner("Validating the devfile")
+	s := log.Spinner("Waiting for Kubernetes resources")
+	defer s.End(false)
+
 	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
 	if err != nil {
 		return err
@@ -159,10 +159,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
-		s.End(false)
-		return errors.Wrap(err, "failed to validate devfile build and run commands")
+		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
-	s.End(true)
 
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
 
@@ -189,8 +187,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
 	}
 
-	log.Infof("\nCreating Services for component %s", a.ComponentName)
-
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
 	err = service.ValidateResourcesExist(a.Client, k8sComponents, a.Context)
 	if err != nil {
@@ -202,8 +198,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}
-
-	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 
 	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral)
@@ -252,13 +246,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if needRestart {
-		s := log.Spinner("Restarting the component")
-		defer s.End(false)
 		err = a.Client.WaitForPodDeletion(pod.Name)
 		if err != nil {
 			return err
 		}
-		s.End(true)
 	}
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
@@ -288,8 +279,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
+	s.End(true)
 
-	log.Infof("\nSyncing to component %s", a.ComponentName)
+	s = log.Spinner("Syncing files into the container")
+	defer s.End(false)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a)
 	compInfo := common.ComponentInfo{
@@ -309,11 +302,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
+	s.End(true)
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
-		log.Infof("\nExecuting %s event commands for component %s", string(libdevfile.PostStart), a.ComponentName)
 		err = libdevfile.ExecPostStartEvents(a.Devfile, a.ComponentName, component.NewExecHandler(a.Client, a.pod.Name, parameters.Show))
 		if err != nil {
 			return err
@@ -330,7 +323,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if !running || execRequired || parameters.RunModeChanged {
-		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
 			return err
@@ -344,9 +336,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err != nil {
 			return err
 		}
-	} else {
-		// no file was modified/added/deleted/renamed, thus return without syncing files
-		log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 	}
 
 	return nil

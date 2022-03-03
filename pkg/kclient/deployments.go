@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/pkg/errors"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -150,8 +149,6 @@ func (c *Client) WaitForPodDeletion(name string) error {
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	klog.V(3).Infof("Waiting for %s deployment rollout", deploymentName)
-	s := log.Spinner("Waiting for component to start")
-	defer s.End(false)
 
 	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
 	if err != nil {
@@ -165,7 +162,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 	// Collect all the events in a separate go routine
 	failedEvents := make(map[string]corev1.Event)
 	quit := make(chan int)
-	go c.CollectEvents("", failedEvents, s, quit)
+	go c.CollectEvents("", failedEvents, quit)
 
 	go func() {
 		defer close(success)
@@ -195,7 +192,6 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 					} else if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
 						klog.V(3).Infof("Waiting for deployment %q rollout to finish: %d of %d updated replicas are available...\n", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
 					} else {
-						s.End(true)
 						klog.V(3).Infof("Deployment %q successfully rolled out\n", deployment.Name)
 						success <- deployment
 					}

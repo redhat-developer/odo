@@ -23,7 +23,7 @@ import (
 
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, waitMessage string, pushTimeout time.Duration) (*corev1.Pod, error) {
+func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, pushTimeout time.Duration) (*corev1.Pod, error) {
 
 	klog.V(3).Infof("Waiting for %s pod", selector)
 
@@ -76,13 +76,10 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 					break loop
 				default:
 					// we start in a phase different from the desired one, let's wait
-					if spinner == nil {
-						spinner = log.Spinner(waitMessage)
-						// Collect all the events in a separate go routine
-						quit := make(chan int)
-						go c.CollectEvents(selector, failedEvents, spinner, quit)
-						defer close(quit)
-					}
+					// Collect all the events in a separate go routine
+					quit := make(chan int)
+					go c.CollectEvents(selector, failedEvents, quit)
+					defer close(quit)
 				}
 			} else {
 				watchErrorChannel <- errors.New("unable to convert event object to Pod")

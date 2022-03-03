@@ -12,6 +12,7 @@
 package clientset
 
 import (
+	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
@@ -22,6 +23,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
+	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 const (
@@ -29,6 +31,8 @@ const (
 	CATALOG = "DEP_CATALOG"
 	// DEPLOY instantiates client for pkg/deploy
 	DEPLOY = "DEP_DEPLOY"
+	// DEV instantiates client for pkg/dev
+	DEV = "DEP_DEV"
 	// FILESYSTEM instantiates client for pkg/testingutil/filesystem
 	FILESYSTEM = "DEP_FILESYSTEM"
 	// INIT instantiates client for pkg/init
@@ -43,6 +47,8 @@ const (
 	PROJECT = "DEP_PROJECT"
 	// REGISTRY instantiates client for pkg/init/registry
 	REGISTRY = "DEP_REGISTRY"
+	// WATCH instantiates client for pkg/watch
+	WATCH = "DEP_WATCH"
 
 	/* Add key for new package here */
 )
@@ -52,6 +58,7 @@ const (
 var subdeps map[string][]string = map[string][]string{
 	CATALOG: {FILESYSTEM, PREFERENCE},
 	DEPLOY:  {KUBERNETES},
+	DEV:     {WATCH},
 	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
 	PROJECT: {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
@@ -60,12 +67,14 @@ var subdeps map[string][]string = map[string][]string{
 type Clientset struct {
 	CatalogClient    catalog.Client
 	DeployClient     deploy.Client
+	DevClient        dev.Client
 	FS               filesystem.Filesystem
 	InitClient       _init.Client
 	KubernetesClient kclient.ClientInterface
 	PreferenceClient preference.Client
 	ProjectClient    project.Client
 	RegistryClient   registry.Client
+	WatchClient      watch.Client
 	/* Add client here */
 }
 
@@ -111,6 +120,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, REGISTRY) {
 		dep.RegistryClient = registry.NewRegistryClient()
 	}
+	if isDefined(command, WATCH) {
+		dep.WatchClient = watch.NewWatchClient()
+	}
 
 	/* With sub-dependencies */
 	if isDefined(command, CATALOG) {
@@ -125,7 +137,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
-
+	if isDefined(command, DEV) {
+		dep.DevClient = dev.NewDevClient(dep.WatchClient)
+	}
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
 	return &dep, nil
 }

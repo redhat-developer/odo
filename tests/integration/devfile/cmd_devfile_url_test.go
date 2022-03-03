@@ -173,7 +173,6 @@ var _ = Describe("odo devfile url command tests", func() {
 				stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			})
 			It("should list secure URL", func() {
-				helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host})
 				stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
 				helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host, "true"})
 			})
@@ -181,56 +180,33 @@ var _ = Describe("odo devfile url command tests", func() {
 
 		When("create with now flag", func() {
 			BeforeEach(func() {
-				stdout = helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--now", "--ingress").ShouldPass().Out()
+				helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--now", "--ingress").ShouldPass()
 			})
 			It("should check if url created for component", func() {
 				// check the env for the runMode
 				envOutput, err := helper.ReadFile(filepath.Join(commonVar.Context, ".odo/env/env.yaml"))
 				Expect(err).To(BeNil())
 				Expect(envOutput).To(ContainSubstring(" RunMode: run"))
-				helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
 			})
-			When("delete with now flag", func() {
-				BeforeEach(func() {
-					stdout = helper.Cmd("odo", "url", "delete", url1, "--now", "-f").ShouldPass().Out()
-				})
-				It("should check if successfully deleted", func() {
-					helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
-				})
-			})
-
 		})
 
 		When("creating a url and doing odo push twice", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--ingress").ShouldPass()
 				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-				stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			})
 			It("should be able to push again twice", func() {
-				helper.DontMatchAllInOutput(stdout, []string{"successfully deleted", "created"})
-				Expect(stdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			})
 			When("deleting url and doing odo push twice", func() {
 				BeforeEach(func() {
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 					helper.Cmd("odo", "url", "delete", url1, "-f").ShouldPass()
 					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-					stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 				})
 				It("should be able to push again twice", func() {
-					helper.DontMatchAllInOutput(stdout, []string{"successfully deleted", "created"})
-					Expect(stdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 				})
-			})
-		})
-
-		When("creating URL with path flag", func() {
-			BeforeEach(func() {
-				helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--path", "testpath", "--ingress").ShouldPass()
-				stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-			})
-			It("should create URL with path defined in Endpoint", func() {
-				helper.MatchAllInOutput(stdout, []string{url1, "/testpath", "created"})
 			})
 		})
 
@@ -257,9 +233,6 @@ var _ = Describe("odo devfile url command tests", func() {
 					helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--ingress", "--context", commonVar.Context).ShouldPass()
 					stdout = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
 				})
-				It("should successfully push url1 and url2", func() {
-					helper.MatchAllInOutput(stdout, []string{url1 + "." + host, url2})
-				})
 				When("doing url list", func() {
 					BeforeEach(func() {
 						stdout = helper.Cmd("odo", "url", "list", "--context", commonVar.Context).ShouldPass().Out()
@@ -280,17 +253,6 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 		})
 
-		When("create URLs under different container names", func() {
-			BeforeEach(func() {
-				helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--container", "runtime", "--ingress").ShouldPass()
-				helper.Cmd("odo", "url", "create", url2, "--port", url2Port, "--host", host, "--container", "tools", "--ingress").ShouldPass()
-				stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-			})
-			It("should create URLs under different container names", func() {
-				helper.MatchAllInOutput(stdout, []string{url1, url2, "created"})
-			})
-
-		})
 		XWhen("create URLs under different container names with same port number", func() {
 			// marking it as pending, since the current behavior of odo url create is buggy, this should be fixed in odo v3-alpha2
 			BeforeEach(func() {
@@ -385,18 +347,14 @@ var _ = Describe("odo devfile url command tests", func() {
 			})
 
 			When("doing odo push twice and doing url list", func() {
-				var pushstdout string
-
 				BeforeEach(func() {
 					helper.Cmd("odo", "url", "create", url1, "--port", url1Port).ShouldPass()
 					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-					pushstdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 					stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
 				})
 
 				It("should push successfully", func() {
-					helper.DontMatchAllInOutput(pushstdout, []string{"successfully deleted", "created"})
-					Expect(pushstdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 					Expect(stdout).Should(ContainSubstring(url1))
 				})
 
@@ -405,21 +363,18 @@ var _ = Describe("odo devfile url command tests", func() {
 					BeforeEach(func() {
 						helper.Cmd("odo", "url", "delete", url1, "-f").ShouldPass()
 						helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
-						pushstdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+						helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 						stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
 					})
 
 					It("should push successfully", func() {
-						helper.DontMatchAllInOutput(pushstdout, []string{"successfully deleted", "created"})
-						Expect(pushstdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 						Expect(stdout).ShouldNot(ContainSubstring(url1))
 					})
 				})
 			})
 			When("doing odo push", func() {
 				BeforeEach(func() {
-					stdout = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-					helper.MatchAllInOutput(stdout, []string{"URL 3000-tcp", "created"})
+					helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 					stdout = helper.Cmd("odo", "url", "list").ShouldPass().Out()
 				})
 

@@ -13,7 +13,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -26,6 +25,12 @@ const (
 	PushErrorString = "Error occurred on Push"
 )
 
+type WatchClient struct{}
+
+func NewWatchClient() *WatchClient {
+	return &WatchClient{}
+}
+
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
 type WatchParameters struct {
 	// Name of component that is to be watched
@@ -37,7 +42,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	//WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
@@ -160,7 +165,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	client: occlient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
-func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters WatchParameters) error {
+func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
@@ -294,7 +299,7 @@ func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters Watc
 			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
 				fmt.Fprintf(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal\n")
 			}
-			fmt.Fprintf(out, "Waiting for something to change in %s\n", parameters.Path)
+			fmt.Fprintf(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit and clean up resources from cluster.\n", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.
@@ -307,7 +312,7 @@ func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters Watc
 			deletedPaths = removeDuplicates(deletedPaths)
 
 			for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
-				fmt.Fprintf(out, "File %s changed\n", file)
+				fmt.Fprintf(out, "\n\nFile %s changed\n", file)
 			}
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
 				fmt.Fprintf(out, "Pushing files...\n")
@@ -336,9 +341,6 @@ func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters Watc
 
 						err = parameters.DevfileWatchHandler(pushParams, parameters)
 
-					} else {
-						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out,
-							changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 					}
 
 				} else {
@@ -362,11 +364,7 @@ func WatchAndPush(client kclient.ClientInterface, out io.Writer, parameters Watc
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams, parameters)
-					} else {
-						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out,
-							[]string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 					}
-
 				}
 				if err != nil {
 
@@ -418,12 +416,6 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 		}
 	}
 	return ignoreEvent
-}
-
-// DevfileWatchAndPush calls out to the WatchAndPush function.
-// As an occlient instance is not needed for devfile components, it sets it to nil
-func DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
-	return WatchAndPush(nil, out, parameters)
 }
 
 func removeDuplicates(input []string) []string {

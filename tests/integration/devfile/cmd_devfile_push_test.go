@@ -151,24 +151,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 			})
-			When("doing odo push again", func() {
-				BeforeEach(func() {
-
-					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-				})
-				It("should not build when no changes are detected in the directory", func() {
-					Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
-				})
-			})
-			When("making changes in file and doing odo push again", func() {
-				BeforeEach(func() {
-					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "Hello from Node.js", "UPDATED!")
-					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-				})
-				It("should build when a file change is detected", func() {
-					Expect(output).To(ContainSubstring("Syncing files to the component"))
-				})
-			})
 			When("doing odo push with -f flag", func() {
 				BeforeEach(func() {
 					output = helper.Cmd("odo", "push", "-f", "--project", commonVar.Project).ShouldPass().Out()
@@ -192,7 +174,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				It("should execute run command on odo push", func() {
 					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-					Expect(output).To(ContainSubstring("Executing devrun command"))
 				})
 			})
 
@@ -353,12 +334,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			})
 			It("should create pvc and reuse if it shares the same devfile volume name", func() {
-
-				helper.MatchAllInOutput(output, []string{
-					"Executing devbuild command",
-					"Executing devrun command",
-				})
-
 				// Check to see if it's been pushed (foobar.txt abd directory testdir)
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
@@ -430,30 +405,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
-		When("doing odo push --debug and devfile contain debugrun", func() {
-			BeforeEach(func() {
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output = helper.Cmd("odo", "push", "--debug", "--project", commonVar.Project).ShouldPass().Out()
-			})
-			It("should execute debug commands", func() {
-				helper.MatchAllInOutput(output, []string{
-					"Executing devbuild command",
-					"Executing debugrun command",
-				})
-			})
-			When("doing odo push", func() {
-				BeforeEach(func() {
-					output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-				})
-				It("should execute dev commands", func() {
-					helper.MatchAllInOutput(output, []string{
-						"Executing devbuild command",
-						"Executing devrun command",
-					})
-				})
-			})
-		})
-
 		When("doing odo push and run command is not marked as hotReloadCapable", func() {
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -461,8 +412,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			It("should restart the application", func() {
 				// TODO: this is almost the same test as one below
-
-				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
 				helper.Cmd("odo", "push", "-f").ShouldPass()
 			})
@@ -475,7 +424,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			It("should not restart the application", func() {
-				Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
 				helper.Cmd("odo", "push", "-f").ShouldPass()
 			})
@@ -498,9 +446,6 @@ var _ = Describe("odo devfile push command tests", func() {
 				output = helper.Cmd("odo", "push").ShouldPass().Out()
 			})
 			It("should execute all commands in composite commmand", func() {
-
-				Expect(output).To(ContainSubstring("Executing mkdir command"))
-
 				// Verify the command executed successfully
 				var statErr error
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -524,8 +469,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			It("should execute all commands in composite commmand", func() {
 
-				Expect(output).To(ContainSubstring("Executing mkdir command"))
-
 				// Verify the command executed successfully
 				var statErr error
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -546,13 +489,9 @@ var _ = Describe("odo devfile push command tests", func() {
 		When("doing odo push and composite command are nested", func() {
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output = helper.Cmd("odo", "push").ShouldPass().Out()
+				helper.Cmd("odo", "push").ShouldPass()
 			})
 			It("should execute all commands in composite commmand", func() {
-				// Verify nested command was executed
-
-				Expect(output).To(ContainSubstring("Executing mkdir command"))
-
 				// Verify the command executed successfully
 				var statErr error
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
@@ -646,32 +585,13 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
-				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
-				helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
+				helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 
 				// Need to force so build and run get triggered again with the component already created.
-				output = helper.Cmd("odo", "push", "--project", commonVar.Project, "-f").ShouldPass().Out()
-				helper.DontMatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
-				helper.MatchAllInOutput(output, []string{
-					"Executing devbuild command",
-					"Executing devrun command",
-				})
+				helper.Cmd("odo", "push", "--project", commonVar.Project, "-f").ShouldPass()
 			})
 		})
 
-		When("doing odo push and using correct custom commands (specified by flags)", func() {
-			BeforeEach(func() {
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output = helper.Cmd("odo", "push", "--build-command", "build", "--run-command", "run").ShouldPass().Out()
-			})
-			It("should push successfully", func() {
-				helper.MatchAllInOutput(output, []string{
-					"Executing build command \"npm install\"",
-					"Executing run command \"npm start\"",
-				})
-
-			})
-		})
 		When("doing odo push and using wrong custom commands (specified by flags)", func() {
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -692,8 +612,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			It("should execute commands with flags", func() {
 				helper.MatchAllInOutput(output, []string{
-					"Executing devbuild command \"npm install\"",
-					"Executing devrun command \"npm start\"",
+					"Building your application in container on cluster",
 				})
 
 			})
@@ -727,12 +646,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			When("doing odo push and sigle env var is set", func() {
 				BeforeEach(func() {
-					output = helper.Cmd("odo", "push", "--build-command", "buildwithenv", "--run-command", "singleenv").ShouldPass().Out()
+					helper.Cmd("odo", "push", "--build-command", "buildwithenv", "--run-command", "singleenv").ShouldPass()
 				})
 				It("should be able to exec command", func() {
-
-					helper.MatchAllInOutput(output, []string{"mkdir $ENV1", "mkdir $BUILD_ENV1"})
-
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
 					helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
@@ -743,9 +659,6 @@ var _ = Describe("odo devfile push command tests", func() {
 					output = helper.Cmd("odo", "push", "--build-command", "buildwithmultipleenv", "--run-command", "multipleenv").ShouldPass().Out()
 				})
 				It("should be able to exec command", func() {
-
-					helper.MatchAllInOutput(output, []string{"mkdir $ENV1 $ENV2", "mkdir $BUILD_ENV1 $BUILD_ENV2"})
-
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
 					helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
@@ -753,12 +666,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 			When("doing odo push and there is a env variable with spaces", func() {
 				BeforeEach(func() {
-					output = helper.Cmd("odo", "push", "--build-command", "buildenvwithspace", "--run-command", "envwithspace").ShouldPass().Out()
+					helper.Cmd("odo", "push", "--build-command", "buildenvwithspace", "--run-command", "envwithspace").ShouldPass()
 				})
 				It("should be able to exec command", func() {
-
-					helper.MatchAllInOutput(output, []string{"mkdir \\\"$ENV1\\\"", "mkdir \\\"$BUILD_ENV1\\\""})
-
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 					output = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath)
 					helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
@@ -769,42 +679,18 @@ var _ = Describe("odo devfile push command tests", func() {
 	})
 
 	Context("pushing devfile without an .odo folder", func() {
-		output := ""
-
 		It("should error out on odo push and passing invalid devfile", func() {
 			helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
-		})
-
-		When("doing odo push", func() {
-			BeforeEach(func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-				output = helper.Cmd("odo", "push", "--project", commonVar.Project, "springboot").ShouldPass().Out()
-			})
-			It("should be able to push based on name passed", func() {
-
-				Expect(output).To(ContainSubstring("Executing devfile commands for component springboot"))
-			})
 		})
 	})
 
 	When("Create and push java-springboot component", func() {
-
-		var output string
-
 		BeforeEach(func() {
 			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
+			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 		})
 		It("should execute default build and run commands correctly", func() {
-
-			helper.MatchAllInOutput(output, []string{
-				"Executing defaultbuild command",
-				"mvn clean",
-				"Executing defaultrun command",
-				"spring-boot:run",
-			})
 
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
@@ -995,8 +881,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, sourcePath+"/server")
 			helper.MatchAllInOutput(stdOut, []string{"server.js", "test"})
 
-			stdOut = helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-			Expect(stdOut).To(ContainSubstring("No file changes detected"))
+			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 		})
 	})
 
