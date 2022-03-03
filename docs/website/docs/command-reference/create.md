@@ -53,6 +53,8 @@ odo create nodejs --starter nodejs-starter
 
 This will download the example template corresponding to the chosen component type (in the example above, `nodejs`) in your current directory (or the path provided with the `--context` flag).
 
+If a starter project has its own devfile, then this devfile will be preserved.
+
 ## Using an existing devfile
 
 If you want to create a new component from an existing devfile, you can do so by specifying the path to the devfile with the `--devfile` flag.
