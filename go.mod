@@ -18,7 +18,9 @@ require (
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.5.0
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/hinshun/vt10x v0.0.0-20220127042424-3ca73d0126d7
+	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
@@ -48,6 +50,7 @@ require (
 	github.com/zalando/go-keyring v0.1.1
 	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a // indirect
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6
+	golang.org/x/tools v0.1.9-0.20220114220130-fd7798718afd // indirect
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -61,7 +64,6 @@ require (
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/controller-runtime v0.10.2
 	sigs.k8s.io/yaml v1.3.0 // indirect
-
 )
 
 replace (
