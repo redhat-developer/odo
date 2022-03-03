@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
@@ -29,7 +28,7 @@ func NewDevClient(watchClient watch.Client) *DevClient {
 
 // Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container,
 // and watches it for any changes. It prints all the logs/output to out.
-func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, out io.Writer) error {
+func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, out io.Writer, h Handler) error {
 	var err error
 
 	var adapter common.ComponentAdapter
@@ -62,7 +61,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		ComponentName:       devfileObj.GetMetadataName(),
 		ApplicationName:     "app",
 		ExtChan:             make(chan bool),
-		DevfileWatchHandler: regenerateAdapterAndPush,
+		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         ignorePaths,
 	}
@@ -74,36 +73,4 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 func (o *DevClient) Cleanup() error {
 	var err error
 	return err
-}
-
-func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
-	var adapter common.ComponentAdapter
-
-	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
-	if err != nil {
-		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
-	}
-
-	err = adapter.Push(pushParams)
-	if err != nil {
-		return fmt.Errorf("watch command was unable to push component: %w", err)
-	}
-
-	return nil
-}
-
-func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
-
-	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
-	devObj, err := devfile.ParseAndValidateFromFile("./devfile.yaml")
-	if err != nil {
-		return nil, err
-	}
-
-	platformContext := kubernetes.KubernetesContext{
-		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
-	}
-
-	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
-
 }

@@ -6,6 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/watch"
+
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -31,6 +36,12 @@ type DevOptions struct {
 	// Variables
 	ignorePaths []string
 	out         io.Writer
+}
+
+type DevHandler struct{}
+
+func NewDevHandler() *DevHandler {
+	return &DevHandler{}
 }
 
 func NewDevOptions() *DevOptions {
@@ -114,8 +125,41 @@ func (o *DevOptions) Run() error {
 	var path = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 
 	fmt.Fprintf(o.out, "Starting your application on cluster in developer mode\n")
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, os.Stdout)
+	d := DevHandler{}
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, os.Stdout, &d)
 	return err
+}
+
+func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+	var adapter common.ComponentAdapter
+
+	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
+	if err != nil {
+		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
+	}
+
+	err = adapter.Push(pushParams)
+	if err != nil {
+		return fmt.Errorf("watch command was unable to push component: %w", err)
+	}
+
+	return nil
+}
+
+func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+
+	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
+	devObj, err := devfile.ParseAndValidateFromFile("./devfile.yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	platformContext := kubernetes.KubernetesContext{
+		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
+	}
+
+	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+
 }
 
 // NewCmdDev implements the odo dev command
