@@ -77,7 +77,8 @@ func queryAPI(client dynamic.Interface, api apiResource, ns string, selector str
 			LabelSelector: selector,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("listing resources failed (%s): %w", api.GroupVersionResource(), err)
+			klog.V(2).Infof("listing resources failed (%s): %v", api.GroupVersionResource(), err)
+			return nil, nil
 		}
 		out = append(out, resp.Items...)
 
