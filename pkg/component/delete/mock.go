@@ -5,7 +5,10 @@
 package delete
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
+	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // MockClient is a mock of Client interface.
@@ -29,4 +32,33 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
+}
+
+// DeleteResources mocks base method.
+func (m *MockClient) DeleteResources(arg0 []unstructured.Unstructured) []unstructured.Unstructured {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteResources", arg0)
+	ret0, _ := ret[0].([]unstructured.Unstructured)
+	return ret0
+}
+
+// DeleteResources indicates an expected call of DeleteResources.
+func (mr *MockClientMockRecorder) DeleteResources(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteResources", reflect.TypeOf((*MockClient)(nil).DeleteResources), arg0)
+}
+
+// ListResourcesToDelete mocks base method.
+func (m *MockClient) ListResourcesToDelete(componentName, namespace string) ([]unstructured.Unstructured, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListResourcesToDelete", componentName, namespace)
+	ret0, _ := ret[0].([]unstructured.Unstructured)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListResourcesToDelete indicates an expected call of ListResourcesToDelete.
+func (mr *MockClientMockRecorder) ListResourcesToDelete(componentName, namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListResourcesToDelete), componentName, namespace)
 }
