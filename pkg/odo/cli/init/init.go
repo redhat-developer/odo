@@ -125,6 +125,17 @@ func (o *InitOptions) Run() (err error) {
 		}
 	}()
 
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	if err != nil {
+		return err
+	}
+	if isEmptyDir && len(o.flags) == 0 {
+		fmt.Println("The current directory is empty. odo will help you start a new project.")
+	} else if len(o.flags) == 0 {
+		fmt.Println("The current directory already contains source code. " +
+			"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
+	}
+
 	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
