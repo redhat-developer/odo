@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"log"
 	"os/exec"
+	"time"
 
 	"github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
@@ -25,7 +26,7 @@ func RunInteractive(command []string, test func(*expect.Console, *bytes.Buffer))
 
 	term := vt10x.New(vt10x.WithWriter(pts))
 
-	c, err := expect.NewConsole(expect.WithStdin(ptm), expect.WithStdout(term), expect.WithCloser(pts, ptm))
+	c, err := expect.NewConsole(expect.WithStdin(ptm), expect.WithStdout(term), expect.WithCloser(pts, ptm), expect.WithDefaultTimeout(3*time.Minute))
 	if err != nil {
 		log.Fatal(err)
 	}
