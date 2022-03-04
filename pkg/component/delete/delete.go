@@ -6,6 +6,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog"
 )
 
 type DeleteComponentClient struct {
@@ -23,6 +24,7 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 func (do *DeleteComponentClient) ListResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
 	selector := componentlabels.GetSelector(componentName, "app")
+	klog.V(2).Infof("selector: %s", selector)
 	// TODO(feloy) add managed-by=odo
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {

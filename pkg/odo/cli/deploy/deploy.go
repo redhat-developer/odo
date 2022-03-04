@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -18,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/utils/pointer"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -51,7 +54,39 @@ func (o *DeployOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+
 	o.contextDir, err = os.Getwd()
+	if err != nil {
+		return err
+	}
+	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, cwd)
+	if err != nil {
+		return err
+	}
+	if !containsDevfile {
+		devfileLocation, err2 := o.clientset.InitClient.SelectDevfile(map[string]string{}, o.clientset.FS, cwd)
+		if err2 != nil {
+			return err2
+		}
+
+		devfilePath, err2 := o.clientset.InitClient.DownloadDevfile(devfileLocation, cwd)
+		if err2 != nil {
+			return fmt.Errorf("unable to download devfile: %w", err2)
+		}
+
+		devfileObj, _, err2 := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
+		if err2 != nil {
+			return fmt.Errorf("unable to download devfile: %w", err2)
+		}
+
+		// Set the name in the devfile and writes the devfile back to the disk
+		err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
+		if err != nil {
+			return fmt.Errorf("failed to update the devfile's name: %w", err)
+		}
+
+	}
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag).CreateAppIfNeeded())
 	if err != nil {
 		return err
 	}
