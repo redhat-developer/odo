@@ -1,14 +1,14 @@
 <!-- 
 Thank you for opening a PR! Here are some things you need to know before submitting:
 
-1. Please read our developer guideline: https://github.com/redhat-developer/odo/wiki/Developer-Guidelines
+1. Please read our developer guideline: https://github.com/redhat-developer/odo/wiki/Dev:-odo-Dev-Guidelines
 2. Label this PR accordingly with the '/kind' line
-3. Ensure you have written and ran the appropriate tests: https://github.com/redhat-developer/odo/wiki/Writing-and-running-tests
-4. Read how we approve and LGTM each PR: https://github.com/redhat-developer/odo/wiki/PR-Review
+3. Ensure you have written and ran the appropriate tests: https://github.com/redhat-developer/odo/wiki/Dev:-Writing-and-running-tests
+4. Read how we approve and LGTM each PR: https://github.com/redhat-developer/odo/wiki/Pull-Requests:-Review-guideline
 
 Documentation:
 
-If you are pushing a change to documentation, please read: https://github.com/redhat-developer/odo/wiki/Contributing-to-Docs
+If you are pushing a change to documentation, please read: https://github.com/redhat-developer/odo/wiki/Documentation:-Contributing
 -->
 
 **What type of PR is this:**
