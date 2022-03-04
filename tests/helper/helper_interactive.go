@@ -19,7 +19,9 @@ type Tester func(*expect.Console, *bytes.Buffer)
 
 // RunInteractive runs the command in interactive mode and returns the output, and error.
 // It takes command as array of strings, and a function `tester` that contains steps to run the test as an argument.
-func RunInteractive(command []string, tester Tester) (string, error) {
+// The command is executed as a separate process, the environment of which is controlled via the `env` argument.
+// If `env` is `nil`, the command inherits the environment of the current process.
+func RunInteractive(command []string, env []string, tester Tester) (string, error) {
 
 	ptm, pts, err := pty.Open()
 	if err != nil {
@@ -40,6 +42,9 @@ func RunInteractive(command []string, tester Tester) (string, error) {
 	cmd.Stdin = c.Tty()
 	cmd.Stdout = c.Tty()
 	cmd.Stderr = c.Tty()
+	if env != nil {
+		cmd.Env = env
+	}
 	err = cmd.Start()
 	if err != nil {
 		log.Fatal(err)

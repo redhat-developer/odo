@@ -34,7 +34,7 @@ var _ = Describe("odo init interactive command tests", func() {
 	It("should download correct devfile", func() {
 
 		command := []string{"odo", "init"}
-		output, err := helper.RunInteractive(command, func(c *expect.Console, output *bytes.Buffer) {
+		output, err := helper.RunInteractive(command, nil, func(c *expect.Console, output *bytes.Buffer) {
 
 			res := helper.ExpectString(c, "Select language")
 			fmt.Fprintln(output, res)
@@ -111,7 +111,12 @@ var _ = Describe("odo init interactive command tests", func() {
 
 		testRunner := func(language string, welcomingMsgs []string, tester helper.Tester) (string, error) {
 			command := []string{"odo", "init"}
-			return helper.RunInteractive(command, testFunc(language, welcomingMsgs, tester))
+			return helper.RunInteractive(command,
+				// Setting verbosity level to 0, because we would be asserting the welcoming message is the first
+				// message displayed to the end user. So we do not want any potential debug lines to be printed first.
+				// Using envvars here (and not via the -v flag), because of https://github.com/redhat-developer/odo/issues/5513
+				[]string{"ODO_LOG_LEVEL=0"},
+				testFunc(language, welcomingMsgs, tester))
 		}
 
 		When("directory is empty", func() {
