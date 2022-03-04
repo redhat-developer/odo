@@ -4,7 +4,7 @@ LOGFILE="pr-${GIT_PR_NUMBER}-kubernetes-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
-ibmcloud login --apikey "${API_KEY}"
+ibmcloud login --apikey "${API_KEY_QE}"
 ibmcloud target -r "${IBM_REGION}"
 ibmcloud ks cluster config --cluster "${IBM_KUBERNETES_ID}" --admin
 
