@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -109,6 +110,16 @@ func ExtractSubString(output, start, end string) string {
 		}
 	}
 	return ""
+}
+
+// ExtractLines returns all lines of the given `output` string
+func ExtractLines(output string) ([]string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	lines := make([]string, 0)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
 
 // WatchNonRetCmdStdOut runs an 'odo watch' command and stores the process' stdout output into buffer.

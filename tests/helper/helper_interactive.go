@@ -15,9 +15,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// RunInteractive runs the command in interactive mode and returns the output, and error
-// It takes command as array of strings, and a function `test` that contains steps to run the test as an argument
-func RunInteractive(command []string, test func(*expect.Console, *bytes.Buffer)) (string, error) {
+type Tester func(*expect.Console, *bytes.Buffer)
+
+// RunInteractive runs the command in interactive mode and returns the output, and error.
+// It takes command as array of strings, and a function `tester` that contains steps to run the test as an argument.
+func RunInteractive(command []string, tester Tester) (string, error) {
 
 	ptm, pts, err := pty.Open()
 	if err != nil {
@@ -44,7 +46,7 @@ func RunInteractive(command []string, test func(*expect.Console, *bytes.Buffer))
 	}
 
 	buf := new(bytes.Buffer)
-	test(c, buf)
+	tester(c, buf)
 	err = cmd.Wait()
 	if err != nil {
 		log.Fatal(err)
