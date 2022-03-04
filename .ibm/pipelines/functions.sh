@@ -13,7 +13,8 @@ save_logs() {
 
     ansi2html < "/tmp/${LOGFILE}" > "/tmp/${LOGFILE}.html"
     ansi2txt < "/tmp/${LOGFILE}" > "/tmp/${LOGFILE}.txt"
-
+    
+    ibmcloud login --apikey "${API_KEY}"
     ibmcloud target -g "${IBM_RESOURCE_GROUP}"
     CRN=$(ibmcloud resource service-instance ${IBM_COS} --output json | jq -r .[0].guid)
     ibmcloud cos config crn --crn "${CRN}"
