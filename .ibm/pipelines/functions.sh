@@ -11,11 +11,11 @@ save_logs() {
     apt update
     apt install jq colorized-logs --yes
 
-    ansi2html < "/tmp/${LOGFILE}" > "/tmp/${LOGFILE}.html"
-    ansi2txt < "/tmp/${LOGFILE}" > "/tmp/${LOGFILE}.txt"
-    
+    ansi2html <"/tmp/${LOGFILE}" >"/tmp/${LOGFILE}.html"
+    ansi2txt <"/tmp/${LOGFILE}" >"/tmp/${LOGFILE}.txt"
+
     ibmcloud login --apikey "${API_KEY}"
-    ibmcloud target -g "${IBM_RESOURCE_GROUP}"
+    ibmcloud target -g "${IBM_RESOURCE_GROUP}"  -r "${IBM_REGION}"
     CRN=$(ibmcloud resource service-instance ${IBM_COS} --output json | jq -r .[0].guid)
     ibmcloud cos config crn --crn "${CRN}"
 
@@ -38,12 +38,10 @@ EOF
 # with values: "team: odo" and "type: testing"
 cleanup_namespaces() {
     PROJECTS=$(kubectl get cm -A | grep config-map-for-cleanup | awk '{ print $1 }')
-    for PROJECT in ${PROJECTS}
-    do
+    for PROJECT in ${PROJECTS}; do
         TEAM=$(kubectl get configmaps config-map-for-cleanup -n ${PROJECT} -o jsonpath='{.data.team}')
         TYPE=$(kubectl get configmaps config-map-for-cleanup -n ${PROJECT} -o jsonpath='{.data.type}')
-        if [[ "${TYPE}" -eq "testing" ]] &&  [[ "${TEAM}" -eq "odo" ]]
-        then
+        if [[ "${TYPE}" -eq "testing" ]] && [[ "${TEAM}" -eq "odo" ]]; then
             kubectl delete namespace ${PROJECT} --wait=false
         fi
     done
