@@ -341,15 +341,14 @@ func CommonAfterEach(commonVar CommonVar) {
 
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		fmt.Println("Error when opening file: ", err)
 	} else {
-		f.Close()
 		_, err = f.WriteString(resultsRow)
 		if err != nil {
-			fmt.Println("Error: ", err)
+			fmt.Println("Error when writing to file: ", err)
 		}
 		if err = f.Close(); err != nil {
-			fmt.Println("Error: ", err)
+			fmt.Println("Error when closing file: ", err)
 		}
 	}
 
