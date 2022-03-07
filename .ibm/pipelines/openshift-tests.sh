@@ -4,7 +4,7 @@ LOGFILE="pr-${GIT_PR_NUMBER}-openshift-tests-${BUILD_NUMBER}"
 
 source .ibm/pipelines/functions.sh
 
-oc login -u apikey -p "${API_KEY}" "${IBM_OPENSHIFT_ENDPOINT}"
+oc login -u apikey -p "${API_KEY_QE}" "${IBM_OPENSHIFT_ENDPOINT}"
 
 cleanup_namespaces
 
@@ -20,8 +20,6 @@ cleanup_namespaces
 ) |& tee "/tmp/${LOGFILE}"
 RESULT=${PIPESTATUS[0]}
 
-ibmcloud login --apikey "${API_KEY}" 
-ibmcloud target -r "${IBM_REGION}"
 save_logs "${LOGFILE}" "OpenShift Tests" ${RESULT}
 
 exit ${RESULT}

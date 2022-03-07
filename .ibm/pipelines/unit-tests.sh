@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to run unit test on IBM Cloud 
+# Script to run unit test on IBM Cloud
 # This script needs update if there is any change in the unit test make target command
 
 LOGFILE="pr-${GIT_PR_NUMBER}-unit-tests-${BUILD_NUMBER}"

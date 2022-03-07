@@ -57,7 +57,7 @@ function Run-Test {
 
 
     Shout "Login Openshift"
-    oc login -u apikey -p ${API_KEY_QE} ${IBM_OPENSHIFT_ENDPOINT}
+    oc login -u apikey -p ${API_KEY} ${IBM_OPENSHIFT_ENDPOINT}
 
     Shout "Create Binary"
     make install 
