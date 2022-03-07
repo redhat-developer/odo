@@ -40,7 +40,9 @@ type Tester func(InteractiveContext)
 // RunInteractive runs the command in interactive mode and returns the output, and error.
 // It takes command as array of strings, and a function `tester` that contains steps to run the test as an argument.
 // The command is executed as a separate process, the environment of which is controlled via the `env` argument.
-// If `env` is `nil`, the command inherits the environment of the current process.
+// The initial value of the sub-process environment is a copy of the environment of the current process.
+// If `env` is not `nil`, it will be appended to the end of the sub-process environment.
+// If there are duplicate environment keys, only the last value in the slice for each duplicate key is used.
 func RunInteractive(command []string, env []string, tester Tester) (string, error) {
 
 	fmt.Fprintln(GinkgoWriter, "running command", command, "with env", env)
@@ -65,7 +67,7 @@ func RunInteractive(command []string, env []string, tester Tester) (string, erro
 	cmd.Stdout = c.Tty()
 	cmd.Stderr = c.Tty()
 	if env != nil {
-		cmd.Env = env
+		cmd.Env = append(os.Environ(), env...)
 	}
 	err = cmd.Start()
 	if err != nil {
