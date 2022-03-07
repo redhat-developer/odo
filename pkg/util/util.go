@@ -116,6 +116,20 @@ func GetIgnoreMatcherFromRules(context string, rules []string) gitignore.IgnoreM
 	return gitignore.NewGitIgnoreFromReader(context, strings.NewReader(strings.Join(rules, "\n")))
 }
 
+func GetRelGlobExps(directory string, globExps []string) []string {
+	relGlobExps := []string{}
+	for _, globExp := range globExps {
+		// for glob matching with the library
+		// the relative paths in the glob expressions need to be converted to absolute paths
+		rel, err := filepath.Rel(directory, globExp)
+		if err != nil {
+			continue // TODO
+		}
+		relGlobExps = append(relGlobExps, rel)
+	}
+	return relGlobExps
+}
+
 // NamespaceKubernetesObjectWithTrim hyphenates applicationName and componentName
 // if the resultant name is greater than 63 characters
 // it trims each to 31 characters

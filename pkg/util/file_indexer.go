@@ -350,6 +350,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 		}
 	}
 
+	var ignoreMatcher gitignore.IgnoreMatcher
 	// find files which are deleted/renamed
 	for fileName, value := range existingFileIndex.Files {
 		if _, ok := ret.NewFileMap[fileName]; !ok {
@@ -367,10 +368,28 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 					return ret, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
 				}
 
-				matched, err := dfutil.IsGlobExpMatch(fileAbsolutePath, ignoreRules)
+				cwd, err := os.Getwd()
 				if err != nil {
 					return IndexerRet{}, err
 				}
+				rel, err := filepath.Rel(directory, cwd)
+				if err != nil {
+					return IndexerRet{}, err
+				}
+				ignoreMatcher = GetIgnoreMatcherFromRules(rel, GetRelGlobExps(directory, ignoreRules))
+				if err != nil {
+					return IndexerRet{}, err
+				}
+				relx, err := filepath.Rel(directory, fileAbsolutePath)
+				if err != nil {
+					continue // TODO
+				}
+				stat, err := os.Stat(fileAbsolutePath)
+				if err != nil {
+					return IndexerRet{}, err
+				}
+				matched := ignoreMatcher.Match(relx, stat.IsDir())
+
 				if matched {
 					continue
 				}
@@ -447,12 +466,19 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileRemoteChanged := make(map[string]bool)
 
 	var ignoreMatcher gitignore.IgnoreMatcher
-	fmt.Println("**********************\nIgnore Rules: ")
-	for _, it := range ignoreRules {
-		fmt.Println(it)
-	}
 	fmt.Println("************************")
-	ignoreMatcher = GetIgnoreMatcherFromRules(pathOptions.directory, ignoreRules)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return IndexerRet{}, err
+	}
+	rel, err := filepath.Rel(pathOptions.directory, cwd)
+	if err != nil {
+		return IndexerRet{}, err
+	}
+	ignoreMatcher = GetIgnoreMatcherFromRules(rel, GetRelGlobExps(pathOptions.directory, ignoreRules))
+	if err != nil {
+		return IndexerRet{}, err
+	}
 
 	for _, matchedPath := range matchedPathsDir {
 		stat, err := os.Stat(matchedPath)
@@ -461,7 +487,11 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		}
 
 		// check if it matches a ignore rule
-		match := ignoreMatcher.Match(matchedPath, stat.IsDir())
+		relx, err := filepath.Rel(pathOptions.directory, matchedPath)
+		if err != nil {
+			continue // TODO
+		}
+		match := ignoreMatcher.Match(relx, stat.IsDir())
 		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
 		//if err != nil {
 		//	return IndexerRet{}, err
