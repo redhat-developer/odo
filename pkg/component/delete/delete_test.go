@@ -43,7 +43,7 @@ func TestDeleteComponentClient_ListResourcesToDelete(t *testing.T) {
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/part-of=app"
+					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
 					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(nil, nil)
 					return client
 				},
@@ -62,7 +62,7 @@ func TestDeleteComponentClient_ListResourcesToDelete(t *testing.T) {
 					var resources []unstructured.Unstructured
 					resources = append(resources, res1, res2)
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/part-of=app"
+					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
 					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
 					return client
 				},
@@ -88,7 +88,7 @@ func TestDeleteComponentClient_ListResourcesToDelete(t *testing.T) {
 					})
 					resources = append(resources, res1, res2)
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/part-of=app"
+					selector := "app.kubernetes.io/instance=my-component,app.kubernetes.io/managed-by=odo,app.kubernetes.io/part-of=app"
 					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
 					return client
 				},

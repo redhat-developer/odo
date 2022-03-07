@@ -1,12 +1,13 @@
 package delete
 
 import (
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/klog"
 )
 
 type DeleteComponentClient struct {
@@ -23,9 +24,9 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
 func (do *DeleteComponentClient) ListResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
-	selector := componentlabels.GetSelector(componentName, "app")
-	klog.V(2).Infof("selector: %s", selector)
-	// TODO(feloy) add managed-by=odo
+	labels := componentlabels.GetLabels(componentName, "app", false)
+	labels[applabels.ManagedBy] = "odo"
+	selector := util.ConvertLabelsToSelector(labels)
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
