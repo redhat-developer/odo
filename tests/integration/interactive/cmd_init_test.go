@@ -4,15 +4,12 @@
 package interactive
 
 import (
-	"bytes"
 	"fmt"
-	"path/filepath"
-	"strings"
-
-	"github.com/Netflix/go-expect"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
+	"log"
+	"path/filepath"
 )
 
 var _ = Describe("odo init interactive command tests", func() {
@@ -34,26 +31,21 @@ var _ = Describe("odo init interactive command tests", func() {
 	It("should download correct devfile", func() {
 
 		command := []string{"odo", "init"}
-		output, err := helper.RunInteractive(command, nil, func(c *expect.Console, output *bytes.Buffer) {
+		output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
-			res := helper.ExpectString(c, "Select language")
-			fmt.Fprintln(output, res)
-			helper.SendLine(c, "go")
+			helper.ExpectString(ctx, "Select language")
+			helper.SendLine(ctx, "go")
 
-			res = helper.ExpectString(c, "Select project type")
-			fmt.Fprintln(output, res)
-			helper.SendLine(c, "\n")
+			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "\n")
 
-			res = helper.ExpectString(c, "Which starter project do you want to use")
-			fmt.Fprintln(output, res)
-			helper.SendLine(c, "\n")
+			helper.ExpectString(ctx, "Which starter project do you want to use")
+			helper.SendLine(ctx, "\n")
 
-			res = helper.ExpectString(c, "Enter component name")
-			fmt.Fprintln(output, res)
-			helper.SendLine(c, "my-go-app")
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "my-go-app")
 
-			res = helper.ExpectString(c, "Your new component \"my-go-app\" is ready in the current directory.")
-			fmt.Fprintln(output, res)
+			helper.ExpectString(ctx, "Your new component \"my-go-app\" is ready in the current directory.")
 
 		})
 
@@ -69,24 +61,20 @@ var _ = Describe("odo init interactive command tests", func() {
 		// then runs an `additionalTester` and finally expects the asking of a component name
 		// (based on the `language` specified)
 		testFunc := func(language string, welcomingMsgs []string, additionalTester helper.Tester) helper.Tester {
-			return func(c *expect.Console, output *bytes.Buffer) {
-				var res string
+			return func(ctx helper.InteractiveContext) {
 				for _, msg := range welcomingMsgs {
-					res = helper.ExpectString(c, msg)
-					fmt.Fprint(output, res)
+					helper.ExpectString(ctx, msg)
 				}
 
 				if additionalTester != nil {
-					additionalTester(c, output)
+					additionalTester(ctx)
 				}
 
-				res = helper.ExpectString(c, "Enter component name")
-				fmt.Fprintln(output, res)
-				helper.SendLine(c, fmt.Sprintf("my-%s-app", language))
+				helper.ExpectString(ctx, "Enter component name")
+				helper.SendLine(ctx, fmt.Sprintf("my-%s-app", language))
 
-				res = helper.ExpectString(c,
+				helper.ExpectString(ctx,
 					fmt.Sprintf("Your new component \"my-%s-app\" is ready in the current directory.", language))
-				fmt.Fprintln(output, res)
 			}
 		}
 
@@ -131,18 +119,15 @@ var _ = Describe("odo init interactive command tests", func() {
 					"The current directory is empty. odo will help you start a new project.",
 				}
 
-				output, err := testRunner(language, welcomingMsgs, func(c *expect.Console, output *bytes.Buffer) {
-					res := helper.ExpectString(c, "Select language")
-					fmt.Fprintln(output, res)
-					helper.SendLine(c, language)
+				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Select language")
+					helper.SendLine(ctx, language)
 
-					res = helper.ExpectString(c, "Select project type")
-					fmt.Fprintln(output, res)
-					helper.SendLine(c, "\n")
+					helper.ExpectString(ctx, "Select project type")
+					helper.SendLine(ctx, "\n")
 
-					res = helper.ExpectString(c, "Which starter project do you want to use")
-					fmt.Fprintln(output, res)
-					helper.SendLine(c, "\n")
+					helper.ExpectString(ctx, "Which starter project do you want to use")
+					helper.SendLine(ctx, "\n")
 				})
 
 				assertBehavior(language, output, err, welcomingMsgs, nil)
@@ -166,27 +151,21 @@ var _ = Describe("odo init interactive command tests", func() {
 						"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.",
 				}
 
-				output, err := testRunner(language, welcomingMsgs, func(c *expect.Console, output *bytes.Buffer) {
-					res := helper.ExpectString(c, "Based on the files in the current directory odo detected")
-					fmt.Fprintln(output, res)
+				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
 
-					res = helper.ExpectString(c, fmt.Sprintf("Language: %s", language))
-					fmt.Fprintln(output, res)
+					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
 
-					res = helper.ExpectString(c, fmt.Sprintf("Project type: %s", language))
-					fmt.Fprintln(output, res)
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
 
-					res = helper.ExpectString(c,
+					helper.ExpectString(ctx,
 						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
-					fmt.Fprintln(output, res)
 
-					res = helper.ExpectString(c, "Is this correct")
-					fmt.Fprintln(output, res)
-					helper.SendLine(c, "\n")
+					helper.ExpectString(ctx, "Is this correct")
+					helper.SendLine(ctx, "\n")
 
-					res = helper.ExpectString(c, "Select container for which you want to change configuration")
-					fmt.Fprintln(output, res)
-					helper.SendLine(c, "\n")
+					helper.ExpectString(ctx, "Select container for which you want to change configuration")
+					helper.SendLine(ctx, "\n")
 				})
 
 				assertBehavior(language, output, err, welcomingMsgs, func() {
