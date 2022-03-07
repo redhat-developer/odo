@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -149,7 +151,8 @@ func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
-	devObj, err := devfile.ParseAndValidateFromFile("./devfile.yaml")
+
+	devObj, err := devfile.ParseAndValidateFromFile(location.DevfileLocation(""))
 	if err != nil {
 		return nil, err
 	}
