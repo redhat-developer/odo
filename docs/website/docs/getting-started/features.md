@@ -7,7 +7,7 @@ sidebar_position: 1
 
 By using `odo`, application developers can develop, test, debug, and deploy microservices based applications on Kubernetes without having a deep understanding of the platform.
 
-`odo` follows *create and push* workflow. As a user, when you *create*, the information (or manifest) is stored in a configuration file. When you *push* it gets created on the Kubernetes cluster. All of this gets stored in the Kubernetes API for seamless accessability and function.
+`odo` follows *create and push* workflow. As a user, when you *create*, the information (or manifest) is stored in a configuration file. When you *push* it gets created on the Kubernetes cluster. All of this gets stored in the Kubernetes API for seamless accessibility and function.
 
 `odo` uses *deploy and link* commands to link components and services together. `odo` achieves this by creating and deploying services based on [Kubernetes Operators](https://github.com/operator-framework/) in the cluster. Services can be created using any of the operators available on [OperatorHub.io](https://operatorhub.io). Upon linking this service, `odo` injects the service configuration into the service. Your application can then use this configuration to communicate with the Operator backed service.
 

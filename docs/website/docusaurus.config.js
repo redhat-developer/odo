@@ -138,13 +138,13 @@ module.exports = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-          'https://github.com/redhat-developer/odo/edit/main/website/',
+          'https://github.com/redhat-developer/odo/edit/main/docs/website/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           editUrl:
-          'https://github.com/redhat-developer/odo/edit/main/website/blog/',
+          'https://github.com/redhat-developer/odo/edit/main/docs/website/',
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
           postsPerPage: 5,

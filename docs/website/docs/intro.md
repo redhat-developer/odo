@@ -11,13 +11,13 @@ We abstract the complex concepts of Kubernetes so you can focus on one thing: `c
 
 Choose your favourite framework and `odo` will deploy it *fast* and *often* to your container orchestrator cluster.
 
-`odo` is focused on [inner loop](./intro#what-is-inner-loop-and-outer-loop) development as well as tooling that would helps users transition to the [outer loop](./intro#what-is-inner-loop-and-outer-loop).
+`odo` is focused on [inner loop](./intro#what-is-inner-loop-and-outer-loop) development as well as tooling that would help users transition to the [outer loop](./intro#what-is-inner-loop-and-outer-loop).
 
 Brendan Burns, one of the co-founders of Kubernetes, said in the [book Kubernetes Patterns](https://www.redhat.com/cms/managed-files/cm-oreilly-kubernetes-patterns-ebook-f19824-201910-en.pdf):
 
 > It (Kubernetes) is the foundation on which applications will be built, and it provides a large library of APIs and tools for building these applications, but it does little to provide the application or container developer with any hints or guidance for how these various pieces can be combined into a complete, reliable system that satisfies their business needs and goals.
 
-`odo` satisfies that need by making Kubernetes development *super easy* for application developers and cloud engineer.
+`odo` satisfies that need by making Kubernetes development *super easy* for application developers and cloud engineers.
 
 ### What is "inner loop" and "outer loop"?
 
