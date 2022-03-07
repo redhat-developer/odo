@@ -12,7 +12,7 @@ import (
 )
 
 type Client interface {
-	Start(d parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, w io.Writer, h Handler) error
+	Start(d parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, w io.Writer, e io.Writer, h Handler) error
 	Cleanup() error
 }
 

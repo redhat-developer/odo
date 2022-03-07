@@ -167,7 +167,7 @@ func (o *DevOptions) Run() error {
 
 	log.Section("Deploying to the cluster in developer mode")
 	d := DevHandler{}
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, log.GetStdout(), &d)
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, log.GetStdout(), log.GetStderr(), &d)
 	return err
 }
 
