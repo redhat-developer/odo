@@ -8,8 +8,10 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/pkg/util"
+	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -237,4 +239,27 @@ func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags
 		backend = o.flagsBackend
 	}
 	return backend.PersonalizeDevfileconfig(devfileobj)
+}
+
+func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error) {
+	devfileLocation, err := o.SelectDevfile(flags, o.fsys, contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", err
+	}
+
+	devfilePath, err := o.DownloadDevfile(devfileLocation, contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", fmt.Errorf("unable to download devfile: %w", err)
+	}
+
+	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
+	if err != nil {
+		return parser.DevfileObj{}, "", fmt.Errorf("unable to parse devfile: %w", err)
+	}
+
+	err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", fmt.Errorf("failed to configure devfile: %w", err)
+	}
+	return devfileObj, devfilePath, nil
 }

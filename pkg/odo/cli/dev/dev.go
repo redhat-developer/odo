@@ -1,19 +1,20 @@
 package dev
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/redhat-developer/odo/pkg/devfile/location"
-
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	dfutil "github.com/devfile/library/pkg/util"
+	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -38,6 +39,9 @@ type DevOptions struct {
 	// Variables
 	ignorePaths []string
 	out         io.Writer
+
+	// working directory
+	contextDir string
 }
 
 type DevHandler struct{}
@@ -63,6 +67,24 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
+
+	o.contextDir, err = os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	if err != nil {
+		return err
+	}
+	if isEmptyDir {
+		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
+	}
+
+	err = o.initDevfile()
+	if err != nil {
+		return err
+	}
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 	if err != nil {
@@ -119,6 +141,28 @@ func (o *DevOptions) Validate() error {
 	return err
 }
 
+func (o *DevOptions) initDevfile() error {
+	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, o.contextDir)
+	if err != nil {
+		return err
+	}
+	if containsDevfile {
+		return nil
+	}
+
+	devfileObj, _, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(map[string]string{}, o.contextDir)
+	if err != nil {
+		return err
+	}
+
+	// Set the name in the devfile and writes the devfile back to the disk
+	err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
+	if err != nil {
+		return fmt.Errorf("failed to update the devfile's name: %w", err)
+	}
+	return nil
+}
+
 func (o *DevOptions) Run() error {
 	var err error
 	var platformContext = kubernetes.KubernetesContext{
@@ -152,7 +196,7 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 
 	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
 
-	devObj, err := devfile.ParseAndValidateFromFile(location.DevfileLocation(""))
+	devObj, err := ododevfile.ParseAndValidateFromFile(location.DevfileLocation(""))
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +223,7 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 		},
 	}
 
-	clientset.Add(devCmd, clientset.DEV)
+	clientset.Add(devCmd, clientset.DEV, clientset.INIT)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "utility"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

@@ -57,9 +57,6 @@ type InitOptions struct {
 	// Flags passed to the command
 	flags map[string]string
 
-	// devfileLocation is the information needed to pull a devfile
-	devfileLocation *backend.DevfileLocation
-
 	// Destination directory
 	contextDir string
 }
@@ -136,27 +133,9 @@ func (o *InitOptions) Run() (err error) {
 			"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
 	}
 
-	o.devfileLocation, err = o.clientset.InitClient.SelectDevfile(o.flags, o.clientset.FS, o.contextDir)
-	if err != nil {
-		return err
-	}
-
-	devfilePath, err := o.clientset.InitClient.DownloadDevfile(o.devfileLocation, o.contextDir)
-	if err != nil {
-		return fmt.Errorf("unable to download devfile: %w", err)
-	}
-
-	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
-	if err != nil {
-		return err
-	}
+	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
 
 	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
-
-	err = o.clientset.InitClient.PersonalizeDevfileConfig(devfileObj, o.flags, o.clientset.FS, o.contextDir)
-	if err != nil {
-		return fmt.Errorf("Failed to configure devfile: %w", err)
-	}
 
 	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
