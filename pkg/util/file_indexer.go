@@ -368,6 +368,9 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 					return ret, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
 				}
 
+				if err != nil {
+					return IndexerRet{}, err
+				}
 				cwd, err := os.Getwd()
 				if err != nil {
 					return IndexerRet{}, err
@@ -376,10 +379,19 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				if err != nil {
 					return IndexerRet{}, err
 				}
+				rules := GetRelGlobExps(directory, ignoreRules)
+				fmt.Printf("***GetRelGlobExp RULES (dir: %s):\n", directory)
+				for _, it := range rules {
+					fmt.Println(it)
+				}
 				ignoreMatcher = GetIgnoreMatcherFromRules(rel, GetRelGlobExps(directory, ignoreRules))
 				if err != nil {
 					return IndexerRet{}, err
 				}
+				if err != nil {
+					return IndexerRet{}, err
+				}
+
 				relx, err := filepath.Rel(directory, fileAbsolutePath)
 				if err != nil {
 					continue // TODO
@@ -467,6 +479,10 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 
 	var ignoreMatcher gitignore.IgnoreMatcher
 	fmt.Println("************************")
+	fmt.Println("***ignore RULES:")
+	for _, it := range ignoreRules {
+		fmt.Println(it)
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		return IndexerRet{}, err
@@ -475,7 +491,15 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	if err != nil {
 		return IndexerRet{}, err
 	}
+	rules := GetRelGlobExps(pathOptions.directory, ignoreRules)
+	fmt.Printf("***GetRelGlobExp RULES (dir: %s):\n", pathOptions.directory)
+	for _, it := range rules {
+		fmt.Println(it)
+	}
 	ignoreMatcher = GetIgnoreMatcherFromRules(rel, GetRelGlobExps(pathOptions.directory, ignoreRules))
+	if err != nil {
+		return IndexerRet{}, err
+	}
 	if err != nil {
 		return IndexerRet{}, err
 	}
@@ -487,11 +511,11 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		}
 
 		// check if it matches a ignore rule
-		relx, err := filepath.Rel(pathOptions.directory, matchedPath)
+		rel, err := filepath.Rel(pathOptions.directory, matchedPath)
 		if err != nil {
 			continue // TODO
 		}
-		match := ignoreMatcher.Match(relx, stat.IsDir())
+		match := ignoreMatcher.Match(rel, stat.IsDir())
 		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
 		//if err != nil {
 		//	return IndexerRet{}, err
@@ -499,7 +523,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		// the folder matches a glob rule and thus should be skipped
 		//TODO remove debug
 		fmt.Println("***************************************************************************")
-		fmt.Printf("Directory: %s File name: %s Is Dir: %s full match path: %s Matched: %s\n", pathOptions.directory, stat.Name(), strconv.FormatBool(stat.IsDir()), matchedPath, strconv.FormatBool(match))
+		fmt.Printf("Directory: %s File name: %s Is Dir: %s full match path: %s Actual match: %s Matched: %s\n", pathOptions.directory, stat.Name(), strconv.FormatBool(stat.IsDir()), matchedPath, rel, strconv.FormatBool(match))
 		if match {
 			return IndexerRet{}, nil
 		}
