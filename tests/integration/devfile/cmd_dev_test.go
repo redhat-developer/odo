@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/redhat-developer/odo/pkg/util"
@@ -56,6 +54,7 @@ var _ = Describe("odo dev command tests", func() {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
 			})
+
 		})
 		It("should use the index information from previous push operation", func() {
 			// Create a new file A
@@ -66,7 +65,6 @@ var _ = Describe("odo dev command tests", func() {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-
 				// File should exist, and its content should match what we initially set it to
 				execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base(fileAPath))
 				Expect(execResult).To(ContainSubstring(fileAText))
@@ -77,7 +75,7 @@ var _ = Describe("odo dev command tests", func() {
 			session := helper.CmdRunner("odo", "dev")
 			defer session.Kill()
 
-			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+			helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 			indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
 			Expect(err).ToNot(HaveOccurred())
 
