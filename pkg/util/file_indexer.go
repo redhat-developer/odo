@@ -3,7 +3,6 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/monochromegane/go-gitignore"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
+	gitignore "github.com/sabhiram/go-gitignore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -350,7 +350,6 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 		}
 	}
 
-	var ignoreMatcher gitignore.IgnoreMatcher
 	// find files which are deleted/renamed
 	for fileName, value := range existingFileIndex.Files {
 		if _, ok := ret.NewFileMap[fileName]; !ok {
@@ -371,20 +370,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				if err != nil {
 					return IndexerRet{}, err
 				}
-				cwd, err := os.Getwd()
-				if err != nil {
-					return IndexerRet{}, err
-				}
-				rel, err := filepath.Rel(directory, cwd)
-				if err != nil {
-					return IndexerRet{}, err
-				}
-				rules := GetRelGlobExps(directory, ignoreRules)
-				fmt.Printf("***GetRelGlobExp RULES (dir: %s):\n", directory)
-				for _, it := range rules {
-					fmt.Println(it)
-				}
-				ignoreMatcher = GetIgnoreMatcherFromRules(rel, GetRelGlobExps(directory, ignoreRules))
+				ignoreMatcher := gitignore.CompileIgnoreLines(GetRelGlobExps(directory, ignoreRules)...)
+
 				if err != nil {
 					return IndexerRet{}, err
 				}
@@ -396,11 +383,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				if err != nil {
 					continue // TODO
 				}
-				stat, err := os.Stat(fileAbsolutePath)
-				if err != nil {
-					return IndexerRet{}, err
-				}
-				matched := ignoreMatcher.Match(relx, stat.IsDir())
+
+				matched := ignoreMatcher.MatchesPath(relx)
 
 				if matched {
 					continue
@@ -477,29 +461,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileChanged := make(map[string]bool)
 	fileRemoteChanged := make(map[string]bool)
 
-	var ignoreMatcher gitignore.IgnoreMatcher
-	fmt.Println("************************")
-	fmt.Println("***ignore RULES:")
-	for _, it := range ignoreRules {
-		fmt.Println(it)
-	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		return IndexerRet{}, err
-	}
-	rel, err := filepath.Rel(pathOptions.directory, cwd)
-	if err != nil {
-		return IndexerRet{}, err
-	}
-	rules := GetRelGlobExps(pathOptions.directory, ignoreRules)
-	fmt.Printf("***GetRelGlobExp RULES (dir: %s):\n", pathOptions.directory)
-	for _, it := range rules {
-		fmt.Println(it)
-	}
-	ignoreMatcher = GetIgnoreMatcherFromRules(rel, GetRelGlobExps(pathOptions.directory, ignoreRules))
-	if err != nil {
-		return IndexerRet{}, err
-	}
+	ignoreMatcher := gitignore.CompileIgnoreLines(GetRelGlobExps(pathOptions.directory, ignoreRules)...)
 	if err != nil {
 		return IndexerRet{}, err
 	}
@@ -515,7 +477,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		if err != nil {
 			continue // TODO
 		}
-		match := ignoreMatcher.Match(rel, stat.IsDir())
+		match := ignoreMatcher.MatchesPath(rel)
 		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
 		//if err != nil {
 		//	return IndexerRet{}, err

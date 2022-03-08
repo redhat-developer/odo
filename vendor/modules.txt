@@ -553,6 +553,9 @@ github.com/redhat-developer/service-binding-operator/pkg/util
 github.com/rivo/uniseg
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
+# github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
+## explicit
+github.com/sabhiram/go-gitignore
 # github.com/securego/gosec/v2 v2.8.0
 ## explicit
 github.com/securego/gosec/v2

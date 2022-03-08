@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/monochromegane/go-gitignore"
 	"hash/adler32"
 	"io"
 	"io/ioutil"
@@ -22,7 +23,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	gitignore "github.com/monochromegane/go-gitignore"
 	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -32,11 +32,6 @@ import (
 
 	"k8s.io/klog"
 )
-
-//TODO remove placeholder once actual function is done
-func NewGitignore() *gitignore.IgnoreMatcher {
-	return nil
-}
 
 const (
 	HTTPRequestTimeout    = 30 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
@@ -121,11 +116,18 @@ func GetRelGlobExps(directory string, globExps []string) []string {
 	for _, globExp := range globExps {
 		// for glob matching with the library
 		// the relative paths in the glob expressions need to be converted to absolute paths
-		rel, err := filepath.Rel(directory, globExp)
-		if err != nil {
-			continue // TODO
+		var rel string
+		var err error
+		globExp = strings.ReplaceAll(globExp, "*", "_star_")
+		if filepath.IsAbs(globExp) {
+			rel, err = filepath.Rel(directory, globExp)
+			if err != nil {
+				continue // TODO
+			}
+		} else {
+			rel = globExp
 		}
-		relGlobExps = append(relGlobExps, rel)
+		relGlobExps = append(relGlobExps, strings.ReplaceAll(rel, "_star_", "*"))
 	}
 	return relGlobExps
 }
