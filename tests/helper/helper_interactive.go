@@ -81,10 +81,9 @@ func RunInteractive(command []string, env []string, tester Tester) (string, erro
 		buffer:  buf,
 	}
 	tester(ctx)
+
 	err = cmd.Wait()
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	// Close the slave end of the pty, and read the remaining bytes from the master end.
 	c.Tty().Close()
 
