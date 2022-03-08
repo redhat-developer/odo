@@ -57,6 +57,15 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	if err != nil {
 		return err
 	}
+
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, cwd)
+	if err != nil {
+		return err
+	}
+	if isEmptyDir {
+		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
+	}
+
 	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, cwd)
 	if err != nil {
 		return err
