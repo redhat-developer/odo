@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -483,9 +482,6 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		//	return IndexerRet{}, err
 		//}
 		// the folder matches a glob rule and thus should be skipped
-		//TODO remove debug
-		fmt.Println("***************************************************************************")
-		fmt.Printf("Directory: %s File name: %s Is Dir: %s full match path: %s Actual match: %s Matched: %s\n", pathOptions.directory, stat.Name(), strconv.FormatBool(stat.IsDir()), matchedPath, rel, strconv.FormatBool(match))
 		if match {
 			return IndexerRet{}, nil
 		}
