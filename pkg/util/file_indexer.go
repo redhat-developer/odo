@@ -477,10 +477,6 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 			continue // TODO
 		}
 		match := ignoreMatcher.MatchesPath(rel)
-		//match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
-		//if err != nil {
-		//	return IndexerRet{}, err
-		//}
 		// the folder matches a glob rule and thus should be skipped
 		if match {
 			return IndexerRet{}, nil
