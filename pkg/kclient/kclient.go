@@ -40,6 +40,9 @@ Please ensure you have an active kubernetes context to your cluster.
 Consult your Kubernetes distribution's documentation for more details
 `
 	waitForComponentDeletionTimeout = 120 * time.Second
+
+	defaultQPS   = 200
+	defaultBurst = 200
 )
 
 // Client is a collection of fields used for client configuration and interaction
@@ -109,6 +112,15 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, errorMsg)
 	}
+
+	// For the rest CLIENT, we set the QPS and Burst to high values so
+	// we do not receive throttling error messages when using the REST client.
+	// Inadvertently, this also increases the speed of which we use the REST client
+	// to safe values without increased error / query information.
+	// See issue: https://github.com/kubernetes/client-go/issues/610
+	// and reference implementation: https://github.com/vmware-tanzu/tanzu-framework/pull/1656
+	client.KubeClientConfig.QPS = defaultQPS
+	client.KubeClientConfig.Burst = defaultBurst
 
 	client.KubeClient, err = kubernetes.NewForConfig(client.KubeClientConfig)
 	if err != nil {
