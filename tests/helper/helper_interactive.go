@@ -31,6 +31,9 @@ type InteractiveContext struct {
 	// Its content will get updated as long as there are interactions with the console, like sending lines or
 	// expecting lines.
 	buffer *bytes.Buffer
+
+	// A function yto call to stop the process
+	StopCommand func()
 }
 
 // Tester represents the function that contains all steps to test the given interactive command.
@@ -79,6 +82,9 @@ func RunInteractive(command []string, env []string, tester Tester) (string, erro
 		Command: command,
 		console: c,
 		buffer:  buf,
+		StopCommand: func() {
+			_ = cmd.Process.Kill()
+		},
 	}
 	tester(ctx)
 
