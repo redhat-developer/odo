@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/monochromegane/go-gitignore"
 	"hash/adler32"
 	"io"
 	"io/ioutil"
@@ -107,9 +106,6 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }
 
-func GetIgnoreMatcherFromRules(context string, rules []string) gitignore.IgnoreMatcher {
-	return gitignore.NewGitIgnoreFromReader(context, strings.NewReader(strings.Join(rules, "\n")))
-}
 
 func GetRelGlobExps(directory string, globExps []string) []string {
 	relGlobExps := []string{}
