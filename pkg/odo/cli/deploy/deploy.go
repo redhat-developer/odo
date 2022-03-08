@@ -34,9 +34,6 @@ type DeployOptions struct {
 
 	// Clients
 	clientset *clientset.Clientset
-
-	// Flags
-	contextFlag string
 }
 
 var deployExample = templates.Examples(`
@@ -80,6 +77,11 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 			return fmt.Errorf("unable to download devfile: %w", err2)
 		}
 
+		err = o.clientset.InitClient.PersonalizeDevfileConfig(devfileObj, map[string]string{}, o.clientset.FS, cwd)
+		if err != nil {
+			return fmt.Errorf("failed to configure devfile: %w", err)
+		}
+
 		// Set the name in the devfile and writes the devfile back to the disk
 		err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
 		if err != nil {
@@ -87,12 +89,12 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		}
 
 	}
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(cwd))
 	if err != nil {
 		return err
 	}
 
-	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextFlag)
+	envFileInfo, err := envinfo.NewEnvSpecificInfo(cwd)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
