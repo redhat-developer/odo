@@ -106,7 +106,6 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }
 
-
 func GetRelGlobExps(directory string, globExps []string) []string {
 	relGlobExps := []string{}
 	for _, globExp := range globExps {
