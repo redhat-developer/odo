@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfileutil "github.com/devfile/library/pkg/util"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -74,10 +77,17 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	})
 
 	var endpoints []v1.Endpoint
+	var portPairs []string
 	for i := range containers {
 		for _, e := range containers[i].Container.Endpoints {
 			if e.Exposure != v1.NoneEndpointExposure {
 				endpoints = append(endpoints, e)
+				freePort, err := devfileutil.HTTPGetFreePort()
+				if err != nil {
+					return err
+				}
+				pair := fmt.Sprintf("%d:%d", freePort, e.TargetPort)
+				portPairs = append(portPairs, pair)
 			}
 		}
 	}
@@ -99,17 +109,39 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	req := o.kubernetesClient.GeneratePortForwardReq(pod.Name)
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
-	fw, err := portforward.NewOnAddresses(dialer, []string{"localhost"}, []string{"8080:3000"}, stopChan, readyChan, out, errOut)
+	// passing nil in below call since we only care for error, not for output messages
+	fw, err := portforward.NewOnAddresses(dialer, []string{"localhost"}, portPairs, stopChan, readyChan, nil, errOut)
 	if err != nil {
 		return err
 	}
 
-	err = fw.ForwardPorts()
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(out, "\nStarted port forwarding.\n")
+	go func() {
+		err = fw.ForwardPorts()
+		if err != nil {
+			fmt.Errorf("error setting up port forwarding: %v", err)
+			os.Exit(1)
+		}
+	}()
+
 	log.Finfof(out, "\nYour application is now running on your cluster.")
+
+	var portFowardURLs string
+	portFowardURLs = "You can access "
+	for i := range portPairs {
+		split := strings.Split(portPairs[i], ":")
+		local := split[0]
+		remote := split[1]
+
+		if i == len(portPairs)-1 && i != 0 {
+			portFowardURLs += fmt.Sprintf("and port %s at http://localhost:%s", remote, local)
+			break
+		} else if i < len(portPairs)-2 {
+			portFowardURLs += fmt.Sprintf("port %s at http://localhost:%s, ", remote, local)
+		} else {
+			portFowardURLs += fmt.Sprintf("port %s at http://localhost:%s ", remote, local)
+		}
+	}
+	fmt.Fprintf(out, "\n%s", portFowardURLs)
 
 	watchParameters := watch.WatchParameters{
 		Path:                path,
