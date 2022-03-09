@@ -7,10 +7,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/util"
+
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfileutil "github.com/devfile/library/pkg/util"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -76,17 +77,18 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1.ContainerComponentType},
 	})
 
-	var endpoints []v1.Endpoint
 	var portPairs []string
+	port := 40000
 	for i := range containers {
 		for _, e := range containers[i].Container.Endpoints {
 			if e.Exposure != v1.NoneEndpointExposure {
-				endpoints = append(endpoints, e)
-				freePort, err := devfileutil.HTTPGetFreePort()
-				if err != nil {
-					return err
+			loop:
+				port++
+				isPortFree := util.IsPortFree(port)
+				if !isPortFree {
+					goto loop
 				}
-				pair := fmt.Sprintf("%d:%d", freePort, e.TargetPort)
+				pair := fmt.Sprintf("%d:%d", port, e.TargetPort)
 				portPairs = append(portPairs, pair)
 			}
 		}
@@ -118,15 +120,14 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	go func() {
 		err = fw.ForwardPorts()
 		if err != nil {
-			fmt.Errorf("error setting up port forwarding: %v", err)
+			fmt.Fprintf(out, fmt.Errorf("error setting up port forwarding: %v", err).Error())
 			os.Exit(1)
 		}
 	}()
 
 	log.Finfof(out, "\nYour application is now running on your cluster.")
 
-	var portFowardURLs string
-	portFowardURLs = "You can access "
+	portFowardURLs := "You can access "
 	for i := range portPairs {
 		split := strings.Split(portPairs[i], ":")
 		local := split[0]
