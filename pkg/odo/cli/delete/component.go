@@ -45,6 +45,8 @@ func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err
 	}
 	if o.namespace != "" {
 		o.clientset.KubernetesClient.SetNamespace(o.namespace)
+	} else {
+		o.namespace = o.clientset.KubernetesClient.GetCurrentNamespace()
 	}
 	return nil
 }
@@ -64,7 +66,7 @@ func (o *ComponentOptions) Run() error {
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
 	log.Info("Searching resources to delete, please wait...")
-	list, err := o.clientset.DeleteClient.ListResourcesToDelete(o.name, o.clientset.KubernetesClient.GetCurrentNamespace())
+	list, err := o.clientset.DeleteClient.ListResourcesToDelete(o.name, o.namespace)
 	if err != nil {
 		return err
 	}
@@ -81,6 +83,7 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 		for _, fail := range failed {
 			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 		}
+		log.Infof("The component %q is successfully deleted from namespace %q", o.name, o.namespace)
 		return nil
 	}
 

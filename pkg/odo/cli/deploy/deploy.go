@@ -69,7 +69,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		return err
 	}
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir).CreateAppIfNeeded())
 	if err != nil {
 		return err
 	}

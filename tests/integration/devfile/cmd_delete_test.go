@@ -41,9 +41,12 @@ var _ = Describe("odo delete command tests", func() {
 				Expect(list).To(ContainSubstring(cmpName))
 			})
 
-			When("the component is deleted using its name and namespace", func() {
+			When("the component is deleted using its name and namespace from another directory", func() {
 				var out string
 				BeforeEach(func() {
+					otherDir := filepath.Join(commonVar.Context, "tmp")
+					helper.MakeDir(otherDir)
+					helper.Chdir(otherDir)
 					out = helper.Cmd("odo", "delete", "component", "--name", cmpName, "--namespace", commonVar.Project, "-f").ShouldPass().Out()
 				})
 
@@ -69,9 +72,12 @@ var _ = Describe("odo delete command tests", func() {
 				commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project, "-o", "yaml")
 			})
 
-			When("the component is deleted using its name and namespace", func() {
+			When("the component is deleted using its name and namespace from another directory", func() {
 				var out string
 				BeforeEach(func() {
+					otherDir := filepath.Join(commonVar.Context, "tmp")
+					helper.MakeDir(otherDir)
+					helper.Chdir(otherDir)
 					out = helper.Cmd("odo", "delete", "component", "--name", cmpName, "--namespace", commonVar.Project, "-f").ShouldPass().Out()
 				})
 

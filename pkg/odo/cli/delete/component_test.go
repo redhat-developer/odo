@@ -27,11 +27,10 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 			name: "No resource found",
 			fields: fields{
 				name:      "my-component",
-				namespace: "",
+				namespace: "my-namespace",
 				forceFlag: false,
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().GetCurrentNamespace().Return("my-namespace")
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
@@ -47,11 +46,10 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 			name: "2 resources to delete",
 			fields: fields{
 				name:      "my-component",
-				namespace: "",
+				namespace: "my-namespace",
 				forceFlag: true,
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().GetCurrentNamespace().Return("my-namespace")
 					return client
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
