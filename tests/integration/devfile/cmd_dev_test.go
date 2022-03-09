@@ -30,6 +30,19 @@ var _ = Describe("odo dev command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
+	When("directory is empty", func() {
+
+		BeforeEach(func() {
+			Expect(helper.ListFilesInDir(commonVar.Context)).To(HaveLen(0))
+		})
+
+		It("should error", func() {
+			output := helper.Cmd("odo", "dev").ShouldFail().Err()
+			Expect(output).To(ContainSubstring("this command cannot run in an empty directory"))
+
+		})
+	})
+
 	When("a component is bootstrapped and pushed", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)

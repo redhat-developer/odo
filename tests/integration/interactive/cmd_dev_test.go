@@ -28,19 +28,6 @@ var _ = Describe("odo dev interactive command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("directory is empty", func() {
-
-		BeforeEach(func() {
-			Expect(helper.ListFilesInDir(commonVar.Context)).To(HaveLen(0))
-		})
-
-		It("should error", func() {
-			output := helper.Cmd("odo", "dev").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("this command cannot run in an empty directory"))
-
-		})
-	})
-
 	When("directory is not empty", func() {
 
 		BeforeEach(func() {
@@ -64,7 +51,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
 
 					helper.ExpectString(ctx,
-						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
+						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
 
 					helper.ExpectString(ctx, "Is this correct")
 					helper.SendLine(ctx, "\n")
