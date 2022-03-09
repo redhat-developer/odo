@@ -208,9 +208,10 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 func NewCmdDev(name, fullName string) *cobra.Command {
 	o := NewDevOptions()
 	devCmd := &cobra.Command{
-		Use:     name,
-		Short:   "Deploy component to development cluster",
-		Long:    "Deploy the component to a development cluster. odo dev is a long running command that will automatically sync your source to the cluster",
+		Use:   name,
+		Short: "Deploy component to development cluster",
+		Long: `odo dev is a long running command that will automatically sync your source to the cluster.
+It forwards endpoints with exposure values 'public' or 'internal' to a port on localhost.`,
 		Example: fmt.Sprintf(devExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
