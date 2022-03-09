@@ -2,6 +2,8 @@ package devfile
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +14,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo dev command tests", func() {
+var _ = FDescribe("odo dev command tests", func() {
 	var cmpName string
 	var commonVar helper.CommonVar
 
@@ -198,6 +200,51 @@ var _ = Describe("odo dev command tests", func() {
 				})
 			})
 		})
+	})
 
+	Context("port-forwarding for the component", func() {
+		When("devfile has single endpoint", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			})
+
+			It("should expose the endpoint on localhost", func() {
+				session := helper.CmdRunner("odo", "dev")
+				defer session.Kill()
+				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+
+				resp, _ := http.Get("http://localhost:40001")
+				defer resp.Body.Close()
+
+				body, _ := io.ReadAll(resp.Body)
+				helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+			})
+		})
+		When("devfile has multiple endpoints", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+			})
+
+			It("should expose two endpoints on localhost", func() {
+				session := helper.CmdRunner("odo", "dev")
+				defer session.Kill()
+				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+
+				resp1, _ := http.Get("http://localhost:40001")
+				defer resp1.Body.Close()
+				resp2, _ := http.Get("http://localhost:40002")
+				defer resp2.Body.Close()
+
+				body1, _ := io.ReadAll(resp1.Body)
+				helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
+
+				body2, _ := io.ReadAll(resp1.Body)
+				helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
+			})
+		})
 	})
 })
