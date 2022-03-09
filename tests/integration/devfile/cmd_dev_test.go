@@ -215,7 +215,8 @@ var _ = FDescribe("odo dev command tests", func() {
 				defer session.Kill()
 				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 
-				resp, _ := http.Get("http://localhost:40001")
+				resp, err := http.Get("http://localhost:40001")
+				Expect(err).ToNot(HaveOccurred())
 				defer resp.Body.Close()
 
 				body, _ := io.ReadAll(resp.Body)
@@ -234,9 +235,12 @@ var _ = FDescribe("odo dev command tests", func() {
 				defer session.Kill()
 				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 
-				resp1, _ := http.Get("http://localhost:40001")
+				resp1, err := http.Get("http://localhost:40001")
+				Expect(err).ToNot(HaveOccurred())
 				defer resp1.Body.Close()
-				resp2, _ := http.Get("http://localhost:40002")
+
+				resp2, err := http.Get("http://localhost:40002")
+				Expect(err).ToNot(HaveOccurred())
 				defer resp2.Body.Close()
 
 				body1, _ := io.ReadAll(resp1.Body)

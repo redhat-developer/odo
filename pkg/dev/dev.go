@@ -7,8 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/httpstream"
-
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
@@ -184,9 +182,7 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 
 	req := o.kubernetesClient.GeneratePortForwardReq(pod.Name)
 
-	var dialer httpstream.Dialer
-	dialer = spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
-
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
 	stopChan := make(chan struct{}, 1)
 	// passing nil for readyChan because it's eventually being closed if it's not nil
 	// passing nil for out because we only care for error, not for output messages; we want to print our own messages
@@ -200,7 +196,7 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 	go func() {
 		err = fw.ForwardPorts()
 		if err != nil {
-			fmt.Fprintf(out, fmt.Errorf("error setting up port forwarding: %v", err).Error())
+			fmt.Fprint(out, fmt.Errorf("error setting up port forwarding: %v", err).Error())
 			os.Exit(1)
 		}
 	}()
