@@ -8,9 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/devfile/library/pkg/devfile"
-	"github.com/devfile/library/pkg/devfile/parser"
-
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
@@ -21,7 +18,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"k8s.io/kubectl/pkg/util/templates"
-	"k8s.io/utils/pointer"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -35,8 +31,8 @@ type DeployOptions struct {
 	// Clients
 	clientset *clientset.Clientset
 
-	// Flags
-	contextFlag string
+	// working directory
+	contextDir string
 }
 
 var deployExample = templates.Examples(`
@@ -55,44 +51,30 @@ func (o *DeployOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete DeployOptions after they've been created
 func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, cwd)
-	if err != nil {
-		return err
-	}
-	if !containsDevfile {
-		devfileLocation, err2 := o.clientset.InitClient.SelectDevfile(map[string]string{}, o.clientset.FS, cwd)
-		if err2 != nil {
-			return err2
-		}
-
-		devfilePath, err2 := o.clientset.InitClient.DownloadDevfile(devfileLocation, cwd)
-		if err2 != nil {
-			return fmt.Errorf("unable to download devfile: %w", err2)
-		}
-
-		devfileObj, _, err2 := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
-		if err2 != nil {
-			return fmt.Errorf("unable to download devfile: %w", err2)
-		}
-
-		// Set the name in the devfile and writes the devfile back to the disk
-		err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
-		if err != nil {
-			return fmt.Errorf("failed to update the devfile's name: %w", err)
-		}
-
-	}
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
+	o.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextFlag)
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	if err != nil {
+		return err
+	}
+	if isEmptyDir {
+		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
+	}
+
+	err = o.initDevfile()
+	if err != nil {
+		return err
+	}
+
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextDir))
+	if err != nil {
+		return err
+	}
+
+	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextDir)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
 	}
@@ -118,6 +100,27 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 
 // Validate validates the DeployOptions based on completed values
 func (o *DeployOptions) Validate() error {
+	return nil
+}
+
+func (o *DeployOptions) initDevfile() error {
+	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, o.contextDir)
+	if err != nil {
+		return err
+	}
+	if containsDevfile {
+		return nil
+	}
+	devfileObj, _, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(map[string]string{}, o.contextDir)
+	if err != nil {
+		return err
+	}
+
+	// Set the name in the devfile and writes the devfile back to the disk
+	err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
+	if err != nil {
+		return fmt.Errorf("failed to update the devfile's name: %w", err)
+	}
 	return nil
 }
 

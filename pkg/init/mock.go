@@ -94,6 +94,22 @@ func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockClient)(nil).PersonalizeName), devfile, flags)
 }
 
+// SelectAndPersonalizeDevfile mocks base method.
+func (m *MockClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectAndPersonalizeDevfile", flags, contextDir)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// SelectAndPersonalizeDevfile indicates an expected call of SelectAndPersonalizeDevfile.
+func (mr *MockClientMockRecorder) SelectAndPersonalizeDevfile(flags, contextDir interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAndPersonalizeDevfile", reflect.TypeOf((*MockClient)(nil).SelectAndPersonalizeDevfile), flags, contextDir)
+}
+
 // SelectDevfile mocks base method.
 func (m *MockClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error) {
 	m.ctrl.T.Helper()

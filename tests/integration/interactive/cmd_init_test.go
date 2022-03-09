@@ -5,11 +5,12 @@ package interactive
 
 import (
 	"fmt"
+	"log"
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
-	"log"
-	"path/filepath"
 )
 
 var _ = Describe("odo init interactive command tests", func() {
