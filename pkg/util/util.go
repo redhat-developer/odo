@@ -113,7 +113,7 @@ func GetRelGlobExps(directory string, globExps []string) []string {
 		// the relative paths in the glob expressions need to be converted to absolute paths
 		var rel string
 		var err error
-		globExp = strings.ReplaceAll(globExp, "*", "_star_")
+		globExp = strings.ReplaceAll(globExp, "*", "_starchar_")
 		if filepath.IsAbs(globExp) {
 			rel, err = filepath.Rel(directory, globExp)
 			if err != nil {
@@ -122,7 +122,7 @@ func GetRelGlobExps(directory string, globExps []string) []string {
 		} else {
 			rel = globExp
 		}
-		relGlobExps = append(relGlobExps, strings.ReplaceAll(rel, "_star_", "*"))
+		relGlobExps = append(relGlobExps, strings.ReplaceAll(rel, "_starchar_", "*"))
 	}
 	return relGlobExps
 }
