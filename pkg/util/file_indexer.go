@@ -374,9 +374,6 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				if err != nil {
 					return IndexerRet{}, err
 				}
-				if err != nil {
-					return IndexerRet{}, err
-				}
 
 				relx, err := filepath.Rel(directory, fileAbsolutePath)
 				if err != nil {
