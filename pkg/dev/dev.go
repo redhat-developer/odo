@@ -131,7 +131,10 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 
 	log.Finfof(out, "\nYour application is now running on your cluster.")
 
-	o.SetupPortForwarding(devfileObj, envSpecificInfo, out, errOut)
+	err = o.SetupPortForwarding(devfileObj, envSpecificInfo, out, errOut)
+	if err != nil {
+		return err
+	}
 
 	watchParameters := watch.WatchParameters{
 		Path:                path,
