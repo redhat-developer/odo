@@ -891,7 +891,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 		It("should not push any files under specified directory in any path", func() {
 			stdOut := helper.Cmd("odo", "push", "-v", "7").ShouldPass().Out()
-			Expect(stdOut).To(ContainSubstring(filepath.Join("target", "application.xml")))
+			Expect(stdOut).ToNot(ContainSubstring(filepath.Join("target", "application.xml")))
 		})
 	})
 
