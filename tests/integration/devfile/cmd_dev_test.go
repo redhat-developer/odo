@@ -246,7 +246,7 @@ var _ = FDescribe("odo dev command tests", func() {
 				body1, _ := io.ReadAll(resp1.Body)
 				helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
 
-				body2, _ := io.ReadAll(resp1.Body)
+				body2, _ := io.ReadAll(resp2.Body)
 				helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
 			})
 		})

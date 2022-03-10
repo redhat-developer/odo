@@ -221,7 +221,7 @@ func printPortForwardingInfo(portPairs []string, out io.Writer) {
 			portFowardURLs += fmt.Sprintf("port %s at http://localhost:%s ", remote, local)
 		}
 	}
-	fmt.Fprintf(out, "\n%s", portFowardURLs)
+	fmt.Fprintf(out, "\n%s\n", portFowardURLs)
 }
 
 // endpointsFromContainers returns a slice of endpoints with exposure value set to public or internal
