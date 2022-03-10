@@ -884,21 +884,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 		})
 	})
-
-	When("doing odo push with a directory entry in gitignore like `target/`", func() {
-		BeforeEach(func() {
-			fc := "target/\\n.settings/\\n.project\\n.classpath\\n.factorypath\\nMANIFEST.MF\\nREADME.html\\n.DS_Store\\nbin/\\nbuild/"
-			helper.CopyExample(filepath.Join("source", "multi-module-devfile"), commonVar.Context)
-			Expect(helper.CreateFileWithContent(
-				filepath.Join(commonVar.Context, ".gitignore"), fc),
-			).ToNot(HaveOccurred())
-		})
-		It("should not push any files under specified directory in any path", func() {
-			stdOut := helper.Cmd("odo", "push", "-v", "7").ShouldPass().Out()
-			Expect(stdOut).ToNot(ContainSubstring(filepath.Join("target", "application.xml")))
-		})
-	})
-
+	
 	Context("using OpenShift cluster", func() {
 		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {
