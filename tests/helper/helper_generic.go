@@ -296,6 +296,11 @@ type CommonVar struct {
 	// original values to get restored after the test is done
 	OriginalWorkingDirectory string
 	OriginalKubeconfig       string
+	// Ginkgo test realted
+	testFileName string
+	testCase     string
+	testFailed   bool
+	testDuration float64
 }
 
 // CommonBeforeEach is common function runs before every test Spec (It)
@@ -323,12 +328,47 @@ func CommonBeforeEach() CommonVar {
 
 // CommonAfterEach is common function that cleans up after every test Spec (It)
 func CommonAfterEach(commonVar CommonVar) {
+	// Get details, including test filename, test case name, test result, and test duration for each test spec and adds it to local testResults.txt file
+	// Ginkgo test related variables
+	commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
+	commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
+	commonVar.testFailed = CurrentGinkgoTestDescription().Failed
+	commonVar.testDuration = CurrentGinkgoTestDescription().Duration.Seconds()
+
+	var prNum string
+	var resultsRow string
+	prNum = os.Getenv("GIT_PR_NUMBER")
+	passedOrFailed := "PASSED"
+	if commonVar.testFailed {
+		passedOrFailed = "FAILED"
+	}
+	clusterType := "OCP"
+	if IsKubernetesCluster() {
+		clusterType = "KUBERNETES"
+	}
+	testDate := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
+	resultsRow = prNum + "," + testDate + "," + clusterType + "," + commonVar.testFileName + "," + commonVar.testCase + "," + passedOrFailed + "," + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
+	testResultsFile := filepath.Join("/", "tmp", "testResults.txt")
+
+	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		fmt.Println("Error when opening file: ", err)
+	} else {
+		_, err = f.WriteString(resultsRow)
+		if err != nil {
+			fmt.Println("Error when writing to file: ", err)
+		}
+		if err = f.Close(); err != nil {
+			fmt.Println("Error when closing file: ", err)
+		}
+	}
+
 	// delete the random project/namespace created in CommonBeforeEach
 	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
 
 	// restores the original kubeconfig and working directory
 	Chdir(commonVar.OriginalWorkingDirectory)
-	err := os.Setenv("KUBECONFIG", commonVar.OriginalKubeconfig)
+	err = os.Setenv("KUBECONFIG", commonVar.OriginalKubeconfig)
 	Expect(err).NotTo(HaveOccurred())
 
 	// delete the temporary context directory
