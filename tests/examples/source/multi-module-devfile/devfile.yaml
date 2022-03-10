@@ -1,0 +1,44 @@
+schemaVersion: 2.0.0
+metadata:
+  name: java-maven
+  version: 1.1.0
+components:
+  - name: tools
+    container:
+      image: quay.io/eclipse/che-java11-maven:nightly
+      memoryLimit: 1024Mi
+      mountSources: true
+      endpoints:
+       - exposure: public
+         name: ep2
+         path: /
+         protocol: http
+         targetPort: 9080
+      volumeMounts:
+        - name: m2
+          path: /home/user/.m2
+  - name: m2
+    volume: {}
+commands:
+  - id: mvn-package
+    exec:
+      component: tools
+      commandLine: "mvn -Dmaven.repo.local=/home/user/.m2/repository install"
+      group:
+        kind: build
+        isDefault: true
+  - id: run 
+    exec:
+      component: tools
+      commandLine: "cd ear; mvn -Dmaven.repo.local=/home/user/.m2/repository liberty:run"
+      
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: tools
+      commandLine: "cd ear; mvn -Dmaven.repo.local=/home/user/.m2/repository liberty:run -Dliberty.jvm.debug='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${DEBUG_PORT}'"
+      group:
+        kind: debug
+        isDefault: true

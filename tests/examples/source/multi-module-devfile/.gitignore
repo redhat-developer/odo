@@ -1,0 +1,10 @@
+target/
+.settings/
+.project
+.classpath
+.factorypath
+MANIFEST.MF
+README.html
+.DS_Store
+bin/
+build/

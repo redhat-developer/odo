@@ -1,0 +1,20 @@
+<server description="Sample Liberty server">
+
+    <featureManager>
+        <feature>jsp-2.3</feature>
+    </featureManager>
+
+    <variable name="default.http.port" defaultValue="9080" />
+    <variable name="default.https.port" defaultValue="9443" />
+
+    <!-- tag::server[] -->
+    <httpEndpoint host="*" httpPort="${default.http.port}"
+        httpsPort="${default.https.port}" id="defaultHttpEndpoint" />
+
+    <!-- tag::EARdefinition[] -->
+    <enterpriseApplication id="guide-maven-multimodules-ear"
+        location="guide-maven-multimodules-ear.ear"
+        name="guide-maven-multimodules-ear" />
+    <!-- end::EARdefinition[] -->
+    <!-- end::server[] -->
+</server>

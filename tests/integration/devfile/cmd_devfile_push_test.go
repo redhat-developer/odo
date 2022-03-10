@@ -885,6 +885,16 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+	When("doing odo push with a directory entry in gitignore like `target/`", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "multi-module-devfile"), commonVar.Context)
+		})
+		It("should not push any files under specified directory in any path", func() {
+			stdOut := helper.Cmd("odo", "push", "-v", "7").ShouldPass().Out()
+			Expect(stdOut).To(ContainSubstring(filepath.Join("target", "application.xml")))
+		})
+	})
+
 	Context("using OpenShift cluster", func() {
 		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {

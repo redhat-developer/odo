@@ -1,0 +1,27 @@
+<?xml version='1.0' encoding='utf-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+    http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- tag::packaging[] -->
+    <!-- tag::groupId[] -->
+    <groupId>io.openliberty.guides</groupId>
+    <!-- end::groupId[] -->
+    <artifactId>guide-maven-multimodules</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <!-- tag::packagingType[] -->
+    <packaging>pom</packaging>
+    <!-- end::packagingType[] -->
+    <!-- end::packaging[] -->
+
+    <!-- tag::modules[] -->
+    <modules>
+        <module>jar</module>
+        <module>war</module>
+        <module>ear</module>
+    </modules>
+    <!-- end::modules[] -->
+</project>
