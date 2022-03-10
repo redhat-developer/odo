@@ -55,7 +55,7 @@ default: bin
 
 .PHONY: help
 help: ## Show this help.
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-26s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .PHONY: bin
 bin: ## build the odo binary
@@ -160,128 +160,127 @@ test-windows:
 	go test $(UNIT_TEST_ARGS)  $(PKGS)
 
 .PHONY: test-generic
-test-generic: ## Run generic integration tests
+test-generic: install ## Run generic integration tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo generic" tests/integration/
 
 .PHONY: test-cmd-login-logout
-test-cmd-login-logout: ## Run odo login and logout tests
+test-cmd-login-logout: install ## Run odo login and logout tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) -focus="odo login and logout command tests" tests/integration/loginlogout/
 
 .PHONY: test-cmd-link-unlink-4-cluster
-test-cmd-link-unlink-4-cluster: ## Run link and unlink commnad tests against 4.x cluster
+test-cmd-link-unlink-4-cluster: install ## Run link and unlink commnad tests against 4.x cluster
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo link and unlink commnad tests" tests/integration/
 
 .PHONY: test-cmd-project
-test-cmd-project: ## Run odo project command tests
+test-cmd-project: install ## Run odo project command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo project command tests" tests/integration/project/
 
 .PHONY: test-cmd-pref-config
-test-cmd-pref-config: ## Run odo preference and config command tests
+test-cmd-pref-config: install ## Run odo preference and config command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo preference and config command tests" tests/integration/
 
 .PHONY: test-plugin-handler
-test-plugin-handler: ## Run odo plugin handler tests
+test-plugin-handler: install ## Run odo plugin handler tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo plugin functionality" tests/integration/
 
 .PHONY: test-cmd-devfile-catalog
-test-cmd-devfile-catalog: ## Run odo catalog devfile command tests
+test-cmd-devfile-catalog: install ## Run odo catalog devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-list
-test-cmd-devfile-list: ## Run odo list devfile command tests
+test-cmd-devfile-list: install ## Run odo list devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo list with devfile" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-create
-test-cmd-devfile-create: ## Run odo create devfile command tests
+test-cmd-devfile-create: install ## Run odo create devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-push
-test-cmd-devfile-push: ## Run odo push devfile command tests
+test-cmd-devfile-push: install ## Run odo push devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile push command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-exec
-test-cmd-devfile-exec: ## Run odo exec devfile command tests
+test-cmd-devfile-exec: install ## Run odo exec devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile exec command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-status
-test-cmd-devfile-status: ## Run odo status devfile command tests
+test-cmd-devfile-status: install ## Run odo status devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile status command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-watch
-test-cmd-devfile-watch: ## Run odo devfile watch command tests
+test-cmd-devfile-watch: install ## Run odo devfile watch command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile watch command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-app
-test-cmd-devfile-app: ## Run odo devfile app command tests
+test-cmd-devfile-app: install ## Run odo devfile app command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile app command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-delete
-test-cmd-devfile-delete: ## Run odo devfile delete command tests
+test-cmd-devfile-delete: install ## Run odo devfile delete command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile delete command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-registry
-test-cmd-devfile-registry: ## Run odo devfile registry command tests
+test-cmd-devfile-registry: install ## Run odo devfile registry command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile registry command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-test
-test-cmd-devfile-test: ## Run odo devfile test command tests
+test-cmd-devfile-test: install ## Run odo devfile test command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile test command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-url
-test-cmd-devfile-url: ## Run odo url devfile command tests
+test-cmd-devfile-url: install ## Run odo url devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile url command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-debug
-test-cmd-devfile-debug: ## Run odo debug devfile command tests
+test-cmd-devfile-debug: install ## Run odo debug devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
 	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug/
 
 .PHONY: test-cmd-devfile-storage
-test-cmd-devfile-storage: ## Run odo storage devfile command tests
+test-cmd-devfile-storage: install ## Run odo storage devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile storage command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-log
-test-cmd-devfile-log: ## Run odo log devfile command tests
+test-cmd-devfile-log: install ## Run odo log devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile log command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-env
-test-cmd-devfile-env: ## Run odo env devfile command tests
+test-cmd-devfile-env: install ## Run odo env devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile env command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-config
-test-cmd-devfile-config: ## Run odo config devfile command tests
+test-cmd-devfile-config: install ## Run odo config devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile config command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-watch
-test-cmd-watch: ## Run odo watch command tests
+test-cmd-watch: install ## Run odo watch command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo watch command tests" tests/integration/
 
 .PHONY: test-cmd-debug
-test-cmd-debug: ## Run odo debug command tests
+test-cmd-debug: install ## Run odo debug command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo debug command tests" tests/integration/
 	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) -focus="odo debug command serial tests" tests/integration/debug/
 
 # Service, link and login/logout command tests are not the part of this test run
 .PHONY: test-integration
-test-integration: ## Run command's integration tests irrespective of service catalog status in the cluster.
+test-integration: install ## Run command's integration tests irrespective of service catalog status in the cluster.
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/
 
- ## Run integration interactive tests
 .PHONY: test-interactive test
-test-integration-interactive:
+test-integration-interactive: install ## Run integration interactive tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/interactive/
 
 .PHONY: test-integration-devfile
-test-integration-devfile: ## Run devfile integration tests
+test-integration-devfile: install ## Run devfile integration tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/integration/devfile/
 	$(RUN_GINKGO) $(GINKGO_FLAGS_SERIAL) tests/integration/devfile/debug/
 
 .PHONY: test-e2e-devfile
-test-e2e-devfile: ## Run devfile e2e tests: odo devfile supported tests
+test-e2e-devfile: install ## Run devfile e2e tests: odo devfile supported tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile supported tests" tests/e2escenarios/
 
 .PHONY: test-e2e-all
-test-e2e-all: ## Run all e2e test scenarios
+test-e2e-all: install ## Run all e2e test scenarios
 	$(RUN_GINKGO) $(GINKGO_FLAGS) tests/e2escenarios/
 
 # run make cross before this!
@@ -303,5 +302,5 @@ openshiftci-presubmit-unittests:
 	./scripts/openshiftci-presubmit-unittests.sh
 
 .PHONY: test-cmd-devfile-describe
-test-cmd-devfile-describe:
+test-cmd-devfile-describe: install
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile describe command tests" tests/integration/devfile/
