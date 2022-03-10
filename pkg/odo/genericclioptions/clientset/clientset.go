@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
+	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/deploy"
 	_init "github.com/redhat-developer/odo/pkg/init"
 	"github.com/redhat-developer/odo/pkg/init/registry"
@@ -29,6 +30,8 @@ import (
 const (
 	// CATALOG instantiates client for pkg/catalog
 	CATALOG = "DEP_CATALOG"
+	// DELETE_COMPONENT instantiates client for pkg/component/delete
+	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 	// DEPLOY instantiates client for pkg/deploy
 	DEPLOY = "DEP_DEPLOY"
 	// DEV instantiates client for pkg/dev
@@ -56,16 +59,18 @@ const (
 // subdeps defines the sub-dependencies
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
-	CATALOG: {FILESYSTEM, PREFERENCE},
-	DEPLOY:  {KUBERNETES},
-	DEV:     {WATCH},
-	INIT:    {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
-	PROJECT: {KUBERNETES_NULLABLE},
+	CATALOG:          {FILESYSTEM, PREFERENCE},
+	DELETE_COMPONENT: {KUBERNETES},
+	DEPLOY:           {KUBERNETES},
+	DEV:              {WATCH},
+	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
+	PROJECT:          {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
 	CatalogClient    catalog.Client
+	DeleteClient     _delete.Client
 	DeployClient     deploy.Client
 	DevClient        dev.Client
 	FS               filesystem.Filesystem
@@ -127,6 +132,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	/* With sub-dependencies */
 	if isDefined(command, CATALOG) {
 		dep.CatalogClient = catalog.NewCatalogClient(dep.FS, dep.PreferenceClient)
+	}
+	if isDefined(command, DELETE_COMPONENT) {
+		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient)
 	}
 	if isDefined(command, DEPLOY) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient)
