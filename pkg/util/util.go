@@ -106,27 +106,6 @@ func NamespaceKubernetesObject(componentName string, applicationName string) (st
 	return fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName), nil
 }
 
-func GetRelGlobExps(directory string, globExps []string) []string {
-	relGlobExps := []string{}
-	for _, globExp := range globExps {
-		// for glob matching with the library
-		// the relative paths in the glob expressions need to be converted to absolute paths
-		var rel string
-		var err error
-		globExp = strings.ReplaceAll(globExp, "*", "_starchar_")
-		if filepath.IsAbs(globExp) {
-			rel, err = filepath.Rel(directory, globExp)
-			if err != nil {
-				continue // TODO
-			}
-		} else {
-			rel = globExp
-		}
-		relGlobExps = append(relGlobExps, strings.ReplaceAll(rel, "_starchar_", "*"))
-	}
-	return relGlobExps
-}
-
 // NamespaceKubernetesObjectWithTrim hyphenates applicationName and componentName
 // if the resultant name is greater than 63 characters
 // it trims each to 31 characters
