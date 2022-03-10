@@ -211,7 +211,7 @@ func WriteFile(newFileMap map[string]FileData, resolvedPath string) error {
 // RunIndexerWithRemote reads the existing index from the given directory and runs the indexer on it
 // with the given ignore rules
 // it also adds the file index to the .gitignore file and resolves the path
-func RunIndexerWithRemote(directory string, ignoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
+func RunIndexerWithRemote(directory string, absoluteIgnoreRules []string, originalIgnoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
 	directory = filepath.FromSlash(directory)
 	ret.ResolvedPath, err = ResolveIndexFilePath(directory)
 	if err != nil {
@@ -236,7 +236,7 @@ func RunIndexerWithRemote(directory string, ignoreRules []string, remoteDirector
 		return ret, err
 	}
 
-	returnedIndex, err := runIndexerWithExistingFileIndex(directory, ignoreRules, remoteDirectories, existingFileIndex)
+	returnedIndex, err := runIndexerWithExistingFileIndex(directory, originalIgnoreRules, remoteDirectories, existingFileIndex)
 	if err != nil {
 		return IndexerRet{}, err
 	}
@@ -369,7 +369,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				if err != nil {
 					return IndexerRet{}, err
 				}
-				ignoreMatcher := gitignore.CompileIgnoreLines(GetRelGlobExps(directory, ignoreRules)...)
+				ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
 
 				if err != nil {
 					return IndexerRet{}, err
@@ -457,7 +457,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileChanged := make(map[string]bool)
 	fileRemoteChanged := make(map[string]bool)
 
-	ignoreMatcher := gitignore.CompileIgnoreLines(GetRelGlobExps(pathOptions.directory, ignoreRules)...)
+	ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
 	if err != nil {
 		return IndexerRet{}, err
 	}
