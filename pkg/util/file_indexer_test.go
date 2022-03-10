@@ -900,7 +900,7 @@ func Test_recursiveChecker(t *testing.T) {
 			args: args{
 				directory:         tempDirectoryName,
 				srcBase:           tempDirectoryName,
-				ignoreRules:       []string{viewsFolderPath},
+				ignoreRules:       []string{viewsFolderName},
 				remoteDirectories: map[string]string{},
 				existingFileIndex: FileIndex{
 					Files: map[string]FileData{},
@@ -1401,7 +1401,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			name: "case 12: ignore a modified file due to ignore rules",
 			args: args{
 				directory:         tempDirectoryName,
-				ignoreRules:       []string{filepath.Join(tempDirectoryName, readmeFileStat.Name())},
+				ignoreRules:       []string{readmeFileStat.Name()},
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
@@ -1424,7 +1424,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			name: "case 13: ignore a deleted file due to ignore rules",
 			args: args{
 				directory:         tempDirectoryName,
-				ignoreRules:       []string{filepath.Join(tempDirectoryName, "blah")},
+				ignoreRules:       []string{"blah"},
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
@@ -1445,7 +1445,7 @@ func Test_runIndexerWithExistingFileIndex(t *testing.T) {
 			name: "case 14: ignore a added file due to ignore rules",
 			args: args{
 				directory:         tempDirectoryName,
-				ignoreRules:       []string{filepath.Join(tempDirectoryName, readmeFileStat.Name())},
+				ignoreRules:       []string{readmeFileStat.Name()},
 				remoteDirectories: map[string]string{},
 				existingFileIndex: &FileIndex{
 					Files: map[string]FileData{
