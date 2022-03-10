@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -192,7 +191,8 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 		err = fw.ForwardPorts()
 		if err != nil {
 			fmt.Fprint(out, fmt.Errorf("error setting up port forwarding: %v", err).Error())
-			os.Exit(1)
+			// do cleanup when this happens
+			// TODO: #5485
 		}
 	}()
 
