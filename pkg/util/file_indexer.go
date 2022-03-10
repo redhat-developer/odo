@@ -366,11 +366,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 					return ret, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
 				}
 
-				if err != nil {
-					return IndexerRet{}, err
-				}
 				ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
-
 				if err != nil {
 					return IndexerRet{}, err
 				}
