@@ -9,7 +9,6 @@ import (
 
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
@@ -155,9 +154,7 @@ func (o *DevClient) Cleanup() error {
 
 // SetupPortForwarding sets up port forwarding for the endpoints in the devfile
 func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecificInfo *envinfo.EnvSpecificInfo, out, errOut io.Writer) error {
-	var err error
-	var containers []v1.Component
-	containers, err = devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
+	containers, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1.ContainerComponentType},
 	})
 
@@ -169,8 +166,7 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 		return nil
 	}
 
-	var pod *corev1.Pod
-	pod, err = o.kubernetesClient.GetOnePodFromSelector(componentlabels.GetSelector(devfileObj.GetMetadataName(), envSpecificInfo.GetApplication()))
+	pod, err := o.kubernetesClient.GetOnePodFromSelector(componentlabels.GetSelector(devfileObj.GetMetadataName(), envSpecificInfo.GetApplication()))
 	if err != nil {
 		return err
 	}
@@ -186,8 +182,7 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 	stopChan := make(chan struct{}, 1)
 	// passing nil for readyChan because it's eventually being closed if it's not nil
 	// passing nil for out because we only care for error, not for output messages; we want to print our own messages
-	var fw *portforward.PortForwarder
-	fw, err = portforward.NewOnAddresses(dialer, []string{"localhost"}, portPairs, stopChan, nil, nil, errOut)
+	fw, err := portforward.NewOnAddresses(dialer, []string{"localhost"}, portPairs, stopChan, nil, nil, errOut)
 	if err != nil {
 		return err
 	}
@@ -242,17 +237,18 @@ func endpointsFromContainers(containers []v1alpha2.Component) []v1.Endpoint {
 // portPairsFromEndpoints returns a slice of strings of the format "<local-port>:<remote-port>"
 func portPairsFromEndpoints(endpoints []v1alpha2.Endpoint) []string {
 	var portPairs []string
-	var port = 40000
+	var port = 40001
 
 	for _, e := range endpoints {
-	loop:
-		port++
-		isPortFree := util.IsPortFree(port)
-		if !isPortFree {
-			goto loop
+		for {
+			isPortFree := util.IsPortFree(port)
+			if isPortFree {
+				pair := fmt.Sprintf("%d:%d", port, e.TargetPort)
+				portPairs = append(portPairs, pair)
+				break
+			}
+			port++
 		}
-		pair := fmt.Sprintf("%d:%d", port, e.TargetPort)
-		portPairs = append(portPairs, pair)
 	}
 	return portPairs
 }
