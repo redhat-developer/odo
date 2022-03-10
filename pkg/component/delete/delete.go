@@ -8,6 +8,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog"
 )
 
 type DeleteComponentClient struct {
@@ -57,6 +58,7 @@ func (do *DeleteComponentClient) DeleteResources(resources []unstructured.Unstru
 		}
 		err = do.kubeClient.DeleteDynamicResource(resource.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource)
 		if err != nil {
+			klog.V(3).Infof("failed to delete resource %q (%s.%s.%s): %v", resource.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, err)
 			failed = append(failed, resource)
 		}
 	}

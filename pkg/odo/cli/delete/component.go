@@ -71,7 +71,7 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 		return err
 	}
 	if len(list) == 0 {
-		log.Infof("No resource found for component %s\n", o.name)
+		log.Infof("No resource found for component %q in namespace %q\n", o.name, o.namespace)
 		return nil
 	}
 	log.Info("The following resources will be deleted: ")
