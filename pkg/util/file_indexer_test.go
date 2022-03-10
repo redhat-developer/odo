@@ -1031,6 +1031,28 @@ func Test_recursiveChecker(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Case 24: subfolder is ignored",
+			args: args{
+				directory:         tempDirectoryName,
+				srcBase:           tempDirectoryName,
+				ignoreRules:       []string{"target/"},
+				remoteDirectories: map[string]string{},
+				existingFileIndex: FileIndex{
+					Files: map[string]FileData{},
+				},
+			},
+			want: IndexerRet{
+				FilesChanged: []string{readmeFile.Name(), jsFile.Name(), viewsFolderPath, targetFolderPath, htmlFile.Name()},
+				NewFileMap: map[string]FileData{
+					readmeFileName:      normalFileMap[readmeFileName],
+					jsFileName:          normalFileMap[jsFileName],
+					viewsFolderName:     normalFileMap[viewsFolderName],
+					htmlRelFilePath:     normalFileMap[htmlRelFilePath],
+					targetFolderRelPath: normalFileMap[targetFolderRelPath],
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
