@@ -14,7 +14,7 @@ cleanup_namespaces
     set -e
     make install
     make test-integration-devfile
-    make test-integration-interactive
+    make test-interactive
     make test-e2e-devfile
     make test-cmd-project
 ) |& tee "/tmp/${LOGFILE}"
