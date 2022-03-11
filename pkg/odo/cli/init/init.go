@@ -178,7 +178,7 @@ Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata
 			CommandGroupKind: v1alpha2.DeployCommandGroupKind,
 		},
 	})
-	if commands != nil && len(commands) != 0 {
+	if len(commands) != 0 {
 		exitMessage += "\nTo deploy your component to a cluster use \"odo deploy\"."
 	}
 	log.Italic(exitMessage)
