@@ -179,4 +179,44 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 		})
 	})
+
+	It("should start downloading starter project only after all interactive questions have been asked", func() {
+
+		output, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+
+			helper.ExpectString(ctx, "Select language")
+			helper.SendLine(ctx, "dotnet")
+
+			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "\n")
+
+			helper.ExpectString(ctx, "Which starter project do you want to use")
+			helper.SendLine(ctx, "\n")
+
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "my-dotnet-app")
+
+			helper.ExpectString(ctx, "Your new component \"my-dotnet-app\" is ready in the current directory.")
+		})
+
+		Expect(err).To(BeNil())
+
+		lines, err := helper.ExtractLines(output)
+		Expect(err).To(BeNil())
+		Expect(len(lines)).To(BeNumerically(">", 2))
+		Expect(lines[len(lines)-1]).To(Equal("Your new component \"my-dotnet-app\" is ready in the current directory."))
+
+		componentNameQuestionIdx, ok := helper.FindFirstElementIndexMatchingRegExp(lines, ".*Enter component name:.*")
+		Expect(ok).To(BeTrue())
+		starterProjectDownloadActionIdx, found := helper.FindFirstElementIndexMatchingRegExp(lines,
+			".*Downloading starter project \"([^\\s]+)\" \\[.*")
+		Expect(found).To(BeTrue())
+		Expect(starterProjectDownloadActionIdx).To(SatisfyAll(
+			Not(BeZero()),
+			// #5495: component name question should be displayed before starter project is actually downloaded
+			BeNumerically(">", componentNameQuestionIdx),
+		), "Action 'Downloading starter project' should have been displayed after the last interactive question ('Enter component name')")
+
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+	})
 })

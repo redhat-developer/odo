@@ -145,6 +145,17 @@ func (o *InitOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
+
+	// Set the name in the devfile but do not write it yet to disk,
+	// because the starter project downloaded at the end might come bundled with a specific Devfile.
+	// In this case, the metadata name of this starter project would just be changed before rewriting it to disk.
+	err = o.clientset.InitClient.PersonalizeName(&devfileObj, o.flags, false)
+	if err != nil {
+		return fmt.Errorf("Failed to update the devfile's name: %w", err)
+	}
+	devfileMetadataName := devfileObj.GetMetadataName()
+
+	var devfileWrittenToDisk bool
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
 		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
@@ -153,20 +164,24 @@ func (o *InitOptions) Run() (err error) {
 		}
 		starterDownloaded = true
 
-		// in case the starter project contains a devfile, read it again
+		// in case the starter project contains a devfile, read it again but override the metadata name with the one set by the user
 		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
 			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 			if err != nil {
 				return err
 			}
+			// WARNING: `devfileObj.SetMetadataName` writes the Devfile to disk.
+			err = devfileObj.SetMetadataName(devfileMetadataName)
+			if err != nil {
+				return err
+			}
+			devfileWrittenToDisk = true
 		}
 	}
-
-	// Set the name in the devfile *AND* writes the devfile back to the disk in case
-	// it has been removed and not replaced by the starter project
-	err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
-	if err != nil {
-		return fmt.Errorf("Failed to update the devfile's name: %w", err)
+	if !devfileWrittenToDisk {
+		if err = devfileObj.WriteYamlDevfile(); err != nil {
+			return err
+		}
 	}
 
 	exitMessage := fmt.Sprintf(`
