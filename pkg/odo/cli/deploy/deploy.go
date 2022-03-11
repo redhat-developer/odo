@@ -95,6 +95,8 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 			return errors.Wrap(err, "failed to update project in env.yaml file")
 		}
 	}
+
+	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 	return
 }
 

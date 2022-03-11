@@ -23,6 +23,7 @@ var _ = Describe("odo dev command tests", func() {
 		commonVar = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
+		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 	})
 
 	// This is run after every Spec (It)
@@ -48,6 +49,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 		It("should show validation errors if the devfile is incorrect", func() {
 			session := helper.CmdRunner("odo", "dev")
@@ -163,6 +165,42 @@ var _ = Describe("odo dev command tests", func() {
 
 			}, 180, 10).Should(Equal(true))
 
+		})
+
+		When("odo dev is executed", func() {
+
+			BeforeEach(func() {
+				session := helper.CmdRunner("odo", "dev")
+				helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+				defer session.Kill()
+				// An ENV file should have been created indicating current namespace
+				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+			})
+
+			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
+				var otherNS string
+				BeforeEach(func() {
+					helper.Cmd("odo", "delete", "component", "--name", cmpName, "-f").ShouldPass()
+					output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
+					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
+
+					otherNS = commonVar.CliRunner.CreateRandNamespaceProject()
+					commonVar.CliRunner.SetProject(otherNS)
+				})
+
+				It("should run odo dev on initial namespace", func() {
+					session := helper.CmdRunner("odo", "dev")
+					helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+					defer session.Kill()
+
+					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
+					Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
+
+					output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
+					Expect(string(output)).To(ContainSubstring(cmpName))
+				})
+			})
 		})
 
 	})
