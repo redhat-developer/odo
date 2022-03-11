@@ -68,6 +68,38 @@ var _ = Describe("odo devfile init command tests", func() {
 			Expect(err).To(ContainSubstring("--starter parameter cannot be used when the directory is not empty"))
 		})
 	})
+	Context("checking odo init final output message", func() {
+		var newContext, devfilePath string
+		BeforeEach(func() {
+			newContext = helper.CreateNewContext()
+			devfilePath = filepath.Join(newContext, "devfile.yaml")
+		})
+		AfterEach(func() {
+			helper.DeleteDir(newContext)
+		})
+		When("the devfile used by `odo init` does not contain a deploy command", func() {
+			var out string
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), devfilePath)
+				out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
+			})
+			It("should only show information about `odo dev`, and not `odo deploy`", func() {
+				Expect(out).To(ContainSubstring("odo dev"))
+				Expect(out).ToNot(ContainSubstring("odo deploy"))
+			})
+		})
+		When("the devfile used by `odo init` contains a deploy command", func() {
+			var out string
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), devfilePath)
+				out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
+			})
+			It("should show information about both `odo dev`, and `odo deploy`", func() {
+				Expect(out).To(ContainSubstring("odo dev"))
+				Expect(out).To(ContainSubstring("odo deploy"))
+			})
+		})
+	})
 
 	When("devfile contains parent URI", func() {
 		var originalKeyList []string
