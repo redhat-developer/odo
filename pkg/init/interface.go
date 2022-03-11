@@ -10,7 +10,6 @@ package init
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -43,8 +42,8 @@ type Client interface {
 	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error
 
 	// PersonalizeName updates a devfile name, depending on the flags.
-	// The method will modify the devfile content and save the devfile on disk
-	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
+	// It optionally saves the devfile to disk depending on `writeToDisk`.
+	PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error
 
 	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
 	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error

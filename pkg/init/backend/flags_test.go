@@ -429,7 +429,7 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 			}
 			fs := dffilesystem.NewFakeFs()
 			devfile := tt.args.devfile(fs)
-			err := o.PersonalizeName(devfile, tt.args.flags)
+			err := o.PersonalizeName(&devfile, tt.args.flags, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -101,12 +101,18 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 	return &starterProjects[starter], nil
 }
 
-func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
+func (o *InteractiveBackend) PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
 	name, err := o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.Data.GetMetadata().Name))
 	if err != nil {
 		return err
 	}
-	return devfile.SetMetadataName(name)
+	metadata := devfile.Data.GetMetadata()
+	metadata.Name = name
+	devfile.Data.SetMetadata(metadata)
+	if writeToDisk {
+		return devfile.WriteYamlDevfile()
+	}
+	return nil
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {

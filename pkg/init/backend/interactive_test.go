@@ -250,7 +250,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 			}
 			fs := filesystem.NewFakeFs()
 			devfile := tt.args.devfile(fs)
-			err := o.PersonalizeName(devfile, tt.args.flags)
+			err := o.PersonalizeName(&devfile, tt.args.flags, false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return

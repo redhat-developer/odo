@@ -21,8 +21,9 @@ type InitBackend interface {
 	// depending on the flags. If not starter project is selected, a nil starter is returned
 	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error)
 
-	// PersonalizeName updates a devfile name, depending on the flags
-	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
+	// PersonalizeName updates a devfile name, depending on the flags.
+	// It optionally writes the resulting Devfile to disk depending on `writeToDisk`.
+	PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error
 
 	// PersonalizeDevfileConfig updates the devfile config for ports and environment variables
 	PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error

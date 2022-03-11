@@ -94,8 +94,14 @@ func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map
 	return nil, fmt.Errorf("starter project %q not found in devfile", starter)
 }
 
-func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
-	return devfile.SetMetadataName(flags[FLAG_NAME])
+func (o *FlagsBackend) PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
+	metadata := devfile.Data.GetMetadata()
+	metadata.Name = flags[FLAG_NAME]
+	devfile.Data.SetMetadata(metadata)
+	if writeToDisk {
+		return devfile.WriteYamlDevfile()
+	}
+	return nil
 }
 
 func (o FlagsBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
