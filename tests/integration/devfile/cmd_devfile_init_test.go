@@ -54,14 +54,33 @@ var _ = Describe("odo devfile init command tests", func() {
 		})
 	})
 
-	When("running odo init with valid flags", func() {
-		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass()
-		})
+	Context("running odo init with valid flags", func() {
+		When("using --devfile flag", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass().Out()
+			})
 
-		It("should download a devfile.yaml file", func() {
-			files := helper.ListFilesInDir(commonVar.Context)
-			Expect(files).To(Equal([]string{"devfile.yaml"}))
+			It("should download a devfile.yaml file", func() {
+				files := helper.ListFilesInDir(commonVar.Context)
+				Expect(files).To(Equal([]string{"devfile.yaml"}))
+			})
+		})
+		When("using --devfile-path flag", func() {
+			var newContext string
+			BeforeEach(func() {
+				newContext = helper.CreateNewContext()
+				newDevfilePath := filepath.Join(newContext, "devfile.yaml")
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), newDevfilePath)
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", newDevfilePath).ShouldPass()
+			})
+			AfterEach(func() {
+				helper.DeleteDir(newContext)
+			})
+			It("should copy the devfile.yaml file", func() {
+				files := helper.ListFilesInDir(commonVar.Context)
+				Expect(files).To(Equal([]string{"devfile.yaml"}))
+			})
+
 		})
 	})
 
