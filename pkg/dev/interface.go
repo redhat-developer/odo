@@ -3,8 +3,6 @@ package dev
 import (
 	"io"
 
-	"github.com/redhat-developer/odo/pkg/envinfo"
-
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -14,8 +12,9 @@ import (
 )
 
 type Client interface {
-	Start(parser.DevfileObj, kubernetes.KubernetesContext, []string, string, io.Writer, io.Writer, Handler) error
-	SetupPortForwarding(parser.DevfileObj, *envinfo.EnvSpecificInfo, io.Writer, io.Writer) error
+	Start(parser.DevfileObj, kubernetes.KubernetesContext, string) error
+	SetupPortForwarding(parser.DevfileObj, string, io.Writer, io.Writer) (map[string]string, error)
+	Watch(parser.DevfileObj, string, []string, io.Writer, Handler) error
 	Cleanup() error
 }
 

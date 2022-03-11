@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -41,6 +42,8 @@ type DevOptions struct {
 	// Variables
 	ignorePaths []string
 	out         io.Writer
+	errOut      io.Writer
+	envFileInfo *envinfo.EnvSpecificInfo
 
 	// working directory
 	contextDir string
@@ -54,7 +57,8 @@ func NewDevHandler() *DevHandler {
 
 func NewDevOptions() *DevOptions {
 	return &DevOptions{
-		out: log.GetStdout(),
+		out:    log.GetStdout(),
+		errOut: log.GetStderr(),
 	}
 }
 
@@ -102,12 +106,12 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
-	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
+	o.envFileInfo, err = envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
 
-	if !envFileInfo.Exists() {
+	if !o.envFileInfo.Exists() {
 		// if env.yaml doesn't exist, get component name from the devfile.yaml
 		var cmpName string
 		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
@@ -116,13 +120,13 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		}
 		// create env.yaml file with component, project/namespace and application info
 		// TODO - store only namespace into env.yaml, we don't want to track component or application name via env.yaml
-		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
+		err = o.envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
 		if err != nil {
 			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
-	} else if envFileInfo.GetComponentSettings().Project != o.GetProject() {
+	} else if o.envFileInfo.GetComponentSettings().Project != o.GetProject() {
 		// set namespace if the evn.yaml exists; that's the only piece we care about in env.yaml
-		err = envFileInfo.SetConfiguration("project", o.GetProject())
+		err = o.envFileInfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
 			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
@@ -166,8 +170,20 @@ func (o *DevOptions) Run() error {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, path)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n ")
+
+	portPairs, err := o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.out, o.errOut)
+	if err != nil {
+		return err
+	}
+	printPortForwardingInfo(portPairs, o.out)
+
 	d := DevHandler{}
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, log.GetStdout(), log.GetStderr(), &d)
+	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
 	return err
 }
 
@@ -201,7 +217,18 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+}
 
+func printPortForwardingInfo(portPairs map[string]string, out io.Writer) {
+	portFowardURLs := ""
+	for pair, container := range portPairs {
+		split := strings.Split(pair, ":")
+		local := split[0]
+		remote := split[1]
+
+		portFowardURLs += fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local)
+	}
+	fmt.Fprintf(out, "\n%s", portFowardURLs)
 }
 
 // NewCmdDev implements the odo dev command
