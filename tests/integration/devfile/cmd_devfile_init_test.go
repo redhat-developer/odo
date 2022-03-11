@@ -48,9 +48,13 @@ var _ = Describe("odo devfile init command tests", func() {
 			Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
 		})
 
-		By("running odo init with wrong path given to --devfile-path", func() {
+		By("running odo init with wrong local file path given to --devfile-path", func() {
 			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "/some/path/devfile.yaml").ShouldFail().Err()
 			Expect(err).To(ContainSubstring("no such file or directory"))
+		})
+		By("running odo init with wrong URL path given to --devfile-path", func() {
+			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "https://github.com/path/to/devfile.yaml").ShouldFail().Err()
+			Expect(err).To(ContainSubstring("unable to download devfile: failed to retrieve"))
 		})
 	})
 
@@ -65,7 +69,7 @@ var _ = Describe("odo devfile init command tests", func() {
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
 			})
 		})
-		When("using --devfile-path flag", func() {
+		When("using --devfile-path flag with a local devfile", func() {
 			var newContext string
 			BeforeEach(func() {
 				newContext = helper.CreateNewContext()
@@ -80,8 +84,17 @@ var _ = Describe("odo devfile init command tests", func() {
 				files := helper.ListFilesInDir(commonVar.Context)
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
 			})
-
 		})
+		When("using --devfile-path flag with a URL", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/nodejs/devfile.yaml").ShouldPass()
+			})
+			It("should copy the devfile.yaml file", func() {
+				files := helper.ListFilesInDir(commonVar.Context)
+				Expect(files).To(Equal([]string{"devfile.yaml"}))
+			})
+		})
+
 	})
 
 	When("running odo init from a directory with sources", func() {
