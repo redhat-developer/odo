@@ -56,6 +56,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 
 	pushParameters := common.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
+		DebugPort:       envSpecificInfo.GetDebugPort(),
 		Path:            path,
 	}
 
