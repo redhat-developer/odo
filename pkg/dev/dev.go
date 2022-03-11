@@ -157,8 +157,13 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1.ContainerComponentType},
 	})
 
-	endpoints := endpointsFromContainers(containers)
-	portPairs := portPairsFromEndpoints(endpoints)
+	ceMap := containerEndpointsFromContainers(containers)
+	pPairs := portPairsFromContainerEndpoints(ceMap)
+
+	var portPairs []string
+	for i := range pPairs {
+		portPairs = append(portPairs, i)
+	}
 
 	if len(portPairs) == 0 {
 		// no endpoints with exposure set to public or internal; no ports to be forwarded
@@ -196,59 +201,62 @@ func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, envSpecifi
 		}
 	}()
 
-	printPortForwardingInfo(portPairs, out)
+	printPortForwardingInfo(pPairs, out)
 	return nil
 }
 
-func printPortForwardingInfo(portPairs []string, out io.Writer) {
-	portFowardURLs := "You can access "
-	for i := range portPairs {
-		split := strings.Split(portPairs[i], ":")
+func printPortForwardingInfo(portPairs map[string]string, out io.Writer) {
+	portFowardURLs := ""
+	for pair, container := range portPairs {
+		split := strings.Split(pair, ":")
 		local := split[0]
 		remote := split[1]
 
-		if i == len(portPairs)-1 && i != 0 {
-			portFowardURLs += fmt.Sprintf("and port %s at http://localhost:%s", remote, local)
-			break
-		} else if i < len(portPairs)-2 {
-			portFowardURLs += fmt.Sprintf("port %s at http://localhost:%s, ", remote, local)
-		} else {
-			portFowardURLs += fmt.Sprintf("port %s at http://localhost:%s ", remote, local)
-		}
+		portFowardURLs += fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local)
 	}
-	fmt.Fprintf(out, "\n%s\n", portFowardURLs)
+	fmt.Fprintf(out, "\n%s", portFowardURLs)
 }
 
-// endpointsFromContainers returns a slice of endpoints with exposure value set to public or internal
-func endpointsFromContainers(containers []v1alpha2.Component) []v1.Endpoint {
-	var endpoints []v1.Endpoint
+// containerEndpointsFromContainers returns a map of with container name as key and its endpoints as a slice of strings
+// it considers only ports that don't have exposure status "None"
+func containerEndpointsFromContainers(containers []v1alpha2.Component) map[string][]int {
+	ceMap := make(map[string][]int, 0)
 
-	for i := range containers {
-		for _, ep := range containers[i].Container.Endpoints {
+	for _, c := range containers {
+		for _, ep := range c.Container.Endpoints {
 			if ep.Exposure != v1.NoneEndpointExposure {
-				endpoints = append(endpoints, ep)
+				port := ep.TargetPort
+				if _, ok := ceMap[c.Name]; !ok {
+					ceMap[c.Name] = []int{port}
+					continue
+				}
+				ceMap[c.Name] = append(ceMap[c.Name], port)
 			}
 		}
 	}
 
-	return endpoints
+	return ceMap
 }
 
-// portPairsFromEndpoints returns a slice of strings of the format "<local-port>:<remote-port>"
-func portPairsFromEndpoints(endpoints []v1alpha2.Endpoint) []string {
-	var portPairs []string
-	var port = 40001
+// portPairsFromContainerEndpoints returns a map of the format "<local-port>:<remote-port>":"<container-name>"
+func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string]string {
+	portPairs := make(map[string]string, 0)
+	port := 40000
 
-	for _, e := range endpoints {
-		for {
-			isPortFree := util.IsPortFree(port)
-			if isPortFree {
-				pair := fmt.Sprintf("%d:%d", port, e.TargetPort)
-				portPairs = append(portPairs, pair)
-				break
-			}
+	for name, ports := range ceMap {
+		for _, p := range ports {
 			port++
+			for {
+				isPortFree := util.IsPortFree(port)
+				if isPortFree {
+					pair := fmt.Sprintf("%d:%d", port, p)
+					portPairs[pair] = name
+					break
+				}
+				port++
+			}
 		}
 	}
+
 	return portPairs
 }
