@@ -248,6 +248,35 @@ var _ = FDescribe("odo dev command tests", func() {
 
 				body2, _ := io.ReadAll(resp2.Body)
 				helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
+
+				helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
+				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+
+				Eventually(func() bool {
+					resp3, err := http.Get("http://localhost:40001")
+					if err != nil {
+						return false
+					}
+					defer resp3.Body.Close()
+
+					resp4, err := http.Get("http://localhost:40002")
+					if err != nil {
+						return false
+					}
+					defer resp4.Body.Close()
+
+					body3, _ := io.ReadAll(resp3.Body)
+					if string(body3) != "H3110 from Node.js Starter Application!" {
+						return false
+					}
+
+					body4, _ := io.ReadAll(resp4.Body)
+					if string(body4) != "H3110 from Node.js Starter Application!" {
+						return false
+					}
+					return true
+				}, 180, 10).Should(Equal(true))
+
 			})
 		})
 	})
