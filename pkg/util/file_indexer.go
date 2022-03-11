@@ -367,9 +367,6 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				}
 
 				ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
-				if err != nil {
-					return IndexerRet{}, err
-				}
 
 				relx, err := filepath.Rel(directory, fileAbsolutePath)
 				if err != nil {
@@ -454,9 +451,6 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileRemoteChanged := make(map[string]bool)
 
 	ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
-	if err != nil {
-		return IndexerRet{}, err
-	}
 
 	for _, matchedPath := range matchedPathsDir {
 		stat, err := os.Stat(matchedPath)
