@@ -884,7 +884,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass()
 		})
 	})
-	
+
 	Context("using OpenShift cluster", func() {
 		BeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {
