@@ -42,7 +42,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	//WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
@@ -299,7 +299,8 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
 				fmt.Fprintf(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal\n")
 			}
-			fmt.Fprintf(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit and clean up resources from cluster.\n", parameters.Path)
+			// TODO: append "and clean up resources from cluster." to the message, once cleanup is implemented
+			fmt.Fprintf(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit.\n", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.
