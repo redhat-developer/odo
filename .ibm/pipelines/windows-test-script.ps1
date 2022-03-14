@@ -55,9 +55,14 @@ function Run-Test {
 
     [Environment]::SetEnvironmentVariable("SKIP_USER_LOGIN_TESTS","true")
 
+    Shout "Login IBMcloud"
+    ibmcloud login --apikey ${API_KEY}
+    ibmcloud target -r eu-de
+    ibmcloud oc cluster config -c ${CLUSTER_ID}
 
     Shout "Login Openshift"
     oc login -u apikey -p ${API_KEY} ${IBM_OPENSHIFT_ENDPOINT}
+    Check-ExitCode $LASTEXITCODE
 
     Shout "Create Binary"
     make install 
@@ -83,6 +88,7 @@ $API_KEY=$args[2]
 $IBM_OPENSHIFT_ENDPOINT=$args[3]
 $LOGFILE=$args[4]
 $REPO=$args[5]
+$CLUSTER_ID=$args[6]
 Shout "Args Recived"
 
 # Pre test cleanup
