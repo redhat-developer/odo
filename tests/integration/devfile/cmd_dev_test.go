@@ -186,7 +186,6 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
 
 					otherNS = commonVar.CliRunner.CreateRandNamespaceProject()
-					commonVar.CliRunner.SetProject(otherNS)
 				})
 
 				It("should run odo dev on initial namespace", func() {

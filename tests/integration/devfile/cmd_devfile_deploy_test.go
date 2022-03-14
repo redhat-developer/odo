@@ -54,6 +54,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			var stdout string
 			BeforeEach(func() {
 				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+				// An ENV file should have been created indicating current namespace
+				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 			})
 			It("should succeed", func() {
 				By("building and pushing image to registry", func() {
@@ -74,7 +77,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
 
 					otherNS = commonVar.CliRunner.CreateRandNamespaceProject()
-					commonVar.CliRunner.SetProject(otherNS)
 				})
 
 				It("should run odo deploy on initial namespace", func() {
