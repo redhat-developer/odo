@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/spf13/cobra"
 
@@ -167,11 +169,21 @@ func (o *InitOptions) Run() (err error) {
 		return fmt.Errorf("Failed to update the devfile's name: %w", err)
 	}
 
-	log.Italicf(`
+	exitMessage := fmt.Sprintf(`
 Your new component %q is ready in the current directory.
 To start editing your component, use "odo dev" and open this folder in your favorite IDE.
-Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".`, devfileObj.Data.GetMetadata().Name)
+Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
+
+	// show information about `odo deploy` command only if the devfile has kind: deploy command defined.
+	commands, _ := devfileObj.Data.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandGroupKind: v1alpha2.DeployCommandGroupKind,
+		},
+	})
+	if len(commands) != 0 {
+		exitMessage += "\nTo deploy your component to a cluster use \"odo deploy\"."
+	}
+	log.Italic(exitMessage)
 
 	return nil
 }
