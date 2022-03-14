@@ -188,6 +188,10 @@ var _ = Describe("odo dev command tests", func() {
 					otherNS = commonVar.CliRunner.CreateRandNamespaceProject()
 				})
 
+				AfterEach(func() {
+					commonVar.CliRunner.DeleteNamespaceProject(otherNS)
+				})
+
 				It("should run odo dev on initial namespace", func() {
 					session := helper.CmdRunner("odo", "dev")
 					helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)

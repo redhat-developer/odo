@@ -79,6 +79,10 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					otherNS = commonVar.CliRunner.CreateRandNamespaceProject()
 				})
 
+				AfterEach(func() {
+					commonVar.CliRunner.DeleteNamespaceProject(otherNS)
+				})
+
 				It("should run odo deploy on initial namespace", func() {
 					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 
