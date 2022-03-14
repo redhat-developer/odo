@@ -19,6 +19,12 @@ type Client interface {
 	// Validate checks for each backend if flags are valid
 	Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error
 
+	// InitDevfile allows to initialize a Devfile in cases where this operation is needed as a prerequisite,
+	// like if the directory contains no Devfile at all.
+	// `preInitHandlerFunc` allows to perform operations prior to triggering the actual Devfile
+	// initialization and personalization process.
+	InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool)) error
+
 	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
 	// or based on the flags if the directory is empty, or
 	// interactively if flags is empty

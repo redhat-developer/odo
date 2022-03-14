@@ -66,6 +66,20 @@ func (mr *MockClientMockRecorder) DownloadStarterProject(project, dest interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadStarterProject", reflect.TypeOf((*MockClient)(nil).DownloadStarterProject), project, dest)
 }
 
+// InitDevfile mocks base method.
+func (m *MockClient) InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(bool)) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InitDevfile", flags, contextDir, preInitHandlerFunc)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InitDevfile indicates an expected call of InitDevfile.
+func (mr *MockClientMockRecorder) InitDevfile(flags, contextDir, preInitHandlerFunc interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitDevfile", reflect.TypeOf((*MockClient)(nil).InitDevfile), flags, contextDir, preInitHandlerFunc)
+}
+
 // PersonalizeDevfileConfig mocks base method.
 func (m *MockClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	m.ctrl.T.Helper()

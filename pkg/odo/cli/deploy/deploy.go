@@ -15,8 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -64,7 +62,12 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
 	}
 
-	err = o.initDevfile()
+	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir, func(interactiveMode bool) {
+		if interactiveMode {
+			fmt.Println("The current directory already contains source code. " +
+				"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
+		}
+	})
 	if err != nil {
 		return err
 	}
@@ -102,27 +105,6 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 
 // Validate validates the DeployOptions based on completed values
 func (o *DeployOptions) Validate() error {
-	return nil
-}
-
-func (o *DeployOptions) initDevfile() error {
-	containsDevfile, err := location.DirectoryContainsDevfile(filesystem.DefaultFs{}, o.contextDir)
-	if err != nil {
-		return err
-	}
-	if containsDevfile {
-		return nil
-	}
-	devfileObj, _, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(map[string]string{}, o.contextDir)
-	if err != nil {
-		return err
-	}
-
-	// Set the name in the devfile and writes the devfile back to the disk
-	err = o.clientset.InitClient.PersonalizeName(devfileObj, map[string]string{})
-	if err != nil {
-		return fmt.Errorf("failed to update the devfile's name: %w", err)
-	}
 	return nil
 }
 
