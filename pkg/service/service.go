@@ -198,7 +198,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 }
 
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, context string) error {
+func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context string) error {
 	// check csv support before proceeding
 	csvSupported, err := client.IsCSVSupported()
 	if err != nil {
@@ -226,7 +226,7 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 		if er != nil {
 			return er
 		}
-		_, er = PushKubernetesResource(client, u, labels)
+		_, er = PushKubernetesResource(client, u, labels, annotations)
 		if er != nil {
 			return er
 		}
@@ -253,7 +253,7 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 
 // PushKubernetesResource pushes a Kubernetes resource (u) to the cluster using client
 // adding labels to the resource
-func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string) (bool, error) {
+func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string, annotations map[string]string) (bool, error) {
 	if isLinkResource(u.GetKind()) {
 		// it's a service binding related resource
 		return false, nil
@@ -264,9 +264,11 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 		return false, err
 	}
 
-	// Add all passed in labels to the deployment regardless if it's an operator or not
-	existingLabels := u.GetLabels()
-	u.SetLabels(mergeLabels(existingLabels, labels))
+	// Add all passed in labels to the k8s resource regardless if it's an operator or not
+	u.SetLabels(mergeMaps(u.GetLabels(), labels))
+
+	// Pass in all annotations to the k8s resource
+	u.SetAnnotations(mergeMaps(u.GetAnnotations(), annotations))
 
 	err = createOperatorService(client, u)
 	return isOp, err
@@ -312,16 +314,16 @@ func GetK8sComponentAsUnstructured(component *devfile.KubernetesComponent, conte
 	return u, nil
 }
 
-func mergeLabels(labels ...map[string]string) map[string]string {
-	mergedLabels := map[string]string{}
+func mergeMaps(maps ...map[string]string) map[string]string {
+	mergedMaps := map[string]string{}
 
-	for _, l := range labels {
+	for _, l := range maps {
 		for k, v := range l {
-			mergedLabels[k] = v
+			mergedMaps[k] = v
 		}
 	}
 
-	return mergedLabels
+	return mergedMaps
 }
 
 // DeployedInfo holds information about the services present on the cluster
@@ -343,7 +345,7 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 		name := svc.GetName()
 		kind := svc.GetKind()
 		deployedLabels := svc.GetLabels()
-		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentLabel] == labels[componentlabels.ComponentLabel] {
+		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentKubernetesInstanceLabel] == labels[componentlabels.ComponentKubernetesInstanceLabel] {
 			deployed[kind+"/"+name] = DeployedInfo{
 				Kind:           kind,
 				Name:           name,

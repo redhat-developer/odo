@@ -49,7 +49,7 @@ type SecretMount struct {
 // ComponentStatus is Status of components
 type ComponentStatus struct {
 	Context        string        `json:"context,omitempty"`
-	State          State         `json:"state"`
+	State          string        `json:"state"`
 	LinkedServices []SecretMount `json:"linkedServices,omitempty"`
 }
 
@@ -61,16 +61,13 @@ type CombinedComponentList struct {
 	OtherComponents   []Component `json:"otherComponents"`
 }
 
-// State represents the component state
-type State string
-
 const (
 	// StateTypePushed means that Storage is present both locally and on cluster
-	StateTypePushed State = "Pushed"
+	StateTypePushed = "Pushed"
 	// StateTypeNotPushed means that Storage is only in local config, but not on the cluster
-	StateTypeNotPushed State = "Not Pushed"
+	StateTypeNotPushed = "Not Pushed"
 	// StateTypeUnknown means that odo cannot tell its state
-	StateTypeUnknown State = "Unknown"
+	StateTypeUnknown = "Unknown"
 )
 
 func newComponentWithType(componentName, componentType string) Component {

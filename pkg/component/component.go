@@ -11,15 +11,16 @@ import (
 
 	"github.com/pkg/errors"
 
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -42,7 +43,6 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 const NotAvailable = "Not available"
-
 const apiVersion = "odo.dev/v1alpha1"
 
 // GetComponentDir returns source repo name
@@ -141,7 +141,7 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentKubernetesInstanceLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -231,6 +231,7 @@ func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
 
 func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
 	if info.Exists() {
+
 		component := newComponentWithType(info.GetName(), componentType)
 
 		component.Namespace = info.GetNamespace()
@@ -328,8 +329,9 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 	return false, nil
 }
 
-func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) State {
-	// first check if a deployment exists
+// GetComponentState ...
+func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) string {
+	// Check to see if the deployment has been pushed or not
 	c, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
 		return StateTypeUnknown
@@ -413,13 +415,14 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	// Annotations
 	component.Annotations = fromCluster.GetAnnotations()
 
+	// Mark the component status as pushed
+	component.Status.State = componentlabels.ComponentPushedName
+
 	// Labels
 	component.Labels = fromCluster.GetLabels()
-
 	component.Namespace = client.GetCurrentNamespace()
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
-	component.Status.State = StateTypePushed
 
 	return component, nil
 }
@@ -476,7 +479,7 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 
 		serviceCompMap := make(map[string]string)
 		for _, gotService := range services {
-			serviceCompMap[gotService.Labels[componentlabels.ComponentLabel]] = gotService.Name
+			serviceCompMap[gotService.Labels[componentlabels.ComponentKubernetesInstanceLabel]] = gotService.Name
 		}
 
 		for _, secret := range secrets {

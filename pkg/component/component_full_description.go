@@ -74,7 +74,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 // NewComponentFullDescriptionFromClientAndLocalConfigProvider gets the complete description of the component from cluster
 func NewComponentFullDescriptionFromClientAndLocalConfigProvider(client kclient.ClientInterface, envInfo *envinfo.EnvSpecificInfo, componentName string, applicationName string, projectName string, context string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
-	var state State
+	var state string
 	if client == nil {
 		state = StateTypeUnknown
 	} else {

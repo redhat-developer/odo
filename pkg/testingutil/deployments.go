@@ -14,17 +14,21 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 	fakeUID := types.UID("12345")
 
 	deployment := appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Component",
+			APIVersion: "odo.dev/v1alpha1",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			UID:  fakeUID,
 			Labels: map[string]string{
-				applabels.App:                  "app",
-				applabels.ApplicationLabel:     "app",
-				componentlabels.ComponentLabel: podName,
-				applabels.ManagedBy:            "odo",
+				applabels.App:              "app",
+				applabels.ApplicationLabel: "app",
+				componentlabels.ComponentKubernetesInstanceLabel: podName,
+				applabels.ManagedBy: "odo",
 			},
 			Annotations: map[string]string{
-				componentlabels.ComponentTypeAnnotation: podName,
+				componentlabels.ComponentProjectTypeAnnotation: podName,
 			},
 		},
 	}

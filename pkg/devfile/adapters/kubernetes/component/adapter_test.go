@@ -46,11 +46,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testComponentName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:     testAppName,
-				componentLabels.ComponentLabel: testComponentName,
+				applabels.ApplicationLabel:                       testAppName,
+				componentLabels.ComponentKubernetesInstanceLabel: testComponentName,
 			},
 			Annotations: map[string]string{
-				componentLabels.ComponentTypeAnnotation: "",
+				componentLabels.ComponentProjectTypeAnnotation: "",
 			},
 		},
 	}
@@ -95,7 +95,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
-				deployment.Annotations[componentLabels.ComponentTypeAnnotation] = string(tt.componentType)
+				deployment.Annotations[componentLabels.ComponentProjectTypeAnnotation] = string(tt.componentType)
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
@@ -683,7 +683,7 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 				},
 				deployment: tt.fields.deployment,
 			}
-			got, err := a.generateDeploymentObjectMeta(tt.args.labels)
+			got, err := a.generateDeploymentObjectMeta(tt.args.labels, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
 				return
