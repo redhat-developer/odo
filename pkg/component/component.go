@@ -11,15 +11,15 @@ import (
 
 	"github.com/pkg/errors"
 
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -35,6 +35,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -42,7 +43,6 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 const NotAvailable = "Not available"
-
 const apiVersion = "odo.dev/v1alpha1"
 
 // GetComponentDir returns source repo name
@@ -125,6 +125,143 @@ func ApplyConfig(client kclient.ClientInterface, envSpecificInfo envinfo.EnvSpec
 	})
 }
 
+// Contains checks to see if the component exists in an array or not
+// by checking the name, type and namespace.
+// We ignore all other aspects (labels, annotations, etc.) as those are
+// propagated by the Kubernetes cluster when retrieving the component and we're only
+// interested if there is a duplicate entry.
+func Contains(component Component, components []Component) bool {
+	for _, comp := range components {
+		if (component.Name == comp.Name) && (component.Spec.Type == comp.Spec.Type) && (component.Namespace == comp.Namespace) {
+			return true
+		}
+	}
+	return false
+}
+
+// RemoveDuplicateComponentsForListingOutput is for listing purposes, we remove all duplicate components which have the same
+// kubernetes instance LABEL as each other.
+// We are using this for LISTING purposes only (the actual Component struct doesn't have much information).
+// If we encounter 2 components with the same name with Dev and Deploy modes, combines them and display "Dev, Deploy"
+func RemoveDuplicateComponentsForListingOutput(components []Component) []Component {
+
+	var outputComp []Component
+
+	// Loop through all the components
+	for _, component := range components {
+		found := false
+		for _, check := range outputComp {
+
+			// Make the variable names a bit shorter for readability
+			componentLabel, checkLabel := component.ObjectMeta.Labels, check.ObjectMeta.Labels
+
+			// If we find ones that match the same instance label
+			if componentLabel[componentlabels.ComponentKubernetesInstanceLabel] == checkLabel[componentlabels.ComponentKubernetesInstanceLabel] {
+
+				// Mark as found
+				found = true
+
+				// Sometimes Kubernetes operators deploy an ingress / service / etc via an operator but do NOT include a
+				// "app.kubernetes.io/managed-by" label. So when we "deduplicate" the component list, this may appear blank.
+				// If it's blank, and there is an instance of the same name with a managed-by label, we propagate that to the output
+				// components
+				if componentLabel[componentlabels.KubernetesManagedByLabel] != "" && checkLabel[componentlabels.KubernetesManagedByLabel] == "" {
+					checkLabel[componentlabels.KubernetesManagedByLabel] = componentLabel[componentlabels.KubernetesManagedByLabel]
+				}
+
+				// Check if there are TWO components, one in dev, one in deploy. If so, we will keep the *first* component, and
+				// update the mode label to indicate it's running in both dev and deploy.
+				// We check this *explicitely* in order to keep the correct order when displaying (ex. Dev, Deploy)
+				// instead of some components showing Deploy, Dev depending on the order that the components are in the array.
+				// We also use this long if statement in case there is something odd that went on (user modified the label outside of odo)
+				componentMode := componentLabel[componentlabels.ComponentModeLabel]
+				checkMode := checkLabel[componentlabels.ComponentModeLabel]
+				if (componentMode != checkMode) &&
+					(componentMode == componentlabels.ComponentDevName || componentMode == componentlabels.ComponentDeployName) &&
+					(checkMode == componentlabels.ComponentDevName || checkMode == componentlabels.ComponentDeployName) {
+					checkLabel[componentlabels.ComponentModeLabel] = fmt.Sprintf("%s, %s", componentlabels.ComponentDevName, componentlabels.ComponentDeployName)
+				}
+
+				// Set the labels in the end
+				check.SetLabels(checkLabel)
+			}
+		}
+
+		// If not found, append to the component output
+		if !found {
+			outputComp = append(outputComp, component)
+		}
+
+	}
+
+	return outputComp
+}
+
+// ListAllClusterComponents returns a list of all "components" on a cluster
+// that are both odo and non-odo components.
+//
+// We then return a list of "components" intended for listing / output purposes specifically for commands such as:
+// `odo list`
+func ListAllClusterComponents(client kclient.ClientInterface, namespace string) ([]Component, error) {
+
+	// Get all the dynamic resources available
+	resourceList, err := client.GetAllResourcesFromSelector("", namespace)
+	if err != nil {
+		return []Component{}, errors.Wrapf(err, "unable to list all dynamic resources required to find components")
+	}
+
+	var components []Component
+
+	for _, resource := range resourceList {
+
+		// Retrieve the labels and annotations from the unstructured resource output
+		labels := resource.GetLabels()
+		annotations := resource.GetAnnotations()
+
+		// Figure out the correct name to use
+		if labels[componentlabels.ComponentKubernetesInstanceLabel] == "" {
+			continue
+		}
+		name := labels[componentlabels.ComponentKubernetesInstanceLabel]
+
+		// Get the component type (if there is any..)
+		var componentType string
+		switch {
+		case annotations[componentlabels.ComponentProjectTypeAnnotation] != "":
+			componentType = annotations[componentlabels.ComponentProjectTypeAnnotation]
+		default:
+			componentType = componentlabels.ComponentUnknownLabel
+		}
+
+		// Generate the appropriate "component" with all necessary information
+		component := Component{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       resource.GetKind(),
+				APIVersion: resource.GetAPIVersion(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        name,
+				Namespace:   namespace,
+				Labels:      labels,
+				Annotations: annotations,
+			},
+			Spec: ComponentSpec{
+				Type: componentType,
+			},
+			Status: ComponentStatus{
+				State: componentlabels.ComponentPushedName,
+			},
+		}
+
+		if !reflect.ValueOf(component).IsZero() {
+			components = append(components, component)
+		}
+
+	}
+
+	return components, nil
+}
+
 // ListDevfileComponents returns the devfile component matching a selector.
 // The selector could be about selecting components part of an application.
 // There are helpers in "applabels" package for this.
@@ -141,7 +278,7 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
+		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentKubernetesInstanceLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -165,8 +302,34 @@ func List(client kclient.ClientInterface, applicationSelector string) (Component
 	return newComponentList(devfileList.Items), nil
 }
 
-// GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
-func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
+// GetComponentFromDevfile converts the passed in Devfile object to a component for table / listing output purposes
+// at the moment we only populate:
+// objectmeta.name
+// spectype
+// To make it compatible with table output / component listing.
+func GetComponentFromDevfile(devObj parser.DevfileObj, namespace string) (Component, error) {
+
+	// Populates the component struct with information from devfile.yaml
+	component := Component{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      devObj.Data.GetMetadata().Name,
+			Namespace: namespace,
+		},
+		Spec: ComponentSpec{
+			Type: GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()),
+		},
+		Status: ComponentStatus{
+			LinkedServices: []SecretMount{},
+			// We always assume not pushed unless otherwise
+			State: StateTypeNotPushed,
+		},
+	}
+
+	return component, nil
+}
+
+// GetComponentFromEnvfile extracts component's metadata from the specified env info if it exists
+func GetComponentFromEnvfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
 	if info.Exists() {
 		devfile, err := parser.Parse(info.GetDevfilePath())
 		if err != nil {
@@ -231,6 +394,7 @@ func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
 
 func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
 	if info.Exists() {
+
 		component := newComponentWithType(info.GetName(), componentType)
 
 		component.Namespace = info.GetNamespace()
@@ -256,62 +420,6 @@ func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentTyp
 	return Component{}, nil
 }
 
-func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
-	var components []Component
-	var err error
-	for _, path := range paths {
-		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-			// we check for .odo/env/env.yaml folder first and then find devfile.yaml, this could be changed
-			// TODO: optimise this
-			if f != nil && strings.Contains(f.Name(), ".odo") {
-				// lets find if there is a devfile and an env.yaml
-				dir := filepath.Dir(path)
-				data, err := envinfo.NewEnvSpecificInfo(dir)
-				if err != nil {
-					return err
-				}
-
-				// if the .odo folder doesn't contain a proper env file
-				if data.GetName() == "" || data.GetApplication() == "" || data.GetNamespace() == "" {
-					return nil
-				}
-
-				// we just want to confirm if the devfile is correct
-				_, err = parser.ParseDevfile(parser.ParserArgs{
-					Path: location.DevfileLocation(dir),
-				})
-				if err != nil {
-					return err
-				}
-				con, _ := filepath.Abs(filepath.Dir(path))
-
-				comp := NewComponent(data.GetName())
-				comp.Status.State = StateTypeUnknown
-				comp.Spec.App = data.GetApplication()
-				comp.Namespace = data.GetNamespace()
-				comp.Status.Context = con
-
-				// since the config file maybe belong to a component of a different project
-				if client != nil {
-					client.SetNamespace(data.GetNamespace())
-					deployment, err := client.GetOneDeployment(comp.Name, comp.Spec.App)
-					if err != nil {
-						comp.Status.State = StateTypeNotPushed
-					} else if deployment != nil {
-						comp.Status.State = StateTypePushed
-					}
-				}
-
-				components = append(components, comp)
-			}
-
-			return nil
-		})
-
-	}
-	return components, err
-}
-
 // Exists checks whether a component with the given name exists in the current application or not
 // componentName is the component name to perform check for
 // The first returned parameter is a bool indicating if a component with the given name already exists or not
@@ -328,8 +436,9 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 	return false, nil
 }
 
-func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) State {
-	// first check if a deployment exists
+// GetComponentState ...
+func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) string {
+	// Check to see if the deployment has been pushed or not
 	c, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
 		return StateTypeUnknown
@@ -345,7 +454,7 @@ func GetComponent(client kclient.ClientInterface, componentName string, applicat
 	return getRemoteComponentMetadata(client, componentName, applicationName, true, true)
 }
 
-// getRemoteComponentMetadata provides component metadata from the cluster
+// getRemoteComponentMetadata provides component metadata from the **cluster**, not locally.
 func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil || fromCluster == nil {
@@ -358,7 +467,6 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 		return Component{}, errors.Wrap(err, "unable to get source type")
 	}
 
-	// init component
 	component := newComponentWithType(componentName, componentType)
 
 	// URL
@@ -413,13 +521,14 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	// Annotations
 	component.Annotations = fromCluster.GetAnnotations()
 
+	// Mark the component status as pushed
+	component.Status.State = componentlabels.ComponentPushedName
+
 	// Labels
 	component.Labels = fromCluster.GetLabels()
-
 	component.Namespace = client.GetCurrentNamespace()
 	component.Spec.App = applicationName
 	component.Spec.Env = filteredEnv
-	component.Status.State = StateTypePushed
 
 	return component, nil
 }
@@ -476,7 +585,7 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 
 		serviceCompMap := make(map[string]string)
 		for _, gotService := range services {
-			serviceCompMap[gotService.Labels[componentlabels.ComponentLabel]] = gotService.Name
+			serviceCompMap[gotService.Labels[componentlabels.ComponentKubernetesInstanceLabel]] = gotService.Name
 		}
 
 		for _, secret := range secrets {

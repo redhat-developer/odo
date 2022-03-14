@@ -325,7 +325,6 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 func (c *Client) CreateDynamicResource(resource unstructured.Unstructured, gvr *meta.RESTMapping) error {
 	klog.V(5).Infoln("Applying resource via server-side apply:")
 	klog.V(5).Infoln(resourceAsJson(resource.Object))
-
 	data, err := json.Marshal(resource.Object)
 	if err != nil {
 		return errors.Wrapf(err, "unable to marshal resource")

@@ -28,11 +28,11 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:     applicationName,
-				componentlabels.ComponentLabel: componentName,
-				applabels.ManagedBy:            "odo",
-				applabels.ManagerVersion:       version.VERSION,
-				labels.URLLabel:                urlName,
+				applabels.ApplicationLabel:                       applicationName,
+				componentlabels.ComponentKubernetesInstanceLabel: componentName,
+				applabels.ManagedBy:                              "odo",
+				applabels.ManagerVersion:                         version.VERSION,
+				labels.URLLabel:                                  urlName,
 			},
 		},
 		Spec: routev1.RouteSpec{
@@ -55,12 +55,12 @@ func GetSingleSecureRoute(urlName string, port int, componentName, applicationNa
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:     applicationName,
-				componentlabels.ComponentLabel: componentName,
-				applabels.ManagedBy:            "odo",
-				applabels.ManagerVersion:       version.VERSION,
-				labels.URLLabel:                urlName,
-				applabels.App:                  applicationName,
+				applabels.ApplicationLabel:                       applicationName,
+				componentlabels.ComponentKubernetesInstanceLabel: componentName,
+				applabels.ManagedBy:                              "odo",
+				applabels.ManagerVersion:                         version.VERSION,
+				labels.URLLabel:                                  urlName,
+				applabels.App:                                    applicationName,
 			},
 		},
 		RouteSpecParams: generator.RouteSpecParams{

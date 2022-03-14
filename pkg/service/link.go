@@ -134,7 +134,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		return false, err
 	}
 
-	secrets, err := client.ListSecrets(componentlabels.GetSelector(labels[componentlabels.ComponentLabel], labels[applabels.ApplicationLabel]))
+	secrets, err := client.ListSecrets(componentlabels.GetSelector(labels[componentlabels.ComponentKubernetesInstanceLabel], labels[applabels.ApplicationLabel]))
 	if err != nil {
 		return false, err
 	}
@@ -244,7 +244,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 				// get the services and get match them against the component
 				serviceCompMap = make(map[string]string)
 				for _, service := range services {
-					serviceCompMap[service.Name] = service.Labels[componentlabels.ComponentLabel]
+					serviceCompMap[service.Name] = service.Labels[componentlabels.ComponentKubernetesInstanceLabel]
 				}
 			}
 

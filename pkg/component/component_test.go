@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/kylelemons/godebug/pretty"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -146,13 +147,13 @@ func TestList(t *testing.T) {
 		*testingutil.CreateFakeDeployment("comp1"),
 	}}
 
-	deploymentList.Items[0].Labels[componentlabels.ComponentTypeLabel] = "nodejs"
+	deploymentList.Items[0].Labels[componentlabels.ComponentKubernetesNameLabel] = "nodejs"
 	deploymentList.Items[0].Annotations = map[string]string{
-		componentlabels.ComponentTypeAnnotation: "nodejs",
+		componentlabels.ComponentProjectTypeLabel: "nodejs",
 	}
-	deploymentList.Items[1].Labels[componentlabels.ComponentTypeLabel] = "wildfly"
+	deploymentList.Items[1].Labels[componentlabels.ComponentKubernetesNameLabel] = "wildfly"
 	deploymentList.Items[1].Annotations = map[string]string{
-		componentlabels.ComponentTypeAnnotation: "wildfly",
+		componentlabels.ComponentProjectTypeLabel: "wildfly",
 	}
 	tests := []struct {
 		name           string
@@ -223,6 +224,7 @@ func TestList(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(tt.output, results) {
+				t.Errorf("Unexpected output, see the diff in results: %s", pretty.Compare(tt.output, results))
 				t.Errorf("expected output:\n%#v\n\ngot:\n%#v", tt.output, results)
 			}
 		})
@@ -351,6 +353,151 @@ func Test_getMachineReadableFormat(t *testing.T) {
 	}
 }
 
+func Test_RemoveDuplicateComponentsForListingOutput(t *testing.T) {
+	type args struct {
+		components []Component
+	}
+	tests := []struct {
+		name string
+		args args
+		want []Component
+	}{
+		{
+			name: "Case 1: Remove duplicated component with the same labels.",
+			args: args{
+				components: []Component{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.dev/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+							Labels: map[string]string{
+								componentlabels.ComponentModeLabel:               componentlabels.ComponentDevLabel,
+								componentlabels.ComponentKubernetesInstanceLabel: "frontend",
+								componentlabels.KubernetesManagedByLabel:          "odo",
+							},
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.dev/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+							Labels: map[string]string{
+								componentlabels.ComponentModeLabel:               componentlabels.ComponentDevLabel,
+								componentlabels.ComponentKubernetesInstanceLabel: "frontend",
+								componentlabels.KubernetesManagedByLabel:          "odo",
+							},
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{},
+					},
+				},
+			},
+			want: []Component{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Component",
+						APIVersion: "odo.dev/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "frontend",
+						Labels: map[string]string{
+							componentlabels.ComponentModeLabel:               componentlabels.ComponentDevLabel,
+							componentlabels.ComponentKubernetesInstanceLabel: "frontend",
+							componentlabels.KubernetesManagedByLabel:          "odo",
+						},
+					},
+					Spec: ComponentSpec{
+						Type: "nodejs",
+					},
+					Status: ComponentStatus{},
+				},
+			},
+		},
+		{
+			name: "Case 2: Combine duplicated Dev + Deploy component to one with Dev and Deploy label.",
+			args: args{
+				components: []Component{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.dev/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+							Labels: map[string]string{
+								componentlabels.ComponentModeLabel:               componentlabels.ComponentDeployLabel,
+								componentlabels.ComponentKubernetesInstanceLabel: "frontend",
+								componentlabels.KubernetesManagedByLabel:          "odo",
+							},
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{},
+					},
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Component",
+							APIVersion: "odo.dev/v1alpha1",
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "frontend",
+							Labels: map[string]string{
+								componentlabels.ComponentModeLabel:               componentlabels.ComponentDevLabel,
+								componentlabels.ComponentKubernetesInstanceLabel: "frontend",
+								componentlabels.KubernetesManagedByLabel:          "odo",
+							},
+						},
+						Spec: ComponentSpec{
+							Type: "nodejs",
+						},
+						Status: ComponentStatus{},
+					},
+				},
+			},
+			want: []Component{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Component",
+						APIVersion: "odo.dev/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "frontend",
+						Labels: map[string]string{
+							componentlabels.ComponentModeLabel:               fmt.Sprintf("%s, %s", componentlabels.ComponentDevLabel, componentlabels.ComponentDeployLabel),
+							componentlabels.ComponentKubernetesInstanceLabel: "frontend",
+							componentlabels.KubernetesManagedByLabel:          "odo",
+						},
+					},
+					Spec: ComponentSpec{
+						Type: "nodejs",
+					},
+					Status: ComponentStatus{},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RemoveDuplicateComponentsForListingOutput(tt.args.components); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getMachineReadableFormatForList() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_getMachineReadableFormatForList(t *testing.T) {
 	type args struct {
 		components []Component
@@ -472,7 +619,7 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 	}
 }
 
-func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
+func getFakeComponent(compName, namespace, appName, compType string, state string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
@@ -482,14 +629,14 @@ func getFakeComponent(compName, namespace, appName, compType string, state State
 			Name:      compName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				applabels.App:                      appName,
-				applabels.ManagedBy:                "odo",
-				applabels.ApplicationLabel:         appName,
-				componentlabels.ComponentLabel:     compName,
-				componentlabels.ComponentTypeLabel: compType,
+				applabels.App:              appName,
+				applabels.ManagedBy:        "odo",
+				applabels.ApplicationLabel: appName,
+				componentlabels.ComponentKubernetesInstanceLabel: compName,
+				componentlabels.ComponentKubernetesNameLabel:     compType,
 			},
 			Annotations: map[string]string{
-				componentlabels.ComponentTypeAnnotation: compType,
+				componentlabels.ComponentProjectTypeLabel: compType,
 			},
 		},
 		Spec: ComponentSpec{

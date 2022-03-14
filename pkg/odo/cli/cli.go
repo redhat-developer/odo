@@ -14,6 +14,7 @@ import (
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
 	_init "github.com/redhat-developer/odo/pkg/odo/cli/init"
+	"github.com/redhat-developer/odo/pkg/odo/cli/list"
 	"github.com/redhat-developer/odo/pkg/odo/cli/login"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
 	"github.com/redhat-developer/odo/pkg/odo/cli/plugins"
@@ -182,7 +183,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdComponent(component.RecommendedCommandName, util.GetFullName(fullName, component.RecommendedCommandName)),
 		component.NewCmdCreate(component.CreateRecommendedCommandName, util.GetFullName(fullName, component.CreateRecommendedCommandName)),
 		component.NewCmdDelete(component.DeleteRecommendedCommandName, util.GetFullName(fullName, component.DeleteRecommendedCommandName)),
-		component.NewCmdList(component.ListRecommendedCommandName, util.GetFullName(fullName, component.ListRecommendedCommandName)),
 		component.NewCmdPush(component.PushRecommendedCommandName, util.GetFullName(fullName, component.PushRecommendedCommandName)),
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
@@ -192,6 +192,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
+		list.NewCmdList(list.RecommendedCommandName, util.GetFullName(fullName, list.RecommendedCommandName)),
 		build_images.NewCmdBuildImages(build_images.RecommendedCommandName, util.GetFullName(fullName, build_images.RecommendedCommandName)),
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
 		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),

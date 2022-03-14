@@ -1,26 +1,21 @@
 package devfile
 
 import (
-	"fmt"
+	"path"
 	"path/filepath"
 
-	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/tests/helper"
-	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("odo list with devfile", func() {
-	var cmpName string
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
-		cmpName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 	})
 
@@ -29,79 +24,103 @@ var _ = Describe("odo list with devfile", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("a component created in 'app' application", func() {
+	When("a component created for deployment", func() {
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.Chdir(commonVar.Context)
+		})
+
+		AfterEach(func() {
+			helper.Cmd("odo", "v2delete", "-a").ShouldPass()
+		})
+
+		It("show an odo deploy in the list", func() {
+
+			By("should display the component as 'None' in odo list", func() {
+				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring("None"))
+			})
+
+			// Fake the odo deploy image build / push passing in "echo" to PODMAN
+			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+
+			By("should display the component as 'Deploy', and 'nodejs' in odo list", func() {
+				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring("Deploy"))
+				Expect(stdOut).To(ContainSubstring("nodejs"))
+			})
 
 		})
 
-		It("should show the component as 'Not Pushed'", func() {
-			output := helper.Cmd("odo", "list").ShouldPass().Out()
-			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sNotPushed", "app", cmpName, commonVar.Project, "nodejs"))))
+		It("show an odo dev in the list", func() {
+
+			// Deploy odo dev
+			session := helper.CmdRunner("odo", "dev")
+			defer session.Kill()
+			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+
+			By("should display the component as 'Dev', and 'nodejs' in odo list", func() {
+				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring("Dev"))
+				Expect(stdOut).To(ContainSubstring("nodejs"))
+			})
+
+			// Fake the odo deploy image build / push passing in "echo" to PODMAN
+			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+			By("building and pushing image to registry", func() {
+				Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+				Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+			})
+
+			By("should display the component as being deployed both Dev and Deploy", func() {
+				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
+				Expect(stdOut).To(ContainSubstring("Dev, Deploy"))
+			})
+
 		})
 
-		It("should show the component as 'Not Pushed' in JSON output", func() {
-			output := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
-			values := gjson.GetMany(output, "kind", "devfileComponents.0.kind", "devfileComponents.0.metadata.name", "devfileComponents.0.status.state")
-			expected := []string{"List", "Component", cmpName, "Not Pushed"}
-			Expect(helper.GjsonExactMatcher(values, expected)).To(Equal(true))
-		})
 	})
-	Context("devfile has missing metadata", func() {
-		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
-		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/redhat-developer/odo/issues/4815
 
-		var metadata devfilepkg.DevfileMetadata
+	When("listing a component outside the main directory", func() {
+		var deployStdout, listStdout, newContext string
 
-		// checkList checks the list output (both normal and json) to see if it contains the expected componentType
-		var checkList = func(componentType string) {
-			By("checking the normal output", func() {
-				stdOut := helper.Cmd("odo", "list", "--context", commonVar.Context).ShouldPass().Out()
-				Expect(stdOut).To(ContainSubstring(componentType))
-			})
-			By("checking the json output", func() {
-				stdOut := helper.Cmd("odo", "list", "--context", commonVar.Context, "-o", "json").ShouldPass().Out()
-				Expect(gjson.Get(stdOut, "devfileComponents.0.spec.type").String()).To(Equal(componentType))
-			})
-		}
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.ReplaceString("devfile.yaml", "nodejs-prj1-api-abhz", "odo-list-dir-test")
 
-		When("projectType is missing", func() {
-			BeforeEach(func() {
-				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-metadata.yaml"), commonVar.Context)
-				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
-			})
+			// cd to the project directory
+			// Fake the odo deploy image build / push passing in "echo" to PODMAN
+			helper.Chdir(commonVar.Context)
+			deployStdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 
-			It("should show the language for 'Type' in odo list", func() {
-				checkList(metadata.Language)
-			})
-			When("the component is pushed", func() {
-				BeforeEach(func() {
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-				})
-				It("should show the language for 'Type' in odo list", func() {
-					checkList(metadata.Language)
-				})
+			// cd to outside the directory (new context)
+			newContext = helper.CreateNewContext()
+			helper.Chdir(newContext)
+			listStdout = helper.Cmd("odo", "list").ShouldPass().Out()
+
+		})
+
+		AfterEach(func() {
+			helper.Chdir(commonVar.Context)
+			helper.Cmd("odo", "v2delete", "-a").ShouldPass()
+			helper.DeleteDir(newContext)
+		})
+
+		It("show an odo deploy in the list", func() {
+
+			// Check that the fake deploy worked
+			Expect(deployStdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+			Expect(deployStdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+
+			// Check that odo list contains the component name when listing outside the directory
+			By("should display the component in odo list even when running outside the directory", func() {
+				Expect(listStdout).To(ContainSubstring("odo-list-dir-test"))
 			})
 		})
 
-		When("projectType and language is missing", func() {
-			BeforeEach(func() {
-				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-and-language-metadata.yaml"), commonVar.Context)
-				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
-			})
-			It("should show 'Not available' for 'Type' in odo list", func() {
-				checkList(component.NotAvailable)
-			})
-			When("the component is pushed", func() {
-				BeforeEach(func() {
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
-				})
-				It("should show 'Not available' for 'Type' in odo list", func() {
-					checkList(component.NotAvailable)
-				})
-			})
-		})
 	})
+
 })
