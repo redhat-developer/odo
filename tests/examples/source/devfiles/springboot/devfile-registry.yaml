@@ -5,6 +5,7 @@ commands:
     group:
       isDefault: true
       kind: build
+    workingDir: ${PROJECT_SOURCE}
   id: build
 - exec:
     commandLine: mvn -Dmaven.repo.local=/home/user/.m2/repository spring-boot:run
@@ -12,6 +13,7 @@ commands:
     group:
       isDefault: true
       kind: run
+    workingDir: ${PROJECT_SOURCE}
   id: run
 - exec:
     commandLine: java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=${DEBUG_PORT},suspend=n
@@ -20,12 +22,16 @@ commands:
     group:
       isDefault: true
       kind: debug
+    workingDir: ${PROJECT_SOURCE}
   id: debug
 components:
 - container:
     endpoints:
     - name: 8080-tcp
       targetPort: 8080
+    env:
+    - name: DEBUG_PORT
+      value: "5858"
     image: quay.io/eclipse/che-java11-maven:next
     memoryLimit: 768Mi
     mountSources: true
