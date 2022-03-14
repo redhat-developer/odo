@@ -22,15 +22,10 @@ check_and_run_devfileTest() {
         fi
 
         Devfile_path=$TEMPDIR/devfile.yaml
-        set +e
+
         # check if devfiles differ then the one in examples dir
-        diff $Devfile_path $Example_devfile_path
-        set -e 
-        if [[ $? == 1 ]]; then
-            NOTEQUAL="true"
-            echo "Devfile for $LANGUAGE is not equal to the one in examples dir"
-            cp $Devfile_path $Example_devfile_path
-        fi
+        # if differs then set  `NOTEQUAL="true"`  and  copy new divfile to examples dir
+        diff $Devfile_path $Example_devfile_path || NOTEQUAL="true" && cp $Devfile_path $Example_devfile_path
     done
 
     if [ "$NOTEQUAL" == "true" ]; then
@@ -45,7 +40,7 @@ mkdir -p $GOPATH/bin
 make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
-error=false 
+error="false" 
 
 # Copy kubeconfig to temporary kubeconfig file
 # Read and Write permission to temporary kubeconfig file
@@ -63,9 +58,9 @@ oc whoami
 # # Integration tests
 check_and_run_devfileTest
 
-make test-operator-hub || error=true
+make test-operator-hub || error="true"
 
-if [ $error ]; then
+if [ "$error" == "true" ]; then
     exit -1
 fi
 
