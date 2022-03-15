@@ -197,13 +197,11 @@ func (o *DevOptions) Run() error {
 	portPairs := portPairsFromContainerEndpoints(ceMapping)
 	portPairsSlice := []string{}
 	for _, v1 := range portPairs {
-		for _, v2 := range v1 {
-			portPairsSlice = append(portPairsSlice, v2)
-		}
+		portPairsSlice = append(portPairsSlice, v1...)
 	}
 
 	go func() {
-		err := o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), portPairsSlice, o.errOut)
+		err = o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), portPairsSlice, o.errOut)
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
@@ -319,7 +317,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 // it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
 // "container1": {"400001:3000", "400002:3001"}
 func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
-	portPairs := make(map[string][]string, 0)
+	portPairs := make(map[string][]string)
 	port := 40000
 
 	for name, ports := range ceMap {

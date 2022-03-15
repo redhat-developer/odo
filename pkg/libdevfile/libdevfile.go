@@ -133,7 +133,7 @@ func GetContainerComponents(devfileObj parser.DevfileObj) ([]v1alpha2.Component,
 
 // GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int) with exposure status other than none
 func GetContainerEndpointMapping(containers []v1alpha2.Component) (map[string][]int, error) {
-	ceMapping := make(map[string][]int, 0)
+	ceMapping := make(map[string][]int)
 	if len(containers) == 0 {
 		return ceMapping, nil
 	}

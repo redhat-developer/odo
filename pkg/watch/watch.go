@@ -303,7 +303,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
 				log.Finfof(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal.")
 			}
-			log.Finfof(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit.", parameters.Path)
+			log.Finfof(out, "\nWatching for changes in the current directory %s\n\nPress Ctrl+c to exit.", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.
