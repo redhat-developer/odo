@@ -239,7 +239,7 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	if err != nil {
 		return nil, err
 	} else if changed {
-		fmt.Printf("\ntotal number of endpoints in the devfile have changed; please run `odo dev` again")
+		fmt.Printf("\ntotal number of endpoints in the devfile have changed; please run `odo dev` again\n\n")
 	}
 
 	platformContext := kubernetes.KubernetesContext{
