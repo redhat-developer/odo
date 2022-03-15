@@ -220,11 +220,11 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 	return backend.PersonalizeName(devfile, flags)
 }
 
-func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error {
+func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
 	var backend backend.InitBackend
 	onlyDevfile, err := location.DirContainsOnlyDevfile(fs, dir)
 	if err != nil {
-		return err
+		return parser.DevfileObj{}, err
 	}
 
 	// Interactive mode since no flags are provided
@@ -234,7 +234,7 @@ func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.PersonalizeDevfileconfig(devfileobj)
+	return backend.PersonalizeDevfileConfig(devfileobj)
 }
 
 func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error) {
@@ -253,7 +253,7 @@ func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, context
 		return parser.DevfileObj{}, "", fmt.Errorf("unable to parse devfile: %w", err)
 	}
 
-	err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)
+	devfileObj, err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", fmt.Errorf("failed to configure devfile: %w", err)
 	}

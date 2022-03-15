@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil"
@@ -13,7 +15,6 @@ import (
 	parsercontext "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/golang/mock/gomock"
 )
 
 func TestInteractiveBackend_SelectDevfile(t *testing.T) {
@@ -483,8 +484,9 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 				askerClient:    askerClient,
 				registryClient: tt.fields.registryClient,
 			}
-			if err = o.PersonalizeDevfileconfig(devfile); (err != nil) != tt.wantErr {
-				t.Errorf("PersonalizeDevfileconfig() error = %v, wantErr %v", err, tt.wantErr)
+			devfile, err = o.PersonalizeDevfileConfig(devfile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PersonalizeDevfileConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			config, err = getPortsAndEnvVar(devfile)
 			if err != nil {

@@ -91,6 +91,6 @@ func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[str
 	return devfile, nil
 }
 
-func (o *AlizerBackend) PersonalizeDevfileconfig(devfile parser.DevfileObj) error {
-	return nil
+func (o *AlizerBackend) PersonalizeDevfileConfig(devfile parser.DevfileObj) (parser.DevfileObj, error) {
+	return devfile, nil
 }

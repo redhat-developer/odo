@@ -25,5 +25,5 @@ type InitBackend interface {
 	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error)
 
 	// PersonalizeDevfileConfig updates the devfile config for ports and environment variables
-	PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error
+	PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error)
 }

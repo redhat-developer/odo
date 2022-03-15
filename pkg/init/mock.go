@@ -81,11 +81,12 @@ func (mr *MockClientMockRecorder) InitDevfile(flags, contextDir, preInitHandlerF
 }
 
 // PersonalizeDevfileConfig mocks base method.
-func (m *MockClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error {
+func (m *MockClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeDevfileConfig", devfileobj, flags, fs, dir)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PersonalizeDevfileConfig indicates an expected call of PersonalizeDevfileConfig.
@@ -95,17 +96,18 @@ func (mr *MockClientMockRecorder) PersonalizeDevfileConfig(devfileobj, flags, fs
 }
 
 // PersonalizeName mocks base method.
-func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
+func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags, writeToDisk)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PersonalizeName indicates an expected call of PersonalizeName.
-func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags, writeToDisk interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) PersonalizeName(devfile, flags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockClient)(nil).PersonalizeName), devfile, flags, writeToDisk)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockClient)(nil).PersonalizeName), devfile, flags)
 }
 
 // SelectAndPersonalizeDevfile mocks base method.

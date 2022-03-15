@@ -101,6 +101,6 @@ func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[stri
 	return devfile, nil
 }
 
-func (o FlagsBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
-	return nil
+func (o FlagsBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
+	return devfileobj, nil
 }

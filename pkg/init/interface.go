@@ -45,7 +45,7 @@ type Client interface {
 	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error)
 
 	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
-	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error
+	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error)
 
 	// SelectAndPersonalizeDevfile selects a devfile, then downloads, parse and personalize it
 	// Returns the devfile object and its path

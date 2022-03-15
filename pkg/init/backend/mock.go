@@ -36,32 +36,34 @@ func (m *MockInitBackend) EXPECT() *MockInitBackendMockRecorder {
 	return m.recorder
 }
 
-// PersonalizeDevfileconfig mocks base method.
-func (m *MockInitBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
+// PersonalizeDevfileConfig mocks base method.
+func (m *MockInitBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PersonalizeDevfileconfig", devfileobj)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "PersonalizeDevfileConfig", devfileobj)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// PersonalizeDevfileconfig indicates an expected call of PersonalizeDevfileconfig.
-func (mr *MockInitBackendMockRecorder) PersonalizeDevfileconfig(devfileobj interface{}) *gomock.Call {
+// PersonalizeDevfileConfig indicates an expected call of PersonalizeDevfileConfig.
+func (mr *MockInitBackendMockRecorder) PersonalizeDevfileConfig(devfileobj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeDevfileconfig", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeDevfileconfig), devfileobj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeDevfileConfig", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeDevfileConfig), devfileobj)
 }
 
 // PersonalizeName mocks base method.
-func (m *MockInitBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
+func (m *MockInitBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags, writeToDisk)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PersonalizeName indicates an expected call of PersonalizeName.
-func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags, writeToDisk interface{}) *gomock.Call {
+func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeName), devfile, flags, writeToDisk)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PersonalizeName", reflect.TypeOf((*MockInitBackend)(nil).PersonalizeName), devfile, flags)
 }
 
 // SelectDevfile mocks base method.
