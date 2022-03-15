@@ -250,22 +250,12 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 }
 
 func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
-	oldContainers, err := libdevfile.GetContainerComponents(oldDevfile)
+	oldEndpoints, err := libdevfile.GetAllEndpointsFromDevfile(oldDevfile)
 	if err != nil {
 		return false, err
 	}
 
-	oldEndpoints, err := libdevfile.GetContainerEndpointMapping(oldContainers)
-	if err != nil {
-		return false, err
-	}
-
-	newContainers, err := libdevfile.GetContainerComponents(newDevfile)
-	if err != nil {
-		return false, err
-	}
-
-	newEndpoints, err := libdevfile.GetContainerEndpointMapping(newContainers)
+	newEndpoints, err := libdevfile.GetAllEndpointsFromDevfile(newDevfile)
 	if err != nil {
 		return false, nil
 	}

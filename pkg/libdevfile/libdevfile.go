@@ -157,3 +157,17 @@ func GetContainerEndpointMapping(containers []v1alpha2.Component) (map[string][]
 	}
 	return ceMapping, nil
 }
+
+// GetAllEndpointsFromDevfile returns a slice of all endpoints in a devfile with exposure value not set to none
+func GetAllEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoint, error) {
+	containers, err := GetContainerComponents(devfileObj)
+	if err != nil {
+		return nil, err
+	}
+
+	var endpoints []v1alpha2.Endpoint
+	for _, c := range containers {
+		endpoints = append(endpoints, c.Container.Endpoints...)
+	}
+	return endpoints, nil
+}
