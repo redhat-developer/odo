@@ -145,5 +145,6 @@ func (s *Spinner) TimeSpent() string {
 		return fmt.Sprintf("%dms", timeElapsed.Nanoseconds()/int64(time.Millisecond))
 	}
 
-	return fmt.Sprintf("%dns", timeElapsed.Nanoseconds())
+	// If it's less than 1ms (nanoseconds), output none.
+	return ""
 }
