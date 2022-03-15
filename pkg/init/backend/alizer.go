@@ -87,8 +87,8 @@ func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags ma
 	return nil, nil
 }
 
-func (o *AlizerBackend) PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
-	return nil
+func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error) {
+	return devfile, nil
 }
 
 func (o *AlizerBackend) PersonalizeDevfileconfig(devfile parser.DevfileObj) error {

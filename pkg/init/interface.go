@@ -42,8 +42,7 @@ type Client interface {
 	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error
 
 	// PersonalizeName updates a devfile name, depending on the flags.
-	// It optionally saves the devfile to disk depending on `writeToDisk`.
-	PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error
+	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error)
 
 	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
 	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error

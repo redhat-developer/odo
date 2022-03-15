@@ -22,8 +22,7 @@ type InitBackend interface {
 	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error)
 
 	// PersonalizeName updates a devfile name, depending on the flags.
-	// It optionally writes the resulting Devfile to disk depending on `writeToDisk`.
-	PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error
+	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error)
 
 	// PersonalizeDevfileConfig updates the devfile config for ports and environment variables
 	PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error

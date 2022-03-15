@@ -249,8 +249,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				registryClient: tt.fields.registryClient,
 			}
 			fs := filesystem.NewFakeFs()
-			devfile := tt.args.devfile(fs)
-			err := o.PersonalizeName(&devfile, tt.args.flags, false)
+			devfile, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -51,7 +51,7 @@ func (mr *MockInitBackendMockRecorder) PersonalizeDevfileconfig(devfileobj inter
 }
 
 // PersonalizeName mocks base method.
-func (m *MockInitBackend) PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
+func (m *MockInitBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags, writeToDisk)
 	ret0, _ := ret[0].(error)

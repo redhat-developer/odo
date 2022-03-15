@@ -210,15 +210,14 @@ func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, de
 }
 
 // PersonalizeName calls PersonalizeName methods of the adequate backend
-func (o *InitClient) PersonalizeName(devfile *parser.DevfileObj, flags map[string]string, writeToDisk bool) error {
+func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error) {
 	var backend backend.InitBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	err := backend.PersonalizeName(devfile, flags, writeToDisk)
-	return err
+	return backend.PersonalizeName(devfile, flags)
 }
 
 func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error {
