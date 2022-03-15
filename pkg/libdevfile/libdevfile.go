@@ -119,3 +119,41 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 	}
 	return nil
 }
+
+// GetContainerComponents returns a slice of container components in the given devfile
+func GetContainerComponents(devfileObj parser.DevfileObj) ([]v1alpha2.Component, error) {
+	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return containers, nil
+}
+
+// GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int) with exposure status other than none
+func GetContainerEndpointMapping(containers []v1alpha2.Component) (map[string][]int, error) {
+	ceMapping := make(map[string][]int, 0)
+	if len(containers) == 0 {
+		return ceMapping, nil
+	}
+
+	for _, cntr := range containers {
+		if cntr.ComponentUnion.Container == nil {
+			// this is not a container component; error prevents panic when accessing Endpoints field
+			return nil, NewNotAContainerError()
+		}
+		k := cntr.Name
+		if _, ok := ceMapping[k]; !ok {
+			ceMapping[k] = []int{}
+		}
+
+		endpoints := cntr.Container.Endpoints
+		for _, e := range endpoints {
+			if e.Exposure != v1alpha2.NoneEndpointExposure {
+				ceMapping[k] = append(ceMapping[k], e.TargetPort)
+			}
+		}
+	}
+	return ceMapping, nil
+}

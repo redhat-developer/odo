@@ -9,6 +9,9 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -176,10 +179,31 @@ func (o *DevOptions) Run() error {
 	}
 	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n ")
 
-	portPairs, err := o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.out, o.errOut)
+	containers, err := libdevfile.GetContainerComponents(o.Context.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}
+
+	ceMapping, err := libdevfile.GetContainerEndpointMapping(containers)
+	if err != nil {
+		return err
+	}
+
+	portPairs := portPairsFromContainerEndpoints(ceMapping)
+	portPairsSlice := []string{}
+	for _, v1 := range portPairs {
+		for _, v2 := range v1 {
+			portPairsSlice = append(portPairsSlice, v2)
+		}
+	}
+
+	go func() {
+		err := o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), portPairsSlice, o.errOut)
+		fmt.Println("port forwarding works, yay")
+		if err != nil {
+			fmt.Printf("failed to setup port-forwarding: %v\n", err)
+		}
+	}()
 	printPortForwardingInfo(portPairs, o.out)
 
 	d := DevHandler{}
@@ -219,16 +243,18 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
 }
 
-func printPortForwardingInfo(portPairs map[string]string, out io.Writer) {
-	portFowardURLs := ""
-	for pair, container := range portPairs {
-		split := strings.Split(pair, ":")
-		local := split[0]
-		remote := split[1]
+func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
+	portForwardURLs := ""
+	for container, ports := range portPairs {
+		for _, pair := range ports {
+			split := strings.Split(pair, ":")
+			local := split[0]
+			remote := split[1]
 
-		portFowardURLs += fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local)
+			portForwardURLs += fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local)
+		}
 	}
-	fmt.Fprintf(out, "\n%s", portFowardURLs)
+	fmt.Fprintf(out, "\n%s", portForwardURLs)
 }
 
 // NewCmdDev implements the odo dev command
@@ -252,4 +278,28 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return devCmd
+}
+
+// portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
+// it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
+// "container1": {"400001:3000", "400002:3001"}
+func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
+	portPairs := make(map[string][]string, 0)
+	port := 40000
+
+	for name, ports := range ceMap {
+		for _, p := range ports {
+			port++
+			for {
+				isPortFree := util.IsPortFree(port)
+				if isPortFree {
+					pair := fmt.Sprintf("%d:%d", port, p)
+					portPairs[name] = append(portPairs[name], pair)
+					break
+				}
+				port++
+			}
+		}
+	}
+	return portPairs
 }

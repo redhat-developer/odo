@@ -248,3 +248,146 @@ func TestDeploy(t *testing.T) {
 		})
 	}
 }
+
+func TestGetContainerComponents(t *testing.T) {
+	container1 := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name: "container1",
+	})
+	type args struct {
+		devfileObj func() parser.DevfileObj
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []v1alpha2.Component
+		wantErr bool
+	}{
+		{
+			name: "no container components",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					return parser.DevfileObj{Data: data}
+				},
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "one container component",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddComponents([]v1alpha2.Component{container1})
+					return parser.DevfileObj{Data: data}
+				},
+			},
+			want:    []v1alpha2.Component{container1},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetContainerComponents(tt.args.devfileObj())
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetContainerComponents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetContainerComponents() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetContainerEndpointMapping(t *testing.T) {
+	type args struct {
+		containers []v1alpha2.Component
+	}
+
+	imageComponent := generator.GetImageComponent(generator.ImageComponentParams{
+		Name: "image-component",
+		Image: v1alpha2.Image{
+			ImageName: "an-image-name",
+		},
+	})
+
+	containerWithNoEndpoints := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name:      "container 1",
+		Endpoints: nil,
+	})
+
+	containerWithOnePublicEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name: "container 2",
+		Endpoints: []v1alpha2.Endpoint{
+			v1alpha2.Endpoint{
+				Name:       "ep1",
+				TargetPort: 8080,
+				Exposure:   v1alpha2.PublicEndpointExposure,
+			},
+		},
+	})
+
+	containerWithOneInternalEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name: "container 3",
+		Endpoints: []v1alpha2.Endpoint{
+			v1alpha2.Endpoint{
+				Name:       "ep2",
+				TargetPort: 9090,
+				Exposure:   v1alpha2.InternalEndpointExposure,
+			},
+		},
+	})
+
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string][]int
+		wantErr bool
+	}{
+		{
+			name: "invalid input - image components instead of container components",
+			args: args{
+				containers: []v1alpha2.Component{imageComponent},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "one container with no endpoints exposed",
+			args: args{
+				containers: []v1alpha2.Component{containerWithNoEndpoints},
+			},
+			want:    map[string][]int{containerWithNoEndpoints.Name: {}},
+			wantErr: false,
+		},
+		{
+			name: "multiple containers with varying types of endpoints",
+			args: args{
+				containers: []v1alpha2.Component{containerWithNoEndpoints, containerWithOnePublicEndpoint, containerWithOneInternalEndpoint},
+			},
+			want:    map[string][]int{containerWithNoEndpoints.Name: {}, containerWithOnePublicEndpoint.Name: {8080}, containerWithOneInternalEndpoint.Name: {9090}},
+			wantErr: false,
+		},
+		{
+			name: "invalid input - one image component with rest being containers",
+			args: args{
+				containers: []v1alpha2.Component{containerWithNoEndpoints, containerWithOnePublicEndpoint, containerWithOneInternalEndpoint, imageComponent},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetContainerEndpointMapping(tt.args.containers)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetContainerEndpointMapping() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetContainerEndpointMapping() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

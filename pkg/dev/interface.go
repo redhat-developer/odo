@@ -13,7 +13,7 @@ import (
 
 type Client interface {
 	Start(parser.DevfileObj, kubernetes.KubernetesContext, string) error
-	SetupPortForwarding(parser.DevfileObj, string, io.Writer, io.Writer) (map[string]string, error)
+	SetupPortForwarding(parser.DevfileObj, []string, io.Writer) error
 	Watch(parser.DevfileObj, string, []string, io.Writer, Handler) error
 	Cleanup() error
 }

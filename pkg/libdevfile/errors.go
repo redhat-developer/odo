@@ -73,3 +73,13 @@ func NewComponentsWithSameNameError() ComponentsWithSameNameError {
 func (e ComponentsWithSameNameError) Error() string {
 	return "more than one component with the same name, should not happen"
 }
+
+type NotAContainerError struct{}
+
+func NewNotAContainerError() NotAContainerError {
+	return NotAContainerError{}
+}
+
+func (e NotAContainerError) Error() string {
+	return "component not a container"
+}
