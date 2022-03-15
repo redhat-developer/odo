@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -125,7 +123,7 @@ func touchGitIgnoreFile(directory string, fs filesystem.Filesystem) (string, err
 	if _, err := fs.Stat(gitIgnoreFile); os.IsNotExist(err) {
 		file, err := fs.OpenFile(gitIgnoreFile, os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
-			return gitIgnoreFile, errors.Wrap(err, "failed to create .gitignore file")
+			return gitIgnoreFile, fmt.Errorf("failed to create .gitignore file: %w", err)
 		}
 		file.Close()
 	}

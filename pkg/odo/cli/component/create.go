@@ -218,7 +218,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
 			if err != nil {
-				return errors.Wrap(err, "unable to get secure registry credential from keyring")
+				return fmt.Errorf("unable to get secure registry credential from keyring: %w", err)
 			}
 			co.devfileMetadata.starterToken = token
 		}
@@ -282,7 +282,7 @@ func (co *CreateOptions) Run() (err error) {
 	// WARN: Starter Project uses go-git that overrides the directory content, there by deleting the existing devfile.
 	err = decideAndDownloadStarterProject(devObj, co.devfileMetadata.starter, co.devfileMetadata.starterToken, co.interactive, co.contextFlag)
 	if err != nil {
-		return errors.Wrap(err, "failed to download project for devfile component")
+		return fmt.Errorf("failed to download project for devfile component: %w", err)
 	}
 
 	//Check if the directory already contains a devfile when starter project is downloaded
@@ -316,13 +316,13 @@ func (co *CreateOptions) Run() (err error) {
 		UserCreatedDevfile: co.devfileMetadata.userCreatedDevfile,
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create env file for devfile component")
+		return fmt.Errorf("failed to create env file for devfile component: %w", err)
 	}
 
 	// Prepare .gitignore file
 	sourcePath, err := dfutil.GetAbsPath(co.contextFlag)
 	if err != nil {
-		return errors.Wrap(err, "unable to get source path")
+		return fmt.Errorf("unable to get source path: %w", err)
 	}
 
 	ignoreFile, err := util.TouchGitIgnoreFile(sourcePath)

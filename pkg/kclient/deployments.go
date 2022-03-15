@@ -96,7 +96,7 @@ func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment
 		})
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Deployments")
+		return nil, fmt.Errorf("unable to list Deployments: %w", err)
 	}
 	return deploymentList.Items, nil
 }
@@ -444,7 +444,7 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 	if deploymentPatchProvider != nil {
 		patch, e := deploymentPatchProvider(deployment)
 		if e != nil {
-			return errors.Wrap(e, "Unable to create a patch for the Deployment")
+			return fmt.Errorf("Unable to create a patch for the Deployment: %w", e)
 		}
 
 		// patch the Deployment with the secret
@@ -466,7 +466,7 @@ func (c *Client) GetDeploymentLabelValues(label string, selector string) ([]stri
 	// List Deployment according to selectors
 	deploymentList, err := c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list DeploymentConfigs")
+		return nil, fmt.Errorf("unable to list DeploymentConfigs: %w", err)
 	}
 
 	// Grab all the matched strings

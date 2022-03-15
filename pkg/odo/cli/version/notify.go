@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 
 	dfutil "github.com/devfile/library/pkg/util"
 )
@@ -26,7 +25,7 @@ func getLatestReleaseTag() (string, error) {
 	// Make request and cache response for 60 minutes
 	body, err := dfutil.HTTPGetRequest(request, 60)
 	if err != nil {
-		return "", errors.Wrap(err, "error getting latest release")
+		return "", fmt.Errorf("error getting latest release: %w", err)
 	}
 
 	return strings.TrimSuffix(string(body), "\n"), nil
@@ -42,7 +41,7 @@ func checkLatestReleaseTag(currentVersion string) (string, error) {
 
 	latestTag, err := getLatestReleaseTag()
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get latest release tag")
+		return "", fmt.Errorf("unable to get latest release tag: %w", err)
 	}
 
 	latestSemver, err := semver.Make(strings.TrimPrefix(latestTag, "v"))

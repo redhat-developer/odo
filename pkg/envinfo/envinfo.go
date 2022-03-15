@@ -2,6 +2,7 @@
 package envinfo
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -96,7 +97,7 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 	// Get the path of the environment file
 	envInfoFile, devfilePath, err := getEnvInfoFile(envDir)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the path of the environment file")
+		return nil, fmt.Errorf("failed to get the path of the environment file: %w", err)
 	}
 
 	// Organize that information into a struct
@@ -158,7 +159,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "debugport":
 			val, err := strconv.Atoi(value.(string))
 			if err != nil {
-				return errors.Wrap(err, "failed to set debug port")
+				return fmt.Errorf("failed to set debug port: %w", err)
 			}
 			esi.componentSettings.DebugPort = &val
 		case "url":

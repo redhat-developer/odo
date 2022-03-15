@@ -60,7 +60,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to generate rsa key")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to generate rsa key: %w", err)
 	}
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(time.Now().Unix()),
@@ -77,12 +77,12 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 
 	certificateDerEncoding, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to create certificate")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to create certificate: %w", err)
 	}
 	out := &bytes.Buffer{}
 	err = pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode certificate")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to encode certificate: %w", err)
 	}
 	certPemEncode := out.String()
 	certPemByteArr := []byte(certPemEncode)
@@ -90,7 +90,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 	tlsPrivKeyEncoding := x509.MarshalPKCS1PrivateKey(privateKey)
 	err = pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode rsa private key")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to encode rsa private key: %w", err)
 	}
 	keyPemEncode := out.String()
 	keyPemByteArr := []byte(keyPemEncode)
@@ -190,7 +190,7 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 
 	secretList, err := c.KubeClient.CoreV1().Secrets(c.Namespace).List(context.TODO(), listOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get secret list")
+		return nil, fmt.Errorf("unable to get secret list: %w", err)
 	}
 
 	return secretList.Items, nil

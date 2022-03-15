@@ -89,7 +89,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 	// Delete the project
 	err = c.projectClient.Projects().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
-		return errors.Wrap(err, "unable to delete project")
+		return fmt.Errorf("unable to delete project: %w", err)
 	}
 
 	// If watcher has been created (wait was passed) we will create a go routine and actually **wait**

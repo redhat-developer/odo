@@ -32,7 +32,7 @@ func checkoutProject(subDir, zipURL, path, starterToken string) error {
 	}
 	err := util.GetAndExtractZip(zipURL, path, subDir, starterToken)
 	if err != nil {
-		return errors.Wrap(err, "failed to download and extract project zip folder")
+		return fmt.Errorf("failed to download and extract project zip folder: %w", err)
 	}
 	return nil
 }

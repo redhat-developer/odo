@@ -2,10 +2,9 @@ package context
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
-
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 
@@ -62,7 +61,7 @@ func SetClusterType(ctx context.Context, client kclient.ClientInterface) {
 		// it sometimes fails to retrieve the data if user is using minishift or plain oc cluster
 		isOC, err := client.IsProjectSupported()
 		if err != nil {
-			klog.V(3).Info(errors.Wrap(err, "unable to detect project support"))
+			klog.V(3).Info(fmt.Errorf("unable to detect project support: %w", err))
 			value = NOTFOUND
 		} else {
 			if isOC {

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,13 +66,13 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	// Set the source path to either the context or current working directory (if context not set)
 	po.sourcePath, err = dfutil.GetAbsPath(po.componentContext)
 	if err != nil {
-		return errors.Wrap(err, "unable to get source path")
+		return fmt.Errorf("unable to get source path: %w", err)
 	}
 
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignoreFlag, po.sourcePath)
 	if err != nil {
-		return errors.Wrap(err, "unable to apply ignore information")
+		return fmt.Errorf("unable to apply ignore information: %w", err)
 	}
 
 	var platformContext interface{}

@@ -79,7 +79,7 @@ func GetDefaultComponentName(cfg preference.Client, componentPath string, compon
 	// Create a random generated name for the component to use within Kubernetes
 	prefix, err = GetComponentDir(componentPath)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
+		return "", fmt.Errorf("unable to generate random component name: %w", err)
 	}
 	prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 
@@ -91,7 +91,7 @@ func GetDefaultComponentName(cfg preference.Client, componentPath string, compon
 		componentNameMaxRetries,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
+		return "", fmt.Errorf("unable to generate random component name: %w", err)
 	}
 
 	return util.GetDNS1123Name(componentName), nil
@@ -142,7 +142,7 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 	for _, elem := range deploymentList {
 		component, err := GetComponent(client, elem.Labels[componentlabels.KubernetesInstanceLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
 		if err != nil {
-			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+			return ComponentList{}, fmt.Errorf("Unable to get component: %w", err)
 		}
 
 		if !reflect.ValueOf(component).IsZero() {
@@ -355,7 +355,7 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	// Component Type
 	componentType, err := fromCluster.GetType()
 	if err != nil {
-		return Component{}, errors.Wrap(err, "unable to get source type")
+		return Component{}, fmt.Errorf("unable to get source type: %w", err)
 	}
 
 	// init component
@@ -382,7 +382,7 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	if getStorage {
 		appStore, e := fromCluster.GetStorage()
 		if e != nil {
-			return Component{}, errors.Wrap(e, "unable to get storage list")
+			return Component{}, fmt.Errorf("unable to get storage list: %w", e)
 		}
 
 		component.Spec.StorageSpec = appStore

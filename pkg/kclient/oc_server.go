@@ -25,7 +25,7 @@ func isServerUp(server string, timeout time.Duration) bool {
 	klog.V(3).Infof("Trying to connect to server %s", address)
 	_, connectionError := net.DialTimeout("tcp", address, timeout)
 	if connectionError != nil {
-		klog.V(3).Info(errors.Wrap(connectionError, "unable to connect to server"))
+		klog.V(3).Info(fmt.Errorf("unable to connect to server: %w", connectionError))
 		return false
 	}
 

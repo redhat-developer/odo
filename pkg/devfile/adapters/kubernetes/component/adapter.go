@@ -1,7 +1,6 @@
 package component
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -194,7 +193,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
 	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
 	if err != nil {
-		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
+		return fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
@@ -206,18 +205,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
 	err = service.PushKubernetesResources(a.Client, k8sComponents, labels, annotations, a.Context)
 	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral)
 	if err != nil {
-		return errors.Wrap(err, "unable to create or update component")
+		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
-		return errors.Wrap(err, "error while waiting for deployment rollout")
+		return fmt.Errorf("error while waiting for deployment rollout: %w", err)
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
@@ -253,7 +252,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
 	needRestart, err := service.PushLinks(a.Client, k8sComponents, labels, a.deployment, a.Context)
 	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	if needRestart {
@@ -265,7 +264,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to update config to component deployed.")
+		return fmt.Errorf("Failed to update config to component deployed: %w", err)
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.

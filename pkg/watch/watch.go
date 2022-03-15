@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -223,7 +222,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 				matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
 				klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
 				if globErr != nil {
-					watchError = errors.Wrap(globErr, "unable to watch changes")
+					watchError = fmt.Errorf("unable to watch changes: %w", globErr)
 				}
 				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
 					// Append the new file change event to changedFiles if and only if the event is not a file remove event
@@ -396,12 +395,12 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 		stat, err := os.Lstat(event.Name)
 		if err != nil {
 			// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
-			// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
-			// which will terminate the watch
+			// So, its better to log the error rather than feeding it to error handler via `watchError = fmt.Errorf("unable to watch changes: %w", err)`,
+			// which will terminate the watchfmt.Errorf("unable to watch changes: %w", err)
 			klog.V(4).Infof("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 		}
 		// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
-		// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
+		// So, its better to log the error rather than feeding it to error handler via `watchError = fmt.Errorf("unable to watch changes: %w", err)`,
 		// which will terminate the watch
 		if stat == nil {
 			klog.V(4).Infof("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)

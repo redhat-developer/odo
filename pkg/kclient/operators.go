@@ -57,7 +57,7 @@ func (c *Client) GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]ol
 func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 	csvs, err := c.ListClusterServiceVersions()
 	if err != nil {
-		return &olm.ClusterServiceVersion{}, errors.Wrap(err, "unable to list services")
+		return &olm.ClusterServiceVersion{}, fmt.Errorf("unable to list services: %w", err)
 	}
 
 	for _, csv := range csvs.Items {

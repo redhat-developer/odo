@@ -78,7 +78,7 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 	}
 
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Unable to list operator backed services")
+		return nil, nil, fmt.Errorf("Unable to list operator backed services: %w", err)
 	}
 
 	var allCRInstances []unstructured.Unstructured

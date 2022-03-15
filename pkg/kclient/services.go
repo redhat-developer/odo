@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +35,7 @@ func (c *Client) ListServices(selector string) ([]corev1.Service, error) {
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Services")
+		return nil, fmt.Errorf("unable to list Services: %w", err)
 	}
 	return serviceList.Items, nil
 }

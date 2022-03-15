@@ -232,7 +232,7 @@ func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	}
 	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
-		return fmt.Errorf("unable to save devfile to %s: %w", co.DevfilePath, (err)
+		return fmt.Errorf("unable to save devfile to %s: %w", co.DevfilePath, err)
 	}
 	devfileSpinner.End(true)
 
@@ -276,7 +276,7 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 		defer registryExistSpinner.End(false)
 		registryList, e := catalogClient.GetDevfileRegistries(registryName)
 		if e != nil {
-			return catalog.DevfileComponentTypeList{}, errors.Wrap(e, "failed to get registry")
+			return catalog.DevfileComponentTypeList{}, fmt.Errorf("failed to get registry: %w", e)
 		}
 		if len(registryList) == 0 {
 			return catalog.DevfileComponentTypeList{}, errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
@@ -338,7 +338,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 			if err != nil {
-				return errors.Wrap(err, "unable to get secure registry credential from keyring")
+				return fmt.Errorf("unable to get secure registry credential from keyring: %w", err)
 			}
 			params.Token = token
 		}

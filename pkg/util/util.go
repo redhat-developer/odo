@@ -446,7 +446,7 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 	var data []byte
 	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, dfutil.ModeReadWriteFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to open .gitignore file")
+		return fmt.Errorf("failed to open .gitignore file: %w", err)
 	}
 	defer file.Close()
 

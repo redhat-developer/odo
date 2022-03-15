@@ -39,7 +39,7 @@ func (o kubernetesClient) Create(projectName string, wait bool) error {
 
 	projectSupport, err := o.client.IsProjectSupported()
 	if err != nil {
-		return errors.Wrap(err, "unable to detect project support")
+		return fmt.Errorf("unable to detect project support: %w", err)
 	}
 
 	if projectSupport {
@@ -49,13 +49,13 @@ func (o kubernetesClient) Create(projectName string, wait bool) error {
 		_, err = o.client.CreateNamespace(projectName)
 	}
 	if err != nil {
-		return errors.Wrap(err, "unable to create new project")
+		return fmt.Errorf("unable to create new project: %w", err)
 	}
 
 	if wait {
 		err = o.client.WaitForServiceAccountInNamespace(projectName, "default")
 		if err != nil {
-			return errors.Wrap(err, "unable to wait for service account")
+			return fmt.Errorf("unable to wait for service account: %w", err)
 		}
 	}
 	return nil
@@ -70,7 +70,7 @@ func (o kubernetesClient) Delete(projectName string, wait bool) error {
 
 	projectSupport, err := o.client.IsProjectSupported()
 	if err != nil {
-		return errors.Wrap(err, "unable to detect project support")
+		return fmt.Errorf("unable to detect project support: %w", err)
 	}
 
 	if projectSupport {
@@ -90,7 +90,7 @@ func (o kubernetesClient) List() (ProjectList, error) {
 
 	projectSupport, err := o.client.IsProjectSupported()
 	if err != nil {
-		return ProjectList{}, errors.Wrap(err, "unable to detect project support")
+		return ProjectList{}, fmt.Errorf("unable to detect project support: %w", err)
 	}
 
 	var allProjects []string
@@ -100,7 +100,7 @@ func (o kubernetesClient) List() (ProjectList, error) {
 		allProjects, err = o.client.GetNamespaces()
 	}
 	if err != nil {
-		return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
+		return ProjectList{}, fmt.Errorf("cannot get all the projects: %w", err)
 	}
 
 	projects := make([]Project, len(allProjects))
@@ -116,7 +116,7 @@ func (o kubernetesClient) List() (ProjectList, error) {
 func (o kubernetesClient) Exists(projectName string) (bool, error) {
 	projectSupport, err := o.client.IsProjectSupported()
 	if err != nil {
-		return false, errors.Wrap(err, "unable to detect project support")
+		return false, fmt.Errorf("unable to detect project support: %w", err)
 	}
 
 	if projectSupport {

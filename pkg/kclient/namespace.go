@@ -27,7 +27,7 @@ const (
 func (c *Client) GetNamespaces() ([]string, error) {
 	namespaces, err := c.KubeClient.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list namespaces")
+		return nil, fmt.Errorf("unable to list namespaces: %w", err)
 	}
 
 	var names []string

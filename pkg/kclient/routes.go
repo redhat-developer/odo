@@ -7,7 +7,6 @@ import (
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
@@ -46,7 +45,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 
 	r, err := c.routeClient.Routes(c.Namespace).Create(context.TODO(), route, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating route")
+		return nil, fmt.Errorf("error creating route: %w", err)
 	}
 	return r, nil
 }
@@ -55,7 +54,7 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 func (c *Client) DeleteRoute(name string) error {
 	err := c.routeClient.Routes(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
-		return errors.Wrap(err, "unable to delete route")
+		return fmt.Errorf("unable to delete route: %w", err)
 	}
 	return nil
 }
@@ -67,7 +66,7 @@ func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get route list")
+		return nil, fmt.Errorf("unable to get route list: %w", err)
 	}
 
 	return routeList.Items, nil

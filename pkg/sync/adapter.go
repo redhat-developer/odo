@@ -83,7 +83,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		deletedFiles = pushParameters.WatchDeletedFiles
 		deletedFiles, err = dfutil.RemoveRelativePathFromFiles(deletedFiles, pushParameters.Path)
 		if err != nil {
-			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+			return false, fmt.Errorf("unable to remove relative path from list of changed/deleted files: %w", err)
 		}
 		indexRegeneratedByWatch = true
 
@@ -100,7 +100,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
-				return false, errors.Wrap(err, "unable to create directory")
+				return false, fmt.Errorf("unable to create directory: %w", err)
 			}
 		}
 
@@ -110,7 +110,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		if syncParameters.PodChanged || !syncParameters.ComponentExists {
 			err := util.DeleteIndexFile(pushParameters.Path)
 			if err != nil {
-				return false, errors.Wrap(err, "unable to reset the index file")
+				return false, fmt.Errorf("unable to reset the index file: %w", err)
 			}
 		}
 
@@ -119,7 +119,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, pushParameters.IgnoredFiles, syncParameters.Files)
 
 		if err != nil {
-			return false, errors.Wrap(err, "unable to run indexer")
+			return false, fmt.Errorf("unable to run indexer: %w", err)
 		}
 
 		if len(ret.FilesChanged) > 0 || len(ret.FilesDeleted) > 0 {
@@ -211,7 +211,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
-			return errors.Wrap(err, "unable push files to pod")
+			return fmt.Errorf("unable push files to pod: %w", err)
 		}
 	}
 

@@ -6,7 +6,6 @@ import (
 
 	// Third-party packages
 	dfutil "github.com/devfile/library/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -79,7 +78,7 @@ func (o *DeleteOptions) Run() (err error) {
 	if isSecure {
 		err = keyring.Delete(dfutil.CredentialPrefix+o.registryName, o.user)
 		if err != nil {
-			return errors.Wrap(err, "unable to delete registry credential from keyring")
+			return fmt.Errorf("unable to delete registry credential from keyring: %w", err)
 		}
 	}
 

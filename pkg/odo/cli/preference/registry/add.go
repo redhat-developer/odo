@@ -6,7 +6,6 @@ import (
 
 	// Third-party packages
 	dfutil "github.com/devfile/library/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -94,7 +93,7 @@ func (o *AddOptions) Run() (err error) {
 	if o.tokenFlag != "" {
 		err = keyring.Set(dfutil.CredentialPrefix+o.registryName, o.user, o.tokenFlag)
 		if err != nil {
-			return errors.Wrap(err, "unable to store registry credential to keyring")
+			return fmt.Errorf("unable to store registry credential to keyring: %w", err)
 		}
 	}
 

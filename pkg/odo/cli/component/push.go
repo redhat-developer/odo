@@ -105,7 +105,7 @@ func (po *PushOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 
 	po.Devfile, err = devfile.ParseAndValidateFromFile(po.DevfilePath)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse devfile")
+		return fmt.Errorf("unable to parse devfile: %w", err)
 	}
 	err = validate.ValidateDevfileData(po.Devfile.Data)
 	if err != nil {
@@ -115,7 +115,7 @@ func (po *PushOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	// We retrieve the configuration information. If this does not exist, then BLANK is returned (important!).
 	envFileInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
+		return fmt.Errorf("unable to retrieve configuration information: %w", err)
 	}
 
 	err = po.setupEnvFile(envFileInfo, cmdline, args)
@@ -157,7 +157,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 		// either cmd commands or the current default kubernetes namespace
 		namespace, err := retrieveCmdNamespace(cmdline)
 		if err != nil {
-			return errors.Wrap(err, "unable to determine target namespace for the component")
+			return fmt.Errorf("unable to determine target namespace for the component: %w", err)
 		}
 
 		if err = checkDefaultProject(kc, namespace); err != nil {
@@ -175,14 +175,14 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 		} else {
 			name, err = GatherName(po.Devfile, po.DevfilePath)
 			if err != nil {
-				return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
+				return fmt.Errorf("unable to gather a name to apply to the env.yaml file: %w", err)
 			}
 		}
 
 		// Create the environment file. This will actually *create* the env.yaml file in your context directory.
 		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Project: namespace, AppName: "app"})
 		if err != nil {
-			return errors.Wrap(err, "failed to create env.yaml for devfile component")
+			return fmt.Errorf("failed to create env.yaml for devfile component: %w", err)
 		}
 
 	} else if envFileInfo.GetNamespace() == "" {
@@ -191,7 +191,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 		// and write it to the env.yaml
 		namespace, err := retrieveCmdNamespace(cmdline)
 		if err != nil {
-			return errors.Wrap(err, "unable to determine target namespace for devfile")
+			return fmt.Errorf("unable to determine target namespace for devfile: %w", err)
 		}
 		if err = checkDefaultProject(kc, namespace); err != nil {
 			return err
@@ -199,7 +199,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 
 		err = envFileInfo.SetConfiguration("project", namespace)
 		if err != nil {
-			return errors.Wrap(err, "failed to write the project to the env.yaml for devfile component")
+			return fmt.Errorf("failed to write the project to the env.yaml for devfile component: %w", err)
 		}
 	} else if envFileInfo.GetNamespace() == "default" {
 		if err := checkDefaultProject(kc, envFileInfo.GetNamespace()); err != nil {
@@ -210,7 +210,7 @@ func (po *PushOptions) setupEnvFile(envFileInfo *envinfo.EnvSpecificInfo, cmdlin
 	if envFileInfo.GetApplication() == "" {
 		err := envFileInfo.SetConfiguration("app", "")
 		if err != nil {
-			return errors.Wrap(err, "failed to write the app to the env.yaml for devfile component")
+			return fmt.Errorf("failed to write the app to the env.yaml for devfile component: %w", err)
 		}
 	}
 	return nil
@@ -272,7 +272,7 @@ func checkDefaultProject(client kclient.ClientInterface, name string) error {
 	projectSupported, err := client.IsProjectSupported()
 
 	if err != nil {
-		return errors.Wrap(err, "resource project validation check failed.")
+		return fmt.Errorf("resource project validation check failed.: %w", err)
 	}
 
 	if projectSupported && name == "default" {

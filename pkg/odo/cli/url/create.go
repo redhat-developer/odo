@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -179,7 +178,7 @@ func (o *CreateOptions) Run() (err error) {
 		o.EnvSpecificInfo = o.Context.EnvSpecificInfo
 		err = o.DevfilePush()
 		if err != nil {
-			return errors.Wrap(err, "failed to push changes")
+			return fmt.Errorf("failed to push changes: %w", err)
 		}
 	} else {
 		log.Italic("\nTo apply the URL configuration changes, please use `odo push`")

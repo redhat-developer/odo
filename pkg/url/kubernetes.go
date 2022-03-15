@@ -48,14 +48,14 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := k.client.ListIngresses(labelSelector)
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list ingress")
+		return URLList{}, fmt.Errorf("unable to list ingress: %w", err)
 	}
 
 	var routes []routev1.Route
 	if k.isRouteSupported {
 		routes, err = k.client.ListRoutes(labelSelector)
 		if err != nil {
-			return URLList{}, errors.Wrap(err, "unable to list routes")
+			return URLList{}, fmt.Errorf("unable to list routes: %w", err)
 		}
 	}
 
@@ -82,7 +82,7 @@ func (k kubernetesClient) List() (URLList, error) {
 	if k.client != nil {
 		clusterURLs, err = k.ListFromCluster()
 		if err != nil {
-			return URLList{}, errors.Wrap(err, "unable to list routes")
+			return URLList{}, fmt.Errorf("unable to list routes: %w", err)
 		}
 	}
 
@@ -251,7 +251,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 				}
 				secret, e := k.client.CreateTLSSecret(selfSignedCert.CertPem, selfSignedCert.KeyPem, objectMeta)
 				if e != nil {
-					return "", errors.Wrap(e, "unable to create tls secret")
+					return "", fmt.Errorf("unable to create tls secret: %w", e)
 				}
 				url.Spec.TLSSecret = secret.Name
 			} else if err != nil {
@@ -325,7 +325,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 		if kerrors.IsAlreadyExists(err) {
 			return "", fmt.Errorf("url named %q already exists in the same app named %q", url.Name, k.appName)
 		}
-		return "", errors.Wrap(err, "unable to create route")
+		return "", fmt.Errorf("unable to create route: %w", err)
 	}
 	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
 }

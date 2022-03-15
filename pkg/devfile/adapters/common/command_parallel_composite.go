@@ -1,7 +1,8 @@
 package common
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -32,7 +33,7 @@ func (p parallelCompositeCommand) Execute(show bool) error {
 
 	err := commandExecs.Run()
 	if err != nil {
-		return errors.Wrap(err, "parallel command execution failed")
+		return fmt.Errorf("parallel command execution failed: %w", err)
 	}
 	return nil
 }
@@ -52,7 +53,7 @@ func (p parallelCompositeCommand) UnExecute() error {
 
 	err := commandExecs.Run()
 	if err != nil {
-		return errors.Wrap(err, "parallel command execution failed")
+		return fmt.Errorf("parallel command execution failed: %w", err)
 	}
 	return nil
 }

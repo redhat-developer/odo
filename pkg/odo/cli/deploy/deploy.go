@@ -79,23 +79,23 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 
 	envFileInfo, err := envinfo.NewEnvSpecificInfo(o.contextDir)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
+		return fmt.Errorf("unable to retrieve configuration information: %w", err)
 	}
 	if !envFileInfo.Exists() {
 		var cmpName string
 		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
 		if err != nil {
-			return errors.Wrap(err, "unable to retrieve component name")
+			return fmt.Errorf("unable to retrieve component name: %w", err)
 		}
 		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
 		if err != nil {
-			return errors.Wrap(err, "failed to write new env.yaml file")
+			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
 
 	} else if envFileInfo.GetComponentSettings().Project != o.GetProject() {
 		err = envFileInfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
-			return errors.Wrap(err, "failed to update project in env.yaml file")
+			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
 	}
 
