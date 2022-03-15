@@ -118,6 +118,7 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         ignorePaths,
+		InitialDevfileObj:   devfileObj,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters)

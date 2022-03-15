@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -61,6 +63,8 @@ type WatchParameters struct {
 	DevfileRunCmd string
 	// DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
 	DevfileDebugCmd string
+	// InitialDevfileObj is used to compare the devfile between the very first run of odo dev and subsequent ones
+	InitialDevfileObj parser.DevfileObj
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided

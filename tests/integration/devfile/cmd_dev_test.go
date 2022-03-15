@@ -166,7 +166,7 @@ var _ = Describe("odo dev command tests", func() {
 
 			BeforeEach(func() {
 				session := helper.CmdRunner("odo", "dev")
-				helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 				defer session.Kill()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -189,7 +189,7 @@ var _ = Describe("odo dev command tests", func() {
 
 				It("should run odo dev on initial namespace", func() {
 					session := helper.CmdRunner("odo", "dev")
-					helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 					defer session.Kill()
 
 					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
@@ -271,12 +271,20 @@ var _ = Describe("odo dev command tests", func() {
 					}
 
 					body4, _ := io.ReadAll(resp4.Body)
-					if string(body4) != "H3110 from Node.js Starter Application!" {
-						return false
-					}
-					return true
+					return string(body4) == "H3110 from Node.js Starter Application!"
 				}, 180, 10).Should(Equal(true))
 
+			})
+
+			When("an endpoint is added after first run of odo dev", func() {
+				It("should print the message to run odo dev again", func() {
+					session := helper.CmdRunner("odo", "dev")
+					defer session.Kill()
+					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+
+					helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
+					helper.WaitForOutputToContain("total number of endpoints in the devfile have changed; please run `odo dev` again", 180, 10, session)
+				})
 			})
 		})
 	})

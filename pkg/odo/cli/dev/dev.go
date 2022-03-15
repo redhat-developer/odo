@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -47,6 +48,8 @@ type DevOptions struct {
 	out         io.Writer
 	errOut      io.Writer
 	envFileInfo *envinfo.EnvSpecificInfo
+	// it's called "initial" because it has to be set only once when running odo dev for the first time
+	initialDevfileObj parser.DevfileObj
 
 	// working directory
 	contextDir string
@@ -113,6 +116,8 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
+
+	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
 
 	if !o.envFileInfo.Exists() {
 		// if env.yaml doesn't exist, get component name from the devfile.yaml
@@ -199,7 +204,6 @@ func (o *DevOptions) Run() error {
 
 	go func() {
 		err := o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), portPairsSlice, o.errOut)
-		fmt.Println("port forwarding works, yay")
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
@@ -228,12 +232,16 @@ func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, 
 }
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
-
-	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
-
 	devObj, err := ododevfile.ParseAndValidateFromFile(location.DevfileLocation(""))
 	if err != nil {
 		return nil, err
+	}
+
+	changed, err := haveEndpointsChanged(parameters.InitialDevfileObj, devObj)
+	if err != nil {
+		return nil, err
+	} else if changed {
+		fmt.Printf("\ntotal number of endpoints in the devfile have changed; please run `odo dev` again")
 	}
 
 	platformContext := kubernetes.KubernetesContext{
@@ -241,6 +249,33 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+}
+
+func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
+	oldContainers, err := libdevfile.GetContainerComponents(oldDevfile)
+	if err != nil {
+		return false, err
+	}
+
+	oldEndpoints, err := libdevfile.GetContainerEndpointMapping(oldContainers)
+	if err != nil {
+		return false, err
+	}
+
+	newContainers, err := libdevfile.GetContainerComponents(newDevfile)
+	if err != nil {
+		return false, err
+	}
+
+	newEndpoints, err := libdevfile.GetContainerEndpointMapping(newContainers)
+	if err != nil {
+		return false, nil
+	}
+
+	if !reflect.DeepEqual(oldEndpoints, newEndpoints) {
+		return true, nil
+	}
+	return false, nil
 }
 
 func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
