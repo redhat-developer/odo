@@ -9,10 +9,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	"io"
+	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,6 +30,8 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/tidwall/gjson"
 )
+
+const EnvOdoBinaryPath = "ODO_BINARY_PATH"
 
 // RandString returns a random string of given length
 func RandString(n int) string {
@@ -279,6 +284,13 @@ func GetUserHomeDir() string {
 	return homeDir
 }
 
+// GetRootDir returns the project root directory
+func GetRootDir() string {
+	//This returns the path to this file
+	var _, f, _, _ = runtime.Caller(0)
+	return path.Join(filepath.Dir(f), "..", "..")
+}
+
 // LocalKubeconfigSet sets the KUBECONFIG to the temporary config file
 func LocalKubeconfigSet(context string) {
 	originalKubeCfg := os.Getenv("KUBECONFIG")
@@ -443,9 +455,29 @@ func SetProjectName() string {
 
 // RunTestSpecs defines a common way how test specs in test suite are executed
 func RunTestSpecs(t *testing.T, description string) {
+	// Unless an explicit `ODO_BINARY_PATH` envvar is defined, integration and e2e tests should build odo and use it.
+	// This fixes potential issues where the tests that execute `odo` as a subprocess
+	// do not match the version of the code.
+	if _, present := os.LookupEnv(EnvOdoBinaryPath); !present {
+		os.Setenv(EnvOdoBinaryPath, buildProject())
+	}
 	os.Setenv(segment.DisableTelemetryEnv, "true")
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
+}
+
+// buildProject builds the `odo` project and returns the path to the binary
+func buildProject() string {
+	rootDir := GetRootDir()
+	buildCmd := exec.Command("make", "bin")
+	buildCmd.Dir = rootDir
+	buildCmd.Stdout = os.Stdout
+	buildCmd.Stderr = os.Stderr
+	err := buildCmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return path.Join(rootDir, "odo")
 }
 
 func IsKubernetesCluster() bool {
