@@ -2,8 +2,8 @@ package common
 
 import (
 	"fmt"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -107,7 +107,7 @@ func (s execCommand) Execute(show bool) error {
 	logger.DevFileCommandExecutionComplete(s.id, s.component, s.originalCmd, s.group, machineoutput.TimestampNow(), err)
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to execute the run command")
+		return fmt.Errorf("unable to execute the run command: %w", err)
 	}
 
 	if showSpinner {

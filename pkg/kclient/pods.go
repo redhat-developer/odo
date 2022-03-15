@@ -38,7 +38,7 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch pod")
+		return nil, fmt.Errorf("unable to watch pod: %w", err)
 	}
 	defer w.Stop()
 
@@ -142,13 +142,13 @@ func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string,
 
 	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
-		return errors.Wrapf(err, "unable to get Kubernetes client config")
+		return fmt.Errorf("unable to get Kubernetes client config: %w", err)
 	}
 
 	// Connect to url (constructed from req) using SPDY (HTTP/2) protocol which allows bidirectional streams.
 	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
-		return errors.Wrapf(err, "unable execute command via SPDY")
+		return fmt.Errorf("unable execute command via SPDY: %w", err)
 	}
 	// initialize the transport of the standard shell streams
 	err = exec.Stream(remotecommand.StreamOptions{
@@ -158,7 +158,7 @@ func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string,
 		Tty:    tty,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "error while streaming command")
+		return fmt.Errorf("error while streaming command: %w", err)
 	}
 
 	return nil

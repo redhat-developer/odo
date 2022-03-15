@@ -8,7 +8,6 @@ import (
 
 	"k8s.io/klog"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
 )
 
@@ -42,7 +41,7 @@ func ExecuteCommand(client ExecClient, compInfo ComponentInfo, command []string,
 		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
 		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
 
-		return errors.Wrapf(err, "unable to exec command %v: \n%v", command, cmdOutput)
+		return fmt.Errorf("unable to exec command %v: \n%v: %w", command, cmdOutput, err)
 	}
 
 	return

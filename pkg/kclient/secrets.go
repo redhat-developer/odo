@@ -42,7 +42,7 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objec
 
 	secret, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secretTemplate, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create secret %s", objectMeta.Name)
+		return nil, fmt.Errorf("unable to create secret %s: %w", objectMeta.Name, err)
 	}
 	return secret, nil
 }
@@ -102,7 +102,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 	secret, err := c.KubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
+		return nil, fmt.Errorf("unable to get the secret %s: %w", secret, err)
 	}
 	return secret, nil
 }
@@ -111,7 +111,7 @@ func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 func (c *Client) UpdateSecret(secret *corev1.Secret, namespace string) (*corev1.Secret, error) {
 	secret, err := c.KubeClient.CoreV1().Secrets(namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update the secret %s", secret)
+		return nil, fmt.Errorf("unable to update the secret %s: %w", secret, err)
 	}
 	return secret, nil
 }
@@ -120,7 +120,7 @@ func (c *Client) UpdateSecret(secret *corev1.Secret, namespace string) (*corev1.
 func (c *Client) DeleteSecret(secretName, namespace string) error {
 	err := c.KubeClient.CoreV1().Secrets(namespace).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete the secret %s", secretName)
+		return fmt.Errorf("unable to delete the secret %s: %w", secretName, err)
 	}
 	return nil
 }
@@ -137,7 +137,7 @@ func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]stri
 	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
 	_, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secret, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
+		return fmt.Errorf("unable to create secret for %s: %w", objectMeta.Name, err)
 	}
 	return nil
 }
@@ -168,7 +168,7 @@ func (c *Client) CreateSecrets(componentName string, commonObjectMeta metav1.Obj
 			ownerReference)
 
 		if err != nil {
-			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
+			return fmt.Errorf("unable to create Secret for %s: %w", commonObjectMeta.Name, err)
 		}
 	}
 
@@ -204,7 +204,7 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch secret")
+		return nil, fmt.Errorf("unable to watch secret: %w", err)
 	}
 	defer w.Stop()
 	for {

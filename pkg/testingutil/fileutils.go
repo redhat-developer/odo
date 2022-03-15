@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/pkg/errors"
 )
 
 // TempMkdir creates a temporary directory
@@ -14,7 +12,7 @@ func TempMkdir(parentDir string, newDirPrefix string) (string, error) {
 	parentDir = filepath.FromSlash(parentDir)
 	dir, err := ioutil.TempDir(parentDir, newDirPrefix)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create dir with prefix %s in directory %s", newDirPrefix, parentDir)
+		return "", fmt.Errorf("failed to create dir with prefix %s in directory %s: %w", newDirPrefix, parentDir, err)
 	}
 	return dir, nil
 }
@@ -24,7 +22,7 @@ func TempMkFile(dir string, fileName string) (string, error) {
 	dir = filepath.FromSlash(dir)
 	f, err := ioutil.TempFile(dir, fileName)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create test file %s in dir %s", fileName, dir)
+		return "", fmt.Errorf("failed to create test file %s in dir %s: %w", fileName, dir, err)
 	}
 	if err := f.Close(); err != nil {
 		return "", err

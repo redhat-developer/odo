@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -82,7 +83,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	if contextDir == "" {
 		path, err = os.Getwd()
 		if err != nil {
-			return errors.Wrapf(err, "Could not get the current working directory.")
+			return fmt.Errorf("Could not get the current working directory: %w", err)
 		}
 	} else {
 		path = contextDir
@@ -133,7 +134,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string, verbose bool) error {
 	remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(starterProject.Git.GitLikeProjectSource)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
+		return fmt.Errorf("unable to get default project source for starter project %s: %w", starterProject.Name, err)
 	}
 
 	// convert revision to referenceName type, ref name could be a branch or tag

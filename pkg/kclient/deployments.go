@@ -67,7 +67,7 @@ func (c *Client) GetOneDeployment(componentName, appName string) (*appsv1.Deploy
 func (c *Client) GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error) {
 	deployments, err := c.GetDeploymentFromSelector(selector)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Deployments for the selector: %v", selector)
+		return nil, fmt.Errorf("unable to get Deployments for the selector: %v: %w", selector, err)
 	}
 
 	num := len(deployments)
@@ -155,7 +155,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 
 	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch deployment")
+		return nil, fmt.Errorf("unable to watch deployment: %w", err)
 	}
 	defer w.Stop()
 
@@ -237,7 +237,7 @@ func resourceAsJson(resource interface{}) string {
 func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Create(context.TODO(), &deploy, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Deployment %s", deploy.Name)
+		return nil, fmt.Errorf("unable to create Deployment %s: %w", deploy.Name, err)
 	}
 	return deployment, nil
 }
@@ -246,7 +246,7 @@ func (c *Client) CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(context.TODO(), &deploy, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
+		return nil, fmt.Errorf("unable to update Deployment %s: %w", deploy.Name, err)
 	}
 	return deployment, nil
 }
@@ -257,7 +257,7 @@ func (c *Client) UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment,
 func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error) {
 	data, err := json.Marshal(deploy)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to marshal deployment")
+		return nil, fmt.Errorf("unable to marshal deployment: %w", err)
 	}
 	klog.V(5).Infoln("Applying Deployment via server-side apply:")
 	klog.V(5).Infoln(resourceAsJson(deploy))
@@ -269,7 +269,7 @@ func (c *Client) ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, 
 
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deploy.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update Deployment %s", deploy.Name)
+		return nil, fmt.Errorf("unable to update Deployment %s: %w", deploy.Name, err)
 	}
 	return deployment, nil
 }
@@ -330,7 +330,7 @@ func (c *Client) CreateDynamicResource(resource unstructured.Unstructured, gvr *
 	klog.V(5).Infoln(resourceAsJson(resource.Object))
 	data, err := json.Marshal(resource.Object)
 	if err != nil {
-		return errors.Wrapf(err, "unable to marshal resource")
+		return fmt.Errorf("unable to marshal resource: %w", err)
 	}
 
 	// Patch the dynamic resource
@@ -438,7 +438,7 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 
 	deployment, err := c.GetOneDeploymentFromSelector(deploymentSelector)
 	if err != nil {
-		return errors.Wrapf(err, "unable to locate Deployment with selector %q", deploymentSelector)
+		return fmt.Errorf("unable to locate Deployment with selector %q: %w", deploymentSelector, err)
 	}
 
 	if deploymentPatchProvider != nil {
@@ -450,10 +450,10 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 		// patch the Deployment with the secret
 		_, e = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
 		if e != nil {
-			return errors.Wrapf(e, "Deployment not patched %s", deployment.Name)
+			return fmt.Errorf("Deployment not patched %s: %w", deployment.Name, e)
 		}
 	} else {
-		return errors.Wrapf(err, "deploymentPatch was not properly set")
+		return fmt.Errorf("deploymentPatch was not properly set: %w", err)
 	}
 
 	return nil

@@ -302,7 +302,7 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 
 		err := addEndpointInDevfile(esi.devfileObj, newEndpointEntry, url.Container)
 		if err != nil {
-			return errors.Wrapf(err, "failed to write endpoints information into devfile")
+			return fmt.Errorf("failed to write endpoints information into devfile: %w", err)
 		}
 	} else {
 		err := updateEndpointInDevfile(esi.devfileObj, url)
@@ -313,7 +313,7 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 
 	err := esi.SetConfiguration("url", localConfigProvider.LocalURL{Name: url.Name, Host: url.Host, TLSSecret: url.TLSSecret, Kind: url.Kind})
 	if err != nil {
-		return errors.Wrapf(err, "failed to persist the component settings to env file")
+		return fmt.Errorf("failed to persist the component settings to env file: %w", err)
 	}
 	return nil
 }

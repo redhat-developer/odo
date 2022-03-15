@@ -18,7 +18,6 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
@@ -492,12 +491,12 @@ func TestGetHostWithPort(t *testing.T) {
 func MakeFileWithContent(dir string, fileName string, content string) error {
 	file, err := os.Create(dir + string(os.PathSeparator) + fileName)
 	if err != nil {
-		return errors.Wrapf(err, "error while creating file")
+		return fmt.Errorf("error while creating file: %w", err)
 	}
 	defer file.Close()
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.Wrapf(err, "error while writing to file")
+		return fmt.Errorf("error while writing to file: %w", err)
 	}
 	return nil
 }

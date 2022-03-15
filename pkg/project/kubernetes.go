@@ -1,6 +1,8 @@
 package project
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -77,7 +79,7 @@ func (o kubernetesClient) Delete(projectName string, wait bool) error {
 		err = o.client.DeleteNamespace(projectName, wait)
 	}
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete project %q", projectName)
+		return fmt.Errorf("unable to delete project %q: %w", projectName, err)
 	}
 	return nil
 }

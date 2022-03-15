@@ -81,7 +81,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 			FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 		})
 		if err != nil {
-			return errors.Wrapf(err, "unable to watch project")
+			return fmt.Errorf("unable to watch project: %w", err)
 		}
 		defer watcher.Stop()
 	}
@@ -170,7 +170,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			FieldSelector: fields.Set{"metadata.name": projectName}.AsSelector().String(),
 		})
 		if err != nil {
-			return errors.Wrapf(err, "unable to watch new project %s creation", projectName)
+			return fmt.Errorf("unable to watch new project %s creation: %w", projectName, err)
 		}
 		defer watcher.Stop()
 	}
@@ -182,7 +182,7 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 	}
 	_, err = c.projectClient.ProjectRequests().Create(context.TODO(), projectRequest, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return errors.Wrapf(err, "unable to create new project %s", projectName)
+		return fmt.Errorf("unable to create new project %s: %w", projectName, err)
 	}
 
 	if watcher != nil {

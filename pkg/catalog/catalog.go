@@ -189,7 +189,7 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 	// Github-based registry
 	URL, err := convertURL(registry.URL)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
+		return nil, fmt.Errorf("unable to convert URL %s: %w", registry.URL, err)
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
@@ -208,7 +208,7 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 
 	jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+		return nil, fmt.Errorf("unable to download the devfile index.json from %s: %w", indexLink, err)
 	}
 
 	var devfileIndex []indexSchema.Schema
@@ -220,12 +220,12 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 		// we try once again
 		jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+			return nil, fmt.Errorf("unable to download the devfile index.json from %s: %w", indexLink, err)
 		}
 
 		err = json.Unmarshal(jsonBytes, &devfileIndex)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
+			return nil, fmt.Errorf("unable to unmarshal the devfile index.json from %s: %w", indexLink, err)
 		}
 	}
 	return createRegistryDevfiles(registry, devfileIndex)

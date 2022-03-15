@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -71,7 +72,7 @@ func (c *Client) CreateNamespace(name string) (*corev1.Namespace, error) {
 
 	newNamespace, err := c.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Namespace %s", namespace.ObjectMeta.Name)
+		return nil, fmt.Errorf("unable to create Namespace %s: %w", namespace.ObjectMeta.Name, err)
 	}
 	return newNamespace, nil
 }
@@ -86,14 +87,14 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 			FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 		})
 		if err != nil {
-			return errors.Wrapf(err, "unable to watch namespace")
+			return fmt.Errorf("unable to watch namespace: %w", err)
 		}
 		defer watcher.Stop()
 	}
 
 	err = c.KubeClient.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete Namespace %s", name)
+		return fmt.Errorf("unable to delete Namespace %s: %w", name, err)
 	}
 
 	if watcher != nil {
@@ -145,14 +146,14 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 func (c *Client) SetCurrentNamespace(namespace string) error {
 	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", namespace)
+		return fmt.Errorf("unable to switch to %s project: %w", namespace, err)
 	}
 
 	rawConfig.Contexts[rawConfig.CurrentContext].Namespace = namespace
 
 	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
 	if err != nil {
-		return errors.Wrapf(err, "unable to switch to %s project", namespace)
+		return fmt.Errorf("unable to switch to %s project: %w", namespace, err)
 	}
 
 	c.Namespace = namespace

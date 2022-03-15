@@ -29,7 +29,7 @@ func New(devfile devfilev1.Command, knowCommands map[string]devfilev1.Command, e
 			if devfileCommand, ok := knowCommands[strings.ToLower(cmd)]; ok {
 				c, err := New(devfileCommand, knowCommands, executor)
 				if err != nil {
-					return nil, errors.Wrapf(err, "couldn't create command %s", cmd)
+					return nil, fmt.Errorf("couldn't create command %s: %w", cmd, err)
 				}
 				components = append(components, c)
 			} else {

@@ -55,7 +55,7 @@ func GetComponentDir(path string) (string, error) {
 	} else {
 		currDir, err := os.Getwd()
 		if err != nil {
-			return "", errors.Wrapf(err, "unable to generate a random name as getting current directory failed")
+			return "", fmt.Errorf("unable to generate a random name as getting current directory failed: %w", err)
 		}
 		retVal = filepath.Base(currDir)
 	}
@@ -135,7 +135,7 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 	// retrieve all the deployments that are associated with this application
 	deploymentList, err := client.GetDeploymentFromSelector(selector)
 	if err != nil {
-		return ComponentList{}, errors.Wrapf(err, "unable to list components")
+		return ComponentList{}, fmt.Errorf("unable to list components: %w", err)
 	}
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
@@ -319,7 +319,7 @@ func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string)
 func Exists(client kclient.ClientInterface, componentName, applicationName string) (bool, error) {
 	deploymentName, err := dfutil.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
-		return false, errors.Wrapf(err, "unable to create namespaced name")
+		return false, fmt.Errorf("unable to create namespaced name: %w", err)
 	}
 	deployment, _ := client.GetDeploymentByName(deploymentName)
 	if deployment != nil {
@@ -349,7 +349,7 @@ func GetComponent(client kclient.ClientInterface, componentName string, applicat
 func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil || fromCluster == nil {
-		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
+		return Component{}, fmt.Errorf("unable to get remote metadata for %s component: %w", componentName, err)
 	}
 
 	// Component Type
@@ -565,7 +565,7 @@ func Delete(kubeClient kclient.ClientInterface, devfileObj parser.DevfileObj, co
 		log.Warningf("%v", e)
 		return nil
 	} else if err != nil {
-		return errors.Wrapf(err, "unable to determine if component %s exists", componentName)
+		return fmt.Errorf("unable to determine if component %s exists: %w", componentName, err)
 	}
 
 	podSpinner.End(true)

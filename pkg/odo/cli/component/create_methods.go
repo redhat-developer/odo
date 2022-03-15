@@ -193,11 +193,11 @@ func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	}
 	devfileData, err := util.DownloadFileInMemory(params)
 	if err != nil {
-		return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
+		return fmt.Errorf("failed to download devfile for devfile component from %s: %w", co.devfileMetadata.devfilePath.value, err)
 	}
 	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
-		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
+		return fmt.Errorf("unable to save devfile to %s: %w", co.DevfilePath, err)
 	}
 	devfileSpinner.End(true)
 
@@ -228,11 +228,11 @@ func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	defer devfileSpinner.End(false)
 	devfileData, err := ioutil.ReadFile(co.devfileMetadata.devfilePath.value)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read devfile from %s", co.devfileMetadata.devfilePath)
+		return fmt.Errorf("failed to read devfile from %s: %w", co.devfileMetadata.devfilePath, err)
 	}
 	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
-		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
+		return fmt.Errorf("unable to save devfile to %s: %w", co.DevfilePath, (err)
 	}
 	devfileSpinner.End(true)
 

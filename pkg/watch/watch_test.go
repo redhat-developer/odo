@@ -5,7 +5,6 @@ package watch
 
 import (
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -16,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/golang/mock/gomock"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -46,7 +45,7 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 	// Create temporary directory for mock component source code
 	srcPath, err := testingutil.TempMkdir(basePath, componentName)
 	if err != nil {
-		return "", retVal, errors.Wrapf(err, "failed to create dir %s under %s", componentName, basePath)
+		return "", retVal, fmt.Errorf("failed to create dir %s under %s: %w", componentName, basePath, err)
 	}
 	dirTreeMappings[componentName] = srcPath
 
@@ -70,7 +69,7 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 		newPath, err := testingutil.SimulateFileModifications(srcPath, fileProperties)
 		dirTreeMappings[relativePath] = newPath
 		if err != nil {
-			return "", retVal, errors.Wrapf(err, "unable to setup test env")
+			return "", retVal, fmt.Errorf("unable to setup test env: %w", err)
 		}
 
 		fileProperties.FilePath = filepath.Base(newPath)

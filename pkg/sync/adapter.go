@@ -154,12 +154,12 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		ret,
 	)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
+		return false, fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
 	}
 	if forceWrite {
 		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
 		if err != nil {
-			return false, errors.Wrapf(err, "Failed to write file")
+			return false, fmt.Errorf("Failed to write file: %w", err)
 		}
 	}
 
@@ -173,7 +173,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := dfutil.IsEmpty(path)
 	if err != nil {
-		return errors.Wrapf(err, "unable to check directory: %s", path)
+		return fmt.Errorf("unable to check directory: %s: %w", path, err)
 	} else if emptyDir {
 		return errors.New(fmt.Sprintf("directory/file %s is empty", path))
 	}
@@ -224,7 +224,7 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to resolve path: %s", pushParameters.Path)
+		return fmt.Errorf("unable to resolve path: %s: %w", pushParameters.Path, err)
 	}
 
 	// Check that the path exists
@@ -236,13 +236,13 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 		//
 		// If you see this error it means somehow watch's SyncFiles was called without the index being first generated (likely because the
 		// above mentioned pushParam wasn't set). See SyncFiles(...) for details.
-		return errors.Wrapf(err, "resolved path doesn't exist: %s", indexFilePath)
+		return fmt.Errorf("resolved path doesn't exist: %s: %w", indexFilePath, err)
 	}
 
 	// Parse the existing index
 	fileIndex, err := util.ReadFileIndex(indexFilePath)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to read index from path: %s", indexFilePath)
+		return fmt.Errorf("Unable to read index from path: %s: %w", indexFilePath, err)
 	}
 
 	rootDir := pushParameters.Path

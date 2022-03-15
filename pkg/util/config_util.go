@@ -39,7 +39,7 @@ func CreateIfNotExists(configFile string) error {
 func GetFromFile(c interface{}, filename string) error {
 	configData, err := filesystem.Get().ReadFile(filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to read file %v", filename)
+		return fmt.Errorf("unable to read file %v: %w", filename, err)
 	}
 
 	err = yaml.Unmarshal(configData, c)
@@ -62,7 +62,7 @@ func WriteToFile(c interface{}, filename string) error {
 	}
 	err = ioutil.WriteFile(filename, data, 0600)
 	if err != nil {
-		return errors.Wrapf(err, "unable to write config to file %v", c)
+		return fmt.Errorf("unable to write config to file %v: %w", c, err)
 	}
 
 	return nil

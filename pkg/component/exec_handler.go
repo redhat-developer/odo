@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -114,7 +113,7 @@ func executeCommand(client kclient.ClientInterface, containerName string, podNam
 		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
 		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
 
-		return errors.Wrapf(err, "unable to exec command %v: \n%v", command, cmdOutput)
+		return fmt.Errorf("unable to exec command %v: \n%v: %w", command, cmdOutput, err)
 	}
 
 	return

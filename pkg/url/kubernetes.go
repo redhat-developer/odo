@@ -303,7 +303,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
 	routeName, err := dfutil.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", fmt.Errorf("unable to create namespaced name: %w", err)
 	}
 
 	if k.deployment == nil {

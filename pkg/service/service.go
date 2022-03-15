@@ -38,7 +38,7 @@ const ServiceKind = "app.kubernetes.io/service-kind"
 func DeleteOperatorService(client kclient.ClientInterface, serviceName string) error {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
-		return errors.Wrapf(err, "Refer %q to see list of running services", serviceName)
+		return fmt.Errorf("Refer %q to see list of running services: %w", serviceName, err)
 	}
 
 	csv, err := client.GetCSVWithCR(kind)

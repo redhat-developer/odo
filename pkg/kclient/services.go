@@ -15,7 +15,7 @@ import (
 func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {
 	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Create(context.TODO(), &svc, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Service for %s", svc.Name)
+		return nil, fmt.Errorf("unable to create Service for %s: %w", svc.Name, err)
 	}
 	return service, err
 }
@@ -24,7 +24,7 @@ func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {
 func (c *Client) UpdateService(svc corev1.Service) (*corev1.Service, error) {
 	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Update(context.TODO(), &svc, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update Service for %s", svc.Name)
+		return nil, fmt.Errorf("unable to update Service for %s: %w", svc.Name, err)
 	}
 	return service, err
 }

@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ func (c *Client) ListPVCs(selector string) ([]corev1.PersistentVolumeClaim, erro
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVCs for selector: %v", selector)
+		return nil, fmt.Errorf("unable to get PVCs for selector: %v: %w", selector, err)
 	}
 
 	return pvcList.Items, nil

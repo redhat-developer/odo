@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -76,15 +77,14 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 	// check if project exist
 	isPrjExists, err := cpo.clientset.ProjectClient.Exists(prjName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
+		return fmt.Errorf("failed to check if project with name %s exists: %w", prjName, err)
 	}
 	if !isPrjExists {
 		err = cpo.clientset.ProjectClient.Create(prjName, true)
 		if err != nil {
-			return errors.Wrapf(
-				err,
-				"project %s does not exist. Failed creating it. Please try after creating project using `odo project create <project_name>`",
-				prjName,
+			return fmt.Errorf(
+				"project %s does not exist. Failed creating it. Please try after creating project using `odo project create <project_name>`: %w",
+				prjName, err,
 			)
 		}
 	}

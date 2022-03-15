@@ -37,7 +37,8 @@ const (
 	// errorMsg is the message for user when invalid configuration error occurs
 	errorMsg = `
 Please ensure you have an active kubernetes context to your cluster. 
-Consult your Kubernetes distribution's documentation for more details
+Consult your Kubernetes distribution's documentation for more details.
+Error: %w
 `
 	waitForComponentDeletionTimeout = 120 * time.Second
 
@@ -110,7 +111,7 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 
 	client.KubeClientConfig, err = client.KubeConfig.ClientConfig()
 	if err != nil {
-		return nil, errors.Wrapf(err, errorMsg)
+		return nil, fmt.Errorf(errorMsg, err)
 	}
 
 	// For the rest CLIENT, we set the QPS and Burst to high values so

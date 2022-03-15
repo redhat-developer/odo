@@ -83,7 +83,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	if mode.IsRegular() {
 		matched, e := dfutil.IsGlobExpMatch(path, ignores)
 		if e != nil {
-			return errors.Wrapf(e, "unable to watcher on %s", path)
+			return fmt.Errorf("unable to watcher on %s: %w", path, e)
 		}
 		if !matched {
 			klog.V(4).Infof("adding watch on path %s", path)
@@ -109,14 +109,14 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 				klog.V(4).Infof("Walk func received an error for path %s, but the path doesn't exist so this is likely not an error. err: %v", path, err)
 				return nil
 			}
-			return errors.Wrapf(err, "unable to walk path: %s", newPath)
+			return fmt.Errorf("unable to walk path: %s: %w", newPath, err)
 		}
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
 			matched, err := dfutil.IsGlobExpMatch(newPath, ignores)
 			if err != nil {
-				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
+				return fmt.Errorf("unable to addRecursiveWatch on %s: %w", newPath, err)
 			}
 			if matched {
 				klog.V(4).Infof("ignoring watch on path %s", newPath)
@@ -319,7 +319,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 				fmt.Fprintf(out, "Pushing files...\n")
 				fileInfo, err := os.Stat(parameters.Path)
 				if err != nil {
-					return errors.Wrapf(err, "%s: file doesn't exist", parameters.Path)
+					return fmt.Errorf("%s: file doesn't exist: %w", parameters.Path, err)
 				}
 				if fileInfo.IsDir() {
 					klog.V(4).Infof("Copying files %s to pod", changedFiles)

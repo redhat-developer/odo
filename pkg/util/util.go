@@ -456,7 +456,7 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 	// check whether .odo/odo-file-index.json is already in the .gitignore file
 	if !strings.Contains(string(data), filename) {
 		if _, err := file.WriteString("\n" + filename); err != nil {
-			return errors.Wrapf(err, "failed to add %v to %v file", filepath.Base(filename), gitIgnoreFile)
+			return fmt.Errorf("failed to add %v to %v file: %w", filepath.Base(filename), gitIgnoreFile, err)
 		}
 	}
 	return nil
@@ -486,7 +486,7 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 		}()
 
 		if _, err = io.Copy(writer, rd); err != nil {
-			return errors.Wrapf(err, "error followLoging logs for %s", compName)
+			return fmt.Errorf("error followLoging logs for %s: %w", compName, err)
 		}
 
 	} else if numberOfLastLines == -1 {
@@ -494,12 +494,12 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 		buf := new(bytes.Buffer)
 		_, err = io.Copy(buf, rd)
 		if err != nil {
-			return errors.Wrapf(err, "unable to copy followLog to buffer")
+			return fmt.Errorf("unable to copy followLog to buffer: %w", err)
 		}
 
 		// Copy to stdout
 		if _, err = io.Copy(writer, buf); err != nil {
-			return errors.Wrapf(err, "error copying logs to stdout")
+			return fmt.Errorf("error copying logs to stdout: %w", err)
 		}
 	} else {
 		reader := bufio.NewReader(rd)

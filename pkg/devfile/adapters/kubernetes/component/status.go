@@ -1,9 +1,8 @@
 package component
 
 import (
+	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -32,7 +31,7 @@ func getSupervisordStatusInContainer(podName string, containerName string, a Ada
 	consoleStderrResult := <-stderrOutputChannel
 
 	if err != nil {
-		a.Logger().ReportError(errors.Wrapf(err, "unable to execute command on %s within container %s, %v, output: %v %v", podName, containerName, err, consoleResult, consoleStderrResult), machineoutput.TimestampNow())
+		a.Logger().ReportError(fmt.Errorf("unable to execute command on %s within container %s, %v, output: %v %v: %w", podName, containerName, err, consoleResult, consoleStderrResult, err), machineoutput.TimestampNow())
 		return nil
 	}
 

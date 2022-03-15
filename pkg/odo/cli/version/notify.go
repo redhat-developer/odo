@@ -1,6 +1,7 @@
 package version
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/blang/semver"
@@ -36,7 +37,7 @@ func getLatestReleaseTag() (string, error) {
 func checkLatestReleaseTag(currentVersion string) (string, error) {
 	currentSemver, err := semver.Make(strings.TrimPrefix(currentVersion, "v"))
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to make semver from the current version: %v", currentVersion)
+		return "", fmt.Errorf("unable to make semver from the current version: %v: %w", currentVersion, err)
 	}
 
 	latestTag, err := getLatestReleaseTag()
@@ -46,7 +47,7 @@ func checkLatestReleaseTag(currentVersion string) (string, error) {
 
 	latestSemver, err := semver.Make(strings.TrimPrefix(latestTag, "v"))
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to make semver from the latest release tag: %v", latestTag)
+		return "", fmt.Errorf("unable to make semver from the latest release tag: %v: %w", latestTag, err)
 	}
 
 	if currentSemver.LT(latestSemver) {
