@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -19,7 +20,12 @@ func runningCmd(cmd *exec.Cmd) string {
 	return fmt.Sprintf("Running %s with args %v", prog, cmd.Args)
 }
 
-func CmdRunner(program string, args ...string) *gexec.Session {
+func CmdRunner(prog string, args ...string) *gexec.Session {
+	program := prog
+	if prog == "odo" {
+		// Make sure to use the version built (or the one explicitly defined by callers)
+		program = os.Getenv(EnvOdoBinaryPath)
+	}
 	// prefix ginkgo verbose output with program name
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)

@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/segment"
 	"io"
 	"log"
 	"os"
@@ -20,6 +18,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
 
 	"github.com/redhat-developer/odo/tests/helper/reporter"
 
@@ -162,6 +163,11 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, success func(out
 
 	cmdStrParts := strings.Fields(cmdStr)
 
+	if len(cmdStrParts) > 0 && cmdStrParts[0] == "odo" {
+		// Make sure to use the version built (or the one explicitly defined by callers)
+		cmdStrParts[0] = os.Getenv(EnvOdoBinaryPath)
+	}
+
 	fmt.Fprintln(GinkgoWriter, "Running command: ", cmdStrParts)
 
 	cmd = exec.Command(cmdStrParts[0], cmdStrParts[1:]...)
@@ -222,8 +228,14 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, success func(out
 // It is different from WaitforCmdOut which gives stdout in one go using session.Out.Contents()
 // for commands like odo log -f which streams continuous data and does not terminate by their own
 // we need to read the stream data from buffer.
-func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, program string, args ...string) (bool, error) {
+func RunCmdWithMatchOutputFromBuffer(timeoutAfter time.Duration, matchString, prog string, args ...string) (bool, error) {
 	var buf, errBuf bytes.Buffer
+
+	program := prog
+	if prog == "odo" {
+		// Make sure to use the version built (or the one explicitly defined by callers)
+		program = os.Getenv(EnvOdoBinaryPath)
+	}
 
 	command := exec.Command(program, args...)
 	command.Stdout = &buf

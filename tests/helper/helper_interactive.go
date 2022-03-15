@@ -48,6 +48,11 @@ type Tester func(InteractiveContext)
 // If there are duplicate environment keys, only the last value in the slice for each duplicate key is used.
 func RunInteractive(command []string, env []string, tester Tester) (string, error) {
 
+	if len(command) != 0 && command[0] == "odo" {
+		// Make sure to use the version built (or the one explicitly defined by callers)
+		command[0] = os.Getenv(EnvOdoBinaryPath)
+	}
+
 	fmt.Fprintln(GinkgoWriter, "running command", command, "with env", env)
 
 	ptm, pts, err := pty.Open()

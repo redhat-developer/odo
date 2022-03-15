@@ -27,7 +27,12 @@ type CmdWrapper struct {
 	pass            bool
 }
 
-func Cmd(program string, args ...string) *CmdWrapper {
+func Cmd(prog string, args ...string) *CmdWrapper {
+	program := prog
+	if prog == "odo" {
+		// Make sure to use the version built (or the one explicitly defined by callers)
+		program = os.Getenv(EnvOdoBinaryPath)
+	}
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)
 	command := exec.Command(program, args...)
