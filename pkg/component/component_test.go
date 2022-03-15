@@ -147,13 +147,13 @@ func TestList(t *testing.T) {
 		*testingutil.CreateFakeDeployment("comp1"),
 	}}
 
-	deploymentList.Items[0].Labels[componentlabels.ComponentKubernetesNameLabel] = "nodejs"
+	deploymentList.Items[0].Labels[componentlabels.KubernetesNameLabel] = "nodejs"
 	deploymentList.Items[0].Annotations = map[string]string{
-		componentlabels.ComponentProjectTypeAnnotation: "nodejs",
+		componentlabels.OdoProjectTypeAnnotation: "nodejs",
 	}
-	deploymentList.Items[1].Labels[componentlabels.ComponentKubernetesNameLabel] = "wildfly"
+	deploymentList.Items[1].Labels[componentlabels.KubernetesNameLabel] = "wildfly"
 	deploymentList.Items[1].Annotations = map[string]string{
-		componentlabels.ComponentProjectTypeAnnotation: "wildfly",
+		componentlabels.OdoProjectTypeAnnotation: "wildfly",
 	}
 	tests := []struct {
 		name           string
@@ -484,14 +484,14 @@ func getFakeComponent(compName, namespace, appName, compType string, state strin
 			Name:      compName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				applabels.App:              appName,
-				applabels.ManagedBy:        "odo",
-				applabels.ApplicationLabel: appName,
-				componentlabels.ComponentKubernetesInstanceLabel: compName,
-				componentlabels.ComponentKubernetesNameLabel:     compType,
+				applabels.App:                           appName,
+				applabels.ManagedBy:                     "odo",
+				applabels.ApplicationLabel:              appName,
+				componentlabels.KubernetesInstanceLabel: compName,
+				componentlabels.KubernetesNameLabel:     compType,
 			},
 			Annotations: map[string]string{
-				componentlabels.ComponentProjectTypeAnnotation: compType,
+				componentlabels.OdoProjectTypeAnnotation: compType,
 			},
 		},
 		Spec: ComponentSpec{

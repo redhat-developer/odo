@@ -147,16 +147,16 @@ func (d devfileComponent) GetAnnotations() map[string]string {
 }
 
 func (d devfileComponent) GetName() string {
-	return d.d.Labels[componentlabels.ComponentKubernetesInstanceLabel]
+	return d.d.Labels[componentlabels.KubernetesInstanceLabel]
 }
 
 func getType(component provider) (string, error) {
 
 	// For backwards compatibility with previously deployed components that could be non-odo, check the label first
 	// then check to see if there is an annotation with the project type
-	if componentType, ok := component.GetLabels()[componentlabels.ComponentProjectTypeAnnotation]; ok {
+	if componentType, ok := component.GetLabels()[componentlabels.OdoProjectTypeAnnotation]; ok {
 		return componentType, nil
-	} else if componentType, ok = component.GetAnnotations()[componentlabels.ComponentProjectTypeAnnotation]; ok {
+	} else if componentType, ok = component.GetAnnotations()[componentlabels.OdoProjectTypeAnnotation]; ok {
 		return componentType, nil
 	}
 

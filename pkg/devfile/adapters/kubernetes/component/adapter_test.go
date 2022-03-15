@@ -46,11 +46,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testComponentName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:                       testAppName,
-				componentLabels.ComponentKubernetesInstanceLabel: testComponentName,
+				applabels.ApplicationLabel:              testAppName,
+				componentLabels.KubernetesInstanceLabel: testComponentName,
 			},
 			Annotations: map[string]string{
-				componentLabels.ComponentProjectTypeAnnotation: "",
+				componentLabels.OdoProjectTypeAnnotation: "",
 			},
 		},
 	}
@@ -95,7 +95,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
-				deployment.Annotations[componentLabels.ComponentProjectTypeAnnotation] = string(tt.componentType)
+				deployment.Annotations[componentLabels.OdoProjectTypeAnnotation] = string(tt.componentType)
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{

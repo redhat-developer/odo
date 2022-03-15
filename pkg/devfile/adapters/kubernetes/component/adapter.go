@@ -116,7 +116,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
 	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
 	selectorLabels := componentlabels.GetLabels(a.ComponentName, a.AppName, false)
-	selectorLabels[componentlabels.ComponentModeLabel] = componentlabels.ComponentDevName
+	selectorLabels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
 	a.deployment, err = a.Client.GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(selectorLabels))
 
 	if err != nil {
@@ -169,11 +169,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Set the mode to Dev since we are using "odo push" here
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
-	labels[componentlabels.ComponentModeLabel] = componentlabels.ComponentDevName
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
 
 	// Set the annotations for the component type
 	annotations := make(map[string]string)
-	annotations[componentlabels.ComponentProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
 
 	previousMode := parameters.EnvSpecificInfo.GetRunMode()
 	currentMode := envinfo.Run
@@ -426,11 +426,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 
 	// Set the labels
 	labels := componentlabels.GetLabels(componentName, a.AppName, true)
-	labels[componentlabels.ComponentModeLabel] = componentlabels.ComponentDevName
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
 	labels["component"] = componentName
 
 	annotations := make(map[string]string)
-	annotations[componentlabels.ComponentProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
 	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
 	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})
@@ -551,9 +551,9 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		e := a.createOrUpdateServiceForComponent(svc, componentName)
+		err := a.createOrUpdateServiceForComponent(svc, componentName)
 		if err != nil {
-			return e
+			return err
 		}
 	} else {
 		if a.Client.IsSSASupported() {

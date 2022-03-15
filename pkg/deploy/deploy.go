@@ -67,13 +67,13 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	// Get the most common labels that's applicable to all resources being deployed.
 	// Set the mode to DEPLOY. Regardless of what Kubernetes resource we are deploying.
 	labels := componentlabels.GetLabels(o.devfileObj.Data.GetMetadata().Name, o.appName, true)
-	labels[componentlabels.ComponentModeLabel] = componentlabels.ComponentDeployName
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDeployName
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
 
 	// Create the annotations
 	// Retrieve the component type from the devfile and also inject it into the list of annotations
 	annotations := make(map[string]string)
-	annotations[componentlabels.ComponentProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
+	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
 
 	// Get the Kubernetes component
 	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})

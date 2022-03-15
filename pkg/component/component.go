@@ -141,7 +141,7 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
-		component, err := GetComponent(client, elem.Labels[componentlabels.ComponentKubernetesInstanceLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
+		component, err := GetComponent(client, elem.Labels[componentlabels.KubernetesInstanceLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
 		if err != nil {
 			return ComponentList{}, errors.Wrap(err, "Unable to get component")
 		}
@@ -479,7 +479,7 @@ func setLinksServiceNames(client kclient.ClientInterface, linkedSecrets []Secret
 
 		serviceCompMap := make(map[string]string)
 		for _, gotService := range services {
-			serviceCompMap[gotService.Labels[componentlabels.ComponentKubernetesInstanceLabel]] = gotService.Name
+			serviceCompMap[gotService.Labels[componentlabels.KubernetesInstanceLabel]] = gotService.Name
 		}
 
 		for _, secret := range secrets {

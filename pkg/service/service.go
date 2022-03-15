@@ -345,7 +345,7 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 		name := svc.GetName()
 		kind := svc.GetKind()
 		deployedLabels := svc.GetLabels()
-		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.ComponentKubernetesInstanceLabel] == labels[componentlabels.ComponentKubernetesInstanceLabel] {
+		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.KubernetesInstanceLabel] == labels[componentlabels.KubernetesInstanceLabel] {
 			deployed[kind+"/"+name] = DeployedInfo{
 				Kind:           kind,
 				Name:           name,

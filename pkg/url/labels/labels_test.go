@@ -30,9 +30,9 @@ func TestGetLabels(t *testing.T) {
 				additional:      false,
 			},
 			want: map[string]string{
-				applabels.ApplicationLabel:                       "applicationame",
-				componentlabels.ComponentKubernetesInstanceLabel: "componentname",
-				URLLabel: "urlname",
+				applabels.ApplicationLabel:              "applicationame",
+				componentlabels.KubernetesInstanceLabel: "componentname",
+				URLLabel:                                "urlname",
 			},
 		}, {
 			name: "Case 2: No URL name",
@@ -43,9 +43,9 @@ func TestGetLabels(t *testing.T) {
 				additional:      false,
 			},
 			want: map[string]string{
-				applabels.ApplicationLabel:                       "applicationame",
-				componentlabels.ComponentKubernetesInstanceLabel: "componentname",
-				URLLabel: "",
+				applabels.ApplicationLabel:              "applicationame",
+				componentlabels.KubernetesInstanceLabel: "componentname",
+				URLLabel:                                "",
 			},
 		}, {
 			name: "Case 3: Everything with additional",
@@ -56,12 +56,12 @@ func TestGetLabels(t *testing.T) {
 				additional:      true,
 			},
 			want: map[string]string{
-				applabels.ApplicationLabel:                       "applicationame",
-				applabels.App:                                    "applicationame",
-				applabels.ManagedBy:                              "odo",
-				applabels.ManagerVersion:                         version.VERSION,
-				componentlabels.ComponentKubernetesInstanceLabel: "componentname",
-				URLLabel: "urlname",
+				applabels.ApplicationLabel:              "applicationame",
+				applabels.App:                           "applicationame",
+				applabels.ManagedBy:                     "odo",
+				applabels.ManagerVersion:                version.VERSION,
+				componentlabels.KubernetesInstanceLabel: "componentname",
+				URLLabel:                                "urlname",
 			},
 		},
 	}

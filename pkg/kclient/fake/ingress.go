@@ -20,12 +20,12 @@ func GetKubernetesIngressListWithMultiple(componentName, appName string, network
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-0",
 			Labels: map[string]string{
-				applabels.ApplicationLabel:                       appName,
-				componentlabels.ComponentKubernetesInstanceLabel: componentName,
-				applabels.ManagedBy:                              "odo",
-				applabels.ManagerVersion:                         version.VERSION,
-				labels.URLLabel:                                  "example-0",
-				applabels.App:                                    appName,
+				applabels.ApplicationLabel:              appName,
+				componentlabels.KubernetesInstanceLabel: componentName,
+				applabels.ManagedBy:                     "odo",
+				applabels.ManagerVersion:                version.VERSION,
+				labels.URLLabel:                         "example-0",
+				applabels.App:                           appName,
 			},
 		},
 		IngressSpecParams: generator.IngressSpecParams{
@@ -45,12 +45,12 @@ func GetKubernetesIngressListWithMultiple(componentName, appName string, network
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "example-1",
 			Labels: map[string]string{
-				applabels.ApplicationLabel:                       "app",
-				componentlabels.ComponentKubernetesInstanceLabel: componentName,
-				applabels.ManagedBy:                              "odo",
-				applabels.ManagerVersion:                         version.VERSION,
-				labels.URLLabel:                                  "example-1",
-				applabels.App:                                    "app",
+				applabels.ApplicationLabel:              "app",
+				componentlabels.KubernetesInstanceLabel: componentName,
+				applabels.ManagedBy:                     "odo",
+				applabels.ManagerVersion:                version.VERSION,
+				labels.URLLabel:                         "example-1",
+				applabels.App:                           "app",
 			},
 		},
 		IngressSpecParams: generator.IngressSpecParams{
@@ -74,12 +74,12 @@ func GetSingleKubernetesIngress(urlName, componentName, appName string, networki
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:                       appName,
-				componentlabels.ComponentKubernetesInstanceLabel: componentName,
-				applabels.ManagedBy:                              "odo",
-				applabels.ManagerVersion:                         version.VERSION,
-				labels.URLLabel:                                  urlName,
-				applabels.App:                                    appName,
+				applabels.ApplicationLabel:              appName,
+				componentlabels.KubernetesInstanceLabel: componentName,
+				applabels.ManagedBy:                     "odo",
+				applabels.ManagerVersion:                version.VERSION,
+				labels.URLLabel:                         urlName,
+				applabels.App:                           appName,
 			},
 		},
 		IngressSpecParams: generator.IngressSpecParams{
@@ -109,12 +109,12 @@ func GetSingleSecureKubernetesIngress(urlName, componentName, appName, secretNam
 		ObjectMeta: metav1.ObjectMeta{
 			Name: urlName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:                       appName,
-				componentlabels.ComponentKubernetesInstanceLabel: componentName,
-				applabels.ManagedBy:                              "odo",
-				applabels.ManagerVersion:                         version.VERSION,
-				labels.URLLabel:                                  urlName,
-				applabels.App:                                    appName,
+				applabels.ApplicationLabel:              appName,
+				componentlabels.KubernetesInstanceLabel: componentName,
+				applabels.ManagedBy:                     "odo",
+				applabels.ManagerVersion:                version.VERSION,
+				labels.URLLabel:                         urlName,
+				applabels.App:                           appName,
 			},
 		},
 		IngressSpecParams: generator.IngressSpecParams{

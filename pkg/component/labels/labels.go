@@ -5,20 +5,17 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-// ComponentKubernetesInstanceLabel is a label key used to identify the component name
-const ComponentKubernetesInstanceLabel = "app.kubernetes.io/instance"
+// KubernetesInstanceLabel is a label key used to identify the component name
+const KubernetesInstanceLabel = "app.kubernetes.io/instance"
 
-// ComponentKubernetesNameLabel is Kubernetes label that identifies the type of a component being used
-const ComponentKubernetesNameLabel = "app.kubernetes.io/name"
-
-// ComponentUnknownLabel is the label that is used to display something we do not know
-const ComponentUnknownLabel = "<unknown>"
+// KubernetesNameLabel is Kubernetes label that identifies the type of a component being used
+const KubernetesNameLabel = "app.kubernetes.io/name"
 
 // KubernetesManagedByLabel ...
 const KubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 
-// ComponentModeLabel ...
-const ComponentModeLabel = "odo.dev/mode"
+// ComponentUnknownLabel is the label that is used to display something we do not know
+const ComponentUnknownLabel = "<unknown>"
 
 // ComponentDevName ...
 const ComponentDevName = "Dev"
@@ -32,8 +29,11 @@ const ComponentNoneName = "None"
 // ComponentPushedName ...
 const ComponentPushedName = "Pushed"
 
-// ComponentProjectTypeAnnotation ...
-const ComponentProjectTypeAnnotation = "odo.dev/project-type"
+// OdoModeLabel ...
+const OdoModeLabel = "odo.dev/mode"
+
+// OdoProjectTypeAnnotation ...
+const OdoProjectTypeAnnotation = "odo.dev/project-type"
 
 // GetLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
@@ -41,7 +41,7 @@ const ComponentProjectTypeAnnotation = "odo.dev/project-type"
 // if you need labels to filter component then use additional=false
 func GetLabels(componentName string, applicationName string, additional bool) map[string]string {
 	labels := applabels.GetLabels(applicationName, additional)
-	labels[ComponentKubernetesInstanceLabel] = componentName
+	labels[KubernetesInstanceLabel] = componentName
 	return labels
 }
 

@@ -22,13 +22,13 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 			Name: podName,
 			UID:  fakeUID,
 			Labels: map[string]string{
-				applabels.App:              "app",
-				applabels.ApplicationLabel: "app",
-				componentlabels.ComponentKubernetesInstanceLabel: podName,
-				applabels.ManagedBy: "odo",
+				applabels.App:                           "app",
+				applabels.ApplicationLabel:              "app",
+				componentlabels.KubernetesInstanceLabel: podName,
+				applabels.ManagedBy:                     "odo",
 			},
 			Annotations: map[string]string{
-				componentlabels.ComponentProjectTypeAnnotation: podName,
+				componentlabels.OdoProjectTypeAnnotation: podName,
 			},
 		},
 	}

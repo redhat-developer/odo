@@ -74,7 +74,7 @@ func WaitAndCheckForTerminatingState(path, resourceType, namespace string, timeo
 func GetAnnotationsDeployment(path, componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
 
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentKubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
 	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "go-template='{{ range $k, $v := (index .items 0).metadata.annotations}}{{$k}}:{{$v}}{{\"\\n\"}}{{end}}'").ShouldPass().Out()
 
@@ -101,7 +101,7 @@ func GetSecrets(path, project string) string {
 
 // GetEnvRefNames gets the ref values from the envFroms of the deployment belonging to the given data
 func GetEnvRefNames(path, componentName, appName, projectName string) []string {
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentKubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
 	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].envFrom[*]}{.secretRef.name}{\"\\n\"}{end}'").ShouldPass().Out()
 
@@ -123,7 +123,7 @@ func GetEnvFromEntry(path string, componentName string, appName string, projectN
 // GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
 func GetVolumeNamesFromDeployment(path, componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.ComponentKubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
+	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
 	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.volumes[*]}{.name}{\":\"}{.persistentVolumeClaim.claimName}{\"\\n\"}{end}'").ShouldPass().Out()
 
