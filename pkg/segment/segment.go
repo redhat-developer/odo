@@ -1,6 +1,7 @@
 package segment
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -18,7 +19,6 @@ import (
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/pborman/uuid"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
