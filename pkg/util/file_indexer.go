@@ -368,12 +368,12 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 
 				ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
 
-				relx, err := filepath.Rel(directory, fileAbsolutePath)
+				rel, err := filepath.Rel(directory, fileAbsolutePath)
 				if err != nil {
-					continue // TODO
+					return IndexerRet{}, err
 				}
 
-				matched := ignoreMatcher.MatchesPath(relx)
+				matched := ignoreMatcher.MatchesPath(rel)
 
 				if matched {
 					continue
@@ -461,7 +461,7 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 		// check if it matches a ignore rule
 		rel, err := filepath.Rel(pathOptions.directory, matchedPath)
 		if err != nil {
-			continue // TODO
+			return IndexerRet{}, err
 		}
 		match := ignoreMatcher.MatchesPath(rel)
 		// the folder matches a glob rule and thus should be skipped
