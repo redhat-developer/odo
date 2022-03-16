@@ -152,11 +152,11 @@ func (d devfileComponent) GetName() string {
 
 func getType(component provider) (string, error) {
 
-	// For backwards compatibility with previously deployed components that could be non-odo, check the label first
-	// then check to see if there is an annotation with the project type
-	if componentType, ok := component.GetLabels()[componentlabels.OdoProjectTypeAnnotation]; ok {
+	// For backwards compatibility with previously deployed components that could be non-odo, check the annotation first
+	// then check to see if there is a label with the project type
+	if componentType, ok := component.GetAnnotations()[componentlabels.OdoProjectTypeAnnotation]; ok {
 		return componentType, nil
-	} else if componentType, ok = component.GetAnnotations()[componentlabels.OdoProjectTypeAnnotation]; ok {
+	} else if componentType, ok = component.GetLabels()[componentlabels.OdoProjectTypeAnnotation]; ok {
 		return componentType, nil
 	}
 

@@ -11,15 +11,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -329,7 +328,6 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 	return false, nil
 }
 
-// GetComponentState ...
 func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) string {
 	// Check to see if the deployment has been pushed or not
 	c, err := GetPushedComponent(client, componentName, applicationName)
@@ -416,7 +414,7 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	component.Annotations = fromCluster.GetAnnotations()
 
 	// Mark the component status as pushed
-	component.Status.State = componentlabels.ComponentPushedName
+	component.Status.State = StateTypePushed
 
 	// Labels
 	component.Labels = fromCluster.GetLabels()

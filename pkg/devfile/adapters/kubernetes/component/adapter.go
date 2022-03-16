@@ -312,7 +312,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
-		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
+		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 	s.End(true)
 
@@ -551,7 +551,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		err := a.createOrUpdateServiceForComponent(svc, componentName)
+		err = a.createOrUpdateServiceForComponent(svc, componentName)
 		if err != nil {
 			return err
 		}

@@ -14,20 +14,11 @@ const KubernetesNameLabel = "app.kubernetes.io/name"
 // KubernetesManagedByLabel ...
 const KubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 
-// ComponentUnknownLabel is the label that is used to display something we do not know
-const ComponentUnknownLabel = "<unknown>"
-
 // ComponentDevName ...
 const ComponentDevName = "Dev"
 
 // ComponentDeployName ...
 const ComponentDeployName = "Deploy"
-
-// ComponentNoneName ...
-const ComponentNoneName = "None"
-
-// ComponentPushedName ...
-const ComponentPushedName = "Pushed"
 
 // OdoModeLabel ...
 const OdoModeLabel = "odo.dev/mode"
