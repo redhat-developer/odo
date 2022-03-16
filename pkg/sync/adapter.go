@@ -116,7 +116,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 
 		// Run the indexer and find the modified/added/deleted/renamed files
 		var err error
-		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, syncParameters.Files)
+		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, pushParameters.IgnoredFiles, syncParameters.Files)
 
 		if err != nil {
 			return false, errors.Wrap(err, "unable to run indexer")

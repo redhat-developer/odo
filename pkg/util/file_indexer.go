@@ -15,6 +15,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
+	gitignore "github.com/sabhiram/go-gitignore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
@@ -210,7 +211,7 @@ func WriteFile(newFileMap map[string]FileData, resolvedPath string) error {
 // RunIndexerWithRemote reads the existing index from the given directory and runs the indexer on it
 // with the given ignore rules
 // it also adds the file index to the .gitignore file and resolves the path
-func RunIndexerWithRemote(directory string, ignoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
+func RunIndexerWithRemote(directory string, absoluteIgnoreRules []string, originalIgnoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
 	directory = filepath.FromSlash(directory)
 	ret.ResolvedPath, err = ResolveIndexFilePath(directory)
 	if err != nil {
@@ -235,7 +236,7 @@ func RunIndexerWithRemote(directory string, ignoreRules []string, remoteDirector
 		return ret, err
 	}
 
-	returnedIndex, err := runIndexerWithExistingFileIndex(directory, ignoreRules, remoteDirectories, existingFileIndex)
+	returnedIndex, err := runIndexerWithExistingFileIndex(directory, originalIgnoreRules, remoteDirectories, existingFileIndex)
 	if err != nil {
 		return IndexerRet{}, err
 	}
@@ -365,10 +366,15 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 					return ret, errors.Wrapf(err, "unable to retrieve absolute path of file %s", fileName)
 				}
 
-				matched, err := dfutil.IsGlobExpMatch(fileAbsolutePath, ignoreRules)
+				ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
+
+				rel, err := filepath.Rel(directory, fileAbsolutePath)
 				if err != nil {
 					return IndexerRet{}, err
 				}
+
+				matched := ignoreMatcher.MatchesPath(rel)
+
 				if matched {
 					continue
 				}
@@ -444,21 +450,23 @@ func recursiveChecker(pathOptions recursiveCheckerPathOptions, ignoreRules []str
 	fileChanged := make(map[string]bool)
 	fileRemoteChanged := make(map[string]bool)
 
+	ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
+
 	for _, matchedPath := range matchedPathsDir {
-
-		// check if it matches a ignore rule
-		match, err := dfutil.IsGlobExpMatch(matchedPath, ignoreRules)
-		if err != nil {
-			return IndexerRet{}, err
-		}
-		// the folder matches a glob rule and thus should be skipped
-		if match {
-			return IndexerRet{}, nil
-		}
-
 		stat, err := os.Stat(matchedPath)
 		if err != nil {
 			return IndexerRet{}, err
+		}
+
+		// check if it matches a ignore rule
+		rel, err := filepath.Rel(pathOptions.directory, matchedPath)
+		if err != nil {
+			return IndexerRet{}, err
+		}
+		match := ignoreMatcher.MatchesPath(rel)
+		// the folder matches a glob rule and thus should be skipped
+		if match {
+			return IndexerRet{}, nil
 		}
 
 		if joinedRelPath != "." {
