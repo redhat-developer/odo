@@ -211,7 +211,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 		fields      fields
 		args        args
 		wantErr     bool
-		checkResult func(devfile parser.DevfileObj, args args) bool
+		checkResult func(newName string, args args) bool
 	}{
 		{
 			name: "no flag",
@@ -234,8 +234,8 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				flags: map[string]string{},
 			},
 			wantErr: false,
-			checkResult: func(devfile parser.DevfileObj, args args) bool {
-				return devfile.GetMetadataName() == "aname"
+			checkResult: func(newName string, args args) bool {
+				return newName == "aname"
 			},
 		}}
 	for _, tt := range tests {
@@ -250,13 +250,13 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				registryClient: tt.fields.registryClient,
 			}
 			fs := filesystem.NewFakeFs()
-			devfile, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)
+			newName, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if tt.checkResult != nil && !tt.checkResult(devfile, tt.args) {
+			if tt.checkResult != nil && !tt.checkResult(newName, tt.args) {
 				t.Errorf("InteractiveBackend.PersonalizeName(), checking result failed")
 			}
 		})

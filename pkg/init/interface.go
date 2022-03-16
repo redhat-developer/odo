@@ -41,8 +41,9 @@ type Client interface {
 	// WARNING: This will first remove all the content of dest.
 	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error
 
-	// PersonalizeName updates a devfile name, depending on the flags.
-	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error)
+	// PersonalizeName returns the customized Devfile Metadata Name.
+	// Depending on the flags, it may return a name set interactively or not.
+	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error)
 
 	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
 	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error)

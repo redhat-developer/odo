@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
@@ -148,8 +149,7 @@ func (o *InitOptions) Run() (err error) {
 
 	// Set the name in the devfile but do not write it yet to disk,
 	// because the starter project downloaded at the end might come bundled with a specific Devfile.
-	// In this case, the metadata name of this starter project would just be changed before rewriting it to disk.
-	devfileObj, err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
+	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
 	if err != nil {
 		return fmt.Errorf("Failed to update the devfile's name: %w", err)
 	}
@@ -162,20 +162,17 @@ func (o *InitOptions) Run() (err error) {
 		}
 		starterDownloaded = true
 
-		// in case the starter project contains a devfile, read it again but override the metadata name with the one set by the user
+		// in case the starter project contains a devfile, read it again
 		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
-			personalizedName := devfileObj.GetMetadataName()
 			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
 			if err != nil {
 				return err
 			}
-			metadata := devfileObj.Data.GetMetadata()
-			metadata.Name = personalizedName
-			devfileObj.Data.SetMetadata(metadata)
 		}
 	}
 
-	if err = devfileObj.WriteYamlDevfile(); err != nil {
+	// WARNING: SetMetadataName writes the Devfile to disk
+	if err = devfileObj.SetMetadataName(name); err != nil {
 		return err
 	}
 

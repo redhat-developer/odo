@@ -101,15 +101,8 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 	return &starterProjects[starter], nil
 }
 
-func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error) {
-	name, err := o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.Data.GetMetadata().Name))
-	if err != nil {
-		return parser.DevfileObj{}, err
-	}
-	metadata := devfile.Data.GetMetadata()
-	metadata.Name = name
-	devfile.Data.SetMetadata(metadata)
-	return devfile, nil
+func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
+	return o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.GetMetadataName()))
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {

@@ -96,10 +96,10 @@ func (mr *MockClientMockRecorder) PersonalizeDevfileConfig(devfileobj, flags, fs
 }
 
 // PersonalizeName mocks base method.
-func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (parser.DevfileObj, error) {
+func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
-	ret0, _ := ret[0].(parser.DevfileObj)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
