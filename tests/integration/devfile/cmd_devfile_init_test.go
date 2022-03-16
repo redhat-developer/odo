@@ -51,11 +51,11 @@ var _ = Describe("odo devfile init command tests", func() {
 
 		By("running odo init with wrong local file path given to --devfile-path", func() {
 			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "/some/path/devfile.yaml").ShouldFail().Err()
-			Expect(err).To(ContainSubstring("no such file or directory"))
+			Expect(err).To(ContainSubstring("unable to download devfile"))
 		})
 		By("running odo init with wrong URL path given to --devfile-path", func() {
 			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "https://github.com/path/to/devfile.yaml").ShouldFail().Err()
-			Expect(err).To(ContainSubstring("unable to download devfile: failed to retrieve"))
+			Expect(err).To(ContainSubstring("unable to download devfile"))
 		})
 	})
 
