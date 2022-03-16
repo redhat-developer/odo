@@ -1,13 +1,13 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
@@ -124,7 +124,7 @@ func (lo *ListOptions) Validate() (err error) {
 
 // ThrowContextError prints a context error if application/project is not found
 func throwContextError() error {
-	return errors.Errorf(`Please specify the application name and project name
+	return errors.New(`Please specify the application name and project name
 Or use the command from inside a directory containing an odo component.`)
 }
 

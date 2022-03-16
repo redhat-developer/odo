@@ -1,12 +1,12 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
@@ -184,7 +184,7 @@ func (co *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 		fileErr := dfutil.ValidateFile(co.devfileMetadata.devfilePath.value)
 		urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 		if fileErr != nil && urlErr != nil {
-			return errors.Errorf("the devfile path you specify is invalid with either file error %q or url error %q", fileErr, urlErr)
+			return fmt.Errorf("the devfile path you specify is invalid with either file error %q or url error %q", fileErr, urlErr)
 		} else if fileErr == nil {
 			co.createMethod = FileCreateMethod{}
 		} else if urlErr == nil {

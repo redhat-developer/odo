@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -8,7 +9,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"
 )

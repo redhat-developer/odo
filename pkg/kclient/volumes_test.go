@@ -1,13 +1,12 @@
 package kclient
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/redhat-developer/odo/pkg/testingutil"
-
-	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,7 +78,7 @@ func TestCreatePVC(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.pvcName == "" {
-					return true, nil, errors.Errorf("pvc name is empty")
+					return true, nil, errors.New("pvc name is empty")
 				}
 				pvc := corev1.PersistentVolumeClaim{
 					TypeMeta: metav1.TypeMeta{

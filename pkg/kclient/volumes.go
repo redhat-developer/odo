@@ -2,10 +2,10 @@ package kclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

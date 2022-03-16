@@ -1,6 +1,7 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,8 +18,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -43,7 +42,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 	nOfProjects := len(projects)
 
 	if nOfProjects == 0 {
-		return nil, errors.Errorf("no starter project found in devfile.")
+		return nil, fmt.Errorf("no starter project found in devfile.")
 	}
 
 	// Determine what project to be used
@@ -66,7 +65,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 		if !projectFound {
 			availableNamesString := strings.Join(availableNames, ",")
-			return nil, errors.Errorf("the project: %s specified in --starter does not exist, available projects: %s", projectPassed, availableNamesString)
+			return nil, fmt.Errorf("the project: %s specified in --starter does not exist, available projects: %s", projectPassed, availableNamesString)
 		}
 	}
 
@@ -124,7 +123,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 			downloadSpinner.End(true)
 		}
 	} else {
-		return errors.Errorf("Project type not supported")
+		return errors.New("Project type not supported")
 	}
 
 	return nil

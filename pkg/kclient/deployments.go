@@ -3,13 +3,13 @@ package kclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -221,10 +221,10 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 See below for a list of failed events that occured more than %d times during deployment:
 %s`, failedEventCount, tableString.String())
 
-			return nil, errors.Errorf(errorMessage)
+			return nil, fmt.Errorf(errorMessage)
 		}
 
-		return nil, errors.Errorf("timeout while waiting for %s deployment roll out", deploymentName)
+		return nil, fmt.Errorf("timeout while waiting for %s deployment roll out", deploymentName)
 	}
 }
 
@@ -453,7 +453,7 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 			return fmt.Errorf("Deployment not patched %s: %w", deployment.Name, e)
 		}
 	} else {
-		return fmt.Errorf("deploymentPatch was not properly set: %w", err)
+		return errors.New("deploymentPatch was not properly set")
 	}
 
 	return nil

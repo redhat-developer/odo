@@ -2,14 +2,13 @@ package component
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
@@ -348,8 +347,11 @@ func GetComponent(client kclient.ClientInterface, componentName string, applicat
 // getRemoteComponentMetadata provides component metadata from the cluster
 func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
-	if err != nil || fromCluster == nil {
+	if err != nil {
 		return Component{}, fmt.Errorf("unable to get remote metadata for %s component: %w", componentName, err)
+	}
+	if fromCluster == nil {
+		return Component{}, nil
 	}
 
 	// Component Type
@@ -531,11 +533,11 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 
 	pod, err := GetOnePod(client, componentName, appName)
 	if err != nil {
-		return nil, errors.Errorf("the component %s doesn't exist on the cluster", componentName)
+		return nil, fmt.Errorf("the component %s doesn't exist on the cluster", componentName)
 	}
 
 	if pod.Status.Phase != corev1.PodRunning {
-		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+		return nil, fmt.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
 	}
 
 	containerName := command.Exec.Component

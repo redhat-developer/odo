@@ -1,6 +1,7 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -14,7 +15,6 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	projectCmd "github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"

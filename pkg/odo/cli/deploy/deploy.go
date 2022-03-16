@@ -1,11 +1,11 @@
 package deploy
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"

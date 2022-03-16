@@ -2,11 +2,11 @@ package kclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	projectv1 "github.com/openshift/api/project/v1"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,7 +110,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 				val, ok := <-watcher.ResultChan()
 				if !ok {
 					//return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
-					watchErrorChannel <- errors.Errorf("watch channel was closed unexpectedly: %+v", val)
+					watchErrorChannel <- fmt.Errorf("watch channel was closed unexpectedly: %+v", val)
 					break
 				}
 
@@ -127,7 +127,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 							break
 						}
 						if val.Type == watch.Error {
-							watchErrorChannel <- errors.Errorf("failed watching the deletion of project %s", name)
+							watchErrorChannel <- fmt.Errorf("failed watching the deletion of project %s", name)
 							break
 						}
 					}
@@ -149,7 +149,7 @@ func (c *Client) DeleteProject(name string, wait bool) error {
 		case err := <-watchErrorChannel:
 			return err
 		case <-time.After(waitForProjectDeletionTimeOut):
-			return errors.Errorf("waited %s but couldn't delete project %s in time", waitForProjectDeletionTimeOut, name)
+			return fmt.Errorf("waited %s but couldn't delete project %s in time", waitForProjectDeletionTimeOut, name)
 		}
 
 	}

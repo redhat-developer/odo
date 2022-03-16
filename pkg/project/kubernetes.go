@@ -1,9 +1,8 @@
 package project
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 )
@@ -22,7 +21,7 @@ func NewClient(client kclient.ClientInterface) Client {
 func (o kubernetesClient) SetCurrent(projectName string) error {
 	err := o.client.SetCurrentNamespace(projectName)
 	if err != nil {
-		return errors.Wrap(err, "unable to set current project to"+projectName)
+		return fmt.Errorf("unable to set current project to %s: %w", projectName, err)
 	}
 	return nil
 }
@@ -34,7 +33,7 @@ func (o kubernetesClient) SetCurrent(projectName string) error {
 // to be created in the namespace before returning
 func (o kubernetesClient) Create(projectName string, wait bool) error {
 	if projectName == "" {
-		return errors.Errorf("no project name given")
+		return errors.New("no project name given")
 	}
 
 	projectSupport, err := o.client.IsProjectSupported()
@@ -65,7 +64,7 @@ func (o kubernetesClient) Create(projectName string, wait bool) error {
 // with the name projectName and returns an error if any
 func (o kubernetesClient) Delete(projectName string, wait bool) error {
 	if projectName == "" {
-		return errors.Errorf("no project name given")
+		return errors.New("no project name given")
 	}
 
 	projectSupport, err := o.client.IsProjectSupported()

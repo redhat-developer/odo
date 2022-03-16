@@ -1,12 +1,11 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
@@ -107,7 +106,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
-		err = errors.Errorf("Failed to start component with name %q. Error: %v",
+		err = fmt.Errorf("Failed to start component with name %q. Error: %w",
 			componentName,
 			err,
 		)

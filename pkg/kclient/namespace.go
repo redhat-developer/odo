@@ -2,10 +2,10 @@ package kclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,7 +105,7 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 			for {
 				val, ok := <-watcher.ResultChan()
 				if !ok {
-					watchErrorChannel <- errors.Errorf("watch channel was closed unexpectedly: %+v", val)
+					watchErrorChannel <- fmt.Errorf("watch channel was closed unexpectedly: %+v", val)
 					break
 				}
 				klog.V(3).Infof("Watch event.Type '%s'.", val.Type)
@@ -117,7 +117,7 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 						break
 					}
 					if val.Type == watch.Error {
-						watchErrorChannel <- errors.Errorf("failed watching the deletion of namespace %s", name)
+						watchErrorChannel <- fmt.Errorf("failed watching the deletion of namespace %s", name)
 						break
 					}
 
@@ -135,7 +135,7 @@ func (c *Client) DeleteNamespace(name string, wait bool) error {
 		case err := <-watchErrorChannel:
 			return err
 		case <-time.After(waitForNamespaceDeletionTimeOut):
-			return errors.Errorf("waited %s but couldn't delete namespace %s in time", waitForNamespaceDeletionTimeOut, name)
+			return fmt.Errorf("waited %s but couldn't delete namespace %s in time", waitForNamespaceDeletionTimeOut, name)
 		}
 
 	}

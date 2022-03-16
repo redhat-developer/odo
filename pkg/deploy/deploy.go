@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,8 +9,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"k8s.io/klog"
-
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"

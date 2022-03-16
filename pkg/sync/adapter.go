@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/devfile/library/pkg/devfile/generator"
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -175,7 +173,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if err != nil {
 		return fmt.Errorf("unable to check directory: %s: %w", path, err)
 	} else if emptyDir {
-		return errors.New(fmt.Sprintf("directory/file %s is empty", path))
+		return fmt.Errorf("directory/file %s is empty", path)
 	}
 
 	// Sync the files to the pod

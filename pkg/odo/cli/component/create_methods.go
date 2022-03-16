@@ -1,12 +1,12 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/zalando/go-keyring"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
@@ -279,7 +279,7 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 			return catalog.DevfileComponentTypeList{}, fmt.Errorf("failed to get registry: %w", e)
 		}
 		if len(registryList) == 0 {
-			return catalog.DevfileComponentTypeList{}, errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
+			return catalog.DevfileComponentTypeList{}, fmt.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
 		}
 		registryExistSpinner.End(true)
 	}
@@ -292,7 +292,7 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 	}
 
 	if registryName != "" && catalogDevfileList.Items == nil {
-		return catalog.DevfileComponentTypeList{}, errors.Errorf("can't create devfile component from registry %s", registryName)
+		return catalog.DevfileComponentTypeList{}, fmt.Errorf("can't create devfile component from registry %s", registryName)
 	}
 
 	if len(catalogDevfileList.DevfileRegistries) == 0 {

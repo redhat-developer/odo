@@ -1,11 +1,11 @@
 package common
 
 import (
+	"errors"
 	"io"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/util"
 	"k8s.io/klog"

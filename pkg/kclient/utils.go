@@ -1,15 +1,16 @@
 package kclient
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/json"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -27,7 +28,7 @@ func GetInputEnvVarsFromStrings(envVars []string) ([]corev1.EnvVar, error) {
 		}
 		_, ok := keys[splits[0]]
 		if ok {
-			return nil, errors.Errorf("multiple values found for VariableName: %s", splits[0])
+			return nil, fmt.Errorf("multiple values found for VariableName: %s", splits[0])
 		}
 
 		keys[splits[0]] = 1

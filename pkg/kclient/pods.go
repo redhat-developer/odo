@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/klog"
 
@@ -72,7 +72,7 @@ func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.Po
 					podChannel <- e
 					break loop
 				case corev1.PodFailed, corev1.PodUnknown:
-					watchErrorChannel <- errors.Errorf("pod %s status %s", e.Name, e.Status.Phase)
+					watchErrorChannel <- fmt.Errorf("pod %s status %s", e.Name, e.Status.Phase)
 					break loop
 				default:
 					// we start in a phase different from the desired one, let's wait
@@ -113,7 +113,7 @@ See below for a list of failed events that occured more than %d times during dep
 %s`, pushTimeout, selector, failedEventCount, tableString.String())
 		}
 
-		return nil, errors.Errorf(errorMessage)
+		return nil, fmt.Errorf(errorMessage)
 	}
 }
 

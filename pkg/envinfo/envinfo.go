@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
@@ -173,7 +171,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to see valid parameters", parameter)
+	return fmt.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to see valid parameters", parameter)
 
 }
 
@@ -232,7 +230,7 @@ var (
 func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 	for _, manParam := range manParams {
 		if parameter == manParam {
-			return errors.Errorf("failed to unset %q: %q is mandatory parameter", parameter, parameter)
+			return fmt.Errorf("failed to unset %q: %q is mandatory parameter", parameter, parameter)
 		}
 	}
 
@@ -242,7 +240,7 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 		}
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
+	return fmt.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
 
 }
 

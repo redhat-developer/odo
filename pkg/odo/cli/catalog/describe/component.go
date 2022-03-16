@@ -87,7 +87,7 @@ func (o *DescribeComponentOptions) Complete(cmdline cmdline.Cmdline, args []stri
 // Validate validates the DescribeComponentOptions based on completed values
 func (o *DescribeComponentOptions) Validate() (err error) {
 	if len(o.devfileComponents) == 0 {
-		return fmt.Errorf("No components with the name \"%s\" found: %w", o.componentName, err)
+		return fmt.Errorf("No components with the name \"%s\" found", o.componentName)
 	}
 
 	return nil
@@ -195,7 +195,10 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 func getDevFileNoValidation(devfileComponent catalog.DevfileComponentType) (parser.DevfileObj, error) {
 	if strings.Contains(devfileComponent.Registry.URL, "github") {
 		devObj, err := devfile.ParseAndValidateFromURL(devfileComponent.Registry.URL + devfileComponent.Link)
-		return devObj, fmt.Errorf("Failed to download devfile.yaml from Github-based registry for devfile component: %s: %w", devfileComponent.Name, err)
+		if err != nil {
+			return devObj, fmt.Errorf("Failed to download devfile.yaml from Github-based registry for devfile component: %s: %w", devfileComponent.Name, err)
+		}
+		return devObj, nil
 	}
 	registryURL, err := url.Parse(devfileComponent.Registry.URL)
 	if err != nil {
@@ -203,7 +206,10 @@ func getDevFileNoValidation(devfileComponent catalog.DevfileComponentType) (pars
 	}
 	registryURL.Path = path.Join(registryURL.Path, "devfiles", devfileComponent.Name)
 	devObj, err := devfile.ParseAndValidateFromURL(registryURL.String())
-	return devObj, fmt.Errorf("Failed to download devfile.yaml from OCI-based registry for devfile component: %s: %w", devfileComponent.Name, err)
+	if err != nil {
+		return devObj, fmt.Errorf("Failed to download devfile.yaml from OCI-based registry for devfile component: %s: %w", devfileComponent.Name, err)
+	}
+	return devObj, nil
 }
 
 // PrintDevfileStarterProjects prints all the starter projects in a devfile

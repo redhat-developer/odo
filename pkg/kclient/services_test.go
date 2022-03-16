@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
-	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
@@ -67,7 +67,7 @@ func TestCreateService(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("create", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.componentName == "" {
-					return true, nil, errors.Errorf("component name is empty")
+					return true, nil, fmt.Errorf("component name is empty")
 				}
 				service := corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
@@ -154,7 +154,7 @@ func TestUpdateService(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("update", "services", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.componentName == "" {
-					return true, nil, errors.Errorf("component name is empty")
+					return true, nil, fmt.Errorf("component name is empty")
 				}
 				service := corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{

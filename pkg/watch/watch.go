@@ -396,7 +396,7 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 		if err != nil {
 			// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 			// So, its better to log the error rather than feeding it to error handler via `watchError = fmt.Errorf("unable to watch changes: %w", err)`,
-			// which will terminate the watchfmt.Errorf("unable to watch changes: %w", err)
+			// which will terminate the watch
 			klog.V(4).Infof("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 		}
 		// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor

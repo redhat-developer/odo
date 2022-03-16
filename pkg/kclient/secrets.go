@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/klog"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -217,7 +216,7 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 			return e, nil
 		}
 	}
-	return nil, errors.Errorf("unknown error while waiting for secret '%s'", name)
+	return nil, fmt.Errorf("unknown error while waiting for secret '%s'", name)
 }
 
 func secretKeyName(componentName, baseKeyName string) string {

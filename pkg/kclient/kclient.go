@@ -2,12 +2,12 @@ package kclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/util"
 

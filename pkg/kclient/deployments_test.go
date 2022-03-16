@@ -1,10 +1,10 @@
 package kclient
 
 import (
+	"errors"
+	"fmt"
 	reflect "reflect"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -54,7 +54,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 	deploy, _ := generator.GetDeployment(devObj, deploymentParams)
 	fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if podName == "" {
-			return true, nil, errors.Errorf("deployment name is empty")
+			return true, nil, errors.New("deployment name is empty")
 		}
 		deployment := appsv1.Deployment{
 			TypeMeta: metav1.TypeMeta{
@@ -167,7 +167,7 @@ func TestGetDeploymentByName(t *testing.T) {
 					deployment := odoTestingUtil.CreateFakeDeployment(tt.deploymentName)
 					return true, deployment, nil
 				} else {
-					return true, nil, errors.Errorf("deployment get error")
+					return true, nil, errors.New("deployment get error")
 				}
 
 			})
@@ -236,7 +236,7 @@ func TestUpdateDeployment(t *testing.T) {
 			deploy, _ := generator.GetDeployment(devObj, deploymentParams)
 			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
-					return true, nil, errors.Errorf("deployment name is empty")
+					return true, nil, errors.New("deployment name is empty")
 				}
 				deployment := appsv1.Deployment{
 					TypeMeta: metav1.TypeMeta{
@@ -303,7 +303,7 @@ func TestDeleteDeployment(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
-					return true, nil, errors.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
+					return true, nil, fmt.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
 				}
 				return true, nil, nil
 			})

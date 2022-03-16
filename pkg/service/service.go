@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"strings"
@@ -19,7 +20,6 @@ import (
 	"k8s.io/klog"
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/pkg/errors"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 )
 
