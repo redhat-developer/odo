@@ -320,7 +320,7 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 	containerWithOnePublicEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
 		Name: "container 2",
 		Endpoints: []v1alpha2.Endpoint{
-			v1alpha2.Endpoint{
+			{
 				Name:       "ep1",
 				TargetPort: 8080,
 				Exposure:   v1alpha2.PublicEndpointExposure,
@@ -331,7 +331,7 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 	containerWithOneInternalEndpoint := generator.GetContainerComponent(generator.ContainerComponentParams{
 		Name: "container 3",
 		Endpoints: []v1alpha2.Endpoint{
-			v1alpha2.Endpoint{
+			{
 				Name:       "ep2",
 				TargetPort: 9090,
 				Exposure:   v1alpha2.InternalEndpointExposure,
