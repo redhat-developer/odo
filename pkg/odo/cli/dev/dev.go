@@ -240,7 +240,8 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	changed, err := haveEndpointsChanged(parameters.InitialDevfileObj, devObj)
 	if err != nil {
 		return nil, err
-	} else if changed {
+	}
+	if changed {
 		fmt.Printf("\ntotal number of endpoints in the devfile have changed; please run `odo dev` again\n\n")
 	}
 
@@ -262,10 +263,7 @@ func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error
 		return false, err
 	}
 
-	if !reflect.DeepEqual(oldEndpoints, newEndpoints) {
-		return true, nil
-	}
-	return false, nil
+	return !reflect.DeepEqual(oldEndpoints, newEndpoints), nil
 }
 
 func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
