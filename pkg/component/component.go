@@ -136,6 +136,34 @@ func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
 	return language
 }
 
+// GatherName parses the Devfile and retrieves an appropriate name in two ways.
+// 1. If metadata.name exists, we use it
+// 2. If metadata.name does NOT exist, we use the folder name where the devfile.yaml is located
+func GatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
+
+	metadata := devObj.Data.GetMetadata()
+
+	klog.V(4).Infof("metadata.Name: %s", metadata.Name)
+
+	// 1. Use metadata.name if it exists
+	if metadata.Name != "" {
+
+		// Remove any suffix's that end with `-`. This is because many Devfile's use the original v1 Devfile pattern of
+		// having names such as "foo-bar-" in order to prepend container names such as "foo-bar-container1"
+		return strings.TrimSuffix(metadata.Name, "-"), nil
+	}
+
+	// 2. Use the folder name as a last resort if nothing else exists
+	sourcePath, err := dfutil.GetAbsPath(devfilePath)
+	if err != nil {
+		return "", fmt.Errorf("unable to get source path: %w", err)
+	}
+	klog.V(4).Infof("Source path: %s", sourcePath)
+	klog.V(4).Infof("devfile dir: %s", filepath.Dir(sourcePath))
+
+	return filepath.Base(filepath.Dir(sourcePath)), nil
+}
+
 func ListDevfileStacksInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
 	var components []Component
 	var err error

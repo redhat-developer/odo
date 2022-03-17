@@ -432,7 +432,7 @@ func ValidateResourcesExist(client kclient.ClientInterface, k8sComponents []devf
 
 	if len(unsupportedResources) > 0 {
 		// tell the user about all the unsupported resources in one message
-		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing \"odo push\": %s", strings.Join(unsupportedResources, ", "))
+		return fmt.Errorf("following resource(s) in the devfile are not supported by your cluster; please install corresponding Operator(s) before doing \"odo dev\": %s", strings.Join(unsupportedResources, ", "))
 	}
 	return nil
 }

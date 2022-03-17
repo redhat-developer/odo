@@ -41,7 +41,6 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 
 	componentGetCmd := NewCmdGet(GetRecommendedCommandName, odoutil.GetFullName(fullName, GetRecommendedCommandName))
 	listCmd := NewCmdList(ListRecommendedCommandName, odoutil.GetFullName(fullName, ListRecommendedCommandName))
-	pushCmd := NewCmdPush(PushRecommendedCommandName, odoutil.GetFullName(fullName, PushRecommendedCommandName))
 
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
@@ -57,7 +56,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
-	componentCmd.AddCommand(componentGetCmd, listCmd, pushCmd)
+	componentCmd.AddCommand(componentGetCmd, listCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

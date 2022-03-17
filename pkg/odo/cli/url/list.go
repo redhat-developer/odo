@@ -91,7 +91,7 @@ func (o *ListOptions) Run() (err error) {
 		}
 
 		if urls.AreOutOfSync() {
-			log.Info("There are local changes. Please run 'odo push'.")
+			log.Info("There are local changes. Please run 'odo dev'.")
 		}
 	}
 

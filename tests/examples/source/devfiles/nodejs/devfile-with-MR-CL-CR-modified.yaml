@@ -1,7 +1,8 @@
-schemaVersion: 2.0.0
+schemaVersion: 2.2.0
 metadata:
   name: nodejs
-  version: 1.0.0
+  projectType: nodejs
+  language: nodejs
 starterProjects:
   - name: nodejs-starter
     git:
@@ -12,28 +13,30 @@ components:
     container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
-      mountSources: true
+      memoryRequest: 550Mi
+      cpuLimit: 700m
+      cpuRequest: 250m
       endpoints:
-        - name: http-3000
+        - name: "3000-tcp"
           targetPort: 3000
+      mountSources: true
 commands:
-  - id: install
+  - id: devbuild
     exec:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-        isDefault: false
-  - id: mkdir
+        isDefault: true
+  - id: build
     exec:
       component: runtime
-      commandLine: mkdir /projects/testfolder
+      commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: build
-        isDefault: false
-  - id: run
+  - id: devrun
     exec:
       component: runtime
       commandLine: npm start
@@ -41,13 +44,10 @@ commands:
       group:
         kind: run
         isDefault: true
-  - id: buildandmkdir
-    composite:
-      label: Build and Mkdir
-      commands:
-        - mkdir
-        - install
-      parallel: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
       group:
-        kind: build
-        isDefault: true
+        kind: run

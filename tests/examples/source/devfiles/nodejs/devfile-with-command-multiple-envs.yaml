@@ -1,7 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
   name: nodejs
-  version: 1.0.0
 starterProjects:
   - name: nodejs-starter
     git:
@@ -12,42 +11,34 @@ components:
     container:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
-      mountSources: true
       endpoints:
-        - name: http-3000
+        - name: "3000-tcp"
           targetPort: 3000
+      mountSources: true
 commands:
-  - id: install
+  - id: buildwithmultipleenv
     exec:
       component: runtime
-      commandLine: npm install
+      commandLine: "sh -c 'mkdir $BUILD_ENV1 $BUILD_ENV2' && npm install"
       workingDir: ${PROJECTS_ROOT}
+      env:
+        - name: BUILD_ENV1
+          value: "test_build_env_variable1"
+        - name: BUILD_ENV2
+          value: "test_build_env_variable2"
       group:
         kind: build
-        isDefault: false
-  - id: mkdir
+        isDefault: true
+  - id: multipleenv
     exec:
       component: runtime
-      commandLine: mkdir /projects/testfolder
-      workingDir: ${PROJECTS_ROOT}
-      group:
-        kind: build
-        isDefault: false
-  - id: run
-    exec:
-      component: runtime
-      commandLine: npm start
+      commandLine: "sh -c 'mkdir $ENV1 $ENV2'"
+      env:
+        - name: ENV1
+          value: "test_env_variable1"
+        - name: ENV2
+          value: "test_env_variable2"
       workingDir: ${PROJECTS_ROOT}
       group:
         kind: run
-        isDefault: true
-  - id: buildandmkdir
-    composite:
-      label: Build and Mkdir
-      commands:
-        - mkdir
-        - install
-      parallel: true
-      group:
-        kind: build
         isDefault: true

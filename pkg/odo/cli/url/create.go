@@ -12,7 +12,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -58,8 +57,9 @@ var (
 
 // CreateOptions encapsulates the options for the odo url create command
 type CreateOptions struct {
-	// Push context
-	*clicomponent.PushOptions
+	*genericclioptions.Context
+
+	contextFlag string
 
 	// Parameters
 	urlName string
@@ -67,7 +67,6 @@ type CreateOptions struct {
 	// Flags
 	portFlag      int
 	secureFlag    bool
-	nowFlag       bool
 	hostFlag      string // host of the URL
 	tlsSecretFlag string // tlsSecret is the secret to te used by the URL
 	pathFlag      string // path of the URL
@@ -80,15 +79,14 @@ type CreateOptions struct {
 
 // NewURLCreateOptions creates a new CreateOptions instance
 func NewURLCreateOptions() *CreateOptions {
-	return &CreateOptions{PushOptions: clicomponent.NewPushOptions()}
+	return &CreateOptions{}
 }
+
+func (o *CreateOptions) SetClientset(clientset *clientset.Clientset) {}
 
 // Complete completes CreateOptions after they've been Created
 func (o *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext()).RequireRouteAvailability()
-	if o.nowFlag {
-		params.CreateAppIfNeeded()
-	}
+	params := genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag).RequireRouteAvailability()
 	o.Context, err = genericclioptions.New(params)
 	if err != nil {
 		return err
@@ -121,15 +119,6 @@ func (o *CreateOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	err = o.Context.LocalConfigProvider.CompleteURL(&o.url)
 	if err != nil {
 		return err
-	}
-
-	if o.nowFlag {
-		prjName := o.Context.LocalConfigProvider.GetNamespace()
-		o.ResolveSrcAndConfigFlags()
-		err = o.ResolveProject(prjName)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -172,24 +161,11 @@ func (o *CreateOptions) Run() (err error) {
 	}
 	log.Successf("URL %s created for component: %v", o.url.Name, o.LocalConfigProvider.GetName())
 
-	if o.nowFlag {
-		// if the now flag is specified, push the changes
-		o.CompleteDevfilePath()
-		o.EnvSpecificInfo = o.Context.EnvSpecificInfo
-		err = o.DevfilePush()
-		if err != nil {
-			return fmt.Errorf("failed to push changes: %w", err)
-		}
-	} else {
-		log.Italic("\nTo apply the URL configuration changes, please use `odo push`")
-	}
+	log.Italic("\nTo apply the URL configuration changes, please use `odo dev`")
 
 	if log.IsJSON() {
 		u := url.NewURLFromLocalURL(o.url)
 		u.Status.State = url.StateTypeNotPushed
-		if o.nowFlag {
-			u.Status.State = url.StateTypePushed
-		}
 		machineoutput.OutputSuccess(u)
 	}
 	return nil
@@ -225,8 +201,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	urlCreateCmd.Flags().StringVarP(&o.protocolFlag, "protocol", "", string(devfilev1.HTTPEndpointProtocol), "protocol for this URL")
 	urlCreateCmd.Flags().StringVarP(&o.containerFlag, "container", "", "", "container of the endpoint in devfile")
 
-	odoutil.AddNowFlag(urlCreateCmd, &o.nowFlag)
-	o.AddContextFlag(urlCreateCmd)
+	odoutil.AddContextFlag(urlCreateCmd, &o.contextFlag)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 
 	return urlCreateCmd

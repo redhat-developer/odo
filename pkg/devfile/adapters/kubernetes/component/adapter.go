@@ -165,7 +165,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
 
-	// Set the mode to Dev since we are using "odo push" here
+	// Set the mode to Dev since we are using "odo dev" here
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
 	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
 

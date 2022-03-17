@@ -9,32 +9,29 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/redhat-developer/odo/pkg/log"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/util"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/spf13/cobra"
+	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/component"
+	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/version"
-	"github.com/redhat-developer/odo/pkg/watch"
-
-	dfutil "github.com/devfile/library/pkg/util"
-	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/odo/cli/component"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
+	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/version"
+	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 // RecommendedCommandName is the recommended command name
