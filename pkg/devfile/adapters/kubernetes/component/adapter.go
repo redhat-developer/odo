@@ -112,13 +112,18 @@ type Adapter struct {
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
-	a.deployment, err = a.Client.GetOneDeployment(a.ComponentName, a.AppName)
+	// Get the Dev deployment:
+	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
+	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
+	selectorLabels := componentlabels.GetLabels(a.ComponentName, a.AppName, false)
+	selectorLabels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
+	a.deployment, err = a.Client.GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(selectorLabels))
+
 	if err != nil {
 		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
 			return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 		}
 	}
-
 	componentExists := a.deployment != nil
 
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
@@ -162,7 +167,13 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
 
+	// Set the mode to Dev since we are using "odo push" here
 	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
+
+	// Set the annotations for the component type
+	annotations := make(map[string]string)
+	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
 
 	previousMode := parameters.EnvSpecificInfo.GetRunMode()
 	currentMode := envinfo.Run
@@ -170,7 +181,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if parameters.Debug {
 		pushDevfileDebugCommands, e := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
 		if e != nil {
-			return fmt.Errorf("debug command is not valid")
+			return fmt.Errorf("debug command is not valid: %w", err)
 		}
 		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
 		currentMode = envinfo.Debug
@@ -194,7 +205,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.Client, k8sComponents, labels, a.Context)
+	err = service.PushKubernetesResources(a.Client, k8sComponents, labels, annotations, a.Context)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}
@@ -234,6 +245,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
+	// Update all services with owner references
 	err = service.UpdateServicesWithOwnerReferences(a.Client, k8sComponents, ownerReference, a.Context)
 	if err != nil {
 		return err
@@ -254,7 +266,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
-		return errors.Wrap(err, "error while waiting for deployment rollout")
+		return errors.Wrapf(err, "Failed to update config to component deployed.")
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
@@ -266,7 +278,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 	err = component.ApplyConfig(a.Client, parameters.EnvSpecificInfo)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to update config to component deployed.")
+		return errors.Wrap(err, "failed to update config to component deployed.")
 	}
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
@@ -393,6 +405,7 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 
 func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
 	ei.SetDevfileObj(a.Devfile)
+	componentName := a.ComponentName
 
 	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
 		Client:              a.Client,
@@ -400,7 +413,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	})
 
 	// handle the ephemeral storage
-	err = storage.HandleEphemeralStorage(a.Client, storageClient, a.ComponentName, isMainStorageEphemeral)
+	err = storage.HandleEphemeralStorage(a.Client, storageClient, componentName, isMainStorageEphemeral)
 	if err != nil {
 		return err
 	}
@@ -411,19 +424,14 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	componentName := a.ComponentName
-	var componentType string
-	// We insert the component type in deployment annotations because its value might be in a namespaced/versioned format,
-	// since labels do not support such formats, we extract the component type from these formats before assigning its value to the corresponding label.
-	// This annotated value will later be used when listing the components; we do this to list/describe and stay inline with the component type value set in the devfile.
-	annotatedComponentType := component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
-	if annotatedComponentType != component.NotAvailable {
-		componentType = strings.TrimSuffix(dfutil.ExtractComponentType(componentType), "-")
-	}
-
+	// Set the labels
 	labels := componentlabels.GetLabels(componentName, a.AppName, true)
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
 	labels["component"] = componentName
-	labels[componentlabels.ComponentTypeLabel] = componentType
+
+	annotations := make(map[string]string)
+	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
 	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})
 	if err != nil {
@@ -449,7 +457,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	initContainers = append(initContainers, kclient.GetBootstrapSupervisordInitContainer())
 
 	// list all the pvcs for the component
-	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
 	if err != nil {
 		return err
 	}
@@ -481,7 +489,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		"component": componentName,
 	}
 
-	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels)
+	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(labels, annotations)
 	if err != nil {
 		return err
 	}
@@ -503,9 +511,6 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
 	}
-
-	// Add annotation for component type; this will later be used while listing/describing a component
-	deployment.Annotations[componentlabels.ComponentTypeAnnotation] = annotatedComponentType
 
 	if vcsUri := util.GetGitOriginPath(a.Context); vcsUri != "" {
 		deployment.Annotations["app.openshift.io/vcs-uri"] = vcsUri
@@ -536,17 +541,19 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
 		if a.Client.IsSSASupported() {
+			klog.V(4).Info("Applying deployment")
 			a.deployment, err = a.Client.ApplyDeployment(*deployment)
 		} else {
+			klog.V(4).Info("Updating deployment")
 			a.deployment, err = a.Client.UpdateDeployment(*deployment)
 		}
 		if err != nil {
 			return err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
-		e := a.createOrUpdateServiceForComponent(svc, componentName)
-		if e != nil {
-			return e
+		err = a.createOrUpdateServiceForComponent(svc, componentName)
+		if err != nil {
+			return err
 		}
 	} else {
 		if a.Client.IsSSASupported() {
@@ -558,6 +565,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		if err != nil {
 			return err
 		}
+
 		klog.V(2).Infof("Successfully created component %v", componentName)
 		ownerReference := generator.GetOwnerReference(a.deployment)
 		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
@@ -603,17 +611,17 @@ func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, compone
 	return a.Client.DeleteService(oldSvc.Name)
 }
 
-// generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name and labels
+// generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name, labels and annotations
 // if no deployment exists, it creates a new deployment name
-func (a Adapter) generateDeploymentObjectMeta(labels map[string]string) (metav1.ObjectMeta, error) {
+func (a Adapter) generateDeploymentObjectMeta(labels map[string]string, annotations map[string]string) (metav1.ObjectMeta, error) {
 	if a.deployment != nil {
-		return generator.GetObjectMeta(a.deployment.Name, a.Client.GetCurrentNamespace(), labels, nil), nil
+		return generator.GetObjectMeta(a.deployment.Name, a.Client.GetCurrentNamespace(), labels, annotations), nil
 	} else {
 		deploymentName, err := util.NamespaceKubernetesObject(a.ComponentName, a.AppName)
 		if err != nil {
 			return metav1.ObjectMeta{}, err
 		}
-		return generator.GetObjectMeta(deploymentName, a.Client.GetCurrentNamespace(), labels, nil), nil
+		return generator.GetObjectMeta(deploymentName, a.Client.GetCurrentNamespace(), labels, annotations), nil
 	}
 }
 

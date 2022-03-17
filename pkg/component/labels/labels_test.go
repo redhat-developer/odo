@@ -28,7 +28,7 @@ func TestGetLabels(t *testing.T) {
 			},
 			want: map[string]string{
 				applabels.ApplicationLabel: "applicationame",
-				ComponentLabel:             "componentname",
+				KubernetesInstanceLabel:    "componentname",
 			},
 		}, {
 			name: "everything with additional",
@@ -42,7 +42,7 @@ func TestGetLabels(t *testing.T) {
 				applabels.App:              "applicationame",
 				applabels.ManagedBy:        "odo",
 				applabels.ManagerVersion:   version.VERSION,
-				ComponentLabel:             "componentname",
+				KubernetesInstanceLabel:    "componentname",
 			},
 		},
 	}

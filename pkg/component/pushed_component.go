@@ -11,7 +11,6 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/klog"
 )
 
 type provider interface {
@@ -143,22 +142,24 @@ func (d devfileComponent) GetEnvVars() []v12.EnvVar {
 func (d devfileComponent) GetLabels() map[string]string {
 	return d.d.Labels
 }
-
 func (d devfileComponent) GetAnnotations() map[string]string {
 	return d.d.Annotations
 }
 
 func (d devfileComponent) GetName() string {
-	return d.d.Labels[componentlabels.ComponentLabel]
+	return d.d.Labels[componentlabels.KubernetesInstanceLabel]
 }
 
 func getType(component provider) (string, error) {
-	if componentType, ok := component.GetAnnotations()[componentlabels.ComponentTypeAnnotation]; ok {
+
+	// For backwards compatibility with previously deployed components that could be non-odo, check the annotation first
+	// then check to see if there is a label with the project type
+	if componentType, ok := component.GetAnnotations()[componentlabels.OdoProjectTypeAnnotation]; ok {
 		return componentType, nil
-	} else if _, ok = component.GetLabels()[componentlabels.ComponentTypeLabel]; ok {
-		klog.V(1).Info("No annotation assigned; retuning 'Not available' since labels are assigned. Annotations will be assigned when user pushes again.")
-		return NotAvailable, nil
+	} else if componentType, ok = component.GetLabels()[componentlabels.OdoProjectTypeAnnotation]; ok {
+		return componentType, nil
 	}
+
 	return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
 }
 
@@ -202,4 +203,5 @@ func isIgnorableError(err error) bool {
 		return true
 	}
 	return kerrors.IsNotFound(err) || kerrors.IsForbidden(err) || kerrors.IsUnauthorized(err)
+
 }

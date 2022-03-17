@@ -55,21 +55,25 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 	return image.BuildPushSpecificImage(o.devfileObj, o.path, img, true)
 }
 
+// ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
+
+	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
 	_, err := service.ValidateResourceExist(o.kubeClient, kubernetes, o.path)
 	if err != nil {
 		return err
 	}
 
 	// Get the most common labels that's applicable to all resources being deployed.
-	// Retrieve the component type from the devfile and also inject it into the list of labels
 	// Set the mode to DEPLOY. Regardless of what Kubernetes resource we are deploying.
 	labels := componentlabels.GetLabels(o.devfileObj.Data.GetMetadata().Name, o.appName, true)
-	componentType := component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
-	labels[componentlabels.ComponentProjectTypeLabel] = componentType
-	labels[componentlabels.ComponentModeLabel] = componentlabels.ComponentDeployLabel
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDeployName
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
+
+	// Create the annotations
+	// Retrieve the component type from the devfile and also inject it into the list of annotations
+	annotations := make(map[string]string)
+	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
 
 	// Get the Kubernetes component
 	u, err := service.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
@@ -79,7 +83,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 
 	// Deploy the actual Kubernetes component and error out if there's an issue.
 	log.Infof("\nDeploying Kubernetes %s: %s", u.GetKind(), u.GetName())
-	isOperatorBackedService, err := service.PushKubernetesResource(o.kubeClient, u, labels)
+	isOperatorBackedService, err := service.PushKubernetesResource(o.kubeClient, u, labels, annotations)
 	if err != nil {
 		return errors.Wrap(err, "failed to create service(s) associated with the component")
 	}

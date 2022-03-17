@@ -189,7 +189,7 @@ func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 
 // HandleEphemeralStorage creates or deletes the ephemeral volume based on the preference setting
 func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
-	selector := fmt.Sprintf("%v=%s,%s=%s", componentlabels.ComponentLabel, componentName, storagelabels.SourcePVCLabel, storage.OdoSourceVolume)
+	selector := fmt.Sprintf("%v=%s,%s=%s", componentlabels.KubernetesInstanceLabel, componentName, storagelabels.SourcePVCLabel, storage.OdoSourceVolume)
 
 	pvcs, err := client.ListPVCs(selector)
 	if err != nil && !kerrors.IsNotFound(err) {

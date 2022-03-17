@@ -5,22 +5,26 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-// ComponentLabel is a label key used to identify the component name
-const ComponentLabel = "app.kubernetes.io/instance"
+// KubernetesInstanceLabel is a label key used to identify the component name
+const KubernetesInstanceLabel = "app.kubernetes.io/instance"
 
-// ComponentTypeLabel is Kubernetes label that identifies the type of a component being used
-const ComponentTypeLabel = "app.kubernetes.io/name"
+// KubernetesNameLabel is Kubernetes label that identifies the type of a component being used
+const KubernetesNameLabel = "app.kubernetes.io/name"
 
-const ComponentTypeAnnotation = "odo.dev/project-type"
+// KubernetesManagedByLabel ...
+const KubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 
-// ComponentDeployLabel ...
-const ComponentDeployLabel = "Deploy"
+// ComponentDevName ...
+const ComponentDevName = "Dev"
 
-// ComponentModeLabel ...
-const ComponentModeLabel = "odo.dev/mode"
+// ComponentDeployName ...
+const ComponentDeployName = "Deploy"
 
-// ComponentProjectTypeLabel ...
-const ComponentProjectTypeLabel = "odo.dev/project-type"
+// OdoModeLabel ...
+const OdoModeLabel = "odo.dev/mode"
+
+// OdoProjectTypeAnnotation ...
+const OdoProjectTypeAnnotation = "odo.dev/project-type"
 
 // GetLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
@@ -28,7 +32,7 @@ const ComponentProjectTypeLabel = "odo.dev/project-type"
 // if you need labels to filter component then use additional=false
 func GetLabels(componentName string, applicationName string, additional bool) map[string]string {
 	labels := applabels.GetLabels(applicationName, additional)
-	labels[ComponentLabel] = componentName
+	labels[KubernetesInstanceLabel] = componentName
 	return labels
 }
 

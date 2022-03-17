@@ -20,6 +20,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentLabels "github.com/redhat-developer/odo/pkg/component/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -46,11 +47,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testComponentName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:     testAppName,
-				componentLabels.ComponentLabel: testComponentName,
+				applabels.ApplicationLabel:              testAppName,
+				componentLabels.KubernetesInstanceLabel: testComponentName,
 			},
 			Annotations: map[string]string{
-				componentLabels.ComponentTypeAnnotation: "",
+				componentLabels.OdoProjectTypeAnnotation: "",
 			},
 		},
 	}
@@ -95,7 +96,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
-				deployment.Annotations[componentLabels.ComponentTypeAnnotation] = string(tt.componentType)
+				deployment.Annotations[componentLabels.OdoProjectTypeAnnotation] = string(tt.componentType)
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
@@ -632,7 +633,8 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 		deployment    *v1.Deployment
 	}
 	type args struct {
-		labels map[string]string
+		labels      map[string]string
+		annotations map[string]string
 	}
 	tests := []struct {
 		name    string
@@ -649,7 +651,8 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs"),
 			},
 			args: args{
-				labels: odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				annotations: nil,
 			},
 			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
 			wantErr: false,
@@ -662,9 +665,24 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 				deployment:    nil,
 			},
 			args: args{
-				labels: odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				annotations: nil,
 			},
 			want:    generator.GetObjectMeta(namespacedKubernetesName, "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			wantErr: false,
+		},
+		{
+			name: "case 3: deployment exists and there is annotations successfully passed in",
+			fields: fields{
+				componentName: "nodejs",
+				appName:       "app",
+				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs"),
+			},
+			args: args{
+				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				annotations: map[string]string{componentlabels.OdoModeLabel: componentlabels.ComponentDevName},
+			},
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, map[string]string{componentlabels.OdoModeLabel: componentlabels.ComponentDevName}),
 			wantErr: false,
 		},
 	}
@@ -683,7 +701,7 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 				},
 				deployment: tt.fields.deployment,
 			}
-			got, err := a.generateDeploymentObjectMeta(tt.args.labels)
+			got, err := a.generateDeploymentObjectMeta(tt.args.labels, tt.args.annotations)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
 				return
