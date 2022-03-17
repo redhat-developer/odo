@@ -65,12 +65,11 @@ ComponentSettings:
 				Expect(stdOut).To(ContainSubstring("No resource found for component %q in namespace %q", cmpName, commonVar.Project))
 			})
 		})
-		When("the component is deployed in DEV mode", func() {
+		When("the component is deployed in DEV mode and dev mode stopped", func() {
+			var devSession helper.DevSession
 			BeforeEach(func() {
-				session := helper.CmdRunner("odo", "dev")
-				defer session.Kill()
-				helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
-
+				devSession = helper.StartDevMode()
+				defer devSession.Kill()
 				Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(cmpName))
 			})
 

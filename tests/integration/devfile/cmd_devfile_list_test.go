@@ -76,10 +76,15 @@ var _ = Describe("odo list with devfile", func() {
 			It("should show the language for 'Type' in odo list", func() {
 				checkList(metadata.Language)
 			})
-			When("the component is pushed", func() {
+			When("the component is pushed in dev mode", func() {
+				var devSession helper.DevSession
 				BeforeEach(func() {
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+					devSession = helper.StartDevMode()
 				})
+				AfterEach(func() {
+					devSession.Stop()
+				})
+
 				It("should show the language for 'Type' in odo list", func() {
 					checkList(metadata.Language)
 				})
@@ -96,7 +101,7 @@ var _ = Describe("odo list with devfile", func() {
 			})
 			When("the component is pushed", func() {
 				BeforeEach(func() {
-					helper.Cmd("odo", "push", "--context", commonVar.Context).ShouldPass().Out()
+					helper.Cmd("odo", "push").ShouldPass().Out()
 				})
 				It("should show 'Not available' for 'Type' in odo list", func() {
 					checkList(component.NotAvailable)

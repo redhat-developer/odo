@@ -8,9 +8,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/redhat-developer/odo/pkg/watch"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -52,30 +52,25 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 		It("should show validation errors if the devfile is incorrect", func() {
-			session := helper.CmdRunner("odo", "dev")
-			defer session.Kill()
-			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
-			helper.WaitForOutputToContain(watch.PushErrorString, 180, 10, session)
+			helper.RunDevMode(func(session *gexec.Session) {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
+				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
+			})
 		})
 		It("should use the index information from previous push operation", func() {
 			// Create a new file A
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
-
 			// watch that project
-			session := helper.CmdRunner("odo", "dev")
-			defer session.Kill()
+			helper.RunDevMode(func(session *gexec.Session) {
+				// Change some other file B
+				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
-			helper.WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
 
-			// Change some other file B
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
-
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-
-			// File should exist, and its content should match what we initially set it to
-			execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base(fileAPath))
-			Expect(execResult).To(ContainSubstring(fileAText))
+				// File should exist, and its content should match what we initially set it to
+				execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base(fileAPath))
+				Expect(execResult).To(ContainSubstring(fileAText))
+			})
 		})
 		It("ensure that index information is updated", func() {
 			// watch that project
