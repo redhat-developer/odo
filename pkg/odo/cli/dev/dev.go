@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strings"
 
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -44,10 +46,12 @@ type DevOptions struct {
 	clientset *clientset.Clientset
 
 	// Variables
-	ignorePaths       []string
-	out               io.Writer
-	errOut            io.Writer
-	initialDevfileObj parser.DevfileObj // it's called "initial" because it has to be set only once when running odo dev for the first time
+	ignorePaths []string
+	out         io.Writer
+	errOut      io.Writer
+	// it's called "initial" because it has to be set only once when running odo dev for the first time
+	// it is used to compare with updated devfile when we watch the contextDir for changes
+	initialDevfileObj parser.DevfileObj
 
 	// working directory
 	contextDir string
@@ -187,17 +191,18 @@ func (o *DevOptions) Run() error {
 	if err != nil {
 		return err
 	}
-	ceMapping, err := libdevfile.GetContainerEndpointMapping(containers)
-	if err != nil {
-		return err
-	}
+	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
 	portPairs := portPairsFromContainerEndpoints(ceMapping)
 	portPairsSlice := []string{}
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
 	}
+	pod, err := o.clientset.KubernetesClient.GetOnePodFromSelector(componentlabels.GetSelector(o.Context.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), "app"))
+	if err != nil {
+		return err
+	}
 	go func() {
-		err = o.clientset.DevClient.SetupPortForwarding(portPairsSlice, o.Context.EnvSpecificInfo.GetDevfileObj(), o.errOut)
+		err = o.clientset.DevClient.SetupPortForwarding(pod, portPairsSlice, o.Context.EnvSpecificInfo.GetDevfileObj(), o.errOut)
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
@@ -254,7 +259,7 @@ func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error
 
 	newEndpoints, err := libdevfile.GetAllEndpointsFromDevfile(newDevfile)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	if !reflect.DeepEqual(oldEndpoints, newEndpoints) {
@@ -264,17 +269,17 @@ func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error
 }
 
 func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
-	portForwardURLs := ""
+	var portForwardURLs strings.Builder
 	for container, ports := range portPairs {
 		for _, pair := range ports {
 			split := strings.Split(pair, ":")
 			local := split[0]
 			remote := split[1]
 
-			portForwardURLs += fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local)
+			portForwardURLs.WriteString(fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local))
 		}
 	}
-	fmt.Fprintf(out, "\n%s", portForwardURLs)
+	fmt.Fprintf(out, "\n%s", portForwardURLs.String())
 }
 
 // NewCmdDev implements the odo dev command

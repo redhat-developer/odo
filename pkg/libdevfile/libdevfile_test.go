@@ -340,53 +340,91 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 	})
 
 	tests := []struct {
-		name    string
-		args    args
-		want    map[string][]int
-		wantErr bool
+		name string
+		args args
+		want map[string][]int
 	}{
 		{
 			name: "invalid input - image components instead of container components",
 			args: args{
 				containers: []v1alpha2.Component{imageComponent},
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string][]int{},
 		},
 		{
 			name: "one container with no endpoints exposed",
 			args: args{
 				containers: []v1alpha2.Component{containerWithNoEndpoints},
 			},
-			want:    map[string][]int{containerWithNoEndpoints.Name: {}},
-			wantErr: false,
+			want: map[string][]int{containerWithNoEndpoints.Name: {}},
 		},
 		{
 			name: "multiple containers with varying types of endpoints",
 			args: args{
 				containers: []v1alpha2.Component{containerWithNoEndpoints, containerWithOnePublicEndpoint, containerWithOneInternalEndpoint},
 			},
-			want:    map[string][]int{containerWithNoEndpoints.Name: {}, containerWithOnePublicEndpoint.Name: {8080}, containerWithOneInternalEndpoint.Name: {9090}},
-			wantErr: false,
+			want: map[string][]int{containerWithNoEndpoints.Name: {}, containerWithOnePublicEndpoint.Name: {8080}, containerWithOneInternalEndpoint.Name: {9090}},
 		},
 		{
 			name: "invalid input - one image component with rest being containers",
 			args: args{
 				containers: []v1alpha2.Component{containerWithNoEndpoints, containerWithOnePublicEndpoint, containerWithOneInternalEndpoint, imageComponent},
 			},
-			want:    nil,
-			wantErr: true,
+			want: map[string][]int{containerWithNoEndpoints.Name: {}, containerWithOnePublicEndpoint.Name: {8080}, containerWithOneInternalEndpoint.Name: {9090}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetContainerEndpointMapping(tt.args.containers)
+			got := GetContainerEndpointMapping(tt.args.containers)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetContainerEndpointMapping() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetAllEndpointsFromDevfile(t *testing.T) {
+	type args struct {
+		devfileObj func() parser.DevfileObj
+	}
+	ep1 := v1alpha2.Endpoint{Name: "ep1", TargetPort: 8080, Exposure: v1alpha2.NoneEndpointExposure}
+	ep2 := v1alpha2.Endpoint{Name: "ep2", TargetPort: 9090, Exposure: v1alpha2.InternalEndpointExposure}
+	ep3 := v1alpha2.Endpoint{Name: "ep3", TargetPort: 8888, Exposure: v1alpha2.PublicEndpointExposure}
+
+	container := generator.GetContainerComponent(generator.ContainerComponentParams{
+		Name:      "container-1",
+		Endpoints: []v1alpha2.Endpoint{ep1, ep2, ep3},
+	})
+	tests := []struct {
+		name    string
+		args    args
+		want    []v1alpha2.Endpoint
+		wantErr bool
+	}{
+		{
+			name: "Container with all endpoints of all kinds of exposures",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddComponents([]v1alpha2.Component{container})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+			},
+			want: []v1alpha2.Endpoint{ep2, ep3},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetAllEndpointsFromDevfile(tt.args.devfileObj())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetContainerEndpointMapping() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetAllEndpointsFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetContainerEndpointMapping() got = %v, want %v", got, tt.want)
+				t.Errorf("GetAllEndpointsFromDevfile() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

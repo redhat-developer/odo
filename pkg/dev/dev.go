@@ -5,9 +5,10 @@ import (
 	"io"
 	"net/http"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/redhat-developer/odo/pkg/envinfo"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
@@ -67,12 +68,7 @@ func (o *DevClient) Cleanup() error {
 	return err
 }
 
-func (o *DevClient) SetupPortForwarding(portPairs []string, devfileObj parser.DevfileObj, errOut io.Writer) error {
-	pod, err := o.kubernetesClient.GetOnePodFromSelector(componentlabels.GetSelector(devfileObj.GetMetadataName(), "app"))
-	if err != nil {
-		return err
-	}
-
+func (o *DevClient) SetupPortForwarding(pod *corev1.Pod, portPairs []string, devfileObj parser.DevfileObj, errOut io.Writer) error {
 	transport, upgrader, err := spdy.RoundTripperFor(o.kubernetesClient.GetClientConfig())
 	if err != nil {
 		return err

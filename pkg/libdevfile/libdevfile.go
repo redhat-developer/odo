@@ -132,30 +132,26 @@ func GetContainerComponents(devfileObj parser.DevfileObj) ([]v1alpha2.Component,
 }
 
 // GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int) with exposure status other than none
-func GetContainerEndpointMapping(containers []v1alpha2.Component) (map[string][]int, error) {
+func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]int {
 	ceMapping := make(map[string][]int)
-	if len(containers) == 0 {
-		return ceMapping, nil
-	}
-
-	for _, cntr := range containers {
-		if cntr.ComponentUnion.Container == nil {
-			// this is not a container component; error prevents panic when accessing Endpoints field
-			return nil, NewNotAContainerError()
+	for _, container := range containers {
+		if container.ComponentUnion.Container == nil {
+			// this is not a container component; continue prevents panic when accessing Endpoints field
+			continue
 		}
-		k := cntr.Name
+		k := container.Name
 		if _, ok := ceMapping[k]; !ok {
 			ceMapping[k] = []int{}
 		}
 
-		endpoints := cntr.Container.Endpoints
+		endpoints := container.Container.Endpoints
 		for _, e := range endpoints {
 			if e.Exposure != v1alpha2.NoneEndpointExposure {
 				ceMapping[k] = append(ceMapping[k], e.TargetPort)
 			}
 		}
 	}
-	return ceMapping, nil
+	return ceMapping
 }
 
 // GetAllEndpointsFromDevfile returns a slice of all endpoints in a devfile with exposure value not set to none
@@ -167,7 +163,12 @@ func GetAllEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoi
 
 	var endpoints []v1alpha2.Endpoint
 	for _, c := range containers {
-		endpoints = append(endpoints, c.Container.Endpoints...)
+		for _, e := range c.Container.Endpoints {
+			if e.Exposure != v1alpha2.NoneEndpointExposure {
+				endpoints = append(endpoints, e)
+			}
+		}
+
 	}
 	return endpoints, nil
 }
