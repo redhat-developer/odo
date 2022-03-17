@@ -35,8 +35,6 @@ func NewDevClient(watchClient watch.Client, kubernetesClient kclient.ClientInter
 	}
 }
 
-// Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container.
-// It uses envSpecificInfo to create push parameters and subsequently push the component to the cluster
 func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, path string) error {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter, err := adapters.NewComponentAdapter(devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext)
@@ -64,14 +62,12 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	return nil
 }
 
-// Cleanup cleans the resources created by Push
 func (o *DevClient) Cleanup() error {
 	var err error
 	return err
 }
 
-// SetupPortForwarding sets up port forwarding for the endpoints in the devfile
-func (o *DevClient) SetupPortForwarding(devfileObj parser.DevfileObj, portPairs []string, errOut io.Writer) error {
+func (o *DevClient) SetupPortForwarding(portPairs []string, devfileObj parser.DevfileObj, errOut io.Writer) error {
 	pod, err := o.kubernetesClient.GetOnePodFromSelector(componentlabels.GetSelector(devfileObj.GetMetadataName(), "app"))
 	if err != nil {
 		return err

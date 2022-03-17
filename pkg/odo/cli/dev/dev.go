@@ -44,12 +44,10 @@ type DevOptions struct {
 	clientset *clientset.Clientset
 
 	// Variables
-	ignorePaths []string
-	out         io.Writer
-	errOut      io.Writer
-	envFileInfo *envinfo.EnvSpecificInfo
-	// it's called "initial" because it has to be set only once when running odo dev for the first time
-	initialDevfileObj parser.DevfileObj
+	ignorePaths       []string
+	out               io.Writer
+	errOut            io.Writer
+	initialDevfileObj parser.DevfileObj // it's called "initial" because it has to be set only once when running odo dev for the first time
 
 	// working directory
 	contextDir string
@@ -112,14 +110,14 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
-	o.envFileInfo, err = envinfo.NewEnvSpecificInfo("")
+	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
 
 	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
 
-	if !o.envFileInfo.Exists() {
+	if !envfileinfo.Exists() {
 		// if env.yaml doesn't exist, get component name from the devfile.yaml
 		var cmpName string
 		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
@@ -128,13 +126,13 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		}
 		// create env.yaml file with component, project/namespace and application info
 		// TODO - store only namespace into env.yaml, we don't want to track component or application name via env.yaml
-		err = o.envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
+		err = envfileinfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
 		if err != nil {
 			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
-	} else if o.envFileInfo.GetComponentSettings().Project != o.GetProject() {
+	} else if envfileinfo.GetComponentSettings().Project != o.GetProject() {
 		// set namespace if the evn.yaml exists; that's the only piece we care about in env.yaml
-		err = o.envFileInfo.SetConfiguration("project", o.GetProject())
+		err = envfileinfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
 			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
@@ -184,24 +182,22 @@ func (o *DevOptions) Run() error {
 	}
 	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n ")
 
+	// get the endpoint/port information for containers in devfile and setup port-forwarding
 	containers, err := libdevfile.GetContainerComponents(o.Context.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}
-
 	ceMapping, err := libdevfile.GetContainerEndpointMapping(containers)
 	if err != nil {
 		return err
 	}
-
 	portPairs := portPairsFromContainerEndpoints(ceMapping)
 	portPairsSlice := []string{}
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
 	}
-
 	go func() {
-		err = o.clientset.DevClient.SetupPortForwarding(o.Context.EnvSpecificInfo.GetDevfileObj(), portPairsSlice, o.errOut)
+		err = o.clientset.DevClient.SetupPortForwarding(portPairsSlice, o.Context.EnvSpecificInfo.GetDevfileObj(), o.errOut)
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
@@ -213,6 +209,7 @@ func (o *DevOptions) Run() error {
 	return err
 }
 
+// RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
 func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter common.ComponentAdapter
 

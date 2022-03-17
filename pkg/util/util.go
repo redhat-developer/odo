@@ -762,7 +762,7 @@ func GetAdler32Value(s string) string {
 	return fmt.Sprintf("%08x", adler32.Checksum([]byte(s)))
 }
 
-// IsPortFree checks if the port is free to use
+// IsPortFree checks if the port on localhost is free to use
 func IsPortFree(port int) bool {
 	address := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", address)
