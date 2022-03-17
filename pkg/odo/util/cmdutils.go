@@ -11,10 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// LogErrorAndExit prints the cause of the given error and exits the code with an
-// exit code of 1.
-// If the context is provided, then that is printed, if not, then the cause is
-// displayed
+// LogErrorAndExit prints the given error and exits the code with an exit code of 1.
+// If the context is provided, then that is printed alongside the error.
 // *If* we are using the global json parameter, we instead output the json output
 func LogErrorAndExit(err error, context string, a ...interface{}) {
 
