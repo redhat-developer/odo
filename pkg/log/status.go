@@ -194,17 +194,23 @@ func (s *Status) End(success bool) {
 	}
 
 	if !IsJSON() {
+
+		time := ""
+		if s.spinner.TimeSpent() != "" {
+			time = fmt.Sprintf("[%s]", s.spinner.TimeSpent())
+		}
+
 		if success {
 			// Clear the warning (unneeded now)
 			s.WarningStatus("")
 			green := color.New(color.FgGreen).SprintFunc()
-			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
+			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s %s\n", green(getSuccessString()), s.status, time)
 		} else {
 			red := color.New(color.FgRed).SprintFunc()
 			if s.warningStatus != "" {
-				fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s] [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent(), s.warningStatus)
+				fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s %s [%s]\n", red(getErrString()), s.status, time, s.warningStatus)
 			} else {
-				fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
+				fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s %s\n", red(getErrString()), s.status, time)
 			}
 		}
 	}
