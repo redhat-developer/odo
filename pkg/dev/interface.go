@@ -20,7 +20,7 @@ type Client interface {
 	// SetupPortForwarding sets up port forwarding to the pod for the portPairs provided in
 	// ["<local-port-1>":"<remote-port-1>", "<local-port-2>":"<remote-port-2>"] format.
 	// It fetches the pod information using the devfileObj. It uses errOut to print errors while performing the port-forwarding.
-	SetupPortForwarding(pod *corev1.Pod, portPairs []string, devfileObj parser.DevfileObj, errOut io.Writer) error
+	SetupPortForwarding(pod *corev1.Pod, portPairs []string, errOut io.Writer) error
 
 	// Watch watches for any changes to the files under path while ignoring the files/directories in ignorePaths.
 	// It logs messages to out and uses the Handler h to perform push operation when anything changes in path.

@@ -68,7 +68,7 @@ func (o *DevClient) Cleanup() error {
 	return err
 }
 
-func (o *DevClient) SetupPortForwarding(pod *corev1.Pod, portPairs []string, devfileObj parser.DevfileObj, errOut io.Writer) error {
+func (o *DevClient) SetupPortForwarding(pod *corev1.Pod, portPairs []string, errOut io.Writer) error {
 	transport, upgrader, err := spdy.RoundTripperFor(o.kubernetesClient.GetClientConfig())
 	if err != nil {
 		return err

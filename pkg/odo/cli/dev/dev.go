@@ -9,8 +9,6 @@ import (
 	"reflect"
 	"strings"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -141,6 +139,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
 	}
+	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
 	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
 	// 1. create an empty string slice to which paths like .gitignore, .odo/odo-file-index.json, etc. will be added
@@ -197,12 +196,12 @@ func (o *DevOptions) Run() error {
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
 	}
-	pod, err := o.clientset.KubernetesClient.GetOnePodFromSelector(componentlabels.GetSelector(o.Context.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), "app"))
+	pod, err := o.clientset.KubernetesClient.GetPodUsingComponentName(o.Context.EnvSpecificInfo.GetDevfileObj().GetMetadataName())
 	if err != nil {
 		return err
 	}
 	go func() {
-		err = o.clientset.DevClient.SetupPortForwarding(pod, portPairsSlice, o.Context.EnvSpecificInfo.GetDevfileObj(), o.errOut)
+		err = o.clientset.DevClient.SetupPortForwarding(pod, portPairsSlice, o.errOut)
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
@@ -253,12 +252,12 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 }
 
 func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
-	oldEndpoints, err := libdevfile.GetAllEndpointsFromDevfile(oldDevfile)
+	oldEndpoints, err := libdevfile.GetPublicAndInternalEndpointsFromDevfile(oldDevfile)
 	if err != nil {
 		return false, err
 	}
 
-	newEndpoints, err := libdevfile.GetAllEndpointsFromDevfile(newDevfile)
+	newEndpoints, err := libdevfile.GetPublicAndInternalEndpointsFromDevfile(newDevfile)
 	if err != nil {
 		return false, err
 	}

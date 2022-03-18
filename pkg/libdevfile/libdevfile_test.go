@@ -384,7 +384,7 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 	}
 }
 
-func TestGetAllEndpointsFromDevfile(t *testing.T) {
+func TestGetPublicAndInternalEndpointsFromDevfile(t *testing.T) {
 	type args struct {
 		devfileObj func() parser.DevfileObj
 	}
@@ -418,13 +418,13 @@ func TestGetAllEndpointsFromDevfile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetAllEndpointsFromDevfile(tt.args.devfileObj())
+			got, err := GetPublicAndInternalEndpointsFromDevfile(tt.args.devfileObj())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAllEndpointsFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetPublicAndInternalEndpointsFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetAllEndpointsFromDevfile() got = %v, want %v", got, tt.want)
+				t.Errorf("GetPublicAndInternalEndpointsFromDevfile() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -154,8 +154,8 @@ func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]i
 	return ceMapping
 }
 
-// GetAllEndpointsFromDevfile returns a slice of all endpoints in a devfile with exposure value not set to none
-func GetAllEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoint, error) {
+// GetPublicAndInternalEndpointsFromDevfile returns a slice of all endpoints in a devfile with exposure value not set to public or internal
+func GetPublicAndInternalEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoint, error) {
 	containers, err := GetContainerComponents(devfileObj)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func GetAllEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoi
 	var endpoints []v1alpha2.Endpoint
 	for _, c := range containers {
 		for _, e := range c.Container.Endpoints {
-			if e.Exposure != v1alpha2.NoneEndpointExposure {
+			if e.Exposure == v1alpha2.PublicEndpointExposure || e.Exposure == v1alpha2.InternalEndpointExposure {
 				endpoints = append(endpoints, e)
 			}
 		}
