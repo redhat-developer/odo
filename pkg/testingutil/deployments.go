@@ -26,6 +26,7 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 				applabels.ApplicationLabel:              "app",
 				componentlabels.KubernetesInstanceLabel: podName,
 				applabels.ManagedBy:                     "odo",
+				componentlabels.OdoModeLabel:            componentlabels.ComponentDevName,
 			},
 			Annotations: map[string]string{
 				componentlabels.OdoProjectTypeAnnotation: podName,

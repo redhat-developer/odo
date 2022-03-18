@@ -285,6 +285,7 @@ func getFakeComponent(compName, namespace, appName, compType string, state strin
 				applabels.ApplicationLabel:              appName,
 				componentlabels.KubernetesInstanceLabel: compName,
 				componentlabels.KubernetesNameLabel:     compType,
+				componentlabels.OdoModeLabel:            componentlabels.ComponentDevName,
 			},
 			Annotations: map[string]string{
 				componentlabels.OdoProjectTypeAnnotation: compType,

@@ -57,7 +57,10 @@ func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 
 // GetOneDeployment returns the Deployment object associated with the given component and app
 func (c *Client) GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error) {
-	return c.GetOneDeploymentFromSelector(componentlabels.GetSelector(componentName, appName))
+	labels := componentlabels.GetLabels(componentName, appName, false)
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
+	selector := util.ConvertLabelsToSelector(labels)
+	return c.GetOneDeploymentFromSelector(selector)
 }
 
 // GetOneDeploymentFromSelector returns the Deployment object associated

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -52,7 +53,10 @@ func (c *Client) DeleteService(serviceName string) error {
 // GetOneService retrieves the service with the given component and app name
 // An error is thrown when exactly one service is not found for the selector.
 func (c *Client) GetOneService(componentName, appName string) (*corev1.Service, error) {
-	return c.GetOneServiceFromSelector(componentlabels.GetSelector(componentName, appName))
+	labels := componentlabels.GetLabels(componentName, appName, false)
+	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
+	selector := util.ConvertLabelsToSelector(labels)
+	return c.GetOneServiceFromSelector(selector)
 }
 
 // GetOneServiceFromSelector returns the service object associated with the given selector.
