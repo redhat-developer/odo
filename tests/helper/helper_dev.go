@@ -10,6 +10,9 @@ import (
 
 	# Starting a session for a series of tests and stopping the session after the tests:
 
+	This format can be used when you want to run several independent tests
+	when the `odo dev` command is running in the background
+
 	```
 	When("running dev session", func() {
 		var devSession DevSession
@@ -20,22 +23,17 @@ import (
 			devSession.Stop()
 		})
 
-		It([...])
-	})
-
-	# Starting a session and stopping it immediately without cleanup
-
-	When("running dev session and stopping it without cleanup", func() {
-		BeforeEach(func() {
-			devSession := helper.StartDevMode()
-			defer devSession.Kill()
-			[...]
+		It("...", func() {
+			// Test with `dev odo` running in the background
 		})
-
-		It([...])
+		It("...", func() {
+			// Test with `dev odo` running in the background
+		})
 	})
 
 	# Starting a session and stopping it cleanly
+
+	This format can be used to test the behaviour of `odo dev` when it is stopped cleanly
 
 	When("running dev session and stopping it with cleanup", func() {
 		BeforeEach(func() {
@@ -44,13 +42,43 @@ import (
 			[...]
 		})
 
-		It([...])
+		It("...", func() {
+			// Test after `odo dev` has been stopped cleanly
+		})
+		It("...", func() {
+			// Test after `odo dev` has been stopped cleanly
+		})
 	})
 
+	# Starting a session and stopping it immediately without cleanup
+
+	This format can be used to test the behaviour of `odo dev` when it is stopped with a KILL signal
+
+	When("running dev session and stopping it without cleanup", func() {
+		BeforeEach(func() {
+			devSession := helper.StartDevMode()
+			defer devSession.Kill()
+			[...]
+		})
+
+		It("...", func() {
+			// Test after `odo dev` has been killed
+		})
+		It("...", func() {
+			// Test after `odo dev` has been killed
+		})
+	})
+
+
 	# Running a dev session and executing some tests inside this session
+
+	This format can be used to run a series of related tests in dev mode
+	All tests will be ran in the same session (ideal for e2e tests)
+	To run independent tests, previous formats should be used instead.
+
 	It("should do ... in dev mode", func() {
 		helper.RunDevMode(func(session *gexec.Session) {
-			// tests on dev mode
+			// test on dev mode
 		})
 	})
 */
