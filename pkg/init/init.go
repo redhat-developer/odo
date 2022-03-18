@@ -263,3 +263,27 @@ func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, context
 	}
 	return devfileObj, devfilePath, nil
 }
+
+func (o InitClient) InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool)) error {
+	containsDevfile, err := location.DirectoryContainsDevfile(o.fsys, contextDir)
+	if err != nil {
+		return err
+	}
+	if containsDevfile {
+		return nil
+	}
+
+	preInitHandlerFunc(len(flags) == 0)
+
+	devfileObj, _, err := o.SelectAndPersonalizeDevfile(map[string]string{}, contextDir)
+	if err != nil {
+		return err
+	}
+
+	// Set the name in the devfile and writes the devfile back to the disk
+	err = o.PersonalizeName(devfileObj, map[string]string{})
+	if err != nil {
+		return fmt.Errorf("failed to update the devfile's name: %w", err)
+	}
+	return nil
+}
