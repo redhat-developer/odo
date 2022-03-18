@@ -17,7 +17,7 @@ import (
 			devSession = helper.StartDevMode()
 		})
 		AfterEach(func() {
-			session.Stop()
+			devSession.Stop()
 		})
 
 		It([...])
@@ -38,7 +38,6 @@ import (
 	# Starting a session and stopping it cleanly
 
 	When("running dev session and stopping it with cleanup", func() {
-		var devSession DevSession
 		BeforeEach(func() {
 			devSession := helper.StartDevMode()
 			defer devSession.Stop()
