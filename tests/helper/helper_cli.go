@@ -13,8 +13,8 @@ type CliRunner interface {
 	GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string
 	WaitAndCheckForExistence(resourceType, namespace string, timeoutMinutes int) bool
 	GetServices(namespace string) string
-	CreateRandNamespaceProject() string
-	CreateRandNamespaceProjectOfLength(i int) string
+	CreateAndSetRandNamespaceProject() string
+	CreateAndSetRandNamespaceProjectOfLength(i int) string
 	SetProject(namespace string) string
 	DeleteNamespaceProject(projectName string)
 	DeletePod(podName string, projectName string)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -25,6 +26,9 @@ type ComponentOptions struct {
 	// forceFlag forces deletion
 	forceFlag bool
 
+	// Context
+	*genericclioptions.Context
+
 	// Clients
 	clientset *clientset.Clientset
 }
@@ -39,10 +43,17 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 }
 
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.name == "" {
-		// TODO #5478
+		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+		if err != nil {
+			return err
+		}
+		// this ensures that the namespace set in env.yaml is used
+		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 		return nil
 	}
+	// 2. Name is passed, and odo does not have access to devfile.yaml; if Name is passed, then we assume that odo does not have access to the devfile.yaml
 	if o.namespace != "" {
 		o.clientset.KubernetesClient.SetNamespace(o.namespace)
 	} else {
@@ -53,7 +64,6 @@ func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err
 
 func (o *ComponentOptions) Validate() (err error) {
 	return nil
-
 }
 
 func (o *ComponentOptions) Run() error {
@@ -74,10 +84,7 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 		log.Infof("No resource found for component %q in namespace %q\n", o.name, o.namespace)
 		return nil
 	}
-	log.Info("The following resources will be deleted: ")
-	for _, resource := range list {
-		fmt.Printf("\t%s: %s\n", resource.GetKind(), resource.GetName())
-	}
+	printDevfileComponents(o.name, o.namespace, list)
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
 		failed := o.clientset.DeleteClient.DeleteResources(list)
 		for _, fail := range failed {
@@ -91,9 +98,59 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 	return nil
 }
 
-// deleteDevfileComponent deletes a component defined by the devfile in the current directory
+// deleteDevfileComponent deletes all the components defined by the devfile in the current directory
 func (o *ComponentOptions) deleteDevfileComponent() error {
+	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	componentName := devfileObj.GetMetadataName()
+	namespace := o.GetProject()
+	appName := "app"
+
+	log.Info("Searching resources to delete, please wait...")
+	isInnerLoopDeployed, resources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName)
+	if err != nil {
+		return err
+	}
+	if len(resources) == 0 {
+		log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
+		return nil
+	}
+
+	// Print all the resources that odo will attempt to delete
+	printDevfileComponents(componentName, namespace, resources)
+
+	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
+		// if innerloop deployment resource is present, then execute preStop events
+		if isInnerLoopDeployed {
+			err = o.clientset.DeleteClient.ExecutePreStopEvents(devfileObj, appName)
+			if err != nil {
+				log.Errorf("Failed to execute preStop events")
+			}
+		}
+
+		// delete all the resources
+		failed := o.clientset.DeleteClient.DeleteResources(resources)
+		for _, fail := range failed {
+			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+		}
+		log.Infof("The component %q is successfully deleted from namespace %q", componentName, namespace)
+		return nil
+	}
+
+	log.Error("Aborting deletion of component")
+
 	return nil
+}
+
+// printDevfileResources prints the devfile components for ComponentOptions.deleteDevfileComponent
+func printDevfileComponents(componentName, namespace string, k8sResources []unstructured.Unstructured) {
+	log.Infof("This will delete %q from the namespace %q.", componentName, namespace)
+
+	if len(k8sResources) != 0 {
+		log.Printf("The component contains the following resources that will get deleted:")
+		for _, resource := range k8sResources {
+			fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+		}
+	}
 }
 
 // NewCmdComponent implements the component odo sub-command

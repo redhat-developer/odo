@@ -49,6 +49,9 @@ const (
 // GetDeploymentByName gets a deployment by querying by name
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	// TODO(pvala): Figure out why Kind and APIVersion are not added to the deployment object
+	deployment.APIVersion = DeploymentAPIVersion
+	deployment.Kind = DeploymentKind
 	return deployment, err
 }
 
@@ -174,7 +177,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 				failure <- errors.New("watch channel was closed")
 				return
 			}
-			//based on https://github.com/kubernetes/kubectl/blob/9a3954bf653c874c8af6f855f2c754a8e1a44b9e/pkg/polymorphichelpers/rollout_status.go#L66-L91
+			// based on https://github.com/kubernetes/kubectl/blob/9a3954bf653c874c8af6f855f2c754a8e1a44b9e/pkg/polymorphichelpers/rollout_status.go#L66-L91
 			if deployment, ok := val.Object.(*appsv1.Deployment); ok {
 				for _, cond := range deployment.Status.Conditions {
 					// using this just for debugging message, so ignoring error on purpose
@@ -398,7 +401,7 @@ func (c *Client) LinkSecret(secretName, componentName, applicationName string) e
 			return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom/0", "value": {"secretRef": {"name": "%s"}} }]`, secretName), nil
 		}
 
-		//in this case we need to add the full envFrom value
+		// in this case we need to add the full envFrom value
 		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
 	}
 

@@ -2,11 +2,15 @@ package testingutil
 
 import (
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
 // GetFakeContainerComponent returns a fake container component for testing
@@ -273,4 +277,41 @@ func GetTestDevfileObjWithPath(fs devfilefs.Filesystem) parser.DevfileObj {
 		Ctx:  devfileCtx.FakeContext(fs, parser.OutputDevfileYamlPath),
 		Data: devfileData,
 	}
+}
+
+// GetTestDevfileObjWithPreStopEvents returns a devfile object with preStop event.
+// This function can further be extended to accept other type of events.
+func GetTestDevfileObjWithPreStopEvents(fs devfilefs.Filesystem, preStopId, preStopCMD string) parser.DevfileObj {
+	obj := GetTestDevfileObj(fs)
+	_ = obj.Data.AddCommands([]v1.Command{
+		{
+			Id: preStopId,
+			CommandUnion: v1.CommandUnion{
+				Exec: &v1.ExecCommand{
+					CommandLine: preStopCMD,
+					Component:   "runtime",
+					WorkingDir:  "/projects/nodejs-starter",
+				},
+			},
+		},
+	})
+	_ = obj.Data.AddEvents(v1.Events{
+		DevWorkspaceEvents: v1.DevWorkspaceEvents{
+			PreStop: []string{strings.ToLower(preStopId)},
+		}})
+	return obj
+}
+
+// GetTestDevfileObjFromFile takes the filename of devfile from tests/examples/sources/devfiles/nodejs and returns a parser.DevfileObj
+func GetTestDevfileObjFromFile(fileName string) parser.DevfileObj {
+	// filename of this file
+	_, filename, _, _ := runtime.Caller(0)
+	// path to the devfile
+	devfilePath := filepath.Join(filepath.Dir(filename), "..", "..", "tests", "examples", filepath.Join("source", "devfiles", "nodejs", fileName))
+
+	devfileObj, _, err := devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath})
+	if err != nil {
+		return parser.DevfileObj{}
+	}
+	return devfileObj
 }

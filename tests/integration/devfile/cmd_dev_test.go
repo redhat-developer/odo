@@ -185,7 +185,7 @@ var _ = Describe("odo dev command tests", func() {
 					output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
 
-					otherNS = commonVar.CliRunner.CreateRandNamespaceProject()
+					otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				})
 
 				AfterEach(func() {

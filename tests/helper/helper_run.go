@@ -20,7 +20,7 @@ func runningCmd(cmd *exec.Cmd) string {
 }
 
 func CmdRunner(program string, args ...string) *gexec.Session {
-	//prefix ginkgo verbose output with program name
+	// prefix ginkgo verbose output with program name
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)
 	command := exec.Command(program, args...)

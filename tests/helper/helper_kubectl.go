@@ -150,20 +150,20 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 	return output
 }
 
-// CreateRandNamespaceProject create new project
-func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
+// CreateAndSetRandNamespaceProject create and set new project
+func (kubectl KubectlRunner) CreateAndSetRandNamespaceProject() string {
 	projectName := SetProjectName()
-	kubectl.createRandNamespaceProject(projectName)
+	kubectl.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }
 
-func (kubectl KubectlRunner) createRandNamespaceProject(projectName string) string {
+func (kubectl KubectlRunner) createAndSetRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	Cmd("kubectl", "create", "namespace", projectName).ShouldPass()
 	Cmd("kubectl", "config", "set-context", "--current", "--namespace", projectName).ShouldPass()
 	session := Cmd("kubectl", "get", "namespaces").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
-	kubectl.addConfigMapForCleanup(projectName) //add configmap for cleanup
+	kubectl.addConfigMapForCleanup(projectName) // add configmap for cleanup
 	return projectName
 }
 
@@ -174,10 +174,10 @@ func (kubectl KubectlRunner) SetProject(namespace string) string {
 	return namespace
 }
 
-// CreateRandNamespaceProjectOfLength create new project with i as the length of the name
-func (kubectl KubectlRunner) CreateRandNamespaceProjectOfLength(i int) string {
+// CreateRandNamespaceProjectOfLength create new project with i as the length of the name and sets it to the current context
+func (kubectl KubectlRunner) CreateAndSetRandNamespaceProjectOfLength(i int) string {
 	projectName := RandString(i)
-	kubectl.createRandNamespaceProject(projectName)
+	kubectl.createAndSetRandNamespaceProject(projectName)
 	return projectName
 }
 
@@ -254,7 +254,7 @@ func (kubectl KubectlRunner) GetAnnotationsDeployment(componentName, appName, pr
 	return GetAnnotationsDeployment(kubectl.path, componentName, appName, projectName)
 }
 
-//GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
+// GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
 func (kubectl KubectlRunner) GetAllPodsInNs(namespace string) string {
 	args := []string{"get", "pods", "-n", namespace}
 	noResourcesMsg := fmt.Sprintf("No resources found in %s namespace", namespace)

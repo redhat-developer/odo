@@ -544,6 +544,7 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 }
 
 // Delete deletes the component
+// Deprecated: Use DeleteComponent() of pkg component/delete
 func Delete(kubeClient kclient.ClientInterface, devfileObj parser.DevfileObj, componentName string, appName string, labels map[string]string, show bool, wait bool) error {
 	if labels == nil {
 		return fmt.Errorf("cannot delete with labels being nil")
