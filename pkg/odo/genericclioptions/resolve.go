@@ -28,9 +28,9 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := o.KClient.GetNamespaceNormal(projectFlag)
 
-		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+		// do not error out the user is running `odo project`
 		if err != nil {
-			if cmdline.GetParentName() != "project" && !(cmdline.GetName() == "v2delete" && cmdline.IsFlagSet("all")) {
+			if cmdline.GetParentName() != "project" {
 				return err
 			}
 		}

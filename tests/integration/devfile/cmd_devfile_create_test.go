@@ -255,12 +255,16 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	When("devfile exists in the working directory", func() {
+		var workingDir string
 		BeforeEach(func() {
+			workingDir = helper.Getwd()
 			devfilePath = filepath.Join(commonVar.Context, devfile)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
 		})
 		AfterEach(func() {
-			helper.Cmd("odo", "v2delete", "-af").ShouldPass()
+			helper.Chdir(commonVar.Context)
+			defer helper.Chdir(workingDir)
+			helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
 		})
 		It("should successfully create the devfile component", func() {
 			helper.Cmd("odo", "create", "nodejs").ShouldPass()
