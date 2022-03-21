@@ -121,13 +121,6 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 	return nil
 }
 
-// GetContainerComponents returns a slice of container components in the given devfile
-func GetContainerComponents(devfileObj parser.DevfileObj) ([]v1alpha2.Component, error) {
-	return devfileObj.Data.GetComponents(common.DevfileOptions{
-		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
-}
-
 // GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int) with exposure status other than none
 func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]int {
 	ceMapping := make(map[string][]int)
@@ -153,7 +146,9 @@ func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]i
 
 // GetPublicAndInternalEndpointsFromDevfile returns a slice of all endpoints in a devfile with exposure value not set to public or internal
 func GetPublicAndInternalEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoint, error) {
-	containers, err := GetContainerComponents(devfileObj)
+	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
 	if err != nil {
 		return nil, err
 	}

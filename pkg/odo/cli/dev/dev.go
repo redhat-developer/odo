@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -181,7 +184,9 @@ func (o *Options) Run() error {
 	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n ")
 
 	// get the endpoint/port information for containers in devfile and setup port-forwarding
-	containers, err := libdevfile.GetContainerComponents(o.Context.EnvSpecificInfo.GetDevfileObj())
+	containers, err := o.Context.EnvSpecificInfo.GetDevfileObj().Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
 	if err != nil {
 		return err
 	}
