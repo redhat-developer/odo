@@ -229,7 +229,7 @@ ComponentSettings:
 			})
 		})
 	})
-	FWhen("deleting a component containing preStop event that is deployed with DEV", func() {
+	When("deleting a component containing preStop event that is deployed with DEV", func() {
 		var out string
 		BeforeEach(func() {
 			// Hardcoded names from devfile-with-valid-events.yaml

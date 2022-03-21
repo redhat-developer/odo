@@ -159,7 +159,7 @@ func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 	project := stringFlagLookup(cmd, "project")
 	context := stringFlagLookup(cmd, "context")
 	component := stringFlagLookup(cmd, "component")
-	// TODO: add validations for the delete command
+
 	if (context != "") && (app != "" || project != "" || component != "") {
 		return fmt.Errorf("cannot provide --app, --project or --component flag when --context is provided")
 	}
