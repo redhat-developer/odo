@@ -22,7 +22,9 @@ type Client interface {
 	// like if the directory contains no Devfile at all.
 	// `preInitHandlerFunc` allows to perform operations prior to triggering the actual Devfile
 	// initialization and personalization process.
-	InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool)) error
+	// `postInitHandlerFunc` allows to perform operations right after the Devfile has been initialized and personalized.
+	InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool),
+		postInitHandlerFunc func(devfileObj parser.DevfileObj) error) error
 
 	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
 	// or based on the flags if the directory is empty, or
