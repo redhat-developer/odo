@@ -144,8 +144,8 @@ func GetContainerEndpointMapping(containers []v1alpha2.Component) map[string][]i
 	return ceMapping
 }
 
-// GetPublicAndInternalEndpointsFromDevfile returns a slice of all endpoints in a devfile with exposure value not set to public or internal
-func GetPublicAndInternalEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v1alpha2.Endpoint, error) {
+// GetEndpointsFromDevfile returns a slice of all endpoints in a devfile and ignores the endpoints with exposure values in ignoreExposures
+func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1alpha2.EndpointExposure) ([]v1alpha2.Endpoint, error) {
 	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
 	})
@@ -153,14 +153,24 @@ func GetPublicAndInternalEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v
 		return nil, err
 	}
 
-	var endpoints []v1alpha2.Endpoint
+	var allEndpoints []v1alpha2.Endpoint
 	for _, c := range containers {
 		for _, e := range c.Container.Endpoints {
-			if e.Exposure == v1alpha2.PublicEndpointExposure || e.Exposure == v1alpha2.InternalEndpointExposure {
-				endpoints = append(endpoints, e)
+			allEndpoints = append(allEndpoints, e)
+		}
+	}
+
+	var endpoints []v1alpha2.Endpoint
+	for _, e := range allEndpoints {
+		ignore := false
+		for _, i := range ignoreExposures {
+			if e.Exposure == i {
+				ignore = true
 			}
 		}
-
+		if !ignore {
+			endpoints = append(endpoints, e)
+		}
 	}
 	return endpoints, nil
 }
@@ -168,12 +178,12 @@ func GetPublicAndInternalEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v
 // HaveEndpointsChanged returns true if the total number of public and/or internal endpoints have changed between
 // the devfile objects
 func HaveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
-	oldEndpoints, err := GetPublicAndInternalEndpointsFromDevfile(oldDevfile)
+	oldEndpoints, err := GetEndpointsFromDevfile(oldDevfile, []v1alpha2.EndpointExposure{v1alpha2.NoneEndpointExposure})
 	if err != nil {
 		return false, err
 	}
 
-	newEndpoints, err := GetPublicAndInternalEndpointsFromDevfile(newDevfile)
+	newEndpoints, err := GetEndpointsFromDevfile(newDevfile, []v1alpha2.EndpointExposure{v1alpha2.NoneEndpointExposure})
 	if err != nil {
 		return false, err
 	}

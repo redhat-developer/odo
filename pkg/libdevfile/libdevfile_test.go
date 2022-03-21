@@ -249,57 +249,6 @@ func TestDeploy(t *testing.T) {
 	}
 }
 
-func TestGetContainerComponents(t *testing.T) {
-	container1 := generator.GetContainerComponent(generator.ContainerComponentParams{
-		Name: "container1",
-	})
-	type args struct {
-		devfileObj func() parser.DevfileObj
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    []v1alpha2.Component
-		wantErr bool
-	}{
-		{
-			name: "no container components",
-			args: args{
-				devfileObj: func() parser.DevfileObj {
-					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					return parser.DevfileObj{Data: data}
-				},
-			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "one container component",
-			args: args{
-				devfileObj: func() parser.DevfileObj {
-					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
-					_ = data.AddComponents([]v1alpha2.Component{container1})
-					return parser.DevfileObj{Data: data}
-				},
-			},
-			want:    []v1alpha2.Component{container1},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetContainerComponents(tt.args.devfileObj())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetContainerComponents() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetContainerComponents() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestGetContainerEndpointMapping(t *testing.T) {
 	type args struct {
 		containers []v1alpha2.Component
@@ -384,9 +333,10 @@ func TestGetContainerEndpointMapping(t *testing.T) {
 	}
 }
 
-func TestGetPublicAndInternalEndpointsFromDevfile(t *testing.T) {
+func TestGetEndpointsFromDevfile(t *testing.T) {
 	type args struct {
-		devfileObj func() parser.DevfileObj
+		devfileObj      func() parser.DevfileObj
+		ignoreExposures []v1alpha2.EndpointExposure
 	}
 	ep1 := v1alpha2.Endpoint{Name: "ep1", TargetPort: 8080, Exposure: v1alpha2.NoneEndpointExposure}
 	ep2 := v1alpha2.Endpoint{Name: "ep2", TargetPort: 9090, Exposure: v1alpha2.InternalEndpointExposure}
@@ -403,7 +353,7 @@ func TestGetPublicAndInternalEndpointsFromDevfile(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Container with all endpoints of all kinds of exposures",
+			name: "Ignore exposure of type none",
 			args: args{
 				devfileObj: func() parser.DevfileObj {
 					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
@@ -412,19 +362,76 @@ func TestGetPublicAndInternalEndpointsFromDevfile(t *testing.T) {
 						Data: data,
 					}
 				},
+				ignoreExposures: []v1alpha2.EndpointExposure{v1alpha2.NoneEndpointExposure},
 			},
 			want: []v1alpha2.Endpoint{ep2, ep3},
+		},
+		{
+			name: "Ignore exposure of type public",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddComponents([]v1alpha2.Component{container})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				ignoreExposures: []v1alpha2.EndpointExposure{v1alpha2.PublicEndpointExposure},
+			},
+			want: []v1alpha2.Endpoint{ep1, ep2},
+		},
+		{
+			name: "Ignore exposure of type internal",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddComponents([]v1alpha2.Component{container})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				ignoreExposures: []v1alpha2.EndpointExposure{v1alpha2.InternalEndpointExposure},
+			},
+			want: []v1alpha2.Endpoint{ep1, ep3},
+		},
+		{
+			name: "Ignore none",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddComponents([]v1alpha2.Component{container})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				ignoreExposures: []v1alpha2.EndpointExposure{},
+			},
+			want: []v1alpha2.Endpoint{ep1, ep2, ep3},
+		},
+		{
+			name: "Ignore all exposure types",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					data, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = data.AddComponents([]v1alpha2.Component{container})
+					return parser.DevfileObj{
+						Data: data,
+					}
+				},
+				ignoreExposures: []v1alpha2.EndpointExposure{v1alpha2.InternalEndpointExposure, v1alpha2.NoneEndpointExposure, v1alpha2.PublicEndpointExposure},
+			},
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPublicAndInternalEndpointsFromDevfile(tt.args.devfileObj())
+			got, err := GetEndpointsFromDevfile(tt.args.devfileObj(), tt.args.ignoreExposures)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPublicAndInternalEndpointsFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetEndpointsFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetPublicAndInternalEndpointsFromDevfile() got = %v, want %v", got, tt.want)
+				t.Errorf("GetEndpointsFromDevfile() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
