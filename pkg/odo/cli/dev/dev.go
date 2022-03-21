@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -36,7 +35,7 @@ import (
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "dev"
 
-type DevOptions struct {
+type Options struct {
 	// Context
 	*genericclioptions.Context
 
@@ -55,14 +54,10 @@ type DevOptions struct {
 	contextDir string
 }
 
-type DevHandler struct{}
+type Handler struct{}
 
-func NewDevHandler() *DevHandler {
-	return &DevHandler{}
-}
-
-func NewDevOptions() *DevOptions {
-	return &DevOptions{
+func NewOptions() *Options {
+	return &Options{
 		out:    log.GetStdout(),
 		errOut: log.GetStderr(),
 	}
@@ -73,11 +68,11 @@ var devExample = templates.Examples(`
 	%[1]s
 `)
 
-func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
+func (o *Options) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
+func (o *Options) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
 	o.contextDir, err = os.Getwd()
@@ -159,12 +154,12 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	return nil
 }
 
-func (o *DevOptions) Validate() error {
+func (o *Options) Validate() error {
 	var err error
 	return err
 }
 
-func (o *DevOptions) Run() error {
+func (o *Options) Run() error {
 	var err error
 	var platformContext = kubernetes.KubernetesContext{
 		Namespace: o.Context.GetProject(),
@@ -192,7 +187,7 @@ func (o *DevOptions) Run() error {
 	}
 	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
 	portPairs := portPairsFromContainerEndpoints(ceMapping)
-	portPairsSlice := []string{}
+	var portPairsSlice []string
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
 	}
@@ -201,20 +196,20 @@ func (o *DevOptions) Run() error {
 		return err
 	}
 	go func() {
-		err = o.clientset.DevClient.SetupPortForwarding(pod, portPairsSlice, o.errOut)
+		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, o.errOut)
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
 	}()
 	printPortForwardingInfo(portPairs, o.out)
 
-	d := DevHandler{}
+	d := Handler{}
 	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
 	return err
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter common.ComponentAdapter
 
 	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
@@ -236,7 +231,7 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 		return nil, err
 	}
 
-	changed, err := haveEndpointsChanged(parameters.InitialDevfileObj, devObj)
+	changed, err := libdevfile.HaveEndpointsChanged(parameters.InitialDevfileObj, devObj)
 	if err != nil {
 		return nil, err
 	}
@@ -249,20 +244,6 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
-}
-
-func haveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
-	oldEndpoints, err := libdevfile.GetPublicAndInternalEndpointsFromDevfile(oldDevfile)
-	if err != nil {
-		return false, err
-	}
-
-	newEndpoints, err := libdevfile.GetPublicAndInternalEndpointsFromDevfile(newDevfile)
-	if err != nil {
-		return false, err
-	}
-
-	return !reflect.DeepEqual(oldEndpoints, newEndpoints), nil
 }
 
 func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
@@ -281,7 +262,7 @@ func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
 
 // NewCmdDev implements the odo dev command
 func NewCmdDev(name, fullName string) *cobra.Command {
-	o := NewDevOptions()
+	o := NewOptions()
 	devCmd := &cobra.Command{
 		Use:   name,
 		Short: "Deploy component to development cluster",

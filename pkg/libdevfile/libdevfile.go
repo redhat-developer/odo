@@ -2,6 +2,7 @@ package libdevfile
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -122,13 +123,9 @@ func execDevfileEvent(devfileObj parser.DevfileObj, events []string, handler Han
 
 // GetContainerComponents returns a slice of container components in the given devfile
 func GetContainerComponents(devfileObj parser.DevfileObj) ([]v1alpha2.Component, error) {
-	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+	return devfileObj.Data.GetComponents(common.DevfileOptions{
 		ComponentOptions: common.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
 	})
-	if err != nil {
-		return nil, err
-	}
-	return containers, nil
 }
 
 // GetContainerEndpointMapping returns a map of container names and slice of its endpoints (in int) with exposure status other than none
@@ -171,4 +168,20 @@ func GetPublicAndInternalEndpointsFromDevfile(devfileObj parser.DevfileObj) ([]v
 
 	}
 	return endpoints, nil
+}
+
+// HaveEndpointsChanged returns true if the total number of public and/or internal endpoints have changed between
+// the devfile objects
+func HaveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
+	oldEndpoints, err := GetPublicAndInternalEndpointsFromDevfile(oldDevfile)
+	if err != nil {
+		return false, err
+	}
+
+	newEndpoints, err := GetPublicAndInternalEndpointsFromDevfile(newDevfile)
+	if err != nil {
+		return false, err
+	}
+
+	return !reflect.DeepEqual(oldEndpoints, newEndpoints), nil
 }

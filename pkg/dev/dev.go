@@ -1,16 +1,9 @@
 package dev
 
 import (
-	"fmt"
 	"io"
-	"net/http"
-
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
-
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -66,34 +59,6 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 func (o *DevClient) Cleanup() error {
 	var err error
 	return err
-}
-
-func (o *DevClient) SetupPortForwarding(pod *corev1.Pod, portPairs []string, errOut io.Writer) error {
-	transport, upgrader, err := spdy.RoundTripperFor(o.kubernetesClient.GetClientConfig())
-	if err != nil {
-		return err
-	}
-
-	req := o.kubernetesClient.GeneratePortForwardReq(pod.Name)
-
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
-	stopChan := make(chan struct{}, 1)
-	// passing nil for readyChan because it's eventually being closed if it's not nil
-	// passing nil for out because we only care for error, not for output messages; we want to print our own messages
-	fw, err := portforward.NewOnAddresses(dialer, []string{"localhost"}, portPairs, stopChan, nil, nil, errOut)
-	if err != nil {
-		return err
-	}
-
-	// start port-forwarding
-	err = fw.ForwardPorts()
-	if err != nil {
-		fmt.Fprint(errOut, fmt.Errorf("error setting up port forwarding: %v", err).Error())
-		// do cleanup when this happens
-		// TODO: #5485
-	}
-
-	return nil
 }
 
 func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler) error {
