@@ -101,7 +101,7 @@ var _ = Describe("odo list with devfile", func() {
 			})
 			When("the component is pushed", func() {
 				BeforeEach(func() {
-					helper.Cmd("odo", "push").ShouldPass().Out()
+					helper.Cmd("odo", "push").ShouldPass()
 				})
 				It("should show 'Not available' for 'Type' in odo list", func() {
 					checkList(component.NotAvailable)
