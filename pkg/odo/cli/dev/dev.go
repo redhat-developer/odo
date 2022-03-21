@@ -1,6 +1,7 @@
 package dev
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,16 +11,24 @@ import (
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/version"
+	"github.com/redhat-developer/odo/pkg/watch"
+
+	dfutil "github.com/devfile/library/pkg/util"
+	ccomponent "github.com/redhat-developer/odo/pkg/component"
+	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -53,7 +62,8 @@ type DevOptions struct {
 	initialDevfileObj parser.DevfileObj
 
 	// working directory
-	contextDir string
+	contextDir     string
+	commandContext context.Context
 }
 
 type Handler struct{}
@@ -76,7 +86,7 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
-
+	o.commandContext = cmdline.Context()
 	o.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
@@ -92,6 +102,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
 		func(interactiveMode bool) {
+			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
 				fmt.Println("The current directory already contains source code. " +
 					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
@@ -209,6 +220,18 @@ func (o *DevOptions) Run() error {
 
 	d := Handler{}
 	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
+
+	if err != nil {
+		return err
+	}
+	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+	scontext.SetComponentType(o.commandContext, ccomponent.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
+	scontext.SetLanguage(o.commandContext, devFileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(o.commandContext, devFileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(o.commandContext, devFileObj.GetMetadataName())
+
+	fmt.Fprintf(o.out, "Starting your application on cluster in developer mode\n")
+	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, os.Stdout, &d)
 	return err
 }
 
