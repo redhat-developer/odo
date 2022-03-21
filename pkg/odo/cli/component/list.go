@@ -135,7 +135,7 @@ func (lo *ListOptions) Run() error {
 
 	if len(lo.pathFlag) != 0 {
 
-		devfileComps, err := component.ListDevfileComponentsInPath(lo.KClient, filepath.SplitList(lo.pathFlag))
+		devfileComps, err := component.ListDevfileStacksInPath(lo.KClient, filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func (lo *ListOptions) Run() error {
 	currentComponentState := component.StateTypeNotPushed
 
 	if lo.KClient != nil {
-		devfileComponentsOut, err := component.ListDevfileComponents(lo.KClient, selector)
+		devfileComponentsOut, err := component.ListDevfileStacks(lo.KClient, selector)
 		if err != nil {
 			return err
 		}

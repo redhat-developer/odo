@@ -1,13 +1,13 @@
-package catalog
+package registry
 
 import (
 	"reflect"
 	"testing"
 )
 
-func TestDevfileComponentTypeList_GetLanguages(t *testing.T) {
+func TestDevfileStackList_GetLanguages(t *testing.T) {
 	type fields struct {
-		Items []DevfileComponentType
+		Items []DevfileStack
 	}
 	tests := []struct {
 		name   string
@@ -21,7 +21,7 @@ func TestDevfileComponentTypeList_GetLanguages(t *testing.T) {
 		{
 			name: "some devfiles",
 			fields: fields{
-				Items: []DevfileComponentType{
+				Items: []DevfileStack{
 					{
 						Name:        "devfile4",
 						DisplayName: "first devfile for lang3",
@@ -61,19 +61,19 @@ func TestDevfileComponentTypeList_GetLanguages(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &DevfileComponentTypeList{
+			o := &DevfileStackList{
 				Items: tt.fields.Items,
 			}
 			if got := o.GetLanguages(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DevfileComponentTypeList.GetLanguages() = %v, want %v", got, tt.want)
+				t.Errorf("DevfileStackList.GetLanguages() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDevfileComponentTypeList_GetProjectTypes(t *testing.T) {
+func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 	type fields struct {
-		Items []DevfileComponentType
+		Items []DevfileStack
 	}
 	type args struct {
 		language string
@@ -91,7 +91,7 @@ func TestDevfileComponentTypeList_GetProjectTypes(t *testing.T) {
 		{
 			name: "project types for lang1",
 			fields: fields{
-				Items: []DevfileComponentType{
+				Items: []DevfileStack{
 					{
 						Name:        "devfile4",
 						DisplayName: "first devfile for lang3",
@@ -138,7 +138,7 @@ func TestDevfileComponentTypeList_GetProjectTypes(t *testing.T) {
 				language: "lang1",
 			},
 			want: TypesWithDetails{
-				"first devfile for lang1": []DevfileComponentType{
+				"first devfile for lang1": []DevfileStack{
 					{
 						Name:        "devfile1",
 						DisplayName: "first devfile for lang1",
@@ -156,7 +156,7 @@ func TestDevfileComponentTypeList_GetProjectTypes(t *testing.T) {
 						},
 					},
 				},
-				"second devfile for lang1": []DevfileComponentType{
+				"second devfile for lang1": []DevfileStack{
 					{
 						Name:        "devfile2",
 						DisplayName: "second devfile for lang1",
@@ -171,11 +171,11 @@ func TestDevfileComponentTypeList_GetProjectTypes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &DevfileComponentTypeList{
+			o := &DevfileStackList{
 				Items: tt.fields.Items,
 			}
 			if got := o.GetProjectTypes(tt.args.language); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DevfileComponentTypeList.GetProjectTypes() = \n%+v, want \n%+v", got, tt.want)
+				t.Errorf("DevfileStackList.GetProjectTypes() = \n%+v, want \n%+v", got, tt.want)
 			}
 		})
 	}

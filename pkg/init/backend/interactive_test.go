@@ -1,26 +1,25 @@
 package backend
 
 import (
-	"github.com/redhat-developer/odo/pkg/testingutil"
 	"reflect"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/redhat-developer/odo/pkg/registry"
+	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercontext "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
-
-	"github.com/redhat-developer/odo/pkg/catalog"
-	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/golang/mock/gomock"
 )
 
 func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 	type fields struct {
 		buildAsker         func(ctrl *gomock.Controller) asker.Asker
-		buildCatalogClient func(ctrl *gomock.Controller) catalog.Client
+		buildCatalogClient func(ctrl *gomock.Controller) registry.Client
 	}
 	tests := []struct {
 		name    string
@@ -34,17 +33,17 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(false, catalog.DevfileComponentType{
+					client.EXPECT().AskType(gomock.Any()).Return(false, registry.DevfileStack{
 						Name: "a-devfile-name",
-						Registry: catalog.Registry{
+						Registry: registry.Registry{
 							Name: "MyRegistry1",
 						},
 					}, nil)
 					return client
 				},
-				buildCatalogClient: func(ctrl *gomock.Controller) catalog.Client {
-					client := catalog.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileComponents(gomock.Any())
+				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					client.EXPECT().ListDevfileStacks(gomock.Any())
 					return client
 				},
 			},
@@ -59,19 +58,19 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(true, catalog.DevfileComponentType{}, nil)
+					client.EXPECT().AskType(gomock.Any()).Return(true, registry.DevfileStack{}, nil)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("go", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(false, catalog.DevfileComponentType{
+					client.EXPECT().AskType(gomock.Any()).Return(false, registry.DevfileStack{
 						Name: "a-devfile-name",
-						Registry: catalog.Registry{
+						Registry: registry.Registry{
 							Name: "MyRegistry1",
 						},
 					}, nil)
 					return client
 				},
-				buildCatalogClient: func(ctrl *gomock.Controller) catalog.Client {
-					client := catalog.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileComponents(gomock.Any())
+				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
+					client := registry.NewMockClient(ctrl)
+					client.EXPECT().ListDevfileStacks(gomock.Any())
 					return client
 				},
 			},
@@ -85,8 +84,8 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			o := &InteractiveBackend{
-				askerClient:   tt.fields.buildAsker(ctrl),
-				catalogClient: tt.fields.buildCatalogClient(ctrl),
+				askerClient:    tt.fields.buildAsker(ctrl),
+				registryClient: tt.fields.buildCatalogClient(ctrl),
 			}
 			got, err := o.SelectDevfile(map[string]string{}, nil, "")
 			if (err != nil) != tt.wantErr {
@@ -102,8 +101,8 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 
 func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 	type fields struct {
-		asker         func(ctrl *gomock.Controller) asker.Asker
-		catalogClient catalog.Client
+		asker          func(ctrl *gomock.Controller) asker.Asker
+		registryClient registry.Client
 	}
 	type args struct {
 		devfile func() parser.DevfileObj
@@ -181,8 +180,8 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 				askerClient = tt.fields.asker(ctrl)
 			}
 			o := &InteractiveBackend{
-				askerClient:   askerClient,
-				catalogClient: tt.fields.catalogClient,
+				askerClient:    askerClient,
+				registryClient: tt.fields.registryClient,
 			}
 			got1, err := o.SelectStarterProject(tt.args.devfile(), tt.args.flags)
 			if (err != nil) != tt.wantErr {
@@ -199,8 +198,8 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 
 func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 	type fields struct {
-		asker         func(ctrl *gomock.Controller) asker.Asker
-		catalogClient catalog.Client
+		asker          func(ctrl *gomock.Controller) asker.Asker
+		registryClient registry.Client
 	}
 	type args struct {
 		devfile func(fs filesystem.Filesystem) parser.DevfileObj
@@ -246,8 +245,8 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				askerClient = tt.fields.asker(ctrl)
 			}
 			o := &InteractiveBackend{
-				askerClient:   askerClient,
-				catalogClient: tt.fields.catalogClient,
+				askerClient:    askerClient,
+				registryClient: tt.fields.registryClient,
 			}
 			fs := filesystem.NewFakeFs()
 			devfile := tt.args.devfile(fs)
@@ -268,8 +267,8 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 	container1 := "runtime"
 
 	type fields struct {
-		asker         func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker
-		catalogClient catalog.Client
+		asker          func(ctrl *gomock.Controller, configuration asker.DevfileConfiguration) asker.Asker
+		registryClient registry.Client
 	}
 	type args struct {
 		devfileobj func(fs filesystem.Filesystem) parser.DevfileObj
@@ -301,7 +300,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
 					return client
 				},
-				catalogClient: nil,
+				registryClient: nil,
 			},
 			args: args{
 				key: "5000",
@@ -339,7 +338,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
 					return client
 				},
-				catalogClient: nil,
+				registryClient: nil,
 			},
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
@@ -375,7 +374,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
 					return client
 				},
-				catalogClient: nil,
+				registryClient: nil,
 			},
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
@@ -414,7 +413,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 					client.EXPECT().AskContainerName(append(configuration.GetContainers(), "NONE - configuration is correct")).Return("NONE - configuration is correct", nil).After(containerConfigDone)
 					return client
 				},
-				catalogClient: nil,
+				registryClient: nil,
 			},
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
@@ -445,7 +444,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 					}, nil).MaxTimes(1)
 					return client
 				},
-				catalogClient: nil,
+				registryClient: nil,
 			},
 			args: args{
 				devfileobj: func(fs filesystem.Filesystem) parser.DevfileObj {
@@ -482,8 +481,8 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 			}
 
 			o := &InteractiveBackend{
-				askerClient:   askerClient,
-				catalogClient: tt.fields.catalogClient,
+				askerClient:    askerClient,
+				registryClient: tt.fields.registryClient,
 			}
 			if err = o.PersonalizeDevfileconfig(devfile); (err != nil) != tt.wantErr {
 				t.Errorf("PersonalizeDevfileconfig() error = %v, wantErr %v", err, tt.wantErr)

@@ -15,14 +15,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/spf13/cobra"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/deploy"
 	_init "github.com/redhat-developer/odo/pkg/init"
-	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/project"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
@@ -48,7 +47,7 @@ const (
 	PREFERENCE = "DEP_PREFERENCE"
 	// PROJECT instantiates client for pkg/project
 	PROJECT = "DEP_PROJECT"
-	// REGISTRY instantiates client for pkg/init/registry
+	// REGISTRY instantiates client for pkg/registry
 	REGISTRY = "DEP_REGISTRY"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
@@ -69,7 +68,7 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
-	CatalogClient    catalog.Client
+	CatalogClient    registry.Client
 	DeleteClient     _delete.Client
 	DeployClient     deploy.Client
 	DevClient        dev.Client
@@ -123,16 +122,13 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		}
 	}
 	if isDefined(command, REGISTRY) {
-		dep.RegistryClient = registry.NewRegistryClient()
+		dep.RegistryClient = registry.NewRegistryClient(dep.FS, dep.PreferenceClient)
 	}
 	if isDefined(command, WATCH) {
 		dep.WatchClient = watch.NewWatchClient()
 	}
 
 	/* With sub-dependencies */
-	if isDefined(command, CATALOG) {
-		dep.CatalogClient = catalog.NewCatalogClient(dep.FS, dep.PreferenceClient)
-	}
 	if isDefined(command, DELETE_COMPONENT) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient)
 	}
@@ -140,7 +136,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient)
 	}
 	if isDefined(command, INIT) {
-		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.CatalogClient)
+		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)

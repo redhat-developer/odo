@@ -2,16 +2,17 @@ package backend
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/fatih/color"
-	"github.com/redhat-developer/odo/pkg/log"
-	"sort"
-	"strconv"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -23,14 +24,14 @@ const (
 
 // InteractiveBackend is a backend that will ask information interactively using the `asker` package
 type InteractiveBackend struct {
-	askerClient   asker.Asker
-	catalogClient catalog.Client
+	askerClient    asker.Asker
+	registryClient registry.Client
 }
 
-func NewInteractiveBackend(askerClient asker.Asker, catalogClient catalog.Client) *InteractiveBackend {
+func NewInteractiveBackend(askerClient asker.Asker, registryClient registry.Client) *InteractiveBackend {
 	return &InteractiveBackend{
-		askerClient:   askerClient,
-		catalogClient: catalogClient,
+		askerClient:    askerClient,
+		registryClient: registryClient,
 	}
 }
 
@@ -40,13 +41,13 @@ func (o *InteractiveBackend) Validate(flags map[string]string, fs filesystem.Fil
 
 func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*DevfileLocation, error) {
 	result := &DevfileLocation{}
-	devfileEntries, _ := o.catalogClient.ListDevfileComponents("")
+	devfileEntries, _ := o.registryClient.ListDevfileStacks("")
 
 	langs := devfileEntries.GetLanguages()
 	state := STATE_ASK_LANG
 	var lang string
 	var err error
-	var details catalog.DevfileComponentType
+	var details registry.DevfileStack
 loop:
 	for {
 		switch state {

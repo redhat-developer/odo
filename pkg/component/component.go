@@ -120,10 +120,10 @@ func ApplyConfig(client kclient.ClientInterface, envSpecificInfo envinfo.EnvSpec
 	})
 }
 
-// ListDevfileComponents returns the devfile component matching a selector.
+// ListDevfileStacks returns the devfile component matching a selector.
 // The selector could be about selecting components part of an application.
 // There are helpers in "applabels" package for this.
-func ListDevfileComponents(client kclient.ClientInterface, selector string) (ComponentList, error) {
+func ListDevfileStacks(client kclient.ClientInterface, selector string) (ComponentList, error) {
 
 	var deploymentList []v1.Deployment
 	var components []Component
@@ -153,7 +153,7 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 
 // List lists all the devfile components in active application
 func List(client kclient.ClientInterface, applicationSelector string) (ComponentList, error) {
-	devfileList, err := ListDevfileComponents(client, applicationSelector)
+	devfileList, err := ListDevfileStacks(client, applicationSelector)
 	if err != nil {
 		return ComponentList{}, nil
 	}
@@ -252,7 +252,7 @@ func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentTyp
 	return Component{}, nil
 }
 
-func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
+func ListDevfileStacksInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
 	var components []Component
 	var err error
 	for _, path := range paths {

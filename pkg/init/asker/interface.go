@@ -3,7 +3,7 @@
 package asker
 
 import (
-	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/redhat-developer/odo/pkg/registry"
 )
 
 // Asker interactively asks for information to the user
@@ -13,7 +13,7 @@ type Asker interface {
 
 	// AskType asks for a Devfile type, or to go back. back is returned as true if the user selected to go back,
 	// or the selected type is returned
-	AskType(types catalog.TypesWithDetails) (back bool, _ catalog.DevfileComponentType, _ error)
+	AskType(types registry.TypesWithDetails) (back bool, _ registry.DevfileStack, _ error)
 
 	// AskStarterProject asks for an optional project, from a list of projects. If no project is selected, false is returned.
 	// Or the index of the selected project is returned

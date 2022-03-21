@@ -7,20 +7,20 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type AlizerBackend struct {
-	askerClient   asker.Asker
-	catalogClient catalog.Client
+	askerClient    asker.Asker
+	registryClient registry.Client
 }
 
-func NewAlizerBackend(askerClient asker.Asker, catalogClient catalog.Client) *AlizerBackend {
+func NewAlizerBackend(askerClient asker.Asker, registryClient registry.Client) *AlizerBackend {
 	return &AlizerBackend{
-		askerClient:   askerClient,
-		catalogClient: catalogClient,
+		askerClient:    askerClient,
+		registryClient: registryClient,
 	}
 }
 
@@ -30,11 +30,11 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 
 // detectFramework uses the alizer library in order to detect the devfile
 // to use depending on the files in the path
-func (o *AlizerBackend) detectFramework(path string) (recognizer.DevFileType, catalog.Registry, error) {
+func (o *AlizerBackend) detectFramework(path string) (recognizer.DevFileType, registry.Registry, error) {
 	types := []recognizer.DevFileType{}
-	components, err := o.catalogClient.ListDevfileComponents("")
+	components, err := o.registryClient.ListDevfileStacks("")
 	if err != nil {
-		return recognizer.DevFileType{}, catalog.Registry{}, err
+		return recognizer.DevFileType{}, registry.Registry{}, err
 	}
 	for _, component := range components.Items {
 		types = append(types, recognizer.DevFileType{
@@ -46,7 +46,7 @@ func (o *AlizerBackend) detectFramework(path string) (recognizer.DevFileType, ca
 	}
 	typ, err := recognizer.SelectDevFileFromTypes(path, types)
 	if err != nil {
-		return recognizer.DevFileType{}, catalog.Registry{}, err
+		return recognizer.DevFileType{}, registry.Registry{}, err
 	}
 
 	// TODO(feloy): This part won't be necessary when SelectDevFileFromTypes returns the index

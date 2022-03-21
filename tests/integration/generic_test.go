@@ -52,22 +52,6 @@ var _ = Describe("odo generic", func() {
 
 	})
 
-	Context("When executing catalog list without component directory", func() {
-		It("should list all component catalogs", func() {
-			stdOut := helper.Cmd("odo", "catalog", "list", "components").ShouldPass().Out()
-			helper.MatchAllInOutput(stdOut, []string{"nodejs", "python", "php", "go", "java"})
-		})
-
-	})
-
-	Context("check catalog component search functionality", func() {
-		It("check that a component does not exist", func() {
-			componentRandomName := helper.RandString(7)
-			output := helper.Cmd("odo", "catalog", "search", "component", componentRandomName).ShouldFail().Err()
-			Expect(output).To(ContainSubstring("no component matched the query: " + componentRandomName))
-		})
-	})
-
 	// Test machine readable output
 	Context("when creating project -o json", func() {
 		var projectName string

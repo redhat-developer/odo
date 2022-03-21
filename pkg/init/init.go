@@ -13,13 +13,12 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 	"k8s.io/utils/pointer"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/init/backend"
-	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -34,20 +33,18 @@ type InitClient struct {
 	fsys             filesystem.Filesystem
 	preferenceClient preference.Client
 	registryClient   registry.Client
-	catalogClient    catalog.Client
 }
 
-func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client, catalogClient catalog.Client) *InitClient {
+func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()
 	return &InitClient{
 		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
-		interactiveBackend: backend.NewInteractiveBackend(askerClient, catalogClient),
-		alizerBackend:      backend.NewAlizerBackend(askerClient, catalogClient),
+		interactiveBackend: backend.NewInteractiveBackend(askerClient, registryClient),
+		alizerBackend:      backend.NewAlizerBackend(askerClient, registryClient),
 		fsys:               fsys,
 		preferenceClient:   preferenceClient,
 		registryClient:     registryClient,
-		catalogClient:      catalogClient,
 	}
 }
 

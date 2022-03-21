@@ -183,10 +183,6 @@ test-cmd-pref-config: install ## Run odo preference and config command tests
 test-plugin-handler: install ## Run odo plugin handler tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo plugin functionality" tests/integration/
 
-.PHONY: test-cmd-devfile-catalog
-test-cmd-devfile-catalog: install ## Run odo catalog devfile command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/devfile/
-
 .PHONY: test-cmd-devfile-list
 test-cmd-devfile-list: install ## Run odo list devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo list with devfile" tests/integration/devfile/

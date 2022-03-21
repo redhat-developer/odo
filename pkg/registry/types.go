@@ -1,4 +1,4 @@
-package catalog
+package registry
 
 // Registry is the main struct of devfile registry
 type Registry struct {
@@ -7,8 +7,8 @@ type Registry struct {
 	Secure bool
 }
 
-// DevfileComponentType is the main struct for devfile catalog components
-type DevfileComponentType struct {
+// DevfileStack is the main struct for devfile catalog components
+type DevfileStack struct {
 	Name        string
 	DisplayName string
 	Description string
@@ -19,11 +19,11 @@ type DevfileComponentType struct {
 	ProjectType string
 }
 
-// DevfileComponentTypeList lists all the DevfileComponentType's
-type DevfileComponentTypeList struct {
+// DevfileStackList lists all the Devfile Stacks
+type DevfileStackList struct {
 	DevfileRegistries []Registry
-	Items             []DevfileComponentType
+	Items             []DevfileStack
 }
 
 // TypesWithDetails is the list of project types in devfile registries, and their associated devfiles
-type TypesWithDetails map[string][]DevfileComponentType
+type TypesWithDetails map[string][]DevfileStack

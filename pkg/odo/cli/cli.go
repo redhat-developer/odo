@@ -3,16 +3,15 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/dev"
 	"os"
 	"strings"
 	"unicode"
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
-	"github.com/redhat-developer/odo/pkg/odo/cli/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
+	"github.com/redhat-developer/odo/pkg/odo/cli/dev"
 	_init "github.com/redhat-developer/odo/pkg/odo/cli/init"
 	"github.com/redhat-developer/odo/pkg/odo/cli/login"
 	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
@@ -178,7 +177,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	cobra.AddTemplateFunc("ModifyAdditionalFlags", modifyAdditionalFlags)
 
 	rootCmdList := append([]*cobra.Command{},
-		catalog.NewCmdCatalog(catalog.RecommendedCommandName, util.GetFullName(fullName, catalog.RecommendedCommandName)),
 		component.NewCmdComponent(component.RecommendedCommandName, util.GetFullName(fullName, component.RecommendedCommandName)),
 		component.NewCmdCreate(component.CreateRecommendedCommandName, util.GetFullName(fullName, component.CreateRecommendedCommandName)),
 		component.NewCmdList(component.ListRecommendedCommandName, util.GetFullName(fullName, component.ListRecommendedCommandName)),

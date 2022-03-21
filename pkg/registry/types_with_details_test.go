@@ -1,4 +1,4 @@
-package catalog
+package registry
 
 import (
 	"reflect"
@@ -14,7 +14,7 @@ func TestTypesWithDetails_GetOrderedLabels(t *testing.T) {
 		{
 			name: "some entries",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileComponentType{
+				"second devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile2",
 						Registry: Registry{
@@ -22,7 +22,7 @@ func TestTypesWithDetails_GetOrderedLabels(t *testing.T) {
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileComponentType{
+				"first devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile1",
 						Registry: Registry{
@@ -61,13 +61,13 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		name    string
 		types   TypesWithDetails
 		args    args
-		want    DevfileComponentType
+		want    DevfileStack
 		wantErr bool
 	}{
 		{
 			name: "get a pos 0",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileComponentType{
+				"second devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile2",
 						Registry: Registry{
@@ -75,7 +75,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileComponentType{
+				"first devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile1",
 						Registry: Registry{
@@ -93,7 +93,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 0,
 			},
-			want: DevfileComponentType{
+			want: DevfileStack{
 				Name: "devfile1",
 				Registry: Registry{
 					Name: "Registry1",
@@ -104,7 +104,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		{
 			name: "get a pos 1",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileComponentType{
+				"second devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile2",
 						Registry: Registry{
@@ -112,7 +112,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileComponentType{
+				"first devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile1",
 						Registry: Registry{
@@ -130,7 +130,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 1,
 			},
-			want: DevfileComponentType{
+			want: DevfileStack{
 				Name: "devfile1",
 				Registry: Registry{
 					Name: "Registry2",
@@ -141,7 +141,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		{
 			name: "get a pos 2",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileComponentType{
+				"second devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile2",
 						Registry: Registry{
@@ -149,7 +149,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileComponentType{
+				"first devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile1",
 						Registry: Registry{
@@ -167,7 +167,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 2,
 			},
-			want: DevfileComponentType{
+			want: DevfileStack{
 				Name: "devfile2",
 				Registry: Registry{
 					Name: "Registry1",
@@ -178,7 +178,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		{
 			name: "get a pos 4: not found",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileComponentType{
+				"second devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile2",
 						Registry: Registry{
@@ -186,7 +186,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileComponentType{
+				"first devfile for lang1": []DevfileStack{
 					{
 						Name: "devfile1",
 						Registry: Registry{
@@ -204,7 +204,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 4,
 			},
-			want:    DevfileComponentType{},
+			want:    DevfileStack{},
 			wantErr: true,
 		}}
 	for _, tt := range tests {
