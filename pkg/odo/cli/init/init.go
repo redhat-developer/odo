@@ -7,13 +7,13 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/redhat-developer/odo/pkg/component"
 
 	"github.com/spf13/cobra"
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -87,6 +87,8 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 
 	o.flags = cmdline.GetFlags()
 
+	scontext.SetInteractive(o.ctx, len(o.flags) == 0)
+
 	return nil
 }
 
@@ -140,7 +142,6 @@ func (o *InitOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
@@ -175,6 +176,18 @@ func (o *InitOptions) Run() (err error) {
 	if err = devfileObj.SetMetadataName(name); err != nil {
 		return err
 	}
+	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(o.ctx, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(o.ctx, devfileObj.Data.GetMetadata().ProjectType)
+
+	// Set the name in the devfile *AND* writes the devfile back to the disk in case
+	// it has been removed and not replaced by the starter project
+	_, err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
+	if err != nil {
+		return fmt.Errorf("failed to update the devfile's name: %w", err)
+	}
+
+	scontext.SetDevfileName(o.ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
 Your new component %q is ready in the current directory.

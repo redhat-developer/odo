@@ -13,14 +13,16 @@ import (
 	"k8s.io/klog"
 )
 
-const ComponentType = "componentType"
-const ClusterType = "clusterType"
-const TelemetryStatus = "isTelemetryEnabled"
-const DevfileName = "devfileName"
-const Language = "language"
-const ProjectType = "projectType"
-
-const NOTFOUND = "not-found"
+const (
+	ComponentType   = "componentType"
+	ClusterType     = "clusterType"
+	TelemetryStatus = "isTelemetryEnabled"
+	DevfileName     = "devfileName"
+	Language        = "language"
+	ProjectType     = "projectType"
+	NOTFOUND        = "not-found"
+	InteractiveMode = "interactive"
+)
 
 type contextKey struct{}
 
@@ -103,6 +105,10 @@ func SetLanguage(ctx context.Context, language string) {
 
 func SetProjectType(ctx context.Context, projectType string) {
 	setContextProperty(ctx, ProjectType, projectType)
+}
+
+func SetInteractive(ctx context.Context, interactive bool) {
+	setContextProperty(ctx, InteractiveMode, interactive)
 }
 
 // GetTelemetryStatus gets the telemetry status that is set before a command is run

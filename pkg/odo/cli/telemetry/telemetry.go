@@ -2,12 +2,11 @@ package telemetry
 
 import (
 	"encoding/json"
-
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-
 	"github.com/redhat-developer/odo/pkg/segment"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )
@@ -41,6 +40,12 @@ func (o *TelemetryOptions) Validate() (err error) {
 func (o *TelemetryOptions) Run() (err error) {
 	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
 		return nil
+	}
+
+	dt := segment.GetDebugTelemetry()
+	if len(dt) > 0 {
+		klog.V(4).Infof("WARNING: telemetry debug enabled, data logged to file %s", dt)
+		return util.WriteToFile(o.telemetryData, dt)
 	}
 
 	segmentClient, err := segment.NewClient(o.clientset.PreferenceClient)
