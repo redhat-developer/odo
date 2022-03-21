@@ -38,7 +38,7 @@ import (
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "dev"
 
-type Options struct {
+type DevOptions struct {
 	// Context
 	*genericclioptions.Context
 
@@ -59,8 +59,8 @@ type Options struct {
 
 type Handler struct{}
 
-func NewOptions() *Options {
-	return &Options{
+func NewDevOptions() *DevOptions {
+	return &DevOptions{
 		out:    log.GetStdout(),
 		errOut: log.GetStderr(),
 	}
@@ -71,11 +71,11 @@ var devExample = templates.Examples(`
 	%[1]s
 `)
 
-func (o *Options) SetClientset(clientset *clientset.Clientset) {
+func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *Options) Complete(cmdline cmdline.Cmdline, args []string) error {
+func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
 	o.contextDir, err = os.Getwd()
@@ -157,12 +157,12 @@ func (o *Options) Complete(cmdline cmdline.Cmdline, args []string) error {
 	return nil
 }
 
-func (o *Options) Validate() error {
+func (o *DevOptions) Validate() error {
 	var err error
 	return err
 }
 
-func (o *Options) Run() error {
+func (o *DevOptions) Run() error {
 	var err error
 	var platformContext = kubernetes.KubernetesContext{
 		Namespace: o.Context.GetProject(),
@@ -267,7 +267,7 @@ func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
 
 // NewCmdDev implements the odo dev command
 func NewCmdDev(name, fullName string) *cobra.Command {
-	o := NewOptions()
+	o := NewDevOptions()
 	devCmd := &cobra.Command{
 		Use:   name,
 		Short: "Deploy component to development cluster",
