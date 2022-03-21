@@ -10,6 +10,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -51,7 +53,7 @@ func NewDevHandler() *DevHandler {
 
 func NewDevOptions() *DevOptions {
 	return &DevOptions{
-		out: os.Stdout,
+		out: log.GetStdout(),
 	}
 }
 
@@ -94,7 +96,6 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
-	fmt.Fprintf(o.out, "Using %s from the current directory.\n", o.Context.GetDevfilePath())
 
 	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
@@ -151,10 +152,17 @@ func (o *DevOptions) Run() error {
 		Namespace: o.Context.GetProject(),
 	}
 	var path = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+	devfileName := o.EnvSpecificInfo.GetDevfileObj().GetMetadataName()
+	namespace := o.GetProject()
 
-	fmt.Fprintf(o.out, "Starting your application on cluster in developer mode\n")
+	// Output what the command is doing / information
+	log.Title("Developing using the "+devfileName+" Devfile",
+		"Namespace: "+namespace,
+		"odo version: "+version.VERSION)
+
+	log.Section("Deploying to the cluster in developer mode")
 	d := DevHandler{}
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, os.Stdout, &d)
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, log.GetStdout(), &d)
 	return err
 }
 

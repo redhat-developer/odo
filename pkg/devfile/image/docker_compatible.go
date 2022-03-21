@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/fatih/color"
 	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/klog"
 )
@@ -24,22 +25,31 @@ func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
 
 // Build an image, as defined in devfile, using a Docker compatible CLI
 func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePath string) error {
+
 	if strings.HasPrefix(image.Dockerfile.Uri, "http") {
 		return errors.New("HTTP URL for uri is not supported")
 	}
 
-	log.Infof("\nBuilding image %s", image.ImageName)
+	// We use a "No Spin" since we are outputting to stdout / stderr
+	buildSpinner := log.SpinnerNoSpin("Building image locally")
+	defer buildSpinner.End(false)
 
 	shell := getShellCommand(o.name, image, devfilePath)
 
 	cmd := exec.Command("bash", "-c", shell)
 	cmd.Env = append(os.Environ(), "PROJECTS_ROOT="+devfilePath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = log.GetStdout()
+	cmd.Stderr = log.GetStderr()
+
+	// Set all output as italic when doing a push, then return to normal at the end
+	color.Set(color.Italic)
+	defer color.Unset()
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
+
+	buildSpinner.End(true)
 	return nil
 }
 
@@ -59,15 +69,26 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 
 // Push an image to its registry using a Docker compatible CLI
 func (o *DockerCompatibleBackend) Push(image string) error {
-	log.Infof("\nPushing image %s", image)
+
+	// We use a "No Spin" since we are outputting to stdout / stderr
+	pushSpinner := log.SpinnerNoSpin("Pushing image to container registry")
+	defer pushSpinner.End(false)
 	klog.V(4).Infof("Running command: %s push %s", o.name, image)
+
 	cmd := exec.Command(o.name, "push", image)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	cmd.Stdout = log.GetStdout()
+	cmd.Stderr = log.GetStderr()
+
+	// Set all output as italic when doing a push, then return to normal at the end
+	color.Set(color.Italic)
+	defer color.Unset()
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
+
+	pushSpinner.End(true)
 	return nil
 }
 

@@ -82,7 +82,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	}
 
 	// Deploy the actual Kubernetes component and error out if there's an issue.
-	log.Infof("\nDeploying Kubernetes %s: %s", u.GetKind(), u.GetName())
+	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
 	isOperatorBackedService, err := service.PushKubernetesResource(o.kubeClient, u, labels, annotations)
 	if err != nil {
 		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)

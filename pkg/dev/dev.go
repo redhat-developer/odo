@@ -1,7 +1,6 @@
 package dev
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -9,6 +8,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/watch"
 	"k8s.io/klog/v2"
 )
@@ -54,7 +54,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		return err
 	}
 	klog.V(4).Infoln("Successfully created inner-loop resourcs")
-	fmt.Fprintf(out, "\nYour application is running on cluster.\n ")
+	log.Finfof(out, "\nYour application is now running on your cluster.")
 
 	watchParameters := watch.WatchParameters{
 		Path:                path,

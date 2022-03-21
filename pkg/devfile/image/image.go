@@ -9,6 +9,7 @@ import (
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/redhat-developer/odo/pkg/log"
 )
 
 // Backend is in interface that must be implemented by container runtimes
@@ -65,6 +66,7 @@ func buildPushImage(backend Backend, image *devfile.ImageComponent, devfilePath 
 	if image == nil {
 		return errors.New("image should not be nil")
 	}
+	log.Sectionf("Building & Pushing Container: %s", image.ImageName)
 	err := backend.Build(image, devfilePath)
 	if err != nil {
 		return err
