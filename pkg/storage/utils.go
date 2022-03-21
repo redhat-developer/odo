@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
@@ -18,7 +17,7 @@ func getPVCNameFromStorageName(client kclient.ClientInterface, storageName strin
 	selector := util.ConvertLabelsToSelector(labels)
 	pvcs, err := client.ListPVCNames(selector)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to get PVC names for selector %v", selector)
+		return "", fmt.Errorf("unable to get PVC names for selector %v: %w", selector, err)
 	}
 	numPVCs := len(pvcs)
 	if numPVCs != 1 {
@@ -32,12 +31,12 @@ func generatePVCName(volName, componentName, appName string) (string, error) {
 
 	pvcName, err := util.NamespaceKubernetesObject(volName, componentName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", fmt.Errorf("unable to create namespaced name: %w", err)
 	}
 
 	pvcName, err = util.NamespaceKubernetesObject(pvcName, appName)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", fmt.Errorf("unable to create namespaced name: %w", err)
 	}
 
 	return pvcName, nil

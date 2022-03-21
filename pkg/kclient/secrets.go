@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/klog"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -42,7 +41,7 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objec
 
 	secret, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secretTemplate, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create secret %s", objectMeta.Name)
+		return nil, fmt.Errorf("unable to create secret %s: %w", objectMeta.Name, err)
 	}
 	return secret, nil
 }
@@ -60,7 +59,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to generate rsa key")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to generate rsa key: %w", err)
 	}
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(time.Now().Unix()),
@@ -77,12 +76,12 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 
 	certificateDerEncoding, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to create certificate")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to create certificate: %w", err)
 	}
 	out := &bytes.Buffer{}
 	err = pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode certificate")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to encode certificate: %w", err)
 	}
 	certPemEncode := out.String()
 	certPemByteArr := []byte(certPemEncode)
@@ -90,7 +89,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 	tlsPrivKeyEncoding := x509.MarshalPKCS1PrivateKey(privateKey)
 	err = pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
 	if err != nil {
-		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode rsa private key")
+		return SelfSignedCertificate{}, fmt.Errorf("unable to encode rsa private key: %w", err)
 	}
 	keyPemEncode := out.String()
 	keyPemByteArr := []byte(keyPemEncode)
@@ -102,7 +101,7 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 	secret, err := c.KubeClient.CoreV1().Secrets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get the secret %s", secret)
+		return nil, fmt.Errorf("unable to get the secret %s: %w", secret, err)
 	}
 	return secret, nil
 }
@@ -111,7 +110,7 @@ func (c *Client) GetSecret(name, namespace string) (*corev1.Secret, error) {
 func (c *Client) UpdateSecret(secret *corev1.Secret, namespace string) (*corev1.Secret, error) {
 	secret, err := c.KubeClient.CoreV1().Secrets(namespace).Update(context.TODO(), secret, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update the secret %s", secret)
+		return nil, fmt.Errorf("unable to update the secret %s: %w", secret, err)
 	}
 	return secret, nil
 }
@@ -120,7 +119,7 @@ func (c *Client) UpdateSecret(secret *corev1.Secret, namespace string) (*corev1.
 func (c *Client) DeleteSecret(secretName, namespace string) error {
 	err := c.KubeClient.CoreV1().Secrets(namespace).Delete(context.TODO(), secretName, metav1.DeleteOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete the secret %s", secretName)
+		return fmt.Errorf("unable to delete the secret %s: %w", secretName, err)
 	}
 	return nil
 }
@@ -137,7 +136,7 @@ func (c *Client) CreateSecret(objectMeta metav1.ObjectMeta, data map[string]stri
 	secret.SetOwnerReferences(append(secret.GetOwnerReferences(), ownerReference))
 	_, err := c.KubeClient.CoreV1().Secrets(c.Namespace).Create(context.TODO(), &secret, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return errors.Wrapf(err, "unable to create secret for %s", objectMeta.Name)
+		return fmt.Errorf("unable to create secret for %s: %w", objectMeta.Name, err)
 	}
 	return nil
 }
@@ -168,7 +167,7 @@ func (c *Client) CreateSecrets(componentName string, commonObjectMeta metav1.Obj
 			ownerReference)
 
 		if err != nil {
-			return errors.Wrapf(err, "unable to create Secret for %s", commonObjectMeta.Name)
+			return fmt.Errorf("unable to create Secret for %s: %w", commonObjectMeta.Name, err)
 		}
 	}
 
@@ -190,7 +189,7 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 
 	secretList, err := c.KubeClient.CoreV1().Secrets(c.Namespace).List(context.TODO(), listOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get secret list")
+		return nil, fmt.Errorf("unable to get secret list: %w", err)
 	}
 
 	return secretList.Items, nil
@@ -204,7 +203,7 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to watch secret")
+		return nil, fmt.Errorf("unable to watch secret: %w", err)
 	}
 	defer w.Stop()
 	for {
@@ -217,7 +216,7 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 			return e, nil
 		}
 	}
-	return nil, errors.Errorf("unknown error while waiting for secret '%s'", name)
+	return nil, fmt.Errorf("unknown error while waiting for secret '%s'", name)
 }
 
 func secretKeyName(componentName, baseKeyName string) string {

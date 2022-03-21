@@ -2,9 +2,10 @@ package kclient
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,7 +20,7 @@ const (
 func (c *Client) CreatePVC(pvc corev1.PersistentVolumeClaim) (*corev1.PersistentVolumeClaim, error) {
 	createdPvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Create(context.TODO(), &pvc, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create PVC")
+		return nil, fmt.Errorf("unable to create PVC: %w", err)
 	}
 	return createdPvc, nil
 }
@@ -35,7 +36,7 @@ func (c *Client) ListPVCs(selector string) ([]corev1.PersistentVolumeClaim, erro
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get PVCs for selector: %v", selector)
+		return nil, fmt.Errorf("unable to get PVCs for selector: %v: %w", selector, err)
 	}
 
 	return pvcList.Items, nil
@@ -45,7 +46,7 @@ func (c *Client) ListPVCs(selector string) ([]corev1.PersistentVolumeClaim, erro
 func (c *Client) ListPVCNames(selector string) ([]string, error) {
 	pvcs, err := c.ListPVCs(selector)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get PVCs from selector")
+		return nil, fmt.Errorf("unable to get PVCs from selector: %w", err)
 	}
 
 	var names []string
@@ -66,7 +67,7 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 	pvc.Labels = labels
 	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), pvc, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return errors.Wrap(err, "unable to remove storage label from PVC")
+		return fmt.Errorf("unable to remove storage label from PVC: %w", err)
 	}
 	return nil
 }

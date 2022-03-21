@@ -10,8 +10,6 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/pkg/errors"
-
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -59,7 +57,7 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
 		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, time.Duration(a.prefClient.GetPushTimeout())*time.Second)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
+			return nil, fmt.Errorf("error while waiting for pod %s: %w", podSelector, err)
 		}
 		a.pod = pod
 	}
@@ -121,7 +119,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	if err != nil {
 		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
-			return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+			return fmt.Errorf("unable to determine if component %s exists: %w", a.ComponentName, err)
 		}
 	}
 	componentExists := a.deployment != nil
@@ -143,7 +141,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if err == nil {
 			pod, podErr := a.getPod(true)
 			if podErr != nil {
-				return errors.Wrapf(podErr, "unable to get pod for component %s", a.ComponentName)
+				return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, podErr)
 			}
 			podName = pod.GetName()
 		}
@@ -195,7 +193,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
 	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
 	if err != nil {
-		return errors.Wrap(err, "error while trying to fetch service(s) from devfile")
+		return fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
@@ -207,24 +205,24 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
 	err = service.PushKubernetesResources(a.Client, k8sComponents, labels, annotations, a.Context)
 	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
 	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral)
 	if err != nil {
-		return errors.Wrap(err, "unable to create or update component")
+		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
-		return errors.Wrap(err, "error while waiting for deployment rollout")
+		return fmt.Errorf("error while waiting for deployment rollout: %w", err)
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
 	pod, err := a.getPod(true)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
 
 	// list the latest state of the PVCs
@@ -254,7 +252,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
 	needRestart, err := service.PushLinks(a.Client, k8sComponents, labels, a.deployment, a.Context)
 	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	if needRestart {
@@ -266,19 +264,19 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to update config to component deployed.")
+		return fmt.Errorf("Failed to update config to component deployed: %w", err)
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
 	pod, err = a.getPod(true)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
 
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 	err = component.ApplyConfig(a.Client, parameters.EnvSpecificInfo)
 	if err != nil {
-		return errors.Wrap(err, "failed to update config to component deployed.")
+		return fmt.Errorf("Failed to update config to component deployed: %w", err)
 	}
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
@@ -289,7 +287,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
-		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
+		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", podName, err)
 	}
 	s.End(true)
 
@@ -312,7 +310,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+		return fmt.Errorf("Failed to sync to component with name %s: %w", a.ComponentName, err)
 	}
 	s.End(true)
 

@@ -2,6 +2,7 @@ package component
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -365,7 +365,7 @@ func TestDoesComponentExist(t *testing.T) {
 				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
 
 				if tt.wantErr {
-					return true, &v1.DeploymentList{Items: []v1.Deployment{*emptyDeployment}}, errors.Errorf("deployment get error")
+					return true, &v1.DeploymentList{Items: []v1.Deployment{*emptyDeployment}}, errors.New("deployment get error")
 				} else if tt.getComponentName == tt.componentName {
 					return true, &v1.DeploymentList{Items: []v1.Deployment{*deployment}}, nil
 				}

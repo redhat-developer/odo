@@ -1,11 +1,11 @@
 package component
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
@@ -65,13 +65,13 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	// Set the source path to either the context or current working directory (if context not set)
 	po.sourcePath, err = dfutil.GetAbsPath(po.componentContext)
 	if err != nil {
-		return errors.Wrap(err, "unable to get source path")
+		return fmt.Errorf("unable to get source path: %w", err)
 	}
 
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignoreFlag, po.sourcePath)
 	if err != nil {
-		return errors.Wrap(err, "unable to apply ignore information")
+		return fmt.Errorf("unable to apply ignore information: %w", err)
 	}
 
 	var platformContext interface{}
@@ -106,7 +106,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
-		err = errors.Errorf("Failed to start component with name %q. Error: %v",
+		err = fmt.Errorf("Failed to start component with name %q. Error: %w",
 			componentName,
 			err,
 		)

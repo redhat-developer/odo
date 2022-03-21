@@ -1,9 +1,9 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
@@ -195,10 +195,15 @@ func GetPushedComponent(c kclient.ClientInterface, componentName, applicationNam
 }
 
 func isIgnorableError(err error) bool {
-	e := errors.Cause(err)
-	if e != nil {
-		err = e
+	for {
+		e := errors.Unwrap(err)
+		if e != nil {
+			err = e
+		} else {
+			break
+		}
 	}
+
 	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
 		return true
 	}

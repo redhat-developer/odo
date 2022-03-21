@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -41,7 +39,7 @@ func GetVolumeInfos(pvcs []corev1.PersistentVolumeClaim) (odoSourcePVCName strin
 
 		generatedVolumeName, e := generateVolumeNameFromPVC(pvc.Name)
 		if e != nil {
-			return "", nil, errors.Wrapf(e, "Unable to generate volume name from pvc name")
+			return "", nil, fmt.Errorf("Unable to generate volume name from pvc name: %w", e)
 		}
 
 		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {

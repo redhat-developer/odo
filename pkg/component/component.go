@@ -2,14 +2,13 @@ package component
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
@@ -55,7 +54,7 @@ func GetComponentDir(path string) (string, error) {
 	} else {
 		currDir, err := os.Getwd()
 		if err != nil {
-			return "", errors.Wrapf(err, "unable to generate a random name as getting current directory failed")
+			return "", fmt.Errorf("unable to generate a random name as getting current directory failed: %w", err)
 		}
 		retVal = filepath.Base(currDir)
 	}
@@ -79,7 +78,7 @@ func GetDefaultComponentName(cfg preference.Client, componentPath string, compon
 	// Create a random generated name for the component to use within Kubernetes
 	prefix, err = GetComponentDir(componentPath)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
+		return "", fmt.Errorf("unable to generate random component name: %w", err)
 	}
 	prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
 
@@ -91,7 +90,7 @@ func GetDefaultComponentName(cfg preference.Client, componentPath string, compon
 		componentNameMaxRetries,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to generate random component name")
+		return "", fmt.Errorf("unable to generate random component name: %w", err)
 	}
 
 	return util.GetDNS1123Name(componentName), nil
@@ -135,14 +134,14 @@ func ListDevfileComponents(client kclient.ClientInterface, selector string) (Com
 	// retrieve all the deployments that are associated with this application
 	deploymentList, err := client.GetDeploymentFromSelector(selector)
 	if err != nil {
-		return ComponentList{}, errors.Wrapf(err, "unable to list components")
+		return ComponentList{}, fmt.Errorf("unable to list components: %w", err)
 	}
 
 	// create a list of object metadata based on the component and application name (extracted from Deployment labels)
 	for _, elem := range deploymentList {
 		component, err := GetComponent(client, elem.Labels[componentlabels.KubernetesInstanceLabel], elem.Labels[applabels.ApplicationLabel], client.GetCurrentNamespace())
 		if err != nil {
-			return ComponentList{}, errors.Wrap(err, "Unable to get component")
+			return ComponentList{}, fmt.Errorf("Unable to get component: %w", err)
 		}
 
 		if !reflect.ValueOf(component).IsZero() {
@@ -319,7 +318,7 @@ func ListDevfileComponentsInPath(client kclient.ClientInterface, paths []string)
 func Exists(client kclient.ClientInterface, componentName, applicationName string) (bool, error) {
 	deploymentName, err := dfutil.NamespaceOpenShiftObject(componentName, applicationName)
 	if err != nil {
-		return false, errors.Wrapf(err, "unable to create namespaced name")
+		return false, fmt.Errorf("unable to create namespaced name: %w", err)
 	}
 	deployment, _ := client.GetDeploymentByName(deploymentName)
 	if deployment != nil {
@@ -348,14 +347,17 @@ func GetComponent(client kclient.ClientInterface, componentName string, applicat
 // getRemoteComponentMetadata provides component metadata from the cluster
 func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
-	if err != nil || fromCluster == nil {
-		return Component{}, errors.Wrapf(err, "unable to get remote metadata for %s component", componentName)
+	if err != nil {
+		return Component{}, fmt.Errorf("unable to get remote metadata for %s component: %w", componentName, err)
+	}
+	if fromCluster == nil {
+		return Component{}, nil
 	}
 
 	// Component Type
 	componentType, err := fromCluster.GetType()
 	if err != nil {
-		return Component{}, errors.Wrap(err, "unable to get source type")
+		return Component{}, fmt.Errorf("unable to get source type: %w", err)
 	}
 
 	// init component
@@ -382,7 +384,7 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 	if getStorage {
 		appStore, e := fromCluster.GetStorage()
 		if e != nil {
-			return Component{}, errors.Wrap(e, "unable to get storage list")
+			return Component{}, fmt.Errorf("unable to get storage list: %w", e)
 		}
 
 		component.Spec.StorageSpec = appStore
@@ -531,11 +533,11 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 
 	pod, err := GetOnePod(client, componentName, appName)
 	if err != nil {
-		return nil, errors.Errorf("the component %s doesn't exist on the cluster", componentName)
+		return nil, fmt.Errorf("the component %s doesn't exist on the cluster", componentName)
 	}
 
 	if pod.Status.Phase != corev1.PodRunning {
-		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+		return nil, fmt.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
 	}
 
 	containerName := command.Exec.Component
@@ -565,7 +567,7 @@ func Delete(kubeClient kclient.ClientInterface, devfileObj parser.DevfileObj, co
 		log.Warningf("%v", e)
 		return nil
 	} else if err != nil {
-		return errors.Wrapf(err, "unable to determine if component %s exists", componentName)
+		return fmt.Errorf("unable to determine if component %s exists: %w", componentName, err)
 	}
 
 	podSpinner.End(true)

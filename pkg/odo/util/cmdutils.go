@@ -8,14 +8,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// LogErrorAndExit prints the cause of the given error and exits the code with an
-// exit code of 1.
-// If the context is provided, then that is printed, if not, then the cause is
-// detected using errors.Cause(err)
+// LogErrorAndExit prints the given error and exits the code with an exit code of 1.
+// If the context is provided, then that is printed alongside the error.
 // *If* we are using the global json parameter, we instead output the json output
 func LogErrorAndExit(err error, context string, a ...interface{}) {
 
@@ -38,7 +35,7 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 
 		} else {
 			if context == "" {
-				log.Error(errors.Cause(err))
+				log.Error(err)
 			} else {
 				printstring := fmt.Sprintf("%s%s", strings.Title(context), "\nError: %v")
 				log.Errorf(printstring, err)

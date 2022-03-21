@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
 	"testing"
@@ -12,7 +13,6 @@ import (
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	"github.com/pkg/errors"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -72,7 +72,7 @@ func TestComponentExists(t *testing.T) {
 						Items: []appsv1.Deployment{
 							*emptyDeployment,
 						},
-					}, errors.Errorf("deployment get error")
+					}, errors.New("deployment get error")
 				} else if tt.getComponentName == tt.componentName {
 					return true, &appsv1.DeploymentList{
 						Items: []appsv1.Deployment{

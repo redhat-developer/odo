@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -83,7 +82,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	if mode.IsRegular() {
 		matched, e := dfutil.IsGlobExpMatch(path, ignores)
 		if e != nil {
-			return errors.Wrapf(e, "unable to watcher on %s", path)
+			return fmt.Errorf("unable to watcher on %s: %w", path, e)
 		}
 		if !matched {
 			klog.V(4).Infof("adding watch on path %s", path)
@@ -109,14 +108,14 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 				klog.V(4).Infof("Walk func received an error for path %s, but the path doesn't exist so this is likely not an error. err: %v", path, err)
 				return nil
 			}
-			return errors.Wrapf(err, "unable to walk path: %s", newPath)
+			return fmt.Errorf("unable to walk path: %s: %w", newPath, err)
 		}
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
 			matched, err := dfutil.IsGlobExpMatch(newPath, ignores)
 			if err != nil {
-				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
+				return fmt.Errorf("unable to addRecursiveWatch on %s: %w", newPath, err)
 			}
 			if matched {
 				klog.V(4).Infof("ignoring watch on path %s", newPath)
@@ -223,7 +222,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 				matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
 				klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
 				if globErr != nil {
-					watchError = errors.Wrap(globErr, "unable to watch changes")
+					watchError = fmt.Errorf("unable to watch changes: %w", globErr)
 				}
 				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
 					// Append the new file change event to changedFiles if and only if the event is not a file remove event
@@ -319,7 +318,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 				fmt.Fprintf(out, "Pushing files...\n")
 				fileInfo, err := os.Stat(parameters.Path)
 				if err != nil {
-					return errors.Wrapf(err, "%s: file doesn't exist", parameters.Path)
+					return fmt.Errorf("%s: file doesn't exist: %w", parameters.Path, err)
 				}
 				if fileInfo.IsDir() {
 					klog.V(4).Infof("Copying files %s to pod", changedFiles)
@@ -396,12 +395,12 @@ func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
 		stat, err := os.Lstat(event.Name)
 		if err != nil {
 			// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
-			// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
+			// So, its better to log the error rather than feeding it to error handler via `watchError = fmt.Errorf("unable to watch changes: %w", err)`,
 			// which will terminate the watch
 			klog.V(4).Infof("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 		}
 		// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
-		// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
+		// So, its better to log the error rather than feeding it to error handler via `watchError = fmt.Errorf("unable to watch changes: %w", err)`,
 		// which will terminate the watch
 		if stat == nil {
 			klog.V(4).Infof("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)

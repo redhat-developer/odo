@@ -1,12 +1,12 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/zalando/go-keyring"
 
 	"github.com/redhat-developer/odo/pkg/catalog"
@@ -193,11 +193,11 @@ func (hcm HTTPCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	}
 	devfileData, err := util.DownloadFileInMemory(params)
 	if err != nil {
-		return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
+		return fmt.Errorf("failed to download devfile for devfile component from %s: %w", co.devfileMetadata.devfilePath.value, err)
 	}
 	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
-		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
+		return fmt.Errorf("unable to save devfile to %s: %w", co.DevfilePath, err)
 	}
 	devfileSpinner.End(true)
 
@@ -228,11 +228,11 @@ func (fcm FileCreateMethod) FetchDevfileAndCreateComponent(co *CreateOptions, cm
 	defer devfileSpinner.End(false)
 	devfileData, err := ioutil.ReadFile(co.devfileMetadata.devfilePath.value)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read devfile from %s", co.devfileMetadata.devfilePath)
+		return fmt.Errorf("failed to read devfile from %s: %w", co.devfileMetadata.devfilePath, err)
 	}
 	err = ioutil.WriteFile(co.DevfilePath, devfileData, 0644) // #nosec G306
 	if err != nil {
-		return errors.Wrapf(err, "unable to save devfile to %s", co.DevfilePath)
+		return fmt.Errorf("unable to save devfile to %s: %w", co.DevfilePath, err)
 	}
 	devfileSpinner.End(true)
 
@@ -276,10 +276,10 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 		defer registryExistSpinner.End(false)
 		registryList, e := catalogClient.GetDevfileRegistries(registryName)
 		if e != nil {
-			return catalog.DevfileComponentTypeList{}, errors.Wrap(e, "failed to get registry")
+			return catalog.DevfileComponentTypeList{}, fmt.Errorf("failed to get registry: %w", e)
 		}
 		if len(registryList) == 0 {
-			return catalog.DevfileComponentTypeList{}, errors.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
+			return catalog.DevfileComponentTypeList{}, fmt.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
 		}
 		registryExistSpinner.End(true)
 	}
@@ -292,7 +292,7 @@ func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentType
 	}
 
 	if registryName != "" && catalogDevfileList.Items == nil {
-		return catalog.DevfileComponentTypeList{}, errors.Errorf("can't create devfile component from registry %s", registryName)
+		return catalog.DevfileComponentTypeList{}, fmt.Errorf("can't create devfile component from registry %s", registryName)
 	}
 
 	if len(catalogDevfileList.DevfileRegistries) == 0 {
@@ -338,7 +338,7 @@ func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePat
 			var token string
 			token, err = keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 			if err != nil {
-				return errors.Wrap(err, "unable to get secure registry credential from keyring")
+				return fmt.Errorf("unable to get secure registry credential from keyring: %w", err)
 			}
 			params.Token = token
 		}

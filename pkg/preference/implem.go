@@ -1,14 +1,13 @@
 package preference
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -187,7 +186,7 @@ func (c *preferenceInfo) RegistryHandler(operation string, registryName string, 
 	c.OdoSettings.RegistryList = &registryList
 	err = util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Errorf("unable to write the configuration of %q operation to preference file", operation)
+		return fmt.Errorf("unable to write the configuration of %q operation to preference file", operation)
 	}
 
 	return nil
@@ -205,7 +204,7 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		registryList = append(registryList, registry)
 
 	case "update", "delete":
-		return nil, errors.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
+		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
 	}
 
 	return registryList, nil
@@ -215,7 +214,7 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 	switch operation {
 
 	case "add":
-		return nil, errors.Errorf("failed to add registry: registry %q already exists", registryName)
+		return nil, fmt.Errorf("failed to add registry: registry %q already exists", registryName)
 
 	case "update":
 		if !forceFlag {
@@ -256,61 +255,61 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "timeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Errorf("unable to set %q to %q", parameter, value)
+				return fmt.Errorf("unable to set %q to %q", parameter, value)
 			}
 			if typedval < 0 {
-				return errors.Errorf("cannot set timeout to less than 0")
+				return errors.New("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.Timeout = &typedval
 
 		case "pushtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
-				return errors.Errorf("cannot set timeout to less than 0")
+				return errors.New("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
 		case "registrycachetime":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
 			}
 			if typedval < 0 {
-				return errors.Errorf("cannot set timeout to less than 0")
+				return errors.New("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.RegistryCacheTime = &typedval
 
 		case "updatenotification":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.UpdateNotification = &val
 
 		case "ephemeral":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.Ephemeral = &val
 
 		case "consenttelemetry":
 			val, err := strconv.ParseBool(strings.ToLower(value))
 			if err != nil {
-				return errors.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be a boolean", parameter, value)
 			}
 			c.OdoSettings.ConsentTelemetry = &val
 		}
 	} else {
-		return errors.Errorf("unknown parameter : %q is not a parameter in odo preference, run `odo preference -h` to see list of available parameters", parameter)
+		return fmt.Errorf("unknown parameter : %q is not a parameter in odo preference, run `odo preference -h` to see list of available parameters", parameter)
 	}
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md", parameter)
+		return fmt.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }
@@ -324,12 +323,12 @@ func (c *preferenceInfo) DeleteConfiguration(parameter string) error {
 			return err
 		}
 	} else {
-		return errors.Errorf("unknown parameter :%q is not a parameter in the odo preference", parameter)
+		return fmt.Errorf("unknown parameter :%q is not a parameter in the odo preference", parameter)
 	}
 
 	err := util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md", parameter)
+		return fmt.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md", parameter)
 	}
 	return nil
 }

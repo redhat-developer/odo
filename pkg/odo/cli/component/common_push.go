@@ -1,10 +1,10 @@
 package component
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -76,15 +76,14 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 	// check if project exist
 	isPrjExists, err := cpo.clientset.ProjectClient.Exists(prjName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if project with name %s exists", prjName)
+		return fmt.Errorf("failed to check if project with name %s exists: %w", prjName, err)
 	}
 	if !isPrjExists {
 		err = cpo.clientset.ProjectClient.Create(prjName, true)
 		if err != nil {
-			return errors.Wrapf(
-				err,
-				"project %s does not exist. Failed creating it. Please try after creating project using `odo project create <project_name>`",
-				prjName,
+			return fmt.Errorf(
+				"project %s does not exist. Failed creating it. Please try after creating project using `odo project create <project_name>`: %w",
+				prjName, err,
 			)
 		}
 	}
@@ -142,7 +141,7 @@ func GatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
 	// 2. Use the folder name as a last resort if nothing else exists
 	sourcePath, err := dfutil.GetAbsPath(devfilePath)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to get source path")
+		return "", fmt.Errorf("unable to get source path: %w", err)
 	}
 	klog.V(4).Infof("Source path: %s", sourcePath)
 	klog.V(4).Infof("devfile dir: %s", filepath.Dir(sourcePath))

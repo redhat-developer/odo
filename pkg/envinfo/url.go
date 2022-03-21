@@ -9,7 +9,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -302,7 +301,7 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 
 		err := addEndpointInDevfile(esi.devfileObj, newEndpointEntry, url.Container)
 		if err != nil {
-			return errors.Wrapf(err, "failed to write endpoints information into devfile")
+			return fmt.Errorf("failed to write endpoints information into devfile: %w", err)
 		}
 	} else {
 		err := updateEndpointInDevfile(esi.devfileObj, url)
@@ -313,7 +312,7 @@ func (esi *EnvSpecificInfo) CreateURL(url localConfigProvider.LocalURL) error {
 
 	err := esi.SetConfiguration("url", localConfigProvider.LocalURL{Name: url.Name, Host: url.Host, TLSSecret: url.TLSSecret, Kind: url.Kind})
 	if err != nil {
-		return errors.Wrapf(err, "failed to persist the component settings to env file")
+		return fmt.Errorf("failed to persist the component settings to env file: %w", err)
 	}
 	return nil
 }
@@ -382,7 +381,7 @@ func (ei *EnvInfo) ListURLs() ([]localConfigProvider.LocalURL, error) {
 func (esi *EnvSpecificInfo) DeleteURL(name string) error {
 	err := removeEndpointInDevfile(esi.devfileObj, name)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete URL")
+		return fmt.Errorf("failed to delete URL: %w", err)
 	}
 
 	if esi.componentSettings.URL == nil {

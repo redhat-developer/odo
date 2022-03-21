@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"hash/adler32"
@@ -23,7 +24,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	"github.com/pkg/errors"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
@@ -204,7 +204,7 @@ func IsValidProjectDir(path string, devfilePath string) error {
 				return nil
 			}
 		}
-		return errors.Errorf("Folder %s doesn't contain the devfile used.", path)
+		return fmt.Errorf("Folder %s doesn't contain the devfile used.", path)
 	}
 
 	return nil
@@ -216,7 +216,7 @@ func IsValidProjectDir(path string, devfilePath string) error {
 // TODO(feloy) sync with devfile library?
 func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string) error {
 	if zipURL == "" {
-		return errors.Errorf("Empty zip url: %s", zipURL)
+		return fmt.Errorf("Empty zip url: %s", zipURL)
 	}
 
 	var pathToZip string
@@ -249,7 +249,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 			}
 		}()
 	} else {
-		return errors.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
+		return fmt.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
 	filenames, err := Unzip(pathToZip, destination, pathToUnzip)
@@ -446,17 +446,17 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 	var data []byte
 	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, dfutil.ModeReadWriteFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to open .gitignore file")
+		return fmt.Errorf("failed to open .gitignore file: %w", err)
 	}
 	defer file.Close()
 
 	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed reading data from %v file", gitIgnoreFile))
+		return fmt.Errorf("failed reading data from %v file: %w", gitIgnoreFile, err)
 	}
 	// check whether .odo/odo-file-index.json is already in the .gitignore file
 	if !strings.Contains(string(data), filename) {
 		if _, err := file.WriteString("\n" + filename); err != nil {
-			return errors.Wrapf(err, "failed to add %v to %v file", filepath.Base(filename), gitIgnoreFile)
+			return fmt.Errorf("failed to add %v to %v file: %w", filepath.Base(filename), gitIgnoreFile, err)
 		}
 	}
 	return nil
@@ -486,7 +486,7 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 		}()
 
 		if _, err = io.Copy(writer, rd); err != nil {
-			return errors.Wrapf(err, "error followLoging logs for %s", compName)
+			return fmt.Errorf("error followLoging logs for %s: %w", compName, err)
 		}
 
 	} else if numberOfLastLines == -1 {
@@ -494,12 +494,12 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 		buf := new(bytes.Buffer)
 		_, err = io.Copy(buf, rd)
 		if err != nil {
-			return errors.Wrapf(err, "unable to copy followLog to buffer")
+			return fmt.Errorf("unable to copy followLog to buffer: %w", err)
 		}
 
 		// Copy to stdout
 		if _, err = io.Copy(writer, buf); err != nil {
-			return errors.Wrapf(err, "error copying logs to stdout")
+			return fmt.Errorf("error copying logs to stdout: %w", err)
 		}
 	} else {
 		reader := bufio.NewReader(rd)

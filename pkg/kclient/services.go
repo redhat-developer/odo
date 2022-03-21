@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +14,7 @@ import (
 func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {
 	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Create(context.TODO(), &svc, metav1.CreateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create Service for %s", svc.Name)
+		return nil, fmt.Errorf("unable to create Service for %s: %w", svc.Name, err)
 	}
 	return service, err
 }
@@ -24,7 +23,7 @@ func (c *Client) CreateService(svc corev1.Service) (*corev1.Service, error) {
 func (c *Client) UpdateService(svc corev1.Service) (*corev1.Service, error) {
 	service, err := c.KubeClient.CoreV1().Services(c.Namespace).Update(context.TODO(), &svc, metav1.UpdateOptions{FieldManager: FieldManager})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to update Service for %s", svc.Name)
+		return nil, fmt.Errorf("unable to update Service for %s: %w", svc.Name, err)
 	}
 	return service, err
 }
@@ -36,7 +35,7 @@ func (c *Client) ListServices(selector string) ([]corev1.Service, error) {
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Services")
+		return nil, fmt.Errorf("unable to list Services: %w", err)
 	}
 	return serviceList.Items, nil
 }

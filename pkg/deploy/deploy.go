@@ -1,14 +1,14 @@
 package deploy
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"k8s.io/klog"
-
-	"github.com/pkg/errors"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -85,7 +85,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	log.Infof("\nDeploying Kubernetes %s: %s", u.GetKind(), u.GetName())
 	isOperatorBackedService, err := service.PushKubernetesResource(o.kubeClient, u, labels, annotations)
 	if err != nil {
-		return errors.Wrap(err, "failed to create service(s) associated with the component")
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	if isOperatorBackedService {

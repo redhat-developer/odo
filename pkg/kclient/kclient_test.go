@@ -1,11 +1,11 @@
 package kclient
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"testing"
 
-	"github.com/pkg/errors"
 	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"

@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
 )
@@ -19,7 +18,7 @@ func CreateIfNotExists(configFile string) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(configFile), 0750)
 		if err != nil {
-			return errors.Wrap(err, "unable to create directory")
+			return fmt.Errorf("unable to create directory: %w", err)
 		}
 	}
 	// Check whether config file is present or not
@@ -27,7 +26,7 @@ func CreateIfNotExists(configFile string) error {
 	if os.IsNotExist(err) {
 		file, err := os.Create(configFile)
 		if err != nil {
-			return errors.Wrap(err, "unable to create config file")
+			return fmt.Errorf("unable to create config file: %w", err)
 		}
 		defer file.Close() // #nosec G307
 	}
@@ -39,12 +38,12 @@ func CreateIfNotExists(configFile string) error {
 func GetFromFile(c interface{}, filename string) error {
 	configData, err := filesystem.Get().ReadFile(filename)
 	if err != nil {
-		return errors.Wrapf(err, "unable to read file %v", filename)
+		return fmt.Errorf("unable to read file %v: %w", filename, err)
 	}
 
 	err = yaml.Unmarshal(configData, c)
 	if err != nil {
-		return errors.Wrap(err, "unable to unmarshal odo config file")
+		return fmt.Errorf("unable to unmarshal odo config file: %w", err)
 	}
 
 	return nil
@@ -54,7 +53,7 @@ func GetFromFile(c interface{}, filename string) error {
 func WriteToFile(c interface{}, filename string) error {
 	data, err := yaml.Marshal(c)
 	if err != nil {
-		return errors.Wrap(err, "unable to marshal odo config data")
+		return fmt.Errorf("unable to marshal odo config data: %w", err)
 	}
 
 	if err = CreateIfNotExists(filename); err != nil {
@@ -62,7 +61,7 @@ func WriteToFile(c interface{}, filename string) error {
 	}
 	err = ioutil.WriteFile(filename, data, 0600)
 	if err != nil {
-		return errors.Wrapf(err, "unable to write config to file %v", c)
+		return fmt.Errorf("unable to write config to file %v: %w", c, err)
 	}
 
 	return nil

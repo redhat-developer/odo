@@ -3,6 +3,7 @@ package kclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,7 +17,6 @@ import (
 
 	"github.com/go-openapi/spec"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -57,7 +57,7 @@ func (c *Client) GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]ol
 func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 	csvs, err := c.ListClusterServiceVersions()
 	if err != nil {
-		return &olm.ClusterServiceVersion{}, errors.Wrap(err, "unable to list services")
+		return &olm.ClusterServiceVersion{}, fmt.Errorf("unable to list services: %w", err)
 	}
 
 	for _, csv := range csvs.Items {

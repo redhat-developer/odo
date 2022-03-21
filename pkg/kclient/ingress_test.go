@@ -7,7 +7,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient/unions"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/pkg/errors"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -209,7 +208,7 @@ func TestListIngresses(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.labelSelector != action.(ktesting.ListAction).GetListRestrictions().Labels.String() {
-					return true, nil, errors.Errorf("selectors are different")
+					return true, nil, fmt.Errorf("selectors are different")
 				}
 				if action.GetResource().GroupVersion().Group == "networking.k8s.io" {
 					return true, tt.wantIngress.GetNetworkingV1IngressList(true), nil
@@ -347,7 +346,7 @@ func TestGetIngresses(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("get", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.ingressName == "" {
-					return true, nil, errors.Errorf("ingress name is empty")
+					return true, nil, fmt.Errorf("ingress name is empty")
 				}
 				if action.GetResource().Group == "networking.k8s.io" {
 					ingress := networkingv1.Ingress{

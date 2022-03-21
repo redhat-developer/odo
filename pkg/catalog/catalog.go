@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/zalando/go-keyring"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -127,7 +126,7 @@ func (o *CatalogClient) SearchComponent(client kclient.ClientInterface, name str
 	//var result []string
 	//componentList, err := ListDevfileComponents(client)
 	//if err != nil {
-	//	return nil, errors.Wrap(err, "unable to list components")
+	//	return nil, fmt.Errorf("unable to list components: %w", err)
 	//}
 	//
 	//// do a partial search in all the components
@@ -189,7 +188,7 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 	// Github-based registry
 	URL, err := convertURL(registry.URL)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to convert URL %s", registry.URL)
+		return nil, fmt.Errorf("unable to convert URL %s: %w", registry.URL, err)
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
@@ -201,14 +200,14 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 	if secure {
 		token, e := keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
 		if e != nil {
-			return nil, errors.Wrap(e, "unable to get secure registry credential from keyring")
+			return nil, fmt.Errorf("unable to get secure registry credential from keyring: %w", e)
 		}
 		request.Token = token
 	}
 
 	jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+		return nil, fmt.Errorf("unable to download the devfile index.json from %s: %w", indexLink, err)
 	}
 
 	var devfileIndex []indexSchema.Schema
@@ -220,12 +219,12 @@ func getRegistryDevfiles(preferenceClient preference.Client, registry Registry) 
 		// we try once again
 		jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to download the devfile index.json from %s", indexLink)
+			return nil, fmt.Errorf("unable to download the devfile index.json from %s: %w", indexLink, err)
 		}
 
 		err = json.Unmarshal(jsonBytes, &devfileIndex)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to unmarshal the devfile index.json from %s", indexLink)
+			return nil, fmt.Errorf("unable to unmarshal the devfile index.json from %s: %w", indexLink, err)
 		}
 	}
 	return createRegistryDevfiles(registry, devfileIndex)

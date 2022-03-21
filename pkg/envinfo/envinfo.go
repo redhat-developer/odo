@@ -2,13 +2,12 @@
 package envinfo
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -96,7 +95,7 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 	// Get the path of the environment file
 	envInfoFile, devfilePath, err := getEnvInfoFile(envDir)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the path of the environment file")
+		return nil, fmt.Errorf("failed to get the path of the environment file: %w", err)
 	}
 
 	// Organize that information into a struct
@@ -158,7 +157,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "debugport":
 			val, err := strconv.Atoi(value.(string))
 			if err != nil {
-				return errors.Wrap(err, "failed to set debug port")
+				return fmt.Errorf("failed to set debug port: %w", err)
 			}
 			esi.componentSettings.DebugPort = &val
 		case "url":
@@ -172,7 +171,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to see valid parameters", parameter)
+	return fmt.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env set --help` to see valid parameters", parameter)
 
 }
 
@@ -231,7 +230,7 @@ var (
 func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 	for _, manParam := range manParams {
 		if parameter == manParam {
-			return errors.Errorf("failed to unset %q: %q is mandatory parameter", parameter, parameter)
+			return fmt.Errorf("failed to unset %q: %q is mandatory parameter", parameter, parameter)
 		}
 	}
 
@@ -241,7 +240,7 @@ func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 		}
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
+	return fmt.Errorf("unknown parameter: %q is not a parameter in the odo environment file, please refer `odo env unset --help` to unset a valid parameter", parameter)
 
 }
 

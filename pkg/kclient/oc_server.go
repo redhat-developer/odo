@@ -3,12 +3,13 @@ package kclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net"
 	"time"
 
 	dfutil "github.com/devfile/library/pkg/util"
 
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
@@ -24,7 +25,7 @@ func isServerUp(server string, timeout time.Duration) bool {
 	klog.V(3).Infof("Trying to connect to server %s", address)
 	_, connectionError := net.DialTimeout("tcp", address, timeout)
 	if connectionError != nil {
-		klog.V(3).Info(errors.Wrap(connectionError, "unable to connect to server"))
+		klog.V(3).Info(fmt.Errorf("unable to connect to server: %w", connectionError))
 		return false
 	}
 
@@ -48,7 +49,7 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	// This will fetch the information about Server Address
 	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get server's address")
+		return nil, fmt.Errorf("unable to get server's address: %w", err)
 	}
 	info.Address = config.Host
 
@@ -72,7 +73,7 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	} else {
 		var openShiftVersion version.Info
 		if e := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); e != nil {
-			return nil, errors.Wrapf(e, "unable to unmarshal OpenShift version %v", string(rawOpenShiftVersion))
+			return nil, fmt.Errorf("unable to unmarshal OpenShift version %v: %w", string(rawOpenShiftVersion), e)
 		}
 		info.OpenShiftVersion = openShiftVersion.GitVersion
 	}
@@ -80,11 +81,11 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 	// This will fetch the information about Kubernetes Version
 	rawKubernetesVersion, err := coreGet.AbsPath("/version").Do(context.TODO()).Raw()
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Kubernetes Version")
+		return nil, fmt.Errorf("unable to get Kubernetes Version: %w", err)
 	}
 	var kubernetesVersion version.Info
 	if err := json.Unmarshal(rawKubernetesVersion, &kubernetesVersion); err != nil {
-		return nil, errors.Wrapf(err, "unable to unmarshal Kubernetes Version: %v", string(rawKubernetesVersion))
+		return nil, fmt.Errorf("unable to unmarshal Kubernetes Version: %v: %w", string(rawKubernetesVersion), err)
 	}
 	info.KubernetesVersion = kubernetesVersion.GitVersion
 

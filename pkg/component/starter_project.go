@@ -1,6 +1,8 @@
 package component
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,8 +18,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -31,7 +31,7 @@ func checkoutProject(subDir, zipURL, path, starterToken string) error {
 	}
 	err := util.GetAndExtractZip(zipURL, path, subDir, starterToken)
 	if err != nil {
-		return errors.Wrap(err, "failed to download and extract project zip folder")
+		return fmt.Errorf("failed to download and extract project zip folder: %w", err)
 	}
 	return nil
 }
@@ -42,7 +42,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 	nOfProjects := len(projects)
 
 	if nOfProjects == 0 {
-		return nil, errors.Errorf("no starter project found in devfile.")
+		return nil, fmt.Errorf("no starter project found in devfile.")
 	}
 
 	// Determine what project to be used
@@ -65,7 +65,7 @@ func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string
 
 		if !projectFound {
 			availableNamesString := strings.Join(availableNames, ",")
-			return nil, errors.Errorf("the project: %s specified in --starter does not exist, available projects: %s", projectPassed, availableNamesString)
+			return nil, fmt.Errorf("the project: %s specified in --starter does not exist, available projects: %s", projectPassed, availableNamesString)
 		}
 	}
 
@@ -82,7 +82,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	if contextDir == "" {
 		path, err = os.Getwd()
 		if err != nil {
-			return errors.Wrapf(err, "Could not get the current working directory.")
+			return fmt.Errorf("Could not get the current working directory: %w", err)
 		}
 	} else {
 		path = contextDir
@@ -123,7 +123,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 			downloadSpinner.End(true)
 		}
 	} else {
-		return errors.Errorf("Project type not supported")
+		return errors.New("Project type not supported")
 	}
 
 	return nil
@@ -133,7 +133,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, path string, verbose bool) error {
 	remoteName, remoteUrl, revision, err := parsercommon.GetDefaultSource(starterProject.Git.GitLikeProjectSource)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get default project source for starter project %s", starterProject.Name)
+		return fmt.Errorf("unable to get default project source for starter project %s: %w", starterProject.Name, err)
 	}
 
 	// convert revision to referenceName type, ref name could be a branch or tag

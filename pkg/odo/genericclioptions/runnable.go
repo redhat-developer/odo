@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
@@ -74,7 +73,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
 	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignal os.Signal) {
 		scontext.SetSignal(cmd.Context(), receivedSignal)
-		startTelemetry(cmd, errors.Wrapf(terminal.InterruptErr, "user interrupted the command execution"), startTime)
+		startTelemetry(cmd, fmt.Errorf("user interrupted the command execution: %w", terminal.InterruptErr), startTime)
 	})
 
 	// CheckMachineReadableOutput

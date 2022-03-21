@@ -34,7 +34,6 @@ require (
 	github.com/operator-framework/api v0.3.20
 	github.com/operator-framework/operator-lifecycle-manager v0.17.0
 	github.com/pborman/uuid v1.2.0
-	github.com/pkg/errors v0.9.1
 	github.com/posener/complete v1.1.1
 	github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae
 	github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3

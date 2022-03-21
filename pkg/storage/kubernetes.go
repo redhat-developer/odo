@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	v1 "k8s.io/api/apps/v1"
@@ -53,7 +52,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 
 	quantity, err := resource.ParseQuantity(storage.Spec.Size)
 	if err != nil {
-		return errors.Wrapf(err, "unable to parse size: %v", storage.Spec.Size)
+		return fmt.Errorf("unable to parse size: %v: %w", storage.Spec.Size, err)
 	}
 
 	pvcParams := generator.PVCParams{
@@ -66,7 +65,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 	klog.V(2).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
 	_, err = k.client.CreatePVC(*pvc)
 	if err != nil {
-		return errors.Wrap(err, "unable to create PVC")
+		return fmt.Errorf("unable to create PVC: %w", err)
 	}
 	return nil
 }
@@ -81,7 +80,7 @@ func (k kubernetesClient) Delete(name string) error {
 	// delete the associated PVC with the component
 	err = k.client.DeletePVC(pvcName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to delete PVC %v", pvcName)
+		return fmt.Errorf("unable to delete PVC %v: %w", pvcName, err)
 	}
 
 	return nil
@@ -146,7 +145,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 	pvcs, err := k.client.ListPVCs(selector)
 	if err != nil {
-		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
+		return StorageList{}, fmt.Errorf("unable to get PVC using selector %v: %w", storagelabels.StorageLabel, err)
 	}
 
 	// to track volume mounts used by a PVC

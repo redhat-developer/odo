@@ -1,11 +1,11 @@
 package service
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/go-openapi/spec"
-	"github.com/pkg/errors"
 )
 
 // BuildCRDFromParams iterates over the parameter maps provided by the user and builds the CRD

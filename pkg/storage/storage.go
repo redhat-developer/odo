@@ -1,7 +1,8 @@
 package storage
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -110,7 +111,7 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 			continue
 		} else if storage.Name == val.Name {
 			if val.Spec.Size != storage.Spec.Size {
-				return nil, errors.Errorf("config mismatch for storage with the same name %s", storage.Name)
+				return nil, fmt.Errorf("config mismatch for storage with the same name %s", storage.Name)
 			}
 		}
 	}

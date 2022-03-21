@@ -1,10 +1,9 @@
 package url
 
 import (
+	"errors"
 	"fmt"
 	"sort"
-
-	"github.com/pkg/errors"
 
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -48,14 +47,14 @@ func (k kubernetesClient) ListFromCluster() (URLList, error) {
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := k.client.ListIngresses(labelSelector)
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list ingress")
+		return URLList{}, fmt.Errorf("unable to list ingress: %w", err)
 	}
 
 	var routes []routev1.Route
 	if k.isRouteSupported {
 		routes, err = k.client.ListRoutes(labelSelector)
 		if err != nil {
-			return URLList{}, errors.Wrap(err, "unable to list routes")
+			return URLList{}, fmt.Errorf("unable to list routes: %w", err)
 		}
 	}
 
@@ -82,7 +81,7 @@ func (k kubernetesClient) List() (URLList, error) {
 	if k.client != nil {
 		clusterURLs, err = k.ListFromCluster()
 		if err != nil {
-			return URLList{}, errors.Wrap(err, "unable to list routes")
+			return URLList{}, fmt.Errorf("unable to list routes: %w", err)
 		}
 	}
 
@@ -192,7 +191,7 @@ func (k kubernetesClient) Create(url URL) (string, error) {
 		return k.createIngress(url, labels)
 	} else {
 		if !k.isRouteSupported {
-			return "", errors.Errorf("routes are not available on non OpenShift clusters")
+			return "", errors.New("routes are not available on non OpenShift clusters")
 		}
 
 		return k.createRoute(url, labels)
@@ -203,7 +202,7 @@ func (k kubernetesClient) Create(url URL) (string, error) {
 // createIngress creates a ingress for the given URL with the given labels
 func (k kubernetesClient) createIngress(url URL, labels map[string]string) (string, error) {
 	if url.Spec.Host == "" {
-		return "", errors.Errorf("the host cannot be empty")
+		return "", errors.New("the host cannot be empty")
 	}
 
 	service, err := k.client.GetOneService(k.componentName, k.appName)
@@ -227,7 +226,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			// get the user given secret
 			_, err = k.client.GetSecret(url.Spec.TLSSecret, k.client.GetCurrentNamespace())
 			if err != nil {
-				return "", errors.Wrap(err, "unable to get the provided secret: "+url.Spec.TLSSecret)
+				return "", fmt.Errorf("unable to get the provided secret %q: %w", url.Spec.TLSSecret, err)
 			}
 		} else {
 			// get the default secret
@@ -238,7 +237,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 			if kerrors.IsNotFound(err) {
 				selfSignedCert, e := kclient.GenerateSelfSignedCertificate(url.Spec.Host)
 				if e != nil {
-					return "", errors.Wrap(e, "unable to generate self-signed certificate for clutser: "+url.Spec.Host)
+					return "", fmt.Errorf("unable to generate self-signed certificate for clutser %q: %w"+url.Spec.Host, e)
 				}
 				// create tls secret
 				secretLabels := componentlabels.GetLabels(k.componentName, k.appName, true)
@@ -251,7 +250,7 @@ func (k kubernetesClient) createIngress(url URL, labels map[string]string) (stri
 				}
 				secret, e := k.client.CreateTLSSecret(selfSignedCert.CertPem, selfSignedCert.KeyPem, objectMeta)
 				if e != nil {
-					return "", errors.Wrap(e, "unable to create tls secret")
+					return "", fmt.Errorf("unable to create tls secret: %w", e)
 				}
 				url.Spec.TLSSecret = secret.Name
 			} else if err != nil {
@@ -303,7 +302,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 	suffix := util.GetAdler32Value(url.Name + k.appName + k.componentName)
 	routeName, err := dfutil.NamespaceOpenShiftObject(url.Name, suffix)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", fmt.Errorf("unable to create namespaced name: %w", err)
 	}
 
 	if k.deployment == nil {
@@ -325,7 +324,7 @@ func (k kubernetesClient) createRoute(url URL, labels map[string]string) (string
 		if kerrors.IsAlreadyExists(err) {
 			return "", fmt.Errorf("url named %q already exists in the same app named %q", url.Name, k.appName)
 		}
-		return "", errors.Wrap(err, "unable to create route")
+		return "", fmt.Errorf("unable to create route: %w", err)
 	}
 	return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
 }

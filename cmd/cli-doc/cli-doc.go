@@ -1,10 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -185,7 +185,15 @@ func main() {
 
 	err := clidoc.Execute()
 	if err != nil {
-		fmt.Println(errors.Cause(err))
+		for {
+			e := errors.Unwrap(err)
+			if e != nil {
+				err = e
+			} else {
+				break
+			}
+		}
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }

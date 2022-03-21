@@ -1,11 +1,12 @@
 package kubernetes
 
 import (
+	"fmt"
+
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/preference"
 
-	"github.com/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 )
@@ -34,7 +35,7 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 
 	err := k.componentAdapter.Push(parameters)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create the component")
+		return fmt.Errorf("Failed to create the component: %w", err)
 	}
 
 	return nil
@@ -44,7 +45,7 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
 	err := k.componentAdapter.CheckSupervisordCommandStatus(command)
 	if err != nil {
-		return errors.Wrap(err, "Failed to check the status")
+		return fmt.Errorf("Failed to check the status: %w", err)
 	}
 
 	return nil
