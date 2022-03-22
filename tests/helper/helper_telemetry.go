@@ -17,9 +17,9 @@ func CreateTelemetryDebugFile() {
 }
 
 func GetTelemetryDebugData() segment.TelemetryData {
-	data, err := ReadFile(segment.GetDebugTelemetry())
+	data, err := ioutil.ReadFile(segment.GetDebugTelemetry())
 	Expect(err).NotTo(HaveOccurred())
 	var td segment.TelemetryData
-	Expect(json.Unmarshal([]byte(data), &td)).NotTo(HaveOccurred())
+	Expect(json.Unmarshal(data, &td)).NotTo(HaveOccurred())
 	return td
 }
