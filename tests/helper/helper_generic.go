@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/tests/helper/reporter"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -341,10 +340,8 @@ func CommonBeforeEach() CommonVar {
 	commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.ConfigDir, "preference.yaml"))
-	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
-	cfg, _ := preference.NewClient()
-	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
-	Expect(err).To(BeNil())
+	// Set Debug Telemetry  so that it does not prompt to set a preference value and we have telemetry logged for validation
+	CreateTelemetryDebugFile()
 	SetDefaultDevfileRegistryAsStaging()
 	return commonVar
 }
@@ -442,7 +439,6 @@ func SetProjectName() string {
 
 // RunTestSpecs defines a common way how test specs in test suite are executed
 func RunTestSpecs(t *testing.T, description string) {
-	os.Setenv("ODO_DISABLE_TELEMETRY", "true")
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
 }
