@@ -8,9 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/onsi/gomega/gexec"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/util"
+
+	"github.com/onsi/gomega/gexec"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -73,101 +75,97 @@ var _ = Describe("odo dev command tests", func() {
 			})
 		})
 		It("ensure that index information is updated", func() {
-			// watch that project
-			session := helper.CmdRunner("odo", "dev")
-			defer session.Kill()
+			helper.RunDevMode(func(session *gexec.Session) {
+				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
+				Expect(err).ToNot(HaveOccurred())
 
-			helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
-			indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
-			Expect(err).ToNot(HaveOccurred())
+				// Create a new file A
+				fileAPath, _ := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 
-			// Create a new file A
-			fileAPath, _ := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
+				// Wait for the new file to exist in the index
+				Eventually(func() bool {
 
-			// Wait for the new file to exist in the index
-			Eventually(func() bool {
-
-				newIndexAfterPush, readErr := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
-				if readErr != nil {
-					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", readErr)
-					return false
-				}
-
-				_, exists := newIndexAfterPush.Files[filepath.Base(fileAPath)]
-				if !exists {
-					fmt.Fprintln(GinkgoWriter, "path", fileAPath, "not found.", readErr)
-				}
-				return exists
-
-			}, 180, 10).Should(Equal(true))
-
-			// Delete file A and verify that it disappears from the index
-			err = os.Remove(fileAPath)
-			Expect(err).ToNot(HaveOccurred())
-			Eventually(func() bool {
-
-				newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
-				if err != nil {
-					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
-					return false
-				}
-
-				// Sanity test: at least one file should be present
-				if len(newIndexAfterPush.Files) == 0 {
-					return false
-				}
-
-				// The fileA file should NOT be found
-				match := false
-				for relativeFilePath := range newIndexAfterPush.Files {
-
-					if strings.Contains(relativeFilePath, filepath.Base(fileAPath)) {
-						match = true
+					newIndexAfterPush, readErr := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
+					if readErr != nil {
+						fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", readErr)
+						return false
 					}
-				}
-				return !match
 
-			}, 180, 10).Should(Equal(true))
+					_, exists := newIndexAfterPush.Files[filepath.Base(fileAPath)]
+					if !exists {
+						fmt.Fprintln(GinkgoWriter, "path", fileAPath, "not found.", readErr)
+					}
+					return exists
 
-			// Change server.js
-			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
-			helper.WaitForOutputToContain("server.js", 180, 10, session)
+				}, 180, 10).Should(Equal(true))
 
-			// Wait for the size values in the old and new index files to differ, indicating that watch has updated the index
-			Eventually(func() bool {
+				// Delete file A and verify that it disappears from the index
+				err = os.Remove(fileAPath)
+				Expect(err).ToNot(HaveOccurred())
+				Eventually(func() bool {
 
-				newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
-				if err != nil {
-					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
-					return false
-				}
+					newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
+					if err != nil {
+						fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
+						return false
+					}
 
-				beforePushValue, exists := indexAfterPush.Files["server.js"]
-				if !exists {
-					fmt.Fprintln(GinkgoWriter, "server.js not found in old index file")
-					return false
-				}
+					// Sanity test: at least one file should be present
+					if len(newIndexAfterPush.Files) == 0 {
+						return false
+					}
 
-				afterPushValue, exists := newIndexAfterPush.Files["server.js"]
-				if !exists {
-					fmt.Fprintln(GinkgoWriter, "server.js not found in new index file")
-					return false
-				}
+					// The fileA file should NOT be found
+					match := false
+					for relativeFilePath := range newIndexAfterPush.Files {
 
-				fmt.Fprintln(GinkgoWriter, "comparing old and new file sizes", beforePushValue.Size, afterPushValue.Size)
+						if strings.Contains(relativeFilePath, filepath.Base(fileAPath)) {
+							match = true
+						}
+					}
+					return !match
 
-				return beforePushValue.Size != afterPushValue.Size
+				}, 180, 10).Should(Equal(true))
 
-			}, 180, 10).Should(Equal(true))
+				// Change server.js
+				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+				helper.WaitForOutputToContain("server.js", 180, 10, session)
 
+				// Wait for the size values in the old and new index files to differ, indicating that watch has updated the index
+				Eventually(func() bool {
+
+					newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
+					if err != nil {
+						fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
+						return false
+					}
+
+					beforePushValue, exists := indexAfterPush.Files["server.js"]
+					if !exists {
+						fmt.Fprintln(GinkgoWriter, "server.js not found in old index file")
+						return false
+					}
+
+					afterPushValue, exists := newIndexAfterPush.Files["server.js"]
+					if !exists {
+						fmt.Fprintln(GinkgoWriter, "server.js not found in new index file")
+						return false
+					}
+
+					fmt.Fprintln(GinkgoWriter, "comparing old and new file sizes", beforePushValue.Size, afterPushValue.Size)
+
+					return beforePushValue.Size != afterPushValue.Size
+
+				}, 180, 10).Should(Equal(true))
+			})
 		})
 
 		When("odo dev is executed", func() {
 
 			BeforeEach(func() {
-				session := helper.CmdRunner("odo", "dev")
-				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
-				defer session.Kill()
+				devSession := helper.StartDevMode()
+				defer devSession.Kill()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
@@ -188,15 +186,14 @@ var _ = Describe("odo dev command tests", func() {
 				})
 
 				It("should run odo dev on initial namespace", func() {
-					session := helper.CmdRunner("odo", "dev")
-					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
-					defer session.Kill()
+					helper.RunDevMode(func(session *gexec.Session) {
+						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
+						Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
 
-					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
+						output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
+						Expect(string(output)).To(ContainSubstring(cmpName))
+					})
 
-					output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-					Expect(string(output)).To(ContainSubstring(cmpName))
 				})
 			})
 		})
@@ -211,16 +208,15 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should expose the endpoint on localhost", func() {
-				session := helper.CmdRunner("odo", "dev")
-				defer session.Kill()
-				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+				helper.RunDevMode(func(session *gexec.Session) {
+					resp, err := http.Get("http://localhost:40001")
+					Expect(err).ToNot(HaveOccurred())
+					defer resp.Body.Close()
 
-				resp, err := http.Get("http://localhost:40001")
-				Expect(err).ToNot(HaveOccurred())
-				defer resp.Body.Close()
+					body, _ := io.ReadAll(resp.Body)
+					helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+				})
 
-				body, _ := io.ReadAll(resp.Body)
-				helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
 			})
 		})
 		When("devfile has multiple endpoints", func() {
@@ -231,59 +227,54 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should expose two endpoints on localhost", func() {
-				session := helper.CmdRunner("odo", "dev")
-				defer session.Kill()
-				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+				helper.RunDevMode(func(session *gexec.Session) {
+					resp1, err := http.Get("http://localhost:40001")
+					Expect(err).ToNot(HaveOccurred())
+					defer resp1.Body.Close()
 
-				resp1, err := http.Get("http://localhost:40001")
-				Expect(err).ToNot(HaveOccurred())
-				defer resp1.Body.Close()
+					resp2, err := http.Get("http://localhost:40002")
+					Expect(err).ToNot(HaveOccurred())
+					defer resp2.Body.Close()
 
-				resp2, err := http.Get("http://localhost:40002")
-				Expect(err).ToNot(HaveOccurred())
-				defer resp2.Body.Close()
+					body1, _ := io.ReadAll(resp1.Body)
+					helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
 
-				body1, _ := io.ReadAll(resp1.Body)
-				helper.MatchAllInOutput(string(body1), []string{"Hello from Node.js Starter Application!"})
+					body2, _ := io.ReadAll(resp2.Body)
+					helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
 
-				body2, _ := io.ReadAll(resp2.Body)
-				helper.MatchAllInOutput(string(body2), []string{"Hello from Node.js Starter Application!"})
+					helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
+					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 
-				helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
-				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+					Eventually(func() bool {
+						resp3, err := http.Get("http://localhost:40001")
+						if err != nil {
+							return false
+						}
+						defer resp3.Body.Close()
 
-				Eventually(func() bool {
-					resp3, err := http.Get("http://localhost:40001")
-					if err != nil {
-						return false
-					}
-					defer resp3.Body.Close()
+						resp4, err := http.Get("http://localhost:40002")
+						if err != nil {
+							return false
+						}
+						defer resp4.Body.Close()
 
-					resp4, err := http.Get("http://localhost:40002")
-					if err != nil {
-						return false
-					}
-					defer resp4.Body.Close()
+						body3, _ := io.ReadAll(resp3.Body)
+						if string(body3) != "H3110 from Node.js Starter Application!" {
+							return false
+						}
 
-					body3, _ := io.ReadAll(resp3.Body)
-					if string(body3) != "H3110 from Node.js Starter Application!" {
-						return false
-					}
-
-					body4, _ := io.ReadAll(resp4.Body)
-					return string(body4) == "H3110 from Node.js Starter Application!"
-				}, 180, 10).Should(Equal(true))
-
+						body4, _ := io.ReadAll(resp4.Body)
+						return string(body4) == "H3110 from Node.js Starter Application!"
+					}, 180, 10).Should(Equal(true))
+				})
 			})
 
 			When("an endpoint is added after first run of odo dev", func() {
 				It("should print the message to run odo dev again", func() {
-					session := helper.CmdRunner("odo", "dev")
-					defer session.Kill()
-					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
-
-					helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
-					helper.WaitForOutputToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
+					helper.RunDevMode(func(session *gexec.Session) {
+						helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
+						helper.WaitForErroutToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
+					})
 				})
 			})
 		})

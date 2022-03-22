@@ -40,6 +40,16 @@ func WaitForOutputToContain(substring string, timeoutInSeconds int, intervalInSe
 
 }
 
+// WaitForErroutToContain waits for the session stdout output to contain a particular substring
+func WaitForErroutToContain(substring string, timeoutInSeconds int, intervalInSeconds int, session *gexec.Session) {
+
+	Eventually(func() string {
+		contents := string(session.Err.Contents())
+		return contents
+	}, timeoutInSeconds, intervalInSeconds).Should(ContainSubstring(substring))
+
+}
+
 // WaitAndCheckForTerminatingState waits for the given interval
 // and checks if the given resource type has been deleted on the cluster or is in the terminating state
 // path is the path to the program's binary

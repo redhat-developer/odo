@@ -89,7 +89,7 @@ type DevSession struct {
 // StartDevMode starts a dev session with `odo dev`
 func StartDevMode() DevSession {
 	session := CmdRunner("odo", "dev")
-	WaitForOutputToContain("Waiting for something to change", 180, 10, session)
+	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 	return DevSession{
 		session: session,
 	}
@@ -109,6 +109,6 @@ func (o DevSession) Stop() {
 func RunDevMode(inside func(session *gexec.Session)) {
 	session := StartDevMode()
 	defer session.Stop()
-	WaitForOutputToContain("Waiting for something to change", 180, 10, session.session)
+	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session.session)
 	inside(session.session)
 }
