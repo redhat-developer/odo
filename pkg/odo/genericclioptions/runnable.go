@@ -57,6 +57,9 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else if len(debugTelemetry) != 0 {
 			klog.V(4).Infof("WARNING: telemetry in debug mode, telemetry will be logged in %s", debugTelemetry)
+			// set telemetry status to true so data is recorded and save actual telemetry status  from cfg for later retrieval
+			scontext.SetTelemetryStatus(cmd.Context(), true)
+			scontext.SetTelemetryStatusActual(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 		} else {
 			var consentTelemetry bool
 			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
@@ -115,6 +118,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 // TODO: move this function to a more suitable place, preferably pkg/segment
 func startTelemetry(cmd *cobra.Command, err error, startTime time.Time) {
 	if scontext.GetTelemetryStatus(cmd.Context()) && !strings.Contains(cmd.CommandPath(), "telemetry") {
+		// if debug telemetry is enabled, we want to set the actual telemetry status back here
+		if len(segment.GetDebugTelemetry()) > 0 {
+			scontext.SetTelemetryStatusFromActual(cmd.Context())
+		}
 		uploadData := &segment.TelemetryData{
 			Event: cmd.CommandPath(),
 			Properties: segment.TelemetryProperties{
