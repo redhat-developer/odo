@@ -107,7 +107,7 @@ var _ = Describe("odo devfile init command tests", func() {
 			})
 
 			It("should record the telemetry data correctly", func() {
-				time.Sleep(5 * time.Second)
+				time.Sleep(1 * time.Second)
 				td := helper.GetTelemetryDebugData()
 				Expect(td.Event).To(ContainSubstring("odo init"))
 				Expect(td.Properties.Success).To(BeTrue())
