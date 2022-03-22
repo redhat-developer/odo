@@ -193,7 +193,7 @@ var _ = Describe("odo dev command tests", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "delete", "component", "--name", cmpName, "-f").ShouldPass()
 					output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
+					Expect(string(output)).To(ContainSubstring("No resources found"))
 
 					Eventually(func() string {
 						return string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Err.Contents())
