@@ -5,7 +5,7 @@ sidebar_position: 3
 [//]: # (Add prerequisite section)
 
 ### Deploying your first devfile on IBM Z & Power
-Since the [DefaultDevfileRegistry](https://registry.devfile.io/viewer) doesn't support IBM Z & Power now, you will need to create a secure private DevfileRegistry first. To create a new secure private DevfileRegistry, please check the doc [secure registry](../architecture/secure-registry.md).
+Since the [DefaultDevfileRegistry](https://registry.devfile.io/viewer) doesn't support IBM Z & Power now, you will need to create a secure private DevfileRegistry first. To create a new private Devfile Registry, please check the [devfile/registry-support](https://github.com/devfile/registry-support) repository.
 
 The images can be used for devfiles on IBM Z & Power
 
