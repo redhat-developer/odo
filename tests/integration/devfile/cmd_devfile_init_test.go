@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
@@ -92,6 +94,13 @@ var _ = Describe("odo devfile init command tests", func() {
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
 				metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 				Expect(metadata.Name).To(BeEquivalentTo(compName))
+			})
+
+			It("should record the telemetry data correctly", func() {
+				td := helper.GetTelemetryDebugData()
+				Expect(td.Properties.Success).To(BeTrue())
+				Expect(td.Properties.Error).To(BeNil())
+				Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
 			})
 		})
 		When("using --devfile-path flag with a local devfile", func() {
