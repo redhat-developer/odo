@@ -319,7 +319,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 				fmt.Fprintf(out, "\n\nFile %s changed\n", file)
 			}
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-				fmt.Fprintf(out, "Pushing files...\n")
+				fmt.Fprintf(out, "Pushing files...\n\n")
 				fileInfo, err := os.Stat(parameters.Path)
 				if err != nil {
 					return fmt.Errorf("%s: file doesn't exist: %w", parameters.Path, err)

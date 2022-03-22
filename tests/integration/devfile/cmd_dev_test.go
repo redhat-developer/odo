@@ -283,7 +283,7 @@ var _ = Describe("odo dev command tests", func() {
 					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 
 					helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
-					helper.WaitForOutputToContain("devfile has been changed; please run `odo dev` again", 180, 10, session)
+					helper.WaitForOutputToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
 				})
 			})
 		})

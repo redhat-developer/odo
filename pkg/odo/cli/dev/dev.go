@@ -240,7 +240,7 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	if !reflect.DeepEqual(parameters.InitialDevfileObj, devObj) {
-		log.Warningf("\ndevfile has been changed; please run `odo dev` again\n\n")
+		log.Warningf("devfile.yaml has been changed; please restart the `odo dev` command\n\n")
 	}
 
 	platformContext := kubernetes.KubernetesContext{
