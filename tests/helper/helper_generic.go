@@ -477,7 +477,10 @@ func SetDefaultDevfileRegistryAsStaging() {
 
 // CopyAndCreate copies required source code and devfile to the given context directory, and creates a component
 func CopyAndCreate(sourcePath, devfilePath, contextDir string) {
+	workingDir := Getwd()
+	defer Chdir(workingDir)
+	Chdir(contextDir)
 	CopyExample(sourcePath, contextDir)
 	CopyExampleDevFile(devfilePath, filepath.Join(contextDir, "devfile.yaml"))
-	Cmd("odo", "create", "--context", contextDir).ShouldPass()
+	Cmd("odo", "init", "--context", contextDir).ShouldPass()
 }
