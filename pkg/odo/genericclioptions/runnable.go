@@ -53,6 +53,11 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
+			if len(debugTelemetry) != 0 {
+				// set telemetry status to true so data is recorded and save actual telemetry status  from cfg for later retrieval
+				scontext.SetTelemetryStatus(cmd.Context(), true)
+				scontext.SetTelemetryStatusActual(cmd.Context(), segment.IsTelemetryEnabled(cfg))
+			}
 		} else if disableTelemetry {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
 		} else if len(debugTelemetry) != 0 {
