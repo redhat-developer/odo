@@ -159,27 +159,7 @@ func checkConflictingFlags(cmd *cobra.Command, args []string) error {
 	project := stringFlagLookup(cmd, "project")
 	context := stringFlagLookup(cmd, "context")
 	component := stringFlagLookup(cmd, "component")
-	all, _ := strconv.ParseBool(stringFlagLookup(cmd, "all"))
-	// TODO: Move this to a method under DeleteOptions, similar to CreateOptions.checkConflictingFlags
-	if cmd.Name() == "v2delete" {
-		if cmd.HasParent() {
-			if cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component" {
-				var componentName string
-				if len(args) > 0 {
-					componentName = args[0]
-				}
-				if (context != "") && (project != "" || componentName != "") {
-					return fmt.Errorf("cannot provide --project or component name when --context is provided")
-				}
-				if project != "" && componentName == "" && app == "" {
-					return fmt.Errorf("cannot provide --project without --app and component name")
-				}
-				if all && ((componentName != "" && app != "" && project != "") || (componentName != "")) {
-					return fmt.Errorf("cannot provide --all when component name, --app and --project are provided")
-				}
-			}
-		}
-	}
+
 	if (context != "") && (app != "" || project != "" || component != "") {
 		return fmt.Errorf("cannot provide --app, --project or --component flag when --context is provided")
 	}

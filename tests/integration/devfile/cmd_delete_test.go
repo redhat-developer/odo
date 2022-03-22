@@ -229,4 +229,28 @@ ComponentSettings:
 			})
 		})
 	})
+	When("deleting a component containing preStop event that is deployed with DEV", func() {
+		var out string
+		BeforeEach(func() {
+			// Hardcoded names from devfile-with-valid-events.yaml
+			cmpName = "nodejs"
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml")).ShouldPass()
+			session := helper.CmdRunner("odo", "dev")
+			defer session.Kill()
+			helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
+			// Ensure that the pod is in running state
+			Eventually(string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Out.Contents()), 60, 3).Should(ContainSubstring(cmpName))
+			// running in verbosity since the preStop events information is only printed in v4
+			out = helper.Cmd("odo", "delete", "component", "-v", "4", "-f").ShouldPass().Out()
+		})
+		It("should contain preStop events list", func() {
+			helper.MatchAllInOutput(out, []string{
+				"Executing myprestop command",
+				"Executing secondprestop command",
+				"Executing thirdprestop command",
+			})
+		})
+	})
 })

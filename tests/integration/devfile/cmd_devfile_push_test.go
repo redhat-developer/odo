@@ -922,7 +922,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 				stdout := helper.Cmd("odo", "push").ShouldPass().Out()
 				helper.DontMatchAllInOutput(stdout, []string{"odo may not work as expected in the default project"})
-				helper.Cmd("odo", "v2delete", "-f").ShouldPass()
+				helper.Cmd("odo", "delete", "component", "-f", "--name", componentName, "--namespace", commonVar.Project).ShouldPass()
 			})
 		})
 	})
