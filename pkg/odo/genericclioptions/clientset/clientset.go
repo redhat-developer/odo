@@ -27,8 +27,6 @@ import (
 )
 
 const (
-	// CATALOG instantiates client for pkg/catalog
-	CATALOG = "DEP_CATALOG"
 	// DELETE_COMPONENT instantiates client for pkg/component/delete
 	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 	// DEPLOY instantiates client for pkg/deploy
@@ -58,17 +56,15 @@ const (
 // subdeps defines the sub-dependencies
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
-	CATALOG:          {FILESYSTEM, PREFERENCE},
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
 	DEV:              {WATCH},
-	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY, CATALOG},
+	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
-	CatalogClient    registry.Client
 	DeleteClient     _delete.Client
 	DeployClient     deploy.Client
 	DevClient        dev.Client
