@@ -154,9 +154,7 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 
 	var allEndpoints []v1alpha2.Endpoint
 	for _, c := range containers {
-		for _, e := range c.Container.Endpoints {
-			allEndpoints = append(allEndpoints, e)
-		}
+		allEndpoints = append(allEndpoints, c.Container.Endpoints...)
 	}
 
 	var endpoints []v1alpha2.Endpoint
