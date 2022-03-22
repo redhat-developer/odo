@@ -2,7 +2,6 @@ package libdevfile
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -173,20 +172,4 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 		}
 	}
 	return endpoints, nil
-}
-
-// HaveEndpointsChanged returns true if the total number of public and/or internal endpoints have changed between
-// the devfile objects
-func HaveEndpointsChanged(oldDevfile, newDevfile parser.DevfileObj) (bool, error) {
-	oldEndpoints, err := GetEndpointsFromDevfile(oldDevfile, []v1alpha2.EndpointExposure{v1alpha2.NoneEndpointExposure})
-	if err != nil {
-		return false, err
-	}
-
-	newEndpoints, err := GetEndpointsFromDevfile(newDevfile, []v1alpha2.EndpointExposure{v1alpha2.NoneEndpointExposure})
-	if err != nil {
-		return false, err
-	}
-
-	return !reflect.DeepEqual(oldEndpoints, newEndpoints), nil
 }

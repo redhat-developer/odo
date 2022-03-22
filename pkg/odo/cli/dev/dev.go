@@ -6,7 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -236,12 +239,8 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 		return nil, err
 	}
 
-	changed, err := libdevfile.HaveEndpointsChanged(parameters.InitialDevfileObj, devObj)
-	if err != nil {
-		return nil, err
-	}
-	if changed {
-		fmt.Printf("\ntotal number of endpoints in the devfile have changed; please run `odo dev` again\n\n")
+	if !reflect.DeepEqual(parameters.InitialDevfileObj, devObj) {
+		log.Warningf("\ndevfile has been changed; please run `odo dev` again\n\n")
 	}
 
 	platformContext := kubernetes.KubernetesContext{
