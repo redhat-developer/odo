@@ -215,9 +215,9 @@ test-cmd-devfile-watch: install ## Run odo devfile watch command tests
 test-cmd-devfile-app: install ## Run odo devfile app command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile app command tests" tests/integration/devfile/
 
-.PHONY: test-cmd-devfile-delete
-test-cmd-devfile-delete: install ## Run odo devfile delete command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile delete command tests" tests/integration/devfile/
+.PHONY: test-cmd-delete
+test-cmd-delete: install ## Run odo delete command tests
+	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo delete command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-registry
 test-cmd-devfile-registry: install ## Run odo devfile registry command tests
