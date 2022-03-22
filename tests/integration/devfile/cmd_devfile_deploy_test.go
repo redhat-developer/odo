@@ -49,6 +49,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		When("running odo deploy", func() {
 			var stdout string
 			BeforeEach(func() {
+				helper.CreateTelemetryDebugFile()
 				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -63,6 +64,10 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					out := commonVar.CliRunner.Run("get", "deployment", deploymentName, "-n", commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
 					Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
 				})
+			})
+			It("should successfully record telemetery information correctly", func() {
+				td := helper.GetTelemetryDebugData()
+				Expect(td.Event).To(ContainSubstring("odo deploy"))
 			})
 
 			When("deleting previous deployment and switching kubeconfig to another namespace", func() {

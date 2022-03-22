@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"fmt"
 	_ "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -24,5 +25,7 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	data, err := ioutil.ReadFile(telemetryFile)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(json.Unmarshal(data, &td)).NotTo(HaveOccurred())
+	//todo remove
+	fmt.Printf("tele data : \n%#v\n", td)
 	return td
 }
