@@ -61,6 +61,20 @@ var _ = Describe("odo dev command tests", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 		})
+		It("should record telemetry info correctly", func() {
+			helper.CreateTelemetryDebugFile()
+			helper.RunDevMode(func(session *gexec.Session) {
+				td := helper.GetTelemetryDebugData()
+				Expect(td.Event).To(ContainSubstring("odo dev"))
+				Expect(td.Properties.Success).To(BeTrue())
+				Expect(td.Properties.Error == "").To(BeTrue())
+				Expect(td.Properties.ErrorType == "").To(BeTrue())
+				//Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
+				//Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
+				//Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
+				//Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
+			})
+		})
 		It("should use the index information from previous push operation", func() {
 			// Create a new file A
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
@@ -288,6 +302,14 @@ var _ = Describe("odo dev command tests", func() {
 						helper.WaitForErroutToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
 					})
 					Expect(err).ToNot(HaveOccurred())
+				})
+			})
+		})
+					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
+					Expect(string(output)).To(ContainSubstring("No resources found"))
+
+					output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
+					Expect(string(output)).To(ContainSubstring(cmpName))
 				})
 			})
 		})

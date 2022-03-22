@@ -199,6 +199,10 @@ test-cmd-devfile-init: install ## Run odo init devfile command tests
 test-cmd-devfile-deploy: install ## Run odo deploy devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile deploy command tests" tests/integration/devfile/
 
+.PHONY: test-cmd-devfile-dev
+test-cmd-devfile-dev: install ## Run odo deploy devfile command tests
+	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo dev command tests" tests/integration/devfile/
+
 .PHONY: test-cmd-devfile-push
 test-cmd-devfile-push: install ## Run odo push devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile push command tests" tests/integration/devfile/
