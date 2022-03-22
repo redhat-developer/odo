@@ -13,85 +13,25 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
 	urlpkg "github.com/redhat-developer/odo/pkg/url"
-	"github.com/redhat-developer/odo/pkg/util"
-
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
-const componentRandomNamePartsMaxLen = 12
-const componentNameMaxRetries = 3
-const componentNameMaxLen = -1
 const NotAvailable = "Not available"
-const apiVersion = "odo.dev/v1alpha1"
-
-// GetComponentDir returns source repo name
-// Parameters:
-//		path: source path
-// Returns: directory name
-func GetComponentDir(path string) (string, error) {
-	retVal := ""
-	if path != "" {
-		retVal = filepath.Base(path)
-	} else {
-		currDir, err := os.Getwd()
-		if err != nil {
-			return "", fmt.Errorf("unable to generate a random name as getting current directory failed: %w", err)
-		}
-		retVal = filepath.Base(currDir)
-	}
-	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
-	return retVal, nil
-}
-
-// GetDefaultComponentName generates a unique component name
-// Parameters: desired default component name(w/o prefix) and slice of existing component names
-// Returns: Unique component name and error if any
-func GetDefaultComponentName(cfg preference.Client, componentPath string, componentType string, existingComponentList ComponentList) (string, error) {
-	var prefix string
-	var err error
-
-	// Get component names from component list
-	var existingComponentNames []string
-	for _, component := range existingComponentList.Items {
-		existingComponentNames = append(existingComponentNames, component.Name)
-	}
-
-	// Create a random generated name for the component to use within Kubernetes
-	prefix, err = GetComponentDir(componentPath)
-	if err != nil {
-		return "", fmt.Errorf("unable to generate random component name: %w", err)
-	}
-	prefix = util.TruncateString(prefix, componentRandomNamePartsMaxLen)
-
-	// Generate unique name for the component using prefix and unique random suffix
-	componentName, err := dfutil.GetRandomName(
-		fmt.Sprintf("%s-%s", componentType, prefix),
-		componentNameMaxLen,
-		existingComponentNames,
-		componentNameMaxRetries,
-	)
-	if err != nil {
-		return "", fmt.Errorf("unable to generate random component name: %w", err)
-	}
-
-	return util.GetDNS1123Name(componentName), nil
-}
 
 // ApplyConfig applies the component config onto component deployment
 // Parameters:
@@ -160,34 +100,6 @@ func List(client kclient.ClientInterface, applicationSelector string) (Component
 	return newComponentList(devfileList.Items), nil
 }
 
-// GetComponentFromDevfile extracts component's metadata from the specified env info if it exists
-func GetComponentFromDevfile(info *envinfo.EnvSpecificInfo) (Component, parser.DevfileObj, error) {
-	if info.Exists() {
-		devfile, err := parser.Parse(info.GetDevfilePath())
-		if err != nil {
-			return Component{}, parser.DevfileObj{}, err
-		}
-		component, err := getComponentFrom(info, GetComponentTypeFromDevfileMetadata(devfile.Data.GetMetadata()))
-		if err != nil {
-			return Component{}, parser.DevfileObj{}, err
-		}
-		components, err := devfile.Data.GetComponents(parsercommon.DevfileOptions{})
-		if err != nil {
-			return Component{}, parser.DevfileObj{}, err
-		}
-		for _, cmp := range components {
-			if cmp.Container != nil {
-				for _, env := range cmp.Container.Env {
-					component.Spec.Env = append(component.Spec.Env, corev1.EnvVar{Name: env.Name, Value: env.Value})
-				}
-			}
-		}
-
-		return component, devfile, nil
-	}
-	return Component{}, parser.DevfileObj{}, nil
-}
-
 // GetComponentTypeFromDevfileMetadata returns component type from the devfile metadata;
 // it could either be projectType or language, if neither of them are set, return 'Not available'
 func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
@@ -222,34 +134,6 @@ func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
 		language = NotAvailable
 	}
 	return language
-}
-
-func getComponentFrom(info localConfigProvider.LocalConfigProvider, componentType string) (Component, error) {
-	if info.Exists() {
-
-		component := newComponentWithType(info.GetName(), componentType)
-
-		component.Namespace = info.GetNamespace()
-
-		component.Spec = ComponentSpec{
-			App:   info.GetApplication(),
-			Type:  componentType,
-			Ports: []string{fmt.Sprintf("%d", info.GetDebugPort())},
-		}
-
-		urls, err := info.ListURLs()
-		if err != nil {
-			return Component{}, err
-		}
-		if len(urls) > 0 {
-			for _, url := range urls {
-				component.Spec.URL = append(component.Spec.URL, url.Name)
-			}
-		}
-
-		return component, nil
-	}
-	return Component{}, nil
 }
 
 func ListDevfileStacksInPath(client kclient.ClientInterface, paths []string) ([]Component, error) {
@@ -322,18 +206,6 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 		return true, nil
 	}
 	return false, nil
-}
-
-func GetComponentState(client kclient.ClientInterface, componentName, applicationName string) string {
-	// Check to see if the deployment has been pushed or not
-	c, err := GetPushedComponent(client, componentName, applicationName)
-	if err != nil {
-		return StateTypeUnknown
-	}
-	if c != nil {
-		return StateTypePushed
-	}
-	return StateTypeNotPushed
 }
 
 // GetComponent provides component definition

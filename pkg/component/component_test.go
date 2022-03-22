@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
@@ -12,134 +11,15 @@ import (
 	v1 "k8s.io/api/apps/v1"
 
 	"github.com/devfile/library/pkg/util"
-	"github.com/golang/mock/gomock"
 	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
 )
-
-func TestGetComponentFrom(t *testing.T) {
-	type cmpSetting struct {
-		componentName   string
-		project         string
-		applicationName string
-		debugPort       int
-	}
-	tests := []struct {
-		name          string
-		isEnvInfo     bool
-		componentType string
-		envURL        []localConfigProvider.LocalURL
-		cmpSetting    cmpSetting
-		want          Component
-		wantErr       bool
-	}{
-		{
-			name:          "Case 1: Get component when env info file exists",
-			isEnvInfo:     true,
-			componentType: "nodejs",
-			envURL: []localConfigProvider.LocalURL{
-				{
-					Name: "url1",
-				},
-			},
-			cmpSetting: cmpSetting{
-				componentName:   "frontend",
-				project:         "project1",
-				applicationName: "testing",
-				debugPort:       1234,
-			},
-			want: Component{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Component",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "frontend",
-				},
-				Spec: ComponentSpec{
-					Type: "nodejs",
-				},
-				Status: ComponentStatus{},
-			},
-		},
-
-		{
-			name:          "Case 2: Get component when env info file does not exists",
-			isEnvInfo:     false,
-			componentType: "nodejs",
-			envURL: []localConfigProvider.LocalURL{
-				{
-					Name: "url2",
-				},
-			},
-			cmpSetting: cmpSetting{
-				componentName:   "backend",
-				project:         "project2",
-				applicationName: "app1",
-				debugPort:       5896,
-			},
-			want: Component{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mockLocalConfigProvider := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-
-			mockLocalConfigProvider.EXPECT().Exists().Return(tt.isEnvInfo)
-
-			if tt.isEnvInfo {
-				mockLocalConfigProvider.EXPECT().GetName().Return(tt.cmpSetting.componentName)
-
-				component := newComponentWithType(tt.cmpSetting.componentName, tt.componentType)
-
-				mockLocalConfigProvider.EXPECT().GetNamespace().Return(tt.cmpSetting.project)
-
-				component.Namespace = tt.cmpSetting.project
-				mockLocalConfigProvider.EXPECT().GetApplication().Return(tt.cmpSetting.applicationName)
-				mockLocalConfigProvider.EXPECT().GetDebugPort().Return(tt.cmpSetting.debugPort)
-
-				component.Spec = ComponentSpec{
-					App:   tt.cmpSetting.applicationName,
-					Type:  tt.componentType,
-					Ports: []string{fmt.Sprintf("%d", tt.cmpSetting.debugPort)},
-				}
-
-				mockLocalConfigProvider.EXPECT().ListURLs().Return(tt.envURL, nil)
-
-				if len(tt.envURL) > 0 {
-					for _, url := range tt.envURL {
-						component.Spec.URL = append(component.Spec.URL, url.Name)
-					}
-				}
-
-				tt.want = component
-
-			}
-
-			got, err := getComponentFrom(mockLocalConfigProvider, tt.componentType)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getComponentFrom() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getComponentFrom() = %v, want %v", got, tt.want)
-			}
-
-		})
-	}
-}
 
 func TestList(t *testing.T) {
 	deploymentList := v1.DeploymentList{Items: []v1.Deployment{
@@ -226,90 +106,6 @@ func TestList(t *testing.T) {
 			if !reflect.DeepEqual(tt.output, results) {
 				t.Errorf("Unexpected output, see the diff in results: %s", pretty.Compare(tt.output, results))
 				t.Errorf("expected output:\n%#v\n\ngot:\n%#v", tt.output, results)
-			}
-		})
-	}
-}
-
-func TestGetDefaultComponentName(t *testing.T) {
-	tests := []struct {
-		testName           string
-		componentType      string
-		componentPath      string
-		existingComponents ComponentList
-		wantErr            bool
-		wantRE             string
-		needPrefix         bool
-	}{
-		{
-			testName:           "Case: App prefix configured",
-			componentType:      "nodejs",
-			componentPath:      "./testing",
-			existingComponents: ComponentList{},
-			wantErr:            false,
-			wantRE:             "nodejs-testing-*",
-			needPrefix:         true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			cfg := preference.NewMockClient(ctrl)
-
-			name, err := GetDefaultComponentName(cfg, tt.componentPath, tt.componentType, tt.existingComponents)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
-			}
-
-			r, _ := regexp.Compile(tt.wantRE)
-			match := r.MatchString(name)
-			if !match {
-				t.Errorf("randomly generated application name %s does not match regexp %s", name, tt.wantRE)
-			}
-		})
-	}
-}
-
-func TestGetComponentDir(t *testing.T) {
-	type args struct {
-		path string
-	}
-	tests := []struct {
-		testName string
-		args     args
-		want     string
-		wantErr  bool
-	}{
-		{
-			testName: "Case: Source Path",
-			args: args{
-				path: "./testing",
-			},
-			wantErr: false,
-			want:    "testing",
-		},
-		{
-			testName: "Case: No clue of any component",
-			args: args{
-				path: "",
-			},
-			wantErr: false,
-			want:    "component",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Log("Running test: ", tt.testName)
-		t.Run(tt.testName, func(t *testing.T) {
-			name, err := GetComponentDir(tt.args.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
-			}
-
-			if name != tt.want {
-				t.Errorf("received name %s which does not match %s", name, tt.want)
 			}
 		})
 	}
