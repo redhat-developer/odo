@@ -12,6 +12,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -296,10 +297,9 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 		}
 		if showWaitingMessage {
 			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
-				fmt.Fprintf(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal\n")
+				log.Finfof(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal.")
 			}
-			// TODO: append "and clean up resources from cluster." to the message, once cleanup is implemented
-			fmt.Fprintf(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit.\n", parameters.Path)
+			log.Finfof(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit.", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.

@@ -4,17 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
@@ -384,16 +387,28 @@ func isLinkResource(kind string) bool {
 // createOperatorService creates the given operator on the cluster
 // it returns the CR,Kind and errors
 func createOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) error {
+
+	// Check resource
+	checkSpinner := log.Spinner("Searching resource in cluster")
+	defer checkSpinner.End(false)
+
 	gvr, err := client.GetRestMappingFromUnstructured(u)
 	if err != nil {
 		return err
 	}
 
-	// create the service on cluster
+	checkSpinner.End(true)
+
+	// Create the service on cluster
+	createSpinner := log.Spinnerf("Creating kind %s", u.GetKind())
+	defer createSpinner.End(false)
+
 	err = client.CreateDynamicResource(u, gvr)
 	if err != nil {
 		return err
 	}
+
+	createSpinner.End(true)
 	return err
 }
 

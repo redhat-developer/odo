@@ -10,11 +10,14 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	"github.com/redhat-developer/odo/pkg/version"
+
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -112,9 +115,24 @@ func (o *DeployOptions) Validate() error {
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run() error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
+	devfileName := devfileObj.GetMetadataName()
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
-	return o.clientset.DeployClient.Deploy(devfileObj, path, appName)
+	namespace := o.GetProject()
+
+	// Output what the command is doing / information
+	log.Title("Deploying the application using "+devfileName+" Devfile",
+		"Namespace: "+namespace,
+		"odo version: "+version.VERSION)
+
+	// Run actual deploy command to be used
+	err := o.clientset.DeployClient.Deploy(devfileObj, path, appName)
+
+	if err == nil {
+		log.Info("\nYour Devfile has been successfully deployed")
+	}
+
+	return err
 }
 
 // NewCmdDeploy implements the odo command
