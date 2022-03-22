@@ -12,7 +12,15 @@ import (
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/tests/helper"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"time"
 )
 
 var _ = Describe("odo devfile init command tests", func() {
@@ -87,6 +95,8 @@ var _ = Describe("odo devfile init command tests", func() {
 			compName := "aname"
 			BeforeEach(func() {
 				helper.Cmd("odo", "init", "--name", compName, "--devfile", "go").ShouldPass().Out()
+				helper.CreateTelemetryDebugFile()
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass().Out()
 			})
 
 			It("should download a devfile.yaml file and correctly set the component name in it", func() {
@@ -97,9 +107,10 @@ var _ = Describe("odo devfile init command tests", func() {
 			})
 
 			It("should record the telemetry data correctly", func() {
+				time.Sleep(5 * time.Second)
 				td := helper.GetTelemetryDebugData()
 				Expect(td.Properties.Success).To(BeTrue())
-				Expect(td.Properties.Error).To(BeNil())
+				Expect(td.Properties.Error == "").To(BeTrue())
 				Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
 			})
 		})
