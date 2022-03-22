@@ -64,7 +64,7 @@ func NewCmdLogout(name, fullName string) *cobra.Command {
 	}
 
 	// Add a defined annotation in order to appear in the help menu
-	logoutCmd.Annotations = map[string]string{"command": "cluster"}
+	logoutCmd.Annotations = map[string]string{"command": "openshift"}
 	logoutCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return logoutCmd

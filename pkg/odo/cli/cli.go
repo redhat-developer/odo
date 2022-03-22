@@ -42,13 +42,13 @@ var (
  /  \__/    Find more information at https://odo.dev
  \__/`
 
-	odoExample = ktemplates.Examples(`Initialize and take your pick from multiple languages or frameworks:
+	odoExample = ktemplates.Examples(`Initializing your component by taking your pick from multiple languages or frameworks:
   %[1]s init
 
-	After creating your initial application, start development with:
+	After creating your initial component, start development with:
   %[1]s dev
 
-	Want to deploy to production? See it live with:
+	Want to deploy after development? See it live with:
   %[1]s deploy
 
 	`)
@@ -66,7 +66,7 @@ Examples:
 Main Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
 
-OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "cluster"}}
+OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "openshift"}}
   {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}{{end}}
 
 Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}
