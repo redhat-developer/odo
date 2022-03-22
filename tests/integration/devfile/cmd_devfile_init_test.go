@@ -109,9 +109,14 @@ var _ = Describe("odo devfile init command tests", func() {
 			It("should record the telemetry data correctly", func() {
 				time.Sleep(5 * time.Second)
 				td := helper.GetTelemetryDebugData()
+				Expect(td.Event).To(ContainSubstring("odo init"))
 				Expect(td.Properties.Success).To(BeTrue())
 				Expect(td.Properties.Error == "").To(BeTrue())
+				Expect(td.Properties.ErrorType == "").To(BeTrue())
 				Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
+				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
+				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
+				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
 			})
 		})
 		When("using --devfile-path flag with a local devfile", func() {
