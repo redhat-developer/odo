@@ -259,10 +259,6 @@ var _ = Describe("odo devfile create command tests", func() {
 			devfilePath = filepath.Join(commonVar.Context, devfile)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), devfilePath)
 		})
-		AfterEach(func() {
-			// We are assuming that the current directory is same as the context directory
-			helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
-		})
 		It("should successfully create the devfile component", func() {
 			helper.Cmd("odo", "create", "nodejs").ShouldPass()
 		})

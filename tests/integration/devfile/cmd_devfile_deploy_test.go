@@ -45,10 +45,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 		})
-		AfterEach(func() {
-			// assuming we are inside the context directory since `odo deploy` cannot be run outside a context directory
-			helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
-		})
 
 		When("running odo deploy", func() {
 			var stdout string
@@ -101,10 +97,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-two-deploy-commands.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
-		})
-		AfterEach(func() {
-			// assuming we are inside the context directory since `odo deploy` cannot be run outside a context directory
-			helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
 		})
 		It("should run odo deploy", func() {
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
