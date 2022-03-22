@@ -44,6 +44,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	startTime := time.Now()
 	cfg, _ := preference.NewClient()
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
+	debugTelemetry := segment.GetDebugTelemetry()
 
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
@@ -54,6 +55,8 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
 		} else if disableTelemetry {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
+		} else if len(debugTelemetry) != 0 {
+			klog.V(4).Infof("WARNING: telemetry in debug mode, telemetry will be logged in %s", debugTelemetry)
 		} else {
 			var consentTelemetry bool
 			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
