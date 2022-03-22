@@ -38,14 +38,14 @@ func (o *TelemetryOptions) Validate() (err error) {
 }
 
 func (o *TelemetryOptions) Run() (err error) {
-	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
-		return nil
-	}
-
 	dt := segment.GetDebugTelemetry()
 	if len(dt) > 0 {
 		klog.V(4).Infof("WARNING: telemetry debug enabled, data logged to file %s", dt)
-		return util.WriteToFile(o.telemetryData, dt)
+		return util.WriteToJSONFile(o.telemetryData, dt)
+	}
+
+	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
+		return nil
 	}
 
 	segmentClient, err := segment.NewClient(o.clientset.PreferenceClient)
