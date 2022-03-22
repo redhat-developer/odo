@@ -1,10 +1,14 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	ccomponent "github.com/redhat-developer/odo/pkg/component"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/spf13/cobra"
@@ -34,7 +38,8 @@ type DeployOptions struct {
 	clientset *clientset.Clientset
 
 	// working directory
-	contextDir string
+	contextDir     string
+	commandContext context.Context
 }
 
 var deployExample = templates.Examples(`
@@ -57,7 +62,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	if err != nil {
 		return err
 	}
-
+	o.commandContext = cmdline.Context()
 	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
@@ -68,6 +73,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 
 	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
 		func(interactiveMode bool) {
+			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
 				fmt.Println("The current directory already contains source code. " +
 					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
@@ -121,6 +127,10 @@ func (o *DeployOptions) Validate() error {
 func (o *DeployOptions) Run() error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	devfileName := devfileObj.GetMetadataName()
+	scontext.SetComponentType(o.commandContext, ccomponent.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(o.commandContext, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(o.commandContext, devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(o.commandContext, devfileName)
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
 	namespace := o.GetProject()
