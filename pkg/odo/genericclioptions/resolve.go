@@ -28,7 +28,7 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := o.KClient.GetNamespaceNormal(projectFlag)
 
-		// do not error out the user is running `odo project`
+		// do not error out when the user is running `odo project`
 		if err != nil {
 			if cmdline.GetParentName() != "project" {
 				return err
