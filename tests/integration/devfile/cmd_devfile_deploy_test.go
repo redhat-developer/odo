@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"path"
 	"path/filepath"
 
@@ -68,6 +69,12 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			It("should successfully record telemetery information correctly", func() {
 				td := helper.GetTelemetryDebugData()
 				Expect(td.Event).To(ContainSubstring("odo deploy"))
+				Expect(td.Properties.Success).To(BeTrue())
+				Expect(td.Properties.Error == "").To(BeTrue())
+				Expect(td.Properties.ErrorType == "").To(BeTrue())
+				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
+				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 			})
 
 			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
@@ -75,7 +82,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "delete", "component", "--name", cmpName, "-f").ShouldPass()
 					output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
+					Expect(string(output)).To(ContainSubstring("No resources found"))
 
 					otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				})
@@ -88,7 +95,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 
 					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
+					Expect(string(output)).To(ContainSubstring("No resources found"))
 
 					output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
 					Expect(string(output)).To(ContainSubstring(deploymentName))
