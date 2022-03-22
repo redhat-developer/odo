@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"os"
 	"path/filepath"
 	"sort"
@@ -63,18 +64,16 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		It("should record telemetry info correctly", func() {
 			helper.CreateTelemetryDebugFile()
-			helper.RunDevMode(func(session *gexec.Session) {
-				session.Kill()
-			})
+			helper.StartDevMode().Stop()
 			td := helper.GetTelemetryDebugData()
 			Expect(td.Event).To(ContainSubstring("odo dev"))
-			Expect(td.Properties.Success).To(BeTrue())
-			Expect(td.Properties.Error == "").To(BeTrue())
-			Expect(td.Properties.ErrorType == "").To(BeTrue())
+			Expect(td.Properties.Success).To(BeFalse())
+			Expect(td.Properties.Error).To(ContainSubstring("interrupt"))
+			Expect(td.Properties.ErrorType == "*errors.errorString").To(BeTrue())
 			//Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
-			//Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
-			//Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
-			//Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
+			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
+			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 		})
 		It("should use the index information from previous push operation", func() {
 			// Create a new file A

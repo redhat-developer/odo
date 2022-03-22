@@ -307,3 +307,7 @@ func sanitizeExec(errString string) string {
 func GetDebugTelemetry() string {
 	return os.Getenv(DebugTelemetryFileEnv)
 }
+
+func SetDebugTelemetry(value string) error {
+	return os.Setenv(DebugTelemetryFileEnv, value)
+}
