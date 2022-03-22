@@ -26,7 +26,7 @@ If you want to download a devfile from a registry, you must specify the devfile 
 
 If you prefer to download a devfile from an URL or from the local filesystem, you can use the `--devfile-path` instead.
 
-The `--starter` flag indicates the name of the starter project (as referenced in the selected devfile), that you want to use to start your development. To see the available starter projects for devfile stacks in official devfile registry use it's  [web interface](https://registry.devfile.io/viewer) to view its content.  
+The `--starter` flag indicates the name of the starter project (as referenced in the selected devfile), that you want to use to start your development. To see the available starter projects for devfile stacks in the official devfile registry use its [web interface](https://registry.devfile.io/viewer) to view its content.  
 
 The required `--name` flag indicates how the component initialized by this command should be named.
 
