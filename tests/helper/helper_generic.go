@@ -457,30 +457,8 @@ type ResourceInfo struct {
 	Namespace    string
 }
 
-func VerifyResourcesDeleted(runner CliRunner, resources []ResourceInfo) {
-	for _, item := range resources {
-		runner.VerifyResourceDeleted(item)
-	}
-}
-
-func VerifyResourcesToBeDeleted(runner CliRunner, resources []ResourceInfo) {
-	for _, item := range resources {
-		runner.VerifyResourceToBeDeleted(item)
-	}
-}
-
 func SetDefaultDevfileRegistryAsStaging() {
 	const registryName string = "DefaultDevfileRegistry"
 	const addRegistryURL string = "https://registry.stage.devfile.io"
 	Cmd("odo", "preference", "registry", "update", registryName, addRegistryURL, "-f").ShouldPass()
-}
-
-// CopyAndCreate copies required source code and devfile to the given context directory, and creates a component
-func CopyAndCreate(sourcePath, devfilePath, contextDir string) {
-	workingDir := Getwd()
-	defer Chdir(workingDir)
-	Chdir(contextDir)
-	CopyExample(sourcePath, contextDir)
-	CopyExampleDevFile(devfilePath, filepath.Join(contextDir, "devfile.yaml"))
-	Cmd("odo", "init", "--context", contextDir).ShouldPass()
 }

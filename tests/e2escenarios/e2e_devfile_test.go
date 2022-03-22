@@ -37,7 +37,10 @@ var _ = Describe("odo devfile supported tests", func() {
 	})
 
 	createStarterProjAndSetDebug := func(component, starter, debugLocalPort string) {
-		helper.Cmd("odo", "create", component, "--starter", starter, "--project", commonVar.Project, componentName, "--context", projectDirPath).ShouldPass()
+		workingDir := helper.Getwd()
+		defer helper.Chdir(workingDir)
+		helper.Chdir(projectDirPath)
+		helper.Cmd("odo", "init", "--name", componentName, "--devfile", component, "--starter", starter).ShouldPass()
 		helper.Cmd("odo", "push", "--context", projectDirPath).ShouldPass()
 		helper.Cmd("odo", "push", "--debug", "--context", projectDirPath).ShouldPass()
 

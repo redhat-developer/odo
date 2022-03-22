@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 
-	//We continued iterating on bracket pair guides. Horizontal lines now outline the scope of a bracket pair. Also, vertical lines now depend on the indentation of the code that is surrounded by the bracket pair.. "github.com/onsi/gomega"
+	// We continued iterating on bracket pair guides. Horizontal lines now outline the scope of a bracket pair. Also, vertical lines now depend on the indentation of the code that is surrounded by the bracket pair.. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -25,8 +25,9 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 
 	When("Creating a nodejs component and replace devfile.yaml to .devfile.yaml", func() {
 		var _ = BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, cmpName, commonVar.Project)
 			helper.Cmd("mv", "devfile.yaml", ".devfile.yaml").ShouldPass()
 		})
 

@@ -35,7 +35,7 @@ var _ = Describe("odo devfile push command tests", func() {
 	When("creating a nodejs component", func() {
 		output := ""
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 		When("setting git config and running odo push", func() {
@@ -678,15 +678,9 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-	Context("pushing devfile without an .odo folder", func() {
-		It("should error out on odo push and passing invalid devfile", func() {
-			helper.Cmd("odo", "push", "--project", commonVar.Project, "--devfile", "invalid.yaml").ShouldFail()
-		})
-	})
-
 	When("Create and push java-springboot component", func() {
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass()
 		})
@@ -719,7 +713,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			output := ""
 			When("java-springboot application is created and pushed", func() {
 				BeforeEach(func() {
-					helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
+					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
 					helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 
 					fmt.Fprintf(GinkgoWriter, "Testing with force push %v", shouldForcePush)
@@ -811,7 +805,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			var output string
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				output = helper.Cmd("odo", "push", "--project", commonVar.Project).ShouldPass().Out()
 			})
@@ -861,7 +855,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	When("creating nodejs component, doing odo push and run command has dev.odo.push.path attribute", func() {
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", cmpName, "--context", commonVar.Context, "--project", commonVar.Project, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-remote-attributes.yaml")).ShouldPass()
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
@@ -893,10 +887,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 		})
 		When("project with with 'default' name is used", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "project", "set", "default").ShouldPass()
+			})
 			It("should throw an error", func() {
 				componentName := helper.RandString(6)
-				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.Cmd("odo", "create", "--project", "default", componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
@@ -913,17 +909,18 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 		})
 		When("project with with 'default' name is used", func() {
-
+			BeforeEach(func() {
+				helper.Cmd("odo", "project", "set", "default").ShouldPass()
+			})
 			It("should push successfully", func() {
 				componentName := helper.RandString(6)
-				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.Cmd("odo", "create", "--project", "default", componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
 				stdout := helper.Cmd("odo", "push").ShouldPass().Out()
 				helper.DontMatchAllInOutput(stdout, []string{"odo may not work as expected in the default project"})
-				helper.Cmd("odo", "delete", "component", "-f", "--name", componentName, "--namespace", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
 			})
 		})
 	})

@@ -185,13 +185,13 @@ var _ = Describe("odo devfile init command tests", func() {
 	})
 
 	It("should successfully run odo init for devfile with starter project from the specified branch", func() {
-		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath(filepath.Join("source", "devfiles", "nodejs", "devfile-with-branch.yaml")), "--starter", "nodejs-starter").ShouldPass()
+		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-branch.yaml"), "--starter", "nodejs-starter").ShouldPass()
 		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "test"}
 		Expect(helper.VerifyFilesExist(commonVar.Context, expectedFiles)).To(Equal(true))
 	})
 
 	It("should successfully run odo init for devfile with starter project from the specified tag", func() {
-		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath(filepath.Join("source", "devfiles", "nodejs", "devfile-with-tag.yaml")), "--starter", "nodejs-starter").ShouldPass()
+		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-tag.yaml"), "--starter", "nodejs-starter").ShouldPass()
 		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "app"}
 		Expect(helper.VerifyFilesExist(commonVar.Context, expectedFiles)).To(Equal(true))
 	})

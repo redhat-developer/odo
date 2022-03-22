@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/tidwall/gjson"
+
+	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,8 +49,9 @@ var _ = Describe("odo devfile url command tests", func() {
 		var stdout string
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, componentName, commonVar.Project)
 		})
 
 		It("should not allow creating an invalid host", func() {
@@ -249,8 +251,9 @@ var _ = Describe("odo devfile url command tests", func() {
 	When("creating a java-springboot component", func() {
 		var stdout string
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, componentName, commonVar.Project)
 		})
 
 		XWhen("create URLs under different container names with same port number", func() {
@@ -267,9 +270,11 @@ var _ = Describe("odo devfile url command tests", func() {
 	When("Creating nodejs component and url with .devfile.yaml", func() {
 		var stdout string
 		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
-			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, componentName, commonVar.Project)
+			helper.Cmd("mv", "devfile.yaml", ".devfile.yaml").ShouldPass()
+
 			stdout = helper.Cmd("odo", "url", "create", url1, "--port", url1Port, "--host", host, "--container", "runtime", "--ingress").ShouldPass().Out()
 		})
 
@@ -299,8 +304,9 @@ var _ = Describe("odo devfile url command tests", func() {
 			ingressurl := helper.RandString(5)
 
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				helper.CreateLocalEnv(commonVar.Context, componentName, commonVar.Project)
 			})
 
 			It("should error out when a host is provided with a route on a openShift cluster", func() {
@@ -388,8 +394,8 @@ var _ = Describe("odo devfile url command tests", func() {
 	When("creating a python component", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "python"), commonVar.Context)
-			helper.Chdir(commonVar.Context)
-			helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "python", "devfile-registry.yaml")).ShouldPass()
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "python", "devfile-registry.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, componentName, commonVar.Project)
 		})
 
 		When("creating a url and doing odo push", func() {
@@ -416,8 +422,9 @@ var _ = Describe("odo devfile url command tests", func() {
 
 		When("creating a nodejs component", func() {
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "--project", commonVar.Project, componentName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				helper.CreateLocalEnv(commonVar.Context, componentName, commonVar.Project)
 			})
 
 			When("creating url", func() {
