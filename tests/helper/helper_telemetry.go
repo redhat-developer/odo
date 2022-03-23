@@ -11,7 +11,8 @@ import (
 func CreateTelemetryDebugFile() {
 	tempFile, err := ioutil.TempFile("", "telemetery")
 	Expect(err).NotTo(HaveOccurred())
-	tempFile.WriteString("hello")
+	_, err = tempFile.WriteString("hello")
+	Expect(err).NotTo(HaveOccurred())
 	Expect(segment.SetDebugTelemetry(tempFile.Name())).NotTo(HaveOccurred())
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
 }
