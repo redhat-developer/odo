@@ -9,7 +9,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/watch"
 	"k8s.io/klog/v2"
 )
@@ -18,14 +17,12 @@ import (
 var _ Client = (*DevClient)(nil)
 
 type DevClient struct {
-	watchClient      watch.Client
-	kubernetesClient kclient.ClientInterface
+	watchClient watch.Client
 }
 
-func NewDevClient(watchClient watch.Client, kubernetesClient kclient.ClientInterface) *DevClient {
+func NewDevClient(watchClient watch.Client) *DevClient {
 	return &DevClient{
-		watchClient:      watchClient,
-		kubernetesClient: kubernetesClient,
+		watchClient: watchClient,
 	}
 }
 
