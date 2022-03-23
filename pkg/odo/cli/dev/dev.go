@@ -90,8 +90,8 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
 			}
 		},
-		func(devfileObj parser.DevfileObj) error {
-			return devfileObj.WriteYamlDevfile()
+		func(newDevfileObj parser.DevfileObj) error {
+			return newDevfileObj.WriteYamlDevfile()
 		})
 	if err != nil {
 		return err

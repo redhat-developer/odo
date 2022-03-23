@@ -261,7 +261,7 @@ func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, context
 }
 
 func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
-	preInitHandlerFunc func(interactiveMode bool), postInitHandlerFunc func(devfileObj parser.DevfileObj) error) error {
+	preInitHandlerFunc func(interactiveMode bool), newDevfileHandlerFunc func(newDevfileObj parser.DevfileObj) error) error {
 
 	containsDevfile, err := location.DirectoryContainsDevfile(o.fsys, contextDir)
 	if err != nil {
@@ -289,8 +289,8 @@ func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
 	metadata.Name = name
 	devfileObj.Data.SetMetadata(metadata)
 
-	if postInitHandlerFunc != nil {
-		err = postInitHandlerFunc(devfileObj)
+	if newDevfileHandlerFunc != nil {
+		err = newDevfileHandlerFunc(devfileObj)
 	}
 
 	return err
