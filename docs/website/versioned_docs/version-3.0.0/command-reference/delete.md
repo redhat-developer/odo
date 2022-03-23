@@ -13,23 +13,27 @@ There are 2 ways to delete a component:
 ```shell
 odo delete component
 ```
-odo analyzes the devfile for the devfile component and the outerloop resources.
+odo analyzes the Devfile _present in the current directory_ for the component and the outerloop resources.
 If the component has been deployed on the cluster, then odo will list all the resources and prompt the user to confirm the deletion.
 Otherwise, odo will exit with a message stating that it could not find the resources on the cluster.
 
-_Note:_ odo does not delete the Devfile, and config files.
+:::info
+odo does not delete the Devfile, the odo configuration files, or the source code.
 
 ## Delete without access to Devfile
 ```shell
 odo delete component --name <component_name> --namespace <namespace>
 ```
 
-odo builds a label from the component name to search for the component on the cluster in the given namespace, and deletes it along with all it's related resources.
-If it finds the component, then it will list all the resources and prompt the user to confirm the deletion.
-Otherwise, it will exit with a message stating that it could not find the resources on the cluster.
+odo builds a label from the component name to search for the component on the cluster in the given namespace, and deletes it along with all its related resources.
+If odo finds the component, then it will list all the resources and prompt the user to confirm the deletion.
+Otherwise, odo will exit with a message stating that it could not find the resources on the cluster.
+
+The `--namespace` is optional, if not provided, odo will use the current active namespace.
 
 
-**_Note:_** In the both the cases, odo does not wait for resources to be deleted.
+:::caution
+In the both the cases, odo does not wait for resources to be deleted.
 
 
 ## Available Flags
