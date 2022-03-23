@@ -7,8 +7,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/dev"
-
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"

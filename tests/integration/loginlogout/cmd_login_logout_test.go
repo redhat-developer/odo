@@ -34,7 +34,7 @@ var _ = Describe("odo login and logout command tests", func() {
 	Context("when running help for logout command", func() {
 		It("should display the help", func() {
 			appHelp := helper.Cmd("odo", "logout", "-h").ShouldPass().Out()
-			Expect(appHelp).To(ContainSubstring("Log out of the current OpenShift session"))
+			Expect(appHelp).To(ContainSubstring("Logout of the cluster"))
 		})
 	})
 
