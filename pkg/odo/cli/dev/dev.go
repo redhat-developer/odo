@@ -12,22 +12,29 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+
+	ccomponent "github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/log"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
 
 	dfutil "github.com/devfile/library/pkg/util"
-	ccomponent "github.com/redhat-developer/odo/pkg/component"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -86,11 +93,12 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
-	o.commandContext = cmdline.Context()
+
 	o.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
 	}
+	o.commandContext = cmdline.Context()
 
 	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
 	if err != nil {
@@ -229,9 +237,7 @@ func (o *DevOptions) Run() error {
 	scontext.SetLanguage(o.commandContext, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(o.commandContext, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(o.commandContext, devFileObj.GetMetadataName())
-
-	fmt.Fprintf(o.out, "Starting your application on cluster in developer mode\n")
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, os.Stdout, &d)
+	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, log.GetStdout(), &d)
 	return err
 }
 

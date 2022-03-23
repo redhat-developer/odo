@@ -22,7 +22,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/version"
-
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -127,14 +126,13 @@ func (o *DeployOptions) Validate() error {
 func (o *DeployOptions) Run() error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	devfileName := devfileObj.GetMetadataName()
+	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
+	appName := o.GetApplication()
+	namespace := o.GetProject()
 	scontext.SetComponentType(o.commandContext, ccomponent.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(o.commandContext, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(o.commandContext, devfileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(o.commandContext, devfileName)
-	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
-	appName := o.GetApplication()
-	namespace := o.GetProject()
-
 	// Output what the command is doing / information
 	log.Title("Deploying the application using "+devfileName+" Devfile",
 		"Namespace: "+namespace,
