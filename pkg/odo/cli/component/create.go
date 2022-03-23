@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	odoDevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -22,6 +21,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
+	"github.com/redhat-developer/odo/pkg/registry"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -66,7 +66,7 @@ type DevfileMetadata struct {
 	componentName      string
 	componentNamespace string
 	devfileLink        string
-	devfileRegistry    catalog.Registry
+	devfileRegistry    registry.Registry
 	devfilePath        devfilePath
 	userCreatedDevfile bool
 	starter            string

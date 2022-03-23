@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/init/asker"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -20,13 +20,13 @@ func GetTestProjectPath(folder string) string {
 	return filepath.Join(basepath, "..", "..", "..", "tests/examples/source/", folder)
 }
 
-var types = []catalog.DevfileComponentType{
+var types = []registry.DevfileStack{
 	{
 		Name:        "java-maven",
 		Language:    "java",
 		ProjectType: "maven",
 		Tags:        []string{"Java", "Maven"},
-		Registry: catalog.Registry{
+		Registry: registry.Registry{
 			Name: "registry1",
 		},
 	},
@@ -35,7 +35,7 @@ var types = []catalog.DevfileComponentType{
 		Language:    "java",
 		ProjectType: "quarkus",
 		Tags:        []string{"Java", "Quarkus"},
-		Registry: catalog.Registry{
+		Registry: registry.Registry{
 			Name: "registry1",
 		},
 	},
@@ -44,7 +44,7 @@ var types = []catalog.DevfileComponentType{
 		Language:    "java",
 		ProjectType: "wildfly",
 		Tags:        []string{"Java", "WildFly"},
-		Registry: catalog.Registry{
+		Registry: registry.Registry{
 			Name: "registry2",
 		},
 	},
@@ -53,7 +53,7 @@ var types = []catalog.DevfileComponentType{
 		Language:    "javascript",
 		ProjectType: "nodejs",
 		Tags:        []string{"NodeJS", "Express", "ubi8"},
-		Registry: catalog.Registry{
+		Registry: registry.Registry{
 			Name: "registry2",
 		},
 	},
@@ -62,12 +62,12 @@ var types = []catalog.DevfileComponentType{
 		Language:    "python",
 		ProjectType: "python",
 		Tags:        []string{"Python", "pip"},
-		Registry: catalog.Registry{
+		Registry: registry.Registry{
 			Name: "registry3",
 		},
 	},
 }
-var list = catalog.DevfileComponentTypeList{
+var list = registry.DevfileStackList{
 	Items: types,
 }
 
@@ -115,9 +115,9 @@ func TestDetectFramework(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			askerClient := asker.NewMockAsker(ctrl)
-			catalogClient := catalog.NewMockClient(ctrl)
-			catalogClient.EXPECT().ListDevfileComponents("").Return(list, nil)
-			alizerClient := NewAlizerBackend(askerClient, catalogClient)
+			registryClient := registry.NewMockClient(ctrl)
+			registryClient.EXPECT().ListDevfileStacks("").Return(list, nil)
+			alizerClient := NewAlizerBackend(askerClient, registryClient)
 			// Run function DetectFramework
 			detected, registry, err := alizerClient.detectFramework(tt.args.path)
 
@@ -138,8 +138,8 @@ func TestDetectFramework(t *testing.T) {
 
 func TestAlizerBackend_SelectDevfile(t *testing.T) {
 	type fields struct {
-		askerClient   func(ctrl *gomock.Controller) asker.Asker
-		catalogClient func(ctrl *gomock.Controller) catalog.Client
+		askerClient    func(ctrl *gomock.Controller) asker.Asker
+		registryClient func(ctrl *gomock.Controller) registry.Client
 	}
 	type args struct {
 		flags map[string]string
@@ -161,10 +161,10 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					askerClient.EXPECT().AskCorrect().Return(true, nil)
 					return askerClient
 				},
-				catalogClient: func(ctrl *gomock.Controller) catalog.Client {
-					catalogClient := catalog.NewMockClient(ctrl)
-					catalogClient.EXPECT().ListDevfileComponents("").Return(list, nil)
-					return catalogClient
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					registryClient := registry.NewMockClient(ctrl)
+					registryClient.EXPECT().ListDevfileStacks("").Return(list, nil)
+					return registryClient
 				},
 			},
 			args: args{
@@ -184,10 +184,10 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					askerClient.EXPECT().AskCorrect().Return(false, nil)
 					return askerClient
 				},
-				catalogClient: func(ctrl *gomock.Controller) catalog.Client {
-					catalogClient := catalog.NewMockClient(ctrl)
-					catalogClient.EXPECT().ListDevfileComponents("").Return(list, nil)
-					return catalogClient
+				registryClient: func(ctrl *gomock.Controller) registry.Client {
+					registryClient := registry.NewMockClient(ctrl)
+					registryClient.EXPECT().ListDevfileStacks("").Return(list, nil)
+					return registryClient
 				},
 			},
 			args: args{
@@ -202,8 +202,8 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			o := &AlizerBackend{
-				askerClient:   tt.fields.askerClient(ctrl),
-				catalogClient: tt.fields.catalogClient(ctrl),
+				askerClient:    tt.fields.askerClient(ctrl),
+				registryClient: tt.fields.registryClient(ctrl),
 			}
 			gotLocation, err := o.SelectDevfile(tt.args.flags, tt.args.fs, tt.args.dir)
 			if (err != nil) != tt.wantErr {

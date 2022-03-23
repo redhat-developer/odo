@@ -1,4 +1,4 @@
-package catalog
+package registry
 
 import (
 	"io/ioutil"
@@ -74,7 +74,7 @@ OdoSettings:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			prefClient, _ := preference.NewClient()
-			catClient := NewCatalogClient(filesystem.NewFakeFs(), prefClient)
+			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
 			got, err := catClient.GetDevfileRegistries(tt.registryName)
 			if err != nil {
 				t.Errorf("Error message is %v", err)
@@ -124,12 +124,12 @@ func TestGetRegistryDevfiles(t *testing.T) {
 	tests := []struct {
 		name     string
 		registry Registry
-		want     []DevfileComponentType
+		want     []DevfileStack
 	}{
 		{
 			name:     "Test NodeJS devfile index",
 			registry: Registry{Name: registryName, URL: server.URL},
-			want: []DevfileComponentType{
+			want: []DevfileStack{
 				{
 					Name:        "nodejs",
 					DisplayName: "NodeJS Angular Web Application",
@@ -150,7 +150,7 @@ func TestGetRegistryDevfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			got, err := getRegistryDevfiles(prefClient, tt.registry)
+			got, err := getRegistryStacks(prefClient, tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)

@@ -9,7 +9,6 @@ import (
 
 	"github.com/zalando/go-keyring"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -18,6 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/segment"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -262,47 +262,47 @@ func conflictCheckForDevfileFlag(args []string, registryName string) error {
 
 // validateAndFetchRegistry validates if the provided registryName exists and returns the devfile listed in the registy;
 // if the registryName is "", then it returns devfiles of all the available registries
-func validateAndFetchRegistry(registryName string) (catalog.DevfileComponentTypeList, error) {
+func validateAndFetchRegistry(registryName string) (registry.DevfileStackList, error) {
 	// TODO(feloy) Get from DI
 	prefClient, err := preference.NewClient()
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
 	}
-	catalogClient := catalog.NewCatalogClient(filesystem.DefaultFs{}, prefClient)
+	registryClient := registry.NewRegistryClient(filesystem.DefaultFs{}, prefClient)
 
 	// Validate if the component type is available
 	if registryName != "" {
 		registryExistSpinner := log.Spinnerf("Checking if the registry %q exists", registryName)
 		defer registryExistSpinner.End(false)
-		registryList, e := catalogClient.GetDevfileRegistries(registryName)
+		registryList, e := registryClient.GetDevfileRegistries(registryName)
 		if e != nil {
-			return catalog.DevfileComponentTypeList{}, fmt.Errorf("failed to get registry: %w", e)
+			return registry.DevfileStackList{}, fmt.Errorf("failed to get registry: %w", e)
 		}
 		if len(registryList) == 0 {
-			return catalog.DevfileComponentTypeList{}, fmt.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
+			return registry.DevfileStackList{}, fmt.Errorf("registry %s doesn't exist, please specify a valid registry via --registry", registryName)
 		}
 		registryExistSpinner.End(true)
 	}
 
 	klog.V(4).Infof("Fetching the available devfile components")
 	// Get available devfile components for checking devfile compatibility
-	catalogDevfileList, err := catalogClient.ListDevfileComponents(registryName)
+	catalogDevfileList, err := registryClient.ListDevfileStacks(registryName)
 	if err != nil {
-		return catalog.DevfileComponentTypeList{}, err
+		return registry.DevfileStackList{}, err
 	}
 
 	if registryName != "" && catalogDevfileList.Items == nil {
-		return catalog.DevfileComponentTypeList{}, fmt.Errorf("can't create devfile component from registry %s", registryName)
+		return registry.DevfileStackList{}, fmt.Errorf("can't create devfile component from registry %s", registryName)
 	}
 
 	if len(catalogDevfileList.DevfileRegistries) == 0 {
-		return catalog.DevfileComponentTypeList{}, errors.New("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
+		return registry.DevfileStackList{}, errors.New("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 	}
 	return catalogDevfileList, nil
 }
 
 // findDevfileFromRegistry finds the devfile and returns necessary information related to it
-func findDevfileFromRegistry(catalogDevfileList catalog.DevfileComponentTypeList, registryName, componentType string) (devfileLink string, devfileRegistry catalog.Registry, err error) {
+func findDevfileFromRegistry(catalogDevfileList registry.DevfileStackList, registryName, componentType string) (devfileLink string, devfileRegistry registry.Registry, err error) {
 	devfileExistSpinner := log.Spinnerf("Checking if the devfile for %q exists on available registries", componentType)
 	defer devfileExistSpinner.End(false)
 	if registryName != "" {
@@ -316,11 +316,11 @@ func findDevfileFromRegistry(catalogDevfileList catalog.DevfileComponentTypeList
 			return devfileComponent.Link, devfileComponent.Registry, nil
 		}
 	}
-	return "", catalog.Registry{}, fmt.Errorf("devfile component type %q is not supported, please run `odo catalog list components` for a list of supported devfile component types", componentType)
+	return "", registry.Registry{}, fmt.Errorf("devfile component type %q is not supported, please run `odo catalog list components` for a list of supported devfile component types", componentType)
 }
 
 // fetchDevfileFromRegistry fetches the required devfile from the list catalogDevfileList
-func fetchDevfileFromRegistry(registry catalog.Registry, devfileLink, devfilePath, componentType, componentContext string, prefClient preference.Client) (err error) {
+func fetchDevfileFromRegistry(registry registry.Registry, devfileLink, devfilePath, componentType, componentContext string, prefClient preference.Client) (err error) {
 	// Download devfile from registry
 	registrySpinner := log.Spinnerf("Creating a devfile component from registry %q", registry.Name)
 	defer registrySpinner.End(false)

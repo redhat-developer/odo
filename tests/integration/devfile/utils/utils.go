@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"index/suffixarray"
 	"os"
@@ -244,27 +243,6 @@ func DeleteLocalConfig(args ...string) {
 		"Successfully deleted devfile.yaml file",
 	}
 	helper.MatchAllInOutput(output, expectedOutput)
-}
-
-// VerifyCatalogListComponent verifies components inside wantOutput exists or not
-// in Devfile Component list
-func VerifyCatalogListComponent(output string, cmpName []string) error {
-	var data map[string]interface{}
-	listItems := []string{"items"}
-
-	if err := json.Unmarshal([]byte(output), &data); err != nil {
-		return err
-	}
-
-	for _, items := range listItems {
-		outputBytes, err := json.Marshal(data[items])
-		if err != nil {
-			return err
-		}
-		output = string(outputBytes)
-		helper.MatchAllInOutput(output, cmpName)
-	}
-	return nil
 }
 
 // VerifyContainerSyncEnv verifies the sync env in the container

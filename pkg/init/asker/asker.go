@@ -2,11 +2,11 @@ package asker
 
 import (
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/redhat-developer/odo/pkg/log"
 	"sort"
 
-	"github.com/redhat-developer/odo/pkg/catalog"
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/registry"
 )
 
 type Survey struct{}
@@ -29,7 +29,7 @@ func (o *Survey) AskLanguage(langs []string) (string, error) {
 	return answer, nil
 }
 
-func (o *Survey) AskType(types catalog.TypesWithDetails) (back bool, _ catalog.DevfileComponentType, _ error) {
+func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ registry.DevfileStack, _ error) {
 	stringTypes := types.GetOrderedLabels()
 	stringTypes = append(stringTypes, "** GO BACK **")
 	question := &survey.Select{
@@ -39,10 +39,10 @@ func (o *Survey) AskType(types catalog.TypesWithDetails) (back bool, _ catalog.D
 	var answerPos int
 	err := survey.AskOne(question, &answerPos)
 	if err != nil {
-		return false, catalog.DevfileComponentType{}, err
+		return false, registry.DevfileStack{}, err
 	}
 	if answerPos == len(stringTypes)-1 {
-		return true, catalog.DevfileComponentType{}, nil
+		return true, registry.DevfileStack{}, nil
 	}
 	compType, err := types.GetAtOrderedPosition(answerPos)
 	return false, compType, err

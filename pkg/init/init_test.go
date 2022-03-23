@@ -7,8 +7,8 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/init/backend"
-	"github.com/redhat-developer/odo/pkg/init/registry"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 

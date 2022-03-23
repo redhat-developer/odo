@@ -43,10 +43,6 @@ mockgen -source=pkg/init/backend/interface.go \
     -package backend \
     -destination pkg/init/backend/mock.go
 
-mockgen -source=pkg/catalog/interface.go \
-    -package catalog \
-    -destination pkg/catalog/mock_catalog.go
-
 mockgen -source=pkg/init/asker/interface.go \
     -package asker \
     -destination pkg/init/asker/mock.go
@@ -55,9 +51,9 @@ mockgen -source=pkg/init/interface.go \
     -package init \
     -destination pkg/init/mock.go
 
-mockgen -source=pkg/init/registry/interface.go \
+mockgen -source=pkg/registry/interface.go \
     -package registry \
-    -destination pkg/init/registry/mock.go
+    -destination pkg/registry/mock.go
 
 mockgen -source=pkg/deploy/interface.go \
     -package deploy \

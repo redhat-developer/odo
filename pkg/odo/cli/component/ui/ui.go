@@ -4,9 +4,10 @@ import (
 	"sort"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/redhat-developer/odo/pkg/catalog"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/util/validation"
+	"github.com/redhat-developer/odo/pkg/registry"
+
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 
@@ -47,7 +48,7 @@ func SelectStarterProject(projects []devfilev1.StarterProject) string {
 }
 
 // SelectDevfileComponentType lets the user to select the devfile component type in the prompt
-func SelectDevfileComponentType(options []catalog.DevfileComponentType) string {
+func SelectDevfileComponentType(options []registry.DevfileStack) string {
 	var componentType string
 	prompt := &survey.Select{
 		Message: "Which devfile component type do you wish to create",
@@ -82,7 +83,7 @@ func EnterDevfileComponentProject(defaultComponentNamespace string) string {
 	return name
 }
 
-func getDevfileComponentTypeNameCandidates(options []catalog.DevfileComponentType) []string {
+func getDevfileComponentTypeNameCandidates(options []registry.DevfileStack) []string {
 	result := make([]string, len(options))
 	for i, option := range options {
 		result[i] = option.Name

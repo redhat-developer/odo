@@ -1,4 +1,4 @@
-package catalog
+package registry
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ func (types TypesWithDetails) GetOrderedLabels() []string {
 
 // GetAtOrderedPosition returns the project type at the given position,
 // when the list of project types is ordered by GetOrderedLabels
-func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileComponentType, error) {
+func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileStack, error) {
 	sortedTypes := sortTypes(types)
 	for _, typ := range sortedTypes {
 		detailsList := types[typ]
@@ -35,7 +35,7 @@ func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileComponentTyp
 		}
 		return detailsList[pos], nil
 	}
-	return DevfileComponentType{}, errors.New("index not found")
+	return DevfileStack{}, errors.New("index not found")
 }
 
 func sortTypes(types TypesWithDetails) []string {
