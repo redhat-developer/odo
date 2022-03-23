@@ -114,7 +114,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 
 		It("should not prompt when user calls for help", func() {
-			output := helper.Cmd("odo", "create", "--help").ShouldPass().Out()
+			output := helper.Cmd("odo", "version", "--help").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 
@@ -134,7 +134,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		// !! Do not test with true because it sends out the telemetry data and messes up the statistics !!
 		It("should not prompt the user", func() {
 			helper.Cmd("odo", "preference", "set", "ConsentTelemetry", "false", "-f").ShouldPass()
-			output := helper.Cmd("odo", "create", "--context", commonVar.Context, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass().Out()
+			output := helper.Cmd("odo", "version", "--help").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 		})
 	})

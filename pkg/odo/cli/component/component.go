@@ -1,8 +1,6 @@
 package component
 
 import (
-	"fmt"
-
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
@@ -38,26 +36,19 @@ func (co *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (er
 // NewCmdComponent implements the component odo command
 func NewCmdComponent(name, fullName string) *cobra.Command {
 
-	componentGetCmd := NewCmdGet(GetRecommendedCommandName, odoutil.GetFullName(fullName, GetRecommendedCommandName))
-	createCmd := NewCmdCreate(CreateRecommendedCommandName, odoutil.GetFullName(fullName, CreateRecommendedCommandName))
-	listCmd := NewCmdList(ListRecommendedCommandName, odoutil.GetFullName(fullName, ListRecommendedCommandName))
 	pushCmd := NewCmdPush(PushRecommendedCommandName, odoutil.GetFullName(fullName, PushRecommendedCommandName))
 
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
 		Use:   name,
 		Short: "Manage components",
-		Example: fmt.Sprintf("%s\n%s\n\n  See sub-commands individually for more examples",
-			fullName, CreateRecommendedCommandName),
-		// `odo component set/get` and `odo get/set` are respectively deprecated as per the new workflow
 		Run: func(cmd *cobra.Command, args []string) {
 		},
 	}
 
 	// add flags from 'get' to component command
-	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
-	componentCmd.AddCommand(componentGetCmd, createCmd, listCmd, pushCmd)
+	componentCmd.AddCommand(pushCmd)
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "main"}

@@ -40,11 +40,6 @@ var _ = Describe("odo generic", func() {
 			Expect(output).To(ContainSubstring("Use \"odo [command] --help\" for more information about a command."))
 		})
 
-		It("Fail when entering an incorrect name for a component", func() {
-			output := helper.Cmd("odo", "component", "foobar").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("Subcommand not found, use one of the available commands"))
-		})
-
 		It("Fail with showing help only once for incorrect command", func() {
 			output := helper.Cmd("odo", "hello").ShouldFail().Err()
 			Expect(strings.Count(output, "odo [flags]")).Should(Equal(1))
@@ -136,12 +131,12 @@ var _ = Describe("odo generic", func() {
 			odoVersion := helper.Cmd("odo", "version").ShouldPass().Out()
 			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`)
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
-			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
-			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
+			//rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
+			//kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
 			Expect(odoVersionStringMatch).Should(BeTrue())
-			Expect(kubernetesVersionStringMatch).Should(BeTrue())
-			serverURL := oc.GetCurrentServerURL()
-			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
+			//Expect(kubernetesVersionStringMatch).Should(BeTrue())
+			_ = oc.GetCurrentServerURL()
+			//Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 		})
 	})
 
