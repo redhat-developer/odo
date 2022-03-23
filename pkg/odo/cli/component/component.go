@@ -60,7 +60,6 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.AddCommand(componentGetCmd, createCmd, listCmd, pushCmd)
 
 	// Add a defined annotation in order to appear in the help menu
-	componentCmd.Annotations = map[string]string{"command": "main"}
 	componentCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return componentCmd

@@ -151,7 +151,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	clientset.Add(deployCmd, clientset.INIT, clientset.DEPLOY)
 
 	// Add a defined annotation in order to appear in the help menu
-	deployCmd.Annotations["command"] = "utility"
+	deployCmd.Annotations["command"] = "main"
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return deployCmd
 }

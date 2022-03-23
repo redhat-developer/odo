@@ -54,8 +54,8 @@ func NewCmdLogout(name, fullName string) *cobra.Command {
 	o := NewLogoutOptions()
 	logoutCmd := &cobra.Command{
 		Use:     name,
-		Short:   "Log out of the current OpenShift session",
-		Long:    "Log out of the current OpenShift session",
+		Short:   "Logout of the cluster",
+		Long:    "Logout of the cluster.",
 		Example: fmt.Sprintf(example, fullName),
 		Args:    cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
@@ -64,7 +64,7 @@ func NewCmdLogout(name, fullName string) *cobra.Command {
 	}
 
 	// Add a defined annotation in order to appear in the help menu
-	logoutCmd.Annotations = map[string]string{"command": "utility"}
+	logoutCmd.Annotations = map[string]string{"command": "cluster"}
 	logoutCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return logoutCmd

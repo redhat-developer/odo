@@ -215,7 +215,7 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT)
 	// Add a defined annotation in order to appear in the help menu
-	devCmd.Annotations["command"] = "utility"
+	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return devCmd

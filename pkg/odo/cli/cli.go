@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/dev"
+
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
 	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
@@ -40,13 +42,16 @@ var (
  /  \__/    Find more information at https://odo.dev
  \__/`
 
-	odoExample = ktemplates.Examples(`  # Creating and deploying a Node.js project
-  git clone https://github.com/odo-devfiles/nodejs-ex && cd nodejs-ex
-  %[1]s create nodejs
-  %[1]s push
+	odoExample = ktemplates.Examples(`Initialize and take your pick from multiple languages or frameworks:
+  %[1]s init
 
-  # Accessing your Node.js component
-  %[1]s url create`)
+	After creating your initial application, start development with:
+  %[1]s dev
+
+	Want to deploy to production? See it live with:
+  %[1]s deploy
+
+	`)
 
 	rootUsageTemplate = `Usage:{{if .Runnable}}
   {{if .HasAvailableFlags}}{{appendIfNotPresent .UseLine "[flags]"}}{{else}}{{.UseLine}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
@@ -58,14 +63,14 @@ Aliases:
 Examples:
 {{ .Example }}{{end}}{{ if .HasAvailableSubCommands}}
 
-Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
+Main Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
+OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "cluster"}}
+  {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}{{end}}
 
 Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
-
-Component Shortcuts:{{range .Commands}}{{if eq .Annotations.command "component"}}
-  {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}{{end}}
 
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
