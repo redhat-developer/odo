@@ -25,7 +25,7 @@ odo does not delete the Devfile, the odo configuration files, or the source code
 odo delete component --name <component_name> --namespace <namespace>
 ```
 
-odo builds a label from the component name to search for the component on the cluster in the given namespace, and deletes it along with all its related resources.
+odo builds a label from the component name to search for the component on the cluster in the given namespace, and deletes it along with all related resources.
 If odo finds the component, then it will list all the resources and prompt the user to confirm the deletion.
 Otherwise, odo will exit with a message stating that it could not find the resources on the cluster.
 
