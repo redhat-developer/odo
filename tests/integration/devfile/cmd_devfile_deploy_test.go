@@ -82,7 +82,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				BeforeEach(func() {
 					helper.Cmd("odo", "delete", "component", "--name", cmpName, "-f").ShouldPass()
 					output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found"))
+					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
 
 					otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				})
@@ -95,7 +95,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 
 					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found"))
+					Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
 
 					output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
 					Expect(string(output)).To(ContainSubstring(deploymentName))
