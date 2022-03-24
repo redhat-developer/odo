@@ -1,7 +1,6 @@
 package dev
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -72,8 +71,7 @@ type DevOptions struct {
 	initialDevfileObj parser.DevfileObj
 
 	// working directory
-	contextDir     string
-	commandContext context.Context
+	contextDir string
 }
 
 type Handler struct{}
@@ -101,7 +99,6 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return err
 	}
-	o.commandContext = cmdline.Context()
 
 	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
 	if err != nil {

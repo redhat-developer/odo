@@ -1,7 +1,6 @@
 package deploy
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -39,7 +38,6 @@ type DeployOptions struct {
 
 	// working directory
 	contextDir     string
-	commandContext context.Context
 }
 
 var deployExample = templates.Examples(`
@@ -62,7 +60,6 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	if err != nil {
 		return err
 	}
-	o.commandContext = cmdline.Context()
 	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
@@ -130,10 +127,10 @@ func (o *DeployOptions) Run(cmdline cmdline.Cmdline) error {
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
 	namespace := o.GetProject()
-	scontext.SetComponentType(o.commandContext, _component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
-	scontext.SetLanguage(o.commandContext, devfileObj.Data.GetMetadata().Language)
-	scontext.SetProjectType(o.commandContext, devfileObj.Data.GetMetadata().ProjectType)
-	scontext.SetDevfileName(o.commandContext, devfileName)
+	scontext.SetComponentType(cmdline.Context(), _component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(cmdline.Context(), devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(cmdline.Context(), devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(cmdline.Context(), devfileName)
 	// Output what the command is doing / information
 	log.Title("Deploying the application using "+devfileName+" Devfile",
 		"Namespace: "+namespace,
