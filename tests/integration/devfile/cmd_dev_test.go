@@ -54,17 +54,17 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 		It("should show validation errors if the devfile is incorrect", func() {
-			helper.RunDevMode(func(session *gexec.Session) {
+			err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
 			})
-
+			Expect(err).ToNot(HaveOccurred())
 		})
 		It("should use the index information from previous push operation", func() {
 			// Create a new file A
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 			// watch that project
-			helper.RunDevMode(func(session *gexec.Session) {
+			err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 				// Change some other file B
 				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
@@ -73,10 +73,10 @@ var _ = Describe("odo dev command tests", func() {
 				execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base(fileAPath))
 				Expect(execResult).To(ContainSubstring(fileAText))
 			})
+			Expect(err).ToNot(HaveOccurred())
 		})
 		It("ensure that index information is updated", func() {
-			helper.RunDevMode(func(session *gexec.Session) {
-				helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+			err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
 				Expect(err).ToNot(HaveOccurred())
 
@@ -159,12 +159,14 @@ var _ = Describe("odo dev command tests", func() {
 
 				}, 180, 10).Should(Equal(true))
 			})
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		When("odo dev is executed", func() {
 
 			BeforeEach(func() {
-				devSession := helper.StartDevMode()
+				devSession, _, _, err := helper.StartDevMode()
+				Expect(err).ToNot(HaveOccurred())
 				defer devSession.Kill()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -186,7 +188,7 @@ var _ = Describe("odo dev command tests", func() {
 				})
 
 				It("should run odo dev on initial namespace", func() {
-					helper.RunDevMode(func(session *gexec.Session) {
+					helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
 						Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
 
@@ -208,8 +210,10 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should expose the endpoint on localhost", func() {
-				helper.RunDevMode(func(session *gexec.Session) {
-					resp, err := http.Get("http://localhost:40001")
+				helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
+					i := strings.Index(string(outContents), "localhost")
+					url := fmt.Sprintf("http://%s", string(outContents)[i:i+15])
+					resp, err := http.Get(url)
 					Expect(err).ToNot(HaveOccurred())
 					defer resp.Body.Close()
 
@@ -227,12 +231,16 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should expose two endpoints on localhost", func() {
-				helper.RunDevMode(func(session *gexec.Session) {
-					resp1, err := http.Get("http://localhost:40001")
+				helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
+					i := strings.Index(string(outContents), "localhost")
+					url1 := fmt.Sprintf("http://%s", string(outContents)[i:i+15])
+					resp1, err := http.Get(url1)
 					Expect(err).ToNot(HaveOccurred())
 					defer resp1.Body.Close()
 
-					resp2, err := http.Get("http://localhost:40002")
+					j := strings.LastIndex(string(outContents), "localhost")
+					url2 := fmt.Sprintf("http://%s", string(outContents)[j:j+15])
+					resp2, err := http.Get(url2)
 					Expect(err).ToNot(HaveOccurred())
 					defer resp2.Body.Close()
 
@@ -246,13 +254,13 @@ var _ = Describe("odo dev command tests", func() {
 					helper.WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 
 					Eventually(func() bool {
-						resp3, err := http.Get("http://localhost:40001")
+						resp3, err := http.Get(url1)
 						if err != nil {
 							return false
 						}
 						defer resp3.Body.Close()
 
-						resp4, err := http.Get("http://localhost:40002")
+						resp4, err := http.Get(url2)
 						if err != nil {
 							return false
 						}
@@ -271,7 +279,7 @@ var _ = Describe("odo dev command tests", func() {
 
 			When("an endpoint is added after first run of odo dev", func() {
 				It("should print the message to run odo dev again", func() {
-					helper.RunDevMode(func(session *gexec.Session) {
+					helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 						helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
 						helper.WaitForErroutToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
 					})

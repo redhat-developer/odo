@@ -68,7 +68,9 @@ ComponentSettings:
 		When("the component is deployed in DEV mode and dev mode stopped", func() {
 			var devSession helper.DevSession
 			BeforeEach(func() {
-				devSession = helper.StartDevMode()
+				var err error
+				devSession, _, _, err = helper.StartDevMode()
+				Expect(err).ToNot(HaveOccurred())
 				defer devSession.Kill()
 				Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(cmpName))
 			})

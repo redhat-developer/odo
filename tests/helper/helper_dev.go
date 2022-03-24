@@ -86,13 +86,25 @@ type DevSession struct {
 	session *gexec.Session
 }
 
-// StartDevMode starts a dev session with `odo dev`
-func StartDevMode() DevSession {
+// StartDevMode returns a session structure, and the contents of the standard and error outputs
+// when the dev mode is completely started
+func StartDevMode() (DevSession, []byte, []byte, error) {
 	session := CmdRunner("odo", "dev")
 	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
-	return DevSession{
+	result := DevSession{
 		session: session,
 	}
+	outContents := session.Out.Contents()
+	errContents := session.Err.Contents()
+	err := session.Out.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, err
+	}
+	err = session.Err.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, err
+	}
+	return result, outContents, errContents, nil
 }
 
 // Kill a Dev session abruptly, without handling any cleanup
@@ -105,10 +117,15 @@ func (o DevSession) Stop() {
 	o.session.Interrupt()
 }
 
-// RunDevMode runs a dev session and executes the `inside` code
-func RunDevMode(inside func(session *gexec.Session)) {
-	session := StartDevMode()
+// RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started.
+// The inside handler is passed the internal session pointer
+// and the contents of the standard and error outputs at the time the handler is called
+func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte)) error {
+	session, outContents, errContents, err := StartDevMode()
+	if err != nil {
+		return err
+	}
 	defer session.Stop()
-	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session.session)
-	inside(session.session)
+	inside(session.session, outContents, errContents)
+	return nil
 }
