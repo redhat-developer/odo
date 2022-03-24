@@ -254,4 +254,66 @@ ComponentSettings:
 			})
 		})
 	})
+
+	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`
+	When("deleting a component that has resources attached to it and was deployed with Dev", func() {
+		resourceTypes := []string{
+			helper.ResourceTypeDeployment,
+			helper.ResourceTypePod,
+			helper.ResourceTypeService,
+			helper.ResourceTypeIngress,
+			helper.ResourceTypePVC,
+		}
+		BeforeEach(func() {
+			// Component name comes from devfile-with-endpoints.yaml
+			cmpName = "nodejs-with-endpoints"
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
+				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-endpoints.yaml")).ShouldPass()
+		})
+		When("a Dev session is started and abruptly killed", func() {
+			BeforeEach(func() {
+				//Purposely killing the dev session to test the component deletion behavior.
+				//Also, devSession.Stop() is expected to clean-up resources at some point
+				helper.StartDevMode().Kill()
+			})
+			It("should delete the component and its owned resources", func() {
+				// Pod should exist
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				Expect(podName).NotTo(BeEmpty())
+				helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
+				for _, resourceType := range resourceTypes {
+					commonVar.CliRunner.WaitAndCheckForExistence(resourceType, commonVar.Project, 1)
+				}
+				// Deployment and Pod should be deleted
+				helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+					{
+						ResourceType: helper.ResourceTypeDeployment,
+						ResourceName: cmpName,
+						Namespace:    commonVar.Project,
+					},
+					{
+						ResourceType: helper.ResourceTypePod,
+						ResourceName: podName,
+						Namespace:    commonVar.Project,
+					},
+				})
+				// Dependent resources should be marked to be deleted (see https://github.com/redhat-developer/odo/issues/4593)
+				helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+					{
+						ResourceType: helper.ResourceTypeIngress,
+						ResourceName: "example",
+						Namespace:    commonVar.Project,
+					},
+					{
+						ResourceType: helper.ResourceTypeService,
+						ResourceName: cmpName,
+						Namespace:    commonVar.Project,
+					},
+				})
+			})
+		})
+	})
+
 })
