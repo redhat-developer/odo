@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/preference"
 	"io"
 	"os"
 	"os/exec"
@@ -340,7 +341,12 @@ func CommonBeforeEach() CommonVar {
 	commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.ConfigDir, "preference.yaml"))
-	// Set Debug Telemetry  so that it does not prompt to set a preference value and we have telemetry logged for validation
+	// Set ConsentTelemetry to true so that it does not prompt to set a preference value
+	cfg, _ := preference.NewClient()
+	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
+	Expect(err).To(BeNil())
+	os.Setenv("ODO_DISABLE_TELEMETERY", "false")
+	// Set Debug Telemetry
 	CreateTelemetryDebugFile()
 	SetDefaultDevfileRegistryAsStaging()
 	return commonVar

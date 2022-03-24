@@ -49,30 +49,30 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
 	// This prompt has been placed here so that it does not prompt the user when they call --help
-	if len(debugTelemetry) == 0 {
-		if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
-			if !segment.RunningInTerminal() {
-				klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
-			} else if disableTelemetry {
-				klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
-			} else {
-				var consentTelemetry bool
-				prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
-				err = survey.AskOne(prompt, &consentTelemetry, nil)
-				ui.HandleError(err)
-				if err == nil {
-					if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
-						klog.V(4).Info(err1.Error())
-					}
+	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
+		if !segment.RunningInTerminal() {
+			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
+		} else if disableTelemetry {
+			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
+		} else if len(debugTelemetry) == 0 {
+			var consentTelemetry bool
+			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
+			err = survey.AskOne(prompt, &consentTelemetry, nil)
+			ui.HandleError(err)
+			if err == nil {
+				if err1 := cfg.SetConfiguration(preference.ConsentTelemetrySetting, strconv.FormatBool(consentTelemetry)); err1 != nil {
+					klog.V(4).Info(err1.Error())
 				}
 			}
 		}
-		// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-		scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
-	} else {
+	}
+	if len(debugTelemetry) > 0 {
 		klog.V(4).Infof("WARNING: debug telemetry enabled. Will be logged in %s", debugTelemetry)
 		scontext.SetTelemetryStatus(cmd.Context(), true)
 		scontext.SetTelemetryStatusActual(cmd.Context(), segment.IsTelemetryEnabled(cfg))
+	} else {
+		// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
+		scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 	}
 
 	// Send data to telemetry in case of user interrupt
