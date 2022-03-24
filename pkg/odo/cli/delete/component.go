@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -15,6 +16,17 @@ import (
 
 // ComponentRecommendedCommandName is the recommended component sub-command name
 const ComponentRecommendedCommandName = "component"
+
+var deleteExample = ktemplates.Examples(`
+# Delete the component present in the current directory from the cluster
+%[1]s
+
+# Delete the component named 'frontend' in the currently active namespace from the cluster
+%[1]s --name frontend
+
+# Delete the component named 'frontend' in the 'myproject' namespace from the cluster
+%[1]s --name frontend --namespace myproject
+`)
 
 type ComponentOptions struct {
 	// name of the component to delete, optional
@@ -158,16 +170,17 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	o := NewComponentOptions()
 
 	var componentCmd = &cobra.Command{
-		Use:   name,
-		Short: "Delete component",
-		Long:  "Delete component",
-		Args:  cobra.NoArgs,
+		Use:     name,
+		Short:   "Delete component",
+		Long:    "Delete component",
+		Args:    cobra.NoArgs,
+		Example: fmt.Sprintf(deleteExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
-	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kube config is used")
+	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kubeconfig is used")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
 	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES)
 
