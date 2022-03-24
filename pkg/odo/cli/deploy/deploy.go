@@ -37,7 +37,7 @@ type DeployOptions struct {
 	clientset *clientset.Clientset
 
 	// working directory
-	contextDir     string
+	contextDir string
 }
 
 var deployExample = templates.Examples(`
