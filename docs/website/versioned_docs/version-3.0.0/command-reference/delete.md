@@ -37,7 +37,7 @@ In both cases, `odo` does not wait for resources to be deleted.
 
 
 ## Available Flags
-* `-f`, `--force` - Use this flag to avoid the user prompt.
+* `-f`, `--force` - Use this flag to avoid being prompted for confirmation.
 * `--name` - Name of the component to delete, optional. By default, the component described in the local devfile is deleted
 * `--namespace` - Namespace in which to find the component to delete, optional. By default, the current namespace defined in kubeconfig is used
 Check the [documentation on flags](flags.md) to see more flags available.
