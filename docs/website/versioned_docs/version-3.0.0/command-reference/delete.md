@@ -33,7 +33,7 @@ The `--namespace` is optional, if not provided, odo will use the current active 
 
 
 :::caution
-In the both the cases, odo does not wait for resources to be deleted.
+In both cases, `odo` does not wait for resources to be deleted.
 
 
 ## Available Flags
