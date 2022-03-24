@@ -29,7 +29,7 @@ odo builds a label from the component name to search for the component on the cl
 If odo finds the component, then it will list all the resources and prompt the user to confirm the deletion.
 Otherwise, odo will exit with a message stating that it could not find the resources on the cluster.
 
-The `--namespace` is optional, if not provided, odo will use the current active namespace.
+`--namespace` is optional, if not provided, odo will use the current active namespace.
 
 
 :::caution
