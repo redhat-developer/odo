@@ -28,7 +28,7 @@
     "glob-parent": "^5.1.2",
     "node-forge": "^1.0.0",
     "prism-react-renderer": "^1.2.1",
-    "prismjs": "^1.25.0",
+    "prismjs": "^1.27.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "trim": "0.0.3",
