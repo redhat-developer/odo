@@ -41,15 +41,13 @@ var (
  \__/`
 
 	odoExample = ktemplates.Examples(`Initializing your component by taking your pick from multiple languages or frameworks:
-  %[1]s init
+  odo init
 
 	After creating your initial component, start development with:
-  %[1]s dev
+  odo dev
 
 	Want to deploy after development? See it live with:
-  %[1]s deploy
-
-	`)
+  odo deploy`)
 
 	rootUsageTemplate = `Usage:{{if .Runnable}}
   {{if .HasAvailableFlags}}{{appendIfNotPresent .UseLine "[flags]"}}{{else}}{{.UseLine}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
@@ -82,32 +80,9 @@ Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
-	rootDefaultHelp = odoLong + `
+	rootDefaultHelp = fmt.Sprintf("%s\n\nUsage:\n%s\n\n%s", odoLong, odoExample, rootHelpMessage)
 
-Get started by creating a new application:
-
- git clone https://github.com/odo-devfiles/nodejs-ex && cd nodejs-ex
- odo create nodejs
- odo push
-
-Your Node.JS application has now been deployed to Kubernetes. odo has pushed the source code, built the application and deployed it.
-
-You can now edit your code in real time and watch as odo automatically deploys your application.
-
- odo watch
-
-To access your application, create a URL:
-
- odo url create myurl
- odo push
-
-More information such as logs or what components you've deployed can be accessed with these commands:
-
- odo describe
- odo list
- odo log
-
-To see a full list of commands, run 'odo --help'`
+	rootHelpMessage = "To see a full list of commands, run 'odo --help'"
 )
 
 const pluginPrefix = "odo"
@@ -139,7 +114,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		Short:   "odo",
 		Long:    odoLong,
 		RunE:    ShowHelp,
-		Example: fmt.Sprintf(odoExample, fullName),
+		Example: odoExample,
 	}
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
