@@ -41,7 +41,7 @@ func TestSet(t *testing.T) {
 	}
 
 	prefClient.EXPECT().SetConfiguration("arg1", "Arg2")
-	err = opts.Run()
+	err = opts.Run(cmdline)
 	if err != nil {
 		t.Errorf("Expected nil error, got %s", err)
 	}
