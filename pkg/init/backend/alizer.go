@@ -87,10 +87,10 @@ func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags ma
 	return nil, nil
 }
 
-func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
-	return nil
+func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
+	return devfile.GetMetadataName(), nil
 }
 
-func (o *AlizerBackend) PersonalizeDevfileconfig(devfile parser.DevfileObj) error {
-	return nil
+func (o *AlizerBackend) PersonalizeDevfileConfig(devfile parser.DevfileObj) (parser.DevfileObj, error) {
+	return devfile, nil
 }

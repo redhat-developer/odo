@@ -101,19 +101,16 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 	return &starterProjects[starter], nil
 }
 
-func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
-	name, err := o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.Data.GetMetadata().Name))
-	if err != nil {
-		return err
-	}
-	return devfile.SetMetadataName(name)
+func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
+	return o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.GetMetadataName()))
 }
 
-func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error {
+func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
 	// TODO: Add tests
 	config, err := getPortsAndEnvVar(devfileobj)
+	var zeroDevfile parser.DevfileObj
 	if err != nil {
-		return err
+		return zeroDevfile, err
 	}
 
 	var selectContainerAnswer string
@@ -124,7 +121,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 		PrintConfiguration(config)
 		selectContainerAnswer, err = o.askerClient.AskContainerName(containerOptions)
 		if err != nil {
-			return err
+			return zeroDevfile, err
 		}
 
 		selectedContainer := config[selectContainerAnswer]
@@ -136,7 +133,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 		for configOps.Ops != "Nothing" {
 			configOps, err = o.askerClient.AskPersonalizeConfiguration(selectedContainer)
 			if err != nil {
-				return err
+				return zeroDevfile, err
 			}
 			switch configOps.Ops {
 			case "Add":
@@ -145,12 +142,12 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					var newPort string
 					newPort, err = o.askerClient.AskAddPort()
 					if err != nil {
-						return err
+						return zeroDevfile, err
 					}
 
 					err = devfileobj.Data.SetPorts(map[string][]string{selectContainerAnswer: {newPort}})
 					if err != nil {
-						return err
+						return zeroDevfile, err
 					}
 					selectedContainer.Ports = append(selectedContainer.Ports, newPort)
 
@@ -158,14 +155,14 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					var newEnvNameAnswer, newEnvValueAnswer string
 					newEnvNameAnswer, newEnvValueAnswer, err = o.askerClient.AskAddEnvVar()
 					if err != nil {
-						return err
+						return zeroDevfile, err
 					}
 					err = devfileobj.Data.AddEnvVars(map[string][]v1alpha2.EnvVar{selectContainerAnswer: {{
 						Name:  newEnvNameAnswer,
 						Value: newEnvValueAnswer,
 					}}})
 					if err != nil {
-						return err
+						return zeroDevfile, err
 					}
 					selectedContainer.Envs[newEnvNameAnswer] = newEnvValueAnswer
 				}
@@ -184,7 +181,7 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					}
 					err = devfileobj.Data.RemovePorts(map[string][]string{selectContainerAnswer: {portToDelete}})
 					if err != nil {
-						return err
+						return zeroDevfile, err
 					}
 					selectedContainer.Ports = append(selectedContainer.Ports[:indexToDelete], selectedContainer.Ports[indexToDelete+1:]...)
 
@@ -195,19 +192,19 @@ func (o *InteractiveBackend) PersonalizeDevfileconfig(devfileobj parser.DevfileO
 					}
 					err = devfileobj.Data.RemoveEnvVars(map[string][]string{selectContainerAnswer: {envToDelete}})
 					if err != nil {
-						return err
+						return zeroDevfile, err
 					}
 					delete(selectedContainer.Envs, envToDelete)
 				}
 			case "Nothing":
 			default:
-				return fmt.Errorf("Unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
+				return zeroDevfile, fmt.Errorf("Unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
 			}
 			// Update the current configuration
 			config[selectContainerAnswer] = selectedContainer
 		}
 	}
-	return devfileobj.WriteYamlDevfile()
+	return devfileobj, nil
 }
 
 func PrintConfiguration(config asker.DevfileConfiguration) {

@@ -398,7 +398,7 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 		fields      fields
 		args        args
 		wantErr     bool
-		checkResult func(devfile parser.DevfileObj, args args) bool
+		checkResult func(newName string, args args) bool
 	}{
 		{
 			name: "name flag",
@@ -417,8 +417,8 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			checkResult: func(devfile parser.DevfileObj, args args) bool {
-				return devfile.GetMetadataName() == args.flags["name"]
+			checkResult: func(newName string, args args) bool {
+				return newName == args.flags["name"]
 			},
 		},
 	}
@@ -428,13 +428,12 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 				preferenceClient: tt.fields.preferenceClient,
 			}
 			fs := dffilesystem.NewFakeFs()
-			devfile := tt.args.devfile(fs)
-			err := o.PersonalizeName(devfile, tt.args.flags)
+			newName, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FlagsBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if tt.checkResult != nil && !tt.checkResult(devfile, tt.args) {
+			if tt.checkResult != nil && !tt.checkResult(newName, tt.args) {
 				t.Errorf("FlagsBackend.PersonalizeName(), checking result failed")
 			}
 		})

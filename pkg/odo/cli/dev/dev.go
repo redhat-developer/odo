@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -82,12 +83,16 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
 	}
 
-	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir, func(interactiveMode bool) {
-		if interactiveMode {
-			fmt.Println("The current directory already contains source code. " +
-				"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
-		}
-	})
+	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
+		func(interactiveMode bool) {
+			if interactiveMode {
+				fmt.Println("The current directory already contains source code. " +
+					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
+			}
+		},
+		func(newDevfileObj parser.DevfileObj) error {
+			return newDevfileObj.WriteYamlDevfile()
+		})
 	if err != nil {
 		return err
 	}

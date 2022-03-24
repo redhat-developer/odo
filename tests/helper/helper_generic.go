@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -120,6 +121,28 @@ func ExtractLines(output string) ([]string, error) {
 		lines = append(lines, scanner.Text())
 	}
 	return lines, scanner.Err()
+}
+
+// FindFirstElementIndexByPredicate returns the index of the first element in `slice` that satisfies the given `predicate`.
+func FindFirstElementIndexByPredicate(slice []string, predicate func(string) bool) (int, bool) {
+	for i, s := range slice {
+		if predicate(s) {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// FindFirstElementIndexMatchingRegExp returns the index of the first element in `slice` that contains any match of
+// the given regular expression `regularExpression`.
+func FindFirstElementIndexMatchingRegExp(slice []string, regularExpression string) (int, bool) {
+	return FindFirstElementIndexByPredicate(slice, func(s string) bool {
+		matched, err := regexp.MatchString(regularExpression, s)
+		Expect(err).To(BeNil(), func() string {
+			return fmt.Sprintf("regular expression error: %v", err)
+		})
+		return matched
+	})
 }
 
 // WatchNonRetCmdStdOut runs an 'odo watch' command and stores the process' stdout output into buffer.

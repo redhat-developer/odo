@@ -210,22 +210,21 @@ func (o *InitClient) DownloadStarterProject(starter *v1alpha2.StarterProject, de
 }
 
 // PersonalizeName calls PersonalizeName methods of the adequate backend
-func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
+func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
 	var backend backend.InitBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	err := backend.PersonalizeName(devfile, flags)
-	return err
+	return backend.PersonalizeName(devfile, flags)
 }
 
-func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error {
+func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
 	var backend backend.InitBackend
 	onlyDevfile, err := location.DirContainsOnlyDevfile(fs, dir)
 	if err != nil {
-		return err
+		return parser.DevfileObj{}, err
 	}
 
 	// Interactive mode since no flags are provided
@@ -235,7 +234,7 @@ func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.PersonalizeDevfileconfig(devfileobj)
+	return backend.PersonalizeDevfileConfig(devfileobj)
 }
 
 func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, contextDir string) (parser.DevfileObj, string, error) {
@@ -254,14 +253,16 @@ func (o InitClient) SelectAndPersonalizeDevfile(flags map[string]string, context
 		return parser.DevfileObj{}, "", fmt.Errorf("unable to parse devfile: %w", err)
 	}
 
-	err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)
+	devfileObj, err = o.PersonalizeDevfileConfig(devfileObj, flags, o.fsys, contextDir)
 	if err != nil {
 		return parser.DevfileObj{}, "", fmt.Errorf("failed to configure devfile: %w", err)
 	}
 	return devfileObj, devfilePath, nil
 }
 
-func (o InitClient) InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool)) error {
+func (o InitClient) InitDevfile(flags map[string]string, contextDir string,
+	preInitHandlerFunc func(interactiveMode bool), newDevfileHandlerFunc func(newDevfileObj parser.DevfileObj) error) error {
+
 	containsDevfile, err := location.DirectoryContainsDevfile(o.fsys, contextDir)
 	if err != nil {
 		return err
@@ -270,17 +271,27 @@ func (o InitClient) InitDevfile(flags map[string]string, contextDir string, preI
 		return nil
 	}
 
-	preInitHandlerFunc(len(flags) == 0)
+	if preInitHandlerFunc != nil {
+		preInitHandlerFunc(len(flags) == 0)
+	}
 
 	devfileObj, _, err := o.SelectAndPersonalizeDevfile(map[string]string{}, contextDir)
 	if err != nil {
 		return err
 	}
 
-	// Set the name in the devfile and writes the devfile back to the disk
-	err = o.PersonalizeName(devfileObj, map[string]string{})
+	// Set the name in the devfile but do not write it yet.
+	name, err := o.PersonalizeName(devfileObj, map[string]string{})
 	if err != nil {
 		return fmt.Errorf("failed to update the devfile's name: %w", err)
 	}
-	return nil
+	metadata := devfileObj.Data.GetMetadata()
+	metadata.Name = name
+	devfileObj.Data.SetMetadata(metadata)
+
+	if newDevfileHandlerFunc != nil {
+		err = newDevfileHandlerFunc(devfileObj)
+	}
+
+	return err
 }

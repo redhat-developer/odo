@@ -10,7 +10,6 @@ package init
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -23,7 +22,11 @@ type Client interface {
 	// like if the directory contains no Devfile at all.
 	// `preInitHandlerFunc` allows to perform operations prior to triggering the actual Devfile
 	// initialization and personalization process.
-	InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool)) error
+	// `newDevfileHandlerFunc` is called only when a new Devfile object has been instantiated.
+	// It allows to perform operations right after the Devfile has been initialized and personalized.
+	// It is not called if the context directory already has a Devfile file.
+	InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(interactiveMode bool),
+		newDevfileHandlerFunc func(newDevfileObj parser.DevfileObj) error) error
 
 	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
 	// or based on the flags if the directory is empty, or
@@ -42,12 +45,12 @@ type Client interface {
 	// WARNING: This will first remove all the content of dest.
 	DownloadStarterProject(project *v1alpha2.StarterProject, dest string) error
 
-	// PersonalizeName updates a devfile name, depending on the flags.
-	// The method will modify the devfile content and save the devfile on disk
-	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
+	// PersonalizeName returns the customized Devfile Metadata Name.
+	// Depending on the flags, it may return a name set interactively or not.
+	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error)
 
 	// PersonalizeDevfileConfig updates the env vars, and URL endpoints
-	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error
+	PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error)
 
 	// SelectAndPersonalizeDevfile selects a devfile, then downloads, parse and personalize it
 	// Returns the devfile object and its path

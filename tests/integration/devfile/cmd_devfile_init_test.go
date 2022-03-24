@@ -170,4 +170,20 @@ var _ = Describe("odo devfile init command tests", func() {
 			}
 		})
 	})
+
+	When("source directory is empty", func() {
+		BeforeEach(func() {
+			Expect(helper.ListFilesInDir(commonVar.Context)).To(HaveLen(0))
+		})
+
+		It("name in devfile is personalized in non-interactive mode", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile-path",
+				filepath.Join(helper.GetExamplePath(), "source", "devfiles", "nodejs",
+					"devfile-with-starter-with-devfile.yaml")).ShouldPass()
+
+			metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(metadata.Name).To(BeEquivalentTo("aname"))
+			Expect(metadata.Language).To(BeEquivalentTo("nodejs"))
+		})
+	})
 })

@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil"
@@ -13,7 +15,6 @@ import (
 	parsercontext "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
-	"github.com/golang/mock/gomock"
 )
 
 func TestInteractiveBackend_SelectDevfile(t *testing.T) {
@@ -210,7 +211,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 		fields      fields
 		args        args
 		wantErr     bool
-		checkResult func(devfile parser.DevfileObj, args args) bool
+		checkResult func(newName string, args args) bool
 	}{
 		{
 			name: "no flag",
@@ -233,8 +234,8 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				flags: map[string]string{},
 			},
 			wantErr: false,
-			checkResult: func(devfile parser.DevfileObj, args args) bool {
-				return devfile.GetMetadataName() == "aname"
+			checkResult: func(newName string, args args) bool {
+				return newName == "aname"
 			},
 		}}
 	for _, tt := range tests {
@@ -249,14 +250,13 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				registryClient: tt.fields.registryClient,
 			}
 			fs := filesystem.NewFakeFs()
-			devfile := tt.args.devfile(fs)
-			err := o.PersonalizeName(devfile, tt.args.flags)
+			newName, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("InteractiveBackend.PersonalizeName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if tt.checkResult != nil && !tt.checkResult(devfile, tt.args) {
+			if tt.checkResult != nil && !tt.checkResult(newName, tt.args) {
 				t.Errorf("InteractiveBackend.PersonalizeName(), checking result failed")
 			}
 		})
@@ -484,8 +484,9 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 				askerClient:    askerClient,
 				registryClient: tt.fields.registryClient,
 			}
-			if err = o.PersonalizeDevfileconfig(devfile); (err != nil) != tt.wantErr {
-				t.Errorf("PersonalizeDevfileconfig() error = %v, wantErr %v", err, tt.wantErr)
+			devfile, err = o.PersonalizeDevfileConfig(devfile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PersonalizeDevfileConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			config, err = getPortsAndEnvVar(devfile)
 			if err != nil {

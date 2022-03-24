@@ -67,25 +67,26 @@ func (mr *MockClientMockRecorder) DownloadStarterProject(project, dest interface
 }
 
 // InitDevfile mocks base method.
-func (m *MockClient) InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(bool)) error {
+func (m *MockClient) InitDevfile(flags map[string]string, contextDir string, preInitHandlerFunc func(bool), newDevfileHandlerFunc func(parser.DevfileObj) error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitDevfile", flags, contextDir, preInitHandlerFunc)
+	ret := m.ctrl.Call(m, "InitDevfile", flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // InitDevfile indicates an expected call of InitDevfile.
-func (mr *MockClientMockRecorder) InitDevfile(flags, contextDir, preInitHandlerFunc interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) InitDevfile(flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitDevfile", reflect.TypeOf((*MockClient)(nil).InitDevfile), flags, contextDir, preInitHandlerFunc)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitDevfile", reflect.TypeOf((*MockClient)(nil).InitDevfile), flags, contextDir, preInitHandlerFunc, newDevfileHandlerFunc)
 }
 
 // PersonalizeDevfileConfig mocks base method.
-func (m *MockClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) error {
+func (m *MockClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeDevfileConfig", devfileobj, flags, fs, dir)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PersonalizeDevfileConfig indicates an expected call of PersonalizeDevfileConfig.
@@ -95,11 +96,12 @@ func (mr *MockClientMockRecorder) PersonalizeDevfileConfig(devfileobj, flags, fs
 }
 
 // PersonalizeName mocks base method.
-func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error {
+func (m *MockClient) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PersonalizeName", devfile, flags)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // PersonalizeName indicates an expected call of PersonalizeName.

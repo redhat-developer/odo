@@ -21,9 +21,10 @@ type InitBackend interface {
 	// depending on the flags. If not starter project is selected, a nil starter is returned
 	SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error)
 
-	// PersonalizeName updates a devfile name, depending on the flags
-	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) error
+	// PersonalizeName returns the customized Devfile Metadata Name.
+	// Depending on the flags, it may return a name set interactively or not.
+	PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error)
 
 	// PersonalizeDevfileConfig updates the devfile config for ports and environment variables
-	PersonalizeDevfileconfig(devfileobj parser.DevfileObj) error
+	PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error)
 }

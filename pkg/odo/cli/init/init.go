@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
@@ -145,6 +146,14 @@ func (o *InitOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
+
+	// Set the name in the devfile but do not write it yet to disk,
+	// because the starter project downloaded at the end might come bundled with a specific Devfile.
+	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
+	if err != nil {
+		return fmt.Errorf("Failed to update the devfile's name: %w", err)
+	}
+
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
 		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
@@ -162,11 +171,9 @@ func (o *InitOptions) Run() (err error) {
 		}
 	}
 
-	// Set the name in the devfile *AND* writes the devfile back to the disk in case
-	// it has been removed and not replaced by the starter project
-	err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
-	if err != nil {
-		return fmt.Errorf("Failed to update the devfile's name: %w", err)
+	// WARNING: SetMetadataName writes the Devfile to disk
+	if err = devfileObj.SetMetadataName(name); err != nil {
+		return err
 	}
 
 	exitMessage := fmt.Sprintf(`
