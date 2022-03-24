@@ -37,7 +37,7 @@ func (o *TelemetryOptions) Validate() (err error) {
 	return err
 }
 
-func (o *TelemetryOptions) Run() (err error) {
+func (o *TelemetryOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
 		return nil
 	}

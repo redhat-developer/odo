@@ -78,7 +78,7 @@ func (pdo *ProjectDeleteOptions) Validate() error {
 }
 
 // Run the project delete command
-func (pdo *ProjectDeleteOptions) Run() (err error) {
+func (pdo *ProjectDeleteOptions) Run(cmdline cmdline.Cmdline) (err error) {
 
 	// Create the "spinner"
 	s := &log.Status{}

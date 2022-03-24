@@ -183,7 +183,7 @@ func (o *DevOptions) Validate() error {
 	return err
 }
 
-func (o *DevOptions) Run() error {
+func (o *DevOptions) Run(cmdline cmdline.Cmdline) error {
 	var err error
 	var platformContext = kubernetes.KubernetesContext{
 		Namespace: o.Context.GetProject(),

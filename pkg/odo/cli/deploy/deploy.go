@@ -124,7 +124,7 @@ func (o *DeployOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *DeployOptions) Run() error {
+func (o *DeployOptions) Run(cmdline cmdline.Cmdline) error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	devfileName := devfileObj.GetMetadataName()
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())

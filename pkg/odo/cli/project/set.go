@@ -83,7 +83,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 }
 
 // Run runs the project set command
-func (pso *ProjectSetOptions) Run() (err error) {
+func (pso *ProjectSetOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	current := pso.GetProject()
 	err = pso.clientset.ProjectClient.SetCurrent(pso.projectName)
 	if err != nil {

@@ -56,7 +56,7 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 }
 
 // Run the project get command
-func (pgo *ProjectGetOptions) Run() (err error) {
+func (pgo *ProjectGetOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	currentProject := pgo.Context.GetProject()
 
 	if pgo.shortFlag {

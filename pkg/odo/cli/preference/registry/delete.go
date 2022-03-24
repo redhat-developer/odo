@@ -68,7 +68,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry delete" command
-func (o *DeleteOptions) Run() (err error) {
+func (o *DeleteOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	isSecure := registryUtil.IsSecure(o.clientset.PreferenceClient, o.registryName)
 	err = o.clientset.PreferenceClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
 	if err != nil {

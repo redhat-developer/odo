@@ -76,7 +76,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url list command
-func (o *ListOptions) Run() (err error) {
+func (o *ListOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	componentName := o.Context.LocalConfigProvider.GetName()
 	urls, err := o.client.List()
 	if err != nil {

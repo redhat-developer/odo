@@ -82,7 +82,7 @@ func (o *LoginOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *LoginOptions) Run() (err error) {
+func (o *LoginOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	return o.loginClient.Login(o.serverFlag, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 

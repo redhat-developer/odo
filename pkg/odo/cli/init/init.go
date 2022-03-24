@@ -110,7 +110,7 @@ func (o *InitOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *InitOptions) Run() (err error) {
+func (o *InitOptions) Run(cmdline cmdline.Cmdline) (err error) {
 
 	var starterDownloaded bool
 

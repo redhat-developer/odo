@@ -77,7 +77,7 @@ func (o *UpdateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry update" command
-func (o *UpdateOptions) Run() (err error) {
+func (o *UpdateOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	secureBeforeUpdate := false
 	secureAfterUpdate := false
 

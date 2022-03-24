@@ -60,7 +60,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry list" command
-func (o *ListOptions) Run() (err error) {
+func (o *ListOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	registryList := o.clientset.PreferenceClient.RegistryList()
 	if registryList == nil || len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")

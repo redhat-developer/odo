@@ -60,7 +60,7 @@ func (o *UnsetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run() (err error) {
+func (o *UnsetOptions) Run(cmdline cmdline.Cmdline) (err error) {
 
 	if !o.forceFlag {
 

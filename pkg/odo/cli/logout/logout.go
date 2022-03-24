@@ -45,7 +45,7 @@ func (o *LogoutOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo logout command
-func (o *LogoutOptions) Run() (err error) {
+func (o *LogoutOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	return o.KClient.RunLogout(os.Stdout)
 }
 

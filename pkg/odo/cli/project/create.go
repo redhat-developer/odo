@@ -74,7 +74,7 @@ func (pco *ProjectCreateOptions) Validate() error {
 }
 
 // Run runs the project create command
-func (pco *ProjectCreateOptions) Run() (err error) {
+func (pco *ProjectCreateOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	// Create the "spinner"
 	s := &log.Status{}
 

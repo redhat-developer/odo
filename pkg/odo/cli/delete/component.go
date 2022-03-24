@@ -78,7 +78,7 @@ func (o *ComponentOptions) Validate() (err error) {
 	return nil
 }
 
-func (o *ComponentOptions) Run() error {
+func (o *ComponentOptions) Run(cmdline cmdline.Cmdline) error {
 	if o.name != "" {
 		return o.deleteNamedComponent()
 	}
