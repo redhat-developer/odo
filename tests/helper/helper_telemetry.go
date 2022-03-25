@@ -29,7 +29,6 @@ func CreateTelemetryDebugFile() {
 
 //GetTelemetryDebugData gets telemetry data dumped into temp file for testing/debugging
 func GetTelemetryDebugData() segment.TelemetryData {
-	Expect(os.Setenv(segment.DisableTelemetryEnv, "true")).NotTo(HaveOccurred())
 	var data []byte
 	var td segment.TelemetryData
 	telemetryFile := segment.GetDebugTelemetryFile()
@@ -42,4 +41,10 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(json.Unmarshal(data, &td)).NotTo(HaveOccurred())
 	return td
+}
+
+//ResetTelemetry resets the telemetry back to original values
+func ResetTelemetry() {
+	Expect(os.Setenv(segment.DisableTelemetryEnv, "true")).NotTo(HaveOccurred())
+	Expect(os.Unsetenv(segment.DebugTelemetryFileEnv))
 }

@@ -120,6 +120,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 			helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 		})
+		AfterEach(func() {
+			helper.ResetTelemetry()
+		})
 		It("should record the telemetry data correctly", func() {
 			td := helper.GetTelemetryDebugData()
 			Expect(td.Event).To(ContainSubstring("odo deploy"))

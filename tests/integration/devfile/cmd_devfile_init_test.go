@@ -298,6 +298,9 @@ var _ = Describe("odo devfile init command tests", func() {
 			helper.CreateTelemetryDebugFile()
 			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass().Out()
 		})
+		AfterEach(func() {
+			helper.ResetTelemetry()
+		})
 		It("should record the telemetry data correctly", func() {
 			td := helper.GetTelemetryDebugData()
 			Expect(td.Event).To(ContainSubstring("odo init"))

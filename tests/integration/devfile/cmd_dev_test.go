@@ -62,19 +62,6 @@ var _ = Describe("odo dev command tests", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("should record telemetry info correctly", func() {
-			helper.CreateTelemetryDebugFile()
-			helper.StartDevMode().Stop()
-			td := helper.GetTelemetryDebugData()
-			Expect(td.Event).To(ContainSubstring("odo dev"))
-			Expect(td.Properties.Success).To(BeFalse())
-			Expect(td.Properties.Error).To(ContainSubstring("interrupt"))
-			Expect(td.Properties.ErrorType == "*errors.errorString").To(BeTrue())
-			//Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
-			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
-			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
-			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
-		})
 		It("should use the index information from previous push operation", func() {
 			// Create a new file A
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
@@ -321,6 +308,9 @@ var _ = Describe("odo dev command tests", func() {
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 				helper.StartDevMode().Stop()
+			})
+			AfterEach(func() {
+				helper.ResetTelemetry()
 			})
 			It("should record the telemetry data correctly", func() {
 				td := helper.GetTelemetryDebugData()
