@@ -1,6 +1,6 @@
 ---
 title: odo init
-sidebar_position: 6
+sidebar_position: 1
 ---
 
 The `odo init` command is the first command to be executed when you want to bootstrap a new component, using `odo`. If sources already exist,

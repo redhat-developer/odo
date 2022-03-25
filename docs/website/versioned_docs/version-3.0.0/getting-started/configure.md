@@ -96,9 +96,69 @@ Unsetting a preference key sets it to an empty value in the preference file. odo
 | Preference         | Description                                                                    | Default                |
 |--------------------|--------------------------------------------------------------------------------|------------------------|
 | UpdateNotification | Control whether a notification to update odo is shown                          | True                   |
-| NamePrefix         | Set a default name prefix for an odo resource (component, storage, etc)        | Current directory name |
 | Timeout            | Timeout for Kubernetes server connection check                                 | 1 second               |
 | PushTimeout        | Timeout for waiting for a component to start                                   | 240 seconds            |
 | RegistryCacheTime  | For how long (in minutes) odo will cache information from the Devfile registry | 4 Minutes              |
 | Ephemeral          | Control whether odo should create a emptyDir volume to store source code       | True                   |
 | ConsentTelemetry   | Control whether odo can collect telemetry for the user's odo usage             | False                  |
+
+
+## Managing Devfile registries
+
+odo uses the portable *devfile* format to describe the components. odo can connect to various devfile registries to download devfiles for different languages and frameworks.
+
+You can connect to publicly available devfile registries, or you can install your own [Devfile Registry](https://github.com/devfile/registry-support).
+
+You can use the `odo preference registry` command to manage the registries used by odo to retrieve devfile information.
+
+### Adding a registry
+
+You can use the following command to add a registry:
+
+```
+odo preference registry add
+```
+
+For example:
+
+```
+$ odo preference registry add StageRegistry https://registry.stage.devfile.io
+New registry successfully added
+```
+
+### Deleting a registry
+
+You can delete a registry with the command:
+
+```
+odo preference registry delete
+```
+
+For example:
+
+```
+$ odo preference registry delete StageRegistry
+? Are you sure you want to delete registry "StageRegistry" Yes
+Successfully deleted registry
+```
+
+You can use the `--force` (or `-f`) flag to force the deletion of the registry without confirmation.
+
+### Updating a registry
+
+You can update the URL and/or the personal access token of a registry already registered with the command:
+
+```
+odo preference registry update
+```
+
+For example:
+
+```
+$ odo preference registry update MyRegistry https://otherregistry.example.com
+? Are you sure you want to update registry "MyRegistry" Yes
+Successfully updated registry
+```
+
+You can use the `--force` (or `-f`) flag to force the update of the registry without confirmation.
+
