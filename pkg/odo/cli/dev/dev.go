@@ -6,12 +6,21 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
+
+	"github.com/redhat-developer/odo/pkg/log"
+
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
 
@@ -41,20 +50,21 @@ type DevOptions struct {
 	// Variables
 	ignorePaths []string
 	out         io.Writer
+	errOut      io.Writer
+	// it's called "initial" because it has to be set only once when running odo dev for the first time
+	// it is used to compare with updated devfile when we watch the contextDir for changes
+	initialDevfileObj parser.DevfileObj
 
 	// working directory
 	contextDir string
 }
 
-type DevHandler struct{}
-
-func NewDevHandler() *DevHandler {
-	return &DevHandler{}
-}
+type Handler struct{}
 
 func NewDevOptions() *DevOptions {
 	return &DevOptions{
-		out: log.GetStdout(),
+		out:    log.GetStdout(),
+		errOut: log.GetStderr(),
 	}
 }
 
@@ -102,12 +112,14 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
-	envFileInfo, err := envinfo.NewEnvSpecificInfo("")
+	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
 
-	if !envFileInfo.Exists() {
+	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
+
+	if !envfileinfo.Exists() {
 		// if env.yaml doesn't exist, get component name from the devfile.yaml
 		var cmpName string
 		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
@@ -116,17 +128,18 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		}
 		// create env.yaml file with component, project/namespace and application info
 		// TODO - store only namespace into env.yaml, we don't want to track component or application name via env.yaml
-		err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
+		err = envfileinfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
 		if err != nil {
 			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
-	} else if envFileInfo.GetComponentSettings().Project != o.GetProject() {
+	} else if envfileinfo.GetComponentSettings().Project != o.GetProject() {
 		// set namespace if the evn.yaml exists; that's the only piece we care about in env.yaml
-		err = envFileInfo.SetConfiguration("project", o.GetProject())
+		err = envfileinfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
 			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
 	}
+	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
 	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
 	// 1. create an empty string slice to which paths like .gitignore, .odo/odo-file-index.json, etc. will be added
@@ -166,12 +179,44 @@ func (o *DevOptions) Run() error {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	d := DevHandler{}
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, log.GetStdout(), &d)
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, path)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n ")
+
+	// get the endpoint/port information for containers in devfile and setup port-forwarding
+	containers, err := o.Context.EnvSpecificInfo.GetDevfileObj().Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return err
+	}
+	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
+	portPairs := portPairsFromContainerEndpoints(ceMapping)
+	var portPairsSlice []string
+	for _, v1 := range portPairs {
+		portPairsSlice = append(portPairsSlice, v1...)
+	}
+	pod, err := o.clientset.KubernetesClient.GetPodUsingComponentName(o.Context.EnvSpecificInfo.GetDevfileObj().GetMetadataName())
+	if err != nil {
+		return err
+	}
+	go func() {
+		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, o.errOut)
+		if err != nil {
+			fmt.Printf("failed to setup port-forwarding: %v\n", err)
+		}
+	}()
+	printPortForwardingInfo(portPairs, o.out)
+
+	d := Handler{}
+	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
 	return err
 }
 
-func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+// RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
+func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter common.ComponentAdapter
 
 	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
@@ -188,12 +233,13 @@ func (o *DevHandler) RegenerateAdapterAndPush(pushParams common.PushParameters, 
 }
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
-
-	// Parse devfile and validate. Path is hard coded because odo expects devfile.yaml to be present in the pwd/cwd.
-
 	devObj, err := ododevfile.ParseAndValidateFromFile(location.DevfileLocation(""))
 	if err != nil {
 		return nil, err
+	}
+
+	if !reflect.DeepEqual(parameters.InitialDevfileObj, devObj) {
+		log.Warningf("devfile.yaml has been changed; please restart the `odo dev` command\n\n")
 	}
 
 	platformContext := kubernetes.KubernetesContext{
@@ -201,16 +247,30 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+}
 
+func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
+	var portForwardURLs strings.Builder
+	for container, ports := range portPairs {
+		for _, pair := range ports {
+			split := strings.Split(pair, ":")
+			local := split[0]
+			remote := split[1]
+
+			portForwardURLs.WriteString(fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local))
+		}
+	}
+	fmt.Fprintf(out, "\n%s", portForwardURLs.String())
 }
 
 // NewCmdDev implements the odo dev command
 func NewCmdDev(name, fullName string) *cobra.Command {
 	o := NewDevOptions()
 	devCmd := &cobra.Command{
-		Use:     name,
-		Short:   "Deploy component to development cluster",
-		Long:    "Deploy the component to a development cluster. odo dev is a long running command that will automatically sync your source to the cluster",
+		Use:   name,
+		Short: "Deploy component to development cluster",
+		Long: `odo dev is a long running command that will automatically sync your source to the cluster.
+It forwards endpoints with exposure values 'public' or 'internal' to a port on localhost.`,
 		Example: fmt.Sprintf(devExample, fullName),
 		Args:    cobra.MaximumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -218,10 +278,34 @@ func NewCmdDev(name, fullName string) *cobra.Command {
 		},
 	}
 
-	clientset.Add(devCmd, clientset.DEV, clientset.INIT)
+	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "utility"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return devCmd
+}
+
+// portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
+// it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
+// "container1": {"400001:3000", "400002:3001"}
+func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
+	portPairs := make(map[string][]string)
+	port := 40000
+
+	for name, ports := range ceMap {
+		for _, p := range ports {
+			port++
+			for {
+				isPortFree := util.IsPortFree(port)
+				if isPortFree {
+					pair := fmt.Sprintf("%d:%d", port, p)
+					portPairs[name] = append(portPairs[name], pair)
+					break
+				}
+				port++
+			}
+		}
+	}
+	return portPairs
 }

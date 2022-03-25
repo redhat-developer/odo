@@ -179,10 +179,10 @@ func addParam(schema *spec.Schema, param olm.SpecDescriptor) {
 }
 
 // GetRestMappingFromUnstructured returns rest mappings from unstructured data
-func (client *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured) (*meta.RESTMapping, error) {
+func (c *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured) (*meta.RESTMapping, error) {
 	gvk := u.GroupVersionKind()
 
-	cfg := client.GetClientConfig()
+	cfg := c.GetClientConfig()
 
 	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
@@ -194,11 +194,11 @@ func (client *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured
 }
 
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
-func (client *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
+func (c *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
 	var operatorGVRList []meta.RESTMapping
 
 	// ignoring the error because
-	csvs, err := client.ListClusterServiceVersions()
+	csvs, err := c.ListClusterServiceVersions()
 	if err != nil {
 		return operatorGVRList, err
 	}

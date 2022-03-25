@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"regexp"
+
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -82,17 +84,32 @@ import (
 		})
 	})
 */
+
+const localhostRegexp = "localhost:[0-9]*"
+
 type DevSession struct {
 	session *gexec.Session
 }
 
-// StartDevMode starts a dev session with `odo dev`
-func StartDevMode() DevSession {
+// StartDevMode a session structure, the contents of the standard and error outputs, and the redirections endpoints to access ports opened by component
+// when the dev mode is completely started
+func StartDevMode() (DevSession, []byte, []byte, []string, error) {
 	session := CmdRunner("odo", "dev")
-	WaitForOutputToContain("Waiting for something to change", 180, 10, session)
-	return DevSession{
+	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+	result := DevSession{
 		session: session,
 	}
+	outContents := session.Out.Contents()
+	errContents := session.Err.Contents()
+	err := session.Out.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, nil, err
+	}
+	err = session.Err.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, nil, err
+	}
+	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), localhostRegexp), nil
 }
 
 // Kill a Dev session abruptly, without handling any cleanup
@@ -105,10 +122,21 @@ func (o DevSession) Stop() {
 	o.session.Interrupt()
 }
 
-// RunDevMode runs a dev session and executes the `inside` code
-func RunDevMode(inside func(session *gexec.Session)) {
-	session := StartDevMode()
+// RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
+// The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
+// and a slice of strings - urls - giving the redirections in the form localhost:<port_number> to access ports opened by component
+func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte, urls []string)) error {
+	session, outContents, errContents, urls, err := StartDevMode()
+	if err != nil {
+		return err
+	}
 	defer session.Stop()
-	WaitForOutputToContain("Waiting for something to change", 180, 10, session.session)
-	inside(session.session)
+	inside(session.session, outContents, errContents, urls)
+	return nil
+}
+
+// FindAllMatchingStrings returns all matches for the provided regExp as a slice of strings
+func FindAllMatchingStrings(s, regExp string) []string {
+	re := regexp.MustCompile(regExp)
+	return re.FindAllString(s, -1)
 }

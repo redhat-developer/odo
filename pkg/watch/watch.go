@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/fsnotify/fsnotify"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -61,6 +63,8 @@ type WatchParameters struct {
 	DevfileRunCmd string
 	// DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
 	DevfileDebugCmd string
+	// InitialDevfileObj is used to compare the devfile between the very first run of odo dev and subsequent ones
+	InitialDevfileObj parser.DevfileObj
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -299,7 +303,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
 				log.Finfof(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal.")
 			}
-			log.Finfof(out, "\nWaiting for something to change in %s\n\nPress Ctrl+c to exit.", parameters.Path)
+			log.Finfof(out, "\nWatching for changes in the current directory %s\n\nPress Ctrl+c to exit.", parameters.Path)
 			showWaitingMessage = false
 		}
 		// if a change happened more than 'delay' seconds ago, sync it now.
@@ -315,7 +319,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 				fmt.Fprintf(out, "\n\nFile %s changed\n", file)
 			}
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-				fmt.Fprintf(out, "Pushing files...\n")
+				fmt.Fprintf(out, "Pushing files...\n\n")
 				fileInfo, err := os.Stat(parameters.Path)
 				if err != nil {
 					return fmt.Errorf("%s: file doesn't exist: %w", parameters.Path, err)

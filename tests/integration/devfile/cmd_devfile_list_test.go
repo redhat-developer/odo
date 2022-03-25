@@ -83,7 +83,9 @@ var _ = Describe("odo list with devfile", func() {
 			When("the component is pushed in dev mode", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
-					devSession = helper.StartDevMode()
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode()
+					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {
 					devSession.Stop()

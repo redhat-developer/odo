@@ -10,6 +10,7 @@ import (
 	"hash/adler32"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"os"
 	"os/signal"
@@ -759,4 +760,16 @@ func SafeGetBool(b *bool) bool {
 // GetAdler32Value returns an adler32 hash of a string on 8 hexadecimal characters
 func GetAdler32Value(s string) string {
 	return fmt.Sprintf("%08x", adler32.Checksum([]byte(s)))
+}
+
+// IsPortFree checks if the port on localhost is free to use
+func IsPortFree(port int) bool {
+	address := fmt.Sprintf("localhost:%d", port)
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return false
+	}
+	_ = listener.Addr().(*net.TCPAddr).Port
+	err = listener.Close()
+	return err == nil
 }

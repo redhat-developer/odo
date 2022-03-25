@@ -1278,6 +1278,20 @@ func (mr *MockClientInterfaceMockRecorder) SetNamespace(ns interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockClientInterface)(nil).SetNamespace), ns)
 }
 
+// SetupPortForwarding mocks base method.
+func (m *MockClientInterface) SetupPortForwarding(pod *v12.Pod, portPairs []string, errOut io.Writer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetupPortForwarding", pod, portPairs, errOut)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetupPortForwarding indicates an expected call of SetupPortForwarding.
+func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, errOut interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupPortForwarding", reflect.TypeOf((*MockClientInterface)(nil).SetupPortForwarding), pod, portPairs, errOut)
+}
+
 // UnlinkSecret mocks base method.
 func (m *MockClientInterface) UnlinkSecret(secretName, componentName, applicationName string) error {
 	m.ctrl.T.Helper()
