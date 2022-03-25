@@ -68,12 +68,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	if len(debugTelemetry) > 0 {
 		klog.V(4).Infof("WARNING: debug telemetry enabled. Will be logged in %s", debugTelemetry)
-		scontext.SetTelemetryStatus(cmd.Context(), true)
-		scontext.SetTelemetryStatusActual(cmd.Context(), segment.IsTelemetryEnabled(cfg))
-	} else {
-		// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
-		scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 	}
+
+	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
+	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
@@ -119,10 +117,6 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 // TODO: move this function to a more suitable place, preferably pkg/segment
 func startTelemetry(cmd *cobra.Command, err error, startTime time.Time) {
 	if scontext.GetTelemetryStatus(cmd.Context()) && !strings.Contains(cmd.CommandPath(), "telemetry") {
-		// if debug telemetry is enabled, we want to set the actual telemetry status back here
-		if len(segment.GetDebugTelemetry()) > 0 {
-			scontext.SetTelemetryStatusFromActual(cmd.Context())
-		}
 		uploadData := &segment.TelemetryData{
 			Event: cmd.CommandPath(),
 			Properties: segment.TelemetryProperties{

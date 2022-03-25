@@ -14,15 +14,14 @@ import (
 )
 
 const (
-	ComponentType         = "componentType"
-	ClusterType           = "clusterType"
-	TelemetryStatus       = "isTelemetryEnabled"
-	DevfileName           = "devfileName"
-	Language              = "language"
-	ProjectType           = "projectType"
-	NOTFOUND              = "not-found"
-	InteractiveMode       = "interactive"
-	TelemetryStatusActual = "telemetryActual"
+	ComponentType   = "componentType"
+	ClusterType     = "clusterType"
+	TelemetryStatus = "isTelemetryEnabled"
+	DevfileName     = "devfileName"
+	Language        = "language"
+	ProjectType     = "projectType"
+	NOTFOUND        = "not-found"
+	InteractiveMode = "interactive"
 )
 
 type contextKey struct{}
@@ -112,10 +111,6 @@ func SetInteractive(ctx context.Context, interactive bool) {
 	setContextProperty(ctx, InteractiveMode, interactive)
 }
 
-func SetTelemetryStatusActual(ctx context.Context, isEnabled bool) {
-	setContextProperty(ctx, TelemetryStatusActual, isEnabled)
-}
-
 // GetTelemetryStatus gets the telemetry status that is set before a command is run
 func GetTelemetryStatus(ctx context.Context) bool {
 	isEnabled, ok := GetContextProperties(ctx)[TelemetryStatus]
@@ -123,16 +118,6 @@ func GetTelemetryStatus(ctx context.Context) bool {
 		return isEnabled.(bool)
 	}
 	return false
-}
-
-// SetTelemetryStatusFromActual resets the actual telemetry status
-func SetTelemetryStatusFromActual(ctx context.Context) {
-	isEnabled, ok := GetContextProperties(ctx)[TelemetryStatusActual]
-	if ok {
-		SetTelemetryStatus(ctx, isEnabled.(bool))
-		unsetContextProperty(ctx, TelemetryStatusActual)
-
-	}
 }
 
 // set safely sets value for a key in storage
@@ -168,10 +153,4 @@ func setContextProperty(ctx context.Context, key string, value interface{}) {
 	if cProperties != nil {
 		cProperties.set(key, value)
 	}
-}
-
-//unsetContextPropery unsets a context property
-func unsetContextProperty(ctx context.Context, key string) {
-	cProperties := propertiesFromContext(ctx)
-	cProperties.set(key, nil)
 }
