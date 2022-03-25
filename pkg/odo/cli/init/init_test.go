@@ -25,6 +25,7 @@ func TestInitOptions_Complete(t *testing.T) {
 			name: "directory not empty",
 			cmdlineExpects: func(mock *cmdline.MockCmdline) {
 				mock.EXPECT().Context().Return(context.Background())
+				mock.EXPECT().Context().Return(context.Background())
 				mock.EXPECT().GetFlags().Times(1)
 			},
 			fsysPopulate: func(fsys filesystem.Filesystem) {
@@ -35,6 +36,7 @@ func TestInitOptions_Complete(t *testing.T) {
 		{
 			name: "directory empty",
 			cmdlineExpects: func(mock *cmdline.MockCmdline) {
+				mock.EXPECT().Context().Return(context.Background())
 				mock.EXPECT().Context().Return(context.Background())
 				mock.EXPECT().GetFlags().Times(1)
 			},
