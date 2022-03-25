@@ -353,7 +353,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("doing odo push and there is a env variable with spaces", func() {
+	When("doing odo dev and there is a env variable with spaces", func() {
 		devfileCmpName := "nodejs"
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
@@ -940,7 +940,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("node-js application is created and pushed with devfile schema 2.2.0", func() {
+	When("node-js application is created and deployed with devfile schema 2.2.0", func() {
 
 		ensureResource := func(cpulimit, cpurequest, memoryrequest string) {
 			By("check for cpuLimit", func() {
