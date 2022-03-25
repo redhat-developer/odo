@@ -184,7 +184,7 @@ func (c *preferenceInfo) RegistryHandler(operation string, registryName string, 
 	}
 
 	c.OdoSettings.RegistryList = &registryList
-	err = util.WriteToFile(&c.Preference, c.Filename)
+	err = util.WriteToYAMLFile(&c.Preference, c.Filename)
 	if err != nil {
 		return fmt.Errorf("unable to write the configuration of %q operation to preference file", operation)
 	}
@@ -307,7 +307,7 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 		return fmt.Errorf("unknown parameter : %q is not a parameter in odo preference, run `odo preference -h` to see list of available parameters", parameter)
 	}
 
-	err := util.WriteToFile(&c.Preference, c.Filename)
+	err := util.WriteToYAMLFile(&c.Preference, c.Filename)
 	if err != nil {
 		return fmt.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md", parameter)
 	}
@@ -326,7 +326,7 @@ func (c *preferenceInfo) DeleteConfiguration(parameter string) error {
 		return fmt.Errorf("unknown parameter :%q is not a parameter in the odo preference", parameter)
 	}
 
-	err := util.WriteToFile(&c.Preference, c.Filename)
+	err := util.WriteToYAMLFile(&c.Preference, c.Filename)
 	if err != nil {
 		return fmt.Errorf("unable to set %q, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md", parameter)
 	}
