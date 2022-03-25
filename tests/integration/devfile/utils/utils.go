@@ -54,7 +54,7 @@ func OdoWatch(odoV2Watch OdoV2Watch, project, context, flag string, runner inter
 	}()
 
 	success, err := helper.WatchNonRetCmdStdOut(
-		("odo watch " + flag + " --context " + context),
+		"odo watch " + flag + " --context " + context,
 		time.Duration(5)*time.Minute,
 		func(output string) bool {
 			// the test hangs up on the CI when the delay is set to 0
@@ -121,7 +121,7 @@ func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
 	}()
 
 	success, err := helper.WatchNonRetCmdStdOut(
-		("odo watch " + flag + " --context " + context),
+		"odo watch " + flag + " --context " + context,
 		time.Duration(5)*time.Minute,
 		func(output string) bool {
 			stringsMatched := true
@@ -178,7 +178,7 @@ func OdoWatchWithIgnore(odoV2Watch OdoV2Watch, context, flag string) {
 	}()
 
 	success, err := helper.WatchNonRetCmdStdOut(
-		("odo watch " + flag + " --context " + context),
+		"odo watch " + flag + " --context " + context,
 		time.Duration(5)*time.Minute,
 		func(output string) bool {
 			stringsMatched := true
