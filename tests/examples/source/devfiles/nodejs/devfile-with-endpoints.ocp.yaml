@@ -1,0 +1,70 @@
+commands:
+- exec:
+    commandLine: npm install
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    hotReloadCapable: false
+    workingDir: ${PROJECTS_ROOT}
+  id: devbuild
+- exec:
+    commandLine: npm install
+    component: runtime
+    group:
+      isDefault: false
+      kind: build
+    hotReloadCapable: false
+    workingDir: ${PROJECTS_ROOT}
+  id: build
+- exec:
+    commandLine: npm start
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    hotReloadCapable: false
+    workingDir: ${PROJECTS_ROOT}
+  id: devrun
+- exec:
+    commandLine: npm start
+    component: runtime
+    group:
+      isDefault: false
+      kind: run
+    hotReloadCapable: false
+    workingDir: ${PROJECTS_ROOT}
+  id: run
+components:
+- container:
+    dedicatedPod: false
+    endpoints:
+    - name: 3000-tcp
+      secure: false
+      targetPort: 3000
+    - exposure: public
+      name: example
+      path: /
+      protocol: http
+      secure: false
+      targetPort: 3030
+    - exposure: public
+      name: example-1
+      path: /
+      protocol: http
+      secure: false
+      targetPort: 4000
+    image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+    memoryLimit: 1024Mi
+    mountSources: true
+  name: runtime
+metadata:
+  language: nodejs
+  name: nodejs-with-endpoints
+  projectType: nodejs
+schemaVersion: 2.0.0
+starterProjects:
+- git:
+    remotes:
+      origin: https://github.com/odo-devfiles/nodejs-ex.git
+  name: nodejs-starter

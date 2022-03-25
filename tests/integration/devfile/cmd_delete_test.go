@@ -255,8 +255,9 @@ ComponentSettings:
 		})
 	})
 
-	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`
-	When("deleting a component that has resources attached to it and was deployed with Dev", func() {
+	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
+	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238
+	When("deleting a component that has resources attached to it after a Dev session is started and abruptly killed", func() {
 		resourceTypes := []string{
 			helper.ResourceTypeDeployment,
 			helper.ResourceTypePod,
@@ -264,54 +265,132 @@ ComponentSettings:
 			helper.ResourceTypeIngress,
 			helper.ResourceTypePVC,
 		}
+
 		BeforeEach(func() {
-			// Component name comes from devfile-with-endpoints.yaml
+			// Component name comes from devfile-with-endpoints.{k8s,ocp}.yaml
 			cmpName = "nodejs-with-endpoints"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+
+			var devfileName string
+			isKubernetesCluster := helper.IsKubernetesCluster()
+			if isKubernetesCluster {
+				devfileName = "devfile-with-endpoints.k8s.yaml"
+			} else {
+				devfileName = "devfile-with-endpoints.ocp.yaml"
+			}
+
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
-				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-endpoints.yaml")).ShouldPass()
+				helper.GetExamplePath("source", "devfiles", "nodejs", devfileName)).ShouldPass()
+
+			// Mimic the behavior of `odo url create` by bootstrapping the component with a .odo/env/env.yaml file
+			odoEnvDir := filepath.Join(commonVar.Context, ".odo", "env")
+			helper.MakeDir(odoEnvDir)
+			if isKubernetesCluster {
+				err := helper.CreateFileWithContent(filepath.Join(odoEnvDir, "env.yaml"), fmt.Sprintf(`
+ComponentSettings:
+  AppName: app
+  Name: %s
+  Project: %s
+  Url:
+  - Name: example
+    Host: 1.2.3.4.nip.io
+    Kind: ingress
+`, cmpName, commonVar.Project))
+				Expect(err).To(BeNil())
+			} else {
+				err := helper.CreateFileWithContent(filepath.Join(odoEnvDir, "env.yaml"), fmt.Sprintf(`
+ComponentSettings:
+  AppName: app
+  Name: %s
+  Project: %s
+  Url:
+  - Name: example
+    Host: 1.2.3.4.nip.io
+    Kind: ingress
+  - Name: example-1
+    Kind: route
+`, cmpName, commonVar.Project))
+				Expect(err).To(BeNil())
+				resourceTypes = append(resourceTypes, helper.ResourceTypeRoute)
+			}
+
+			helper.StartDevMode().Kill()
 		})
-		When("a Dev session is started and abruptly killed", func() {
-			BeforeEach(func() {
-				//Purposely killing the dev session to test the component deletion behavior.
-				//Also, devSession.Stop() is expected to clean-up resources at some point
-				helper.StartDevMode().Kill()
+
+		It("should delete the component and its owned resources", func() {
+			// Pod should exist
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			Expect(podName).NotTo(BeEmpty())
+			services := commonVar.CliRunner.GetServices(commonVar.Project)
+			Expect(services).To(SatisfyAll(
+				Not(BeEmpty()),
+				ContainSubstring(fmt.Sprintf("%s-app", cmpName)),
+			))
+
+			isKubernetesCluster := helper.IsKubernetesCluster()
+
+			ingressesOut := commonVar.CliRunner.Run("get", "ingress",
+				"-n", commonVar.Project,
+				"-o", "custom-columns=NAME:.metadata.name",
+				"--no-headers").Out.Contents()
+			ingresses, err := helper.ExtractLines(string(ingressesOut))
+			Expect(err).To(BeNil())
+			Expect(ingresses).To(HaveLen(1))
+			Expect(ingresses[0]).To(HavePrefix("example-"))
+
+			if !isKubernetesCluster {
+				routesOut := commonVar.CliRunner.Run("get", "routes",
+					"-n", commonVar.Project,
+					"-o", "custom-columns=NAME:.metadata.name",
+					"--no-headers").Out.Contents()
+				routes, err := helper.ExtractLines(string(routesOut))
+				Expect(err).To(BeNil())
+				Expect(routes).To(HaveLen(3))
+				Expect(routesOut).To(SatisfyAll(
+					ContainSubstring("example"),
+					ContainSubstring("example-1"),
+				))
+			}
+
+			helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
+			for _, resourceType := range resourceTypes {
+				commonVar.CliRunner.WaitAndCheckForExistence(resourceType, commonVar.Project, 1)
+			}
+			// Deployment and Pod should be deleted
+			helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+				{
+					ResourceType: helper.ResourceTypeDeployment,
+					ResourceName: cmpName,
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypePod,
+					ResourceName: podName,
+					Namespace:    commonVar.Project,
+				},
 			})
-			It("should delete the component and its owned resources", func() {
-				// Pod should exist
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-				Expect(podName).NotTo(BeEmpty())
-				helper.Cmd("odo", "delete", "component", "-f").ShouldPass()
-				for _, resourceType := range resourceTypes {
-					commonVar.CliRunner.WaitAndCheckForExistence(resourceType, commonVar.Project, 1)
-				}
-				// Deployment and Pod should be deleted
-				helper.VerifyResourcesDeleted(commonVar.CliRunner, []helper.ResourceInfo{
-					{
-						ResourceType: helper.ResourceTypeDeployment,
-						ResourceName: cmpName,
-						Namespace:    commonVar.Project,
-					},
-					{
-						ResourceType: helper.ResourceTypePod,
-						ResourceName: podName,
-						Namespace:    commonVar.Project,
-					},
-				})
-				// Dependent resources should be marked to be deleted (see https://github.com/redhat-developer/odo/issues/4593)
+			// Dependent resources should be marked to be deleted (see https://github.com/redhat-developer/odo/issues/4593)
+			helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
+				{
+					ResourceType: helper.ResourceTypeIngress,
+					ResourceName: "example",
+					Namespace:    commonVar.Project,
+				},
+				{
+					ResourceType: helper.ResourceTypeService,
+					ResourceName: cmpName,
+					Namespace:    commonVar.Project,
+				},
+			})
+			if !isKubernetesCluster {
 				helper.VerifyResourcesToBeDeleted(commonVar.CliRunner, []helper.ResourceInfo{
 					{
-						ResourceType: helper.ResourceTypeIngress,
-						ResourceName: "example",
-						Namespace:    commonVar.Project,
-					},
-					{
-						ResourceType: helper.ResourceTypeService,
-						ResourceName: cmpName,
+						ResourceType: helper.ResourceTypeRoute,
+						ResourceName: "example-1",
 						Namespace:    commonVar.Project,
 					},
 				})
-			})
+			}
 		})
 	})
 
