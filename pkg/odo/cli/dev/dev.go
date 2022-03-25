@@ -280,7 +280,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu
-	devCmd.Annotations["command"] = "utility"
+	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return devCmd

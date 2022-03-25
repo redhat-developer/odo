@@ -36,7 +36,6 @@ func NewCmdURL(name, fullName string) *cobra.Command {
 	}
 
 	// Add a defined annotation in order to appear in the help menu
-	urlCmd.Annotations = map[string]string{"command": "main"}
 	urlCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	urlCmd.AddCommand(urlCreateCmd, urlDeleteCmd, urlListCmd)
 

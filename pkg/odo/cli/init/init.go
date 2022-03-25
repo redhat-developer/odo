@@ -218,6 +218,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu
+	initCmd.Annotations["command"] = "main"
 	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	return initCmd
 }

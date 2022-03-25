@@ -17,6 +17,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	componentCmd := NewCmdComponent(ComponentRecommendedCommandName, util.GetFullName(fullName, ComponentRecommendedCommandName))
 	deleteCmd.AddCommand(componentCmd)
+	deleteCmd.Annotations = map[string]string{"command": "main"}
 	deleteCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return deleteCmd

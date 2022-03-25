@@ -40,13 +40,14 @@ var (
  /  \__/    Find more information at https://odo.dev
  \__/`
 
-	odoExample = ktemplates.Examples(`  # Creating and deploying a Node.js project
-  git clone https://github.com/odo-devfiles/nodejs-ex && cd nodejs-ex
-  %[1]s create nodejs
-  %[1]s push
+	odoExample = ktemplates.Examples(`Initializing your component by taking your pick from multiple languages or frameworks:
+  odo init
 
-  # Accessing your Node.js component
-  %[1]s url create`)
+	After creating your initial component, start development with:
+  odo dev
+
+	Want to deploy after development? See it live with:
+  odo deploy`)
 
 	rootUsageTemplate = `Usage:{{if .Runnable}}
   {{if .HasAvailableFlags}}{{appendIfNotPresent .UseLine "[flags]"}}{{else}}{{.UseLine}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
@@ -58,14 +59,14 @@ Aliases:
 Examples:
 {{ .Example }}{{end}}{{ if .HasAvailableSubCommands}}
 
-Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
+Main Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
+OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "openshift"}}
+  {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}{{end}}
 
 Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
-
-Component Shortcuts:{{range .Commands}}{{if eq .Annotations.command "component"}}
-  {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}{{end}}
 
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
@@ -79,32 +80,9 @@ Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
-	rootDefaultHelp = odoLong + `
+	rootDefaultHelp = fmt.Sprintf("%s\n\nUsage:\n%s\n\n%s", odoLong, odoExample, rootHelpMessage)
 
-Get started by creating a new application:
-
- git clone https://github.com/odo-devfiles/nodejs-ex && cd nodejs-ex
- odo create nodejs
- odo push
-
-Your Node.JS application has now been deployed to Kubernetes. odo has pushed the source code, built the application and deployed it.
-
-You can now edit your code in real time and watch as odo automatically deploys your application.
-
- odo watch
-
-To access your application, create a URL:
-
- odo url create myurl
- odo push
-
-More information such as logs or what components you've deployed can be accessed with these commands:
-
- odo describe
- odo list
- odo log
-
-To see a full list of commands, run 'odo --help'`
+	rootHelpMessage = "To see a full list of commands, run 'odo --help'"
 )
 
 const pluginPrefix = "odo"
@@ -136,7 +114,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		Short:   "odo",
 		Long:    odoLong,
 		RunE:    ShowHelp,
-		Example: fmt.Sprintf(odoExample, fullName),
+		Example: odoExample,
 	}
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

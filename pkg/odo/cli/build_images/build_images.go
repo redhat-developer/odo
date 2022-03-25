@@ -79,7 +79,7 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 	}
 
 	// Add a defined annotation in order to appear in the help menu
-	buildImagesCmd.Annotations = map[string]string{"command": "utility"}
+	buildImagesCmd.Annotations = map[string]string{"command": "main"}
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
 	util.AddContextFlag(buildImagesCmd, &o.contextFlag)
