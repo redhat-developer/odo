@@ -110,7 +110,7 @@ var _ = Describe("odo list with devfile", func() {
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, err = helper.StartDevMode()
+					devSession, _, _, _, err = helper.StartDevMode()
 					Expect(err).ToNot(HaveOccurred())
 				})
 				AfterEach(func() {

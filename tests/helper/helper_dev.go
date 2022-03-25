@@ -149,7 +149,7 @@ func (o DevSession) Stop() {
 // since the end of the dev mode started or previous sync, and until the end of the synchronization.
 func (o DevSession) WaitSync() ([]byte, []byte, error) {
 	WaitForOutputToContain("Pushing files...", 180, 10, o.session)
-	WaitForOutputToContain("Waiting for something to change", 180, 10, o.session)
+	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, o.session)
 	outContents := o.session.Out.Contents()
 	errContents := o.session.Err.Contents()
 	err := o.session.Out.Clear()
