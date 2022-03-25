@@ -2,9 +2,9 @@ package devfile
 
 import (
 	"fmt"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"io"
 	"net/http"
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"os"
 	"path/filepath"
 	"sort"
@@ -291,34 +291,27 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
-		})
-					output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
 
-					output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-					Expect(string(output)).To(ContainSubstring(cmpName))
+			When("recording telemetry data", func() {
+				BeforeEach(func() {
+					helper.EnableTelemetryDebug()
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+					helper.StartDevMode().Stop()
 				})
-			})
-		})
-		When("recording telemetry data", func() {
-			BeforeEach(func() {
-				helper.EnableTelemetryDebug()
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-				helper.StartDevMode().Stop()
-			})
-			AfterEach(func() {
-				helper.ResetTelemetry()
-			})
-			It("should record the telemetry data correctly", func() {
-				td := helper.GetTelemetryDebugData()
-				Expect(td.Event).To(ContainSubstring("odo init"))
-				Expect(td.Properties.Success).To(BeTrue())
-				Expect(td.Properties.Error == "").To(BeTrue())
-				Expect(td.Properties.ErrorType == "").To(BeTrue())
-				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
-				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
-				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+				It("should record the telemetry data correctly", func() {
+					td := helper.GetTelemetryDebugData()
+					Expect(td.Event).To(ContainSubstring("odo init"))
+					Expect(td.Properties.Success).To(BeTrue())
+					Expect(td.Properties.Error == "").To(BeTrue())
+					Expect(td.Properties.ErrorType == "").To(BeTrue())
+					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
+					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
+					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
+				})
 			})
 		})
 	})

@@ -239,18 +239,12 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		}
 	}()
 	printPortForwardingInfo(portPairs, o.out)
-
-	d := Handler{}
-	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
-
-	if err != nil {
-		return err
-	}
 	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 	scontext.SetComponentType(ctx, odocomponent.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
+	d := Handler{}
 	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
 	return err
 }

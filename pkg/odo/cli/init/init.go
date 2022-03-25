@@ -18,7 +18,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/spf13/cobra"
 
 	"k8s.io/kubectl/pkg/util/templates"
@@ -176,7 +175,6 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
-	helper.ResetTelemetry()
 	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
