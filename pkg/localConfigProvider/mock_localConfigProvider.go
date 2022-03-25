@@ -47,34 +47,6 @@ func (mr *MockLocalConfigProviderMockRecorder) CompleteURL(url interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).CompleteURL), url)
 }
 
-// CreateURL mocks base method.
-func (m *MockLocalConfigProvider) CreateURL(url LocalURL) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateURL", url)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateURL indicates an expected call of CreateURL.
-func (mr *MockLocalConfigProviderMockRecorder) CreateURL(url interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).CreateURL), url)
-}
-
-// DeleteURL mocks base method.
-func (m *MockLocalConfigProvider) DeleteURL(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteURL", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteURL indicates an expected call of DeleteURL.
-func (mr *MockLocalConfigProviderMockRecorder) DeleteURL(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).DeleteURL), name)
-}
-
 // Exists mocks base method.
 func (m *MockLocalConfigProvider) Exists() bool {
 	m.ctrl.T.Helper()

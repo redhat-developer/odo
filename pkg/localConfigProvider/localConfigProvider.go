@@ -60,13 +60,6 @@ type LocalConfigProvider interface {
 	GetDebugPort() int
 	GetContainers() ([]LocalContainer, error)
 
-	GetURL(name string) (*LocalURL, error)
-	CompleteURL(url *LocalURL) error
-	ValidateURL(url LocalURL) error
-	CreateURL(url LocalURL) error
-	DeleteURL(name string) error
-	GetContainerPorts(container string) ([]string, error)
-	GetComponentPorts() ([]string, error)
 	ListURLs() ([]LocalURL, error)
 
 	ListStorage() ([]LocalStorage, error)
