@@ -1,14 +1,16 @@
 package devfile
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhat-developer/odo/tests/helper"
 	"gopkg.in/yaml.v2"
+
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile init command tests", func() {
@@ -35,6 +37,9 @@ var _ = Describe("odo devfile init command tests", func() {
 			files := helper.ListFilesInDir(commonVar.Context)
 			Expect(len(files)).To(Equal(0))
 		})
+		By("using an invalid devfile name", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "invalid").ShouldFail()
+		})
 		By("running odo init in a directory containing a devfile.yaml", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			defer os.Remove(filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -44,7 +49,7 @@ var _ = Describe("odo devfile init command tests", func() {
 
 		By("running odo init in a directory containing a .devfile.yaml", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-registry.yaml"), filepath.Join(commonVar.Context, ".devfile.yaml"))
-			defer os.Remove(filepath.Join(commonVar.Context, ".devfile.yaml"))
+			defer helper.DeleteFile(filepath.Join(commonVar.Context, ".devfile.yaml"))
 			err := helper.Cmd("odo", "init").ShouldFail().Err()
 			Expect(err).To(ContainSubstring("a devfile already exists in the current directory"))
 		})
@@ -57,17 +62,36 @@ var _ = Describe("odo devfile init command tests", func() {
 			err := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "https://github.com/path/to/devfile.yaml").ShouldFail().Err()
 			Expect(err).To(ContainSubstring("unable to download devfile"))
 		})
+		By("running odo init multiple times", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs").ShouldPass()
+			defer helper.DeleteFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			output := helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs").ShouldFail().Err()
+			Expect(output).To(ContainSubstring("a devfile already exists in the current directory"))
+		})
+
+		By("running odo init with --devfile-path and --devfile-registry", func() {
+			errOut := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "https://github.com/path/to/devfile.yaml", "--devfile-registry", "DefaultDevfileRegistry").ShouldFail().Err()
+			Expect(errOut).To(ContainSubstring("--devfile-registry parameter cannot be used with --devfile-path"))
+		})
+		By("running odo init with invalid --devfile-registry value", func() {
+			fakeRegistry := "fake"
+			errOut := helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", "https://github.com/path/to/devfile.yaml", "--devfile-registry", fakeRegistry).ShouldFail().Err()
+			Expect(errOut).To(ContainSubstring(fmt.Sprintf("%q not found", fakeRegistry)))
+		})
 	})
 
 	Context("running odo init with valid flags", func() {
 		When("using --devfile flag", func() {
+			compName := "aname"
 			BeforeEach(func() {
-				helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass().Out()
+				helper.Cmd("odo", "init", "--name", compName, "--devfile", "go").ShouldPass().Out()
 			})
 
-			It("should download a devfile.yaml file", func() {
+			It("should download a devfile.yaml file and correctly set the component name in it", func() {
 				files := helper.ListFilesInDir(commonVar.Context)
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
+				metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
+				Expect(metadata.Name).To(BeEquivalentTo(compName))
 			})
 		})
 		When("using --devfile-path flag with a local devfile", func() {
@@ -95,9 +119,81 @@ var _ = Describe("odo devfile init command tests", func() {
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
 			})
 		})
+		When("using --devfile-registry flag", func() {
+			It("should successfully run odo init if specified registry is valid", func() {
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass()
+			})
 
+		})
+	})
+	When("a dangling env file exists in the working directory", func() {
+		BeforeEach(func() {
+			helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
+		})
+		It("should successfully create a devfile component and remove the dangling env file", func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass()
+		})
 	})
 
+	When("a devfile is provided which has a starter that has its own devfile", func() {
+		BeforeEach(func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--starter", "nodejs-starter", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-starter-with-devfile.yaml")).ShouldPass()
+		})
+		It("should pass and keep the devfile in starter", func() {
+			devfileContent, err := helper.ReadFile(filepath.Join(commonVar.Context, "devfile.yaml"))
+			Expect(err).To(Not(HaveOccurred()))
+			helper.MatchAllInOutput(devfileContent, []string{"2.2.0", "outerloop-deploy", "deployk8s", "outerloop-build"})
+		})
+	})
+
+	When("running odo init with a devfile that has a subDir starter project", func() {
+		BeforeEach(func() {
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-with-subDir.yaml"), "--starter", "springbootproject").ShouldPass()
+		})
+
+		It("should successfully extract the project in the specified subDir path", func() {
+			var found, notToBeFound int
+			pathsToValidate := map[string]bool{
+				filepath.Join(commonVar.Context, "java", "com"):                                            true,
+				filepath.Join(commonVar.Context, "java", "com", "example"):                                 true,
+				filepath.Join(commonVar.Context, "java", "com", "example", "demo"):                         true,
+				filepath.Join(commonVar.Context, "java", "com", "example", "demo", "DemoApplication.java"): true,
+				filepath.Join(commonVar.Context, "resources", "application.properties"):                    true,
+			}
+			pathsNotToBePresent := map[string]bool{
+				filepath.Join(commonVar.Context, "src"):  true,
+				filepath.Join(commonVar.Context, "main"): true,
+			}
+			err := filepath.Walk(commonVar.Context, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if ok := pathsToValidate[path]; ok {
+					found++
+				}
+				if ok := pathsNotToBePresent[path]; ok {
+					notToBeFound++
+				}
+				return nil
+			})
+			Expect(err).To(BeNil())
+
+			Expect(found).To(Equal(len(pathsToValidate)))
+			Expect(notToBeFound).To(Equal(0))
+		})
+	})
+
+	It("should successfully run odo init for devfile with starter project from the specified branch", func() {
+		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-branch.yaml"), "--starter", "nodejs-starter").ShouldPass()
+		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "test"}
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements(expectedFiles))
+	})
+
+	It("should successfully run odo init for devfile with starter project from the specified tag", func() {
+		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-tag.yaml"), "--starter", "nodejs-starter").ShouldPass()
+		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "app"}
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements(expectedFiles))
+	})
 	When("running odo init from a directory with sources", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)

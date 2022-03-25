@@ -187,9 +187,9 @@ test-plugin-handler: install ## Run odo plugin handler tests
 test-cmd-devfile-list: install ## Run odo list devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo list with devfile" tests/integration/devfile/
 
-.PHONY: test-cmd-devfile-create
-test-cmd-devfile-create: install ## Run odo create devfile command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/devfile/
+.PHONY: test-cmd-devfile-init
+test-cmd-devfile-init: install ## Run odo init devfile command tests
+	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile init command tests" tests/integration/devfile/
 
 .PHONY: test-cmd-devfile-push
 test-cmd-devfile-push: install ## Run odo push devfile command tests

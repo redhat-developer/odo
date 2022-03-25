@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/tidwall/gjson"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/tests/helper"
-	"github.com/tidwall/gjson"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,9 +33,9 @@ var _ = Describe("odo list with devfile", func() {
 	When("a component created in 'app' application", func() {
 
 		BeforeEach(func() {
-			helper.Cmd("odo", "create", "--project", commonVar.Project, cmpName, "--devfile", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-
+			helper.CreateLocalEnv(commonVar.Context, cmpName, commonVar.Project)
 		})
 
 		It("should show the component as 'Not Pushed'", func() {
@@ -52,7 +53,9 @@ var _ = Describe("odo list with devfile", func() {
 	Context("devfile has missing metadata", func() {
 		// Note: We will be using SpringBoot example here because it helps to distinguish between language and projectType.
 		// In terms of SpringBoot, spring is the projectType and java is the language; see https://github.com/redhat-developer/odo/issues/4815
-
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+		})
 		var metadata devfilepkg.DevfileMetadata
 
 		// checkList checks the list output (both normal and json) to see if it contains the expected componentType
@@ -69,7 +72,8 @@ var _ = Describe("odo list with devfile", func() {
 
 		When("projectType is missing", func() {
 			BeforeEach(func() {
-				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-metadata.yaml"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-with-missing-projectType-metadata.yaml")).ShouldPass()
+				helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 
@@ -93,7 +97,8 @@ var _ = Describe("odo list with devfile", func() {
 
 		When("projectType and language is missing", func() {
 			BeforeEach(func() {
-				helper.CopyAndCreate(filepath.Join("source", "devfiles", "springboot", "project"), filepath.Join("source", "devfiles", "springboot", "devfile-with-missing-projectType-and-language-metadata.yaml"), commonVar.Context)
+				helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-with-missing-projectType-and-language-metadata.yaml")).ShouldPass()
+				helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
 				metadata = helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			})
 			It("should show 'Not available' for 'Type' in odo list", func() {

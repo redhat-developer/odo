@@ -61,7 +61,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 
 		It("should pass, when doing odo create with --registry flag", func() {
-			helper.Cmd("odo", "create", "nodejs", "--registry", registryName).ShouldPass()
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", registryName).ShouldPass()
 		})
 
 		It("should fail, when adding same registry", func() {
@@ -80,7 +80,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 		It("deleting registry and creating component with registry flag ", func() {
 			helper.Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldPass()
-			helper.Cmd("odo", "create", "java-maven", "--registry", registryName).ShouldFail()
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "java-maven", "--devfile-registry", registryName).ShouldFail()
 		})
 	})
 
@@ -98,26 +98,27 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 		When("adding git based registries", func() {
 			BeforeEach(func() {
-				out, err = helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/odo-devfiles/registry").ShouldPass().OutAndErr()
+				out, err = helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldPass().OutAndErr()
 
 			})
-			It("should show deprication warning", func() {
+			It("should show deprecation warning", func() {
 				co = fmt.Sprintln(out, err)
 				helper.MatchAllInOutput(co, []string{deprecated, docLink})
 
-				By("odo resgistry list is executed, should show the warning", func() {
+				By("odo registry list is executed, should show the warning", func() {
 					out, err = helper.Cmd("odo", "preference", "registry", "list").ShouldPass().OutAndErr()
 					co = fmt.Sprintln(out, err)
 					helper.MatchAllInOutput(co, []string{deprecated, docLink})
 				})
-				By("should successfully delete registry", func() {
-					out, err = helper.Cmd("odo", "create", "nodejs", "--registry", "RegistryFromGitHub").ShouldPass().OutAndErr()
-					co = fmt.Sprintln(out, err)
-					helper.MatchAllInOutput(co, []string{deprecated, docLink})
-				})
+				// TODO: Should `odo init` support GitHub based registries
+				// By("should successfully delete registry", func() {
+				// 	out, err = helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", "RegistryFromGitHub").ShouldPass().OutAndErr()
+				// 	co = fmt.Sprintln(out, err)
+				// 	helper.MatchAllInOutput(co, []string{deprecated, docLink})
+				// })
 			})
-			It("should not show deprication warning if git registry is not used for component creation", func() {
-				out, err = helper.Cmd("odo", "create", "nodejs", "--registry", "DefaultDevfileRegistry").ShouldPass().OutAndErr()
+			It("should not show deprecation warning if git registry is not used for component creation", func() {
+				out, err = helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().OutAndErr()
 				helper.DontMatchAllInOutput(fmt.Sprintln(out, err), []string{deprecated, docLink})
 			})
 		})

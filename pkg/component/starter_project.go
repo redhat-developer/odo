@@ -6,22 +6,17 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
-)
-
-const (
-	defaultStarterProjectName = "devfile-starter-project-name"
 )
 
 func checkoutProject(subDir, zipURL, path, starterToken string) error {
@@ -34,43 +29,6 @@ func checkoutProject(subDir, zipURL, path, starterToken string) error {
 		return fmt.Errorf("failed to download and extract project zip folder: %w", err)
 	}
 	return nil
-}
-
-// GetStarterProject gets starter project value from flag --starter.
-func GetStarterProject(projects []devfilev1.StarterProject, projectPassed string) (project *devfilev1.StarterProject, err error) {
-
-	nOfProjects := len(projects)
-
-	if nOfProjects == 0 {
-		return nil, fmt.Errorf("no starter project found in devfile.")
-	}
-
-	// Determine what project to be used
-	if nOfProjects == 1 && projectPassed == defaultStarterProjectName {
-		project = &projects[0]
-	} else if nOfProjects > 1 && projectPassed == defaultStarterProjectName {
-		project = &projects[0]
-		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
-	} else { //If the user has specified a project
-		var availableNames []string
-
-		projectFound := false
-		for indexOfProject, projectInfo := range projects {
-			availableNames = append(availableNames, projectInfo.Name)
-			if projectInfo.Name == projectPassed { //Get the index
-				project = &projects[indexOfProject]
-				projectFound = true
-			}
-		}
-
-		if !projectFound {
-			availableNamesString := strings.Join(availableNames, ",")
-			return nil, fmt.Errorf("the project: %s specified in --starter does not exist, available projects: %s", projectPassed, availableNamesString)
-		}
-	}
-
-	return project, err
-
 }
 
 // DownloadStarterProject downloads a starter project referenced in devfile

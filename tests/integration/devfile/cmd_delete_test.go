@@ -36,7 +36,6 @@ var _ = Describe("odo delete command tests", func() {
 			deploymentName = "my-component"
 			serviceName = "my-cs"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-deploy-with-multiple-resources.yaml")).ShouldPass()
 			// Note:	component will be automatically bootstrapped when `odo dev` or `odo deploy` is run
 		})
@@ -236,7 +235,6 @@ ComponentSettings:
 			// Hardcoded names from devfile-with-valid-events.yaml
 			cmpName = "nodejs"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml")).ShouldPass()
 			session := helper.CmdRunner("odo", "dev")
 			defer session.Kill()
