@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -18,7 +18,7 @@ func TestSetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := localConfigProvider.LocalURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testDebugPort := 5005
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -30,23 +30,23 @@ func TestSetEnvInfo(t *testing.T) {
 		expectError        bool
 	}{
 		{
-			name:      fmt.Sprintf("Case 1: %s to test", URL),
-			parameter: URL,
-			value:     testURL,
+			name:      fmt.Sprintf("Case 1: %s to test", DebugPort),
+			parameter: DebugPort,
+			value:     strconv.Itoa(testDebugPort),
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{},
 			},
-			checkConfigSetting: []string{"URL"},
+			checkConfigSetting: []string{"debugport"},
 			expectError:        false,
 		},
 		{
 			name:      fmt.Sprintf("Case 2: %s to test", invalidParam),
 			parameter: invalidParam,
-			value:     testURL,
+			value:     strconv.Itoa(testDebugPort),
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{},
 			},
-			checkConfigSetting: []string{"URL"},
+			checkConfigSetting: []string{"debugport"},
 			expectError:        true,
 		},
 	}
@@ -86,7 +86,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := localConfigProvider.LocalURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testDebugPort := 15005
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -96,11 +96,11 @@ func TestUnsetEnvInfo(t *testing.T) {
 		expectError     bool
 	}{
 		{
-			name:      fmt.Sprintf("Case 1: unset %s", URL),
-			parameter: URL,
+			name:      fmt.Sprintf("Case 1: unset %s", DebugPort),
+			parameter: DebugPort,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]localConfigProvider.LocalURL{testURL},
+					DebugPort: &testDebugPort,
 				},
 			},
 			expectError: false,
@@ -110,7 +110,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			parameter: invalidParam,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]localConfigProvider.LocalURL{testURL},
+					DebugPort: &testDebugPort,
 				},
 			},
 			expectError: true,

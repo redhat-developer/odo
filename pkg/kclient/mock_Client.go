@@ -12,15 +12,12 @@ import (
 	spec "github.com/go-openapi/spec"
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/openshift/api/project/v1"
-	v10 "github.com/openshift/api/route/v1"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	unions "github.com/redhat-developer/odo/pkg/kclient/unions"
 	v11 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	v13 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	discovery "k8s.io/client-go/discovery"
 	dynamic "k8s.io/client-go/dynamic"
 	kubernetes "k8s.io/client-go/kubernetes"
@@ -107,21 +104,6 @@ func (mr *MockClientInterfaceMockRecorder) CreateDynamicResource(exampleCustomRe
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).CreateDynamicResource), exampleCustomResource, gvr)
 }
 
-// CreateIngress mocks base method.
-func (m *MockClientInterface) CreateIngress(ingress unions.KubernetesIngress) (*unions.KubernetesIngress, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateIngress", ingress)
-	ret0, _ := ret[0].(*unions.KubernetesIngress)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateIngress indicates an expected call of CreateIngress.
-func (mr *MockClientInterfaceMockRecorder) CreateIngress(ingress interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIngress", reflect.TypeOf((*MockClientInterface)(nil).CreateIngress), ingress)
-}
-
 // CreateNamespace mocks base method.
 func (m *MockClientInterface) CreateNamespace(name string) (*v12.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -164,21 +146,6 @@ func (m *MockClientInterface) CreatePVC(pvc v12.PersistentVolumeClaim) (*v12.Per
 func (mr *MockClientInterfaceMockRecorder) CreatePVC(pvc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePVC", reflect.TypeOf((*MockClientInterface)(nil).CreatePVC), pvc)
-}
-
-// CreateRoute mocks base method.
-func (m *MockClientInterface) CreateRoute(name, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, path string, ownerReference v13.OwnerReference) (*v10.Route, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateRoute", name, serviceName, portNumber, labels, secureURL, path, ownerReference)
-	ret0, _ := ret[0].(*v10.Route)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateRoute indicates an expected call of CreateRoute.
-func (mr *MockClientInterfaceMockRecorder) CreateRoute(name, serviceName, portNumber, labels, secureURL, path, ownerReference interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRoute", reflect.TypeOf((*MockClientInterface)(nil).CreateRoute), name, serviceName, portNumber, labels, secureURL, path, ownerReference)
 }
 
 // CreateSecret mocks base method.
@@ -281,20 +248,6 @@ func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, group, ve
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, group, version, resource)
 }
 
-// DeleteIngress mocks base method.
-func (m *MockClientInterface) DeleteIngress(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteIngress", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteIngress indicates an expected call of DeleteIngress.
-func (mr *MockClientInterfaceMockRecorder) DeleteIngress(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIngress", reflect.TypeOf((*MockClientInterface)(nil).DeleteIngress), name)
-}
-
 // DeleteNamespace mocks base method.
 func (m *MockClientInterface) DeleteNamespace(name string, wait bool) error {
 	m.ctrl.T.Helper()
@@ -335,20 +288,6 @@ func (m *MockClientInterface) DeleteProject(name string, wait bool) error {
 func (mr *MockClientInterfaceMockRecorder) DeleteProject(name, wait interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockClientInterface)(nil).DeleteProject), name, wait)
-}
-
-// DeleteRoute mocks base method.
-func (m *MockClientInterface) DeleteRoute(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRoute", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteRoute indicates an expected call of DeleteRoute.
-func (mr *MockClientInterfaceMockRecorder) DeleteRoute(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoute", reflect.TypeOf((*MockClientInterface)(nil).DeleteRoute), name)
 }
 
 // DeleteSecret mocks base method.
@@ -643,21 +582,6 @@ func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(group, version, re
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), group, version, resource, name)
 }
 
-// GetIngress mocks base method.
-func (m *MockClientInterface) GetIngress(name string) (*unions.KubernetesIngress, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetIngress", name)
-	ret0, _ := ret[0].(*unions.KubernetesIngress)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetIngress indicates an expected call of GetIngress.
-func (mr *MockClientInterfaceMockRecorder) GetIngress(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIngress", reflect.TypeOf((*MockClientInterface)(nil).GetIngress), name)
-}
-
 // GetNamespace mocks base method.
 func (m *MockClientInterface) GetNamespace(name string) (*v12.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -733,21 +657,6 @@ func (mr *MockClientInterfaceMockRecorder) GetOneDeploymentFromSelector(selector
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeploymentFromSelector), selector)
 }
 
-// GetOneIngressFromSelector mocks base method.
-func (m *MockClientInterface) GetOneIngressFromSelector(selector string) (*unions.KubernetesIngress, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneIngressFromSelector", selector)
-	ret0, _ := ret[0].(*unions.KubernetesIngress)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOneIngressFromSelector indicates an expected call of GetOneIngressFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetOneIngressFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneIngressFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneIngressFromSelector), selector)
-}
-
 // GetOnePodFromSelector mocks base method.
 func (m *MockClientInterface) GetOnePodFromSelector(selector string) (*v12.Pod, error) {
 	m.ctrl.T.Helper()
@@ -761,21 +670,6 @@ func (m *MockClientInterface) GetOnePodFromSelector(selector string) (*v12.Pod, 
 func (mr *MockClientInterfaceMockRecorder) GetOnePodFromSelector(selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnePodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOnePodFromSelector), selector)
-}
-
-// GetOneRouteFromSelector mocks base method.
-func (m *MockClientInterface) GetOneRouteFromSelector(selector string) (*v10.Route, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneRouteFromSelector", selector)
-	ret0, _ := ret[0].(*v10.Route)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOneRouteFromSelector indicates an expected call of GetOneRouteFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetOneRouteFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneRouteFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneRouteFromSelector), selector)
 }
 
 // GetOneService mocks base method.
@@ -913,21 +807,6 @@ func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromUnstructured(arg0 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromUnstructured", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromUnstructured), arg0)
 }
 
-// GetRoute mocks base method.
-func (m *MockClientInterface) GetRoute(name string) (*v10.Route, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRoute", name)
-	ret0, _ := ret[0].(*v10.Route)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRoute indicates an expected call of GetRoute.
-func (mr *MockClientInterfaceMockRecorder) GetRoute(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoute", reflect.TypeOf((*MockClientInterface)(nil).GetRoute), name)
-}
-
 // GetSecret mocks base method.
 func (m *MockClientInterface) GetSecret(name, namespace string) (*v12.Secret, error) {
 	m.ctrl.T.Helper()
@@ -1018,21 +897,6 @@ func (mr *MockClientInterfaceMockRecorder) IsResourceSupported(apiGroup, apiVers
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsResourceSupported", reflect.TypeOf((*MockClientInterface)(nil).IsResourceSupported), apiGroup, apiVersion, resourceName)
 }
 
-// IsRouteSupported mocks base method.
-func (m *MockClientInterface) IsRouteSupported() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsRouteSupported")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsRouteSupported indicates an expected call of IsRouteSupported.
-func (mr *MockClientInterfaceMockRecorder) IsRouteSupported() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsRouteSupported", reflect.TypeOf((*MockClientInterface)(nil).IsRouteSupported))
-}
-
 // IsSSASupported mocks base method.
 func (m *MockClientInterface) IsSSASupported() bool {
 	m.ctrl.T.Helper()
@@ -1121,21 +985,6 @@ func (mr *MockClientInterfaceMockRecorder) ListDynamicResource(group, version, r
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResource), group, version, resource)
 }
 
-// ListIngresses mocks base method.
-func (m *MockClientInterface) ListIngresses(labelSelector string) (*unions.KubernetesIngressList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListIngresses", labelSelector)
-	ret0, _ := ret[0].(*unions.KubernetesIngressList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListIngresses indicates an expected call of ListIngresses.
-func (mr *MockClientInterfaceMockRecorder) ListIngresses(labelSelector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIngresses", reflect.TypeOf((*MockClientInterface)(nil).ListIngresses), labelSelector)
-}
-
 // ListPVCNames mocks base method.
 func (m *MockClientInterface) ListPVCNames(selector string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -1179,21 +1028,6 @@ func (m *MockClientInterface) ListProjectNames() ([]string, error) {
 func (mr *MockClientInterfaceMockRecorder) ListProjectNames() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjectNames", reflect.TypeOf((*MockClientInterface)(nil).ListProjectNames))
-}
-
-// ListRoutes mocks base method.
-func (m *MockClientInterface) ListRoutes(labelSelector string) ([]v10.Route, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListRoutes", labelSelector)
-	ret0, _ := ret[0].([]v10.Route)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListRoutes indicates an expected call of ListRoutes.
-func (mr *MockClientInterfaceMockRecorder) ListRoutes(labelSelector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRoutes", reflect.TypeOf((*MockClientInterface)(nil).ListRoutes), labelSelector)
 }
 
 // ListSecrets mocks base method.

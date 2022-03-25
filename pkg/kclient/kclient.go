@@ -332,19 +332,3 @@ func (c *Client) IsSSASupported() bool {
 	return *c.isSSASupported
 
 }
-
-func (c *Client) checkIngressSupport() error {
-	var err error
-	if c.checkIngressSupports {
-		c.isNetworkingV1IngressSupported, err = c.IsResourceSupported("networking.k8s.io", "v1", "ingresses")
-		if err != nil {
-			return fmt.Errorf("failed to check networking v1 ingress support %w", err)
-		}
-		c.isExtensionV1Beta1IngressSupported, err = c.IsResourceSupported("extensions", "v1beta1", "ingresses")
-		if err != nil {
-			return fmt.Errorf("failed to check extensions v1beta1 ingress support %w", err)
-		}
-		c.checkIngressSupports = false
-	}
-	return nil
-}

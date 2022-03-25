@@ -24,7 +24,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/service"
-	urlpkg "github.com/redhat-developer/odo/pkg/url"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,33 +31,6 @@ import (
 )
 
 const NotAvailable = "Not available"
-
-// ApplyConfig applies the component config onto component deployment
-// Parameters:
-//	client: kclient instance
-//	componentConfig: Component configuration
-//	envSpecificInfo: Component environment specific information, available if uses devfile
-// Returns:
-//	err: Errors if any else nil
-func ApplyConfig(client kclient.ClientInterface, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
-	isRouteSupported := false
-	isRouteSupported, err = client.IsRouteSupported()
-	if err != nil {
-		isRouteSupported = false
-	}
-
-	urlClient := urlpkg.NewClient(urlpkg.ClientOptions{
-		Client:              client,
-		IsRouteSupported:    isRouteSupported,
-		LocalConfigProvider: &envSpecificInfo,
-	})
-
-	return urlpkg.Push(urlpkg.PushParameters{
-		LocalConfigProvider: &envSpecificInfo,
-		URLClient:           urlClient,
-		IsRouteSupported:    isRouteSupported,
-	})
-}
 
 // ListDevfileStacks returns the devfile component matching a selector.
 // The selector could be about selecting components part of an application.
@@ -238,11 +210,11 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 
 // GetComponent provides component definition
 func GetComponent(client kclient.ClientInterface, componentName string, applicationName string, projectName string) (component Component, err error) {
-	return getRemoteComponentMetadata(client, componentName, applicationName, true, true)
+	return getRemoteComponentMetadata(client, componentName, applicationName, true)
 }
 
 // getRemoteComponentMetadata provides component metadata from the cluster
-func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getUrls, getStorage bool) (Component, error) {
+func getRemoteComponentMetadata(client kclient.ClientInterface, componentName string, applicationName string, getStorage bool) (Component, error) {
 	fromCluster, err := GetPushedComponent(client, componentName, applicationName)
 	if err != nil {
 		return Component{}, fmt.Errorf("unable to get remote metadata for %s component: %w", componentName, err)
@@ -259,23 +231,6 @@ func getRemoteComponentMetadata(client kclient.ClientInterface, componentName st
 
 	// init component
 	component := newComponentWithType(componentName, componentType)
-
-	// URL
-	if getUrls {
-		urls, e := fromCluster.GetURLs()
-		if e != nil {
-			return Component{}, e
-		}
-		component.Spec.URLSpec = urls
-		urlsNb := len(urls)
-		if urlsNb > 0 {
-			res := make([]string, 0, urlsNb)
-			for _, url := range urls {
-				res = append(res, url.Name)
-			}
-			component.Spec.URL = res
-		}
-	}
 
 	// Storage
 	if getStorage {

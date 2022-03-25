@@ -7,7 +7,6 @@ import (
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/redhat-developer/odo/pkg/url"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,7 +23,6 @@ type provider interface {
 // PushedComponent is an abstraction over the cluster representation of the component
 type PushedComponent interface {
 	provider
-	GetURLs() ([]url.URL, error)
 	GetApplication() string
 	GetType() (string, error)
 	GetStorage() ([]storage.Storage, error)
@@ -32,12 +30,10 @@ type PushedComponent interface {
 
 type defaultPushedComponent struct {
 	application   string
-	urls          []url.URL
 	storage       []storage.Storage
 	provider      provider
 	client        kclient.ClientInterface
 	storageClient storage.Client
-	urlClient     url.Client
 }
 
 func (d defaultPushedComponent) GetLabels() map[string]string {
@@ -62,17 +58,6 @@ func (d defaultPushedComponent) GetEnvVars() []v12.EnvVar {
 
 func (d defaultPushedComponent) GetLinkedSecrets() []SecretMount {
 	return d.provider.GetLinkedSecrets()
-}
-
-func (d defaultPushedComponent) GetURLs() ([]url.URL, error) {
-	if d.urls == nil {
-		urls, err := d.urlClient.ListFromCluster()
-		if err != nil && !isIgnorableError(err) {
-			return []url.URL{}, err
-		}
-		d.urls = urls.Items
-	}
-	return d.urls, nil
 }
 
 // GetStorage gets the storage using the storage client of the given pushed component
@@ -163,13 +148,12 @@ func getType(component provider) (string, error) {
 	return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
 }
 
-func newPushedComponent(applicationName string, p provider, c kclient.ClientInterface, storageClient storage.Client, urlClient url.Client) PushedComponent {
+func newPushedComponent(applicationName string, p provider, c kclient.ClientInterface, storageClient storage.Client) PushedComponent {
 	return &defaultPushedComponent{
 		application:   applicationName,
 		provider:      p,
 		client:        c,
 		storageClient: storageClient,
-		urlClient:     urlClient,
 	}
 }
 
@@ -187,11 +171,7 @@ func GetPushedComponent(c kclient.ClientInterface, componentName, applicationNam
 		Deployment: d,
 	})
 
-	urlClient := url.NewClient(url.ClientOptions{
-		Client:     c,
-		Deployment: d,
-	})
-	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c, storageClient, urlClient), nil
+	return newPushedComponent(applicationName, &devfileComponent{d: *d}, c, storageClient), nil
 }
 
 func isIgnorableError(err error) bool {

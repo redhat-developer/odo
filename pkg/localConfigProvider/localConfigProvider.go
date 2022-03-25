@@ -1,37 +1,5 @@
 package localConfigProvider
 
-// URLKind is an enum to indicate the type of the URL i.e ingress/route
-type URLKind string
-
-const (
-	INGRESS URLKind = "ingress"
-	ROUTE   URLKind = "route"
-)
-
-// LocalURL holds URL related information
-type LocalURL struct {
-	// Name of the URL
-	Name string `yaml:"Name,omitempty" json:"name,omitempty"`
-	// Port number for the url of the component, required in case of components which expose more than one service port
-	Port int `yaml:"Port,omitempty" json:"port,omitempty"`
-	// Indicates if the URL should be a secure https one
-	Secure bool `yaml:"Secure,omitempty" json:"secure,omitempty"`
-	// Cluster host
-	Host string `yaml:"Host,omitempty" json:"host,omitempty"`
-	// TLS secret name to create ingress to provide a secure URL
-	TLSSecret string `yaml:"TLSSecret,omitempty" json:"tlsSecret,omitempty"`
-	// Exposed port number for docker container, required for local scenarios
-	ExposedPort int `yaml:"ExposedPort,omitempty" json:"exposedPort,omitempty"`
-	// Kind is the kind of the URL
-	Kind URLKind `yaml:"Kind,omitempty" json:"kind,omitempty"`
-	// Path is the path of the URL
-	Path string `yaml:"-" json:"-"`
-	// Container is the container of the URL
-	Container string `yaml:"-" json:"-"`
-	// Protocol is the protocol of the URL
-	Protocol string `yaml:"-" json:"-"`
-}
-
 // LocalStorage holds storage related information
 type LocalStorage struct {
 	// Name of the storage
@@ -59,8 +27,6 @@ type LocalConfigProvider interface {
 	GetNamespace() string
 	GetDebugPort() int
 	GetContainers() ([]LocalContainer, error)
-
-	ListURLs() ([]LocalURL, error)
 
 	ListStorage() ([]LocalStorage, error)
 

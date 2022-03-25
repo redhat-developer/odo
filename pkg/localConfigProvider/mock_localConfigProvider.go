@@ -33,20 +33,6 @@ func (m *MockLocalConfigProvider) EXPECT() *MockLocalConfigProviderMockRecorder 
 	return m.recorder
 }
 
-// CompleteURL mocks base method.
-func (m *MockLocalConfigProvider) CompleteURL(url *LocalURL) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompleteURL", url)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CompleteURL indicates an expected call of CompleteURL.
-func (mr *MockLocalConfigProviderMockRecorder) CompleteURL(url interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).CompleteURL), url)
-}
-
 // Exists mocks base method.
 func (m *MockLocalConfigProvider) Exists() bool {
 	m.ctrl.T.Helper()
@@ -73,36 +59,6 @@ func (m *MockLocalConfigProvider) GetApplication() string {
 func (mr *MockLocalConfigProviderMockRecorder) GetApplication() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplication", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetApplication))
-}
-
-// GetComponentPorts mocks base method.
-func (m *MockLocalConfigProvider) GetComponentPorts() ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetComponentPorts")
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetComponentPorts indicates an expected call of GetComponentPorts.
-func (mr *MockLocalConfigProviderMockRecorder) GetComponentPorts() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponentPorts", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetComponentPorts))
-}
-
-// GetContainerPorts mocks base method.
-func (m *MockLocalConfigProvider) GetContainerPorts(container string) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetContainerPorts", container)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetContainerPorts indicates an expected call of GetContainerPorts.
-func (mr *MockLocalConfigProviderMockRecorder) GetContainerPorts(container interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContainerPorts", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetContainerPorts), container)
 }
 
 // GetContainers mocks base method.
@@ -162,21 +118,6 @@ func (mr *MockLocalConfigProviderMockRecorder) GetNamespace() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetNamespace))
 }
 
-// GetURL mocks base method.
-func (m *MockLocalConfigProvider) GetURL(name string) (*LocalURL, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURL", name)
-	ret0, _ := ret[0].(*LocalURL)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetURL indicates an expected call of GetURL.
-func (mr *MockLocalConfigProviderMockRecorder) GetURL(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).GetURL), name)
-}
-
 // ListStorage mocks base method.
 func (m *MockLocalConfigProvider) ListStorage() ([]LocalStorage, error) {
 	m.ctrl.T.Helper()
@@ -190,33 +131,4 @@ func (m *MockLocalConfigProvider) ListStorage() ([]LocalStorage, error) {
 func (mr *MockLocalConfigProviderMockRecorder) ListStorage() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStorage", reflect.TypeOf((*MockLocalConfigProvider)(nil).ListStorage))
-}
-
-// ListURLs mocks base method.
-func (m *MockLocalConfigProvider) ListURLs() ([]LocalURL, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListURLs")
-	ret0, _ := ret[0].([]LocalURL)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListURLs indicates an expected call of ListURLs.
-func (mr *MockLocalConfigProviderMockRecorder) ListURLs() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListURLs", reflect.TypeOf((*MockLocalConfigProvider)(nil).ListURLs))
-}
-
-// ValidateURL mocks base method.
-func (m *MockLocalConfigProvider) ValidateURL(url LocalURL) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateURL", url)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ValidateURL indicates an expected call of ValidateURL.
-func (mr *MockLocalConfigProviderMockRecorder) ValidateURL(url interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateURL", reflect.TypeOf((*MockLocalConfigProvider)(nil).ValidateURL), url)
 }
