@@ -274,18 +274,6 @@ func VerifyFileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-// VerifyFilesExist receives an array of paths to files, and returns whether
-// or not they all exist. If any one of the expected files doesn't exist, it
-// returns false
-func VerifyFilesExist(path string, files []string) bool {
-	for _, f := range files {
-		if !VerifyFileExists(filepath.Join(path, f)) {
-			return false
-		}
-	}
-	return true
-}
-
 // ReplaceDevfileField replaces the value of a given field in a specified
 // devfile.
 // Currently only the first match of the field is replaced. i.e if the

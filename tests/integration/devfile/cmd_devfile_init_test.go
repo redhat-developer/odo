@@ -148,8 +148,7 @@ var _ = Describe("odo devfile init command tests", func() {
 
 	When("running odo init with a devfile that has a subDir starter project", func() {
 		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-with-subDir.yaml"), "--starter", "spingbootproject").ShouldPass()
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-with-subDir.yaml"), "--starter", "springbootproject").ShouldPass()
 		})
 
 		It("should successfully extract the project in the specified subDir path", func() {
@@ -187,13 +186,13 @@ var _ = Describe("odo devfile init command tests", func() {
 	It("should successfully run odo init for devfile with starter project from the specified branch", func() {
 		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-branch.yaml"), "--starter", "nodejs-starter").ShouldPass()
 		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "test"}
-		Expect(helper.VerifyFilesExist(commonVar.Context, expectedFiles)).To(Equal(true))
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements(expectedFiles))
 	})
 
 	It("should successfully run odo init for devfile with starter project from the specified tag", func() {
 		helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-tag.yaml"), "--starter", "nodejs-starter").ShouldPass()
 		expectedFiles := []string{"package.json", "package-lock.json", "README.md", "devfile.yaml", "app"}
-		Expect(helper.VerifyFilesExist(commonVar.Context, expectedFiles)).To(Equal(true))
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements(expectedFiles))
 	})
 	When("running odo init from a directory with sources", func() {
 		BeforeEach(func() {
