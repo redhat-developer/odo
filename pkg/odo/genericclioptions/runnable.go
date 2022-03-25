@@ -55,7 +55,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
 		} else if disableTelemetry {
 			klog.V(4).Infof("Skipping telemetry question due to %s=%t\n", segment.DisableTelemetryEnv, disableTelemetry)
-		} else if len(debugTelemetry) == 0 {
+		} else {
 			var consentTelemetry bool
 			prompt := &survey.Confirm{Message: "Help odo improve by allowing it to collect usage data. Read about our privacy statement: https://developers.redhat.com/article/tool-data-collection. You can change your preference later by changing the ConsentTelemetry preference.", Default: true}
 			err = survey.AskOne(prompt, &consentTelemetry, nil)
@@ -68,7 +68,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		}
 	}
 	if len(debugTelemetry) > 0 {
-		klog.V(4).Infof("WARNING: debug telemetry enabled. Will be logged in %s", debugTelemetry)
+		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
 	}
 
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
