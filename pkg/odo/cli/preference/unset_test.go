@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -64,8 +65,7 @@ func TestUnsetForce(t *testing.T) {
 			if !tt.forceFlag {
 				prefClient.EXPECT().IsSet("arg1").Return(tt.exists)
 			}
-			cmdline.EXPECT().Context()
-			err = opts.Run(cmdline.Context())
+			err = opts.Run(context.Background())
 
 			if err == nil && tt.expectedRunErr != "" {
 				t.Errorf("Expected %v, got no error", tt.expectedRunErr)
