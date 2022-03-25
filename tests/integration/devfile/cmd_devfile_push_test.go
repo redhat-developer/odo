@@ -700,7 +700,8 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"runtime",
 				commonVar.Project,
-				[]string{"ps", "-ef"},
+				// [s] to not match the current command: https://unix.stackexchange.com/questions/74185/how-can-i-prevent-grep-from-showing-up-in-ps-results
+				[]string{"bash", "-c", "grep [s]pring-boot:run /proc/*/cmdline"},
 				func(cmdOp string, err error) bool {
 					cmdOutput = cmdOp
 					statErr = err
@@ -708,7 +709,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
-			Expect(cmdOutput).To(ContainSubstring("spring-boot:run"))
+			Expect(cmdOutput).To(MatchRegexp("Binary file .* matches"))
 		})
 	})
 
