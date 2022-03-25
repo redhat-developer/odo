@@ -89,9 +89,10 @@ type DevSession struct {
 	session *gexec.Session
 }
 
-// StartDevMode returns a session structure, and the contents of the standard and error outputs
+// StartDevMode takes a regExp which it compiles against the output of the session structure
+// It returns a session structure, the contents of the standard and error outputs, and matches it finds for the regExp
 // when the dev mode is completely started
-func StartDevMode() (DevSession, []byte, []byte, error) {
+func StartDevMode(regExp string) (DevSession, []byte, []byte, []string, error) {
 	session := CmdRunner("odo", "dev")
 	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 	result := DevSession{
@@ -101,13 +102,13 @@ func StartDevMode() (DevSession, []byte, []byte, error) {
 	errContents := session.Err.Contents()
 	err := session.Out.Clear()
 	if err != nil {
-		return DevSession{}, nil, nil, err
+		return DevSession{}, nil, nil, nil, err
 	}
 	err = session.Err.Clear()
 	if err != nil {
-		return DevSession{}, nil, nil, err
+		return DevSession{}, nil, nil, nil, err
 	}
-	return result, outContents, errContents, nil
+	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), regExp), nil
 }
 
 // Kill a Dev session abruptly, without handling any cleanup
@@ -120,23 +121,26 @@ func (o DevSession) Stop() {
 	o.session.Interrupt()
 }
 
-// RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started.
+// RunDevMode takes a regExp that it passes to StartDevMode to find matches in the output of its session structure
+// It runs a dev session and executes the `inside` code when the dev mode is completely started.
 // The inside handler is passed the internal session pointer
 // and the contents of the standard and error outputs at the time the handler is called
-func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte)) error {
-	session, outContents, errContents, err := StartDevMode()
+func RunDevMode(regExp string, inside func(session *gexec.Session, outContents []byte, errContents []byte, matches []string)) error {
+	session, outContents, errContents, matches, err := StartDevMode(regExp)
 	if err != nil {
 		return err
 	}
 	defer session.Stop()
-	inside(session.session, outContents, errContents)
+	inside(session.session, outContents, errContents, matches)
 	return nil
 }
 
-// FindAllMatchingStrings finds all occurrences of the sub-string subStr in the string s
-// It returns a slice of strings
-func FindAllMatchingStrings(s, subStr string) []string {
-	subStr = fmt.Sprintf("%s.*", subStr)
-	re := regexp.MustCompile(subStr)
+// FindAllMatchingStrings returns all matches for the provided regExp as a slice of strings
+func FindAllMatchingStrings(s, regExp string) []string {
+	if regExp == "" {
+		return nil
+	}
+	regExp = fmt.Sprintf("%s.*", regExp)
+	re := regexp.MustCompile(regExp)
 	return re.FindAllString(s, -1)
 }
