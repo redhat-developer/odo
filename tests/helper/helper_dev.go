@@ -116,7 +116,7 @@ func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) 
 	args := []string{"dev"}
 	args = append(args, opts...)
 	session := CmdRunner("odo", args...)
-	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, session)
 	result := DevSession{
 		session: session,
 	}
@@ -149,7 +149,7 @@ func (o DevSession) Stop() {
 // since the end of the dev mode started or previous sync, and until the end of the synchronization.
 func (o DevSession) WaitSync() ([]byte, []byte, error) {
 	WaitForOutputToContain("Pushing files...", 180, 10, o.session)
-	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, o.session)
+	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, o.session)
 	outContents := o.session.Out.Contents()
 	errContents := o.session.Err.Contents()
 	err := o.session.Out.Clear()
