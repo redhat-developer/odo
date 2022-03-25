@@ -268,7 +268,6 @@ ComponentSettings:
 			// Component name comes from devfile-with-endpoints.yaml
 			cmpName = "nodejs-with-endpoints"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
 				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-endpoints.yaml")).ShouldPass()
 		})
