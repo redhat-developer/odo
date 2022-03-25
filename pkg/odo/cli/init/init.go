@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/tests/helper"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -147,13 +148,6 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	// Set the name in the devfile but do not write it yet to disk,
-	// because the starter project downloaded at the end might come bundled with a specific Devfile.
-	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
-	if err != nil {
-		return fmt.Errorf("Failed to update the devfile's name: %w", err)
-	}
-
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
 		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
@@ -170,11 +164,6 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 			}
 		}
 	}
-
-	// WARNING: SetMetadataName writes the Devfile to disk
-	if err = devfileObj.SetMetadataName(name); err != nil {
-		return err
-	}
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
@@ -186,6 +175,7 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to update the devfile's name: %w", err)
 	}
 
+	helper.ResetTelemetry()
 	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
