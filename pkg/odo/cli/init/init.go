@@ -146,6 +146,13 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
+	// Set the name in the devfile *AND* writes the devfile back to the disk in case
+	// it has been removed and not replaced by the starter project
+	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
+	if err != nil {
+		return fmt.Errorf("failed to update the devfile's name: %w", err)
+	}
+
 	if starterInfo != nil {
 		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
 		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
@@ -162,17 +169,13 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 			}
 		}
 	}
+	// WARNING: SetMetadataName writes the Devfile to disk
+	if err = devfileObj.SetMetadataName(name); err != nil {
+		return err
+	}
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
-
-	// Set the name in the devfile *AND* writes the devfile back to the disk in case
-	// it has been removed and not replaced by the starter project
-	_, err = o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
-	if err != nil {
-		return fmt.Errorf("failed to update the devfile's name: %w", err)
-	}
-
 	helper.ResetTelemetry()
 	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
