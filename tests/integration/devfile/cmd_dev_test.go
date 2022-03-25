@@ -313,6 +313,26 @@ var _ = Describe("odo dev command tests", func() {
 				})
 			})
 		})
+		When("recording telemetry data", func() {
+			BeforeEach(func() {
+				helper.CreateTelemetryDebugFile()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+				helper.StartDevMode().Stop()
+			})
+			It("should record the telemetry data correctly", func() {
+				td := helper.GetTelemetryDebugData()
+				Expect(td.Event).To(ContainSubstring("odo init"))
+				Expect(td.Properties.Success).To(BeTrue())
+				Expect(td.Properties.Error == "").To(BeTrue())
+				Expect(td.Properties.ErrorType == "").To(BeTrue())
+				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
+				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
+				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
+			})
+		})
 	})
 
 	When("Devfile 2.1.0 is used", func() {

@@ -50,7 +50,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		When("running odo deploy", func() {
 			var stdout string
 			BeforeEach(func() {
-				helper.CreateTelemetryDebugFile()
 				stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -65,16 +64,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					out := commonVar.CliRunner.Run("get", "deployment", deploymentName, "-n", commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
 					Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
 				})
-			})
-			It("should successfully record telemetery information correctly", func() {
-				td := helper.GetTelemetryDebugData()
-				Expect(td.Event).To(ContainSubstring("odo deploy"))
-				Expect(td.Properties.Success).To(BeTrue())
-				Expect(td.Properties.Error == "").To(BeTrue())
-				Expect(td.Properties.ErrorType == "").To(BeTrue())
-				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
-				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
-				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 			})
 
 			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
@@ -120,6 +109,26 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				out := commonVar.CliRunner.Run("get", "deployment", "my-component", "-n", commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
 				Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
 			})
+		})
+	})
+
+	When("recording telemetry data", func() {
+		BeforeEach(func() {
+			helper.CreateTelemetryDebugFile()
+			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+			// An ENV file should have been created indicating current namespace
+			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+			helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+		})
+		It("should record the telemetry data correctly", func() {
+			td := helper.GetTelemetryDebugData()
+			Expect(td.Event).To(ContainSubstring("odo deploy"))
+			Expect(td.Properties.Success).To(BeTrue())
+			Expect(td.Properties.Error == "").To(BeTrue())
+			Expect(td.Properties.ErrorType == "").To(BeTrue())
+			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
+			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 		})
 	})
 })
