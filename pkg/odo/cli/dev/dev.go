@@ -33,7 +33,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/log"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -48,8 +47,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 
+	odocomponent "github.com/redhat-developer/odo/pkg/component"
+	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -251,7 +251,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, log.GetStdout(), &d)
+	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
 	return err
 }
 
