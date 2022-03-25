@@ -14,9 +14,9 @@ func setDebugTelemetryFile(value string) error {
 	return os.Setenv(segment.DebugTelemetryFileEnv, value)
 }
 
-//CreateTelemetryDebugFile creates a temp file to use for debugging telemetry.
+//EnableTelemetryDebug creates a temp file to use for debugging telemetry.
 //it also sets up envs and cfg for the same
-func CreateTelemetryDebugFile() {
+func EnableTelemetryDebug() {
 	Expect(os.Setenv(segment.DisableTelemetryEnv, "false")).NotTo(HaveOccurred())
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")

@@ -302,11 +302,9 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		When("recording telemetry data", func() {
 			BeforeEach(func() {
-				helper.CreateTelemetryDebugFile()
+				helper.EnableTelemetryDebug()
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 				helper.StartDevMode().Stop()
 			})
 			AfterEach(func() {

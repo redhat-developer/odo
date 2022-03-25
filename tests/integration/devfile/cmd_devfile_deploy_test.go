@@ -114,11 +114,8 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 	When("recording telemetry data", func() {
 		BeforeEach(func() {
-			helper.CreateTelemetryDebugFile()
+			helper.EnableTelemetryDebug()
 			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-			// An ENV file should have been created indicating current namespace
-			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
-			helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 		})
 		AfterEach(func() {
 			helper.ResetTelemetry()
