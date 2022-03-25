@@ -1,7 +1,6 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -45,24 +44,6 @@ func GetFromFile(c interface{}, filename string) error {
 	err = yaml.Unmarshal(configData, c)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal odo config file: %w", err)
-	}
-
-	return nil
-}
-
-//WriteToJSONFile writes a struct to json file
-func WriteToJSONFile(c interface{}, filename string) error {
-	data, err := json.Marshal(c)
-	if err != nil {
-		return fmt.Errorf("unable to marshal odo config data: %w", err)
-	}
-
-	if err = CreateIfNotExists(filename); err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(filename, data, 0600)
-	if err != nil {
-		return fmt.Errorf("unable to write config to file %v: %w", c, err)
 	}
 
 	return nil
