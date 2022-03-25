@@ -4,16 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/tests/helper"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/spf13/cobra"
-
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -22,6 +18,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/tests/helper"
+	"github.com/spf13/cobra"
 
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"

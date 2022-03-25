@@ -4,13 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -20,9 +15,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
 
-	odocomponent "github.com/redhat-developer/odo/pkg/component"
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )
 

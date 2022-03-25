@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/log"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -28,7 +30,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/util"
 
-	ccomponent "github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -39,18 +40,30 @@ import (
 
 	dfutil "github.com/devfile/library/pkg/util"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
+
+	"github.com/devfile/library/pkg/devfile/parser"
+	dfutil "github.com/devfile/library/pkg/util"
+	odocomponent "github.com/redhat-developer/odo/pkg/component"
+	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
+	"github.com/spf13/cobra"
+	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -234,10 +247,10 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		return err
 	}
 	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
-	scontext.SetComponentType(o.commandContext, ccomponent.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
-	scontext.SetLanguage(o.commandContext, devFileObj.Data.GetMetadata().Language)
-	scontext.SetProjectType(o.commandContext, devFileObj.Data.GetMetadata().ProjectType)
-	scontext.SetDevfileName(o.commandContext, devFileObj.GetMetadataName())
+	scontext.SetComponentType(ctx, odocomponent.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, log.GetStdout(), &d)
 	return err
 }
