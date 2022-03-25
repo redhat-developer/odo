@@ -123,7 +123,8 @@ func (o DevSession) Stop() {
 }
 
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
-// The inside handler is passed the internal session pointer and the contents of the standard and error outputs at the time the handler is called
+// The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
+// and a slice of strings - urls - matching the LOCALHOST_REGEXP at the time the handler is called
 func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte, urls []string)) error {
 	session, outContents, errContents, urls, err := StartDevMode()
 	if err != nil {
