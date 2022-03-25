@@ -43,7 +43,6 @@ const (
 type EnvInfo struct {
 	devfileObj        parser.DevfileObj
 	isRouteSupported  bool
-	updateURL         bool              // this indicates that the URL create operation should be an update operation
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
