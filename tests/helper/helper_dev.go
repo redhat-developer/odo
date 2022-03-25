@@ -85,7 +85,7 @@ import (
 	})
 */
 
-const LOCALHOST_REGEXP = "localhost:[0-9]*"
+const localhostRegexp = "localhost:[0-9]*"
 
 type DevSession struct {
 	session *gexec.Session
