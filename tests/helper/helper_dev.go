@@ -1,6 +1,9 @@
 package helper
 
 import (
+	"fmt"
+	"regexp"
+
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -128,4 +131,12 @@ func RunDevMode(inside func(session *gexec.Session, outContents []byte, errConte
 	defer session.Stop()
 	inside(session.session, outContents, errContents)
 	return nil
+}
+
+// FindAllMatchingStrings finds all occurrences of the sub-string subStr in the string s
+// It returns a slice of strings
+func FindAllMatchingStrings(s, subStr string) []string {
+	subStr = fmt.Sprintf("%s.*", subStr)
+	re := regexp.MustCompile(subStr)
+	return re.FindAllString(s, -1)
 }

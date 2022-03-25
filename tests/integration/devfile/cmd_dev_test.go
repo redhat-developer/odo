@@ -188,14 +188,14 @@ var _ = Describe("odo dev command tests", func() {
 				})
 
 				It("should run odo dev on initial namespace", func() {
-					helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
+					err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
 						Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
 
 						output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
 						Expect(string(output)).To(ContainSubstring(cmpName))
 					})
-
+					Expect(err).ToNot(HaveOccurred())
 				})
 			})
 		})
@@ -210,9 +210,9 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should expose the endpoint on localhost", func() {
-				helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
-					i := strings.Index(string(outContents), "localhost")
-					url := fmt.Sprintf("http://%s", string(outContents)[i:i+15])
+				err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
+					urls := helper.FindAllMatchingStrings(string(outContents), "localhost")
+					url := fmt.Sprintf("http://%s", urls[0])
 					resp, err := http.Get(url)
 					Expect(err).ToNot(HaveOccurred())
 					defer resp.Body.Close()
@@ -220,7 +220,7 @@ var _ = Describe("odo dev command tests", func() {
 					body, _ := io.ReadAll(resp.Body)
 					helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
 				})
-
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 		When("devfile has multiple endpoints", func() {
@@ -231,15 +231,15 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should expose two endpoints on localhost", func() {
-				helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
-					i := strings.Index(string(outContents), "localhost")
-					url1 := fmt.Sprintf("http://%s", string(outContents)[i:i+15])
+				err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
+					urls := helper.FindAllMatchingStrings(string(outContents), "localhost")
+					url1 := fmt.Sprintf("http://%s", urls[0])
+					url2 := fmt.Sprintf("http://%s", urls[1])
+
 					resp1, err := http.Get(url1)
 					Expect(err).ToNot(HaveOccurred())
 					defer resp1.Body.Close()
 
-					j := strings.LastIndex(string(outContents), "localhost")
-					url2 := fmt.Sprintf("http://%s", string(outContents)[j:j+15])
 					resp2, err := http.Get(url2)
 					Expect(err).ToNot(HaveOccurred())
 					defer resp2.Body.Close()
@@ -275,14 +275,16 @@ var _ = Describe("odo dev command tests", func() {
 						return string(body4) == "H3110 from Node.js Starter Application!"
 					}, 180, 10).Should(Equal(true))
 				})
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			When("an endpoint is added after first run of odo dev", func() {
 				It("should print the message to run odo dev again", func() {
-					helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
+					err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte) {
 						helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
 						helper.WaitForErroutToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
 					})
+					Expect(err).ToNot(HaveOccurred())
 				})
 			})
 		})
