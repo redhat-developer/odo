@@ -27,6 +27,7 @@ func CreateTelemetryDebugFile() {
 
 //GetTelemetryDebugData gets telemetry data dumped into temp file for testing/debugging
 func GetTelemetryDebugData() segment.TelemetryData {
+	Expect(os.Setenv("ODO_DISABLE_TELEMETRY", "true")).NotTo(HaveOccurred())
 	var data []byte
 	var td segment.TelemetryData
 	telemetryFile := segment.GetDebugTelemetry()

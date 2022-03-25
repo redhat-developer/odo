@@ -355,7 +355,6 @@ func CommonBeforeEach() CommonVar {
 func CommonAfterEach(commonVar CommonVar) {
 	// Get details, including test filename, test case name, test result, and test duration for each test spec and adds it to local testResults.txt file
 	// Ginkgo test related variables
-	CreateTelemetryDebugFile()
 	commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
 	commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
 	commonVar.testFailed = CurrentGinkgoTestDescription().Failed
