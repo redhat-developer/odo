@@ -10,6 +10,10 @@ import (
 	"os"
 )
 
+func setDebugTelemetryFile(value string) error {
+	return os.Setenv(segment.DebugTelemetryFileEnv, value)
+}
+
 //CreateTelemetryDebugFile creates a temp file to use for debugging telemetry.
 //it also sets up envs and cfg for the same
 func CreateTelemetryDebugFile() {
@@ -19,7 +23,7 @@ func CreateTelemetryDebugFile() {
 	Expect(err).To(BeNil())
 	tempFile, err := ioutil.TempFile("", "telemetry")
 	Expect(err).NotTo(HaveOccurred())
-	Expect(segment.SetDebugTelemetryFile(tempFile.Name())).NotTo(HaveOccurred())
+	Expect(setDebugTelemetryFile(tempFile.Name())).NotTo(HaveOccurred())
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
 }
 
