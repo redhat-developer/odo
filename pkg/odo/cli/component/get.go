@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -60,7 +61,7 @@ func (gto *GetOptions) Validate() (err error) {
 }
 
 // Run has the logic to perform the required actions as part of command
-func (gto *GetOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (gto *GetOptions) Run(ctx context.Context) (err error) {
 	klog.V(4).Infof("component get called")
 
 	if gto.shortFlag {

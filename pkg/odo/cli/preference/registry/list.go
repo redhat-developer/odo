@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	// Built-in packages
 	"fmt"
 	"io"
@@ -14,7 +15,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
-	util "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
+	"github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -60,7 +61,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry list" command
-func (o *ListOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *ListOptions) Run(ctx context.Context) (err error) {
 	registryList := o.clientset.PreferenceClient.RegistryList()
 	if registryList == nil || len(*registryList) == 0 {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")

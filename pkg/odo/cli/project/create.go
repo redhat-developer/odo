@@ -11,6 +11,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/redhat-developer/odo/pkg/segment/context"
 
+	runcontext "context"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -74,7 +75,7 @@ func (pco *ProjectCreateOptions) Validate() error {
 }
 
 // Run runs the project create command
-func (pco *ProjectCreateOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (pco *ProjectCreateOptions) Run(ctx runcontext.Context) (err error) {
 	// Create the "spinner"
 	s := &log.Status{}
 

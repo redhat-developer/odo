@@ -64,7 +64,8 @@ func TestUnsetForce(t *testing.T) {
 			if !tt.forceFlag {
 				prefClient.EXPECT().IsSet("arg1").Return(tt.exists)
 			}
-			err = opts.Run(cmdline)
+			cmdline.EXPECT().Context()
+			err = opts.Run(cmdline.Context())
 
 			if err == nil && tt.expectedRunErr != "" {
 				t.Errorf("Expected %v, got no error", tt.expectedRunErr)

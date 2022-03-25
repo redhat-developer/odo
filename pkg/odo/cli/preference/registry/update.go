@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	// Built-in packages
 	"fmt"
 
@@ -77,7 +78,7 @@ func (o *UpdateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for "odo registry update" command
-func (o *UpdateOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *UpdateOptions) Run(ctx context.Context) (err error) {
 	secureBeforeUpdate := false
 	secureAfterUpdate := false
 

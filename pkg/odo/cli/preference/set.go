@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -61,7 +62,7 @@ func (o *SetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *SetOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *SetOptions) Run(ctx context.Context) (err error) {
 
 	if !o.forceFlag {
 		if isSet := o.clientset.PreferenceClient.IsSet(o.paramName); isSet {

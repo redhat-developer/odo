@@ -117,7 +117,7 @@ func TestCreate(t *testing.T) {
 			prjClient.EXPECT().SetCurrent(tt.wantProjectName).Times(1)
 
 			/* RUN */
-			err = opts.Run(cmdline)
+			err = opts.Run(cmdline.Context())
 		})
 	}
 }

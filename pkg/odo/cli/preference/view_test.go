@@ -42,7 +42,8 @@ func TestView(t *testing.T) {
 	prefClient.EXPECT().EphemeralSourceVolume().Return(pointer.Bool(false))
 	prefClient.EXPECT().ConsentTelemetry().Return(pointer.Bool(false))
 
-	err = opts.Run(cmdline)
+	cmdline.EXPECT().Context()
+	err = opts.Run(cmdline.Context())
 	if err != nil {
 		t.Errorf(`Expected nil error, got %s`, err)
 	}

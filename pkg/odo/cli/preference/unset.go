@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -60,7 +61,7 @@ func (o *UnsetOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *UnsetOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 
 	if !o.forceFlag {
 

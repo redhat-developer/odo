@@ -1,6 +1,7 @@
 package genericclioptions
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -36,7 +37,7 @@ type Runnable interface {
 	SetClientset(clientset *clientset.Clientset)
 	Complete(cmdline cmdline.Cmdline, args []string) error
 	Validate() error
-	Run(cmdline cmdline.Cmdline) error
+	Run(ctx context.Context) error
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
@@ -108,7 +109,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Run(cmdLineObj)
+	err = o.Run(cmdLineObj.Context())
 	startTelemetry(cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }

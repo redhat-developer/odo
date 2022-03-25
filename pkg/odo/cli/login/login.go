@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/auth"
@@ -82,7 +83,7 @@ func (o *LoginOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *LoginOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *LoginOptions) Run(ctx context.Context) (err error) {
 	return o.loginClient.Login(o.serverFlag, o.userNameFlag, o.passwordFlag, o.tokenFlag, o.caAuthFlag, o.skipTlsFlag)
 }
 

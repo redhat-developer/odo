@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -57,7 +58,7 @@ func (plo *ProjectListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo project list command
-func (plo *ProjectListOptions) Run(cmdline cmdline.Cmdline) error {
+func (plo *ProjectListOptions) Run(ctx context.Context) error {
 	projects, err := plo.clientset.ProjectClient.List()
 	if err != nil {
 		return err

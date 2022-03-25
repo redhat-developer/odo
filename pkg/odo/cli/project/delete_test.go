@@ -153,7 +153,7 @@ func TestDelete(t *testing.T) {
 			prjClient.EXPECT().Delete(tt.wantProjectName, false).Times(1)
 
 			/* RUN */
-			err = opts.Run(cmdline)
+			err = opts.Run(cmdline.Context())
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -21,7 +22,7 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/version"
 
-	_component "github.com/redhat-developer/odo/pkg/component"
+	odocomponent "github.com/redhat-developer/odo/pkg/component"
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -121,16 +122,16 @@ func (o *DeployOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *DeployOptions) Run(cmdline cmdline.Cmdline) error {
+func (o *DeployOptions) Run(ctx context.Context) error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	devfileName := devfileObj.GetMetadataName()
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
 	namespace := o.GetProject()
-	scontext.SetComponentType(cmdline.Context(), _component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
-	scontext.SetLanguage(cmdline.Context(), devfileObj.Data.GetMetadata().Language)
-	scontext.SetProjectType(cmdline.Context(), devfileObj.Data.GetMetadata().ProjectType)
-	scontext.SetDevfileName(cmdline.Context(), devfileName)
+	scontext.SetComponentType(ctx, odocomponent.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(ctx, devfileName)
 	// Output what the command is doing / information
 	log.Title("Deploying the application using "+devfileName+" Devfile",
 		"Namespace: "+namespace,

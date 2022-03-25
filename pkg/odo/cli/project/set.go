@@ -1,6 +1,7 @@
 package project
 
 import (
+	runcontext "context"
 	"fmt"
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
@@ -83,7 +84,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 }
 
 // Run runs the project set command
-func (pso *ProjectSetOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (pso *ProjectSetOptions) Run(ctx runcontext.Context) (err error) {
 	current := pso.GetProject()
 	err = pso.clientset.ProjectClient.SetCurrent(pso.projectName)
 	if err != nil {

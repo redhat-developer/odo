@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -37,7 +38,7 @@ func (o *TelemetryOptions) Validate() (err error) {
 	return err
 }
 
-func (o *TelemetryOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
 	if !segment.IsTelemetryEnabled(o.clientset.PreferenceClient) {
 		return nil
 	}

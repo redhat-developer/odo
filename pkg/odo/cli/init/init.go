@@ -110,7 +110,7 @@ func (o *InitOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *InitOptions) Run(cmdline cmdline.Cmdline) (err error) {
+func (o *InitOptions) Run(ctx context.Context) (err error) {
 
 	var starterDownloaded bool
 
@@ -175,9 +175,9 @@ func (o *InitOptions) Run(cmdline cmdline.Cmdline) (err error) {
 	if err = devfileObj.SetMetadataName(name); err != nil {
 		return err
 	}
-	scontext.SetComponentType(cmdline.Context(), component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
-	scontext.SetLanguage(cmdline.Context(), devfileObj.Data.GetMetadata().Language)
-	scontext.SetProjectType(cmdline.Context(), devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
 
 	// Set the name in the devfile *AND* writes the devfile back to the disk in case
 	// it has been removed and not replaced by the starter project
@@ -186,7 +186,7 @@ func (o *InitOptions) Run(cmdline cmdline.Cmdline) (err error) {
 		return fmt.Errorf("failed to update the devfile's name: %w", err)
 	}
 
-	scontext.SetDevfileName(cmdline.Context(), devfileObj.GetMetadataName())
+	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
 Your new component %q is ready in the current directory.

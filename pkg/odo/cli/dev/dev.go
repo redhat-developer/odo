@@ -1,6 +1,7 @@
 package dev
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -180,7 +181,7 @@ func (o *DevOptions) Validate() error {
 	return err
 }
 
-func (o *DevOptions) Run(cmdline cmdline.Cmdline) error {
+func (o *DevOptions) Run(ctx context.Context) error {
 	var err error
 	var platformContext = kubernetes.KubernetesContext{
 		Namespace: o.Context.GetProject(),
