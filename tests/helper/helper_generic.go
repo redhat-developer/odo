@@ -343,11 +343,10 @@ func CommonBeforeEach() CommonVar {
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.ConfigDir, "preference.yaml"))
 	// Set ConsentTelemetry to true so that it does not prompt to set a preference value
 	cfg, _ := preference.NewClient()
-	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
+	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
-	os.Setenv("ODO_DISABLE_TELEMETERY", "false")
+	os.Setenv("ODO_DISABLE_TELEMETRY", "true")
 	// Set Debug Telemetry
-	CreateTelemetryDebugFile()
 	SetDefaultDevfileRegistryAsStaging()
 	return commonVar
 }

@@ -86,7 +86,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 
 	o.flags = cmdline.GetFlags()
 
-	scontext.SetInteractive(o.ctx, len(o.flags) == 0)
+	scontext.SetInteractive(cmdline.Context(), len(o.flags) == 0)
 
 	return nil
 }
