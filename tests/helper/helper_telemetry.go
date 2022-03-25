@@ -31,7 +31,11 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	var data []byte
 	var td segment.TelemetryData
 	telemetryFile := segment.GetDebugTelemetry()
-	FileShouldEventuallyContainSubstring(telemetryFile, "event", 5)
+	Eventually(func() string {
+		data, err := ioutil.ReadFile(telemetryFile)
+		Expect(err).To(BeNil())
+		return string(data)
+	}, 10, 1).Should(ContainSubstring("event"))
 	data, err := ioutil.ReadFile(telemetryFile)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(json.Unmarshal(data, &td)).NotTo(HaveOccurred())

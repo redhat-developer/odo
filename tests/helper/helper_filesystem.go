@@ -187,26 +187,6 @@ func FileShouldContainSubstring(file string, subString string) {
 	Expect(string(data)).To(ContainSubstring(subString))
 }
 
-func FileShouldEventuallyContainSubstring(file string, substring string, timeout int) {
-	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
-	// this is a test package so time.Tick() is acceptable
-	// nolint
-	tick := time.Tick(time.Second)
-	for {
-		select {
-		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout after %v minutes", timeout))
-
-		case <-tick:
-			data, err := ioutil.ReadFile(file)
-			Expect(err).NotTo(HaveOccurred())
-			if strings.Contains(string(data), substring) {
-				return
-			}
-		}
-	}
-}
-
 // ReplaceString replaces oldString with newString in text file
 func ReplaceString(filename string, oldString string, newString string) {
 	fmt.Fprintf(GinkgoWriter, "Replacing \"%s\" with \"%s\" in %s\n", oldString, newString, filename)
