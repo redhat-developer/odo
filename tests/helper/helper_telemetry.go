@@ -13,13 +13,11 @@ import (
 //CreateTelemetryDebugFile creates a temp file to use for debugging telemetry.
 //it also sets up envs and cfg for the same
 func CreateTelemetryDebugFile() {
-	Expect(os.Setenv("ODO_DISABLE_TELEMETRY", "false")).NotTo(HaveOccurred())
+	Expect(os.Setenv(segment.DisableTelemetryEnv, "false")).NotTo(HaveOccurred())
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
 	Expect(err).To(BeNil())
 	tempFile, err := ioutil.TempFile("", "telemetry")
-	Expect(err).NotTo(HaveOccurred())
-	_, err = tempFile.WriteString("hello")
 	Expect(err).NotTo(HaveOccurred())
 	Expect(segment.SetDebugTelemetry(tempFile.Name())).NotTo(HaveOccurred())
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
@@ -27,7 +25,7 @@ func CreateTelemetryDebugFile() {
 
 //GetTelemetryDebugData gets telemetry data dumped into temp file for testing/debugging
 func GetTelemetryDebugData() segment.TelemetryData {
-	Expect(os.Setenv("ODO_DISABLE_TELEMETRY", "true")).NotTo(HaveOccurred())
+	Expect(os.Setenv(segment.DisableTelemetryEnv, "true")).NotTo(HaveOccurred())
 	var data []byte
 	var td segment.TelemetryData
 	telemetryFile := segment.GetDebugTelemetry()

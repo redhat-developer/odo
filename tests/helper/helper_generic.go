@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"io"
 	"os"
 	"os/exec"
@@ -345,7 +346,7 @@ func CommonBeforeEach() CommonVar {
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
-	os.Setenv("ODO_DISABLE_TELEMETRY", "true")
+	os.Setenv(segment.DisableTelemetryEnv, "true")
 	// Set Debug Telemetry
 	SetDefaultDevfileRegistryAsStaging()
 	return commonVar
