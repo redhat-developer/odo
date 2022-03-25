@@ -69,7 +69,7 @@ ComponentSettings:
 			var devSession helper.DevSession
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode("")
+				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
 				defer devSession.Kill()
 				Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(cmpName))

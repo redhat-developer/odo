@@ -85,14 +85,16 @@ import (
 		})
 	})
 */
+
+const LOCALHOST_REGEXP = "localhost:[0-9]*"
+
 type DevSession struct {
 	session *gexec.Session
 }
 
-// StartDevMode takes a regExp which it compiles against the output of the session structure
-// It returns a session structure, the contents of the standard and error outputs, and matches it finds for the regExp
+// StartDevMode a session structure, the contents of the standard and error outputs, and matches it finds for LOCALHOST_REGEXP
 // when the dev mode is completely started
-func StartDevMode(regExp string) (DevSession, []byte, []byte, []string, error) {
+func StartDevMode() (DevSession, []byte, []byte, []string, error) {
 	session := CmdRunner("odo", "dev")
 	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
 	result := DevSession{
@@ -108,7 +110,7 @@ func StartDevMode(regExp string) (DevSession, []byte, []byte, []string, error) {
 	if err != nil {
 		return DevSession{}, nil, nil, nil, err
 	}
-	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), regExp), nil
+	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), LOCALHOST_REGEXP), nil
 }
 
 // Kill a Dev session abruptly, without handling any cleanup
@@ -121,25 +123,20 @@ func (o DevSession) Stop() {
 	o.session.Interrupt()
 }
 
-// RunDevMode takes a regExp that it passes to StartDevMode to find matches in the output of its session structure
-// It runs a dev session and executes the `inside` code when the dev mode is completely started.
-// The inside handler is passed the internal session pointer
-// and the contents of the standard and error outputs at the time the handler is called
-func RunDevMode(regExp string, inside func(session *gexec.Session, outContents []byte, errContents []byte, matches []string)) error {
-	session, outContents, errContents, matches, err := StartDevMode(regExp)
+// RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
+// The inside handler is passed the internal session pointer and the contents of the standard and error outputs at the time the handler is called
+func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte, urls []string)) error {
+	session, outContents, errContents, urls, err := StartDevMode()
 	if err != nil {
 		return err
 	}
 	defer session.Stop()
-	inside(session.session, outContents, errContents, matches)
+	inside(session.session, outContents, errContents, urls)
 	return nil
 }
 
 // FindAllMatchingStrings returns all matches for the provided regExp as a slice of strings
 func FindAllMatchingStrings(s, regExp string) []string {
-	if regExp == "" {
-		return nil
-	}
 	regExp = fmt.Sprintf("%s.*", regExp)
 	re := regexp.MustCompile(regExp)
 	return re.FindAllString(s, -1)
