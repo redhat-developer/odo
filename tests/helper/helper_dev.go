@@ -109,7 +109,7 @@ func StartDevMode() (DevSession, []byte, []byte, []string, error) {
 	if err != nil {
 		return DevSession{}, nil, nil, nil, err
 	}
-	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), LOCALHOST_REGEXP), nil
+	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), localhostRegexp), nil
 }
 
 // Kill a Dev session abruptly, without handling any cleanup
