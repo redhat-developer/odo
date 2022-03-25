@@ -19,7 +19,7 @@ func CreateTelemetryDebugFile() {
 	Expect(err).To(BeNil())
 	tempFile, err := ioutil.TempFile("", "telemetry")
 	Expect(err).NotTo(HaveOccurred())
-	Expect(segment.SetDebugTelemetry(tempFile.Name())).NotTo(HaveOccurred())
+	Expect(segment.SetDebugTelemetryFile(tempFile.Name())).NotTo(HaveOccurred())
 	Expect(tempFile.Close()).NotTo(HaveOccurred())
 }
 
@@ -28,7 +28,7 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	Expect(os.Setenv(segment.DisableTelemetryEnv, "true")).NotTo(HaveOccurred())
 	var data []byte
 	var td segment.TelemetryData
-	telemetryFile := segment.GetDebugTelemetry()
+	telemetryFile := segment.GetDebugTelemetryFile()
 	Eventually(func() string {
 		data, err := ioutil.ReadFile(telemetryFile)
 		Expect(err).To(BeNil())

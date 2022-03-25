@@ -304,10 +304,10 @@ func sanitizeExec(errString string) string {
 	return errString
 }
 
-func GetDebugTelemetry() string {
+func GetDebugTelemetryFile() string {
 	return os.Getenv(DebugTelemetryFileEnv)
 }
 
-func SetDebugTelemetry(value string) error {
+func SetDebugTelemetryFile(value string) error {
 	return os.Setenv(DebugTelemetryFileEnv, value)
 }

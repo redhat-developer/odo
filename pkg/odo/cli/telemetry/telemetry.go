@@ -43,7 +43,7 @@ func (o *TelemetryOptions) Run(ctx context.Context) (err error) {
 		return nil
 	}
 
-	dt := segment.GetDebugTelemetry()
+	dt := segment.GetDebugTelemetryFile()
 	if len(dt) > 0 {
 		klog.V(4).Infof("WARNING: telemetry debug enabled, data logged to file %s", dt)
 		return util.WriteToJSONFile(o.telemetryData, dt)
