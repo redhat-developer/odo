@@ -91,7 +91,7 @@ type DevSession struct {
 	session *gexec.Session
 }
 
-// StartDevMode a session structure, the contents of the standard and error outputs, and matches it finds for LOCALHOST_REGEXP
+// StartDevMode a session structure, the contents of the standard and error outputs, and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
 func StartDevMode() (DevSession, []byte, []byte, []string, error) {
 	session := CmdRunner("odo", "dev")
