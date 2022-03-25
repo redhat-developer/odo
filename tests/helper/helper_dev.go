@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"fmt"
 	"regexp"
 
 	"github.com/onsi/gomega/gexec"
@@ -137,7 +136,6 @@ func RunDevMode(inside func(session *gexec.Session, outContents []byte, errConte
 
 // FindAllMatchingStrings returns all matches for the provided regExp as a slice of strings
 func FindAllMatchingStrings(s, regExp string) []string {
-	regExp = fmt.Sprintf("%s.*", regExp)
 	re := regexp.MustCompile(regExp)
 	return re.FindAllString(s, -1)
 }
