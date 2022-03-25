@@ -9,7 +9,7 @@ import (
 )
 
 func CreateTelemetryDebugFile() {
-	tempFile, err := ioutil.TempFile("", "telemetery")
+	tempFile, err := ioutil.TempFile("", "telemetry")
 	Expect(err).NotTo(HaveOccurred())
 	_, err = tempFile.WriteString("hello")
 	Expect(err).NotTo(HaveOccurred())
