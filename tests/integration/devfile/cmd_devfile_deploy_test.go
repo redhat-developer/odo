@@ -66,7 +66,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				})
 			})
 
-			It("should run odo run successfully", func() {
+			It("should run odo dev successfully", func() {
 				_, _, _, _, err := helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
 			})
