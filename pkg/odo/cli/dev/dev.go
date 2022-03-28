@@ -215,7 +215,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 	d := Handler{}
-	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
+	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d)
 	return err
 }
 
