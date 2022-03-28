@@ -297,7 +297,8 @@ var _ = Describe("odo dev command tests", func() {
 					helper.EnableTelemetryDebug()
 					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-					helper.StartDevMode().Stop()
+					session, _, _, _, _ := helper.StartDevMode()
+					session.Stop()
 				})
 				AfterEach(func() {
 					helper.ResetTelemetry()
