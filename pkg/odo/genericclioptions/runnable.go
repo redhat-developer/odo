@@ -89,8 +89,6 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		}
 		scontext.SetSignal(cmd.Context(), receivedSignal)
 		startTelemetry(cmd, fmt.Errorf("user interrupted the command execution: %w", terminal.InterruptErr), startTime)
-		// exit here to stop spinners from rotating
-		os.Exit(1)
 	})
 
 	// CheckMachineReadableOutput

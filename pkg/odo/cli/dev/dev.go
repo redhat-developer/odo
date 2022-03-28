@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
-	"sync"
-	"time"
 
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -40,9 +38,6 @@ import (
 
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "dev"
-
-// This wait group is used in watch.WatchAndPush and HandleSignal to coordinate deletion
-var wg sync.WaitGroup
 
 type DevOptions struct {
 	// Context
@@ -288,7 +283,6 @@ func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
 func (o *DevOptions) HandleSignal() error {
 	o.cancel()
 	<-o.cleanupDone
-	time.Sleep(10 * time.Second)
 	return nil
 }
 

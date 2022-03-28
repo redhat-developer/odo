@@ -20,7 +20,7 @@ import (
 	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
 )
 
-var _ = FDescribe("odo dev command tests", func() {
+var _ = Describe("odo dev command tests", func() {
 	var cmpName string
 	var commonVar helper.CommonVar
 

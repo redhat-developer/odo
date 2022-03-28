@@ -612,7 +612,8 @@ func StartSignalWatcher(watchSignals []os.Signal, handle func(receivedSignal os.
 
 	receivedSignal := <-signals
 	handle(receivedSignal)
-
+	// exit here to stop spinners from rotating
+	os.Exit(1)
 }
 
 // cleanDir cleans the original folder during events like interrupted copy etc
