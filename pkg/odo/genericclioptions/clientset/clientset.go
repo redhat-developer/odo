@@ -58,9 +58,10 @@ const (
 var subdeps map[string][]string = map[string][]string{
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
-	DEV:              {WATCH},
+	DEV:              {WATCH, KUBERNETES},
 	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY},
 	PROJECT:          {KUBERNETES_NULLABLE},
+	WATCH:            {KUBERNETES},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -120,9 +121,6 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, REGISTRY) {
 		dep.RegistryClient = registry.NewRegistryClient(dep.FS, dep.PreferenceClient)
 	}
-	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient()
-	}
 
 	/* With sub-dependencies */
 	if isDefined(command, DELETE_COMPONENT) {
@@ -137,9 +135,13 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
-	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.WatchClient)
+	if isDefined(command, WATCH) {
+		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient)
 	}
+	if isDefined(command, DEV) {
+		dep.DevClient = dev.NewDevClient(dep.WatchClient, dep.KubernetesClient)
+	}
+
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
 	return &dep, nil
 }

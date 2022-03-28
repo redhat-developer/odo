@@ -40,6 +40,10 @@ type Runnable interface {
 	Run(ctx context.Context) error
 }
 
+type SignalHandler interface {
+	HandleSignal() error
+}
+
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	var err error
 	startTime := time.Now()
@@ -77,8 +81,16 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
 	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignal os.Signal) {
+		if handler, ok := o.(SignalHandler); ok {
+			err = handler.HandleSignal()
+			if err != nil {
+				log.Errorf("failed to delete resources from Kubernetes cluster: %v", err)
+			}
+		}
 		scontext.SetSignal(cmd.Context(), receivedSignal)
 		startTelemetry(cmd, fmt.Errorf("user interrupted the command execution: %w", terminal.InterruptErr), startTime)
+		// exit here to stop spinners from rotating
+		os.Exit(1)
 	})
 
 	// CheckMachineReadableOutput

@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/redhat-developer/odo/pkg/kclient"
+
 	"github.com/golang/mock/gomock"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -188,6 +190,8 @@ func commonChecks(path string, files []string, delFiles []string, globExps []str
 }
 
 func TestWatchAndPush(t *testing.T) {
+	doCleanup := make(chan bool)
+	cleanupDone := make(chan bool)
 	tests := []struct {
 		name              string
 		componentName     string
@@ -759,7 +763,7 @@ func TestWatchAndPush(t *testing.T) {
 				t.Errorf("failed to setup test environment. Error %v", err)
 			}
 
-			watchClient := NewWatchClient()
+			watchClient := NewWatchClient(&kclient.MockClientInterface{})
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
@@ -843,6 +847,8 @@ func TestWatchAndPush(t *testing.T) {
 			err = watchClient.WatchAndPush(
 				os.Stdout,
 				watchParameters,
+				doCleanup,
+				cleanupDone,
 			)
 			if err != nil && err != ErrUserRequestedWatchExit {
 				t.Errorf("error in WatchAndPush %+v", err)

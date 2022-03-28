@@ -8,6 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
+	"sync"
+	"time"
+
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -28,7 +33,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -36,6 +40,9 @@ import (
 
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "dev"
+
+// This wait group is used in watch.WatchAndPush and HandleSignal to coordinate deletion
+var wg sync.WaitGroup
 
 type DevOptions struct {
 	// Context
@@ -51,6 +58,9 @@ type DevOptions struct {
 	// it's called "initial" because it has to be set only once when running odo dev for the first time
 	// it is used to compare with updated devfile when we watch the contextDir for changes
 	initialDevfileObj parser.DevfileObj
+	cleanupDone       chan bool
+	ctx               context.Context
+	cancel            context.CancelFunc
 
 	// working directory
 	contextDir string
@@ -63,8 +73,9 @@ type Handler struct{}
 
 func NewDevOptions() *DevOptions {
 	return &DevOptions{
-		out:    log.GetStdout(),
-		errOut: log.GetStderr(),
+		out:         log.GetStdout(),
+		errOut:      log.GetStderr(),
+		cleanupDone: make(chan bool),
 	}
 }
 
@@ -213,12 +224,16 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	portsBuf.Wait()
 
 	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
+
+	o.ctx, o.cancel = context.WithCancel(context.Background())
 	d := Handler{}
-	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d)
+	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.cleanupDone, o.ctx)
+
 	return err
 }
 
@@ -254,6 +269,27 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+}
+
+func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
+	var portForwardURLs strings.Builder
+	for container, ports := range portPairs {
+		for _, pair := range ports {
+			split := strings.Split(pair, ":")
+			local := split[0]
+			remote := split[1]
+
+			portForwardURLs.WriteString(fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local))
+		}
+	}
+	fmt.Fprintf(out, "\n%s", portForwardURLs.String())
+}
+
+func (o *DevOptions) HandleSignal() error {
+	o.cancel()
+	<-o.cleanupDone
+	time.Sleep(10 * time.Second)
+	return nil
 }
 
 // NewCmdDev implements the odo dev command
