@@ -204,6 +204,26 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
+			When("recording telemetry data", func() {
+				BeforeEach(func() {
+					helper.EnableTelemetryDebug()
+					session, _, _, _, _ := helper.StartDevMode()
+					session.Stop()
+				})
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+				It("should record the telemetry data correctly", func() {
+					td := helper.GetTelemetryDebugData()
+					Expect(td.Event).To(ContainSubstring("odo init"))
+					Expect(td.Properties.Success).To(BeTrue())
+					Expect(td.Properties.Error == "").To(BeTrue())
+					Expect(td.Properties.ErrorType == "").To(BeTrue())
+					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
+					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
+					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
+				})
+			})
 		})
 	})
 
@@ -289,29 +309,6 @@ var _ = Describe("odo dev command tests", func() {
 						helper.WaitForErroutToContain("devfile.yaml has been changed; please restart the `odo dev` command", 180, 10, session)
 					})
 					Expect(err).ToNot(HaveOccurred())
-				})
-			})
-
-			When("recording telemetry data", func() {
-				BeforeEach(func() {
-					helper.EnableTelemetryDebug()
-					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-					helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
-					session, _, _, _, _ := helper.StartDevMode()
-					session.Stop()
-				})
-				AfterEach(func() {
-					helper.ResetTelemetry()
-				})
-				It("should record the telemetry data correctly", func() {
-					td := helper.GetTelemetryDebugData()
-					Expect(td.Event).To(ContainSubstring("odo init"))
-					Expect(td.Properties.Success).To(BeTrue())
-					Expect(td.Properties.Error == "").To(BeTrue())
-					Expect(td.Properties.ErrorType == "").To(BeTrue())
-					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
-					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
-					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
 				})
 			})
 		})
