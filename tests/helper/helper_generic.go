@@ -346,7 +346,6 @@ func CommonBeforeEach() CommonVar {
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
-	os.Setenv(segment.DisableTelemetryEnv, "true")
 	SetDefaultDevfileRegistryAsStaging()
 	return commonVar
 }
@@ -444,6 +443,7 @@ func SetProjectName() string {
 
 // RunTestSpecs defines a common way how test specs in test suite are executed
 func RunTestSpecs(t *testing.T, description string) {
+	os.Setenv(segment.DisableTelemetryEnv, "true")
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
 }

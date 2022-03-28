@@ -145,8 +145,8 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	// Set the name in the devfile *AND* writes the devfile back to the disk in case
-	// it has been removed and not replaced by the starter project
+	// Set the name in the devfile but do not write it yet to disk,
+	// because the starter project downloaded at the end might come bundled with a specific Devfile.
 	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
 	if err != nil {
 		return fmt.Errorf("failed to update the devfile's name: %w", err)

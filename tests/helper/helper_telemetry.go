@@ -47,4 +47,8 @@ func GetTelemetryDebugData() segment.TelemetryData {
 func ResetTelemetry() {
 	Expect(os.Setenv(segment.DisableTelemetryEnv, "true")).NotTo(HaveOccurred())
 	Expect(os.Unsetenv(segment.DebugTelemetryFileEnv))
+	cfg, _ := preference.NewClient()
+	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "true")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(segment.IsTelemetryEnabled(cfg)).To(BeFalse())
 }
