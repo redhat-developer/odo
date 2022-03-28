@@ -223,10 +223,6 @@ test-cmd-devfile-registry: install ## Run odo devfile registry command tests
 test-cmd-devfile-test: install ## Run odo devfile test command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile test command tests" tests/integration/devfile/
 
-.PHONY: test-cmd-devfile-url
-test-cmd-devfile-url: install ## Run odo url devfile command tests
-	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile url command tests" tests/integration/devfile/
-
 .PHONY: test-cmd-devfile-debug
 test-cmd-devfile-debug: install ## Run odo debug devfile command tests
 	$(RUN_GINKGO) $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
