@@ -2,13 +2,14 @@ package devfile
 
 import (
 	"fmt"
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -1091,11 +1092,10 @@ var _ = Describe("odo dev command tests", func() {
 	When("a component with endpoints is bootstrapped and pushed", func() {
 
 		BeforeEach(func() {
-			// Component name comes from devfile-with-endpoints.yaml
 			cmpName = "nodejs-with-endpoints"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
-				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-endpoints.yaml")).ShouldPass()
+				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 
 			devSession, _, _, _, err := helper.StartDevMode()
 			Expect(err).ShouldNot(HaveOccurred())
