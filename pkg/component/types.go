@@ -3,7 +3,6 @@ package component
 import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/storage"
-	"github.com/redhat-developer/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,8 +22,6 @@ type ComponentSpec struct {
 	App         string            `json:"app,omitempty"`
 	Type        string            `json:"type,omitempty"`
 	Source      string            `json:"source,omitempty"`
-	URL         []string          `json:"url,omitempty"`
-	URLSpec     []url.URL         `json:"-"`
 	Storage     []string          `json:"storage,omitempty"`
 	StorageSpec []storage.Storage `json:"-"`
 	Env         []corev1.EnvVar   `json:"env,omitempty"`

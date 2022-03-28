@@ -2,13 +2,14 @@ package devfile
 
 import (
 	"fmt"
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -1085,4 +1086,49 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 	*/
+
+	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
+	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238
+	When("a component with endpoints is bootstrapped and pushed", func() {
+
+		BeforeEach(func() {
+			cmpName = "nodejs-with-endpoints"
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
+				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+
+			devSession, _, _, _, err := helper.StartDevMode()
+			Expect(err).ShouldNot(HaveOccurred())
+			devSession.Kill()
+		})
+
+		It("should not create Ingress or Route resources in the cluster", func() {
+			// Pod should exist
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+			Expect(podName).NotTo(BeEmpty())
+			services := commonVar.CliRunner.GetServices(commonVar.Project)
+			Expect(services).To(SatisfyAll(
+				Not(BeEmpty()),
+				ContainSubstring(fmt.Sprintf("%s-app", cmpName)),
+			))
+
+			ingressesOut := commonVar.CliRunner.Run("get", "ingress",
+				"-n", commonVar.Project,
+				"-o", "custom-columns=NAME:.metadata.name",
+				"--no-headers").Out.Contents()
+			ingresses, err := helper.ExtractLines(string(ingressesOut))
+			Expect(err).To(BeNil())
+			Expect(ingresses).To(BeEmpty())
+
+			if !helper.IsKubernetesCluster() {
+				routesOut := commonVar.CliRunner.Run("get", "routes",
+					"-n", commonVar.Project,
+					"-o", "custom-columns=NAME:.metadata.name",
+					"--no-headers").Out.Contents()
+				routes, err := helper.ExtractLines(string(routesOut))
+				Expect(err).To(BeNil())
+				Expect(routes).To(BeEmpty())
+			}
+		})
+	})
 })

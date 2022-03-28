@@ -42,8 +42,6 @@ const (
 // EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
 	devfileObj        parser.DevfileObj
-	isRouteSupported  bool
-	updateURL         bool              // this indicates that the URL create operation should be an update operation
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -160,13 +158,6 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 				return fmt.Errorf("failed to set debug port: %w", err)
 			}
 			esi.componentSettings.DebugPort = &val
-		case "url":
-			urlValue := value.(localConfigProvider.LocalURL)
-			if esi.componentSettings.URL != nil {
-				*esi.componentSettings.URL = append(*esi.componentSettings.URL, urlValue)
-			} else {
-				esi.componentSettings.URL = &[]localConfigProvider.LocalURL{urlValue}
-			}
 		}
 
 		return esi.writeToFile()
@@ -339,11 +330,6 @@ func (ei *EnvInfo) GetDevfileObj() parser.DevfileObj {
 	return ei.devfileObj
 }
 
-// SetIsRouteSupported sets the isRouteSupported value for the envinfo
-func (ei *EnvInfo) SetIsRouteSupported(isRouteSupported bool) {
-	ei.isRouteSupported = isRouteSupported
-}
-
 const (
 	// Name is the name of the setting controlling the component name
 	Name = "Name"
@@ -357,10 +343,6 @@ const (
 	DebugPort = "DebugPort"
 	// DebugPortDescription s the human-readable description for debug port setting
 	DebugPortDescription = "Set this value to user-defined debug port to assign the debug port to the component"
-	// URL parameter
-	URL = "URL"
-	// URLDescription is the description of URL
-	URLDescription = "URL to access the component"
 	// Push parameter
 	Push = "PUSH"
 	// PushDescription is the description of push parameter
@@ -372,7 +354,6 @@ var (
 		Name:      NameDescription,
 		Project:   ProjectDescription,
 		DebugPort: DebugPortDescription,
-		URL:       URLDescription,
 		Push:      PushDescription,
 	}
 

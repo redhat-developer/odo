@@ -55,21 +55,15 @@ type internalCxt struct {
 
 // CreateParameters defines the options which can be provided while creating the context
 type CreateParameters struct {
-	cmdline           cmdline.Cmdline
-	componentContext  string
-	routeAvailability bool
-	devfile           bool
-	offline           bool
-	appIfNeeded       bool
+	cmdline          cmdline.Cmdline
+	componentContext string
+	devfile          bool
+	offline          bool
+	appIfNeeded      bool
 }
 
 func NewCreateParameters(cmdline cmdline.Cmdline) CreateParameters {
 	return CreateParameters{cmdline: cmdline}
-}
-
-func (o CreateParameters) RequireRouteAvailability() CreateParameters {
-	o.routeAvailability = true
-	return o
 }
 
 func (o CreateParameters) NeedDevfile(ctx string) CreateParameters {
@@ -122,14 +116,6 @@ func New(parameters CreateParameters) (*Context, error) {
 			if err = ctx.checkComponentExistsOrFail(); err != nil {
 				return nil, err
 			}
-		}
-
-		if parameters.routeAvailability {
-			isRouteSupported, err := ctx.KClient.IsRouteSupported()
-			if err != nil {
-				return nil, err
-			}
-			ctx.EnvSpecificInfo.SetIsRouteSupported(isRouteSupported)
 		}
 	}
 
