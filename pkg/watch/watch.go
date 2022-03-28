@@ -213,7 +213,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
 
-	log.Finfof(out, "\nWatching for changes in the current directory %s\n\nPress Ctrl+c to exit.", parameters.Path)
+	printInfoMessage(out, parameters.Path)
 	// This goroutine listens for either file change events from fsnotify, fs errors, or a terminate signal
 	// The results are stored in the variables defined in the var( ... ) block above
 	wg.Add(1)
@@ -348,7 +348,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 					deletedPaths = []string{}
 				}
 				if showWaitingMessage {
-					log.Finfof(out, "\nWatching for changes in the current directory %s\n\nPress Ctrl+c to exit.", parameters.Path)
+					printInfoMessage(out, parameters.Path)
 					showWaitingMessage = false
 				}
 			}
@@ -408,4 +408,9 @@ func removeDuplicates(input []string) []string {
 		result = append(result, str)
 	}
 	return result
+}
+
+func printInfoMessage(out io.Writer, path string) {
+	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+
+		"Press Ctrl+c to exit to exit `odo dev` and delete resources from the cluster\n", path)
 }
