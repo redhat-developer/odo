@@ -23,9 +23,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
-
-	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
@@ -130,7 +127,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
 	namespace := o.GetProject()
-	scontext.SetComponentType(ctx, odocomponent.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devfileName)
