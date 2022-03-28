@@ -18,8 +18,10 @@ import (
 	```
 	When("running dev session", func() {
 		var devSession DevSession
+		var outContents []byte
+		var errContents []byte
 		BeforeEach(func() {
-			devSession = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode()
 		})
 		AfterEach(func() {
 			devSession.Stop()
@@ -27,6 +29,7 @@ import (
 
 		It("...", func() {
 			// Test with `dev odo` running in the background
+			// outContents and errContents are contents of std/err output when dev mode is started
 		})
 		It("...", func() {
 			// Test with `dev odo` running in the background
@@ -38,14 +41,18 @@ import (
 	This format can be used to test the behaviour of `odo dev` when it is stopped cleanly
 
 	When("running dev session and stopping it with cleanup", func() {
+		var devSession DevSession
+		var outContents []byte
+		var errContents []byte
 		BeforeEach(func() {
-			devSession := helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode()
 			defer devSession.Stop()
 			[...]
 		})
 
 		It("...", func() {
 			// Test after `odo dev` has been stopped cleanly
+			// outContents and errContents are contents of std/err output when dev mode is started
 		})
 		It("...", func() {
 			// Test after `odo dev` has been stopped cleanly
@@ -57,14 +64,18 @@ import (
 	This format can be used to test the behaviour of `odo dev` when it is stopped with a KILL signal
 
 	When("running dev session and stopping it without cleanup", func() {
+		var devSession DevSession
+		var outContents []byte
+		var errContents []byte
 		BeforeEach(func() {
-			devSession := helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode()
 			defer devSession.Kill()
 			[...]
 		})
 
 		It("...", func() {
 			// Test after `odo dev` has been killed
+			// outContents and errContents are contents of std/err output when dev mode is started
 		})
 		It("...", func() {
 			// Test after `odo dev` has been killed
@@ -79,10 +90,16 @@ import (
 	To run independent tests, previous formats should be used instead.
 
 	It("should do ... in dev mode", func() {
-		helper.RunDevMode(func(session *gexec.Session) {
+		helper.RunDevMode(func(session *gexec.Session, outContents []byte, errContents []byte) {
 			// test on dev mode
+			// outContents and errContents are contents of std/err output when dev mode is started
 		})
 	})
+
+	# Waiting for file synchronisation to finish
+
+	The method session.WaitSync() can be used to wait for the synchronization of files to finish.
+	The method returns the contents of std/err output since the end of the dev mode started or previous sync, and until the end of the synchronization.
 */
 
 const localhostRegexp = "localhost:[0-9]*"
@@ -91,11 +108,15 @@ type DevSession struct {
 	session *gexec.Session
 }
 
-// StartDevMode a session structure, the contents of the standard and error outputs, and the redirections endpoints to access ports opened by component
+// StartDevMode starts a dev session with `odo dev`
+// It returns a session structure, the contents of the standard and error outputs
+// and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode() (DevSession, []byte, []byte, []string, error) {
-	session := CmdRunner("odo", "dev")
-	WaitForOutputToContain("Watching for changes in the current directory", 180, 10, session)
+func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) {
+	args := []string{"dev"}
+	args = append(args, opts...)
+	session := CmdRunner("odo", args...)
+	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, session)
 	result := DevSession{
 		session: session,
 	}
@@ -110,6 +131,7 @@ func StartDevMode() (DevSession, []byte, []byte, []string, error) {
 		return DevSession{}, nil, nil, nil, err
 	}
 	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), localhostRegexp), nil
+
 }
 
 // Kill a Dev session abruptly, without handling any cleanup
@@ -120,6 +142,25 @@ func (o DevSession) Kill() {
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
 func (o DevSession) Stop() {
 	o.session.Interrupt()
+}
+
+//  WaitSync waits for the synchronization of files to be finished
+// It returns the contents of the standard and error outputs
+// since the end of the dev mode started or previous sync, and until the end of the synchronization.
+func (o DevSession) WaitSync() ([]byte, []byte, error) {
+	WaitForOutputToContain("Pushing files...", 180, 10, o.session)
+	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, o.session)
+	outContents := o.session.Out.Contents()
+	errContents := o.session.Err.Contents()
+	err := o.session.Out.Clear()
+	if err != nil {
+		return nil, nil, err
+	}
+	err = o.session.Err.Clear()
+	if err != nil {
+		return nil, nil, err
+	}
+	return outContents, errContents, nil
 }
 
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started

@@ -9,10 +9,10 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"

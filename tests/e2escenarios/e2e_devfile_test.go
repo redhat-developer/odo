@@ -4,6 +4,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 // Test Objective:
@@ -36,13 +37,14 @@ var _ = Describe("odo devfile supported tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	createStarterProjAndSetDebug := func(component, starter, debugLocalPort string) {
+	createStarterProjAndSetDebug := func(component, starter string) {
 		workingDir := helper.Getwd()
 		defer helper.Chdir(workingDir)
 		helper.Chdir(projectDirPath)
 		helper.Cmd("odo", "init", "--name", componentName, "--devfile", component, "--starter", starter).ShouldPass()
-		helper.Cmd("odo", "push", "--context", projectDirPath).ShouldPass()
-		helper.Cmd("odo", "push", "--debug", "--context", projectDirPath).ShouldPass()
+		session, _, _, _, err := helper.StartDevMode()
+		Expect(err).ToNot(HaveOccurred())
+		session.Stop()
 
 		//		stopChannel := make(chan bool)
 		//		go func() {
@@ -63,16 +65,16 @@ var _ = Describe("odo devfile supported tests", func() {
 
 	Context("odo debug support for devfile components", func() {
 		It("Verify output debug information for nodeJS debug works", func() {
-			createStarterProjAndSetDebug("nodejs", "nodejs-starter", "5859")
+			createStarterProjAndSetDebug("nodejs", "nodejs-starter")
 		})
 		It("Verify output debug information for java-springboot works", func() {
-			createStarterProjAndSetDebug("java-springboot", "springbootproject", "5860")
+			createStarterProjAndSetDebug("java-springboot", "springbootproject")
 		})
 		It("Verify output debug information for java-quarkus debug works", func() {
-			createStarterProjAndSetDebug("java-quarkus", "community", "5862")
+			createStarterProjAndSetDebug("java-quarkus", "community")
 		})
 		It("Verify output debug information for java-maven debug works", func() {
-			createStarterProjAndSetDebug("java-maven", "springbootproject", "5863")
+			createStarterProjAndSetDebug("java-maven", "springbootproject")
 		})
 	})
 

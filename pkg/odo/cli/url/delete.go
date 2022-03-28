@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -27,39 +26,32 @@ var (
 
 // DeleteOptions encapsulates the options for the odo url delete command
 type DeleteOptions struct {
-	// Push context
-	*clicomponent.PushOptions
+	*genericclioptions.Context
+
+	contextFlag string
 
 	// Parameters
 	urlName string
 
 	// Flags
 	forceFlag bool
-	nowFlag   bool
 }
 
 // NewURLDeleteOptions creates a new DeleteOptions instance
 func NewURLDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{PushOptions: clicomponent.NewPushOptions()}
+	return &DeleteOptions{}
 }
+
+func (o *DeleteOptions) SetClientset(clientset *clientset.Clientset) {}
 
 // Complete completes DeleteOptions after they've been Deleted
 func (o *DeleteOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.GetComponentContext()))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(o.contextFlag))
 	if err != nil {
 		return err
 	}
 
 	o.urlName = args[0]
-
-	if o.nowFlag {
-		prjName := o.LocalConfigProvider.GetNamespace()
-		o.ResolveSrcAndConfigFlags()
-		err = o.ResolveProject(prjName)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
@@ -87,16 +79,6 @@ func (o *DeleteOptions) Run() (err error) {
 
 		log.Successf("URL %s removed from component %s", o.urlName, o.LocalConfigProvider.GetName())
 
-		if o.nowFlag {
-			o.CompleteDevfilePath()
-			o.EnvSpecificInfo = o.Context.EnvSpecificInfo
-			err = o.DevfilePush()
-			if err != nil {
-				return err
-			}
-			log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
-		}
-
 	} else {
 		return fmt.Errorf("aborting deletion of URL: %v", o.urlName)
 	}
@@ -120,8 +102,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 
 	urlDeleteCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete url without prompting")
 
-	o.AddContextFlag(urlDeleteCmd)
-	odoutil.AddNowFlag(urlDeleteCmd, &o.nowFlag)
+	odoutil.AddContextFlag(urlDeleteCmd, &o.contextFlag)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
 
