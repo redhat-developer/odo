@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -94,7 +95,7 @@ func (o *TerminalOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *TerminalOptions) Run() (err error) {
+func (o *TerminalOptions) Run(ctx context.Context) (err error) {
 	// shell type is already validated so retrieval will work
 	_, err = os.Stdout.Write([]byte(supportedShells[o.shellType]))
 	return

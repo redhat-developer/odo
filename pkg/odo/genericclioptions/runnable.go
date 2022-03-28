@@ -1,6 +1,7 @@
 package genericclioptions
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -36,7 +37,7 @@ type Runnable interface {
 	SetClientset(clientset *clientset.Clientset)
 	Complete(cmdline cmdline.Cmdline, args []string) error
 	Validate() error
-	Run() error
+	Run(ctx context.Context) error
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
@@ -44,11 +45,11 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	startTime := time.Now()
 	cfg, _ := preference.NewClient()
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
+	debugTelemetry := segment.GetDebugTelemetryFile()
 
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
 	// This prompt has been placed here so that it does not prompt the user when they call --help
-
 	if !cfg.IsSet(preference.ConsentTelemetrySetting) && cmd.Parent().Name() != "preference" {
 		if !segment.RunningInTerminal() {
 			klog.V(4).Infof("Skipping telemetry question because there is no terminal (tty)\n")
@@ -66,6 +67,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			}
 		}
 	}
+	if len(debugTelemetry) > 0 {
+		klog.V(4).Infof("WARNING: debug telemetry, if enabled, will be logged in %s", debugTelemetry)
+	}
+
 	// set value for telemetry status in context so that we do not need to call IsTelemetryEnabled every time to check its status
 	scontext.SetTelemetryStatus(cmd.Context(), segment.IsTelemetryEnabled(cfg))
 
@@ -89,9 +94,10 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	o.SetClientset(deps)
 
+	cmdLineObj := cmdline.NewCobra(cmd)
 	// Run completion, validation and run.
 	// Only upload data to segment for completion and validation if a non-nil error is returned.
-	err = o.Complete(cmdline.NewCobra(cmd), args)
+	err = o.Complete(cmdLineObj, args)
 	if err != nil {
 		startTelemetry(cmd, err, startTime)
 	}
@@ -103,7 +109,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Run()
+	err = o.Run(cmdLineObj.Context())
 	startTelemetry(cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }

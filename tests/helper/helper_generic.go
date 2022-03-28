@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
 	"io"
 	"os"
 	"os/exec"
@@ -16,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/tests/helper/reporter"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -442,7 +443,7 @@ func SetProjectName() string {
 
 // RunTestSpecs defines a common way how test specs in test suite are executed
 func RunTestSpecs(t *testing.T, description string) {
-	os.Setenv("ODO_DISABLE_TELEMETRY", "true")
+	os.Setenv(segment.DisableTelemetryEnv, "true")
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
 }

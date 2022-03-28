@@ -1,6 +1,7 @@
 package url
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -69,7 +70,7 @@ func (o *DeleteOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url delete command
-func (o *DeleteOptions) Run() (err error) {
+func (o *DeleteOptions) Run(ctx context.Context) (err error) {
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
 		err := o.LocalConfigProvider.DeleteURL(o.urlName)
 		if err != nil {

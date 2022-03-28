@@ -1,6 +1,7 @@
 package component
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -129,7 +130,7 @@ Or use the command from inside a directory containing an odo component.`)
 }
 
 // Run has the logic to perform the required actions as part of command
-func (lo *ListOptions) Run() error {
+func (lo *ListOptions) Run(ctx context.Context) error {
 	var otherComps []component.Component
 	// --path workflow
 

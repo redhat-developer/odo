@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -56,7 +57,7 @@ func (pgo *ProjectGetOptions) Validate() (err error) {
 }
 
 // Run the project get command
-func (pgo *ProjectGetOptions) Run() (err error) {
+func (pgo *ProjectGetOptions) Run(ctx context.Context) (err error) {
 	currentProject := pgo.Context.GetProject()
 
 	if pgo.shortFlag {

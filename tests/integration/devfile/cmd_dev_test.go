@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"fmt"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"io"
 	"net/http"
 	"os"
@@ -201,6 +202,26 @@ var _ = Describe("odo dev command tests", func() {
 						Expect(string(output)).To(ContainSubstring(cmpName))
 					})
 					Expect(err).ToNot(HaveOccurred())
+				})
+			})
+			When("recording telemetry data", func() {
+				BeforeEach(func() {
+					helper.EnableTelemetryDebug()
+					session, _, _, _, _ := helper.StartDevMode()
+					session.Stop()
+				})
+				AfterEach(func() {
+					helper.ResetTelemetry()
+				})
+				It("should record the telemetry data correctly", func() {
+					td := helper.GetTelemetryDebugData()
+					Expect(td.Event).To(ContainSubstring("odo dev"))
+					Expect(td.Properties.Success).To(BeFalse())
+					Expect(td.Properties.Error).To(ContainSubstring("interrupt"))
+					Expect(td.Properties.ErrorType == "*errors.errorString").To(BeTrue())
+					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
+					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 				})
 			})
 		})

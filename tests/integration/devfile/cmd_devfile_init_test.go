@@ -2,15 +2,17 @@ package devfile
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
+
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
 	"github.com/redhat-developer/odo/tests/helper"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 var _ = Describe("odo devfile init command tests", func() {
@@ -280,6 +282,26 @@ var _ = Describe("odo devfile init command tests", func() {
 			metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 			Expect(metadata.Name).To(BeEquivalentTo("aname"))
 			Expect(metadata.Language).To(BeEquivalentTo("nodejs"))
+		})
+	})
+	When("recording telemetry data", func() {
+		BeforeEach(func() {
+			helper.EnableTelemetryDebug()
+			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go").ShouldPass().Out()
+		})
+		AfterEach(func() {
+			helper.ResetTelemetry()
+		})
+		It("should record the telemetry data correctly", func() {
+			td := helper.GetTelemetryDebugData()
+			Expect(td.Event).To(ContainSubstring("odo init"))
+			Expect(td.Properties.Success).To(BeTrue())
+			Expect(td.Properties.Error == "").To(BeTrue())
+			Expect(td.Properties.ErrorType == "").To(BeTrue())
+			Expect(td.Properties.CmdProperties[segment.DevfileName]).To(ContainSubstring("aname"))
+			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("go"))
+			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("go"))
+			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("go"))
 		})
 	})
 })

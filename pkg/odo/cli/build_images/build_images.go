@@ -1,6 +1,7 @@
 package build_images
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -58,7 +59,7 @@ func (o *BuildImagesOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo command
-func (o *BuildImagesOptions) Run() (err error) {
+func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
 	devfileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 	path := filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 	return image.BuildPushImages(devfileObj, path, o.pushFlag)

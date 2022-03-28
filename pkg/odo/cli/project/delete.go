@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"fmt"
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
@@ -78,7 +79,7 @@ func (pdo *ProjectDeleteOptions) Validate() error {
 }
 
 // Run the project delete command
-func (pdo *ProjectDeleteOptions) Run() (err error) {
+func (pdo *ProjectDeleteOptions) Run(ctx context.Context) (err error) {
 
 	// Create the "spinner"
 	s := &log.Status{}

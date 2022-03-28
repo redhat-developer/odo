@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -41,7 +42,7 @@ func TestSet(t *testing.T) {
 	}
 
 	prefClient.EXPECT().SetConfiguration("arg1", "Arg2")
-	err = opts.Run()
+	err = opts.Run(context.Background())
 	if err != nil {
 		t.Errorf("Expected nil error, got %s", err)
 	}

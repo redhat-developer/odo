@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"path"
 	"path/filepath"
 
@@ -108,6 +109,28 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				out := commonVar.CliRunner.Run("get", "deployment", "my-component", "-n", commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
 				Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
 			})
+		})
+	})
+
+	When("recording telemetry data", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
+			helper.EnableTelemetryDebug()
+			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+		})
+		AfterEach(func() {
+			helper.ResetTelemetry()
+		})
+		It("should record the telemetry data correctly", func() {
+			td := helper.GetTelemetryDebugData()
+			Expect(td.Event).To(ContainSubstring("odo deploy"))
+			Expect(td.Properties.Success).To(BeTrue())
+			Expect(td.Properties.Error == "").To(BeTrue())
+			Expect(td.Properties.ErrorType == "").To(BeTrue())
+			Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
+			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 		})
 	})
 })

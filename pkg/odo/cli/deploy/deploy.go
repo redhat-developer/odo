@@ -1,13 +1,11 @@
 package deploy
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -17,8 +15,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/version"
 
+	"os"
+	"path/filepath"
+
+	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -57,7 +60,6 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 	if err != nil {
 		return err
 	}
-
 	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
 	if err != nil {
 		return err
@@ -68,6 +70,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 
 	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
 		func(interactiveMode bool) {
+			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
 				fmt.Println("The current directory already contains source code. " +
 					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
@@ -118,13 +121,16 @@ func (o *DeployOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *DeployOptions) Run() error {
+func (o *DeployOptions) Run(ctx context.Context) error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	devfileName := devfileObj.GetMetadataName()
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
 	namespace := o.GetProject()
-
+	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(ctx, devfileName)
 	// Output what the command is doing / information
 	log.Title("Deploying the application using "+devfileName+" Devfile",
 		"Namespace: "+namespace,

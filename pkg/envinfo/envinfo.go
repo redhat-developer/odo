@@ -259,7 +259,7 @@ func (esi *EnvSpecificInfo) writeToFile() error {
 	proxyei := newProxyEnvInfo()
 	proxyei.ComponentSettings = esi.componentSettings
 
-	return util.WriteToFile(&proxyei, esi.Filename)
+	return util.WriteToYAMLFile(&proxyei, esi.Filename)
 }
 
 // GetName returns the component name

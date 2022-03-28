@@ -1,6 +1,7 @@
 package url
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -76,7 +77,7 @@ func (o *ListOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the odo url list command
-func (o *ListOptions) Run() (err error) {
+func (o *ListOptions) Run(ctx context.Context) (err error) {
 	componentName := o.Context.LocalConfigProvider.GetName()
 	urls, err := o.client.List()
 	if err != nil {

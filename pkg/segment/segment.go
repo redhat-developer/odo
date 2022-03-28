@@ -33,7 +33,10 @@ const Sanitizer = "XXXX"
 
 // DisableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely
 // hiding even the question
-const DisableTelemetryEnv = "ODO_DISABLE_TELEMETRY"
+const (
+	DisableTelemetryEnv   = "ODO_DISABLE_TELEMETRY"
+	DebugTelemetryFileEnv = "ODO_DEBUG_TELEMETRY_FILE"
+)
 
 type TelemetryProperties struct {
 	Duration      int64                  `json:"duration"`
@@ -299,4 +302,8 @@ func sanitizeExec(errString string) string {
 	pattern, _ := regexp.Compile("exec command.*")
 	errString = pattern.ReplaceAllString(errString, fmt.Sprintf("exec command %s", Sanitizer))
 	return errString
+}
+
+func GetDebugTelemetryFile() string {
+	return os.Getenv(DebugTelemetryFileEnv)
 }

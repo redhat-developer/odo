@@ -1,6 +1,7 @@
 package preference
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -47,7 +48,7 @@ func (o *ViewOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (o *ViewOptions) Run() (err error) {
+func (o *ViewOptions) Run(ctx context.Context) (err error) {
 
 	if log.IsJSON() {
 		prefDef := o.clientset.PreferenceClient.NewPreferenceList()

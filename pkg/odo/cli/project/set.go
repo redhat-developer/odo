@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"fmt"
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
@@ -8,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/segment/context"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/spf13/cobra"
@@ -62,8 +63,8 @@ func (pso *ProjectSetOptions) Complete(cmdline cmdline.Cmdline, args []string) (
 	if err != nil {
 		return err
 	}
-	if context.GetTelemetryStatus(cmdline.Context()) {
-		context.SetClusterType(cmdline.Context(), pso.KClient)
+	if scontext.GetTelemetryStatus(cmdline.Context()) {
+		scontext.SetClusterType(cmdline.Context(), pso.KClient)
 	}
 	return nil
 }
@@ -83,7 +84,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 }
 
 // Run runs the project set command
-func (pso *ProjectSetOptions) Run() (err error) {
+func (pso *ProjectSetOptions) Run(ctx context.Context) (err error) {
 	current := pso.GetProject()
 	err = pso.clientset.ProjectClient.SetCurrent(pso.projectName)
 	if err != nil {

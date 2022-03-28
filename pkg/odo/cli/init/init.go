@@ -6,13 +6,9 @@ import (
 	"fmt"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-
-	"github.com/spf13/cobra"
-
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
@@ -22,6 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/spf13/cobra"
 
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"
@@ -87,6 +84,8 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 
 	o.flags = cmdline.GetFlags()
 
+	scontext.SetInteractive(cmdline.Context(), len(o.flags) == 0)
+
 	return nil
 }
 
@@ -109,7 +108,7 @@ func (o *InitOptions) Validate() error {
 }
 
 // Run contains the logic for the odo command
-func (o *InitOptions) Run() (err error) {
+func (o *InitOptions) Run(ctx context.Context) (err error) {
 
 	var starterDownloaded bool
 
@@ -140,7 +139,6 @@ func (o *InitOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	scontext.SetComponentType(o.ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
 
 	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
 	if err != nil {
@@ -151,7 +149,7 @@ func (o *InitOptions) Run() (err error) {
 	// because the starter project downloaded at the end might come bundled with a specific Devfile.
 	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
 	if err != nil {
-		return fmt.Errorf("Failed to update the devfile's name: %w", err)
+		return fmt.Errorf("failed to update the devfile's name: %w", err)
 	}
 
 	if starterInfo != nil {
@@ -170,11 +168,14 @@ func (o *InitOptions) Run() (err error) {
 			}
 		}
 	}
-
 	// WARNING: SetMetadataName writes the Devfile to disk
 	if err = devfileObj.SetMetadataName(name); err != nil {
 		return err
 	}
+	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
 Your new component %q is ready in the current directory.

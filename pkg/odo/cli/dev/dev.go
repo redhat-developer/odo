@@ -1,8 +1,10 @@
 package dev
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"io"
 	"os"
 	"path/filepath"
@@ -92,6 +94,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
 		func(interactiveMode bool) {
+			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
 				fmt.Println("The current directory already contains source code. " +
 					"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
@@ -161,7 +164,7 @@ func (o *DevOptions) Validate() error {
 	return err
 }
 
-func (o *DevOptions) Run() error {
+func (o *DevOptions) Run(ctx context.Context) error {
 	var err error
 	var platformContext = kubernetes.KubernetesContext{
 		Namespace: o.Context.GetProject(),
@@ -206,9 +209,13 @@ func (o *DevOptions) Run() error {
 		}
 	}()
 	printPortForwardingInfo(portPairs, o.out)
-
+	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 	d := Handler{}
-	err = o.clientset.DevClient.Watch(o.Context.EnvSpecificInfo.GetDevfileObj(), path, o.ignorePaths, o.out, &d)
+	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d)
 	return err
 }
 

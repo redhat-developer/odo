@@ -9,8 +9,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/project"
-	"github.com/redhat-developer/odo/pkg/segment/context"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
+	"context"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -62,8 +63,8 @@ func (pco *ProjectCreateOptions) Complete(cmdline cmdline.Cmdline, args []string
 	if err != nil {
 		return err
 	}
-	if context.GetTelemetryStatus(cmdline.Context()) {
-		context.SetClusterType(cmdline.Context(), pco.KClient)
+	if scontext.GetTelemetryStatus(cmdline.Context()) {
+		scontext.SetClusterType(cmdline.Context(), pco.KClient)
 	}
 	return nil
 }
@@ -74,7 +75,7 @@ func (pco *ProjectCreateOptions) Validate() error {
 }
 
 // Run runs the project create command
-func (pco *ProjectCreateOptions) Run() (err error) {
+func (pco *ProjectCreateOptions) Run(ctx context.Context) (err error) {
 	// Create the "spinner"
 	s := &log.Status{}
 

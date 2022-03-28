@@ -1,6 +1,7 @@
 package delete
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -78,7 +79,7 @@ func (o *ComponentOptions) Validate() (err error) {
 	return nil
 }
 
-func (o *ComponentOptions) Run() error {
+func (o *ComponentOptions) Run(ctx context.Context) error {
 	if o.name != "" {
 		return o.deleteNamedComponent()
 	}
