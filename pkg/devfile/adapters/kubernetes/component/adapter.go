@@ -497,8 +497,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		PodSelectorLabels: selectorLabels,
 		Replicas:          pointer.Int32Ptr(1),
 	}
-	deployParams.InitContainers[0].ImagePullPolicy = corev1.PullIfNotPresent
-	deployParams.Containers[0].ImagePullPolicy = corev1.PullIfNotPresent
+
 	deployment, err := generator.GetDeployment(a.Devfile, deployParams)
 	if err != nil {
 		return err
