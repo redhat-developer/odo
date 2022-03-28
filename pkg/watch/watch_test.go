@@ -190,7 +190,6 @@ func commonChecks(path string, files []string, delFiles []string, globExps []str
 }
 
 func TestWatchAndPush(t *testing.T) {
-	doCleanup := make(chan bool)
 	cleanupDone := make(chan bool)
 	tests := []struct {
 		name              string
@@ -847,7 +846,6 @@ func TestWatchAndPush(t *testing.T) {
 			err = watchClient.WatchAndPush(
 				os.Stdout,
 				watchParameters,
-				doCleanup,
 				cleanupDone,
 			)
 			if err != nil && err != ErrUserRequestedWatchExit {
