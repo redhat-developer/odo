@@ -168,6 +168,24 @@ ComponentSettings:
 					})
 				})
 			})
+			When("a resource is changed in the devfile and the component is deleted while having access to the devfile.yaml", func() {
+				var changedServiceName, stdout string
+				BeforeEach(func() {
+					changedServiceName = "my-changed-cs"
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), fmt.Sprintf("name: %s", serviceName), fmt.Sprintf("name: %s", changedServiceName))
+
+					stdout = helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
+				})
+				It("should show warning about undeleted service belonging to the component", func() {
+					Expect(stdout).To(SatisfyAll(
+						ContainSubstring("There are still resources left in the cluster that might be belonging to the deleted component"),
+						Not(ContainSubstring(changedServiceName)),
+						ContainSubstring(serviceName),
+						ContainSubstring("odo delete component --name %s --namespace %s", cmpName, commonVar.Project),
+					))
+				})
+
+			})
 			When("the component is deleted while having access to the devfile.yaml", func() {
 				var stdOut string
 				BeforeEach(func() {
