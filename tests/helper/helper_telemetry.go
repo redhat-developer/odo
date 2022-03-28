@@ -33,9 +33,9 @@ func GetTelemetryDebugData() segment.TelemetryData {
 	var td segment.TelemetryData
 	telemetryFile := segment.GetDebugTelemetryFile()
 	Eventually(func() string {
-		data, err := ioutil.ReadFile(telemetryFile)
+		d, err := ioutil.ReadFile(telemetryFile)
 		Expect(err).To(BeNil())
-		return string(data)
+		return string(d)
 	}, 10, 1).Should(ContainSubstring("event"))
 	data, err := ioutil.ReadFile(telemetryFile)
 	Expect(err).NotTo(HaveOccurred())
