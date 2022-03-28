@@ -114,6 +114,8 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 	When("recording telemetry data", func() {
 		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 			helper.EnableTelemetryDebug()
 			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
 		})

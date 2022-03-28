@@ -215,7 +215,7 @@ var _ = Describe("odo dev command tests", func() {
 				})
 				It("should record the telemetry data correctly", func() {
 					td := helper.GetTelemetryDebugData()
-					Expect(td.Event).To(ContainSubstring("odo init"))
+					Expect(td.Event).To(ContainSubstring("odo dev"))
 					Expect(td.Properties.Success).To(BeTrue())
 					Expect(td.Properties.Error == "").To(BeTrue())
 					Expect(td.Properties.ErrorType == "").To(BeTrue())
