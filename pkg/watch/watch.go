@@ -187,18 +187,15 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 	// mutex as they are shared between goroutines to communicate
 	// sync state/events.
 	var (
-		lastChange                     time.Time
 		watchError                     error
 		deletedPaths                   []string
 		changedFiles                   []string
 		hasFirstSuccessfulPushOccurred bool
 		wg                             sync.WaitGroup
 		showWaitingMessage             bool
-		delay                          time.Duration
 	)
 
-	delay = 1 * time.Second
-
+	//ticker := time.NewTicker(1 * time.Second)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
@@ -217,13 +214,20 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 	// This goroutine listens for either file change events from fsnotify, fs errors, or a terminate signal
 	// The results are stored in the variables defined in the var( ... ) block above
 	wg.Add(1)
-	for {
-		select {
-		case event := <-watcher.Events:
-			// check if the delay between events is more than a second; if not don't push again
-			if time.Now().After(lastChange.Add(delay)) {
-				lastChange = time.Now()
-
+	go func() {
+		var (
+			timer     *time.Timer
+			lastEvent fsnotify.Event
+		)
+		timer = time.NewTimer(time.Millisecond)
+		<-timer.C
+		for {
+			select {
+			case event := <-watcher.Events:
+				lastEvent = event
+				timer.Reset(100 * time.Millisecond)
+			case <-timer.C:
+				event := lastEvent
 				klog.V(4).Infof("filesystem watch event: %s", event)
 
 				isIgnoreEvent := shouldIgnoreEvent(event)
@@ -279,60 +283,32 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 				deletedPaths = removeDuplicates(deletedPaths)
 
 				for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
-					fmt.Fprintf(out, "\n\nFile %s changed\n", file)
+					fmt.Fprintf(out, "\nFile %s changed\n", file)
 				}
 				if len(changedFiles) > 0 || len(deletedPaths) > 0 {
 					fmt.Fprintf(out, "Pushing files...\n\n")
-					fileInfo, err := os.Stat(parameters.Path)
-					if err != nil {
-						log.Errorf("%s: file doesn't exist: %s", parameters.Path, err.Error())
-					}
 					showWaitingMessage = true
-					if fileInfo.IsDir() {
-						klog.V(4).Infof("Copying files %s to pod", changedFiles)
+					klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
-						if parameters.DevfileWatchHandler != nil {
-							pushParams := common.PushParameters{
-								Path:                     parameters.Path,
-								WatchFiles:               changedFiles,
-								WatchDeletedFiles:        deletedPaths,
-								IgnoredFiles:             parameters.FileIgnores,
-								ForceBuild:               false,
-								DevfileBuildCmd:          parameters.DevfileBuildCmd,
-								DevfileRunCmd:            parameters.DevfileRunCmd,
-								DevfileDebugCmd:          parameters.DevfileDebugCmd,
-								DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-								EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-								Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-								DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
-							}
-
-							err = parameters.DevfileWatchHandler(pushParams, parameters)
-
+					if parameters.DevfileWatchHandler != nil {
+						pushParams := common.PushParameters{
+							Path:                     parameters.Path,
+							WatchFiles:               changedFiles,
+							WatchDeletedFiles:        deletedPaths,
+							IgnoredFiles:             parameters.FileIgnores,
+							ForceBuild:               false,
+							DevfileBuildCmd:          parameters.DevfileBuildCmd,
+							DevfileRunCmd:            parameters.DevfileRunCmd,
+							DevfileDebugCmd:          parameters.DevfileDebugCmd,
+							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
+							EnvSpecificInfo:          *parameters.EnvSpecificInfo,
+							Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
+							DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
 						}
-					} else {
-						pathDir := filepath.Dir(parameters.Path)
-						klog.V(4).Infof("Copying file %s to pod", parameters.Path)
 
-						if parameters.DevfileWatchHandler != nil {
-							pushParams := common.PushParameters{
-								Path:                     pathDir,
-								WatchFiles:               changedFiles,
-								WatchDeletedFiles:        deletedPaths,
-								IgnoredFiles:             parameters.FileIgnores,
-								ForceBuild:               false,
-								DevfileBuildCmd:          parameters.DevfileBuildCmd,
-								DevfileRunCmd:            parameters.DevfileRunCmd,
-								DevfileDebugCmd:          parameters.DevfileDebugCmd,
-								DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-								EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-								Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-								DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
-							}
-
-							err = parameters.DevfileWatchHandler(pushParams, parameters)
-						}
+						err = parameters.DevfileWatchHandler(pushParams, parameters)
 					}
+
 					if err != nil {
 						// Log and output, but intentionally not exiting on error here.
 						// We don't want to break watch when push failed, it might be fixed with the next change.
@@ -351,20 +327,20 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 					printInfoMessage(out, parameters.Path)
 					showWaitingMessage = false
 				}
+			case watchErr := <-watcher.Errors:
+				log.Errorf("error watching filesystem for changes: %v", watchErr.Error())
+				wg.Done()
+			case <-ctx.Done():
+				devfileObj := parameters.InitialDevfileObj
+				err = o.kubernetesClient.DeleteDeployment(componentlabels.GetLabels(devfileObj.GetMetadataName(), "app", false))
+				if err != nil {
+					fmt.Fprintf(out, "failed to delete inner loop resources: %w", err)
+				}
+				cleanupDone <- true
+				wg.Done()
 			}
-		case watchErr := <-watcher.Errors:
-			log.Errorf("error watching filesystem for changes: %v", watchErr.Error())
-			wg.Done()
-		case <-ctx.Done():
-			devfileObj := parameters.InitialDevfileObj
-			err = o.kubernetesClient.DeleteDeployment(componentlabels.GetLabels(devfileObj.GetMetadataName(), "app", false))
-			if err != nil {
-				fmt.Fprintf(out, "failed to delete inner loop resources: %w", err)
-			}
-			cleanupDone <- true
-			wg.Done()
 		}
-	}
+	}()
 	wg.Wait()
 	return nil
 }
