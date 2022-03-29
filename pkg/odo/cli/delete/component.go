@@ -91,7 +91,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
 	log.Info("Searching resources to delete, please wait...")
-	list, err := o.clientset.DeleteClient.ListResourcesToDelete(o.name, o.namespace)
+	list, err := o.clientset.DeleteClient.ListClusterResourcesToDelete(o.name, o.namespace)
 	if err != nil {
 		return err
 	}
@@ -130,20 +130,19 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 		return nil
 	}
 	var remainingResources []unstructured.Unstructured
-	k8sResources, _ := o.clientset.DeleteClient.ListResourcesToDelete(componentName, namespace)
+	k8sResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(componentName, namespace)
 	// get resources present in k8sResources(present on the cluster) but not in devfileResources(not present in the devfile)
-	if len(k8sResources) != 0 {
-		for _, k8sresource := range k8sResources {
-			var present bool
-			for _, dresource := range devfileResources {
-				//                                              skip the component's endpoints resource
-				if reflect.DeepEqual(dresource, k8sresource) || (k8sresource.GetKind() == "Endpoints" && strings.Contains(k8sresource.GetName(), componentName)) {
-					present = true
-				}
+	for _, k8sresource := range k8sResources {
+		var present bool
+		for _, dresource := range devfileResources {
+			//  skip if the cluster and devfile resource are same OR if the cluster resource is the component's Endpoints resource
+			if reflect.DeepEqual(dresource, k8sresource) || (k8sresource.GetKind() == "Endpoints" && strings.Contains(k8sresource.GetName(), componentName)) {
+				present = true
+				break
 			}
-			if !present {
-				remainingResources = append(remainingResources, k8sresource)
-			}
+		}
+		if !present {
+			remainingResources = append(remainingResources, k8sresource)
 		}
 	}
 	// Print all the resources that odo will attempt to delete
