@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -54,5 +55,47 @@ var _ = Describe("odo devfile build-images command tests", func() {
 			Expect(stdout).To(ContainSubstring("--unknown-flag value"))
 		})
 
+	})
+
+	When("using a devfile.yaml containing an Image component with a build context", func() {
+
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", "aname",
+				"--devfile-path",
+				helper.GetExamplePath("source", "devfiles", "nodejs",
+					"devfile-outerloop-project_source-in-docker-build-context.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
+		})
+
+		for _, scope := range []struct {
+			name    string
+			envvars []string
+		}{
+			{
+				name:    "Podman",
+				envvars: []string{"PODMAN_CMD=echo"},
+			},
+			{
+				name: "Docker",
+				envvars: []string{
+					"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+					"DOCKER_CMD=echo",
+				},
+			},
+		} {
+			It(fmt.Sprintf("should build image via %s if build context references PROJECT_SOURCE env var", scope.name), func() {
+				stdout := helper.Cmd("odo", "build-images").AddEnv(scope.envvars...).ShouldPass().Out()
+				lines, err := helper.ExtractLines(stdout)
+				Expect(err).ShouldNot(HaveOccurred())
+				nbLines := len(lines)
+				Expect(nbLines).To(BeNumerically(">", 2))
+				containerImage := "localhost:5000/devfile-nodejs-deploy:0.1.0" // from Devfile yaml file
+				dockerfilePath := filepath.Join(commonVar.Context, "Dockerfile")
+				buildCtx := commonVar.Context
+				Expect(lines[nbLines-2]).To(BeEquivalentTo(
+					fmt.Sprintf("build -t %s -f %s %s", containerImage, dockerfilePath, buildCtx)))
+			})
+		}
 	})
 })
