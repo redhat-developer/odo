@@ -9,10 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
-	"github.com/redhat-developer/odo/tests/helper"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/redhat-developer/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile init command tests", func() {

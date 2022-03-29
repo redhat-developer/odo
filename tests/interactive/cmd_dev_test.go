@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -36,6 +37,36 @@ var _ = Describe("odo dev interactive command tests", func() {
 				SatisfyAll(
 					HaveLen(2),
 					ContainElements("requirements.txt", "wsgi.py")))
+		})
+		It("should run alizer to download devfile successfully even with -v flag", func() {
+
+			language := "python"
+			_, _ = helper.RunInteractive([]string{"odo", "dev", "-v", "4"},
+				nil,
+				func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
+
+					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
+
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", language))
+
+					helper.ExpectString(ctx,
+						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
+
+					helper.ExpectString(ctx, "Is this correct")
+					helper.SendLine(ctx, "\n")
+
+					helper.ExpectString(ctx, "Select container for which you want to change configuration")
+					helper.SendLine(ctx, "\n")
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, "my-app")
+
+					helper.ExpectString(ctx, "Press Ctrl+c to exit")
+					ctx.StopCommand()
+				})
+
+			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 		})
 
 		It("should run alizer to download devfile", func() {

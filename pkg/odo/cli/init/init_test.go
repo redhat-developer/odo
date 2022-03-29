@@ -54,6 +54,7 @@ func TestInitOptions_Complete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
 			initClient := _init.NewMockClient(ctrl)
+			initClient.EXPECT().GetFlags(gomock.Any()).Return(map[string]string{})
 			o := NewInitOptions()
 			o.SetClientset(&clientset.Clientset{
 				PreferenceClient: prefClient,
