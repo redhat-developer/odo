@@ -442,6 +442,53 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
+	When("adding local files to gitignore and running odo dev", func() {
+		var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, stdOut, podName string
+		var session helper.DevSession
+		// from devfile
+		devfileCmpName := "nodejs"
+		BeforeEach(func() {
+			gitignorePath = filepath.Join(commonVar.Context, ".gitignore")
+			newFilePath1 = filepath.Join(commonVar.Context, "foobar.txt")
+			newDirPath = filepath.Join(commonVar.Context, "testdir")
+			newFilePath2 = filepath.Join(newDirPath, "foobar.txt")
+			newFilePath3 = filepath.Join(newDirPath, "baz.txt")
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			if err := helper.CreateFileWithContent(newFilePath1, "hello world"); err != nil {
+				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+			}
+			// Create a new directory
+			helper.MakeDir(newDirPath)
+			if err := helper.CreateFileWithContent(newFilePath2, "hello world"); err != nil {
+				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+			}
+			if err := helper.CreateFileWithContent(newFilePath3, "hello world"); err != nil {
+				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+			}
+			if err := helper.CreateFileWithContent(gitignorePath, "foobar.txt"); err != nil {
+				fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
+			}
+			var err error
+			session, _, _, _, err = helper.StartDevMode()
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			session.Stop()
+		})
+
+		It("should not sync ignored files to the container", func() {
+			podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+
+			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+			helper.MatchAllInOutput(stdOut, []string{"testdir"})
+			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
+			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/testdir")
+			helper.MatchAllInOutput(stdOut, []string{"baz.txt"})
+			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
+		})
+	})
+
 	When("devfile has sourcemappings and running odo dev", func() {
 		devfileCmpName := "nodejs"
 		var session helper.DevSession
