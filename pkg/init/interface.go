@@ -10,11 +10,15 @@ package init
 import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type Client interface {
+	// GetFlags gets the flag specific to init operation so that it can correctly decide on the backend to be used
+	// It ignores all the flags except the ones specific to init operation, for e.g. verbosity flag
+	GetFlags(flags map[string]string) map[string]string
 	// Validate checks for each backend if flags are valid
 	Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error
 

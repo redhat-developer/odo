@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -27,6 +28,30 @@ var _ = Describe("odo init interactive command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
+	})
+
+	It("should not fail when using -v flag", func() {
+		command := []string{"odo", "init", "-v", "4"}
+		output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+			helper.ExpectString(ctx, "Select language")
+			helper.SendLine(ctx, "go")
+
+			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "\n")
+
+			helper.ExpectString(ctx, "Which starter project do you want to use")
+			helper.SendLine(ctx, "\n")
+
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "my-go-app")
+
+			helper.ExpectString(ctx, "Your new component \"my-go-app\" is ready in the current directory.")
+
+		})
+		Expect(err).To(BeNil())
+		Expect(output).To(ContainSubstring("Your new component \"my-go-app\" is ready in the current directory."))
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
 	It("should download correct devfile", func() {

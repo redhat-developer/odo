@@ -9,6 +9,8 @@ import (
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
@@ -18,7 +20,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/spf13/cobra"
 
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"
@@ -82,7 +83,7 @@ func (o *InitOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 		return err
 	}
 
-	o.flags = cmdline.GetFlags()
+	o.flags = o.clientset.InitClient.GetFlags(cmdline.GetFlags())
 
 	scontext.SetInteractive(cmdline.Context(), len(o.flags) == 0)
 

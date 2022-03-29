@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"io"
 	"os"
 	"path/filepath"
@@ -31,6 +30,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -91,8 +91,8 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if isEmptyDir {
 		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
 	}
-
-	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
+	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
+	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {

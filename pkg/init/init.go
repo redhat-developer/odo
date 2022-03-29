@@ -48,6 +48,18 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 	}
 }
 
+// GetFlags gets the flag specific to init operation so that it can correctly decide on the backend to be used
+// It ignores all the flags except the ones specific to init operation, for e.g. verbosity flag
+func (o *InitClient) GetFlags(flags map[string]string) map[string]string {
+	initFlags := map[string]string{}
+	for flag, value := range flags {
+		if flag == backend.FLAG_NAME || flag == backend.FLAG_DEVFILE || flag == backend.FLAG_DEVFILE_REGISTRY || flag == backend.FLAG_STARTER || flag == backend.FLAG_DEVFILE_PATH {
+			initFlags[flag] = value
+		}
+	}
+	return initFlags
+}
+
 // Validate calls Validate method of the adequate backend
 func (o *InitClient) Validate(flags map[string]string, fs filesystem.Filesystem, dir string) error {
 	var backend backend.InitBackend

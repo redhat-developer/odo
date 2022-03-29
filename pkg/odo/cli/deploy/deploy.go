@@ -68,7 +68,9 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
 	}
 
-	err = o.clientset.InitClient.InitDevfile(cmdline.GetFlags(), o.contextDir,
+	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
+
+	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
 		func(interactiveMode bool) {
 			scontext.SetInteractive(cmdline.Context(), interactiveMode)
 			if interactiveMode {
