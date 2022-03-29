@@ -198,7 +198,7 @@ ComponentSettings:
 			var projectName string
 			BeforeEach(func() {
 				// deploy the component to the cluster
-				session := helper.CmdRunner("odo", "dev")
+				session := helper.CmdRunner("odo", "dev", "--random-ports")
 				defer session.Kill()
 				helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
 				Expect(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())).To(ContainSubstring(cmpName))
@@ -238,7 +238,7 @@ ComponentSettings:
 			cmpName = "nodejs"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-valid-events.yaml")).ShouldPass()
-			session := helper.CmdRunner("odo", "dev")
+			session := helper.CmdRunner("odo", "dev", "--random-ports")
 			defer session.Kill()
 			helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
 			// Ensure that the pod is in running state
