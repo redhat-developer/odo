@@ -5,6 +5,7 @@
 package dev
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 
@@ -38,20 +39,6 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// Cleanup mocks base method.
-func (m *MockClient) Cleanup() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Cleanup")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Cleanup indicates an expected call of Cleanup.
-func (mr *MockClientMockRecorder) Cleanup() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cleanup", reflect.TypeOf((*MockClient)(nil).Cleanup))
-}
-
 // Start mocks base method.
 func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error {
 	m.ctrl.T.Helper()
@@ -67,17 +54,17 @@ func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths
 }
 
 // Watch mocks base method.
-func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler) error {
+func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, cleanupDone chan bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h)
+	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, cleanupDone)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, cleanupDone interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, cleanupDone)
 }
 
 // MockHandler is a mock of Handler interface.

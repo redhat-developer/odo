@@ -6,10 +6,9 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 
-	"github.com/redhat-developer/odo/pkg/watch"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 type Client interface {

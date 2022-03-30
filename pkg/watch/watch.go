@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
@@ -56,6 +55,10 @@ type WatchParameters struct {
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
+	// This is a channel added to signal readiness of the watch command to the external channel listeners
+	StartChan chan bool
+	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
+	ExtChan chan bool
 	// Parameter whether or not to show build logs
 	Show bool
 	// EnvSpecificInfo contains information of env.yaml file
@@ -181,11 +184,11 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	// mutex as they are shared between goroutines to communicate
 	// sync state/events.
 	var (
+		//changelock                     sync.Mutex
 		watchError                     error
 		deletedPaths                   []string
 		changedFiles                   []string
 		hasFirstSuccessfulPushOccurred bool
-		wg                             sync.WaitGroup
 		showWaitingMessage             bool
 	)
 
@@ -194,6 +197,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
 	defer watcher.Close()
+	defer close(parameters.ExtChan)
 
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
@@ -203,137 +207,136 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 
 	printInfoMessage(out, parameters.Path)
-	// This goroutine listens for either file change events from fsnotify, fs errors, or a terminate signal
-	// The results are stored in the variables defined in the var( ... ) block above
-	wg.Add(1)
-	go func() {
-		var (
-			timer     *time.Timer
-			lastEvent fsnotify.Event
-		)
-		timer = time.NewTimer(time.Millisecond)
-		<-timer.C
-		for {
-			select {
-			case event := <-watcher.Events:
-				lastEvent = event
-				timer.Reset(100 * time.Millisecond)
-			case <-timer.C:
-				event := lastEvent
-				klog.V(4).Infof("filesystem watch event: %s", event)
 
-				isIgnoreEvent := shouldIgnoreEvent(event)
+	var (
+		timer     *time.Timer
+		lastEvent fsnotify.Event
+	)
+	timer = time.NewTimer(time.Millisecond)
+	<-timer.C
+	// Only signal start of watch if invoker is interested
+	if parameters.StartChan != nil {
+		parameters.StartChan <- true
+	}
+	for {
+		select {
+		case <-parameters.ExtChan:
+			watchError = ErrUserRequestedWatchExit
+			return watchError
+		case event := <-watcher.Events:
+			lastEvent = event
+			timer.Reset(100 * time.Millisecond)
+		case <-timer.C:
+			event := lastEvent
+			klog.V(4).Infof("filesystem watch event: %s", event)
+			isIgnoreEvent := shouldIgnoreEvent(event)
 
-				// add file name to changedFiles only once
-				alreadyInChangedFiles := false
-				for _, cfile := range changedFiles {
-					if cfile == event.Name {
-						alreadyInChangedFiles = true
-						break
-					}
+			// add file name to changedFiles only once
+			alreadyInChangedFiles := false
+			for _, cfile := range changedFiles {
+				if cfile == event.Name {
+					alreadyInChangedFiles = true
+					break
 				}
-
-				// Filter out anything in ignores list from the list of changed files
-				// This is important in spite of not watching the
-				// ignores paths because, when a directory that is ignored, is deleted,
-				// because its parent is watched, the fsnotify automatically raises an event
-				// for it.
-				matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
-				klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
-				if globErr != nil {
-					watchError = fmt.Errorf("unable to watch changes: %w", globErr)
-				}
-				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
-					// Append the new file change event to changedFiles if and only if the event is not a file remove event
-					if event.Op&fsnotify.Remove != fsnotify.Remove {
-						changedFiles = append(changedFiles, event.Name)
-					}
-				}
-
-				// Rename operation triggers RENAME event on old path + CREATE event for renamed path so delete old path in case of rename
-				// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
-				if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-					// On remove/rename, stop watching the resource
-					if e := watcher.Remove(event.Name); e != nil {
-						klog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
-					}
-					// Append the file to list of deleted files
-					// When a file/folder is deleted, it raises 2 events:
-					//	a. RENAME with event.Name empty
-					//	b. REMOVE with event.Name as file name
-					if !alreadyInChangedFiles && !matched && event.Name != "" {
-						deletedPaths = append(deletedPaths, event.Name)
-					}
-				} else {
-					// On other ops, recursively watch the resource (if applicable)
-					if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
-						klog.V(4).Infof("Error occurred in addRecursiveWatch, setting watchError to %v", e)
-						watchError = e
-					}
-				}
-
-				deletedPaths = removeDuplicates(deletedPaths)
-
-				for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
-					fmt.Fprintf(out, "\nFile %s changed\n", file)
-				}
-				if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-					fmt.Fprintf(out, "Pushing files...\n\n")
-					showWaitingMessage = true
-					klog.V(4).Infof("Copying files %s to pod", changedFiles)
-
-					if parameters.DevfileWatchHandler != nil {
-						pushParams := common.PushParameters{
-							Path:                     parameters.Path,
-							WatchFiles:               changedFiles,
-							WatchDeletedFiles:        deletedPaths,
-							IgnoredFiles:             parameters.FileIgnores,
-							ForceBuild:               false,
-							DevfileBuildCmd:          parameters.DevfileBuildCmd,
-							DevfileRunCmd:            parameters.DevfileRunCmd,
-							DevfileDebugCmd:          parameters.DevfileDebugCmd,
-							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-							EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-							Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-							DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
-						}
-
-						err = parameters.DevfileWatchHandler(pushParams, parameters)
-					}
-
-					if err != nil {
-						// Log and output, but intentionally not exiting on error here.
-						// We don't want to break watch when push failed, it might be fixed with the next change.
-						klog.V(4).Infof("Error from Push: %v", err)
-						fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-					} else {
-						hasFirstSuccessfulPushOccurred = true
-					}
-
-					// Reset changed files
-					changedFiles = []string{}
-					// Reset deleted Paths
-					deletedPaths = []string{}
-				}
-				if showWaitingMessage {
-					printInfoMessage(out, parameters.Path)
-					showWaitingMessage = false
-				}
-			case watchErr := <-watcher.Errors:
-				log.Errorf("error watching filesystem for changes: %v", watchErr.Error())
-				wg.Done()
-			case <-ctx.Done():
-				devfileObj := parameters.InitialDevfileObj
-				err = o.kubernetesClient.DeleteDeployment(componentlabels.GetLabels(devfileObj.GetMetadataName(), "app", false))
-				if err != nil {
-					fmt.Fprintf(out, "failed to delete inner loop resources: %w", err)
-				}
-				cleanupDone <- true
-				wg.Done()
 			}
+
+			// Filter out anything in ignores list from the list of changed files
+			// This is important in spite of not watching the
+			// ignores paths because, when a directory that is ignored, is deleted,
+			// because its parent is watched, the fsnotify automatically raises an event
+			// for it.
+			matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
+			klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
+			if globErr != nil {
+				watchError = fmt.Errorf("unable to watch changes: %w", globErr)
+			}
+			if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
+				// Append the new file change event to changedFiles if and only if the event is not a file remove event
+				if event.Op&fsnotify.Remove != fsnotify.Remove {
+					changedFiles = append(changedFiles, event.Name)
+				}
+			}
+
+			// Rename operation triggers RENAME event on old path + CREATE event for renamed path so delete old path in case of rename
+			// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
+			if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+				// On remove/rename, stop watching the resource
+				if e := watcher.Remove(event.Name); e != nil {
+					klog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
+				}
+				// Append the file to list of deleted files
+				// When a file/folder is deleted, it raises 2 events:
+				//	a. RENAME with event.Name empty
+				//	b. REMOVE with event.Name as file name
+				if !alreadyInChangedFiles && !matched && event.Name != "" {
+					deletedPaths = append(deletedPaths, event.Name)
+				}
+			} else {
+				// On other ops, recursively watch the resource (if applicable)
+				if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
+					klog.V(4).Infof("Error occurred in addRecursiveWatch, setting watchError to %v", e)
+					watchError = e
+				}
+			}
+
+			deletedPaths = removeDuplicates(deletedPaths)
+
+			for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
+				fmt.Fprintf(out, "\nFile %s changed\n", file)
+			}
+			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
+				fmt.Fprintf(out, "Pushing files...\n\n")
+				showWaitingMessage = true
+				klog.V(4).Infof("Copying files %s to pod", changedFiles)
+
+				if parameters.DevfileWatchHandler != nil {
+					pushParams := common.PushParameters{
+						Path:                     parameters.Path,
+						WatchFiles:               changedFiles,
+						WatchDeletedFiles:        deletedPaths,
+						IgnoredFiles:             parameters.FileIgnores,
+						ForceBuild:               false,
+						DevfileBuildCmd:          parameters.DevfileBuildCmd,
+						DevfileRunCmd:            parameters.DevfileRunCmd,
+						DevfileDebugCmd:          parameters.DevfileDebugCmd,
+						DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
+						EnvSpecificInfo:          *parameters.EnvSpecificInfo,
+						Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
+						DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
+					}
+
+					err = parameters.DevfileWatchHandler(pushParams, parameters)
+				}
+
+				if err != nil {
+					// Log and output, but intentionally not exiting on error here.
+					// We don't want to break watch when push failed, it might be fixed with the next change.
+					klog.V(4).Infof("Error from Push: %v", err)
+					fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+				} else {
+					hasFirstSuccessfulPushOccurred = true
+				}
+
+				// Reset changed files
+				changedFiles = []string{}
+				// Reset deleted Paths
+				deletedPaths = []string{}
+			}
+			if showWaitingMessage {
+				printInfoMessage(out, parameters.Path)
+				showWaitingMessage = false
+			}
+		case watchErr := <-watcher.Errors:
+			return watchErr
+		case <-ctx.Done():
+			devfileObj := parameters.InitialDevfileObj
+			err = o.kubernetesClient.DeleteDeployment(componentlabels.GetLabels(devfileObj.GetMetadataName(), "app", false))
+			if err != nil {
+				fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
+			}
+			cleanupDone <- true
 		}
-	}()
-	wg.Wait()
+	}
 	return nil
 }
 

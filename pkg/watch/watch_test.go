@@ -4,6 +4,7 @@
 package watch
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -98,6 +99,9 @@ var (
 // ExtChan is used to return from otherwise non-terminating(without SIGINT) end of ever running watch function
 var ExtChan = make(chan bool)
 var StartChan = make(chan bool)
+var cleanupDone = make(chan bool)
+var ctx context.Context
+var cancel context.CancelFunc
 
 type mockPushParameters struct {
 	componentName   string
@@ -150,7 +154,6 @@ func commonChecks(path string, files []string, delFiles []string, globExps []str
 		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush.globExps, globExps)
 		os.Exit(1)
 	}
-
 	for _, expChangedFile := range ExpectedChangedFiles {
 		found := false
 		// Verify every file in expected file changes to be actually observed to be changed
@@ -190,7 +193,6 @@ func commonChecks(path string, files []string, delFiles []string, globExps []str
 }
 
 func TestWatchAndPush(t *testing.T) {
-	cleanupDone := make(chan bool)
 	tests := []struct {
 		name              string
 		componentName     string
@@ -199,7 +201,6 @@ func TestWatchAndPush(t *testing.T) {
 		ignores           []string
 		show              bool
 		forcePush         bool
-		delayInterval     int
 		wantErr           bool
 		want              []string
 		wantDeleted       []string
@@ -220,11 +221,10 @@ func TestWatchAndPush(t *testing.T) {
 			// the test setup uses ioutil for creating temp directories and folders.
 			// it creates temp files and folders with random strings attached to the end of their path
 			// thus we use tests*/
-			ignores:       []string{".git", "tests*/", "LICENSE"},
-			delayInterval: 1,
-			wantErr:       false,
-			show:          false,
-			forcePush:     false,
+			ignores:   []string{".git", "tests*/", "LICENSE"},
+			wantErr:   false,
+			show:      false,
+			forcePush: false,
 			requiredFilePaths: []testingutil.FileProperties{
 				{
 					FilePath:         "src",
@@ -325,7 +325,6 @@ func TestWatchAndPush(t *testing.T) {
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
 			ignores:         []string{".git", "tests*/", "LICENSE"},
-			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
 			forcePush:       false,
@@ -428,7 +427,6 @@ func TestWatchAndPush(t *testing.T) {
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
 			ignores:         []string{".git", "tests*/", "LICENSE"},
-			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
 			forcePush:       false,
@@ -525,7 +523,6 @@ func TestWatchAndPush(t *testing.T) {
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
 			ignores:         []string{".git", "tests*/", "LICENSE"},
-			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
 			forcePush:       false,
@@ -628,7 +625,6 @@ func TestWatchAndPush(t *testing.T) {
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
 			ignores:         []string{".git", "tests*/", "LICENSE"},
-			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
 			forcePush:       false,
@@ -735,6 +731,9 @@ func TestWatchAndPush(t *testing.T) {
 	for _, tt := range tests {
 		ExtChan = make(chan bool)
 		StartChan = make(chan bool)
+		cleanupDone = make(chan bool)
+		ctx, cancel = context.WithCancel(context.Background())
+
 		t.Log("Running test: ", tt.name)
 		t.Run(tt.name, func(t *testing.T) {
 			mockPush = mockPushParameters{
@@ -824,7 +823,6 @@ func TestWatchAndPush(t *testing.T) {
 				FileIgnores:     dfutil.GetAbsGlobExps(basePath, tt.ignores),
 				StartChan:       StartChan,
 				ExtChan:         ExtChan,
-				PushDiffDelay:   tt.delayInterval,
 				Show:            tt.show,
 				DevfileBuildCmd: tt.devfileBuildCmd,
 				DevfileRunCmd:   tt.devfileRunCmd,
@@ -843,7 +841,7 @@ func TestWatchAndPush(t *testing.T) {
 				}),
 			}
 
-			err = watchClient.WatchAndPush(os.Stdout, watchParameters, cleanupDone)
+			err = watchClient.WatchAndPush(os.Stdout, watchParameters, ctx, cleanupDone)
 			if err != nil && err != ErrUserRequestedWatchExit {
 				t.Errorf("error in WatchAndPush %+v", err)
 			}
