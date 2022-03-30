@@ -104,5 +104,5 @@ func selectBackend() (Backend, error) {
 	if _, err := lookPathCmd(dockerCmd); err == nil {
 		return NewDockerCompatibleBackend(dockerCmd), nil
 	}
-	return nil, errors.New("no backend found")
+	return nil, errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")
 }
