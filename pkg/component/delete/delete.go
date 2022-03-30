@@ -30,9 +30,9 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 	}
 }
 
-// ListResourcesToDelete lists Kubernetes resources from cluster in namespace for a given odo component
+// ListClusterResourcesToDelete lists Kubernetes resources from cluster in namespace for a given odo component
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
-func (do *DeleteComponentClient) ListResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
+func (do *DeleteComponentClient) ListClusterResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
 	labels := componentlabels.GetLabels(componentName, "app", false)
 	labels[applabels.ManagedBy] = "odo"

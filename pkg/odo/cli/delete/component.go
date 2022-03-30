@@ -3,6 +3,8 @@ package delete
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -89,7 +91,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 // deleteNamedComponent deletes a component given its name
 func (o *ComponentOptions) deleteNamedComponent() error {
 	log.Info("Searching resources to delete, please wait...")
-	list, err := o.clientset.DeleteClient.ListResourcesToDelete(o.name, o.namespace)
+	list, err := o.clientset.DeleteClient.ListClusterResourcesToDelete(o.name, o.namespace)
 	if err != nil {
 		return err
 	}
@@ -119,19 +121,23 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 	appName := "app"
 
 	log.Info("Searching resources to delete, please wait...")
-	isInnerLoopDeployed, resources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName)
+	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName)
 	if err != nil {
 		return err
 	}
-	if len(resources) == 0 {
+	if len(devfileResources) == 0 {
 		log.Infof("No resource found for component %q in namespace %q\n", componentName, namespace)
 		return nil
 	}
-
 	// Print all the resources that odo will attempt to delete
-	printDevfileComponents(componentName, namespace, resources)
+	printDevfileComponents(componentName, namespace, devfileResources)
 
 	if o.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %q and all its resources?", componentName)) {
+		// Get a list of component's resources present on the cluster
+		clusterResources, _ := o.clientset.DeleteClient.ListClusterResourcesToDelete(componentName, namespace)
+		// Get a list of component's resources absent from the devfile, but present on the cluster
+		remainingResources := listResourcesMissingFromDevfilePresentOnCluster(componentName, devfileResources, clusterResources)
+
 		// if innerloop deployment resource is present, then execute preStop events
 		if isInnerLoopDeployed {
 			err = o.clientset.DeleteClient.ExecutePreStopEvents(devfileObj, appName)
@@ -141,17 +147,45 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 		}
 
 		// delete all the resources
-		failed := o.clientset.DeleteClient.DeleteResources(resources)
+		failed := o.clientset.DeleteClient.DeleteResources(devfileResources)
 		for _, fail := range failed {
 			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 		}
 		log.Infof("The component %q is successfully deleted from namespace %q", componentName, namespace)
+
+		if len(remainingResources) != 0 {
+			log.Printf("There are still resources left in the cluster that might be belonging to the deleted component.")
+			for _, resource := range remainingResources {
+				fmt.Printf("\t- %s: %s\n", resource.GetKind(), resource.GetName())
+			}
+			log.Infof("If you want to delete those, execute `odo delete component --name %s --namespace %s`", componentName, namespace)
+		}
 		return nil
 	}
 
 	log.Error("Aborting deletion of component")
 
 	return nil
+}
+
+// listResourcesMissingFromDevfilePresentOnCluster returns a list of resources belonging to a component name that are present on cluster, but missing from devfile
+func listResourcesMissingFromDevfilePresentOnCluster(componentName string, devfileResources, clusterResources []unstructured.Unstructured) []unstructured.Unstructured {
+	var remainingResources []unstructured.Unstructured
+	// get resources present in k8sResources(present on the cluster) but not in devfileResources(not present in the devfile)
+	for _, k8sresource := range clusterResources {
+		var present bool
+		for _, dresource := range devfileResources {
+			//  skip if the cluster and devfile resource are same OR if the cluster resource is the component's Endpoints resource
+			if reflect.DeepEqual(dresource, k8sresource) || (k8sresource.GetKind() == "Endpoints" && strings.Contains(k8sresource.GetName(), componentName)) {
+				present = true
+				break
+			}
+		}
+		if !present {
+			remainingResources = append(remainingResources, k8sresource)
+		}
+	}
+	return remainingResources
 }
 
 // printDevfileResources prints the devfile components for ComponentOptions.deleteDevfileComponent

@@ -22,7 +22,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-func TestDeleteComponentClient_ListResourcesToDelete(t *testing.T) {
+func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
 	res1 := getUnstructured("dep1", "deployment", "v1", "")
 	res2 := getUnstructured("svc1", "service", "v1", "")
 
@@ -110,7 +110,7 @@ func TestDeleteComponentClient_ListResourcesToDelete(t *testing.T) {
 			do := &DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			got, err := do.ListResourcesToDelete(tt.args.componentName, tt.args.namespace)
+			got, err := do.ListClusterResourcesToDelete(tt.args.componentName, tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponentClient.ListResourcesToDelete() error = %v, wantErr %v", err, tt.wantErr)
 				return
