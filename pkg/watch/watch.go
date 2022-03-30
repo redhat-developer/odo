@@ -222,6 +222,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 			return watchError
 		case event := <-watcher.Events:
 			lastEvent = event
+			// We are waiting for more events in this interval
 			timer.Reset(100 * time.Millisecond)
 		case <-timer.C:
 			event := lastEvent
