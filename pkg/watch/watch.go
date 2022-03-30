@@ -348,7 +348,6 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 			cleanupDone <- true
 		}
 	}
-	return nil
 }
 
 func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
