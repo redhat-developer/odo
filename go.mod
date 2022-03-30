@@ -19,6 +19,7 @@ require (
 	github.com/go-openapi/spec v0.19.5
 	github.com/golang/mock v1.5.0
 	github.com/hinshun/vt10x v0.0.0-20220127042424-3ca73d0126d7
+	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0

@@ -17,10 +17,21 @@ type Component struct {
 	Status            ComponentStatus `json:"status,omitempty"`
 }
 
+// OdoComponent
+type OdoComponent struct {
+	Name      string
+	ManagedBy string
+	Modes     map[string]bool
+	Type      string
+}
+
 // ComponentSpec is spec of components
 type ComponentSpec struct {
 	App         string            `json:"app,omitempty"`
 	Type        string            `json:"type,omitempty"`
+	Managed     string            `json:"managed,omitempty"`
+	Dev         bool              `json:"dev,omitempty"`
+	Deploy      bool              `json:"deploy,omitempty"`
 	Source      string            `json:"source,omitempty"`
 	Storage     []string          `json:"storage,omitempty"`
 	StorageSpec []storage.Storage `json:"-"`
@@ -59,12 +70,10 @@ type CombinedComponentList struct {
 }
 
 const (
-	// StateTypePushed means that Storage is present both locally and on cluster
-	StateTypePushed = "Pushed"
-	// StateTypeNotPushed means that Storage is only in local config, but not on the cluster
-	StateTypeNotPushed = "Not Pushed"
 	// StateTypeUnknown means that odo cannot tell its state
 	StateTypeUnknown = "Unknown"
+	// StateTypeNone means that it has not been pushed to the cluster *at all* in either deploy or dev
+	StateTypeNone = "None"
 )
 
 func newComponentWithType(componentName, componentType string) Component {
