@@ -1,111 +1,98 @@
 package component
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
-
-	v1 "k8s.io/api/apps/v1"
-
-	"github.com/devfile/library/pkg/util"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/testingutil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ktesting "k8s.io/client-go/testing"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func TestList(t *testing.T) {
-	deploymentList := v1.DeploymentList{Items: []v1.Deployment{
-		*testingutil.CreateFakeDeployment("comp0"),
-		*testingutil.CreateFakeDeployment("comp1"),
-	}}
+func TestListAllClusterComponents(t *testing.T) {
+	res1 := getUnstructured("dep1", "deployment", "v1", "Unknown", "Unknown", "my-ns")
+	res2 := getUnstructured("svc1", "service", "v1", "odo", "nodejs", "my-ns")
 
-	deploymentList.Items[0].Labels[componentlabels.KubernetesNameLabel] = "nodejs"
-	deploymentList.Items[0].Annotations = map[string]string{
-		componentlabels.OdoProjectTypeAnnotation: "nodejs",
+	type fields struct {
+		kubeClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
-	deploymentList.Items[1].Labels[componentlabels.KubernetesNameLabel] = "wildfly"
-	deploymentList.Items[1].Annotations = map[string]string{
-		componentlabels.OdoProjectTypeAnnotation: "wildfly",
+	type args struct {
+		namespace string
 	}
 	tests := []struct {
-		name           string
-		deploymentList v1.DeploymentList
-		projectExists  bool
-		wantErr        bool
-		output         ComponentList
+		name    string
+		fields  fields
+		args    args
+		want    []OdoComponent
+		wantErr bool
 	}{
 		{
-			name:          "Case 1: no component and no config exists",
-			wantErr:       false,
-			projectExists: true,
-			output:        newComponentList([]Component{}),
-		},
-		{
-			name:           "Case 2: Components are returned from deployments on a kubernetes cluster",
-			deploymentList: deploymentList,
-			wantErr:        false,
-			projectExists:  true,
-			output: ComponentList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				ListMeta: metav1.ListMeta{},
-				Items: []Component{
-					getFakeComponent("comp0", "test", "app", "nodejs", StateTypePushed),
-					getFakeComponent("comp1", "test", "app", "wildfly", StateTypePushed),
+			name: "1 non-odo resource returned with Unknown",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					var resources []unstructured.Unstructured
+					resources = append(resources, res1)
+					client := kclient.NewMockClientInterface(ctrl)
+					selector := ""
+					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					return client
 				},
 			},
+			args: args{
+				namespace: "my-ns",
+			},
+			want: []OdoComponent{{
+				Name:      "dep1",
+				ManagedBy: "Unknown",
+				Modes:     map[string]bool{},
+				Type:      "Unknown",
+			}},
+			wantErr: false,
+		},
+		{
+			name: "1 non-odo resource returned with Unknown, and 1 odo resource returned with odo",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					var resources []unstructured.Unstructured
+					resources = append(resources, res1, res2)
+					client := kclient.NewMockClientInterface(ctrl)
+					selector := ""
+					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					return client
+				},
+			},
+			args: args{
+				namespace: "my-ns",
+			},
+			want: []OdoComponent{{
+				Name:      "dep1",
+				ManagedBy: "Unknown",
+				Modes:     map[string]bool{},
+				Type:      "Unknown",
+			}, {
+				Name:      "svc1",
+				ManagedBy: "odo",
+				Modes:     map[string]bool{},
+				Type:      "nodejs",
+			}},
+			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, fakeClientSet := kclient.FakeNew()
-			client.Namespace = "test"
-
-			fakeClientSet.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				listAction, ok := action.(ktesting.ListAction)
-				if !ok {
-					return false, nil, fmt.Errorf("expected a ListAction, got %v", action)
-				}
-				if len(tt.deploymentList.Items) <= 0 {
-					return true, &tt.deploymentList, nil
-				}
-
-				var deploymentLabels0 map[string]string
-				var deploymentLabels1 map[string]string
-				if len(tt.deploymentList.Items) == 2 {
-					deploymentLabels0 = tt.deploymentList.Items[0].Labels
-					deploymentLabels1 = tt.deploymentList.Items[1].Labels
-				}
-				switch listAction.GetListRestrictions().Labels.String() {
-				case util.ConvertLabelsToSelector(deploymentLabels0):
-					return true, &tt.deploymentList.Items[0], nil
-				case util.ConvertLabelsToSelector(deploymentLabels1):
-					return true, &tt.deploymentList.Items[1], nil
-				default:
-					return true, &tt.deploymentList, nil
-				}
-			})
-
-			results, err := List(client, applabels.GetSelector("app"))
-
+			ctrl := gomock.NewController(t)
+			got, err := ListAllClusterComponents(tt.fields.kubeClient(ctrl), tt.args.namespace)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("expected err: %v, but err is %v", tt.wantErr, err)
+				t.Errorf("ListAllClusterComponents error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-
-			if !reflect.DeepEqual(tt.output, results) {
-				t.Errorf("Unexpected output, see the diff in results: %s", pretty.Compare(tt.output, results))
-				t.Errorf("expected output:\n%#v\n\ngot:\n%#v", tt.output, results)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ListAllClusterComponents got = %+v\nwant = %+v\ncomparison:\n %v", got, tt.want, pretty.Compare(got, tt.want))
 			}
 		})
 	}
@@ -270,34 +257,18 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 	}
 }
 
-func getFakeComponent(compName, namespace, appName, compType string, state string) Component {
-	return Component{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Component",
-			APIVersion: "odo.dev/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      compName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				applabels.App:                           appName,
-				applabels.ManagedBy:                     "odo",
-				applabels.ApplicationLabel:              appName,
-				componentlabels.KubernetesInstanceLabel: compName,
-				componentlabels.KubernetesNameLabel:     compType,
-				componentlabels.OdoModeLabel:            componentlabels.ComponentDevName,
-			},
-			Annotations: map[string]string{
-				componentlabels.OdoProjectTypeAnnotation: compType,
-			},
-		},
-		Spec: ComponentSpec{
-			Type: compType,
-			App:  appName,
-		},
-		Status: ComponentStatus{
-			State: state,
-		},
-	}
-
+// getUnstructured returns an unstructured.Unstructured object
+func getUnstructured(name, kind, apiVersion, managed, componentType, namespace string) (u unstructured.Unstructured) {
+	u.SetName(name)
+	u.SetKind(kind)
+	u.SetAPIVersion(apiVersion)
+	u.SetNamespace(namespace)
+	u.SetLabels(map[string]string{
+		labels.KubernetesInstanceLabel:  name,
+		labels.KubernetesManagedByLabel: managed,
+	})
+	u.SetAnnotations(map[string]string{
+		labels.OdoProjectTypeAnnotation: componentType,
+	})
+	return
 }

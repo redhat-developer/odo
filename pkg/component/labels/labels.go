@@ -20,6 +20,9 @@ const ComponentDevName = "Dev"
 // ComponentDeployName ...
 const ComponentDeployName = "Deploy"
 
+// ComponentNoneName ...
+const ComponentNoneName = "None"
+
 // OdoModeLabel ...
 const OdoModeLabel = "odo.dev/mode"
 

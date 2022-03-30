@@ -41,7 +41,7 @@ var _ = Describe("odo generic", func() {
 		})
 
 		It("Fail when entering an incorrect name for a component", func() {
-			output := helper.Cmd("odo", "component", "foobar").ShouldFail().Err()
+			output := helper.Cmd("odo", "delete", "foobar").ShouldFail().Err()
 			Expect(output).To(ContainSubstring("Subcommand not found, use one of the available commands"))
 		})
 

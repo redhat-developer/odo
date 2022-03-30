@@ -1,8 +1,6 @@
 package completion
 
 import (
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -66,23 +64,5 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 // ComponentNameCompletionHandler provides component name completion
 var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	var selector string
-	if context.GetApplication() != "" {
-		selector = applabels.GetSelector(context.GetApplication())
-	}
-	components, err := component.List(context.KClient, selector)
-
-	if err != nil {
-		return completions
-	}
-
-	for _, component := range components.Items {
-		// we found the component name in the list which means
-		// that the component name has been already selected by the user so no need to suggest more
-		if args.commands[component.Name] {
-			return nil
-		}
-		completions = append(completions, component.Name)
-	}
 	return completions
 }
