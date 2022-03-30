@@ -37,7 +37,11 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	shell := getShellCommand(o.name, image, devfilePath)
 
 	cmd := exec.Command("bash", "-c", shell)
-	cmd.Env = append(os.Environ(), "PROJECTS_ROOT="+devfilePath)
+	cmdEnv := []string{
+		"PROJECTS_ROOT=" + devfilePath,
+		"PROJECT_SOURCE=" + devfilePath,
+	}
+	cmd.Env = append(os.Environ(), cmdEnv...)
 	cmd.Stdout = log.GetStdout()
 	cmd.Stderr = log.GetStderr()
 

@@ -1,9 +1,11 @@
 package devfile
 
 import (
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
+	"fmt"
 	"path"
 	"path/filepath"
+
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -137,5 +139,49 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("javascript"))
 			Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
 		})
+	})
+
+	When("using a devfile.yaml containing an Image component with a build context", func() {
+
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", "aname",
+				"--devfile-path",
+				helper.GetExamplePath("source", "devfiles", "nodejs",
+					"devfile-outerloop-project_source-in-docker-build-context.yaml")).ShouldPass()
+		})
+
+		for _, scope := range []struct {
+			name    string
+			envvars []string
+		}{
+			{
+				name:    "Podman",
+				envvars: []string{"PODMAN_CMD=echo"},
+			},
+			{
+				name: "Docker",
+				envvars: []string{
+					"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+					"DOCKER_CMD=echo",
+				},
+			},
+		} {
+			It(fmt.Sprintf("should build image via %s if build context references PROJECT_SOURCE env var", scope.name), func() {
+				stdout := helper.Cmd("odo", "deploy").AddEnv(scope.envvars...).ShouldPass().Out()
+				lines, err := helper.ExtractLines(stdout)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(lines).ShouldNot(BeEmpty())
+				containerImage := "localhost:5000/devfile-nodejs-deploy:0.1.0" // from Devfile yaml file
+				dockerfilePath := filepath.Join(commonVar.Context, "Dockerfile")
+				buildCtx := commonVar.Context
+				expected := fmt.Sprintf("build -t %s -f %s %s", containerImage, dockerfilePath, buildCtx)
+				i, found := helper.FindFirstElementIndexByPredicate(lines, func(s string) bool {
+					return s == expected
+				})
+				Expect(found).To(BeTrue(), "line not found: ["+expected+"]")
+				Expect(i).ToNot(BeZero(), "line not found at non-zero index: ["+expected+"]")
+			})
+		}
 	})
 })

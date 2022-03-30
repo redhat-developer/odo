@@ -1,0 +1,98 @@
+# Source: https://github.com/kadel/devfile-nodejs-deploy/blob/main/devfile.yaml
+schemaVersion: 2.2.0
+metadata:
+  language: javascript
+  name: devfile-nodejs-deploy
+  projectType: nodejs
+variables:
+  CONTAINER_IMAGE: localhost:5000/devfile-nodejs-deploy:0.1.0
+commands:
+  - id: install
+    exec:
+      commandLine: npm install
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: $PROJECT_SOURCE
+  - id: run
+    exec:
+      commandLine: npm start
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: $PROJECT_SOURCE
+  - id: build-image
+    apply:
+      component: prod-image
+  - id: deploy-deployment
+    apply:
+      component: outerloop-deploy
+  - id: deploy-service
+    apply:
+      component: outerloop-service
+  - id: deploy
+    composite:
+      commands:
+        - build-image
+        - deploy-deployment
+        - deploy-service
+      group:
+        kind: deploy
+        isDefault: true
+components:
+  - container:
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+      image: registry.access.redhat.com/ubi8/nodejs-14:latest
+      memoryLimit: 1024Mi
+      mountSources: true
+    name: runtime
+  - name: prod-image
+    image:
+      imageName: "{{CONTAINER_IMAGE}}"
+      dockerfile:
+        uri: ./Dockerfile
+        buildContext: ${PROJECT_SOURCE}
+  - name: outerloop-deploy
+    kubernetes:
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: devfile-nodejs-deploy
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: devfile-nodejs-deploy
+          template:
+            metadata:
+              labels:
+                app: devfile-nodejs-deploy
+            spec:
+              containers:
+                - name: main
+                  image: "{{CONTAINER_IMAGE}}"
+                  resources: {}
+  - name: outerloop-service
+    kubernetes:
+      inlined: |
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            app: devfile-nodejs-deploy
+          name: devfile-nodejs-deploy
+        spec:
+          ports:
+          - name: http-3000
+            port: 3000
+            protocol: TCP
+            targetPort: 3000
+          selector:
+            app: devfile-nodejs-deploy
+          type: LoadBalancer
+
