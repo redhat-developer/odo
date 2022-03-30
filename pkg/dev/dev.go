@@ -60,7 +60,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	return nil
 }
 
-func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, cleanupDone chan bool, ctx context.Context) error {
+func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, cleanupDone chan bool) error {
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
 		return err
@@ -72,12 +72,11 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		Path:                path,
 		ComponentName:       devfileObj.GetMetadataName(),
 		ApplicationName:     "app",
-		ExtChan:             make(chan bool),
 		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         absIgnorePaths,
 		InitialDevfileObj:   devfileObj,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, cleanupDone, ctx)
+	return o.watchClient.WatchAndPush(out, watchParameters, ctx, cleanupDone)
 }

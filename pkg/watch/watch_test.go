@@ -843,11 +843,7 @@ func TestWatchAndPush(t *testing.T) {
 				}),
 			}
 
-			err = watchClient.WatchAndPush(
-				os.Stdout,
-				watchParameters,
-				cleanupDone,
-			)
+			err = watchClient.WatchAndPush(os.Stdout, watchParameters, cleanupDone)
 			if err != nil && err != ErrUserRequestedWatchExit {
 				t.Errorf("error in WatchAndPush %+v", err)
 			}

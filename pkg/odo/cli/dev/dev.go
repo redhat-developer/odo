@@ -53,9 +53,12 @@ type DevOptions struct {
 	// it's called "initial" because it has to be set only once when running odo dev for the first time
 	// it is used to compare with updated devfile when we watch the contextDir for changes
 	initialDevfileObj parser.DevfileObj
-	cleanupDone       chan bool
-	ctx               context.Context
-	cancel            context.CancelFunc
+	// cleanupDone is passed to business layer; WatchAndPush method uses this channel to notify us that cleanup is done
+	cleanupDone chan bool
+	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
+	ctx context.Context
+	// cancel function ensures that any function/method listening on ctx.Done channel stops doing its work
+	cancel context.CancelFunc
 
 	// working directory
 	contextDir string
@@ -227,7 +230,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 
 	o.ctx, o.cancel = context.WithCancel(context.Background())
 	d := Handler{}
-	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.cleanupDone, o.ctx)
+	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.cleanupDone)
 
 	return err
 }

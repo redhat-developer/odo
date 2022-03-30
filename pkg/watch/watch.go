@@ -56,15 +56,9 @@ type WatchParameters struct {
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
-	// This is a channel added to signal readiness of the watch command to the external channel listeners
-	StartChan chan bool
-	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
-	ExtChan chan bool
-	// Interval of time before pushing changes to remote(component) pod
-	PushDiffDelay int
 	// Parameter whether or not to show build logs
 	Show bool
-	// EnvSpecificInfo contains infomation of env.yaml file
+	// EnvSpecificInfo contains information of env.yaml file
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileBuildCmd string
@@ -178,7 +172,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	client: occlient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
-func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cleanupDone chan bool, ctx context.Context) error {
+func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, cleanupDone chan bool) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
@@ -195,13 +189,11 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, cl
 		showWaitingMessage             bool
 	)
 
-	//ticker := time.NewTicker(1 * time.Second)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
 	defer watcher.Close()
-	defer close(parameters.ExtChan)
 
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
