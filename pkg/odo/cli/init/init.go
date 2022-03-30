@@ -192,7 +192,7 @@ Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata
 	if len(commands) != 0 {
 		exitMessage += "\nTo deploy your component to a cluster use \"odo deploy\"."
 	}
-	log.Italic(exitMessage)
+	log.Info(exitMessage)
 
 	return nil
 }
