@@ -43,6 +43,24 @@ var _ = Describe("odo devfile build-images command tests", func() {
 		})
 	})
 
+	When("using a devfile.yaml with no Image component", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", "aname",
+				"--devfile-path",
+				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			helper.CreateLocalEnv(commonVar.Context, "aname", commonVar.Project)
+		})
+		It("should not be able to run odo build-images", func() {
+			stdout, stderr := helper.Cmd("odo", "build-images").AddEnv("PODMAN_CMD=echo").ShouldFail().OutAndErr()
+			// Make sure no "{podman,docker} build -t ..." command gets executed
+			imageBuildCmd := "build -t "
+			Expect(stdout).ShouldNot(ContainSubstring(imageBuildCmd))
+			Expect(stderr).ShouldNot(ContainSubstring(imageBuildCmd))
+			Expect(stderr).To(ContainSubstring("no component with type \"Image\" found in Devfile"))
+		})
+	})
+
 	When("using a devfile.yaml containing an Image component with Dockerfile args", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
