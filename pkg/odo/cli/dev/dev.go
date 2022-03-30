@@ -288,6 +288,7 @@ func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
 func (o *DevOptions) HandleSignal() error {
 	o.cancel()
 	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
+	// we are waiting for the cleanup to finish, before to continue the signal handler processing
 	<-o.cleanupDone
 	return nil
 }
