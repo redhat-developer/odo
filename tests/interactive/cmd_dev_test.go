@@ -41,7 +41,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 		It("should run alizer to download devfile successfully even with -v flag", func() {
 
 			language := "python"
-			_, _ = helper.RunInteractive([]string{"odo", "dev", "-v", "4"},
+			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "-v", "4"},
 				nil,
 				func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
