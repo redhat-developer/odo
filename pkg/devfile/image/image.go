@@ -9,6 +9,7 @@ import (
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 )
 
@@ -38,6 +39,9 @@ func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error
 	})
 	if err != nil {
 		return err
+	}
+	if len(components) == 0 {
+		return libdevfile.NewComponentTypeNotFoundError(devfile.ImageComponentType)
 	}
 
 	for _, component := range components {

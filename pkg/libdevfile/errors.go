@@ -83,3 +83,18 @@ func NewNotAContainerError() NotAContainerError {
 func (e NotAContainerError) Error() string {
 	return "component not a container"
 }
+
+// ComponentTypeNotFoundError is returned when no component with the specified type has been found in Devfile
+type ComponentTypeNotFoundError struct {
+	componentType v1alpha2.ComponentType
+}
+
+func NewComponentTypeNotFoundError(componentType v1alpha2.ComponentType) ComponentTypeNotFoundError {
+	return ComponentTypeNotFoundError{
+		componentType: componentType,
+	}
+}
+
+func (e ComponentTypeNotFoundError) Error() string {
+	return fmt.Sprintf("no component with type %q found in Devfile", e.componentType)
+}
