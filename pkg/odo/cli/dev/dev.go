@@ -89,6 +89,9 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
 
+	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
+	o.ctx, o.cancel = context.WithCancel(context.Background())
+
 	o.contextDir, err = os.Getwd()
 	if err != nil {
 		return err
@@ -228,7 +231,6 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 
-	o.ctx, o.cancel = context.WithCancel(context.Background())
 	d := Handler{}
 	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.cleanupDone)
 
