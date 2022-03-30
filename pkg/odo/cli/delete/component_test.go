@@ -2,8 +2,10 @@ package delete
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/devfile/library/pkg/testingutil/filesystem"
@@ -47,7 +49,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				},
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListResourcesToDelete("my-component", "my-namespace").Return(nil, nil)
+					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(nil, nil)
 					client.EXPECT().DeleteResources(gomock.Any()).Times(0)
 					return client
 				},
@@ -70,7 +72,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					res2 := getUnstructured("svc1", "service", "v1")
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
-					client.EXPECT().ListResourcesToDelete("my-component", "my-namespace").Return(resources, nil)
+					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(resources, nil)
 					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}).Times(1)
 					return client
 				},
@@ -128,6 +130,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources).Return([]unstructured.Unstructured{})
 				return deleteClient
@@ -142,6 +145,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
+				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources).Return(nil)
 				return deleteClient
@@ -275,4 +279,58 @@ func getUnstructured(name, kind, apiVersion string) (u unstructured.Unstructured
 	u.SetKind(kind)
 	u.SetAPIVersion(apiVersion)
 	return
+}
+
+func Test_listResourcesMissingFromDevfilePresentOnCluster(t *testing.T) {
+	const componentName = "mynodejs"
+	deployment := getUnstructured("my-deploy", "Deployment", "apps/v1")
+	svc := getUnstructured("my-service", "Service", "v1")
+	deployment2 := getUnstructured("my-deploy-2", "Deployment", "apps/v1")
+	endpoint := getUnstructured(fmt.Sprintf("my-endpoint-%s", componentName), "Endpoints", "apps/v1")
+	type args struct {
+		componentName    string
+		devfileResources []unstructured.Unstructured
+		clusterResources []unstructured.Unstructured
+	}
+	tests := []struct {
+		name string
+		args args
+		want []unstructured.Unstructured
+	}{
+		// TODO: Add test cases.
+		{
+			name: "devfile and cluster has same resources",
+			args: args{
+				componentName:    componentName,
+				devfileResources: []unstructured.Unstructured{deployment, svc},
+				clusterResources: []unstructured.Unstructured{deployment, svc},
+			},
+			want: nil,
+		},
+		{
+			name: "devfile and cluster have different resources",
+			args: args{
+				componentName:    componentName,
+				devfileResources: []unstructured.Unstructured{deployment, svc},
+				clusterResources: []unstructured.Unstructured{deployment2, svc},
+			},
+			want: []unstructured.Unstructured{deployment2},
+		},
+		{
+			name: "component's endpoint is one of the cluster resources",
+			args: args{
+				componentName:    componentName,
+				devfileResources: []unstructured.Unstructured{deployment, svc},
+				clusterResources: []unstructured.Unstructured{deployment2, svc, endpoint},
+			},
+			want: []unstructured.Unstructured{deployment2},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := listResourcesMissingFromDevfilePresentOnCluster(tt.args.componentName, tt.args.devfileResources, tt.args.clusterResources); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("listResourcesMissingFromDevfilePresentOnCluster() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
