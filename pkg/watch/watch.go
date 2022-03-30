@@ -8,11 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-
-	"github.com/redhat-developer/odo/pkg/kclient"
-
 	"github.com/devfile/library/pkg/devfile/parser"
+	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -32,12 +29,12 @@ const (
 )
 
 type WatchClient struct {
-	kubernetesClient kclient.ClientInterface
+	deleteClient _delete.Client
 }
 
-func NewWatchClient(kubernetesClient kclient.ClientInterface) *WatchClient {
+func NewWatchClient(deleteClient _delete.Client) *WatchClient {
 	return &WatchClient{
-		kubernetesClient: kubernetesClient,
+		deleteClient: deleteClient,
 	}
 }
 
@@ -330,9 +327,21 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 			return watchErr
 		case <-ctx.Done():
 			devfileObj := parameters.InitialDevfileObj
-			err = o.kubernetesClient.DeleteDeployment(componentlabels.GetLabels(devfileObj.GetMetadataName(), "app", false))
+			isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
 			if err != nil {
 				fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
+			}
+			// if innerloop deployment resource is present, then execute preStop events
+			if isInnerLoopDeployed {
+				err = o.deleteClient.ExecutePreStopEvents(devfileObj, "app")
+				if err != nil {
+					fmt.Fprint(out, "Failed to execute preStop events")
+				}
+			}
+			// delete all the resources
+			failed := o.deleteClient.DeleteResources(resources)
+			for _, fail := range failed {
+				fmt.Fprintf(out, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 			}
 			cleanupDone <- true
 		}

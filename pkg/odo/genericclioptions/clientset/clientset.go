@@ -61,7 +61,7 @@ var subdeps map[string][]string = map[string][]string{
 	DEV:              {WATCH, KUBERNETES},
 	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY},
 	PROJECT:          {KUBERNETES_NULLABLE},
-	WATCH:            {KUBERNETES},
+	WATCH:            {DELETE_COMPONENT},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -136,7 +136,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
 	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient)
+		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient)
 	}
 	if isDefined(command, DEV) {
 		dep.DevClient = dev.NewDevClient(dep.WatchClient, dep.KubernetesClient)
