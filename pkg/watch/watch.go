@@ -225,6 +225,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 			// We are waiting for more events in this interval
 			timer.Reset(100 * time.Millisecond)
 		case <-timer.C:
+			// no more events in the interval, let's proceed with the synchronization
 			event := lastEvent
 			klog.V(4).Infof("filesystem watch event: %s", event)
 			isIgnoreEvent := shouldIgnoreEvent(event)
