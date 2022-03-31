@@ -66,7 +66,7 @@ func DeleteOperatorService(client kclient.ClientInterface, serviceName string) e
 
 	group, version, resource := kclient.GetGVRFromCR(cr)
 
-	return client.DeleteDynamicResource(name, group, version, resource)
+	return client.DeleteDynamicResource(name, group, version, resource, false)
 }
 
 // ListOperatorServices lists all operator backed services.

@@ -157,8 +157,8 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 							Resource: res2.GetKind(),
 						},
 					}, nil)
-					client.EXPECT().DeleteDynamicResource(res1.GetName(), "", "v1", res1.GetKind())
-					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind())
+					client.EXPECT().DeleteDynamicResource(res1.GetName(), "", "v1", res1.GetKind(), false)
+					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind(), false)
 					return client
 				},
 			},
@@ -180,7 +180,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 							Resource: res2.GetKind(),
 						},
 					}, nil)
-					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind())
+					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind(), false)
 					return client
 				},
 			},
@@ -208,8 +208,8 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 							Resource: res2.GetKind(),
 						},
 					}, nil)
-					client.EXPECT().DeleteDynamicResource(res1.GetName(), "", "v1", res1.GetKind()).Return(errors.New("some error"))
-					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind())
+					client.EXPECT().DeleteDynamicResource(res1.GetName(), "", "v1", res1.GetKind(), false).Return(errors.New("some error"))
+					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind(), false)
 					return client
 				},
 			},
@@ -226,7 +226,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 			do := &DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			if got := do.DeleteResources(tt.args.resources); !reflect.DeepEqual(got, tt.want) {
+			if got := do.DeleteResources(tt.args.resources, false); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("DeleteComponentClient.DeleteResources() = %v, want %v", got, tt.want)
 			}
 		})

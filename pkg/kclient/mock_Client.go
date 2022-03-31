@@ -235,17 +235,17 @@ func (mr *MockClientInterfaceMockRecorder) DeleteDeployment(labels interface{}) 
 }
 
 // DeleteDynamicResource mocks base method.
-func (m *MockClientInterface) DeleteDynamicResource(name, group, version, resource string) error {
+func (m *MockClientInterface) DeleteDynamicResource(name, group, version, resource string, wait bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDynamicResource", name, group, version, resource)
+	ret := m.ctrl.Call(m, "DeleteDynamicResource", name, group, version, resource, wait)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteDynamicResource indicates an expected call of DeleteDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, group, version, resource interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, group, version, resource, wait interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, group, version, resource)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, group, version, resource, wait)
 }
 
 // DeleteNamespace mocks base method.
@@ -1124,6 +1124,20 @@ func (m *MockClientInterface) SetupPortForwarding(pod *v11.Pod, portPairs []stri
 func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, out, errOut interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupPortForwarding", reflect.TypeOf((*MockClientInterface)(nil).SetupPortForwarding), pod, portPairs, out, errOut)
+}
+
+// TryWithBlockOwnerDeletion mocks base method.
+func (m *MockClientInterface) TryWithBlockOwnerDeletion(ownerReference v12.OwnerReference, exec func(v12.OwnerReference) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryWithBlockOwnerDeletion", ownerReference, exec)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TryWithBlockOwnerDeletion indicates an expected call of TryWithBlockOwnerDeletion.
+func (mr *MockClientInterfaceMockRecorder) TryWithBlockOwnerDeletion(ownerReference, exec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryWithBlockOwnerDeletion", reflect.TypeOf((*MockClientInterface)(nil).TryWithBlockOwnerDeletion), ownerReference, exec)
 }
 
 // UnlinkSecret mocks base method.

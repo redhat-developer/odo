@@ -237,14 +237,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
 			continue
 		}
-		err = a.Client.UpdateStorageOwnerReference(&pvcs[i], ownerReference)
+		err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+			return a.Client.UpdateStorageOwnerReference(&pvcs[i], ownerRef)
+		})
 		if err != nil {
 			return err
 		}
 	}
 
 	// Update all services with owner references
-	err = service.UpdateServicesWithOwnerReferences(a.Client, k8sComponents, ownerReference, a.Context)
+	err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+		return service.UpdateServicesWithOwnerReferences(a.Client, k8sComponents, ownerRef, a.Context)
+	})
 	if err != nil {
 		return err
 	}
@@ -561,10 +565,14 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		}
 
 		klog.V(2).Infof("Successfully created component %v", componentName)
-		ownerReference := generator.GetOwnerReference(a.deployment)
-		svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 		if len(svc.Spec.Ports) > 0 {
-			_, err = a.Client.CreateService(*svc)
+			ownerReference := generator.GetOwnerReference(a.deployment)
+			originOwnerRefs := svc.OwnerReferences
+			err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+				svc.OwnerReferences = append(originOwnerRefs, ownerRef)
+				_, err = a.Client.CreateService(*svc)
+				return err
+			})
 			if err != nil {
 				return err
 			}
@@ -578,12 +586,16 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 
 func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string) error {
 	oldSvc, err := a.Client.GetOneService(a.ComponentName, a.AppName)
+	originOwnerReferences := svc.OwnerReferences
 	ownerReference := generator.GetOwnerReference(a.deployment)
-	svc.OwnerReferences = append(svc.OwnerReferences, ownerReference)
 	if err != nil {
 		// no old service was found, create a new one
 		if len(svc.Spec.Ports) > 0 {
-			_, err = a.Client.CreateService(*svc)
+			err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+				svc.OwnerReferences = append(originOwnerReferences, ownerRef)
+				_, err = a.Client.CreateService(*svc)
+				return err
+			})
 			if err != nil {
 				return err
 			}
@@ -594,7 +606,11 @@ func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, compone
 	if len(svc.Spec.Ports) > 0 {
 		svc.Spec.ClusterIP = oldSvc.Spec.ClusterIP
 		svc.ResourceVersion = oldSvc.GetResourceVersion()
-		_, err = a.Client.UpdateService(*svc)
+		err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+			svc.OwnerReferences = append(originOwnerReferences, ownerRef)
+			_, err = a.Client.UpdateService(*svc)
+			return err
+		})
 		if err != nil {
 			return err
 		}

@@ -38,16 +38,18 @@ type ClientInterface interface {
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	DeleteDeployment(labels map[string]string) error
-	CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error
-	ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error)
-	GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error)
-	UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error
-	DeleteDynamicResource(name, group, version, resource string) error
 	LinkSecret(secretName, componentName, applicationName string) error
 	UnlinkSecret(secretName, componentName, applicationName string) error
 	GetDeploymentLabelValues(label string, selector string) ([]string, error)
 	GetDeploymentAPIVersion() (metav1.GroupVersionResource, error)
 	IsDeploymentExtensionsV1Beta1() (bool, error)
+
+	// dynamic.go
+	CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error
+	ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error)
+	GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error)
+	UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error
+	DeleteDynamicResource(name, group, version, resource string, wait bool) error
 
 	// events.go
 	CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int)
@@ -87,6 +89,9 @@ type ClientInterface interface {
 	GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error)
 	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
+
+	// owner_reference.go
+	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
 
 	// pods.go
 	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, pushTimeout time.Duration) (*corev1.Pod, error)

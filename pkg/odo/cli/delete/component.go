@@ -41,6 +41,9 @@ type ComponentOptions struct {
 	// forceFlag forces deletion
 	forceFlag bool
 
+	// waitFlag waits for deletion of all resources
+	waitFlag bool
+
 	// Context
 	*genericclioptions.Context
 
@@ -101,7 +104,7 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 	}
 	printDevfileComponents(o.name, o.namespace, list)
 	if o.forceFlag || ui.Proceed("Are you sure you want to delete these resources?") {
-		failed := o.clientset.DeleteClient.DeleteResources(list)
+		failed := o.clientset.DeleteClient.DeleteResources(list, o.waitFlag)
 		for _, fail := range failed {
 			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 		}
@@ -147,7 +150,7 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 		}
 
 		// delete all the resources
-		failed := o.clientset.DeleteClient.DeleteResources(devfileResources)
+		failed := o.clientset.DeleteClient.DeleteResources(devfileResources, o.waitFlag)
 		for _, fail := range failed {
 			log.Warningf("Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 		}
@@ -217,6 +220,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	componentCmd.Flags().StringVar(&o.name, "name", "", "Name of the component to delete, optional. By default, the component described in the local devfile is deleted")
 	componentCmd.Flags().StringVar(&o.namespace, "namespace", "", "Namespace in which to find the component to delete, optional. By default, the current namespace defined in kubeconfig is used")
 	componentCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Delete component without prompting")
+	componentCmd.Flags().BoolVarP(&o.waitFlag, "wait", "w", false, "Wait for deletion of all dependent resources")
 	clientset.Add(componentCmd, clientset.DELETE_COMPONENT, clientset.KUBERNETES)
 
 	return componentCmd
