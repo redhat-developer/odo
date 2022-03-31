@@ -53,8 +53,6 @@ type DevOptions struct {
 	// it's called "initial" because it has to be set only once when running odo dev for the first time
 	// it is used to compare with updated devfile when we watch the contextDir for changes
 	initialDevfileObj parser.DevfileObj
-	// cleanupDone is passed to business layer; WatchAndPush method uses this channel to notify us that cleanup is done
-	cleanupDone chan bool
 	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
 	ctx context.Context
 	// cancel function ensures that any function/method listening on ctx.Done channel stops doing its work
@@ -71,9 +69,8 @@ type Handler struct{}
 
 func NewDevOptions() *DevOptions {
 	return &DevOptions{
-		out:         log.GetStdout(),
-		errOut:      log.GetStderr(),
-		cleanupDone: make(chan bool),
+		out:    log.GetStdout(),
+		errOut: log.GetStderr(),
 	}
 }
 
@@ -232,7 +229,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 
 	d := Handler{}
-	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.cleanupDone)
+	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
 
 	return err
 }
@@ -289,8 +286,8 @@ func (o *DevOptions) HandleSignal() error {
 	o.cancel()
 	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
 	// we are waiting for the cleanup to finish, before to continue the signal handler processing
-	<-o.cleanupDone
-	return nil
+	for {
+	}
 }
 
 // NewCmdDev implements the odo dev command
