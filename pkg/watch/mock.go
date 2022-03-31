@@ -36,15 +36,15 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // WatchAndPush mocks base method.
-func (m *MockClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, cleanupDone chan bool) error {
+func (m *MockClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WatchAndPush", out, parameters, ctx, cleanupDone)
+	ret := m.ctrl.Call(m, "WatchAndPush", out, parameters, ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // WatchAndPush indicates an expected call of WatchAndPush.
-func (mr *MockClientMockRecorder) WatchAndPush(out, parameters, ctx, cleanupDone interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) WatchAndPush(out, parameters, ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAndPush", reflect.TypeOf((*MockClient)(nil).WatchAndPush), out, parameters, ctx, cleanupDone)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchAndPush", reflect.TypeOf((*MockClient)(nil).WatchAndPush), out, parameters, ctx)
 }
