@@ -24,6 +24,7 @@ type Backend interface {
 }
 
 var lookPathCmd = exec.LookPath
+var getEnvFunc = os.Getenv
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
@@ -89,7 +90,7 @@ func buildPushImage(backend Backend, image *devfile.ImageComponent, devfilePath 
 // or return an error if none are present locally
 func selectBackend() (Backend, error) {
 
-	podmanCmd := os.Getenv("PODMAN_CMD")
+	podmanCmd := getEnvFunc("PODMAN_CMD")
 	if podmanCmd == "" {
 		podmanCmd = "podman"
 	}
@@ -97,7 +98,7 @@ func selectBackend() (Backend, error) {
 		return NewDockerCompatibleBackend(podmanCmd), nil
 	}
 
-	dockerCmd := os.Getenv("DOCKER_CMD")
+	dockerCmd := getEnvFunc("DOCKER_CMD")
 	if dockerCmd == "" {
 		dockerCmd = "docker"
 	}
