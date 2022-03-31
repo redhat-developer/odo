@@ -8,7 +8,6 @@ import (
 	"time"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -18,12 +17,17 @@ import (
 )
 
 // CreateDynamicResource creates a dynamic custom resource
-func (c *Client) CreateDynamicResource(resource unstructured.Unstructured, gvr *meta.RESTMapping) error {
+func (c *Client) CreateDynamicResource(resource unstructured.Unstructured) error {
 	klog.V(5).Infoln("Applying resource via server-side apply:")
 	klog.V(5).Infoln(resourceAsJson(resource.Object))
 	data, err := json.Marshal(resource.Object)
 	if err != nil {
 		return fmt.Errorf("unable to marshal resource: %w", err)
+	}
+
+	gvr, err := c.GetRestMappingFromUnstructured(resource)
+	if err != nil {
+		return err
 	}
 
 	// Patch the dynamic resource
@@ -37,15 +41,13 @@ func (c *Client) CreateDynamicResource(resource unstructured.Unstructured, gvr *
 
 // ListDynamicResource returns an unstructured list of instances of a Custom
 // Resource currently deployed in the active namespace of the cluster
-func (c *Client) ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error) {
+func (c *Client) ListDynamicResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
 
 	if c.DynamicClient == nil {
 		return nil, nil
 	}
 
-	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
-
-	list, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).List(context.TODO(), metav1.ListOptions{})
+	list, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +56,8 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 }
 
 // GetDynamicResource returns an unstructured instance of a Custom Resource currently deployed in the active namespace
-func (c *Client) GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error) {
-	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
-
-	res, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
+func (c *Client) GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
+	res, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -65,10 +65,8 @@ func (c *Client) GetDynamicResource(group, version, resource, name string) (*uns
 }
 
 // UpdateDynamicResource updates a dynamic resource
-func (c *Client) UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error {
-	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
-
-	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Update(context.TODO(), u, metav1.UpdateOptions{})
+func (c *Client) UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error {
+	_, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Update(context.TODO(), u, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -83,9 +81,7 @@ type GVRN struct {
 // DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource
 // if wait is true, it will set the PropagationPolicy to DeletePropagationForeground
 // to wait for owned resources to be deleted (only for resources with a BlockOwnerDeletion set to true)
-func (c *Client) DeleteDynamicResource(name, group, version, resourceName string, wait bool) error {
-
-	gvr := schema.GroupVersionResource{Group: group, Version: version, Resource: resourceName}
+func (c *Client) DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error {
 
 	doDeleteResource := func() error {
 		return c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
@@ -103,7 +99,7 @@ func (c *Client) DeleteDynamicResource(name, group, version, resourceName string
 	}
 
 	// Search resources referencing this resource without BlockOwnerDeletion, to handle waiting their deletion here
-	thisRes, err := c.GetDynamicResource(group, version, resourceName, name)
+	thisRes, err := c.GetDynamicResource(gvr, name)
 	if err != nil {
 		return err
 	}
@@ -118,9 +114,9 @@ func (c *Client) DeleteDynamicResource(name, group, version, resourceName string
 		for _, ownerRef := range ownerRefs {
 			if ownerRef.UID == thisRes.GetUID() {
 				if ownerRef.BlockOwnerDeletion == nil || !*ownerRef.BlockOwnerDeletion {
-					mapping, err := c.GetRestMappingFromUnstructured(res)
-					if err != nil {
-						return err
+					mapping, err2 := c.GetRestMappingFromUnstructured(res)
+					if err2 != nil {
+						return err2
 					}
 					toWait = append(toWait, GVRN{
 						gvr:  mapping.Resource,
@@ -131,7 +127,10 @@ func (c *Client) DeleteDynamicResource(name, group, version, resourceName string
 		}
 	}
 
-	doDeleteResource()
+	err = doDeleteResource()
+	if err != nil {
+		return err
+	}
 	err = c.WaitDynamicResourceDeleted(gvr, name)
 	if err != nil {
 		return err
@@ -154,7 +153,7 @@ func (c *Client) WaitDynamicResourceDeleted(gvr schema.GroupVersionResource, nam
 	}
 	defer watcher.Stop()
 
-	_, err = c.GetDynamicResource(gvr.Group, gvr.Version, gvr.Resource, name)
+	_, err = c.GetDynamicResource(gvr, name)
 	if err != nil {
 		// deletion is done if the resource does not exist
 		if kerrors.IsNotFound(err) {

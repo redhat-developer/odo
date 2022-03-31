@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -45,11 +46,11 @@ type ClientInterface interface {
 	IsDeploymentExtensionsV1Beta1() (bool, error)
 
 	// dynamic.go
-	CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error
-	ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error)
-	GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error)
-	UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error
-	DeleteDynamicResource(name, group, version, resource string, wait bool) error
+	CreateDynamicResource(exampleCustomResource unstructured.Unstructured) error
+	ListDynamicResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error)
+	GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error)
+	UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error
+	DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error
 
 	// events.go
 	CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int)

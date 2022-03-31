@@ -64,9 +64,7 @@ func DeleteOperatorService(client kclient.ClientInterface, serviceName string) e
 		}
 	}
 
-	group, version, resource := kclient.GetGVRFromCR(cr)
-
-	return client.DeleteDynamicResource(name, group, version, resource, false)
+	return client.DeleteDynamicResource(name, kclient.GetGVRFromCR(cr), false)
 }
 
 // ListOperatorServices lists all operator backed services.
@@ -123,9 +121,7 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 func GetCRInstances(client kclient.ClientInterface, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	group, version, resource := kclient.GetGVRFromCR(customResource)
-
-	instances, err := client.ListDynamicResource(group, version, resource)
+	instances, err := client.ListDynamicResources(kclient.GetGVRFromCR(customResource))
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +351,7 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sCompon
 			return err
 		}
 
-		d, err := client.GetDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName())
+		d, err := client.GetDynamicResource(restMapping.Resource, u.GetName())
 		if err != nil {
 			return err
 		}
@@ -372,7 +368,7 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sCompon
 		}
 		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
 
-		err = client.UpdateDynamicResource(restMapping.Resource.Group, restMapping.Resource.Version, restMapping.Resource.Resource, u.GetName(), d)
+		err = client.UpdateDynamicResource(restMapping.Resource, u.GetName(), d)
 		if err != nil {
 			return err
 		}
@@ -392,18 +388,13 @@ func createOperatorService(client kclient.ClientInterface, u unstructured.Unstru
 	checkSpinner := log.Spinner("Searching resource in cluster")
 	defer checkSpinner.End(false)
 
-	gvr, err := client.GetRestMappingFromUnstructured(u)
-	if err != nil {
-		return err
-	}
-
 	checkSpinner.End(true)
 
 	// Create the service on cluster
 	createSpinner := log.Spinnerf("Creating kind %s", u.GetKind())
 	defer createSpinner.End(false)
 
-	err = client.CreateDynamicResource(u, gvr)
+	err := client.CreateDynamicResource(u)
 	if err != nil {
 		return err
 	}

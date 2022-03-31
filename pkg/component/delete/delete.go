@@ -69,7 +69,7 @@ func (do *DeleteComponentClient) DeleteResources(resources []unstructured.Unstru
 			failed = append(failed, resource)
 			continue
 		}
-		err = do.kubeClient.DeleteDynamicResource(resource.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, wait)
+		err = do.kubeClient.DeleteDynamicResource(resource.GetName(), gvr.Resource, wait)
 		if err != nil {
 			klog.V(3).Infof("failed to delete resource %q (%s.%s.%s): %v", resource.GetName(), gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, err)
 			failed = append(failed, resource)
@@ -131,7 +131,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 		}
 		// Try to fetch the resource from the cluster; if it exists, append it to the resources list
 		var cr *unstructured.Unstructured
-		cr, err = do.kubeClient.GetDynamicResource(gvr.Resource.Group, gvr.Resource.Version, gvr.Resource.Resource, lr.GetName())
+		cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
 		if err != nil {
 			continue
 		}

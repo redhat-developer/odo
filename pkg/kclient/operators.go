@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/discovery"
@@ -205,13 +203,8 @@ func (c *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
 	for _, c := range csvs.Items {
 		owned := c.Spec.CustomResourceDefinitions.Owned
 		for i := range owned {
-			g, v, r := GetGVRFromCR(&owned[i])
 			operatorGVRList = append(operatorGVRList, meta.RESTMapping{
-				Resource: schema.GroupVersionResource{
-					Group:    g,
-					Version:  v,
-					Resource: r,
-				},
+				Resource: GetGVRFromCR(&owned[i]),
 			})
 		}
 	}

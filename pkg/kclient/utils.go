@@ -8,6 +8,7 @@ import (
 
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/olekukonko/tablewriter"
@@ -68,7 +69,7 @@ func getErrorMessageFromEvents(failedEvents map[string]corev1.Event) strings.Bui
 
 // GetGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func GetGVRFromCR(cr *olm.CRDDescription) (string, string, string) {
+func GetGVRFromCR(cr *olm.CRDDescription) schema.GroupVersionResource {
 	var group, version, resource string
 	version = cr.Version
 
@@ -76,7 +77,11 @@ func GetGVRFromCR(cr *olm.CRDDescription) (string, string, string) {
 	resource = gr[0]
 	group = gr[1]
 
-	return group, version, resource
+	return schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
 }
 
 // ConvertK8sResourceToUnstructured converts any K8s resource to unstructured.Unstructured format
