@@ -263,6 +263,17 @@ func (kubectl KubectlRunner) GetAllPodsInNs(namespace string) string {
 	return Cmd(kubectl.path, args...).ShouldPass().Out()
 }
 
+// GetAllPodNames gets the names of pods in given namespace
+func (kubectl KubectlRunner) GetAllPodNames(namespace string) []string {
+	session := CmdRunner(kubectl.path, "get", "pods", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	if output == "" {
+		return []string{}
+	}
+	return strings.Split(output, " ")
+}
+
 func (kubectl KubectlRunner) PodsShouldBeRunning(project string, regex string) {
 	// now verify if the pods for the operator have started
 	pods := kubectl.GetAllPodsInNs(project)
