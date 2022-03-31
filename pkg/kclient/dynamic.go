@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"time"
 
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 )
 
@@ -74,15 +75,20 @@ func (c *Client) UpdateDynamicResource(group, version, resource, name string, u 
 	return nil
 }
 
+type GVRN struct {
+	gvr  schema.GroupVersionResource
+	name string
+}
+
 // DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource
 // if wait is true, it will set the PropagationPolicy to DeletePropagationForeground
 // to wait for owned resources to be deleted (only for resources with a BlockOwnerDeletion set to true)
 func (c *Client) DeleteDynamicResource(name, group, version, resourceName string, wait bool) error {
 
-	resource := schema.GroupVersionResource{Group: group, Version: version, Resource: resourceName}
+	gvr := schema.GroupVersionResource{Group: group, Version: version, Resource: resourceName}
 
 	doDeleteResource := func() error {
-		return c.DynamicClient.Resource(resource).Namespace(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
+		return c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Delete(context.TODO(), name, metav1.DeleteOptions{
 			PropagationPolicy: func(f metav1.DeletionPropagation) *metav1.DeletionPropagation {
 				if wait {
 					return &f
@@ -96,16 +102,64 @@ func (c *Client) DeleteDynamicResource(name, group, version, resourceName string
 		return doDeleteResource()
 	}
 
-	var err error
-	var watch apiMachineryWatch.Interface
-	watch, err = c.DynamicClient.Resource(resource).Namespace(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
+	// Search resources referencing this resource without BlockOwnerDeletion, to handle waiting their deletion here
+	thisRes, err := c.GetDynamicResource(group, version, resourceName, name)
 	if err != nil {
 		return err
 	}
-	defer watch.Stop()
-
-	err = doDeleteResource()
+	all, err := c.GetAllResourcesFromSelector("", c.Namespace)
 	if err != nil {
+		return err
+	}
+
+	var toWait []GVRN
+	for _, res := range all {
+		ownerRefs := res.GetOwnerReferences()
+		for _, ownerRef := range ownerRefs {
+			if ownerRef.UID == thisRes.GetUID() {
+				if ownerRef.BlockOwnerDeletion == nil || !*ownerRef.BlockOwnerDeletion {
+					mapping, err := c.GetRestMappingFromUnstructured(res)
+					if err != nil {
+						return err
+					}
+					toWait = append(toWait, GVRN{
+						gvr:  mapping.Resource,
+						name: res.GetName(),
+					})
+				}
+			}
+		}
+	}
+
+	doDeleteResource()
+	err = c.WaitDynamicResourceDeleted(gvr, name)
+	if err != nil {
+		return err
+	}
+	for _, wait := range toWait {
+		err = c.WaitDynamicResourceDeleted(wait.gvr, wait.name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// WaitDynamicResourceDeleted waits for the given resource to be deleted, with a timeout
+func (c *Client) WaitDynamicResourceDeleted(gvr schema.GroupVersionResource, name string) error {
+
+	watcher, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+
+	_, err = c.GetDynamicResource(gvr.Group, gvr.Version, gvr.Resource, name)
+	if err != nil {
+		// deletion is done if the resource does not exist
+		if kerrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -114,11 +168,11 @@ func (c *Client) DeleteDynamicResource(name, group, version, resourceName string
 		case <-time.After(time.Minute):
 			return fmt.Errorf("timeout while waiting for %q resource to be deleted", name)
 
-		case val, ok := <-watch.ResultChan():
+		case val, ok := <-watcher.ResultChan():
 			if !ok {
 				return errors.New("error getting value from resultchan")
 			}
-			if val.Type == apiMachineryWatch.Deleted {
+			if val.Type == watch.Deleted {
 				return nil
 			}
 		}
