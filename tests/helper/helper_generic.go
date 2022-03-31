@@ -34,6 +34,34 @@ import (
 
 const EnvOdoBinaryPath = "ODO_BINARY_PATH"
 
+// TestSuiteBeforeAllSpecsFunc allows to perform some operations before Ginkgo runs any specs,
+// but after the spec tree has been parsed and constructed. It allows passing information to all parallel processes
+// Ginkgo will spawn.
+// It is intended to be used via Ginkgo's `SynchronizedBeforeSuite`.
+// Here, it allows determining whether we need to build odo and return the path to the built binary.
+// If users have purposely set the `ODO_BINARY_PATH`,  we will use that instead.
+// This fixes potential issues where the tests that execute `odo` as a subprocess do not match the version of the code.
+var TestSuiteBeforeAllSpecsFunc = func() []byte {
+	odoBinaryPath, present := os.LookupEnv(EnvOdoBinaryPath)
+	if !present {
+		odoBinaryPath = buildProject()
+	}
+	return []byte(odoBinaryPath)
+}
+
+// TestSuiteBeforeEachSpecFunc runs in parallel in all parallel processes spawned by Ginkgo, taking in the information
+// passed by a previous function, like `TestSuiteBeforeAllSpecsFunc` that returns a slice of bytes.
+// Here, it allows setting the right path to use as `odo` binary in the spec process.
+// If users have purposely set the `ODO_BINARY_PATH`,  we will use that instead.
+// This fixes potential issues where the tests that execute `odo` as a subprocess do not match the version of the code.
+var TestSuiteBeforeEachSpecFunc = func(odoBinaryPath []byte) {
+	//This function runs in parallel in all parallel processes spawned by Ginkgo, passing the information
+	// returned by the first function above
+	if _, present := os.LookupEnv(EnvOdoBinaryPath); !present {
+		os.Setenv(EnvOdoBinaryPath, string(odoBinaryPath))
+	}
+}
+
 // RandString returns a random string of given length
 func RandString(n int) string {
 	return dfutil.GenerateRandomString(n)
@@ -467,12 +495,6 @@ func SetProjectName() string {
 
 // RunTestSpecs defines a common way how test specs in test suite are executed
 func RunTestSpecs(t *testing.T, description string) {
-	// Unless an explicit `ODO_BINARY_PATH` envvar is defined, integration and e2e tests should build odo and use it.
-	// This fixes potential issues where the tests that execute `odo` as a subprocess
-	// do not match the version of the code.
-	if _, present := os.LookupEnv(EnvOdoBinaryPath); !present {
-		os.Setenv(EnvOdoBinaryPath, buildProject())
-	}
 	os.Setenv(segment.DisableTelemetryEnv, "true")
 	RegisterFailHandler(Fail)
 	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport(t, "../../reports/")})
