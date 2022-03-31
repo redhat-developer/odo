@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -266,20 +265,6 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
-}
-
-func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
-	var portForwardURLs strings.Builder
-	for container, ports := range portPairs {
-		for _, pair := range ports {
-			split := strings.Split(pair, ":")
-			local := split[0]
-			remote := split[1]
-
-			portForwardURLs.WriteString(fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local))
-		}
-	}
-	fmt.Fprintf(out, "\n%s", portForwardURLs.String())
 }
 
 func (o *DevOptions) HandleSignal() error {
