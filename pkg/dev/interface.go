@@ -13,7 +13,7 @@ import (
 
 type Client interface {
 	// Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container.
-	Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, path string) error
+	Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error
 
 	// Watch watches for any changes to the files under path while ignoring the files/directories in ignorePaths.
 	// It logs messages to out and uses the Handler h to perform push operation when anything changes in path.

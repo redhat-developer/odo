@@ -53,17 +53,17 @@ func (mr *MockClientMockRecorder) Cleanup() *gomock.Call {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, path string) error {
+func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, path)
+	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, ignorePaths, path)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, path interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths, path interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, ignorePaths, path)
 }
 
 // Watch mocks base method.

@@ -6,6 +6,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/util"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
@@ -26,7 +27,7 @@ func NewDevClient(watchClient watch.Client) *DevClient {
 	}
 }
 
-func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, path string) error {
+func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter, err := adapters.NewComponentAdapter(devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext)
 	if err != nil {
@@ -42,6 +43,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		EnvSpecificInfo: *envSpecificInfo,
 		DebugPort:       envSpecificInfo.GetDebugPort(),
 		Path:            path,
+		IgnoredFiles:    ignorePaths,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
@@ -64,6 +66,8 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		return err
 	}
 
+	absIgnorePaths := util.GetAbsGlobExps(path, ignorePaths)
+
 	watchParameters := watch.WatchParameters{
 		Path:                path,
 		ComponentName:       devfileObj.GetMetadataName(),
@@ -71,7 +75,7 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		ExtChan:             make(chan bool),
 		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
-		FileIgnores:         ignorePaths,
+		FileIgnores:         absIgnorePaths,
 		InitialDevfileObj:   devfileObj,
 	}
 

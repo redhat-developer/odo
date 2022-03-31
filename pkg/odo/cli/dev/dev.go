@@ -13,7 +13,6 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 
@@ -148,13 +147,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	if err != nil {
 		return err
 	}
-	// 2. get absolute path of pwd/cwd
-	sourcePath, err := dfutil.GetAbsPath("")
-	if err != nil {
-		return fmt.Errorf("unable to get source path: %w", err)
-	}
-	// 3. combine 1 & 2 to have absolute paths of all files to be ignored
-	o.ignorePaths = dfutil.GetAbsGlobExps(sourcePath, ignores)
+	o.ignorePaths = ignores
 
 	return nil
 }
@@ -179,7 +172,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, path)
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path)
 	if err != nil {
 		return err
 	}
