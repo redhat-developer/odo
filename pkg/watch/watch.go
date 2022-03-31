@@ -374,5 +374,5 @@ func removeDuplicates(input []string) []string {
 
 func printInfoMessage(out io.Writer, path string) {
 	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+
-		"Press Ctrl+c to exit to exit `odo dev` and delete resources from the cluster\n", path)
+		"Press Ctrl+c to exit `odo dev` and delete resources from the cluster\n", path)
 }
