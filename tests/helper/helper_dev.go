@@ -102,7 +102,7 @@ import (
 	The method returns the contents of std/err output since the end of the dev mode started or previous sync, and until the end of the synchronization.
 */
 
-const localhostRegexp = "localhost:[0-9]*"
+const localhostRegexp = "127.0.0.1:[0-9]*"
 
 type DevSession struct {
 	session *gexec.Session
@@ -113,7 +113,7 @@ type DevSession struct {
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
 func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) {
-	args := []string{"dev"}
+	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
 	session := CmdRunner("odo", args...)
 	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, session)

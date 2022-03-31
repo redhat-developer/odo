@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -55,6 +54,9 @@ type DevOptions struct {
 
 	// working directory
 	contextDir string
+
+	// Flags
+	randomPorts bool
 }
 
 type Handler struct{}
@@ -176,7 +178,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n ")
+	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n\n")
 
 	// get the endpoint/port information for containers in devfile and setup port-forwarding
 	containers, err := o.Context.EnvSpecificInfo.GetDevfileObj().Data.GetComponents(parsercommon.DevfileOptions{
@@ -186,7 +188,12 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		return err
 	}
 	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
-	portPairs := portPairsFromContainerEndpoints(ceMapping)
+	var portPairs map[string][]string
+	if o.randomPorts {
+		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
+	} else {
+		portPairs = portPairsFromContainerEndpoints(ceMapping)
+	}
 	var portPairsSlice []string
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
@@ -195,13 +202,16 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	portsBuf := NewPortWriter(os.Stdout, len(portPairsSlice))
 	go func() {
-		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, o.errOut)
+		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, o.errOut)
 		if err != nil {
 			fmt.Printf("failed to setup port-forwarding: %v\n", err)
 		}
 	}()
-	printPortForwardingInfo(portPairs, o.out)
+
+	portsBuf.Wait()
+
 	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
@@ -246,20 +256,6 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
 }
 
-func printPortForwardingInfo(portPairs map[string][]string, out io.Writer) {
-	var portForwardURLs strings.Builder
-	for container, ports := range portPairs {
-		for _, pair := range ports {
-			split := strings.Split(pair, ":")
-			local := split[0]
-			remote := split[1]
-
-			portForwardURLs.WriteString(fmt.Sprintf("- Port %s from %q container forwarded to localhost:%s\n", remote, container, local))
-		}
-	}
-	fmt.Fprintf(out, "\n%s", portForwardURLs.String())
-}
-
 // NewCmdDev implements the odo dev command
 func NewCmdDev(name, fullName string) *cobra.Command {
 	o := NewDevOptions()
@@ -274,6 +270,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	devCmd.Flags().BoolVarP(&o.randomPorts, "random-ports", "f", false, "Assign random ports to redirected ports")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu
@@ -302,6 +299,21 @@ func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string
 				}
 				port++
 			}
+		}
+	}
+	return portPairs
+}
+
+// randomPortPairsFromContainerEndpoints assigns a random (empty) port on localhost to each port in the provided containerEndpoints map
+// it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
+// "container1": {":3000", ":3001"}
+func randomPortPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
+	portPairs := make(map[string][]string)
+
+	for name, ports := range ceMap {
+		for _, p := range ports {
+			pair := fmt.Sprintf(":%d", p)
+			portPairs[name] = append(portPairs[name], pair)
 		}
 	}
 	return portPairs

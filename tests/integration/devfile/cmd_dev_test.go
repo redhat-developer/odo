@@ -44,7 +44,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should error", func() {
-			output := helper.Cmd("odo", "dev").ShouldFail().Err()
+			output := helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
 			Expect(output).To(ContainSubstring("this command cannot run in an empty directory"))
 
 		})
@@ -823,7 +823,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should throw a validation error for composite run commands", func() {
-			output := helper.Cmd("odo", "dev").ShouldFail().Err()
+			output := helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
 			Expect(output).To(ContainSubstring("not supported currently"))
 		})
 	})
@@ -834,7 +834,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should not correctly execute PreStart commands", func() {
-			output := helper.Cmd("odo", "dev").ShouldFail().Err()
+			output := helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
 			// This is expected to fail for now.
 			// see https://github.com/redhat-developer/odo/issues/4187 for more info
 			helper.MatchAllInOutput(output, []string{"myprestart should either map to an apply command or a composite command with apply commands\n"})
