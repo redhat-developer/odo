@@ -277,7 +277,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	devCmd.Flags().BoolVarP(&o.randomPorts, "random-ports", "f", false, "Assign random ports to redirectoed ports")
+	devCmd.Flags().BoolVarP(&o.randomPorts, "random-ports", "f", false, "Assign random ports to redirected ports")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu
