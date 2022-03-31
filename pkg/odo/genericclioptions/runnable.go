@@ -81,6 +81,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// Send data to telemetry in case of user interrupt
 	captureSignals := []os.Signal{syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt}
 	go commonutil.StartSignalWatcher(captureSignals, func(receivedSignal os.Signal) {
+		err := fmt.Errorf("user interrupted the command execution: %w", terminal.InterruptErr)
 		if handler, ok := o.(SignalHandler); ok {
 			err = handler.HandleSignal()
 			if err != nil {
@@ -88,7 +89,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 			}
 		}
 		scontext.SetSignal(cmd.Context(), receivedSignal)
-		startTelemetry(cmd, fmt.Errorf("user interrupted the command execution: %w", terminal.InterruptErr), startTime)
+		startTelemetry(cmd, err, startTime)
 	})
 
 	// CheckMachineReadableOutput
