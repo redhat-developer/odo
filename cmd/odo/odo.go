@@ -70,7 +70,7 @@ func main() {
 		util.LogErrorAndExit(root.ExecuteContext(segment.NewContext(context.Background())), "")
 		select {
 		case message := <-updateInfo:
-			log.Italic(message)
+			log.Info(message)
 		default:
 			klog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
