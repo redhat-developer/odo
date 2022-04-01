@@ -280,7 +280,7 @@ var _ = Describe("odo dev command tests", func() {
 					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
 				})
 
-				It("should have deleted all resources before to return", func() {
+				It("should have deleted all resources before returning", func() {
 					By("deleting the service", func() {
 						services := commonVar.CliRunner.GetServices(commonVar.Project)
 						Expect(services).To(BeEmpty())
