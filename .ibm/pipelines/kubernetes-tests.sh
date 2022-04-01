@@ -13,6 +13,7 @@ cleanup_namespaces
 (
     set -e
     make install
+    export ODO_BINARY_PATH="$(go env GOPATH)/bin/odo"
     make test-integration-devfile
     make test-interactive
     make test-e2e-devfile
