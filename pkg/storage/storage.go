@@ -54,8 +54,8 @@ func NewClient(options ClientOptions) Client {
 	}
 
 	if options.Deployment != nil {
-		genericInfo.appName = options.Deployment.Labels[labels.KubernetesPartOfLabel]
-		genericInfo.componentName = options.Deployment.Labels[labels.KubernetesInstanceLabel]
+		genericInfo.appName = labels.GetAppName(options.Deployment.Labels)
+		genericInfo.componentName = labels.GetComponentName(options.Deployment.Labels)
 	}
 
 	return kubernetesClient{

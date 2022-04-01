@@ -135,7 +135,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		return false, err
 	}
 
-	secrets, err := client.ListSecrets(odolabels.GetSelector(labels[odolabels.KubernetesInstanceLabel], labels[odolabels.KubernetesPartOfLabel], odolabels.ComponentAnyMode))
+	secrets, err := client.ListSecrets(odolabels.GetSelector(odolabels.GetComponentName(labels), odolabels.GetAppName(labels), odolabels.ComponentAnyMode))
 	if err != nil {
 		return false, err
 	}
@@ -245,7 +245,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 				// get the services and get match them against the component
 				serviceCompMap = make(map[string]string)
 				for _, service := range services {
-					serviceCompMap[service.Name] = service.Labels[odolabels.KubernetesInstanceLabel]
+					serviceCompMap[service.Name] = odolabels.GetComponentName(service.Labels)
 				}
 			}
 

@@ -1,34 +1,35 @@
 package labels
 
 import (
+	"errors"
+
 	"github.com/redhat-developer/odo/pkg/version"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-// KubernetesInstanceLabel is a label key used to identify the component name
+// KubernetesInstanceLabel identifies the component name
 const KubernetesInstanceLabel = "app.kubernetes.io/instance"
 
-// KubernetesManagedByLabel ...
+// KubernetesManagedByLabel identifies the manager of the component
 const KubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 
-// ManagerVersion is a Kubernetes label that adds what version of odo is being ran.
+// KubernetesManagedByVersionLabel identifies the version of manager used to deploy the resource
 const KubernetesManagedByVersionLabel = "app.kubernetes.io/managed-by-version"
 
-// KubernetesPartOfLabel is label key that is used to group all object that belong to one application
-// It should be save to use just this label to filter application
+// KubernetesPartOfLabel groups all object that belong to one application
 const KubernetesPartOfLabel = "app.kubernetes.io/part-of"
 
 // KubernetesStorageNameLabel is the label key that is applied to all storage resources
 // that are created
 const KubernetesStorageNameLabel = "app.kubernetes.io/storage-name"
 
-// ComponentDevMode ...
+// ComponentDevMode indicates the resource is deployed using dev command
 const ComponentDevMode = "Dev"
 
-// ComponentDeployMode ...
+// ComponentDeployMode indicates the resource is deployed using deploy command
 const ComponentDeployMode = "Deploy"
 
-// ComponentDeployName ...
+//  ComponentAnyMode is used to search resources deployed using either dev or deploy comamnd
 const ComponentAnyMode = ""
 
 // OdoModeLabel ...
@@ -39,6 +40,8 @@ const OdoProjectTypeAnnotation = "odo.dev/project-type"
 
 // App is the default name used when labeling
 const App = "app"
+
+const odoManager = "odo"
 
 // DevfileStorageLabel is the label key that is applied to all storage resources for devfile components
 // that are created
@@ -51,6 +54,54 @@ const SourcePVCLabel = "odo-source-pvc"
 func GetLabels(componentName string, applicationName string, mode string) map[string]string {
 	labels := getLabels(componentName, applicationName, mode, true)
 	return labels
+}
+func AddStorageInfo(labels map[string]string, storageName string, isSourceVolume bool) {
+	labels[KubernetesStorageNameLabel] = storageName
+	labels["component"] = labels[KubernetesInstanceLabel]
+	labels[DevfileStorageLabel] = storageName
+	if isSourceVolume {
+		labels[SourcePVCLabel] = storageName
+	}
+}
+
+func GetDevfileStorageName(labels map[string]string) string {
+	return labels[DevfileStorageLabel]
+}
+
+func GetComponentName(labels map[string]string) string {
+	return labels[KubernetesInstanceLabel]
+}
+
+func GetAppName(labels map[string]string) string {
+	return labels[KubernetesPartOfLabel]
+}
+
+func GetManagedBy(labels map[string]string) string {
+	return labels[KubernetesManagedByLabel]
+}
+
+func IsManagedByOdo(labels map[string]string) bool {
+	return labels[KubernetesManagedByLabel] == odoManager
+}
+
+func GetMode(labels map[string]string) string {
+	return labels[OdoModeLabel]
+}
+
+func GetProjectType(labels map[string]string, annotations map[string]string) (string, error) {
+	// For backwards compatibility with previously deployed components that could be non-odo, check the annotation first
+	// then check to see if there is a label with the project type
+	if typ, ok := annotations[OdoProjectTypeAnnotation]; ok {
+		return typ, nil
+	}
+	if typ, ok := labels[OdoProjectTypeAnnotation]; ok {
+		return typ, nil
+	}
+	return "", errors.New("component type not found in labels or annotations")
+}
+
+func SetProjectType(annotations map[string]string, value string) {
+	annotations[OdoProjectTypeAnnotation] = value
 }
 
 // GetSelector is used for selection of resources which are a part of the given component
@@ -79,13 +130,11 @@ func getLabels(componentName string, applicationName string, mode string, additi
 func getApplicationLabels(application string, additional bool) labels.Set {
 	labels := labels.Set{
 		KubernetesPartOfLabel:    application,
-		KubernetesManagedByLabel: "odo",
+		KubernetesManagedByLabel: odoManager,
 	}
-
 	if additional {
 		labels[App] = application
 		labels[KubernetesManagedByVersionLabel] = version.VERSION
 	}
-
 	return labels
 }

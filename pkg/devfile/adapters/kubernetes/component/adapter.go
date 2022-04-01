@@ -170,7 +170,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Set the annotations for the component type
 	annotations := make(map[string]string)
-	annotations[odolabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
 
 	previousMode := parameters.EnvSpecificInfo.GetRunMode()
 	currentMode := envinfo.Run
@@ -425,7 +425,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	labels["component"] = componentName
 
 	annotations := make(map[string]string)
-	annotations[odolabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
 	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
 	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})

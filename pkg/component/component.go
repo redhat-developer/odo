@@ -149,10 +149,8 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		// Figure out the correct name to use
 		// if there is no instance label, we SKIP the resource as
 		// it is not a component essential for Kubernetes.
-		var name string
-		if labels[odolabels.KubernetesInstanceLabel] != "" {
-			name = labels[odolabels.KubernetesInstanceLabel]
-		} else {
+		name := odolabels.GetComponentName(labels)
+		if name == "" {
 			continue
 		}
 
@@ -169,11 +167,9 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		// IMPORTANT. If "managed-by" label is BLANK, it is most likely an operator
 		// or a non-component. We do not want to show these in the list of components
 		// so we skip them if there is no "managed-by" label.
-		var managedBy string
-		switch {
-		case labels[odolabels.KubernetesManagedByLabel] != "":
-			managedBy = labels[odolabels.KubernetesManagedByLabel]
-		default:
+
+		managedBy := odolabels.GetManagedBy(labels)
+		if managedBy == "" {
 			continue
 		}
 
@@ -183,7 +179,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			ManagedBy: managedBy,
 			Type:      componentType,
 		}
-		mode := labels[odolabels.OdoModeLabel]
+		mode := odolabels.GetMode(labels)
 		found := false
 		for v, otherCompo := range components {
 			if component.Name == otherCompo.Name {

@@ -39,14 +39,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 	}
 
 	labels := odolabels.GetLabels(k.componentName, k.appName, odolabels.ComponentDevMode)
-	labels[odolabels.KubernetesStorageNameLabel] = storage.Name
-	labels["component"] = k.componentName
-	labels[odolabels.DevfileStorageLabel] = storage.Name
-
-	if strings.Contains(storage.Name, OdoSourceVolume) {
-		// Add label for source pvc
-		labels[odolabels.SourcePVCLabel] = storage.Name
-	}
+	odolabels.AddStorageInfo(labels, storage.Name, strings.Contains(storage.Name, OdoSourceVolume))
 
 	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetCurrentNamespace(), labels, nil)
 
@@ -160,7 +153,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-				storage = append(storage, NewStorageWithContainer(pvc.Labels[odolabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName, nil))
+				storage = append(storage, NewStorageWithContainer(odolabels.GetDevfileStorageName(pvc.Labels), size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName, nil))
 			}
 		}
 		if !found {

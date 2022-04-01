@@ -132,20 +132,15 @@ func (d devfileComponent) GetAnnotations() map[string]string {
 }
 
 func (d devfileComponent) GetName() string {
-	return d.d.Labels[odolabels.KubernetesInstanceLabel]
+	return odolabels.GetComponentName(d.d.Labels)
 }
 
 func getType(component provider) (string, error) {
-
-	// For backwards compatibility with previously deployed components that could be non-odo, check the annotation first
-	// then check to see if there is a label with the project type
-	if componentType, ok := component.GetAnnotations()[odolabels.OdoProjectTypeAnnotation]; ok {
-		return componentType, nil
-	} else if componentType, ok = component.GetLabels()[odolabels.OdoProjectTypeAnnotation]; ok {
-		return componentType, nil
+	res, err := odolabels.GetProjectType(component.GetLabels(), component.GetAnnotations())
+	if err != nil {
+		return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
 	}
-
-	return "", fmt.Errorf("%s component doesn't provide a type annotation; consider pushing the component again", component.GetName())
+	return res, nil
 }
 
 func newPushedComponent(applicationName string, p provider, c kclient.ClientInterface, storageClient storage.Client) PushedComponent {

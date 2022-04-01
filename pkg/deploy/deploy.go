@@ -72,7 +72,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	// Create the annotations
 	// Retrieve the component type from the devfile and also inject it into the list of annotations
 	annotations := make(map[string]string)
-	annotations[odolabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
 
 	// Get the Kubernetes component
 	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
