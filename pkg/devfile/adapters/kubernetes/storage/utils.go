@@ -9,11 +9,10 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -42,12 +41,12 @@ func GetVolumeInfos(pvcs []corev1.PersistentVolumeClaim) (odoSourcePVCName strin
 			return "", nil, fmt.Errorf("unable to generate volume name from pvc name: %w", e)
 		}
 
-		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {
+		if pvc.Labels[odolabels.KubernetesStorageNameLabel] == storagepkg.OdoSourceVolume {
 			odoSourcePVCName = pvc.Name
 			continue
 		}
 
-		infos[pvc.Labels[storagelabels.StorageLabel]] = VolumeInfo{
+		infos[pvc.Labels[odolabels.KubernetesStorageNameLabel]] = VolumeInfo{
 			PVCName:    pvc.Name,
 			VolumeName: generatedVolumeName,
 		}
@@ -187,7 +186,7 @@ func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
 
 // HandleEphemeralStorage creates or deletes the ephemeral volume based on the preference setting
 func HandleEphemeralStorage(client kclient.ClientInterface, storageClient storage.Client, componentName string, isEphemeral bool) error {
-	selector := fmt.Sprintf("%v=%s,%s=%s", componentlabels.KubernetesInstanceLabel, componentName, storagelabels.SourcePVCLabel, storage.OdoSourceVolume)
+	selector := fmt.Sprintf("%v=%s,%s=%s", odolabels.KubernetesInstanceLabel, componentName, odolabels.SourcePVCLabel, storage.OdoSourceVolume)
 
 	pvcs, err := client.ListPVCs(selector)
 	if err != nil && !kerrors.IsNotFound(err) {

@@ -11,7 +11,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -66,14 +66,13 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 
 	// Get the most common labels that's applicable to all resources being deployed.
 	// Set the mode to DEPLOY. Regardless of what Kubernetes resource we are deploying.
-	labels := componentlabels.GetLabels(o.devfileObj.Data.GetMetadata().Name, o.appName, true)
-	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDeployName
+	labels := odolabels.GetLabels(o.devfileObj.Data.GetMetadata().Name, o.appName, odolabels.ComponentDeployMode)
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
 
 	// Create the annotations
 	// Retrieve the component type from the devfile and also inject it into the list of annotations
 	annotations := make(map[string]string)
-	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
+	annotations[odolabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata())
 
 	// Get the Kubernetes component
 	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})

@@ -1,8 +1,7 @@
 package testingutil
 
 import (
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,14 +21,14 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 			Name: podName,
 			UID:  fakeUID,
 			Labels: map[string]string{
-				applabels.App:                           "app",
-				applabels.ApplicationLabel:              "app",
-				componentlabels.KubernetesInstanceLabel: podName,
-				applabels.ManagedBy:                     "odo",
-				componentlabels.OdoModeLabel:            componentlabels.ComponentDevName,
+				odolabels.App:                      "app",
+				odolabels.KubernetesPartOfLabel:    "app",
+				odolabels.KubernetesInstanceLabel:  podName,
+				odolabels.KubernetesManagedByLabel: "odo",
+				odolabels.OdoModeLabel:             odolabels.ComponentDevMode,
 			},
 			Annotations: map[string]string{
-				componentlabels.OdoProjectTypeAnnotation: podName,
+				odolabels.OdoProjectTypeAnnotation: podName,
 			},
 		},
 	}

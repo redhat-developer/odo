@@ -32,16 +32,11 @@ type ClientInterface interface {
 	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)
 	GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error)
 	GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error)
-	ListDeployments(selector string) (*appsv1.DeploymentList, error)
 	WaitForPodDeletion(name string) error
 	WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error)
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
-	DeleteDeployment(labels map[string]string) error
-	LinkSecret(secretName, componentName, applicationName string) error
-	UnlinkSecret(secretName, componentName, applicationName string) error
-	GetDeploymentLabelValues(label string, selector string) ([]string, error)
 	GetDeploymentAPIVersion() (metav1.GroupVersionResource, error)
 	IsDeploymentExtensionsV1Beta1() (bool, error)
 
@@ -60,8 +55,6 @@ type ClientInterface interface {
 	GetConfig() clientcmd.ClientConfig
 	GetClientConfig() *rest.Config
 	GetDynamicClient() dynamic.Interface
-	Delete(labels map[string]string, wait bool) error
-	WaitForComponentDeletion(selector string) error
 	GeneratePortForwardReq(podName string) *rest.Request
 	SetDiscoveryInterface(client discovery.DiscoveryInterface)
 	IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error)

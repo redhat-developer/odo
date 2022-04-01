@@ -18,9 +18,7 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentLabels "github.com/redhat-developer/odo/pkg/component/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -45,11 +43,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testComponentName,
 			Labels: map[string]string{
-				applabels.ApplicationLabel:              testAppName,
-				componentLabels.KubernetesInstanceLabel: testComponentName,
+				odolabels.KubernetesPartOfLabel:   testAppName,
+				odolabels.KubernetesInstanceLabel: testComponentName,
 			},
 			Annotations: map[string]string{
-				componentLabels.OdoProjectTypeAnnotation: "",
+				odolabels.OdoProjectTypeAnnotation: "",
 			},
 		},
 	}
@@ -94,7 +92,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
-				deployment.Annotations[componentLabels.OdoProjectTypeAnnotation] = string(tt.componentType)
+				deployment.Annotations[odolabels.OdoProjectTypeAnnotation] = string(tt.componentType)
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
@@ -374,7 +372,7 @@ func TestDoesComponentExist(t *testing.T) {
 			})
 
 			// Verify that a component with the specified name exists
-			componentExists, err := component.ComponentExists(fkclient, tt.getComponentName, "")
+			componentExists, err := component.ComponentExists(fkclient, tt.getComponentName, tt.appName)
 			if !tt.wantErr && err != nil {
 				t.Errorf("unexpected error: %v", err)
 			} else if !tt.wantErr && componentExists != tt.want {
@@ -543,9 +541,9 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			},
 			args: args{
 				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
-				annotations: map[string]string{componentlabels.OdoModeLabel: componentlabels.ComponentDevName},
+				annotations: map[string]string{odolabels.OdoModeLabel: odolabels.ComponentDevMode},
 			},
-			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, map[string]string{componentlabels.OdoModeLabel: componentlabels.ComponentDevName}),
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, map[string]string{odolabels.OdoModeLabel: odolabels.ComponentDevMode}),
 			wantErr: false,
 		},
 	}

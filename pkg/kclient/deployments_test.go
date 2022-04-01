@@ -2,8 +2,6 @@ package kclient
 
 import (
 	"errors"
-	"fmt"
-	reflect "reflect"
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -14,7 +12,6 @@ import (
 	"github.com/devfile/library/pkg/testingutil"
 
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -270,91 +267,5 @@ func TestUpdateDeployment(t *testing.T) {
 			}
 
 		})
-	}
-}
-
-func TestDeleteDeployment(t *testing.T) {
-	type args struct {
-		labels map[string]string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "case 1: normal delete with labels",
-			args: args{labels: map[string]string{
-				"component": "frontend",
-			}},
-			wantErr: false,
-		},
-		{
-			name:    "case 2: delete with empty labels",
-			args:    args{labels: nil},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// initialising the fakeclient
-			fkclient, fkclientset := FakeNew()
-			fkclient.Namespace = "default"
-
-			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
-					return true, nil, fmt.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
-				}
-				return true, nil, nil
-			})
-
-			if err := fkclient.DeleteDeployment(tt.args.labels); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteDeployment() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestGetDeploymentLabelValues(t *testing.T) {
-	fkclient, fkclientset := FakeNew()
-	fkclient.Namespace = "default"
-	fkclientset.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-		depList := appsv1.DeploymentList{
-			Items: []appsv1.Deployment{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							"a-selector": "sel-value",
-							"a-label":    "a-value",
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							"a-selector": "sel-value-2",
-							"a-label":    "a-value-2",
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							"other-selector": "sel-value",
-							"a-label":        "another-value",
-						},
-					},
-				},
-			},
-		}
-		return true, &depList, nil
-	})
-	result, err := fkclient.GetDeploymentLabelValues("a-label", "a-selector")
-	expected := []string{"a-value", "a-value-2"}
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %v, got %v", expected, result)
-	}
-	if err != nil {
-		t.Errorf("Expected no error, got %s", err)
 	}
 }

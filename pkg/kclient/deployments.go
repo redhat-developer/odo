@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -16,11 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/util"
-
 	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
-
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 )
 
 func boolPtr(b bool) *bool {
@@ -47,9 +43,7 @@ func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 
 // GetOneDeployment returns the Deployment object associated with the given component and app
 func (c *Client) GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error) {
-	labels := componentlabels.GetLabels(componentName, appName, false)
-	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
-	selector := util.ConvertLabelsToSelector(labels)
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
 	return c.GetOneDeploymentFromSelector(selector)
 }
 
@@ -104,14 +98,6 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 		}
 	}
 	return nil
-}
-
-// ListDeployments lists all deployments by selector
-func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error) {
-
-	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: selector,
-	})
 }
 
 // WaitForPodDeletion waits for the given pod to be deleted
@@ -300,117 +286,6 @@ func (c *Client) removeDuplicateEnv(deploymentName string) error {
 		return err
 	}
 	return nil
-}
-
-// DeleteDeployment deletes the deployments with the given selector
-func (c *Client) DeleteDeployment(labels map[string]string) error {
-	if labels == nil {
-		return errors.New("labels for deletion are empty")
-	}
-	// convert labels to selector
-	selector := util.ConvertLabelsToSelector(labels)
-	klog.V(3).Infof("Selectors used for deletion: %s", selector)
-
-	// Delete Deployment
-	klog.V(3).Info("Deleting Deployment")
-
-	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
-}
-
-// Define a function that is meant to create patch based on the contents of the deployment
-type deploymentPatchProvider func(deployment *appsv1.Deployment) (string, error)
-
-// LinkSecret links a secret to the Deployment of a component
-func (c *Client) LinkSecret(secretName, componentName, applicationName string) error {
-
-	var deploymentPatchProvider = func(d *appsv1.Deployment) (string, error) {
-		if len(d.Spec.Template.Spec.Containers[0].EnvFrom) > 0 {
-			// we always add the link as the first value in the envFrom array. That way we don't need to know the existing value
-			return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom/0", "value": {"secretRef": {"name": "%s"}} }]`, secretName), nil
-		}
-
-		// in this case we need to add the full envFrom value
-		return fmt.Sprintf(`[{ "op": "add", "path": "/spec/template/spec/containers/0/envFrom", "value": [{"secretRef": {"name": "%s"}}] }]`, secretName), nil
-	}
-
-	return c.jsonPatchDeployment(componentlabels.GetSelector(componentName, applicationName), deploymentPatchProvider)
-}
-
-// UnlinkSecret unlinks a secret to the Deployment of a component
-func (c *Client) UnlinkSecret(secretName, componentName, applicationName string) error {
-	// Remove the Secret from the container
-	var deploymentPatchProvider = func(d *appsv1.Deployment) (string, error) {
-		indexForRemoval := -1
-		for i, env := range d.Spec.Template.Spec.Containers[0].EnvFrom {
-			if env.SecretRef.Name == secretName {
-				indexForRemoval = i
-				break
-			}
-		}
-
-		if indexForRemoval == -1 {
-			return "", fmt.Errorf("deployment does not contain a link to %s", secretName)
-		}
-
-		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
-	}
-
-	return c.jsonPatchDeployment(componentlabels.GetSelector(componentName, applicationName), deploymentPatchProvider)
-}
-
-// jsonPatchDeployment will look up the appropriate Deployment, and execute the specified patch
-// the whole point of using patch is to avoid race conditions where we try to update
-// deployment while it's being simultaneously updated from another source (for example Kubernetes itself)
-// this will result in the triggering of a redeployment
-func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchProvider deploymentPatchProvider) error {
-
-	deployment, err := c.GetOneDeploymentFromSelector(deploymentSelector)
-	if err != nil {
-		return fmt.Errorf("unable to locate Deployment with selector %q: %w", deploymentSelector, err)
-	}
-
-	if deploymentPatchProvider != nil {
-		patch, e := deploymentPatchProvider(deployment)
-		if e != nil {
-			return fmt.Errorf("unable to create a patch for the Deployment: %w", e)
-		}
-
-		// patch the Deployment with the secret
-		_, e = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
-		if e != nil {
-			return fmt.Errorf("deployment not patched %s: %w", deployment.Name, e)
-		}
-	} else {
-		return errors.New("deploymentPatch was not properly set")
-	}
-
-	return nil
-}
-
-// GetDeploymentLabelValues get label values of given label from objects in project that are matching selector
-// returns slice of unique label values
-func (c *Client) GetDeploymentLabelValues(label string, selector string) ([]string, error) {
-
-	// List Deployment according to selectors
-	deploymentList, err := c.appsClient.Deployments(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return nil, fmt.Errorf("unable to list DeploymentConfigs: %w", err)
-	}
-
-	// Grab all the matched strings
-	var values []string
-	for _, elem := range deploymentList.Items {
-		for key, val := range elem.Labels {
-			if key == label {
-				values = append(values, val)
-			}
-		}
-	}
-
-	// Sort alphabetically
-	sort.Strings(values)
-
-	return values, nil
 }
 
 // GetDeploymentAPIVersion returns a map with Group, Version, Resource information of Deployment objects

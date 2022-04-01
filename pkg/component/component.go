@@ -11,7 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 
 	corev1 "k8s.io/api/core/v1"
@@ -80,7 +80,7 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 
 // GetOnePod gets a pod using the component and app name
 func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
-	return client.GetOnePodFromSelector(componentlabels.GetSelector(componentName, appName))
+	return client.GetOnePodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode))
 }
 
 // ComponentExists checks whether a deployment by the given name exists in the given app
@@ -150,8 +150,8 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		// if there is no instance label, we SKIP the resource as
 		// it is not a component essential for Kubernetes.
 		var name string
-		if labels[componentlabels.KubernetesInstanceLabel] != "" {
-			name = labels[componentlabels.KubernetesInstanceLabel]
+		if labels[odolabels.KubernetesInstanceLabel] != "" {
+			name = labels[odolabels.KubernetesInstanceLabel]
 		} else {
 			continue
 		}
@@ -159,8 +159,8 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		// Get the component type (if there is any..)
 		var componentType string
 		switch {
-		case annotations[componentlabels.OdoProjectTypeAnnotation] != "":
-			componentType = annotations[componentlabels.OdoProjectTypeAnnotation]
+		case annotations[odolabels.OdoProjectTypeAnnotation] != "":
+			componentType = annotations[odolabels.OdoProjectTypeAnnotation]
 		default:
 			componentType = StateTypeUnknown
 		}
@@ -171,8 +171,8 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		// so we skip them if there is no "managed-by" label.
 		var managedBy string
 		switch {
-		case labels[componentlabels.KubernetesManagedByLabel] != "":
-			managedBy = labels[componentlabels.KubernetesManagedByLabel]
+		case labels[odolabels.KubernetesManagedByLabel] != "":
+			managedBy = labels[odolabels.KubernetesManagedByLabel]
 		default:
 			continue
 		}
@@ -183,7 +183,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			ManagedBy: managedBy,
 			Type:      componentType,
 		}
-		mode := labels[componentlabels.OdoModeLabel]
+		mode := labels[odolabels.OdoModeLabel]
 		found := false
 		for v, otherCompo := range components {
 			if component.Name == otherCompo.Name {

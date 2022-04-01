@@ -11,6 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,8 +21,6 @@ import (
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -136,7 +135,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 		return false, err
 	}
 
-	secrets, err := client.ListSecrets(componentlabels.GetSelector(labels[componentlabels.KubernetesInstanceLabel], labels[applabels.ApplicationLabel]))
+	secrets, err := client.ListSecrets(odolabels.GetSelector(labels[odolabels.KubernetesInstanceLabel], labels[odolabels.KubernetesPartOfLabel], odolabels.ComponentAnyMode))
 	if err != nil {
 		return false, err
 	}
@@ -246,7 +245,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 				// get the services and get match them against the component
 				serviceCompMap = make(map[string]string)
 				for _, service := range services {
-					serviceCompMap[service.Name] = service.Labels[componentlabels.KubernetesInstanceLabel]
+					serviceCompMap[service.Name] = service.Labels[odolabels.KubernetesInstanceLabel]
 				}
 			}
 

@@ -3,18 +3,18 @@ package storage
 import (
 	"fmt"
 
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // getPVCNameFromStorageName returns the PVC associated with the given storage
 func getPVCNameFromStorageName(client kclient.ClientInterface, storageName string) (string, error) {
-	var labels = make(map[string]string)
-	labels[storagelabels.StorageLabel] = storageName
-
-	selector := util.ConvertLabelsToSelector(labels)
+	var selector = labels.Set{
+		odolabels.KubernetesStorageNameLabel: storageName,
+	}.String()
 	pvcs, err := client.ListPVCNames(selector)
 	if err != nil {
 		return "", fmt.Errorf("unable to get PVC names for selector %v: %w", selector, err)

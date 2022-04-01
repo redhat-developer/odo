@@ -12,7 +12,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
@@ -114,9 +114,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Get the Dev deployment:
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
 	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
-	selectorLabels := componentlabels.GetLabels(a.ComponentName, a.AppName, false)
-	selectorLabels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
-	a.deployment, err = a.Client.GetOneDeploymentFromSelector(util.ConvertLabelsToSelector(selectorLabels))
+	selectorLabels := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
+	a.deployment, err = a.Client.GetOneDeploymentFromSelector(selectorLabels)
 
 	if err != nil {
 		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
@@ -167,12 +166,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
-	labels := componentlabels.GetLabels(a.ComponentName, a.AppName, true)
-	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
+	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
 
 	// Set the annotations for the component type
 	annotations := make(map[string]string)
-	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	annotations[odolabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
 
 	previousMode := parameters.EnvSpecificInfo.GetRunMode()
 	currentMode := envinfo.Run
@@ -423,12 +421,11 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	}
 
 	// Set the labels
-	labels := componentlabels.GetLabels(componentName, a.AppName, true)
-	labels[componentlabels.OdoModeLabel] = componentlabels.ComponentDevName
+	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode)
 	labels["component"] = componentName
 
 	annotations := make(map[string]string)
-	annotations[componentlabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
+	annotations[odolabels.OdoProjectTypeAnnotation] = component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata())
 	klog.V(4).Infof("We are deploying these annotations: %s", annotations)
 
 	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})

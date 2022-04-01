@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/version"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
-func TestGetLabels(t *testing.T) {
+func Test_getLabels(t *testing.T) {
 	type args struct {
 		componentName   string
 		applicationName string
@@ -17,7 +17,7 @@ func TestGetLabels(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want map[string]string
+		want labels.Set
 	}{
 		{
 			name: "everything filled",
@@ -26,9 +26,11 @@ func TestGetLabels(t *testing.T) {
 				applicationName: "applicationame",
 				additional:      false,
 			},
-			want: map[string]string{
-				applabels.ApplicationLabel: "applicationame",
-				KubernetesInstanceLabel:    "componentname",
+			want: labels.Set{
+				KubernetesManagedByLabel: "odo",
+				KubernetesPartOfLabel:    "applicationame",
+				KubernetesInstanceLabel:  "componentname",
+				"odo.dev/mode":           "Dev",
 			},
 		}, {
 			name: "everything with additional",
@@ -37,18 +39,19 @@ func TestGetLabels(t *testing.T) {
 				applicationName: "applicationame",
 				additional:      true,
 			},
-			want: map[string]string{
-				applabels.ApplicationLabel: "applicationame",
-				applabels.App:              "applicationame",
-				applabels.ManagedBy:        "odo",
-				applabels.ManagerVersion:   version.VERSION,
-				KubernetesInstanceLabel:    "componentname",
+			want: labels.Set{
+				KubernetesPartOfLabel:           "applicationame",
+				App:                             "applicationame",
+				KubernetesManagedByLabel:        "odo",
+				KubernetesManagedByVersionLabel: version.VERSION,
+				KubernetesInstanceLabel:         "componentname",
+				"odo.dev/mode":                  "Dev",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetLabels(tt.args.componentName, tt.args.applicationName, tt.args.additional); !reflect.DeepEqual(got, tt.want) {
+			if got := getLabels(tt.args.componentName, tt.args.applicationName, ComponentDevMode, tt.args.additional); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetLabels() = %v, want %v", got, tt.want)
 			}
 		})
