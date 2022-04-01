@@ -263,12 +263,12 @@ func getUnstructured(name, kind, apiVersion, managed, componentType, namespace s
 	u.SetKind(kind)
 	u.SetAPIVersion(apiVersion)
 	u.SetNamespace(namespace)
-	u.SetLabels(map[string]string{
-		labels.KubernetesInstanceLabel:  name,
-		labels.KubernetesManagedByLabel: managed,
-	})
-	u.SetAnnotations(map[string]string{
-		labels.OdoProjectTypeAnnotation: componentType,
-	})
+	u.SetLabels(labels.Builder().
+		WithComponentName(name).
+		WithManager(managed).
+		Labels())
+	u.SetAnnotations(labels.Builder().
+		WithProjectType(componentType).
+		Labels())
 	return
 }

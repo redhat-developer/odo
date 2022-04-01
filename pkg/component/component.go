@@ -155,11 +155,8 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		}
 
 		// Get the component type (if there is any..)
-		var componentType string
-		switch {
-		case annotations[odolabels.OdoProjectTypeAnnotation] != "":
-			componentType = annotations[odolabels.OdoProjectTypeAnnotation]
-		default:
+		componentType, err := odolabels.GetProjectType(nil, annotations)
+		if err != nil || componentType == "" {
 			componentType = StateTypeUnknown
 		}
 

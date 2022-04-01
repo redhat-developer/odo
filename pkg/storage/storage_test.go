@@ -12,7 +12,7 @@ import (
 
 func getStorageLabels(storageName, componentName, applicationName string) map[string]string {
 	labels := odolabels.GetLabels(componentName, applicationName, odolabels.ComponentDevMode)
-	labels[odolabels.KubernetesStorageNameLabel] = storageName
+	odolabels.AddStorageInfo(labels, storageName, false)
 	return labels
 }
 

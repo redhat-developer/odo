@@ -64,6 +64,10 @@ func AddStorageInfo(labels map[string]string, storageName string, isSourceVolume
 	}
 }
 
+func GetStorageName(labels map[string]string) string {
+	return labels[KubernetesStorageNameLabel]
+}
+
 func GetDevfileStorageName(labels map[string]string) string {
 	return labels[DevfileStorageLabel]
 }

@@ -41,14 +41,9 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			APIVersion: kclient.DeploymentAPIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testComponentName,
-			Labels: map[string]string{
-				odolabels.KubernetesPartOfLabel:   testAppName,
-				odolabels.KubernetesInstanceLabel: testComponentName,
-			},
-			Annotations: map[string]string{
-				odolabels.OdoProjectTypeAnnotation: "",
-			},
+			Name:        testComponentName,
+			Labels:      odolabels.Builder().WithComponentName(testComponentName).WithAppName(testAppName).Labels(),
+			Annotations: odolabels.Builder().WithProjectType("").Labels(),
 		},
 	}
 
@@ -92,7 +87,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp devfilev1.Component
 			if tt.componentType != "" {
-				deployment.Annotations[odolabels.OdoProjectTypeAnnotation] = string(tt.componentType)
+				odolabels.SetProjectType(deployment.Annotations, string(tt.componentType))
 				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
@@ -541,9 +536,9 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			},
 			args: args{
 				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
-				annotations: map[string]string{odolabels.OdoModeLabel: odolabels.ComponentDevMode},
+				annotations: odolabels.Builder().WithMode(odolabels.ComponentDevMode).Labels(),
 			},
-			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, map[string]string{odolabels.OdoModeLabel: odolabels.ComponentDevMode}),
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, odolabels.Builder().WithMode(odolabels.ComponentDevMode).Labels()),
 			wantErr: false,
 		},
 	}

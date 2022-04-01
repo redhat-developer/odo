@@ -7,14 +7,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/util"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 // getPVCNameFromStorageName returns the PVC associated with the given storage
 func getPVCNameFromStorageName(client kclient.ClientInterface, storageName string) (string, error) {
-	var selector = labels.Set{
-		odolabels.KubernetesStorageNameLabel: storageName,
-	}.String()
+	var selector = odolabels.Builder().WithStorageName(storageName).Selector()
 	pvcs, err := client.ListPVCNames(selector)
 	if err != nil {
 		return "", fmt.Errorf("unable to get PVC names for selector %v: %w", selector, err)

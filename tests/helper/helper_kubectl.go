@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-
 	"github.com/redhat-developer/odo/pkg/component/labels"
 )
 
@@ -187,7 +186,7 @@ func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 
 func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, labels.KubernetesPartOfLabel, appName)
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).SelectorFlag()
 	output := Cmd(kubectl.path, "get", ResourceTypeDeployment, selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 

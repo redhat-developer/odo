@@ -20,16 +20,14 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,
 			UID:  fakeUID,
-			Labels: map[string]string{
-				odolabels.App:                      "app",
-				odolabels.KubernetesPartOfLabel:    "app",
-				odolabels.KubernetesInstanceLabel:  podName,
-				odolabels.KubernetesManagedByLabel: "odo",
-				odolabels.OdoModeLabel:             odolabels.ComponentDevMode,
-			},
-			Annotations: map[string]string{
-				odolabels.OdoProjectTypeAnnotation: podName,
-			},
+			Labels: odolabels.Builder().
+				WithApp("app").
+				WithAppName("app").
+				WithComponentName(podName).
+				WithManager("odo").
+				WithMode(odolabels.ComponentDevMode).
+				Labels(),
+			Annotations: odolabels.Builder().WithProjectType(podName).Labels(),
 		},
 	}
 	return &deployment
