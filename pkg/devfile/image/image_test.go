@@ -2,6 +2,7 @@ package image
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -116,6 +117,7 @@ func TestBuildPushImage(t *testing.T) {
 func TestSelectBackend(t *testing.T) {
 	tests := []struct {
 		name        string
+		getEnvFunc  func(string) string
 		lookPathCmd func(string) (string, error)
 		wantType    string
 		wantErr     bool
@@ -157,10 +159,53 @@ func TestSelectBackend(t *testing.T) {
 			wantErr:  false,
 			wantType: "podman",
 		},
+		{
+			name: "value of PODMAN_CMD envvar is returned if it points to a valid command",
+			getEnvFunc: func(name string) string {
+				if name == "PODMAN_CMD" {
+					return "my-alternate-podman-command"
+				}
+				return ""
+			},
+			lookPathCmd: func(name string) (string, error) {
+				if name == "my-alternate-podman-command" {
+					return "my-alternate-podman-command", nil
+				}
+				return "", errors.New("")
+			},
+			wantErr:  false,
+			wantType: "my-alternate-podman-command",
+		},
+		{
+			name: "docker if PODMAN_CMD points to an invalid command",
+			getEnvFunc: func(name string) string {
+				if name == "PODMAN_CMD" {
+					return "no-such-command"
+				}
+				return ""
+			},
+			lookPathCmd: func(name string) (string, error) {
+				if name == "docker" {
+					return "docker", nil
+				}
+				return "", errors.New("")
+			},
+			wantErr:  false,
+			wantType: "docker",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.getEnvFunc != nil {
+				getEnvFunc = tt.getEnvFunc
+			} else {
+				getEnvFunc = func(string) string {
+					//Empty environment
+					return ""
+				}
+			}
+			defer func() { getEnvFunc = os.Getenv }()
 			lookPathCmd = tt.lookPathCmd
 			defer func() { lookPathCmd = exec.LookPath }()
 			backend, err := selectBackend()
