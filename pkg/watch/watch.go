@@ -161,9 +161,6 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	return nil
 }
 
-// ErrUserRequestedWatchExit is returned when the user stops the watch loop
-var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
-
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
@@ -211,7 +208,6 @@ func forLoopFunc(ctx context.Context, watcher *fsnotify.Watcher, parameters Watc
 
 func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher *fsnotify.Watcher, out io.Writer) {
 	var (
-		watchError                     error
 		deletedPaths                   []string
 		changedFiles                   []string
 		hasFirstSuccessfulPushOccurred bool
@@ -234,6 +230,7 @@ func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher 
 		// ignores paths because, when a directory that is ignored, is deleted,
 		// because its parent is watched, the fsnotify automatically raises an event
 		// for it.
+		var watchError error
 		matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
 		klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
 		if globErr != nil {
@@ -300,12 +297,8 @@ func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher 
 			klog.V(4).Infof("Error from Push: %v", err)
 			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
 		} else {
-			hasFirstSuccessfulPushOccurred = true
 			printInfoMessage(out, parameters.Path)
 		}
-		// Reset changed files and deleted files
-		changedFiles = []string{}
-		deletedPaths = []string{}
 	}
 }
 

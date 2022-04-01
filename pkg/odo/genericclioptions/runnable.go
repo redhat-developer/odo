@@ -85,7 +85,7 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		if handler, ok := o.(SignalHandler); ok {
 			err = handler.HandleSignal()
 			if err != nil {
-				log.Errorf("failed to delete resources from Kubernetes cluster: %v", err)
+				log.Errorf("error handling interrupt signal : %v", err)
 			}
 		}
 		scontext.SetSignal(cmd.Context(), receivedSignal)
