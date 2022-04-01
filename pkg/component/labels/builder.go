@@ -29,47 +29,47 @@ func (o builder) SelectorFlag() string {
 }
 
 func (o builder) WithComponentName(name string) builder {
-	o.m[KubernetesInstanceLabel] = name
+	o.m[kubernetesInstanceLabel] = name
 	return o
 }
 
 func (o builder) WithAppName(name string) builder {
-	o.m[KubernetesPartOfLabel] = name
+	o.m[kubernetesPartOfLabel] = name
 	return o
 }
 
 func (o builder) WithApp(name string) builder {
-	o.m[App] = name
+	o.m[app] = name
 	return o
 }
 
 func (o builder) WithManager(manager string) builder {
-	o.m[KubernetesManagedByLabel] = manager
+	o.m[kubernetesManagedByLabel] = manager
 	return o
 }
 
 func (o builder) WithProjectType(typ string) builder {
-	o.m[OdoProjectTypeAnnotation] = typ
+	o.m[odoProjectTypeAnnotation] = typ
 	return o
 }
 
 func (o builder) WithMode(mode string) builder {
-	o.m[OdoModeLabel] = mode
+	o.m[odoModeLabel] = mode
 	return o
 }
 
 func (o builder) WithSourcePVC(s string) builder {
-	o.m[SourcePVCLabel] = s
+	o.m[sourcePVCLabel] = s
 	return o
 }
 
 func (o builder) WithDevfileStorageName(name string) builder {
-	o.m[DevfileStorageLabel] = name
+	o.m[devfileStorageLabel] = name
 	return o
 }
 
 func (o builder) WithStorageName(name string) builder {
-	o.m[KubernetesStorageNameLabel] = name
+	o.m[kubernetesStorageNameLabel] = name
 	return o
 }
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/redhat-developer/odo/pkg/component/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	v1 "k8s.io/api/apps/v1"
@@ -134,11 +135,10 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, nil
 	}
 
-	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.componentName, odolabels.SourcePVCLabel)
-
+	selector := labels.SelectorBuilder().WithComponent(k.componentName).WithoutSourcePVC(OdoSourceVolume).Selector()
 	pvcs, err := k.client.ListPVCs(selector)
 	if err != nil {
-		return StorageList{}, fmt.Errorf("unable to get PVC using selector %v: %w", odolabels.KubernetesStorageNameLabel, err)
+		return StorageList{}, fmt.Errorf("unable to get PVC using selector %q: %w", selector, err)
 	}
 
 	// to track volume mounts used by a PVC

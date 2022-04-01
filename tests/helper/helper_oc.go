@@ -235,7 +235,7 @@ func (oc OcRunner) GetEnvFromEntry(componentName string, appName string, project
 func (oc OcRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
 
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, labels.KubernetesPartOfLabel, appName)
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).SelectorFlag()
 	output := Cmd(oc.path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 
