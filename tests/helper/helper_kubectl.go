@@ -18,7 +18,6 @@ const (
 	ResourceTypeDeployment = "deployment"
 	ResourceTypePod        = "pod"
 	ResourceTypePVC        = "pvc"
-	ResourceTypeIngress    = "ingress"
 	ResourceTypeService    = "service"
 )
 
@@ -80,21 +79,21 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 // devfile component by passing component name as a argument
 func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := Cmd(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
+	stdOut := Cmd(kubectl.path, "get", ResourceTypePod, "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
 // GetPVCSize executes kubectl command and returns the bound storage size
 func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string) string {
 	selector := fmt.Sprintf("--selector=app.kubernetes.io/storage-name=%s,app.kubernetes.io/instance=%s", storageName, compName)
-	stdOut := Cmd(kubectl.path, "get", "pvc", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}").ShouldPass().Out()
+	stdOut := Cmd(kubectl.path, "get", ResourceTypePVC, "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.resources.requests.storage}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
 // GetPodInitContainers executes kubectl command and returns the init containers of the pod
 func (kubectl KubectlRunner) GetPodInitContainers(compName string, namespace string) []string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := Cmd(kubectl.path, "get", "pods", "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}").ShouldPass().Out()
+	stdOut := Cmd(kubectl.path, "get", ResourceTypePod, "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}").ShouldPass().Out()
 	return strings.Split(stdOut, " ")
 }
 
@@ -144,7 +143,7 @@ func (kubectl KubectlRunner) WaitAndCheckForExistence(resourceType, namespace st
 
 // GetServices gets services on the cluster
 func (kubectl KubectlRunner) GetServices(namespace string) string {
-	session := CmdRunner(kubectl.path, "get", "services", "--namespace", namespace)
+	session := CmdRunner(kubectl.path, "get", ResourceTypeService, "--namespace", namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
 	return output
@@ -190,7 +189,7 @@ func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
 	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
-	output := Cmd(kubectl.path, "get", "deployment", selector, "--namespace", projectName,
+	output := Cmd(kubectl.path, "get", ResourceTypeDeployment, selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'").ShouldPass().Out()
 
 	for _, line := range strings.Split(output, "\n") {
@@ -204,7 +203,7 @@ func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, pr
 }
 
 func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
-	session := CmdRunner(kubectl.path, "get", "pvc", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	session := CmdRunner(kubectl.path, "get", ResourceTypePVC, "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
 	if output == "" {
@@ -215,7 +214,7 @@ func (kubectl KubectlRunner) GetAllPVCNames(namespace string) []string {
 
 // DeletePod deletes a specified pod in the namespace
 func (kubectl KubectlRunner) DeletePod(podName string, namespace string) {
-	Cmd(kubectl.path, "delete", "pod", "--namespace", namespace, podName).ShouldPass()
+	Cmd(kubectl.path, "delete", ResourceTypePod, "--namespace", namespace, podName).ShouldPass()
 }
 
 // WaitAndCheckForTerminatingState waits for the given interval
@@ -256,7 +255,7 @@ func (kubectl KubectlRunner) GetAnnotationsDeployment(componentName, appName, pr
 
 // GetAllPodsInNs gets the list of pods in given namespace. It waits for reasonable amount of time for pods to come up
 func (kubectl KubectlRunner) GetAllPodsInNs(namespace string) string {
-	args := []string{"get", "pods", "-n", namespace}
+	args := []string{"get", ResourceTypePod, "-n", namespace}
 	noResourcesMsg := fmt.Sprintf("No resources found in %s namespace", namespace)
 	kubectl.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 		return !strings.Contains(output, noResourcesMsg)
@@ -270,7 +269,7 @@ func (kubectl KubectlRunner) PodsShouldBeRunning(project string, regex string) {
 	// Look for pods with specified regex
 	pod := regexp.MustCompile(regex).FindString(pods)
 
-	args := []string{"get", "pods", pod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+	args := []string{"get", ResourceTypePod, pod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
 	kubectl.WaitForRunnerCmdOut(args, 1, true, func(output string) bool {
 		return strings.Contains(output, "Running")
 	})
@@ -351,7 +350,7 @@ func (kubectl KubectlRunner) addConfigMapForCleanup(projectName string) {
 func (kubectl KubectlRunner) ScalePodToZero(componentName, appName, projectName string) {
 	podName := kubectl.GetRunningPodNameByComponent(componentName, projectName)
 	Cmd(kubectl.path, "scale", "deploy", strings.Join([]string{componentName, appName}, "-"), "--replicas=0").ShouldPass()
-	kubectl.WaitForRunnerCmdOut([]string{"get", "-n", projectName, "pod", podName}, 1, false, func(output string) bool {
+	kubectl.WaitForRunnerCmdOut([]string{"get", "-n", projectName, ResourceTypePod, podName}, 1, false, func(output string) bool {
 		return !strings.Contains(output, podName)
 	})
 }
