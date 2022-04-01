@@ -90,7 +90,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return err
 	}
 	if isEmptyDir {
-		return errors.New("this command cannot run in an empty directory, you need to run it in a directory containing source code")
+		return errors.New("this command cannot run in an empty directory, run the command in a directory containing source code or initialize using 'odo init'")
 	}
 	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
 	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
