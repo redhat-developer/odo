@@ -139,7 +139,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient)
 	}
 	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.WatchClient, dep.KubernetesClient)
+		dep.DevClient = dev.NewDevClient(dep.WatchClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

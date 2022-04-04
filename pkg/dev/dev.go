@@ -4,8 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/redhat-developer/odo/pkg/kclient"
-
 	"github.com/redhat-developer/odo/pkg/envinfo"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -21,14 +19,12 @@ import (
 var _ Client = (*DevClient)(nil)
 
 type DevClient struct {
-	watchClient     watch.Client
-	kuberneteClient kclient.ClientInterface
+	watchClient watch.Client
 }
 
-func NewDevClient(watchClient watch.Client, kubernetesClient kclient.ClientInterface) *DevClient {
+func NewDevClient(watchClient watch.Client) *DevClient {
 	return &DevClient{
-		watchClient:     watchClient,
-		kuberneteClient: kubernetesClient,
+		watchClient: watchClient,
 	}
 }
 
