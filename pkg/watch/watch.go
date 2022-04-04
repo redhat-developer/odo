@@ -344,7 +344,7 @@ func (o *WatchClient) cleanupFunc(devfileObj parser.DevfileObj, out io.Writer) e
 		}
 	}
 	// delete all the resources
-	failed := o.deleteClient.DeleteResources(resources)
+	failed := o.deleteClient.DeleteResources(resources, true)
 	for _, fail := range failed {
 		fmt.Fprintf(out, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 	}
