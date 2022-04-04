@@ -9,10 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/onsi/gomega/gexec"
@@ -210,6 +209,7 @@ var _ = Describe("odo dev command tests", func() {
 					helper.EnableTelemetryDebug()
 					session, _, _, _, _ := helper.StartDevMode()
 					session.Stop()
+					session.WaitEnd()
 				})
 				AfterEach(func() {
 					helper.ResetTelemetry()

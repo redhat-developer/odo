@@ -2,6 +2,7 @@ package helper
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/onsi/gomega/gexec"
 )
@@ -116,7 +117,7 @@ func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) 
 	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
 	session := CmdRunner("odo", args...)
-	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, session)
+	WaitForOutputToContain("Watching for changes in the current directory", 360, 10, session)
 	result := DevSession{
 		session: session,
 	}
@@ -142,6 +143,10 @@ func (o DevSession) Kill() {
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
 func (o DevSession) Stop() {
 	o.session.Interrupt()
+}
+
+func (o DevSession) WaitEnd() {
+	o.session.Wait(1 * time.Minute)
 }
 
 //  WaitSync waits for the synchronization of files to be finished
