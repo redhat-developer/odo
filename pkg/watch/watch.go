@@ -66,8 +66,13 @@ type WatchParameters struct {
 	InitialDevfileObj parser.DevfileObj
 }
 
-type processEventsFunc func(events []fsnotify.Event, parameters WatchParameters, watcher *fsnotify.Watcher, out io.Writer)
-type cleanupFunc func(parameters WatchParameters, out io.Writer) error
+type evaluateChangesFunc func(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string)
+
+// processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
+type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer)
+
+// cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
+type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
 
 // addRecursiveWatch handles adding watches recursively for the path provided
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
@@ -179,12 +184,21 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	printInfoMessage(out, parameters.Path)
 
-	return forLoopFunc(ctx, watcher, parameters, out, processEvents, o.cleanupFunc)
+	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.cleanupFunc)
 }
 
-func forLoopFunc(ctx context.Context, watcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
+// eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
+// While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
+// It outputs any logs to the out io Writer
+func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
 	var events []fsnotify.Event
 
+	// timer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
+	// at this point. In the select block, however, every time we receive an event, we reset the timer to watch for
+	// 100ms since receiving that event. This is done because a single filesystem event by the user triggers multiple
+	// events for fsnotify. It's a known-issue, but not really bug. For more info look at below issues:
+	//    - https://github.com/fsnotify/fsnotify/issues/122
+	//    - https://github.com/fsnotify/fsnotify/issues/344
 	timer := time.NewTimer(time.Millisecond)
 	<-timer.C
 
@@ -195,23 +209,27 @@ func forLoopFunc(ctx context.Context, watcher *fsnotify.Watcher, parameters Watc
 			// We are waiting for more events in this interval
 			timer.Reset(100 * time.Millisecond)
 		case <-timer.C:
-			// no more events in the interval, let's proceed with the synchronization
-			processEventsHandler(events, parameters, watcher, out)
+			// timer has fired
+			// first find the files that have changed (also includes the ones newly created) or deleted
+			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.FileIgnores, watcher)
+			// process the changes and sync files with remote pod
+			processEventsHandler(changedFiles, deletedPaths, parameters, out)
+			// empty the events to receive new events
 			events = []fsnotify.Event{} // empty the events slice to capture new events
 		case watchErr := <-watcher.Errors:
 			return watchErr
 		case <-ctx.Done():
-			return cleanupHandler(parameters, out)
+			return cleanupHandler(parameters.InitialDevfileObj, out)
 		}
 	}
 }
 
-func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher *fsnotify.Watcher, out io.Writer) {
-	var (
-		deletedPaths                   []string
-		changedFiles                   []string
-		hasFirstSuccessfulPushOccurred bool
-	)
+// evaluateFileChanges evaluates any file changes for the events. It ignores the files in fileIgnores slice and removes
+// any deleted paths from the watcher
+func evaluateFileChanges(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
+	var changedFiles []string
+	var deletedPaths []string
+
 	for _, event := range events {
 		klog.V(4).Infof("filesystem watch event: %s", event)
 		isIgnoreEvent := shouldIgnoreEvent(event)
@@ -231,8 +249,8 @@ func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher 
 		// because its parent is watched, the fsnotify automatically raises an event
 		// for it.
 		var watchError error
-		matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
-		klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
+		matched, globErr := dfutil.IsGlobExpMatch(event.Name, fileIgnores)
+		klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, fileIgnores, matched, globErr)
 		if globErr != nil {
 			watchError = fmt.Errorf("unable to watch changes: %w", globErr)
 		}
@@ -259,7 +277,7 @@ func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher 
 			}
 		} else {
 			// On other ops, recursively watch the resource (if applicable)
-			if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
+			if e := addRecursiveWatch(watcher, event.Name, fileIgnores); e != nil && watchError == nil {
 				klog.V(4).Infof("Error occurred in addRecursiveWatch, setting watchError to %v", e)
 				watchError = e
 			}
@@ -267,43 +285,49 @@ func processEvents(events []fsnotify.Event, parameters WatchParameters, watcher 
 	}
 	deletedPaths = removeDuplicates(deletedPaths)
 
+	return changedFiles, deletedPaths
+}
+
+func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer) {
+	if len(changedFiles) == 0 && len(deletedPaths) == 0 {
+		return
+	}
+
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
 
-	// if any file(s) is/are changed or deleted, sync with remote pod
-	if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-		fmt.Fprintf(out, "Pushing files...\n\n")
-		klog.V(4).Infof("Copying files %s to pod", changedFiles)
+	var hasFirstSuccessfulPushOccurred bool
 
-		pushParams := common.PushParameters{
-			Path:                     parameters.Path,
-			WatchFiles:               changedFiles,
-			WatchDeletedFiles:        deletedPaths,
-			IgnoredFiles:             parameters.FileIgnores,
-			ForceBuild:               false,
-			DevfileBuildCmd:          parameters.DevfileBuildCmd,
-			DevfileRunCmd:            parameters.DevfileRunCmd,
-			DevfileDebugCmd:          parameters.DevfileDebugCmd,
-			DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-			EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-			Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-			DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
-		}
-		err := parameters.DevfileWatchHandler(pushParams, parameters)
-		if err != nil {
-			// Log and output, but intentionally not exiting on error here.
-			// We don't want to break watch when push failed, it might be fixed with the next change.
-			klog.V(4).Infof("Error from Push: %v", err)
-			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-		} else {
-			printInfoMessage(out, parameters.Path)
-		}
+	fmt.Fprintf(out, "Pushing files...\n\n")
+	klog.V(4).Infof("Copying files %s to pod", changedFiles)
+
+	pushParams := common.PushParameters{
+		Path:                     parameters.Path,
+		WatchFiles:               changedFiles,
+		WatchDeletedFiles:        deletedPaths,
+		IgnoredFiles:             parameters.FileIgnores,
+		ForceBuild:               false,
+		DevfileBuildCmd:          parameters.DevfileBuildCmd,
+		DevfileRunCmd:            parameters.DevfileRunCmd,
+		DevfileDebugCmd:          parameters.DevfileDebugCmd,
+		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
+		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
+		Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
+		DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
+	}
+	err := parameters.DevfileWatchHandler(pushParams, parameters)
+	if err != nil {
+		// Log and output, but intentionally not exiting on error here.
+		// We don't want to break watch when push failed, it might be fixed with the next change.
+		klog.V(4).Infof("Error from Push: %v", err)
+		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+	} else {
+		printInfoMessage(out, parameters.Path)
 	}
 }
 
-func (o *WatchClient) cleanupFunc(parameters WatchParameters, out io.Writer) error {
-	devfileObj := parameters.InitialDevfileObj
+func (o *WatchClient) cleanupFunc(devfileObj parser.DevfileObj, out io.Writer) error {
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)

@@ -8,26 +8,50 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/fsnotify/fsnotify"
 )
 
-func processEventsHandler(events []fsnotify.Event, _ WatchParameters, _ *fsnotify.Watcher, out io.Writer) {
-	fmt.Fprintf(out, "processing %d events\n", len(events))
+func evaluateChangesHandler(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
+	var changedFiles []string
+	var deletedPaths []string
+
+	for _, event := range events {
+		for _, file := range fileIgnores {
+			// if file is in fileIgnores, don't do anything
+			if event.Name == file {
+				continue
+			}
+		}
+		// this if condition is copied from original implementation in watch.go. Code within the if block is simplified for tests
+		if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+			// On remove/rename, stop watching the resource
+			_ = watcher.Remove(event.Name)
+			// Append the file to list of deleted files
+			deletedPaths = append(deletedPaths, event.Name)
+			continue
+		}
+		// this if condition is copied from original implementation in watch.go. Code within the if block is simplified for tests
+		if event.Op&fsnotify.Remove != fsnotify.Remove {
+			changedFiles = append(changedFiles, event.Name)
+		}
+	}
+	return changedFiles, deletedPaths
 }
 
-func cleanupHandler(_ WatchParameters, out io.Writer) error {
-	fmt.Fprintf(out, "cleanup done\n")
+func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer) {
+	fmt.Fprintf(out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
+}
+
+func cleanupHandler(_ parser.DevfileObj, out io.Writer) error {
+	fmt.Fprintf(out, "cleanup done")
 	return nil
 }
 
-func Test_forLoopFunc(t *testing.T) {
-	watcher, _ := fsnotify.NewWatcher()
+func Test_eventWatcher(t *testing.T) {
 	type args struct {
-		ctx                  context.Context
-		watcher              *fsnotify.Watcher
-		parameters           WatchParameters
-		processEventsHandler processEventsFunc
-		cleanupHandler       cleanupFunc
+		parameters WatchParameters
 	}
 	tests := []struct {
 		name          string
@@ -35,65 +59,81 @@ func Test_forLoopFunc(t *testing.T) {
 		wantOut       string
 		wantErr       bool
 		watcherEvents []fsnotify.Event
-		watcherErrors []error
+		watcherError  error
 	}{
 		{
 			name: "Case 1: Multiple events, no errors",
 			args: args{
-				ctx:                  nil,
-				watcher:              watcher,
-				parameters:           WatchParameters{},
-				processEventsHandler: processEventsHandler,
-				cleanupHandler:       cleanupHandler,
+				parameters: WatchParameters{},
 			},
-			wantOut:       "processing 2 events\n",
+			wantOut:       "changedFiles [file1 file2] deletedPaths []\ncleanup done",
 			wantErr:       false,
-			watcherEvents: []fsnotify.Event{{Name: "event1", Op: 1}, {Name: "event2", Op: 2}},
-			watcherErrors: nil,
+			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Create}, {Name: "file2", Op: fsnotify.Write}},
+			watcherError:  nil,
 		},
 		{
 			name: "Case 2: Multiple events, one error",
 			args: args{
-				ctx:                  nil,
-				watcher:              watcher,
-				parameters:           WatchParameters{},
-				processEventsHandler: processEventsHandler,
-				cleanupHandler:       cleanupHandler,
+				parameters: WatchParameters{},
 			},
 			wantOut:       "",
 			wantErr:       true,
-			watcherEvents: []fsnotify.Event{{Name: "event1", Op: 1}, {Name: "event2", Op: 2}},
-			watcherErrors: []error{fmt.Errorf("error")},
+			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Create}, {Name: "file2", Op: fsnotify.Write}},
+			watcherError:  fmt.Errorf("error"),
+		},
+		{
+			name: "Case 3: Delete file, no error",
+			args: args{
+				parameters: WatchParameters{FileIgnores: []string{"file1"}},
+			},
+			wantOut:       "changedFiles [] deletedPaths [file1 file2]\ncleanup done",
+			wantErr:       false,
+			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Remove}, {Name: "file2", Op: fsnotify.Rename}},
+			watcherError:  nil,
+		},
+		{
+			name: "Case 4: Only errors",
+			args: args{
+				parameters: WatchParameters{},
+			},
+			wantOut:       "",
+			wantErr:       true,
+			watcherEvents: nil,
+			watcherError:  fmt.Errorf("error1"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			watcher, _ := fsnotify.NewWatcher()
+			//mu := sync.Mutex{}
 			var cancel context.CancelFunc
-			tt.args.ctx, cancel = context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(context.Background())
 			out := &bytes.Buffer{}
 
 			go func() {
-				err := forLoopFunc(tt.args.ctx, tt.args.watcher, tt.args.parameters, out, tt.args.processEventsHandler, tt.args.cleanupHandler)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("forLoopFunc() error = %v, wantErr %v", err, tt.wantErr)
-					return
+				for _, event := range tt.watcherEvents {
+					watcher.Events <- event
 				}
+
+				if tt.watcherError != nil {
+					watcher.Errors <- tt.watcherError
+				}
+				<-time.After(500 * time.Millisecond)
+				cancel()
 			}()
 
-			for i := range tt.watcherEvents {
-				watcher.Events <- tt.watcherEvents[i]
+			err := eventWatcher(ctx, watcher, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 
-			for i := range tt.watcherErrors {
-				watcher.Errors <- tt.watcherErrors[i]
-			}
+			// this is to avoid panic while testing. eventWatcher has a reset of few milliseconds when listening for
+			// events, so using this to ensure there's no race in tests
 
-			<-time.After(300 * time.Millisecond)
 			if gotOut := out.String(); gotOut != tt.wantOut {
-				t.Errorf("forLoopFunc() gotOut = %v, want %v", gotOut, tt.wantOut)
+				t.Errorf("eventWatcher() gotOut = %v, want %v", gotOut, tt.wantOut)
 			}
-			out.Reset()
-			cancel()
 		})
 	}
 }
