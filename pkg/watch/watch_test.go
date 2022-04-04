@@ -105,7 +105,6 @@ func Test_eventWatcher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			watcher, _ := fsnotify.NewWatcher()
-			//mu := sync.Mutex{}
 			var cancel context.CancelFunc
 			ctx, cancel := context.WithCancel(context.Background())
 			out := &bytes.Buffer{}
@@ -127,9 +126,6 @@ func Test_eventWatcher(t *testing.T) {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			// this is to avoid panic while testing. eventWatcher has a reset of few milliseconds when listening for
-			// events, so using this to ensure there's no race in tests
 
 			if gotOut := out.String(); gotOut != tt.wantOut {
 				t.Errorf("eventWatcher() gotOut = %v, want %v", gotOut, tt.wantOut)

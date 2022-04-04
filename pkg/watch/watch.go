@@ -66,7 +66,10 @@ type WatchParameters struct {
 	InitialDevfileObj parser.DevfileObj
 }
 
-type evaluateChangesFunc func(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string)
+// evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
+// any deleted paths from the watcher. It returns a slice of changed files (if any) and paths that are deleted (if any)
+// by the events
+type evaluateChangesFunc func(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
 type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer)
