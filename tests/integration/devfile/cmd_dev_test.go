@@ -217,12 +217,23 @@ var _ = Describe("odo dev command tests", func() {
 				It("should record the telemetry data correctly", func() {
 					td := helper.GetTelemetryDebugData()
 					Expect(td.Event).To(ContainSubstring("odo dev"))
-					Expect(td.Properties.Success).To(BeFalse())
-					Expect(td.Properties.Error).To(ContainSubstring("interrupt"))
-					Expect(td.Properties.ErrorType == "*errors.errorString").To(BeTrue())
+					Expect(td.Properties.Success).To(BeTrue())
+					Expect(td.Properties.Error).ToNot(ContainSubstring("interrupt"))
 					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
 					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
 					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
+				})
+			})
+			When("odo dev is stopped", func() {
+				It("should delete component from the cluster", func() {
+					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
+					err := helper.RunDevMode(func(session *gexec.Session, outContents, errContents []byte, urls []string) {
+						out := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
+						Expect(string(out)).To(ContainSubstring(deploymentName))
+					})
+					Expect(err).ToNot(HaveOccurred())
+					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
+					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
 				})
 			})
 		})
@@ -755,7 +766,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("running odo dev and composite command is marked as paralell:true", func() {
+	When("running odo dev and composite command is marked as parallel:true", func() {
 		devfileCmpName := "nodejs"
 		var session helper.DevSession
 		BeforeEach(func() {
@@ -768,7 +779,7 @@ var _ = Describe("odo dev command tests", func() {
 			session.Stop()
 		})
 
-		It("should execute all commands in composite commmand", func() {
+		It("should execute all commands in composite command", func() {
 			// Verify the command executed successfully
 			var statErr error
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)

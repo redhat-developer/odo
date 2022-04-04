@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"reflect"
 
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -28,7 +30,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -51,6 +52,10 @@ type DevOptions struct {
 	// it's called "initial" because it has to be set only once when running odo dev for the first time
 	// it is used to compare with updated devfile when we watch the contextDir for changes
 	initialDevfileObj parser.DevfileObj
+	// ctx is used to communicate with WatchAndPush to stop watching and start cleaning up
+	ctx context.Context
+	// cancel function ensures that any function/method listening on ctx.Done channel stops doing its work
+	cancel context.CancelFunc
 
 	// working directory
 	contextDir string
@@ -79,6 +84,9 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
+
+	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
+	o.ctx, o.cancel = context.WithCancel(context.Background())
 
 	o.contextDir, err = os.Getwd()
 	if err != nil {
@@ -213,12 +221,15 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	portsBuf.Wait()
 
 	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
+
 	d := Handler{}
-	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d)
+	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
+
 	return err
 }
 
@@ -254,6 +265,14 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 	}
 
 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+}
+
+func (o *DevOptions) HandleSignal() error {
+	fmt.Fprintf(o.out, "\n\nCancelling deployment.\nThis is non-preemptive operation, it will wait for other tasks to finish first\n\n")
+	o.cancel()
+	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
+	// wait for the cleanup to finish and let the main thread finish instead of signal handler go routine from runnable
+	select {}
 }
 
 // NewCmdDev implements the odo dev command

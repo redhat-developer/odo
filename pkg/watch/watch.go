@@ -1,14 +1,15 @@
 package watch
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 
 	"github.com/fsnotify/fsnotify"
 
@@ -27,10 +28,14 @@ const (
 	PushErrorString = "Error occurred on Push"
 )
 
-type WatchClient struct{}
+type WatchClient struct {
+	deleteClient _delete.Client
+}
 
-func NewWatchClient() *WatchClient {
-	return &WatchClient{}
+func NewWatchClient(deleteClient _delete.Client) *WatchClient {
+	return &WatchClient{
+		deleteClient: deleteClient,
+	}
 }
 
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
@@ -47,15 +52,9 @@ type WatchParameters struct {
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
-	// This is a channel added to signal readiness of the watch command to the external channel listeners
-	StartChan chan bool
-	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
-	ExtChan chan bool
-	// Interval of time before pushing changes to remote(component) pod
-	PushDiffDelay int
 	// Parameter whether or not to show build logs
 	Show bool
-	// EnvSpecificInfo contains infomation of env.yaml file
+	// EnvSpecificInfo contains information of env.yaml file
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileBuildCmd string
@@ -66,6 +65,17 @@ type WatchParameters struct {
 	// InitialDevfileObj is used to compare the devfile between the very first run of odo dev and subsequent ones
 	InitialDevfileObj parser.DevfileObj
 }
+
+// evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
+// any deleted paths from the watcher. It returns a slice of changed files (if any) and paths that are deleted (if any)
+// by the events
+type evaluateChangesFunc func(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
+
+// processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
+type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer)
+
+// cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
+type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
 
 // addRecursiveWatch handles adding watches recursively for the path provided
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
@@ -159,114 +169,15 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	return nil
 }
 
-// ErrUserRequestedWatchExit is returned when the user stops the watch loop
-var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch based on user request")
-
-// WatchAndPush watches path, if something changes in  that path it calls PushLocal
-// ignores .git/* by default
-// inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
-// Parameters:
-//	client: occlient instance
-//	out: io Writer instance
-// 	parameters: WatchParameters
-func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) error {
-	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
-	// delayInterval int
+func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
-
-	// these variables must be accessed while holding the changeLock
-	// mutex as they are shared between goroutines to communicate
-	// sync state/events.
-	var (
-		changeLock   sync.Mutex
-		dirty        bool
-		lastChange   time.Time
-		watchError   error
-		deletedPaths []string
-		changedFiles []string
-	)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
 	defer watcher.Close()
-	defer close(parameters.ExtChan)
 
-	// This goroutine listens for either file change events from fsnotify, fs errors, or a terminate signal
-	// The results are stored in the variables defined in the var( ... ) block above
-	go func() {
-		for {
-			select {
-			case extMsg := <-parameters.ExtChan:
-				if extMsg {
-					changeLock.Lock()
-					watchError = ErrUserRequestedWatchExit
-					changeLock.Unlock()
-				}
-			case event := <-watcher.Events:
-				changeLock.Lock()
-				klog.V(4).Infof("filesystem watch event: %s", event)
-
-				isIgnoreEvent := shouldIgnoreEvent(event)
-
-				// add file name to changedFiles only once
-				alreadyInChangedFiles := false
-				for _, cfile := range changedFiles {
-					if cfile == event.Name {
-						alreadyInChangedFiles = true
-						break
-					}
-				}
-
-				// Filter out anything in ignores list from the list of changed files
-				// This is important in spite of not watching the
-				// ignores paths because, when a directory that is ignored, is deleted,
-				// because its parent is watched, the fsnotify automatically raises an event
-				// for it.
-				matched, globErr := dfutil.IsGlobExpMatch(event.Name, parameters.FileIgnores)
-				klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, globErr)
-				if globErr != nil {
-					watchError = fmt.Errorf("unable to watch changes: %w", globErr)
-				}
-				if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
-					// Append the new file change event to changedFiles if and only if the event is not a file remove event
-					if event.Op&fsnotify.Remove != fsnotify.Remove {
-						changedFiles = append(changedFiles, event.Name)
-					}
-				}
-
-				lastChange = time.Now()
-				dirty = true
-				// Rename operation triggers RENAME event on old path + CREATE event for renamed path so delete old path in case of rename
-				// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
-				if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-					// On remove/rename, stop watching the resource
-					if e := watcher.Remove(event.Name); e != nil {
-						klog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
-					}
-					// Append the file to list of deleted files
-					// When a file/folder is deleted, it raises 2 events:
-					//	a. RENAME with event.Name empty
-					//	b. REMOVE with event.Name as file name
-					if !alreadyInChangedFiles && !matched && event.Name != "" {
-						deletedPaths = append(deletedPaths, event.Name)
-					}
-				} else {
-					// On other ops, recursively watch the resource (if applicable)
-					if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
-						klog.V(4).Infof("Error occurred in addRecursiveWatch, setting watchError to %v", e)
-						watchError = e
-					}
-				}
-				changeLock.Unlock()
-			case watchErr := <-watcher.Errors:
-				changeLock.Lock()
-				watchError = fmt.Errorf("error watching filesystem for changes: %v", watchErr)
-				changeLock.Unlock()
-			}
-		}
-	}()
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
 	err = addRecursiveWatch(watcher, parameters.Path, parameters.FileIgnores)
@@ -274,124 +185,170 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters) er
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
 
-	// Only signal start of watch if invoker is interested
-	if parameters.StartChan != nil {
-		parameters.StartChan <- true
-	}
+	printInfoMessage(out, parameters.Path)
 
-	var ticker *time.Ticker
-	delay := time.Duration(parameters.PushDiffDelay) * time.Second
+	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.cleanupFunc)
+}
 
-	// don't create a ticker if delay is 0 as it will trigger panic
-	if delay != 0 {
-		ticker = time.NewTicker(delay)
-		defer ticker.Stop()
-	}
-	showWaitingMessage := true
+// eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
+// While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
+// It outputs any logs to the out io Writer
+func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
+	var events []fsnotify.Event
 
-	hasFirstSuccessfulPushOccurred := false
+	// timer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
+	// at this point. In the select block, however, every time we receive an event, we reset the timer to watch for
+	// 100ms since receiving that event. This is done because a single filesystem event by the user triggers multiple
+	// events for fsnotify. It's a known-issue, but not really bug. For more info look at below issues:
+	//    - https://github.com/fsnotify/fsnotify/issues/122
+	//    - https://github.com/fsnotify/fsnotify/issues/344
+	timer := time.NewTimer(time.Millisecond)
+	<-timer.C
 
-	// This for{} loop waits for filesystem changes that are signaled by the above goroutine;
-	// - 'dirty' is used by the goroutine to indicate that at least one change has occurred
 	for {
-		changeLock.Lock()
-		if watchError != nil {
-			klog.V(4).Infof("Ending watch for {} loop with error %v\n", watchError)
-			return watchError
-		}
-		if showWaitingMessage {
-			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug {
-				log.Finfof(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal.")
-			}
-			log.Finfof(out, "\nWatching for changes in the current directory %s\n\nPress Ctrl+c to exit.", parameters.Path)
-			showWaitingMessage = false
-		}
-		// if a change happened more than 'delay' seconds ago, sync it now.
-		// if a change happened less than 'delay' seconds ago, sleep for 'delay' seconds
-		// and see if more changes happen, we don't want to sync when
-		// the filesystem is in the middle of changing due to a massive
-		// set of changes (such as a local build in progress).
-		if dirty && time.Now().After(lastChange.Add(delay)) {
-
-			deletedPaths = removeDuplicates(deletedPaths)
-
-			for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
-				fmt.Fprintf(out, "\n\nFile %s changed\n", file)
-			}
-			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-				fmt.Fprintf(out, "Pushing files...\n\n")
-				fileInfo, err := os.Stat(parameters.Path)
-				if err != nil {
-					return fmt.Errorf("%s: file doesn't exist: %w", parameters.Path, err)
-				}
-				if fileInfo.IsDir() {
-					klog.V(4).Infof("Copying files %s to pod", changedFiles)
-
-					if parameters.DevfileWatchHandler != nil {
-						pushParams := common.PushParameters{
-							Path:                     parameters.Path,
-							WatchFiles:               changedFiles,
-							WatchDeletedFiles:        deletedPaths,
-							IgnoredFiles:             parameters.FileIgnores,
-							ForceBuild:               false,
-							DevfileBuildCmd:          parameters.DevfileBuildCmd,
-							DevfileRunCmd:            parameters.DevfileRunCmd,
-							DevfileDebugCmd:          parameters.DevfileDebugCmd,
-							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-							EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-							Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-							DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
-						}
-
-						err = parameters.DevfileWatchHandler(pushParams, parameters)
-
-					}
-
-				} else {
-					pathDir := filepath.Dir(parameters.Path)
-					klog.V(4).Infof("Copying file %s to pod", parameters.Path)
-
-					if parameters.DevfileWatchHandler != nil {
-						pushParams := common.PushParameters{
-							Path:                     pathDir,
-							WatchFiles:               changedFiles,
-							WatchDeletedFiles:        deletedPaths,
-							IgnoredFiles:             parameters.FileIgnores,
-							ForceBuild:               false,
-							DevfileBuildCmd:          parameters.DevfileBuildCmd,
-							DevfileRunCmd:            parameters.DevfileRunCmd,
-							DevfileDebugCmd:          parameters.DevfileDebugCmd,
-							DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
-							EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-							Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-							DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
-						}
-
-						err = parameters.DevfileWatchHandler(pushParams, parameters)
-					}
-				}
-				if err != nil {
-
-					// Log and output, but intentionally not exiting on error here.
-					// We don't want to break watch when push failed, it might be fixed with the next change.
-					klog.V(4).Infof("Error from Push: %v", err)
-					fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-				} else {
-					hasFirstSuccessfulPushOccurred = true
-				}
-				dirty = false
-				showWaitingMessage = true
-				// Reset changed files
-				changedFiles = []string{}
-				// Reset deleted Paths
-				deletedPaths = []string{}
-			}
-		}
-		changeLock.Unlock()
-		if ticker != nil {
-			<-ticker.C
+		select {
+		case event := <-watcher.Events:
+			events = append(events, event)
+			// We are waiting for more events in this interval
+			timer.Reset(100 * time.Millisecond)
+		case <-timer.C:
+			// timer has fired
+			// first find the files that have changed (also includes the ones newly created) or deleted
+			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.FileIgnores, watcher)
+			// process the changes and sync files with remote pod
+			processEventsHandler(changedFiles, deletedPaths, parameters, out)
+			// empty the events to receive new events
+			events = []fsnotify.Event{} // empty the events slice to capture new events
+		case watchErr := <-watcher.Errors:
+			return watchErr
+		case <-ctx.Done():
+			return cleanupHandler(parameters.InitialDevfileObj, out)
 		}
 	}
+}
+
+// evaluateFileChanges evaluates any file changes for the events. It ignores the files in fileIgnores slice and removes
+// any deleted paths from the watcher
+func evaluateFileChanges(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
+	var changedFiles []string
+	var deletedPaths []string
+
+	for _, event := range events {
+		klog.V(4).Infof("filesystem watch event: %s", event)
+		isIgnoreEvent := shouldIgnoreEvent(event)
+
+		// add file name to changedFiles only once
+		alreadyInChangedFiles := false
+		for _, cfile := range changedFiles {
+			if cfile == event.Name {
+				alreadyInChangedFiles = true
+				break
+			}
+		}
+
+		// Filter out anything in ignores list from the list of changed files
+		// This is important in spite of not watching the
+		// ignores paths because, when a directory that is ignored, is deleted,
+		// because its parent is watched, the fsnotify automatically raises an event
+		// for it.
+		var watchError error
+		matched, globErr := dfutil.IsGlobExpMatch(event.Name, fileIgnores)
+		klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, fileIgnores, matched, globErr)
+		if globErr != nil {
+			watchError = fmt.Errorf("unable to watch changes: %w", globErr)
+		}
+		if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
+			// Append the new file change event to changedFiles if and only if the event is not a file remove event
+			if event.Op&fsnotify.Remove != fsnotify.Remove {
+				changedFiles = append(changedFiles, event.Name)
+			}
+		}
+
+		// Rename operation triggers RENAME event on old path + CREATE event for renamed path so delete old path in case of rename
+		// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
+		if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+			// On remove/rename, stop watching the resource
+			if e := watcher.Remove(event.Name); e != nil {
+				klog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
+			}
+			// Append the file to list of deleted files
+			// When a file/folder is deleted, it raises 2 events:
+			//	a. RENAME with event.Name empty
+			//	b. REMOVE with event.Name as file name
+			if !alreadyInChangedFiles && !matched && event.Name != "" {
+				deletedPaths = append(deletedPaths, event.Name)
+			}
+		} else {
+			// On other ops, recursively watch the resource (if applicable)
+			if e := addRecursiveWatch(watcher, event.Name, fileIgnores); e != nil && watchError == nil {
+				klog.V(4).Infof("Error occurred in addRecursiveWatch, setting watchError to %v", e)
+				watchError = e
+			}
+		}
+	}
+	deletedPaths = removeDuplicates(deletedPaths)
+
+	return changedFiles, deletedPaths
+}
+
+func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer) {
+	if len(changedFiles) == 0 && len(deletedPaths) == 0 {
+		return
+	}
+
+	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
+		fmt.Fprintf(out, "\nFile %s changed\n", file)
+	}
+
+	var hasFirstSuccessfulPushOccurred bool
+
+	fmt.Fprintf(out, "Pushing files...\n\n")
+	klog.V(4).Infof("Copying files %s to pod", changedFiles)
+
+	pushParams := common.PushParameters{
+		Path:                     parameters.Path,
+		WatchFiles:               changedFiles,
+		WatchDeletedFiles:        deletedPaths,
+		IgnoredFiles:             parameters.FileIgnores,
+		ForceBuild:               false,
+		DevfileBuildCmd:          parameters.DevfileBuildCmd,
+		DevfileRunCmd:            parameters.DevfileRunCmd,
+		DevfileDebugCmd:          parameters.DevfileDebugCmd,
+		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
+		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
+		Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
+		DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
+	}
+	err := parameters.DevfileWatchHandler(pushParams, parameters)
+	if err != nil {
+		// Log and output, but intentionally not exiting on error here.
+		// We don't want to break watch when push failed, it might be fixed with the next change.
+		klog.V(4).Infof("Error from Push: %v", err)
+		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+	} else {
+		printInfoMessage(out, parameters.Path)
+	}
+}
+
+func (o *WatchClient) cleanupFunc(devfileObj parser.DevfileObj, out io.Writer) error {
+	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
+	if err != nil {
+		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
+		return err
+	}
+	// if innerloop deployment resource is present, then execute preStop events
+	if isInnerLoopDeployed {
+		err = o.deleteClient.ExecutePreStopEvents(devfileObj, "app")
+		if err != nil {
+			fmt.Fprint(out, "Failed to execute preStop events")
+		}
+	}
+	// delete all the resources
+	failed := o.deleteClient.DeleteResources(resources)
+	for _, fail := range failed {
+		fmt.Fprintf(out, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
+	}
+	return nil
 }
 
 func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {
@@ -433,4 +390,9 @@ func removeDuplicates(input []string) []string {
 		result = append(result, str)
 	}
 	return result
+}
+
+func printInfoMessage(out io.Writer, path string) {
+	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+
+		"Press Ctrl+c to exit `odo dev` and delete resources from the cluster\n", path)
 }

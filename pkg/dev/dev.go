@@ -1,7 +1,10 @@
 package dev
 
 import (
+	"context"
 	"io"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
 
@@ -18,12 +21,14 @@ import (
 var _ Client = (*DevClient)(nil)
 
 type DevClient struct {
-	watchClient watch.Client
+	watchClient     watch.Client
+	kuberneteClient kclient.ClientInterface
 }
 
-func NewDevClient(watchClient watch.Client) *DevClient {
+func NewDevClient(watchClient watch.Client, kubernetesClient kclient.ClientInterface) *DevClient {
 	return &DevClient{
-		watchClient: watchClient,
+		watchClient:     watchClient,
+		kuberneteClient: kubernetesClient,
 	}
 }
 
@@ -55,12 +60,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	return nil
 }
 
-func (o *DevClient) Cleanup() error {
-	var err error
-	return err
-}
-
-func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler) error {
+func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context) error {
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
 		return err
@@ -72,12 +72,11 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		Path:                path,
 		ComponentName:       devfileObj.GetMetadataName(),
 		ApplicationName:     "app",
-		ExtChan:             make(chan bool),
 		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         absIgnorePaths,
 		InitialDevfileObj:   devfileObj,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters)
+	return o.watchClient.WatchAndPush(out, watchParameters, ctx)
 }

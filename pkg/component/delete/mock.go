@@ -35,21 +35,6 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// ListClusterResourcesToDelete mocks base method
-func (m *MockClient) ListClusterResourcesToDelete(componentName, namespace string) ([]unstructured.Unstructured, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListClusterResourcesToDelete", componentName, namespace)
-	ret0, _ := ret[0].([]unstructured.Unstructured)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListClusterResourcesToDelete indicates an expected call of ListClusterResourcesToDelete
-func (mr *MockClientMockRecorder) ListClusterResourcesToDelete(componentName, namespace interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDelete), componentName, namespace)
-}
-
 // DeleteResources mocks base method.
 func (m *MockClient) DeleteResources(arg0 []unstructured.Unstructured) []unstructured.Unstructured {
 	m.ctrl.T.Helper()
@@ -76,6 +61,21 @@ func (m *MockClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName 
 func (mr *MockClientMockRecorder) ExecutePreStopEvents(devfileObj, appName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecutePreStopEvents", reflect.TypeOf((*MockClient)(nil).ExecutePreStopEvents), devfileObj, appName)
+}
+
+// ListClusterResourcesToDelete mocks base method.
+func (m *MockClient) ListClusterResourcesToDelete(componentName, namespace string) ([]unstructured.Unstructured, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListClusterResourcesToDelete", componentName, namespace)
+	ret0, _ := ret[0].([]unstructured.Unstructured)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListClusterResourcesToDelete indicates an expected call of ListClusterResourcesToDelete.
+func (mr *MockClientMockRecorder) ListClusterResourcesToDelete(componentName, namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterResourcesToDelete", reflect.TypeOf((*MockClient)(nil).ListClusterResourcesToDelete), componentName, namespace)
 }
 
 // ListResourcesToDeleteFromDevfile mocks base method.

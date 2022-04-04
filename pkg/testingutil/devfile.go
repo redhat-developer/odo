@@ -1,6 +1,10 @@
 package testingutil
 
 import (
+	"path/filepath"
+	"runtime"
+	"strings"
+
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -8,9 +12,6 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 // GetFakeContainerComponent returns a fake container component for testing
@@ -302,7 +303,7 @@ func GetTestDevfileObjWithPreStopEvents(fs devfilefs.Filesystem, preStopId, preS
 	return obj
 }
 
-// GetTestDevfileObjFromFile takes the filename of devfile from tests/examples/sources/devfiles/nodejs and returns a parser.DevfileObj
+// GetTestDevfileObjFromFile takes the filename of devfile from tests/examples/source/devfiles/nodejs and returns a parser.DevfileObj
 func GetTestDevfileObjFromFile(fileName string) parser.DevfileObj {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
