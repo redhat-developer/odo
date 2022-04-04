@@ -41,7 +41,7 @@ func Test_getLabels(t *testing.T) {
 			},
 			want: labels.Set{
 				kubernetesPartOfLabel:           "applicationame",
-				app:                             "applicationame",
+				appLabel:                        "applicationame",
 				kubernetesManagedByLabel:        "odo",
 				kubernetesManagedByVersionLabel: version.VERSION,
 				kubernetesInstanceLabel:         "componentname",

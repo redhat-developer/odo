@@ -8,8 +8,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 
-	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"

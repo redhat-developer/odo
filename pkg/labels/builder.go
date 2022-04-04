@@ -39,7 +39,7 @@ func (o builder) WithAppName(name string) builder {
 }
 
 func (o builder) WithApp(name string) builder {
-	o.m[app] = name
+	o.m[appLabel] = name
 	return o
 }
 
@@ -74,6 +74,6 @@ func (o builder) WithStorageName(name string) builder {
 }
 
 func (o builder) WithComponent(name string) builder {
-	o.m["component"] = name
+	o.m[componentLabel] = name
 	return o
 }

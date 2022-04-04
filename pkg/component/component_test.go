@@ -7,8 +7,8 @@ import (
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

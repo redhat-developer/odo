@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/storage"
 	v1 "k8s.io/api/apps/v1"
 	v12 "k8s.io/api/core/v1"

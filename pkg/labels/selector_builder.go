@@ -16,7 +16,7 @@ func SelectorBuilder() selectorBuilder {
 }
 
 func (o selectorBuilder) WithComponent(name string) selectorBuilder {
-	req, err := labels.NewRequirement("component", selection.Equals, []string{name})
+	req, err := labels.NewRequirement(componentLabel, selection.Equals, []string{name})
 	if err != nil {
 		panic(err)
 	}

@@ -7,57 +7,17 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-// kubernetesInstanceLabel identifies the component name
-const kubernetesInstanceLabel = "app.kubernetes.io/instance"
-
-// kubernetesManagedByLabel identifies the manager of the component
-const kubernetesManagedByLabel = "app.kubernetes.io/managed-by"
-
-// kubernetesManagedByVersionLabel identifies the version of manager used to deploy the resource
-const kubernetesManagedByVersionLabel = "app.kubernetes.io/managed-by-version"
-
-// kubernetesPartOfLabel groups all object that belong to one application
-const kubernetesPartOfLabel = "app.kubernetes.io/part-of"
-
-// kubernetesStorageNameLabel is the label key that is applied to all storage resources
-// that are created
-const kubernetesStorageNameLabel = "app.kubernetes.io/storage-name"
-
-// ComponentDevMode indicates the resource is deployed using dev command
-const ComponentDevMode = "Dev"
-
-// ComponentDeployMode indicates the resource is deployed using deploy command
-const ComponentDeployMode = "Deploy"
-
-//  ComponentAnyMode is used to search resources deployed using either dev or deploy comamnd
-const ComponentAnyMode = ""
-
-// odoModeLabel ...
-const odoModeLabel = "odo.dev/mode"
-
-// odoProjectTypeAnnotation ...
-const odoProjectTypeAnnotation = "odo.dev/project-type"
-
-// app is the default name used when labeling
-const app = "app"
-
-const odoManager = "odo"
-
-// devfileStorageLabel is the label key that is applied to all storage resources for devfile components
-// that are created
-const devfileStorageLabel = "storage-name"
-
-const sourcePVCLabel = "odo-source-pvc"
-
 // GetLabels return labels that should be applied to every object for given component in active application
 // if you need labels to filter component then use GetSelector instead
 func GetLabels(componentName string, applicationName string, mode string) map[string]string {
 	labels := getLabels(componentName, applicationName, mode, true)
 	return labels
 }
+
+// AddStorageInfo adds labels for storage resources
 func AddStorageInfo(labels map[string]string, storageName string, isSourceVolume bool) {
 	labels[kubernetesStorageNameLabel] = storageName
-	labels["component"] = labels[kubernetesInstanceLabel]
+	labels[componentLabel] = labels[kubernetesInstanceLabel]
 	labels[devfileStorageLabel] = storageName
 	if isSourceVolume {
 		labels[sourcePVCLabel] = storageName
@@ -108,7 +68,7 @@ func SetProjectType(annotations map[string]string, value string) {
 	annotations[odoProjectTypeAnnotation] = value
 }
 
-// GetSelector is used for selection of resources which are a part of the given component
+// GetSelector returns a selector string used for selection of resources which are part of the given component in given mode
 func GetSelector(componentName string, applicationName string, mode string) string {
 	labels := getLabels(componentName, applicationName, mode, false)
 	return labels.String()
@@ -137,7 +97,7 @@ func getApplicationLabels(application string, additional bool) labels.Set {
 		kubernetesManagedByLabel: odoManager,
 	}
 	if additional {
-		labels[app] = application
+		labels[appLabel] = application
 		labels[kubernetesManagedByVersionLabel] = version.VERSION
 	}
 	return labels

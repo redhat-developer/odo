@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/redhat-developer/odo/pkg/component/labels"
-	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

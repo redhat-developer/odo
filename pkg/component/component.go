@@ -11,8 +11,8 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	odolabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
