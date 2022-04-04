@@ -50,7 +50,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 				deleteComponentClient: func(ctrl *gomock.Controller) _delete.Client {
 					client := _delete.NewMockClient(ctrl)
 					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(nil, nil)
-					client.EXPECT().DeleteResources(gomock.Any()).Times(0)
+					client.EXPECT().DeleteResources(gomock.Any(), false).Times(0)
 					return client
 				},
 			},
@@ -73,7 +73,7 @@ func TestComponentOptions_deleteNamedComponent(t *testing.T) {
 					resources = append(resources, res1, res2)
 					client := _delete.NewMockClient(ctrl)
 					client.EXPECT().ListClusterResourcesToDelete("my-component", "my-namespace").Return(resources, nil)
-					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}).Times(1)
+					client.EXPECT().DeleteResources([]unstructured.Unstructured{res1, res2}, false).Times(1)
 					return client
 				},
 			},
@@ -132,7 +132,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any()).Return(nil)
-				deleteClient.EXPECT().DeleteResources(resources).Return([]unstructured.Unstructured{})
+				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
 			},
 			fields: fields{
@@ -147,7 +147,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName).Return(errors.New("some error"))
-				deleteClient.EXPECT().DeleteResources(resources).Return(nil)
+				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
 			},
 			fields: fields{

@@ -157,8 +157,8 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 							Resource: res2.GetKind(),
 						},
 					}, nil)
-					client.EXPECT().DeleteDynamicResource(res1.GetName(), "", "v1", res1.GetKind())
-					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind())
+					client.EXPECT().DeleteDynamicResource(res1.GetName(), getGVR("", "v1", res1.GetKind()), false)
+					client.EXPECT().DeleteDynamicResource(res2.GetName(), getGVR("", "v1", res2.GetKind()), false)
 					return client
 				},
 			},
@@ -180,7 +180,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 							Resource: res2.GetKind(),
 						},
 					}, nil)
-					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind())
+					client.EXPECT().DeleteDynamicResource(res2.GetName(), getGVR("", "v1", res2.GetKind()), false)
 					return client
 				},
 			},
@@ -208,8 +208,8 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 							Resource: res2.GetKind(),
 						},
 					}, nil)
-					client.EXPECT().DeleteDynamicResource(res1.GetName(), "", "v1", res1.GetKind()).Return(errors.New("some error"))
-					client.EXPECT().DeleteDynamicResource(res2.GetName(), "", "v1", res2.GetKind())
+					client.EXPECT().DeleteDynamicResource(res1.GetName(), getGVR("", "v1", res1.GetKind()), false).Return(errors.New("some error"))
+					client.EXPECT().DeleteDynamicResource(res2.GetName(), getGVR("", "v1", res2.GetKind()), false)
 					return client
 				},
 			},
@@ -226,7 +226,7 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 			do := &DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			if got := do.DeleteResources(tt.args.resources); !reflect.DeepEqual(got, tt.want) {
+			if got := do.DeleteResources(tt.args.resources, false); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("DeleteComponentClient.DeleteResources() = %v, want %v", got, tt.want)
 			}
 		})
@@ -317,7 +317,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 
 					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource.Group, outerLoopGVR.Resource.Version, outerLoopGVR.Resource.Resource, outerLoopResource.GetName()).
+						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
 						Return(&deployedOuterLoopResource, nil)
 
 					return kubeClient
@@ -365,7 +365,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 						Return(&appsv1.Deployment{}, kerrors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "Deployments"}, innerLoopDeploymentName))
 					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource.Group, outerLoopGVR.Resource.Version, outerLoopGVR.Resource.Resource, outerLoopResource.GetName()).
+						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
 						Return(&deployedOuterLoopResource, nil)
 					return kubeClient
 				},
@@ -421,7 +421,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).Return(deployment, nil)
 					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource.Group, outerLoopGVR.Resource.Version, outerLoopGVR.Resource.Resource, outerLoopResource.GetName()).
+						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
 						Return(nil, errors.New("some error"))
 					return kubeClient
 				},
@@ -608,4 +608,12 @@ func getUnstructured(name, kind, apiVersion, namespace string) (u unstructured.U
 	u.SetAPIVersion(apiVersion)
 	u.SetNamespace(namespace)
 	return
+}
+
+func getGVR(group, version, resource string) schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
 }

@@ -397,6 +397,17 @@ func (oc OcRunner) GetAllPodsInNs(namespace string) string {
 	return Cmd(oc.path, args...).ShouldPass().Out()
 }
 
+// GetAllPodNames gets the names of pods in given namespace
+func (oc OcRunner) GetAllPodNames(namespace string) []string {
+	session := CmdRunner(oc.path, "get", "pods", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	if output == "" {
+		return []string{}
+	}
+	return strings.Split(output, " ")
+}
+
 // StatFileInPod returns stat result of filepath in pod of given component, in a given app, in a given project.
 // It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
 // in it anyway

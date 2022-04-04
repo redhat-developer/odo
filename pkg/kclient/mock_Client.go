@@ -18,6 +18,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	discovery "k8s.io/client-go/discovery"
 	dynamic "k8s.io/client-go/dynamic"
 	kubernetes "k8s.io/client-go/kubernetes"
@@ -91,17 +92,17 @@ func (mr *MockClientInterfaceMockRecorder) CreateDeployment(deploy interface{}) 
 }
 
 // CreateDynamicResource mocks base method.
-func (m *MockClientInterface) CreateDynamicResource(exampleCustomResource unstructured.Unstructured, gvr *meta.RESTMapping) error {
+func (m *MockClientInterface) CreateDynamicResource(exampleCustomResource unstructured.Unstructured) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDynamicResource", exampleCustomResource, gvr)
+	ret := m.ctrl.Call(m, "CreateDynamicResource", exampleCustomResource)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateDynamicResource indicates an expected call of CreateDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) CreateDynamicResource(exampleCustomResource, gvr interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) CreateDynamicResource(exampleCustomResource interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).CreateDynamicResource), exampleCustomResource, gvr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).CreateDynamicResource), exampleCustomResource)
 }
 
 // CreateNamespace mocks base method.
@@ -235,17 +236,17 @@ func (mr *MockClientInterfaceMockRecorder) DeleteDeployment(labels interface{}) 
 }
 
 // DeleteDynamicResource mocks base method.
-func (m *MockClientInterface) DeleteDynamicResource(name, group, version, resource string) error {
+func (m *MockClientInterface) DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDynamicResource", name, group, version, resource)
+	ret := m.ctrl.Call(m, "DeleteDynamicResource", name, gvr, wait)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteDynamicResource indicates an expected call of DeleteDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, group, version, resource interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, gvr, wait interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, group, version, resource)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, gvr, wait)
 }
 
 // DeleteNamespace mocks base method.
@@ -568,18 +569,18 @@ func (mr *MockClientInterfaceMockRecorder) GetDynamicClient() *gomock.Call {
 }
 
 // GetDynamicResource mocks base method.
-func (m *MockClientInterface) GetDynamicResource(group, version, resource, name string) (*unstructured.Unstructured, error) {
+func (m *MockClientInterface) GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDynamicResource", group, version, resource, name)
+	ret := m.ctrl.Call(m, "GetDynamicResource", gvr, name)
 	ret0, _ := ret[0].(*unstructured.Unstructured)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDynamicResource indicates an expected call of GetDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(group, version, resource, name interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(gvr, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), group, version, resource, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), gvr, name)
 }
 
 // GetNamespace mocks base method.
@@ -970,19 +971,19 @@ func (mr *MockClientInterfaceMockRecorder) ListDeployments(selector interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDeployments", reflect.TypeOf((*MockClientInterface)(nil).ListDeployments), selector)
 }
 
-// ListDynamicResource mocks base method.
-func (m *MockClientInterface) ListDynamicResource(group, version, resource string) (*unstructured.UnstructuredList, error) {
+// ListDynamicResources mocks base method.
+func (m *MockClientInterface) ListDynamicResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDynamicResource", group, version, resource)
+	ret := m.ctrl.Call(m, "ListDynamicResources", gvr)
 	ret0, _ := ret[0].(*unstructured.UnstructuredList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDynamicResource indicates an expected call of ListDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) ListDynamicResource(group, version, resource interface{}) *gomock.Call {
+// ListDynamicResources indicates an expected call of ListDynamicResources.
+func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(gvr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResource), group, version, resource)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), gvr)
 }
 
 // ListPVCNames mocks base method.
@@ -1126,6 +1127,20 @@ func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupPortForwarding", reflect.TypeOf((*MockClientInterface)(nil).SetupPortForwarding), pod, portPairs, out, errOut)
 }
 
+// TryWithBlockOwnerDeletion mocks base method.
+func (m *MockClientInterface) TryWithBlockOwnerDeletion(ownerReference v12.OwnerReference, exec func(v12.OwnerReference) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryWithBlockOwnerDeletion", ownerReference, exec)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TryWithBlockOwnerDeletion indicates an expected call of TryWithBlockOwnerDeletion.
+func (mr *MockClientInterfaceMockRecorder) TryWithBlockOwnerDeletion(ownerReference, exec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryWithBlockOwnerDeletion", reflect.TypeOf((*MockClientInterface)(nil).TryWithBlockOwnerDeletion), ownerReference, exec)
+}
+
 // UnlinkSecret mocks base method.
 func (m *MockClientInterface) UnlinkSecret(secretName, componentName, applicationName string) error {
 	m.ctrl.T.Helper()
@@ -1156,17 +1171,17 @@ func (mr *MockClientInterfaceMockRecorder) UpdateDeployment(deploy interface{}) 
 }
 
 // UpdateDynamicResource mocks base method.
-func (m *MockClientInterface) UpdateDynamicResource(group, version, resource, name string, u *unstructured.Unstructured) error {
+func (m *MockClientInterface) UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDynamicResource", group, version, resource, name, u)
+	ret := m.ctrl.Call(m, "UpdateDynamicResource", gvr, name, u)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateDynamicResource indicates an expected call of UpdateDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) UpdateDynamicResource(group, version, resource, name, u interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) UpdateDynamicResource(gvr, name, u interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).UpdateDynamicResource), group, version, resource, name, u)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).UpdateDynamicResource), gvr, name, u)
 }
 
 // UpdatePVCLabels mocks base method.

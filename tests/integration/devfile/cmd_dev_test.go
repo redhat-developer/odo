@@ -9,10 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	segment "github.com/redhat-developer/odo/pkg/segment/context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/onsi/gomega/gexec"
@@ -210,6 +209,7 @@ var _ = Describe("odo dev command tests", func() {
 					helper.EnableTelemetryDebug()
 					session, _, _, _, _ := helper.StartDevMode()
 					session.Stop()
+					session.WaitEnd()
 				})
 				AfterEach(func() {
 					helper.ResetTelemetry()
@@ -234,6 +234,65 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
+		When("odo dev is executed and Ephemeral is set to false", func() {
+
+			BeforeEach(func() {
+				helper.Cmd("odo", "preference", "set", "Ephemeral", "false").ShouldPass()
+
+				devSession, _, _, _, err := helper.StartDevMode()
+				Expect(err).ToNot(HaveOccurred())
+				defer devSession.Kill()
+				// An ENV file should have been created indicating current namespace
+				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+			})
+
+			It("should have created resources", func() {
+				By("creating a service", func() {
+					services := commonVar.CliRunner.GetServices(commonVar.Project)
+					Expect(services).To(SatisfyAll(
+						Not(BeEmpty()),
+						ContainSubstring(fmt.Sprintf("%s-app", cmpName)),
+					))
+				})
+				By("creating a PVC", func() {
+					pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+					Expect(strings.Join(pvcs, "\n")).To(SatisfyAll(
+						Not(BeEmpty()),
+						ContainSubstring(fmt.Sprintf("%s-app", cmpName)),
+					))
+				})
+				By("creating a pod", func() {
+					pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+					Expect(strings.Join(pods, "\n")).To(SatisfyAll(
+						Not(BeEmpty()),
+						ContainSubstring(fmt.Sprintf("%s-app-", cmpName)),
+					))
+				})
+			})
+
+			When("running odo delete component --wait", func() {
+				BeforeEach(func() {
+					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
+				})
+
+				It("should have deleted all resources before returning", func() {
+					By("deleting the service", func() {
+						services := commonVar.CliRunner.GetServices(commonVar.Project)
+						Expect(services).To(BeEmpty())
+					})
+					By("deleting the PVC", func() {
+						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+						Expect(pvcs).To(BeEmpty())
+					})
+					By("deleting the pod", func() {
+						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+						Expect(pods).To(BeEmpty())
+					})
 				})
 			})
 		})
