@@ -268,7 +268,6 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 }
 
 func (o *DevOptions) HandleSignal() error {
-	fmt.Fprintf(o.out, "\n\nCancelling deployment. Press Ctrl-c again to terminate immediately\n\n")
 	o.cancel()
 	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
 	// wait for the cleanup to finish and let the main thread finish instead of signal handler go routine from runnable

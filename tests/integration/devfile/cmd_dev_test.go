@@ -217,9 +217,8 @@ var _ = Describe("odo dev command tests", func() {
 				It("should record the telemetry data correctly", func() {
 					td := helper.GetTelemetryDebugData()
 					Expect(td.Event).To(ContainSubstring("odo dev"))
-					Expect(td.Properties.Success).To(BeFalse())
-					Expect(td.Properties.Error).To(ContainSubstring("interrupt"))
-					Expect(td.Properties.ErrorType == "*errors.errorString").To(BeTrue())
+					Expect(td.Properties.Success).To(BeTrue())
+					Expect(td.Properties.Error).ToNot(ContainSubstring("interrupt"))
 					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
 					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
 					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
