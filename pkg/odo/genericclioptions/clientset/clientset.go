@@ -58,7 +58,7 @@ const (
 var subdeps map[string][]string = map[string][]string{
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
-	DEV:              {WATCH, KUBERNETES},
+	DEV:              {WATCH},
 	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	WATCH:            {DELETE_COMPONENT},
