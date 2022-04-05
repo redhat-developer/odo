@@ -153,6 +153,11 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 
 	for _, resource := range resourceList {
 
+		// ignore "PackageManifest" as they are not components, it is just a record in OpenShift catalog.
+		if resource.GetKind() == "PackageManifest" {
+			continue
+		}
+
 		var labels, annotations map[string]string
 
 		// Retrieve the labels and annotations from the unstructured resource output
