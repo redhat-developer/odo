@@ -138,7 +138,10 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 		return nil, err
 	}
 
-	client.DynamicClient, err = dynamic.NewForConfig(client.KubeClientConfig)
+	noWarningConfig := rest.CopyConfig(client.KubeClientConfig)
+	// set the warning handler for this client to ignore warnings
+	noWarningConfig.WarningHandler = rest.NoWarnings{}
+	client.DynamicClient, err = dynamic.NewForConfig(noWarningConfig)
 	if err != nil {
 		return nil, err
 	}
