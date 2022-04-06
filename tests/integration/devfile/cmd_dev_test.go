@@ -251,6 +251,10 @@ var _ = Describe("odo dev command tests", func() {
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 			})
 
+			AfterEach(func() {
+				devSession.Kill()
+			})
+
 			It("should have created resources", func() {
 				By("creating a service", func() {
 					services := commonVar.CliRunner.GetServices(commonVar.Project)
