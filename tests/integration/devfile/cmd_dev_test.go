@@ -240,12 +240,12 @@ var _ = Describe("odo dev command tests", func() {
 
 		When("odo dev is executed and Ephemeral is set to false", func() {
 
+			var devSession helper.DevSession
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "Ephemeral", "false").ShouldPass()
-
-				devSession, _, _, _, err := helper.StartDevMode()
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
-				defer devSession.Kill()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
@@ -275,9 +275,32 @@ var _ = Describe("odo dev command tests", func() {
 				})
 			})
 
-			When("running odo delete component --wait", func() {
+			When("killing odo dev and running odo delete component --wait", func() {
 				BeforeEach(func() {
+					devSession.Kill()
 					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
+				})
+
+				It("should have deleted all resources before returning", func() {
+					By("deleting the service", func() {
+						services := commonVar.CliRunner.GetServices(commonVar.Project)
+						Expect(services).To(BeEmpty())
+					})
+					By("deleting the PVC", func() {
+						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+						Expect(pvcs).To(BeEmpty())
+					})
+					By("deleting the pod", func() {
+						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+						Expect(pods).To(BeEmpty())
+					})
+				})
+			})
+
+			When("stopping odo dev normally", func() {
+				BeforeEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should have deleted all resources before returning", func() {
