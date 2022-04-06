@@ -74,16 +74,6 @@ func (e ComponentsWithSameNameError) Error() string {
 	return "more than one component with the same name, should not happen"
 }
 
-type NotAContainerError struct{}
-
-func NewNotAContainerError() NotAContainerError {
-	return NotAContainerError{}
-}
-
-func (e NotAContainerError) Error() string {
-	return "component not a container"
-}
-
 // ComponentTypeNotFoundError is returned when no component with the specified type has been found in Devfile
 type ComponentTypeNotFoundError struct {
 	componentType v1alpha2.ComponentType

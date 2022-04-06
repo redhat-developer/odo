@@ -81,12 +81,12 @@ func HasPreStopEvents(devfileObj parser.DevfileObj) bool {
 	return len(preStopEvents) > 0
 }
 
-func ExecPostStartEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
+func ExecPostStartEvents(devfileObj parser.DevfileObj, handler Handler) error {
 	postStartEvents := devfileObj.Data.GetEvents().PostStart
 	return execDevfileEvent(devfileObj, postStartEvents, handler)
 }
 
-func ExecPreStopEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
+func ExecPreStopEvents(devfileObj parser.DevfileObj, handler Handler) error {
 	preStopEvents := devfileObj.Data.GetEvents().PreStop
 	return execDevfileEvent(devfileObj, preStopEvents, handler)
 }

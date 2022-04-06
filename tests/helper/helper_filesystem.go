@@ -85,12 +85,6 @@ func DeleteFile(filepath string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-// RenameFile renames a file from oldFileName to newFileName
-func RenameFile(oldFileName, newFileName string) {
-	err := os.Rename(oldFileName, newFileName)
-	Expect(err).NotTo(HaveOccurred())
-}
-
 // Chdir change current working dir
 func Chdir(dir string) {
 	fmt.Fprintf(GinkgoWriter, "Setting current dir to: %s\n", dir)
@@ -112,22 +106,6 @@ func Getwd() string {
 	return dir
 }
 
-// CopyExampleFile copies an example file from tests/examples/<file-path>
-// into targetDst
-func CopyExampleFile(filePath, targetDst string) {
-	// filename of this file
-	_, filename, _, _ := runtime.Caller(0)
-	// path to the examples directory
-	examplesDir := filepath.Join(filepath.Dir(filename), "..", "examples")
-
-	src := filepath.Join(examplesDir, filePath)
-	info, err := os.Stat(src)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = dfutil.CopyFile(src, targetDst, info)
-	Expect(err).NotTo(HaveOccurred())
-}
-
 // CopyExample copies an example from tests/examples/<binaryOrSource>/<componentName>/<exampleName> into targetDir
 func CopyExample(exampleName string, targetDir string) {
 	// filename of this file
@@ -141,21 +119,6 @@ func CopyExample(exampleName string, targetDir string) {
 
 	err = copyDir(src, targetDir, info)
 	Expect(err).NotTo(HaveOccurred())
-}
-
-func CopyManifestFile(fileName, targetDst string) {
-	// filename of this file
-	_, filename, _, _ := runtime.Caller(0)
-	// path to the examples directory
-	manifestsDir := filepath.Join(filepath.Dir(filename), "..", "examples", "manifests")
-
-	src := filepath.Join(manifestsDir, fileName)
-	info, err := os.Stat(src)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = dfutil.CopyFile(src, targetDst, info)
-	Expect(err).NotTo(HaveOccurred())
-
 }
 
 func GetExamplePath(args ...string) string {
@@ -258,12 +221,6 @@ func ListFilesInDir(directoryName string) []string {
 	return filesInDirectory
 }
 
-// CreateSymLink creates a symlink between the oldFile and the newFile
-func CreateSymLink(oldFileName, newFileName string) {
-	err := os.Symlink(oldFileName, newFileName)
-	Expect(err).NotTo(HaveOccurred())
-}
-
 // VerifyFileExists receives a path to a file, and returns whether or not
 // it points to an existing file
 func VerifyFileExists(filename string) bool {
@@ -272,47 +229,6 @@ func VerifyFileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
-}
-
-// ReplaceDevfileField replaces the value of a given field in a specified
-// devfile.
-// Currently only the first match of the field is replaced. i.e if the
-// field is 'type' and there are two types throughout the devfile, only one
-// is replaced with the newValue
-func ReplaceDevfileField(devfileLocation, field, newValue string) error {
-	file, err := ioutil.ReadFile(devfileLocation)
-	if err != nil {
-		return err
-	}
-	lines := strings.Split(string(file), "\n")
-	for i, line := range lines {
-		if strings.Contains(line, field) {
-			lineSplit := strings.SplitN(lines[i], ":", 2)
-			lineSplit[1] = newValue
-			lines[i] = strings.Join(lineSplit, ": ")
-			break
-		}
-	}
-	output := strings.Join(lines, "\n")
-	err = ioutil.WriteFile(devfileLocation, []byte(output), 0600)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// FileIsEmpty checks if the file is empty
-func FileIsEmpty(filename string) (bool, error) {
-	file, err := os.Stat(filename)
-	if err != nil {
-		return false, err
-	}
-
-	if file.Size() > 0 {
-		return false, nil
-	}
-
-	return true, nil
 }
 
 // ReadFile reads the file from the filePath

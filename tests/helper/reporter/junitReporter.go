@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"testing"
 	"time"
 
 	"github.com/onsi/ginkgo/config"
@@ -12,7 +11,7 @@ import (
 )
 
 // JunitReport takes test object and filepath as argument, returns junitReporter object
-func JunitReport(t *testing.T, filePath string) *reporters.JUnitReporter {
+func JunitReport(filePath string) *reporters.JUnitReporter {
 	time := time.Now()
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		_ = os.Mkdir(filePath, os.ModePerm)

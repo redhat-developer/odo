@@ -16,10 +16,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/component/labels"
 )
 
-const (
-	ResourceTypeRoute = "route"
-)
-
 type OcRunner struct {
 	// path to oc binary
 	path string
@@ -77,29 +73,6 @@ func (oc OcRunner) GetFirstURL(component string, app string, project string) str
 		return string(session.Out.Contents())
 	}
 	return ""
-}
-
-// StatFileInPodContainer returns stat result of filepath in a container of a pod of given component, in a given app, in a given project.
-// It also strips access time information as it vaires accross file systems/kernel configs, and we are not interested
-// in it anyway
-func StatFileInPodContainer(runner CliRunner, cmpName, containerName, appName, project, filepath string) string {
-	podName := runner.GetRunningPodNameByComponent(cmpName, project)
-	var result string
-	runner.CheckCmdOpInRemoteDevfilePod(
-		podName,
-		containerName,
-		project,
-		[]string{"stat", filepath},
-		func(cmdOp string, err error) bool {
-			// strip out access info as
-			// 1. Touching a file (such as running it in a script) modifies access times. This gives wrong value on mounts without noatime
-			// 2. We are not interested in Access info anyway.
-			re := regexp.MustCompile("(?m)[\r\n]+^.*Access.*$")
-			result = re.ReplaceAllString(cmdOp, "")
-			return true
-		},
-	)
-	return result
 }
 
 // GetComponentRoutes run command to get the Routes in yaml format for given component
@@ -486,7 +459,7 @@ func (oc OcRunner) WaitForRunnerCmdOut(args []string, timeout int, errOnFail boo
 				output += "\n"
 				output += string(session.Err.Contents())
 			}
-			if check(strings.TrimSpace(string(output))) {
+			if check(strings.TrimSpace(output)) {
 				return true
 			}
 		}

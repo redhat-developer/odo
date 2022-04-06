@@ -23,11 +23,11 @@ func GetValidEnvInfo(cmdline cmdline.Cmdline) (*envinfo.EnvSpecificInfo, error) 
 
 	// Now we check to see if we can skip gathering the information.
 	// Return if we can skip gathering configuration information
-	canWeSkip, err := cmdline.CheckIfConfigurationNeeded()
+	configIsNeeded, err := cmdline.CheckIfConfigurationNeeded()
 	if err != nil {
 		return nil, err
 	}
-	if canWeSkip {
+	if !configIsNeeded {
 		return envInfo, nil
 	}
 

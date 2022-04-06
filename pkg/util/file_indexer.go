@@ -209,7 +209,7 @@ func WriteFile(newFileMap map[string]FileData, resolvedPath string) error {
 // RunIndexerWithRemote reads the existing index from the given directory and runs the indexer on it
 // with the given ignore rules
 // it also adds the file index to the .gitignore file and resolves the path
-func RunIndexerWithRemote(directory string, absoluteIgnoreRules []string, originalIgnoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
+func RunIndexerWithRemote(directory string, originalIgnoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
 	directory = filepath.FromSlash(directory)
 	ret.ResolvedPath, err = ResolveIndexFilePath(directory)
 	if err != nil {
@@ -293,8 +293,7 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
 				// which uses path relative to base path for taro header to correctly identify file location when untarred
 
-				// Yes, now that the file exists, now we need to get the absolute path.. if we don't, then when we pass in:
-				// 'odo push --context foobar' instead of 'odo push --context ~/foobar' it will NOT work..
+				// now that the file exists, now we need to get the absolute path
 				fileAbsolutePath, err := dfutil.GetAbsPath(fileName)
 				if err != nil {
 					return IndexerRet{}, err

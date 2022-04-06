@@ -24,7 +24,7 @@ type Cmdline interface {
 	// IsFlagSet returns true if the flag is explicitely set
 	IsFlagSet(flagName string) bool
 
-	// CheckIfConfigurationNeeded checks against a set of commands that do *NOT* need configuration.
+	// CheckIfConfigurationNeeded checks against a set of commands that need configuration.
 	CheckIfConfigurationNeeded() (bool, error)
 
 	// Context returns the context attached to the command

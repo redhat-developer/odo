@@ -319,7 +319,7 @@ func (kubectl KubectlRunner) WaitForRunnerCmdOut(args []string, timeout int, err
 				output += "\n"
 				output += string(session.Err.Contents())
 			}
-			if check(strings.TrimSpace(string(output))) {
+			if check(strings.TrimSpace(output)) {
 				return true
 			}
 		}

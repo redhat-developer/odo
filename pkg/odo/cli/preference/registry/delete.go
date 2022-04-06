@@ -20,7 +20,7 @@ import (
 
 const deleteCommandName = "delete"
 
-// "odo registry delete" command description and examples
+// "odo preference registry delete" command description and examples
 var (
 	deleteLongDesc = ktemplates.LongDesc(`Delete devfile registry`)
 
@@ -29,7 +29,7 @@ var (
 	`)
 )
 
-// DeleteOptions encapsulates the options for the "odo registry delete" command
+// DeleteOptions encapsulates the options for the "odo preference registry delete" command
 type DeleteOptions struct {
 	// Clients
 	clientset *clientset.Clientset
@@ -68,7 +68,7 @@ func (o *DeleteOptions) Validate() (err error) {
 	return nil
 }
 
-// Run contains the logic for "odo registry delete" command
+// Run contains the logic for "odo preference registry delete" command
 func (o *DeleteOptions) Run(ctx context.Context) (err error) {
 	isSecure := registryUtil.IsSecure(o.clientset.PreferenceClient, o.registryName)
 	err = o.clientset.PreferenceClient.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
@@ -86,7 +86,7 @@ func (o *DeleteOptions) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-// NewCmdDelete implements the "odo registry delete" command
+// NewCmdDelete implements the "odo preference registry delete" command
 func NewCmdDelete(name, fullName string) *cobra.Command {
 	o := NewDeleteOptions()
 	registryDeleteCmd := &cobra.Command{

@@ -12,26 +12,31 @@ import (
 	"syscall"
 	"time"
 
+	"gopkg.in/AlecAivazis/survey.v1/terminal"
+
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
-	"gopkg.in/AlecAivazis/survey.v1/terminal"
 
 	"github.com/redhat-developer/odo/pkg/version"
 
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"gopkg.in/AlecAivazis/survey.v1"
+
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
+
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"k8s.io/klog"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 type Runnable interface {
@@ -105,9 +110,6 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	// fixes / checks all related machine readable output functions
 	util.LogErrorAndExit(CheckMachineReadableOutputCommand(cmd), "")
 
-	// LogErrorAndExit is used so that we get -o (jsonoutput) for cmds which have json output implemented
-	util.LogErrorAndExit(checkConflictingFlags(cmd, args), "")
-
 	deps, err := clientset.Fetch(cmd)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
@@ -174,39 +176,6 @@ func startTelemetry(cmd *cobra.Command, err error, startTime time.Time) {
 			return
 		}
 	}
-}
-
-// checkConflictingFlags checks for conflicting flags. Currently --context cannot be provided
-// with either --app, --project and --component as that information can be fetched from the local
-// config.
-func checkConflictingFlags(cmd *cobra.Command, args []string) error {
-
-	// we allow providing --context with --app and --project in case of `odo create` or `odo component create`
-	if cmd.Name() == "create" {
-		if cmd.HasParent() {
-			if cmd.Parent().Name() == "odo" || cmd.Parent().Name() == "component" {
-				return nil
-			}
-		}
-	}
-	app := stringFlagLookup(cmd, "app")
-	project := stringFlagLookup(cmd, "project")
-	context := stringFlagLookup(cmd, "context")
-	component := stringFlagLookup(cmd, "component")
-
-	if (context != "") && (app != "" || project != "" || component != "") {
-		return fmt.Errorf("cannot provide --app, --project or --component flag when --context is provided")
-	}
-	return nil
-}
-
-func stringFlagLookup(cmd *cobra.Command, flagName string) string {
-	flag := cmd.Flags().Lookup(flagName)
-	// a check to make sure if the flag is not defined we return blank
-	if flag == nil {
-		return ""
-	}
-	return flag.Value.String()
 }
 
 // CheckMachineReadableOutputCommand performs machine-readable output functions required to

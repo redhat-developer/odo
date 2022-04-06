@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/log"
 
 	// api resource types
 

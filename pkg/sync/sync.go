@@ -77,7 +77,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	uniquePaths := make(map[string]bool)
 	klog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
-		//watchTar
+		// watchTar
 		for _, fileName := range files {
 
 			if _, ok := uniquePaths[fileName]; ok {
@@ -99,8 +99,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 				// Fetch path of source file relative to that of source base path so that it can be passed to recursiveTar
 				// which uses path relative to base path for taro header to correctly identify file location when untarred
 
-				// Yes, now that the file exists, now we need to get the absolute path.. if we don't, then when we pass in:
-				// 'odo push --context foobar' instead of 'odo push --context ~/foobar' it will NOT work..
+				// now that the file exists, now we need to get the absolute path
 				fileAbsolutePath, err := dfutil.GetAbsPath(fileName)
 				if err != nil {
 					return err
@@ -164,7 +163,7 @@ func linearTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, fs 
 			return err
 		}
 		if len(files) == 0 {
-			//case empty directory
+			// case empty directory
 			hdr, _ := taro.FileInfoHeader(stat, joinedPath)
 			hdr.Name = destFile
 			if err := tw.WriteHeader(hdr); err != nil {
@@ -173,7 +172,7 @@ func linearTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, fs 
 		}
 		return nil
 	} else if stat.Mode()&os.ModeSymlink != 0 {
-		//case soft link
+		// case soft link
 		hdr, _ := taro.FileInfoHeader(stat, joinedPath)
 		target, err := os.Readlink(joinedPath)
 		if err != nil {
@@ -186,7 +185,7 @@ func linearTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, fs 
 			return err
 		}
 	} else {
-		//case regular file or other file type like pipe
+		// case regular file or other file type like pipe
 		hdr, err := taro.FileInfoHeader(stat, joinedPath)
 		if err != nil {
 			return err

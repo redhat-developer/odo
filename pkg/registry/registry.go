@@ -11,8 +11,9 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	"github.com/devfile/registry-support/registry-library/library"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/zalando/go-keyring"
+
+	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -116,7 +117,7 @@ func (o RegistryClient) ListDevfileStacks(registryName string) (DevfileStackList
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryStacks(o.preferenceClient, registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo registry update --help`)\n", registry.Name, err)
+				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo preference registry update --help`)\n", registry.Name, err)
 				return
 			}
 

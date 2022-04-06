@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -34,7 +35,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	It("Should fail with an error with no registries", func() {
 		helper.Cmd("odo", "preference", "registry", "delete", "DefaultDevfileRegistry", "-f").ShouldPass()
 		output := helper.Cmd("odo", "preference", "registry", "list").ShouldFail().Err()
-		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo registry add -h` to add one"})
+		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one"})
 	})
 
 	It("Should fail to update the registry, when registry is not present", func() {
@@ -55,7 +56,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
 		})
 
-		It("should pass, when doing odo create with --registry flag", func() {
+		It("should pass, when doing odo init with --devfile-registry flag", func() {
 			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", registryName).ShouldPass()
 		})
 
@@ -100,7 +101,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 				co = fmt.Sprintln(out, err)
 				helper.MatchAllInOutput(co, []string{deprecated, docLink})
 
-				By("odo registry list is executed, should show the warning", func() {
+				By("odo preference registry list is executed, should show the warning", func() {
 					out, err = helper.Cmd("odo", "preference", "registry", "list").ShouldPass().OutAndErr()
 					co = fmt.Sprintln(out, err)
 					helper.MatchAllInOutput(co, []string{deprecated, docLink})
