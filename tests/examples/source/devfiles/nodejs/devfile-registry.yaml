@@ -5,7 +5,7 @@ commands:
     group:
       isDefault: true
       kind: build
-    workingDir: /project
+    workingDir: ${PROJECT_SOURCE}
   id: install
 - exec:
     commandLine: npm start
@@ -13,7 +13,7 @@ commands:
     group:
       isDefault: true
       kind: run
-    workingDir: /project
+    workingDir: ${PROJECT_SOURCE}
   id: run
 - exec:
     commandLine: npm run debug
@@ -21,7 +21,7 @@ commands:
     group:
       isDefault: true
       kind: debug
-    workingDir: /project
+    workingDir: ${PROJECT_SOURCE}
   id: debug
 - exec:
     commandLine: npm test
@@ -29,7 +29,7 @@ commands:
     group:
       isDefault: true
       kind: test
-    workingDir: /project
+    workingDir: ${PROJECT_SOURCE}
   id: test
 components:
 - container:
@@ -39,7 +39,6 @@ components:
     image: registry.access.redhat.com/ubi8/nodejs-14:latest
     memoryLimit: 1024Mi
     mountSources: true
-    sourceMapping: /project
   name: runtime
 metadata:
   description: Stack with Node.js 14

@@ -62,7 +62,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			})
 
 			It("should find files in component container", func() {
-				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/projects/server.js").ShouldPass()
 			})
 
 			When("a storage is added and deployed", func() {
@@ -110,7 +110,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					})
 
 					It("should find files in component container", func() {
-						helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+						helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/projects/server.js").ShouldPass()
 					})
 
 					It("should find the link environment variable", func() {
@@ -161,7 +161,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 					})
 
 					It("should find files in component container", func() {
-						helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+						helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/projects/server.js").ShouldPass()
 					})
 
 					It("should find bindings for service", func() {
@@ -313,7 +313,7 @@ var _ = Describe("odo link command tests for OperatorHub", func() {
 			})
 
 			It("should find files in component container", func() {
-				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+				helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/projects/server.js").ShouldPass()
 			})
 
 			It("should find bindings for service", func() {

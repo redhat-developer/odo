@@ -136,7 +136,7 @@ var _ = Describe("Test suits to check .devfile.yaml compatibility", func() {
 				})
 
 				It("should find files in component container", func() {
-					helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/project/server.js").ShouldPass()
+					helper.Cmd("odo", "exec", "--context", commonVar.Context, "--", "ls", "/projects/server.js").ShouldPass()
 				})
 
 				It("should create pods in running state", func() {

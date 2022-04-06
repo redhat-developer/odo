@@ -5,6 +5,7 @@ commands:
     group:
       isDefault: true
       kind: build
+    workingDir: ${PROJECT_SOURCE}
   id: pip-install-requirements
 - exec:
     commandLine: python app.py
@@ -12,7 +13,7 @@ commands:
     group:
       isDefault: true
       kind: run
-    workingDir: ${PROJECTS_ROOT}
+    workingDir: ${PROJECT_SOURCE}
   id: run-app
 - exec:
     commandLine: pip install --user debugpy && python -m debugpy --listen 0.0.0.0:${DEBUG_PORT}
@@ -20,13 +21,16 @@ commands:
     component: py-web
     group:
       kind: debug
-    workingDir: ${PROJECTS_ROOT}
+    workingDir: ${PROJECT_SOURCE}
   id: debugpy
 components:
 - container:
     endpoints:
     - name: web
       targetPort: 8080
+    env:
+    - name: DEBUG_PORT
+      value: "5858"
     image: quay.io/eclipse/che-python-3.7:nightly
     mountSources: true
   name: py-web
@@ -45,5 +49,5 @@ schemaVersion: 2.0.0
 starterProjects:
 - git:
     remotes:
-      origin: https://github.com/odo-devfiles/python-ex
+      origin: https://github.com/devfile-samples/python-ex
   name: python-example
