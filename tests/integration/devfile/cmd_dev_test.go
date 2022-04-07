@@ -252,6 +252,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			AfterEach(func() {
+				// We stop the process so the process does not remain after the end of the tests
 				devSession.Kill()
 			})
 
