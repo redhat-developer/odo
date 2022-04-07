@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
@@ -1054,6 +1055,42 @@ var _ = Describe("odo devfile push command tests", func() {
 				helper.DontMatchAllInOutput(stdout, []string{"odo may not work as expected in the default project"})
 				helper.Cmd("odo", "delete", "-f").ShouldPass()
 			})
+		})
+	})
+
+	When("a container component defines a Command or Args", func() {
+		devfileCmpName := "nodejs"
+
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "create", "--project", commonVar.Project, devfileCmpName,
+				"--devfile",
+				helper.GetExamplePath("source", "devfiles", "nodejs",
+					"issue-5620-devfile-with-container-command-args.yaml")).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+		})
+
+		It("should run odo push successfully (#5620)", func() {
+			stdout := helper.Cmd("odo", "push").ShouldPass().Out()
+			helper.DontMatchAllInOutput(stdout, []string{"Failed to create the component:"})
+
+			//Check the processes managed by supervisord
+			for process, state := range map[string]string{"devrun": "RUNNING", "debugrun": "STOPPED"} {
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
+					"runtime",
+					commonVar.Project,
+					[]string{common.SupervisordBinaryPath, common.SupervisordCtlSubCommand, "status", process},
+					func(stdout string, err error) bool {
+						Expect(err).ShouldNot(HaveOccurred())
+						helper.MatchAllInOutput(stdout, []string{state})
+						return err == nil
+					},
+				)
+			}
+
+			helper.Cmd("odo", "delete", "-f").ShouldPass()
 		})
 	})
 
