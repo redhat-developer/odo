@@ -89,9 +89,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 		// Check if the container belongs to a run command component
 		if container.Name == runCommand.Exec.Component {
 			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
-			if len(container.Command) == 0 && len(container.Args) == 0 {
-				overrideContainerArgs(container)
-			}
+			overrideContainerArgs(container)
 
 			// Always mount the supervisord volume in the run component container
 			klog.V(2).Infof("Updating container %v with supervisord volume mounts", container.Name)
@@ -133,9 +131,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 		// Check if the container belongs to a debug command component
 		if debugCommand.Exec != nil && container.Name == debugCommand.Exec.Component {
 			// If the debug component container has no entrypoint and arguments, override the entrypoint with supervisord
-			if len(container.Command) == 0 && len(container.Args) == 0 {
-				overrideContainerArgs(container)
-			}
+			overrideContainerArgs(container)
 
 			foundMountPath := false
 			for _, mounts := range container.VolumeMounts {
@@ -211,6 +207,16 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 // overrideContainerArgs overrides the container's entrypoint with supervisord
 func overrideContainerArgs(container *corev1.Container) {
 	klog.V(2).Infof("Updating container %v entrypoint with supervisord", container.Name)
-	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
-	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+	//TODO(#5620): overriding command and args, irrespective of whether the container had Command or Args defined in it.
+	//   This is a hacky hotfix for https://github.com/redhat-developer/odo/issues/5620. Otherwise,
+	//   odo does not work at all if Devfile container component defines a Command or an Args.
+	//   As suggested in the issue, a proper fix will need to be implemented later on,
+	//   for example by keeping using supervisord as pid1, and executing the command with args "on the side"
+	//   as a separate process.
+	if len(container.Command) != 0 || len(container.Args) != 0 {
+		klog.V(4).Infof("original command and args for container %v intentionally ignored due to issue #5620",
+			container.Name)
+	}
+	container.Command = []string{adaptersCommon.SupervisordBinaryPath}
+	container.Args = []string{"-c", adaptersCommon.SupervisordConfFile}
 }
