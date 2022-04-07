@@ -20,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/version"
 
 	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/utils/pointer"
@@ -27,6 +28,11 @@ import (
 
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "init"
+
+// Below are various "outputs" that we use in both the CLI and test cases, so we must
+// put them in a common place
+
+const InitializingNewComponent = "Initializing new component"
 
 var initExample = templates.Examples(`
   # Boostrap a new component in interactive mode
@@ -129,12 +135,17 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+
+	// Show a welcome message for when you initially run `odo init`.
+
+	var infoOutput string
 	if isEmptyDir && len(o.flags) == 0 {
-		fmt.Println("The current directory is empty. odo will help you start a new project.")
+		infoOutput = component.NoSourceCodeDetected
 	} else if len(o.flags) == 0 {
-		fmt.Println("The current directory already contains source code. " +
-			"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.")
+		infoOutput = component.SourceCodeDetected
 	}
+	log.Title(InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Info("\nInteractive mode enabled, please answer the following questions:")
 
 	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
 	if err != nil {
@@ -179,8 +190,8 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
-Your new component %q is ready in the current directory.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE.
+Your new component '%s' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
 
 	// show information about `odo deploy` command only if the devfile has kind: deploy command defined.
@@ -215,8 +226,8 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 
 	initCmd.Flags().String(backend.FLAG_NAME, "", "name of the component to create")
 	initCmd.Flags().String(backend.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
-	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
-	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project. Available starter projects can be found with \"odo catalog describe component <devfile>\"")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo preference registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
+	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
 	// Add a defined annotation in order to appear in the help menu

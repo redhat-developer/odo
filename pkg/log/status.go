@@ -294,6 +294,16 @@ func Title(firstLine, secondLine, thirdLine string) {
  \__/%s`, blue(firstLine), secondLine, thirdLine, "\n")
 }
 
+// Stitle is the same as Title but returns the string instead
+func Stitle(firstLine, secondLine, thirdLine string) string {
+	blue := color.New(color.FgBlue).SprintFunc()
+	return fmt.Sprintf(`  __
+ /  \__     %s
+ \__/  \    %s
+ /  \__/    %s
+ \__/%s`, blue(firstLine), secondLine, thirdLine, "\n")
+}
+
 // Sectionf outputs a title in BLUE and underlined for separating a section (such as building a container, deploying files, etc.)
 // T͟h͟i͟s͟ ͟i͟s͟ ͟u͟n͟d͟e͟r͟l͟i͟n͟e͟d͟ ͟b͟l͟u͟e͟ ͟t͟e͟x͟t͟
 func Sectionf(format string, a ...interface{}) {

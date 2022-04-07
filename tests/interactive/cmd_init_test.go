@@ -6,11 +6,17 @@ package interactive
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
+	"strings"
+
+	odolog "github.com/redhat-developer/odo/pkg/log"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -22,6 +28,10 @@ var _ = Describe("odo init interactive command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
+
+		// We make EXPLICITLY sure that we are outputting with NO COLOR
+		// this is because in some cases we are comparing the output with a colorized one
+		os.Setenv("NO_COLOR", "true")
 	})
 
 	// Clean up after the test
@@ -46,11 +56,11 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "my-go-app")
 
-			helper.ExpectString(ctx, "Your new component \"my-go-app\" is ready in the current directory.")
+			helper.ExpectString(ctx, "Your new component 'my-go-app' is ready in the current directory")
 
 		})
 		Expect(err).To(BeNil())
-		Expect(output).To(ContainSubstring("Your new component \"my-go-app\" is ready in the current directory."))
+		Expect(output).To(ContainSubstring("Your new component 'my-go-app' is ready in the current directory"))
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
@@ -71,12 +81,12 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "my-go-app")
 
-			helper.ExpectString(ctx, "Your new component \"my-go-app\" is ready in the current directory.")
+			helper.ExpectString(ctx, "Your new component 'my-go-app' is ready in the current directory")
 
 		})
 
 		Expect(err).To(BeNil())
-		Expect(output).To(ContainSubstring("Your new component \"my-go-app\" is ready in the current directory."))
+		Expect(output).To(ContainSubstring("Your new component 'my-go-app' is ready in the current directory"))
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
@@ -100,7 +110,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				helper.SendLine(ctx, fmt.Sprintf("my-%s-app", language))
 
 				helper.ExpectString(ctx,
-					fmt.Sprintf("Your new component \"my-%s-app\" is ready in the current directory.", language))
+					fmt.Sprintf("Your new component 'my-%s-app' is ready in the current directory", language))
 			}
 		}
 
@@ -114,7 +124,7 @@ var _ = Describe("odo init interactive command tests", func() {
 			Expect(len(lines)).To(BeNumerically(">", len(msgs)))
 			Expect(lines[0:len(msgs)]).To(Equal(msgs))
 			Expect(lines).To(
-				ContainElement(fmt.Sprintf("Your new component \"my-%s-app\" is ready in the current directory.", language)))
+				ContainElement(fmt.Sprintf("Your new component 'my-%s-app' is ready in the current directory", language)))
 
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 
@@ -141,9 +151,9 @@ var _ = Describe("odo init interactive command tests", func() {
 
 			It("should display appropriate welcoming messages", func() {
 				language := "java"
-				welcomingMsgs := []string{
-					"The current directory is empty. odo will help you start a new project.",
-				}
+
+				// The first output is welcoming message / paragraph / banner output
+				welcomingMsgs := strings.Split(odolog.Stitle(component.InitializingNewComponent, component.NoSourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Select language")
@@ -172,10 +182,7 @@ var _ = Describe("odo init interactive command tests", func() {
 
 			It("should display appropriate welcoming messages", func() {
 				language := "python"
-				welcomingMsgs := []string{
-					"The current directory already contains source code. " +
-						"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project.",
-				}
+				welcomingMsgs := strings.Split(odolog.Stitle(component.InitializingNewComponent, component.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -221,7 +228,7 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "my-dotnet-app")
 
-			helper.ExpectString(ctx, "Your new component \"my-dotnet-app\" is ready in the current directory.")
+			helper.ExpectString(ctx, "Your new component 'my-dotnet-app' is ready in the current directory")
 		})
 
 		Expect(err).To(BeNil())
@@ -229,7 +236,7 @@ var _ = Describe("odo init interactive command tests", func() {
 		lines, err := helper.ExtractLines(output)
 		Expect(err).To(BeNil())
 		Expect(len(lines)).To(BeNumerically(">", 2))
-		Expect(lines[len(lines)-1]).To(Equal("Your new component \"my-dotnet-app\" is ready in the current directory."))
+		Expect(lines[len(lines)-1]).To(Equal("Your new component 'my-dotnet-app' is ready in the current directory"))
 
 		componentNameQuestionIdx, ok := helper.FindFirstElementIndexMatchingRegExp(lines, ".*Enter component name:.*")
 		Expect(ok).To(BeTrue())

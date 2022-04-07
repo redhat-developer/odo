@@ -13,6 +13,10 @@ PKGS := $(shell go list $(COMMON_GOFLAGS)  ./... | grep -v $(PROJECT)/vendor | g
 FILES := odo dist
 TIMEOUT ?= 14400s
 
+# We should NOT output any color when running interactive tests
+# or else we may have issues with regards to comparing coloured output strings
+NO_COLOR = true
+
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
 # TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node if running on PSI cluster or 24 nodes if running on IBM Cloud cluster.
