@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -142,11 +143,12 @@ func (o DevSession) Kill() {
 
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
 func (o DevSession) Stop() {
-	o.session.Interrupt()
+	err := terminateProc(o.session)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 }
 
 func (o DevSession) WaitEnd() {
-	o.session.Wait(1 * time.Minute)
+	o.session.Wait(3 * time.Minute)
 }
 
 //  WaitSync waits for the synchronization of files to be finished
@@ -176,7 +178,10 @@ func RunDevMode(inside func(session *gexec.Session, outContents []byte, errConte
 	if err != nil {
 		return err
 	}
-	defer session.Stop()
+	defer func() {
+		session.Stop()
+		session.WaitEnd()
+	}()
 	inside(session.session, outContents, errContents, urls)
 	return nil
 }
