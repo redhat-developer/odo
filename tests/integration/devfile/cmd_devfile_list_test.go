@@ -39,6 +39,7 @@ var _ = Describe("odo list with devfile", func() {
 		})
 		AfterEach(func() {
 			devSession.Stop()
+			devSession.WaitEnd()
 		})
 
 		var checkList = func(componentType string) {
@@ -106,6 +107,7 @@ var _ = Describe("odo list with devfile", func() {
 				})
 				AfterEach(func() {
 					devSession.Stop()
+					devSession.WaitEnd()
 				})
 
 				It("should show the language for 'Type' in odo list", func() {
@@ -132,6 +134,7 @@ var _ = Describe("odo list with devfile", func() {
 				})
 				AfterEach(func() {
 					devSession.Stop()
+					devSession.WaitEnd()
 				})
 				It("should show 'nodejs' for 'Type' in odo list", func() {
 					checkList("Not available")

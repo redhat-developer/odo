@@ -170,7 +170,10 @@ var _ = Describe("odo dev command tests", func() {
 			BeforeEach(func() {
 				devSession, _, _, _, err := helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
-				defer devSession.Kill()
+				defer func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+				}()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
@@ -255,6 +258,7 @@ var _ = Describe("odo dev command tests", func() {
 			AfterEach(func() {
 				// We stop the process so the process does not remain after the end of the tests
 				devSession.Kill()
+				devSession.WaitEnd()
 			})
 
 			It("should have created resources", func() {
@@ -284,6 +288,7 @@ var _ = Describe("odo dev command tests", func() {
 			When("killing odo dev and running odo delete component --wait", func() {
 				BeforeEach(func() {
 					devSession.Kill()
+					devSession.WaitEnd()
 					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
 				})
 
@@ -1267,6 +1272,7 @@ var _ = Describe("odo dev command tests", func() {
 			devSession, _, _, _, err := helper.StartDevMode()
 			Expect(err).ShouldNot(HaveOccurred())
 			devSession.Kill()
+			devSession.WaitEnd()
 		})
 
 		It("should not create Ingress or Route resources in the cluster", func() {

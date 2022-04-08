@@ -70,7 +70,10 @@ ComponentSettings:
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
-				defer devSession.Kill()
+				defer func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+				}()
 				Expect(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()).To(ContainSubstring(cmpName))
 			})
 

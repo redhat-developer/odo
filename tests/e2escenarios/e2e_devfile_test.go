@@ -45,6 +45,7 @@ var _ = Describe("odo devfile supported tests", func() {
 		session, _, _, _, err := helper.StartDevMode()
 		Expect(err).ToNot(HaveOccurred())
 		session.Stop()
+		session.WaitEnd()
 
 		//		stopChannel := make(chan bool)
 		//		go func() {
