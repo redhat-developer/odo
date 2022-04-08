@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"syscall"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -26,11 +24,7 @@ func CmdRunner(program string, args ...string) *gexec.Session {
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)
 	command := exec.Command(program, args...)
-	if runtime.GOOS == "windows" {
-		command.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
-		}
-	}
+	setSysProcAttr(command)
 	fmt.Fprintln(GinkgoWriter, runningCmd(command))
 	session, err := gexec.Start(command, prefixWriter, prefixWriter)
 	Expect(err).NotTo(HaveOccurred())

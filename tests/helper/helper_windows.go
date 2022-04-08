@@ -5,6 +5,7 @@ package helper
 
 import (
 	"fmt"
+	"os/exec"
 	"syscall"
 
 	"github.com/onsi/gomega/gexec"
@@ -27,4 +28,10 @@ func terminateProc(session *gexec.Session) error {
 		return fmt.Errorf("calling GenerateConsoleCtrlEvent: %w", err)
 	}
 	return nil
+}
+
+func setSysProcAttr(command *exec.Cmd) {
+	command.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+	}
 }

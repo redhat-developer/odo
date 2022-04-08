@@ -9,3 +9,5 @@ func terminateProc(session *gexec.Session) error {
 	session.Interrupt()
 	return nil
 }
+
+func setSysProcAttr(command *exec.Cmd) {}
