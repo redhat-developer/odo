@@ -484,6 +484,11 @@ func IsDebug() bool {
 	return false
 }
 
+// IsAppleSilicon returns true if we are on a Mac M1 / Apple Silicon natively
+func IsAppleSilicon() bool {
+	return runtime.GOOS == "darwin" && (strings.HasPrefix(runtime.GOARCH, "arm") || strings.HasPrefix(runtime.GOARCH, "arm64"))
+}
+
 // GetStdout gets the appropriate stdout from the OS. If it's Linux, it will use
 // the go-colorable library in order to fix any and all color ASCII issues.
 // TODO: Test needs to be added once we get Windows testing available on TravisCI / CI platform.

@@ -95,6 +95,21 @@ func selectBackend() (Backend, error) {
 		podmanCmd = "podman"
 	}
 	if _, err := lookPathCmd(podmanCmd); err == nil {
+
+		// Podman does NOT build x86 images on Apple Silicon / M1 and we must *WARN* the user that this will not work.
+		// There is a temporary workaround in order to build x86 images on Apple Silicon / M1 by running the following commands:
+		// podman machine ssh sudo rpm-ostree install qemu-user-static
+		// podman machine ssh sudo systemctl reboot
+		//
+		// The problem is that Fedora CoreOS does not have qemu-user-static installed by default,
+		// and the workaround is to install it manually as the dependencies need to be integrated into the Fedora ecosystem
+		// The open discussion is here: https://github.com/containers/podman/discussions/12899
+		//
+		// TODO: Remove this warning when Podman natively supports x86 images on Apple Silicon / M1.
+		if log.IsAppleSilicon() {
+			log.Warning("WARNING: Building images on Apple Silicon / M1 is not (yet) supported natively on Podman")
+			log.Warning("There is however a temporary workaround: https://github.com/containers/podman/discussions/12899")
+		}
 		return NewDockerCompatibleBackend(podmanCmd), nil
 	}
 
