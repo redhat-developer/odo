@@ -5,11 +5,9 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -66,12 +64,6 @@ func (pgo *ProjectGetOptions) Run(ctx context.Context) (err error) {
 	}
 
 	log.Infof("The current project is: %v", currentProject)
-
-	if log.IsJSON() {
-		prj := project.NewProject(currentProject, true)
-		machineoutput.OutputSuccess(prj)
-	}
-
 	return nil
 }
 
@@ -80,12 +72,11 @@ func NewCmdProjectGet(name, fullName string) *cobra.Command {
 	o := NewProjectGetOptions()
 
 	projectGetCmd := &cobra.Command{
-		Use:         name,
-		Short:       getShortDesc,
-		Long:        getLongDesc,
-		Example:     fmt.Sprintf(getExample, fullName),
-		Args:        cobra.ExactArgs(0),
-		Annotations: map[string]string{"machineoutput": "json"},
+		Use:     name,
+		Short:   getShortDesc,
+		Long:    getLongDesc,
+		Example: fmt.Sprintf(getExample, fullName),
+		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

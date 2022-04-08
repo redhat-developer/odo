@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/project"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"context"
+
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -103,12 +102,6 @@ func (pco *ProjectCreateOptions) Run(ctx context.Context) (err error) {
 
 	log.Successf("New project created and now using project: %v", pco.projectName)
 
-	// If -o json has been passed, let's output the appropriate json output.
-	if log.IsJSON() {
-		prj := project.NewProject(pco.projectName, true)
-		machineoutput.OutputSuccess(prj)
-	}
-
 	return nil
 }
 
@@ -117,12 +110,11 @@ func NewCmdProjectCreate(name, fullName string) *cobra.Command {
 	o := NewProjectCreateOptions()
 
 	projectCreateCmd := &cobra.Command{
-		Use:         name,
-		Short:       createShortDesc,
-		Long:        createLongDesc,
-		Example:     fmt.Sprintf(createExample, fullName),
-		Args:        cobra.ExactArgs(1),
-		Annotations: map[string]string{"machineoutput": "json"},
+		Use:     name,
+		Short:   createShortDesc,
+		Long:    createLongDesc,
+		Example: fmt.Sprintf(createExample, fullName),
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

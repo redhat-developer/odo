@@ -31,11 +31,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 		helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 	})
 
-	It("Should list all default registries with json", func() {
-		output := helper.Cmd("odo", "preference", "registry", "list", "-o", "json").ShouldPass().Out()
-		helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
-	})
-
 	It("Should fail with an error with no registries", func() {
 		helper.Cmd("odo", "preference", "registry", "delete", "DefaultDevfileRegistry", "-f").ShouldPass()
 		output := helper.Cmd("odo", "preference", "registry", "list").ShouldFail().Err()

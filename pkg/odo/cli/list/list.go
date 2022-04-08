@@ -12,7 +12,6 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/spf13/cobra"
 
@@ -147,11 +146,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 		devfileComponents = append(devfileComponents, lo.localComponent)
 	}
 
-	if log.IsJSON() {
-		machineoutput.OutputSuccess(devfileComponents)
-	} else {
-		lo.HumanReadableOutput(log.GetStdout(), devfileComponents)
-	}
+	lo.HumanReadableOutput(log.GetStdout(), devfileComponents)
 
 	return nil
 }
@@ -166,7 +161,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		Long:        "List all components in the current namespace.",
 		Example:     fmt.Sprintf(listExample, fullName),
 		Args:        cobra.NoArgs,
-		Annotations: map[string]string{"machineoutput": "json", "command": "main"},
+		Annotations: map[string]string{"command": "main"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
