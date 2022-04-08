@@ -10,7 +10,7 @@ import (
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
-	backend "github.com/redhat-developer/odo/pkg/init/backend"
+	alizer "github.com/redhat-developer/odo/pkg/alizer"
 	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -38,7 +38,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DownloadDevfile mocks base method.
-func (m *MockClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
+func (m *MockClient) DownloadDevfile(devfileLocation *alizer.DevfileLocation, destDir string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadDevfile", devfileLocation, destDir)
 	ret0, _ := ret[0].(string)
@@ -141,10 +141,10 @@ func (mr *MockClientMockRecorder) SelectAndPersonalizeDevfile(flags, contextDir 
 }
 
 // SelectDevfile mocks base method.
-func (m *MockClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error) {
+func (m *MockClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*alizer.DevfileLocation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
-	ret0, _ := ret[0].(*backend.DevfileLocation)
+	ret0, _ := ret[0].(*alizer.DevfileLocation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

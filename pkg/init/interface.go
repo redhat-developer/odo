@@ -11,7 +11,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	"github.com/redhat-developer/odo/pkg/init/backend"
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -35,11 +35,11 @@ type Client interface {
 	// SelectDevfile returns information about a devfile selected based on Alizer if the directory content,
 	// or based on the flags if the directory is empty, or
 	// interactively if flags is empty
-	SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error)
+	SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*alizer.DevfileLocation, error)
 
 	// DownloadDevfile downloads a devfile given its location information and a destination directory
 	// and returns the path of the downloaded file
-	DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error)
+	DownloadDevfile(devfileLocation *alizer.DevfileLocation, destDir string) (string, error)
 
 	// SelectStarterProject selects a starter project from the devfile and returns information about the starter project,
 	// depending on the flags. If not starter project is selected, a nil starter is returned

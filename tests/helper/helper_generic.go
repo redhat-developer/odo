@@ -18,6 +18,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
+	"github.com/tidwall/gjson"
 
 	"github.com/redhat-developer/odo/tests/helper/reporter"
 
@@ -400,6 +401,20 @@ func CommonAfterEach(commonVar CommonVar) {
 	DeleteDir(commonVar.ConfigDir)
 
 	os.Unsetenv("GLOBALODOCONFIG")
+}
+
+// JsonPathContentIs expects that the content of the path to equal value
+func JsonPathContentIs(json string, path string, value string) bool {
+	result := gjson.Get(json, path)
+	Expect(result.String()).To(Equal(value), fmt.Sprintf("content of path %q should be %q but is %q", path, value, result.String()))
+	return true
+}
+
+// JsonPathContentContain expects that the content of the path to contain value
+func JsonPathContentContain(json string, path string, value string) bool {
+	result := gjson.Get(json, path)
+	Expect(result.String()).To(ContainSubstring(value), fmt.Sprintf("content of path %q should contain %q but is %q", path, value, result.String()))
+	return true
 }
 
 // SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters

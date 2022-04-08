@@ -7,8 +7,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // LogErrorAndExit prints the given error and exits the code with an exit code of 1.
@@ -23,13 +21,8 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 
 			// Machine readble error output
 			machineOutput := machineoutput.GenericError{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       machineoutput.ErrorKind,
-					APIVersion: machineoutput.APIVersion,
-				},
 				Message: err.Error(),
 			}
-
 			// Output the error
 			machineoutput.OutputError(machineOutput)
 

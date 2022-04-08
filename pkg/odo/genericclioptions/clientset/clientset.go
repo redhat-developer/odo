@@ -12,6 +12,7 @@
 package clientset
 
 import (
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/spf13/cobra"
 
@@ -27,6 +28,8 @@ import (
 )
 
 const (
+	// ALIZER instantiates client for pkg/alizer
+	ALIZER = "DEP_ALIZER"
 	// DELETE_COMPONENT instantiates client for pkg/component/delete
 	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 	// DEPLOY instantiates client for pkg/deploy
@@ -56,16 +59,19 @@ const (
 // subdeps defines the sub-dependencies
 // Clients will be created only once and be reused for sub-dependencies
 var subdeps map[string][]string = map[string][]string{
+	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
 	DEV:              {WATCH},
-	INIT:             {FILESYSTEM, PREFERENCE, REGISTRY},
+	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	PROJECT:          {KUBERNETES_NULLABLE},
+	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	WATCH:            {DELETE_COMPONENT},
 	/* Add sub-dependencies here, if any */
 }
 
 type Clientset struct {
+	AlizerClient     alizer.Client
 	DeleteClient     _delete.Client
 	DeployClient     deploy.Client
 	DevClient        dev.Client
@@ -123,6 +129,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 
 	/* With sub-dependencies */
+	if isDefined(command, ALIZER) {
+		dep.AlizerClient = alizer.NewAlizerClient(dep.RegistryClient)
+	}
 	if isDefined(command, DELETE_COMPONENT) {
 		dep.DeleteClient = _delete.NewDeleteComponentClient(dep.KubernetesClient)
 	}
@@ -130,7 +139,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.DeployClient = deploy.NewDeployClient(dep.KubernetesClient)
 	}
 	if isDefined(command, INIT) {
-		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient)
+		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)

@@ -10,6 +10,7 @@ import (
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
+	alizer "github.com/redhat-developer/odo/pkg/alizer"
 	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -67,10 +68,10 @@ func (mr *MockInitBackendMockRecorder) PersonalizeName(devfile, flags interface{
 }
 
 // SelectDevfile mocks base method.
-func (m *MockInitBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*DevfileLocation, error) {
+func (m *MockInitBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*alizer.DevfileLocation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectDevfile", flags, fs, dir)
-	ret0, _ := ret[0].(*DevfileLocation)
+	ret0, _ := ret[0].(*alizer.DevfileLocation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

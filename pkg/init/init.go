@@ -13,6 +13,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 	"k8s.io/utils/pointer"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/init/backend"
@@ -35,13 +36,13 @@ type InitClient struct {
 	registryClient   registry.Client
 }
 
-func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client) *InitClient {
+func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client, alizerClient alizer.Client) *InitClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()
 	return &InitClient{
 		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
 		interactiveBackend: backend.NewInteractiveBackend(askerClient, registryClient),
-		alizerBackend:      backend.NewAlizerBackend(askerClient, registryClient),
+		alizerBackend:      backend.NewAlizerBackend(askerClient, alizerClient),
 		fsys:               fsys,
 		preferenceClient:   preferenceClient,
 		registryClient:     registryClient,
@@ -72,7 +73,7 @@ func (o *InitClient) Validate(flags map[string]string, fs filesystem.Filesystem,
 }
 
 // SelectDevfile calls SelectDevfile methods of the adequate backend
-func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*backend.DevfileLocation, error) {
+func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*alizer.DevfileLocation, error) {
 	var backend backend.InitBackend
 
 	empty, err := location.DirIsEmpty(fs, dir)
@@ -104,7 +105,7 @@ func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesy
 	return location, err
 }
 
-func (o *InitClient) DownloadDevfile(devfileLocation *backend.DevfileLocation, destDir string) (string, error) {
+func (o *InitClient) DownloadDevfile(devfileLocation *alizer.DevfileLocation, destDir string) (string, error) {
 	destDevfile := filepath.Join(destDir, "devfile.yaml")
 	if devfileLocation.DevfilePath != "" {
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)
