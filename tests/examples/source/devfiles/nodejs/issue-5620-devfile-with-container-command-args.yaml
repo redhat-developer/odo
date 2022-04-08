@@ -1,0 +1,59 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.1
+  displayName: Node.js Runtime
+  description: Stack with Node.js 14
+  icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+  tags: ['NodeJS', 'Express', 'ubi8']
+  projectType: 'nodejs'
+  language: 'javascript'
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: 'https://github.com/odo-devfiles/nodejs-ex.git'
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-14:latest
+      command: ["tail"]
+      args: ["-f", "/dev/null"]
+      memoryLimit: 1024Mi
+      mountSources: true
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+commands:
+  - id: install
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: true
+  - id: run
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: run
+        isDefault: true
+  - id: debug
+    exec:
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: debug
+        isDefault: true
+  - id: test
+    exec:
+      component: runtime
+      commandLine: npm test
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: test
+        isDefault: true

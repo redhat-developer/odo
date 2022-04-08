@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -1245,6 +1246,39 @@ var _ = Describe("odo dev command tests", func() {
 				routes, err := helper.ExtractLines(string(routesOut))
 				Expect(err).To(BeNil())
 				Expect(routes).To(BeEmpty())
+			}
+		})
+	})
+
+	When("a container component defines a Command or Args", func() {
+		devfileCmpName := "nodejs"
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+
+		It("should run odo dev successfully (#5620)", func() {
+			devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode()
+			Expect(err).ShouldNot(HaveOccurred())
+			defer devSession.Stop()
+			const errorMessage = "Failed to create the component:"
+			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
+			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
+			//Check the processes managed by supervisord
+			for process, state := range map[string]string{"devrun": "RUNNING", "debugrun": "STOPPED"} {
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
+					"runtime",
+					commonVar.Project,
+					[]string{common.SupervisordBinaryPath, common.SupervisordCtlSubCommand, "status", process},
+					func(stdout string, err error) bool {
+						Expect(err).ShouldNot(HaveOccurred())
+						helper.MatchAllInOutput(stdout, []string{state})
+						return err == nil
+					},
+				)
 			}
 		})
 	})
