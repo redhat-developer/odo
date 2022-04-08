@@ -29,11 +29,6 @@ import (
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "init"
 
-// Below are various "outputs" that we use in both the CLI and test cases, so we must
-// put them in a common place
-
-const InitializingNewComponent = "Initializing new component"
-
 var initExample = templates.Examples(`
   # Boostrap a new component in interactive mode
   %[1]s
@@ -144,7 +139,7 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 	} else if len(o.flags) == 0 {
 		infoOutput = component.SourceCodeDetected
 	}
-	log.Title(InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Title(component.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
 	log.Info("\nInteractive mode enabled, please answer the following questions:")
 
 	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
