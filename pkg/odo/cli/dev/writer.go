@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 type PortWriter struct {
@@ -23,6 +25,12 @@ func NewPortWriter(buffer io.Writer, len int) *PortWriter {
 }
 
 func (o *PortWriter) Write(buf []byte) (n int, err error) {
+
+	// Set the colours to green (to indicate that the port is OPEN)
+	// as well as bold. So it stands our that the application is currently
+	// being port forwarded.
+	color.Set(color.FgGreen, color.Bold)
+	defer color.Unset() // Use it in your function
 	s := string(buf)
 	if strings.HasPrefix(s, "Forwarding from 127.0.0.1") {
 		fmt.Fprintf(o.buffer, " - %s", s)

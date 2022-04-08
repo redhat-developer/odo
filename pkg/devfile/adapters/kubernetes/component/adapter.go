@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"io"
-	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -38,6 +37,7 @@ import (
 )
 
 const supervisorDStatusWaitTimeInterval = 1
+const numberOfLinesToOutputLog = 100
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
@@ -382,21 +382,20 @@ func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error 
 	}
 
 	if !running {
-		numberOfLines := 20
-		log.Warningf("devfile command %q exited with error status within %d sec", command.Id, supervisorDStatusWaitTimeInterval)
-		log.Infof("Last %d lines of the component's log:", numberOfLines)
+		log.Warningf("Devfile command %q exited with an error status in %d sec", command.Id, supervisorDStatusWaitTimeInterval)
+		log.Warningf("Last %d lines of log:", numberOfLinesToOutputLog)
 
 		rd, err := component.Log(a.Client, a.ComponentName, a.AppName, false, command)
 		if err != nil {
 			return err
 		}
 
-		err = util.DisplayLog(false, rd, os.Stderr, a.ComponentName, numberOfLines)
+		// Use GetStderr in order to make sure that colour output is correct
+		// on non-TTY terminals
+		err = util.DisplayLog(false, rd, log.GetStderr(), a.ComponentName, numberOfLinesToOutputLog)
 		if err != nil {
 			return err
 		}
-
-		log.Info("To get the full log output, please run 'odo log'")
 	}
 	return nil
 }

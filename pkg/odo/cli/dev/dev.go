@@ -186,7 +186,6 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(o.out, "\nYour application is running on cluster.\n\n")
 
 	// get the endpoint/port information for containers in devfile and setup port-forwarding
 	containers, err := o.Context.EnvSpecificInfo.GetDevfileObj().Data.GetComponents(parsercommon.DevfileOptions{
@@ -210,7 +209,11 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	portsBuf := NewPortWriter(os.Stdout, len(portPairsSlice))
+
+	// Output that the application is running, and then show the port-forwarding information
+	log.Info("\nYour application is now running on the cluster")
+
+	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice))
 	go func() {
 		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, o.errOut)
 		if err != nil {
