@@ -170,7 +170,10 @@ var _ = Describe("odo dev command tests", func() {
 			BeforeEach(func() {
 				devSession, _, _, _, err := helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
-				defer devSession.Kill()
+				defer func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+				}()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
@@ -255,6 +258,7 @@ var _ = Describe("odo dev command tests", func() {
 			AfterEach(func() {
 				// We stop the process so the process does not remain after the end of the tests
 				devSession.Kill()
+				devSession.WaitEnd()
 			})
 
 			It("should have created resources", func() {
@@ -284,6 +288,7 @@ var _ = Describe("odo dev command tests", func() {
 			When("killing odo dev and running odo delete component --wait", func() {
 				BeforeEach(func() {
 					devSession.Kill()
+					devSession.WaitEnd()
 					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
 				})
 
@@ -430,6 +435,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 			AfterEach(func() {
 				session.Stop()
+				session.WaitEnd()
 			})
 
 			It("should check if the env variable has a correct value", func() {
@@ -513,6 +519,7 @@ var _ = Describe("odo dev command tests", func() {
 
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should correctly propagate changes to the container", func() {
@@ -574,6 +581,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should not sync ignored files to the container", func() {
@@ -601,6 +609,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should sync files to the correct location", func() {
@@ -635,6 +644,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should sync to the correct dir in container", func() {
@@ -666,6 +676,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should sync to the correct dir in container", func() {
@@ -690,6 +701,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should sync to the correct dir in container", func() {
@@ -716,6 +728,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should sync to the correct dir in container", func() {
@@ -740,6 +753,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {
@@ -807,6 +821,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should successfully use the volume components in container components", func() {
@@ -834,6 +849,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should execute all commands in composite commmand", func() {
@@ -865,6 +881,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should execute all commands in composite command", func() {
@@ -896,6 +913,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should execute all commands in composite commmand", func() {
@@ -952,6 +970,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should error out with some log", func() {
@@ -974,6 +993,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should execute default build and run commands correctly", func() {
@@ -1038,6 +1058,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		When("Update the devfile.yaml", func() {
@@ -1143,6 +1164,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should check cpuLimit, cpuRequests, memoryRequests", func() {
@@ -1181,6 +1203,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 		AfterEach(func() {
 			session.Stop()
+			session.WaitEnd()
 		})
 
 		It("should sync only the mentioned files at the appropriate remote destination", func() {
@@ -1208,7 +1231,10 @@ var _ = Describe("odo dev command tests", func() {
 
 			session, _, errContents, _, err := helper.StartDevMode()
 			Expect(err).ToNot(HaveOccurred())
-			defer session.Stop()
+			defer func() {
+				session.Stop()
+				session.WaitEnd()
+			}()
 			helper.DontMatchAllInOutput(string(errContents), []string{"odo may not work as expected in the default project"})
 		})
 	})
@@ -1246,6 +1272,7 @@ var _ = Describe("odo dev command tests", func() {
 			devSession, _, _, _, err := helper.StartDevMode()
 			Expect(err).ShouldNot(HaveOccurred())
 			devSession.Kill()
+			devSession.WaitEnd()
 		})
 
 		It("should not create Ingress or Route resources in the cluster", func() {

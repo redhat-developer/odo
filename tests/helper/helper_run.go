@@ -24,6 +24,7 @@ func CmdRunner(program string, args ...string) *gexec.Session {
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)
 	command := exec.Command(program, args...)
+	setSysProcAttr(command)
 	fmt.Fprintln(GinkgoWriter, runningCmd(command))
 	session, err := gexec.Start(command, prefixWriter, prefixWriter)
 	Expect(err).NotTo(HaveOccurred())

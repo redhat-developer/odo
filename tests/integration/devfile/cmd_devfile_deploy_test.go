@@ -72,6 +72,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				session, _, _, _, err := helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
 				session.Kill()
+				session.WaitEnd()
 			})
 
 			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
