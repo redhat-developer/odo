@@ -11,7 +11,7 @@ require (
 	github.com/devfile/library v1.2.1-0.20220217161036-0f5995513e92
 	github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f
 	github.com/devfile/registry-support/registry-library v0.0.0-20211125162259-d7edf148d3e2
-	github.com/fatih/color v1.10.0
+	github.com/fatih/color v1.13.0
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -23,7 +23,7 @@ require (
 	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
-	github.com/mattn/go-colorable v0.1.8
+	github.com/mattn/go-colorable v0.1.9
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v4.7.0-origin.0+incompatible
@@ -61,7 +61,7 @@ require (
 	k8s.io/kubectl v0.22.1
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/controller-runtime v0.10.2
-	sigs.k8s.io/yaml v1.3.0 // indirect
+	sigs.k8s.io/yaml v1.3.0
 
 )
 
