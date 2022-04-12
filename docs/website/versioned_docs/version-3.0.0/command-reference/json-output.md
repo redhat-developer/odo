@@ -1,5 +1,5 @@
 ---
-title: json output
+title: JSON Output
 sidebar_position: 20
 ---
 
@@ -8,10 +8,10 @@ the useful commands can output their result in JSON format.
 
 When used with the `-o json` flags, a command:
 - that terminates successully, will:
-  - terminate with an exit status of value 0,
+  - terminate with a zero exit status,
   - will return its result in JSON format in its standard output stream.
 - that terminates with an error, will:
-  - terminate with an exit status of value 1,
+  - terminate with a non-zero exit status,
   - will return an error message in its standard error stream, in the unique field `message` of a JSON object, as in `{ "message": "file not found" }`
 
 ## odo alizer -o json
@@ -31,7 +31,7 @@ $ echo $?
 0
 ```
 
-If the command is executed in an empty directory, it will return an error and terminate with an exit status of value `1`:
+If the command is executed in an empty directory, it will return an error and terminate with a non-zero exit status:
 
 ```
 $ odo alizer -o json

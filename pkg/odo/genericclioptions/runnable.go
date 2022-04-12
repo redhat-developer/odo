@@ -60,10 +60,6 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	disableTelemetry, _ := strconv.ParseBool(os.Getenv(segment.DisableTelemetryEnv))
 	debugTelemetry := segment.GetDebugTelemetryFile()
 
-	if _, ok := o.(JsonOutputter); ok {
-		machineoutput.UsedByCommand(cmd)
-	}
-
 	// Prompt the user to consent for telemetry if a value is not set already
 	// Skip prompting if the preference command is called
 	// This prompt has been placed here so that it does not prompt the user when they call --help

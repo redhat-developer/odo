@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -38,7 +39,7 @@ func (o *AlizerOptions) Validate() error {
 }
 
 func (o *AlizerOptions) Run(ctx context.Context) (err error) {
-	return errors.New("this command can be run with json output only")
+	return errors.New("this command can be run with json output only, please use the flag: -o json")
 }
 
 // Run contains the logic for the odo command
@@ -68,6 +69,7 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(alizerCmd, clientset.ALIZER)
+	machineoutput.UsedByCommand(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	alizerCmd.Annotations["command"] = "gui"
 	return alizerCmd
