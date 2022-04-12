@@ -20,12 +20,6 @@ import (
 
 const NotAvailable = "Not available"
 
-// Below are various "outputs" that we use in both the CLI and test cases, so we must
-// put them in a common place
-const InitializingNewComponent = "Initializing new component"
-const SourceCodeDetected = "Files: Source code detected, a Devfile will be determined based upon source code autodetection"
-const NoSourceCodeDetected = "Files: No source code detected, a starter project will be created in the current directory"
-
 // GetComponentTypeFromDevfileMetadata returns component type from the devfile metadata;
 // it could either be projectType or language, if neither of them are set, return 'Not available'
 func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {

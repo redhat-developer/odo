@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	odolog "github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -153,7 +153,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				language := "java"
 
 				// The first output is welcoming message / paragraph / banner output
-				welcomingMsgs := strings.Split(odolog.Stitle(component.InitializingNewComponent, component.NoSourceCodeDetected, "odo version: "+version.VERSION), "\n")
+				welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.NoSourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Select language")
@@ -182,7 +182,7 @@ var _ = Describe("odo init interactive command tests", func() {
 
 			It("should display appropriate welcoming messages", func() {
 				language := "python"
-				welcomingMsgs := strings.Split(odolog.Stitle(component.InitializingNewComponent, component.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
+				welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
 				output, err := testRunner(language, welcomingMsgs, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")

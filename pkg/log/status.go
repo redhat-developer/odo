@@ -286,12 +286,7 @@ func Swarningf(format string, a ...interface{}) string {
 //  \__/
 //
 func Title(firstLine, secondLine, thirdLine string) {
-	blue := color.New(color.FgBlue).SprintFunc()
-	fmt.Fprintf(GetStdout(), `  __
- /  \__     %s
- \__/  \    %s
- /  \__/    %s
- \__/%s`, blue(firstLine), secondLine, thirdLine, "\n")
+	fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine, thirdLine))
 }
 
 // Stitle is the same as Title but returns the string instead

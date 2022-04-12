@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -135,11 +136,11 @@ func (o *InitOptions) Run(ctx context.Context) (err error) {
 
 	var infoOutput string
 	if isEmptyDir && len(o.flags) == 0 {
-		infoOutput = component.NoSourceCodeDetected
+		infoOutput = messages.NoSourceCodeDetected
 	} else if len(o.flags) == 0 {
-		infoOutput = component.SourceCodeDetected
+		infoOutput = messages.SourceCodeDetected
 	}
-	log.Title(component.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
 	log.Info("\nInteractive mode enabled, please answer the following questions:")
 
 	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
