@@ -186,4 +186,48 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			})
 		}
 	})
+
+	When("using a devfile.yaml containing an Image component with no build context", func() {
+
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs",
+					"issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+
+		for _, scope := range []struct {
+			name    string
+			envvars []string
+		}{
+			{
+				name:    "Podman",
+				envvars: []string{"PODMAN_CMD=echo"},
+			},
+			{
+				name: "Docker",
+				envvars: []string{
+					"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+					"DOCKER_CMD=echo",
+				},
+			},
+		} {
+			It(fmt.Sprintf("should build image via %s by defaulting build context to devfile path", scope.name), func() {
+				stdout := helper.Cmd("odo", "deploy").AddEnv(scope.envvars...).ShouldPass().Out()
+				lines, err := helper.ExtractLines(stdout)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(lines).ShouldNot(BeEmpty())
+				containerImage := "localhost:5000/devfile-nodejs-deploy:0.1.0" // from Devfile yaml file
+				dockerfilePath := filepath.Join(commonVar.Context, "Dockerfile")
+				buildCtx := commonVar.Context
+				expected := fmt.Sprintf("build -t %s -f %s %s", containerImage, dockerfilePath, buildCtx)
+				i, found := helper.FindFirstElementIndexByPredicate(lines, func(s string) bool {
+					return s == expected
+				})
+				Expect(found).To(BeTrue(), "line not found: ["+expected+"]")
+				Expect(i).ToNot(BeZero(), "line not found at non-zero index: ["+expected+"]")
+			})
+		}
+	})
 })
