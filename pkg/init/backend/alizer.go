@@ -2,25 +2,23 @@ package backend
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/init/asker"
-	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type AlizerBackend struct {
-	askerClient    asker.Asker
-	registryClient registry.Client
+	askerClient  asker.Asker
+	alizerClient alizer.Client
 }
 
-func NewAlizerBackend(askerClient asker.Asker, registryClient registry.Client) *AlizerBackend {
+func NewAlizerBackend(askerClient asker.Asker, alizerClient alizer.Client) *AlizerBackend {
 	return &AlizerBackend{
-		askerClient:    askerClient,
-		registryClient: registryClient,
+		askerClient:  askerClient,
+		alizerClient: alizerClient,
 	}
 }
 
@@ -28,42 +26,9 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 	return nil
 }
 
-// detectFramework uses the alizer library in order to detect the devfile
-// to use depending on the files in the path
-func (o *AlizerBackend) detectFramework(path string) (recognizer.DevFileType, registry.Registry, error) {
-	types := []recognizer.DevFileType{}
-	components, err := o.registryClient.ListDevfileStacks("")
-	if err != nil {
-		return recognizer.DevFileType{}, registry.Registry{}, err
-	}
-	for _, component := range components.Items {
-		types = append(types, recognizer.DevFileType{
-			Name:        component.Name,
-			Language:    component.Language,
-			ProjectType: component.ProjectType,
-			Tags:        component.Tags,
-		})
-	}
-	typ, err := recognizer.SelectDevFileFromTypes(path, types)
-	if err != nil {
-		return recognizer.DevFileType{}, registry.Registry{}, err
-	}
-
-	// TODO(feloy): This part won't be necessary when SelectDevFileFromTypes returns the index
-	var indexOfDetected int
-	for i, typeFromList := range types {
-		if reflect.DeepEqual(typeFromList, typ) {
-			indexOfDetected = i
-			break
-		}
-	}
-	registry := components.Items[indexOfDetected].Registry
-	return typ, registry, nil
-}
-
 // SelectDevfile calls thz Alizer to detect the devfile and asks for confirmation to the user
-func (o *AlizerBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (location *DevfileLocation, err error) {
-	selected, registry, err := o.detectFramework(dir)
+func (o *AlizerBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (location *alizer.DevfileLocation, err error) {
+	selected, registry, err := o.alizerClient.DetectFramework(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -77,10 +42,7 @@ func (o *AlizerBackend) SelectDevfile(flags map[string]string, fs filesystem.Fil
 	if !confirm {
 		return nil, nil
 	}
-	return &DevfileLocation{
-		Devfile:         selected.Name,
-		DevfileRegistry: registry.Name,
-	}, nil
+	return alizer.GetDevfileLocationFromDetection(selected, registry), nil
 }
 
 func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags map[string]string) (starter *v1alpha2.StarterProject, err error) {

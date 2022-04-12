@@ -12,6 +12,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	dffilesystem "github.com/devfile/library/pkg/testingutil/filesystem"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -23,7 +24,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *DevfileLocation
+		want    *alizer.DevfileLocation
 		wantErr bool
 	}{
 		{
@@ -36,7 +37,7 @@ func TestFlagsBackend_SelectDevfile(t *testing.T) {
 				},
 			},
 			wantErr: false,
-			want: &DevfileLocation{
+			want: &alizer.DevfileLocation{
 				Devfile:         "adevfile",
 				DevfilePath:     "apath",
 				DevfileRegistry: "aregistry",

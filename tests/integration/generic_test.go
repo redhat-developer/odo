@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
-	"github.com/tidwall/gjson"
 )
 
 var _ = Describe("odo generic", func() {
@@ -50,62 +49,6 @@ var _ = Describe("odo generic", func() {
 			Expect(strings.Count(output, "odo [flags]")).Should(Equal(1))
 		})
 
-	})
-
-	// Test machine readable output
-	Context("when creating project -o json", func() {
-		var projectName string
-		JustBeforeEach(func() {
-			projectName = helper.RandString(6)
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(projectName)
-		})
-
-		// odo project create foobar -o json
-		It("should be able to create project and show output in json format", func() {
-			actual := helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass().Out()
-			values := gjson.GetMany(actual, "kind", "metadata.name", "status.active")
-			expected := []string{"Project", projectName, "true"}
-			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
-		})
-	})
-
-	Context("Creating same project twice with flag -o json", func() {
-		var projectName string
-		JustBeforeEach(func() {
-			projectName = helper.RandString(6)
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(projectName)
-		})
-		// odo project create foobar -o json (x2)
-		It("should fail along with proper machine readable output", func() {
-			helper.Cmd("odo", "project", "create", projectName).ShouldPass()
-			actual := helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldFail().Err()
-			valuesC := gjson.GetMany(actual, "kind", "message")
-			expectedC := []string{"Error", "unable to create new project"}
-			Expect(helper.GjsonMatcher(valuesC, expectedC)).To(Equal(true))
-
-		})
-	})
-
-	Context("Delete the project with flag -o json", func() {
-		var projectName string
-		JustBeforeEach(func() {
-			projectName = helper.RandString(6)
-		})
-
-		// odo project delete foobar -o json
-		It("should be able to delete project and show output in json format", func() {
-			helper.Cmd("odo", "project", "create", projectName, "-o", "json").ShouldPass()
-
-			actual := helper.Cmd("odo", "project", "delete", projectName, "-o", "json").ShouldPass().Out()
-			valuesDel := gjson.GetMany(actual, "kind", "message")
-			expectedDel := []string{"Status", "Deleted project"}
-			Expect(helper.GjsonMatcher(valuesDel, expectedDel)).To(Equal(true))
-
-		})
 	})
 
 	Context("When deleting two project one after the other", func() {

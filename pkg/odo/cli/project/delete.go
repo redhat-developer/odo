@@ -6,12 +6,10 @@ import (
 
 	odoerrors "github.com/redhat-developer/odo/pkg/errors"
 	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/redhat-developer/odo/pkg/project"
 	"github.com/spf13/cobra"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -98,7 +96,7 @@ func (pdo *ProjectDeleteOptions) Run(ctx context.Context) (err error) {
 	//	return err
 	//}
 
-	if log.IsJSON() || pdo.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
+	if pdo.forceFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName)) {
 
 		// If the --wait parameter has been passed, we add a spinner..
 		if pdo.waitFlag {
@@ -116,9 +114,6 @@ func (pdo *ProjectDeleteOptions) Run(ctx context.Context) (err error) {
 		log.Success(successMessage)
 		log.Warning("Warning! Projects are asynchronously deleted from the cluster. odo does its best to delete the project. Due to multi-tenant clusters, the project may still exist on a different node.")
 
-		if log.IsJSON() {
-			machineoutput.SuccessStatus(project.ProjectKind, pdo.projectName, successMessage)
-		}
 		return nil
 	}
 
@@ -130,12 +125,11 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 	o := NewProjectDeleteOptions()
 
 	projectDeleteCmd := &cobra.Command{
-		Use:         name,
-		Short:       deleteShortDesc,
-		Long:        deleteLongDesc,
-		Example:     fmt.Sprintf(deleteExample, fullName),
-		Args:        cobra.ExactArgs(1),
-		Annotations: map[string]string{"machineoutput": "json"},
+		Use:     name,
+		Short:   deleteShortDesc,
+		Long:    deleteLongDesc,
+		Example: fmt.Sprintf(deleteExample, fullName),
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

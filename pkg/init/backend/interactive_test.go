@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil"
@@ -25,7 +26,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  fields
-		want    *DevfileLocation
+		want    *alizer.DevfileLocation
 		wantErr bool
 	}{
 		{
@@ -48,7 +49,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 					return client
 				},
 			},
-			want: &DevfileLocation{
+			want: &alizer.DevfileLocation{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "MyRegistry1",
 			},
@@ -75,7 +76,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 					return client
 				},
 			},
-			want: &DevfileLocation{
+			want: &alizer.DevfileLocation{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "MyRegistry1",
 			},

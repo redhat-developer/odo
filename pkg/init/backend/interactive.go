@@ -10,6 +10,7 @@ import (
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/fatih/color"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/registry"
@@ -39,8 +40,8 @@ func (o *InteractiveBackend) Validate(flags map[string]string, fs filesystem.Fil
 	return nil
 }
 
-func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*DevfileLocation, error) {
-	result := &DevfileLocation{}
+func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*alizer.DevfileLocation, error) {
+	result := &alizer.DevfileLocation{}
 	devfileEntries, _ := o.registryClient.ListDevfileStacks("")
 
 	langs := devfileEntries.GetLanguages()

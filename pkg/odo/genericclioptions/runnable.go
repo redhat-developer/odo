@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	commonutil "github.com/redhat-developer/odo/pkg/util"
@@ -42,6 +43,14 @@ type Runnable interface {
 
 type SignalHandler interface {
 	HandleSignal() error
+}
+
+// JsonOutputter must be implemented by commands with JSON output
+// For these commands, the `-o json` flag will be added
+// when err is not nil, the text of the error will be returned in a `message` field on stderr with an exit status of 1
+// when err is nil, the result of RunForJsonOutput will be returned in JSON format on stdout with an exit status of 0
+type JsonOutputter interface {
+	RunForJsonOutput(ctx context.Context) (result interface{}, err error)
 }
 
 func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
@@ -120,7 +129,15 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 	}
 	util.LogErrorAndExit(err, "")
 
-	err = o.Run(cmdLineObj.Context())
+	if jsonOutputter, ok := o.(JsonOutputter); ok && log.IsJSON() {
+		var out interface{}
+		out, err = jsonOutputter.RunForJsonOutput(cmdLineObj.Context())
+		if err == nil {
+			machineoutput.OutputSuccess(out)
+		}
+	} else {
+		err = o.Run(cmdLineObj.Context())
+	}
 	startTelemetry(cmd, err, startTime)
 	util.LogErrorAndExit(err, "")
 }

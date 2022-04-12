@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/segment"
 	"io"
 	"os"
 	"os/exec"
@@ -18,6 +16,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/segment"
+	"github.com/tidwall/gjson"
+
 	"github.com/redhat-developer/odo/tests/helper/reporter"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -25,7 +27,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/tidwall/gjson"
 )
 
 // RandString returns a random string of given length
@@ -402,34 +403,18 @@ func CommonAfterEach(commonVar CommonVar) {
 	os.Unsetenv("GLOBALODOCONFIG")
 }
 
-// GjsonMatcher validates if []results from gjson.GetMany match the expected values for each json path requested
-// Values is an array of results returned by the gjson.GetMany function
-// Expected is an array of strings, defines the expected values for each of the paths requested in the gjson.GetMany function
-// For documentation about gjson see https://github.com/tidwall/gjson#get-multiple-values-at-once
-func GjsonMatcher(values []gjson.Result, expected []string) bool {
-	matched := 0
-	for i, v := range values {
-		if strings.Contains(v.String(), expected[i]) {
-			matched++
-		}
-	}
-	numVars := len(expected)
-	return matched == numVars
+// JsonPathContentIs expects that the content of the path to equal value
+func JsonPathContentIs(json string, path string, value string) bool {
+	result := gjson.Get(json, path)
+	Expect(result.String()).To(Equal(value), fmt.Sprintf("content of path %q should be %q but is %q", path, value, result.String()))
+	return true
 }
 
-// GjsonExactMatcher validates if []results from gjson.GetMany match the expected values for each json path requested
-// Values is an array of results returned by the gjson.GetMany function
-// Expected is an array of strings, defines the expected values for each of the paths requested in the gjson.GetMany function
-// For documentation about gjson see https://github.com/tidwall/gjson#get-multiple-values-at-once
-func GjsonExactMatcher(values []gjson.Result, expected []string) bool {
-	matched := 0
-	for i, v := range values {
-		if v.String() == expected[i] {
-			matched++
-		}
-	}
-	numVars := len(expected)
-	return matched == numVars
+// JsonPathContentContain expects that the content of the path to contain value
+func JsonPathContentContain(json string, path string, value string) bool {
+	result := gjson.Get(json, path)
+	Expect(result.String()).To(ContainSubstring(value), fmt.Sprintf("content of path %q should contain %q but is %q", path, value, result.String()))
+	return true
 }
 
 // SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters

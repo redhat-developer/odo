@@ -6,7 +6,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/init/backend"
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -173,7 +173,7 @@ func TestInitClient_downloadDirect(t *testing.T) {
 	type fields struct {
 		fsys           func(fs filesystem.Filesystem) filesystem.Filesystem
 		registryClient func(ctrl *gomock.Controller) registry.Client
-		InitParams     backend.DevfileLocation
+		InitParams     alizer.DevfileLocation
 	}
 	type args struct {
 		URL  string

@@ -70,3 +70,7 @@ mockgen -source=pkg/component/delete/interface.go \
 mockgen -source=pkg/dev/interface.go \
     -package dev \
     -destination pkg/dev/mock.go
+
+mockgen -source=pkg/alizer/interface.go \
+    -package alizer \
+    -destination pkg/alizer/mock.go

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
@@ -62,10 +63,13 @@ Main Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
 
 OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "openshift"}}
-  {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}{{end}}
+  {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}
 
-Utility Commands:{{range .Commands}}{{if or (eq .Annotations.command "utility") (eq .Name "help") }}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
+Utility Commands:{{range .Commands}}{{if eq .Annotations.command "utility" }}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
+GUI Commands:{{range .Commands}}{{if or (eq .Annotations.command "gui") }}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
@@ -167,6 +171,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),
 		_delete.NewCmdDelete(_delete.RecommendedCommandName, util.GetFullName(fullName, _delete.RecommendedCommandName)),
 		dev.NewCmdDev(dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName)),
+		alizer.NewCmdAlizer(alizer.RecommendedCommandName, util.GetFullName(fullName, alizer.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands

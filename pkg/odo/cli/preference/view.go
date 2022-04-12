@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -49,13 +47,6 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run(ctx context.Context) (err error) {
-
-	if log.IsJSON() {
-		prefDef := o.clientset.PreferenceClient.NewPreferenceList()
-		machineoutput.OutputSuccess(prefDef)
-
-		return
-	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(o.clientset.PreferenceClient.UpdateNotification()))
@@ -89,11 +80,10 @@ func showBlankIfNil(intf interface{}) interface{} {
 func NewCmdView(name, fullName string) *cobra.Command {
 	o := NewViewOptions()
 	preferenceViewCmd := &cobra.Command{
-		Use:         name,
-		Short:       "View current preference values",
-		Long:        "View current preference values",
-		Example:     fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
-		Annotations: map[string]string{"machineoutput": "json"},
+		Use:     name,
+		Short:   "View current preference values",
+		Long:    "View current preference values",
+		Example: fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
 
 		Args: cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {

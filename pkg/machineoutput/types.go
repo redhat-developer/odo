@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/redhat-developer/odo/pkg/log"
+
+	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,15 +44,20 @@ const APIVersion = "odo.dev/v1alpha1"
 
 // GenericError for machine readable output error messages
 type GenericError struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Message           string `json:"message"`
+	Message string `json:"message"`
 }
 
 // unindentedMutex prevents multiple JSON objects from being outputted simultaneously on the same line. This is only
 // required for OutputSuccessUnindented's 'unindented' JSON objects, since objects printed by other methods are not written from
 // multiple threads.
 var unindentedMutex = &sync.Mutex{}
+
+func UsedByCommand(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations["machineoutput"] = "json"
+}
 
 // OutputSuccessUnindented outputs a "successful" machine-readable output format in unindented json
 func OutputSuccessUnindented(machineOutput interface{}) {

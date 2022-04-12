@@ -9,6 +9,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -68,8 +69,8 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 	return nil
 }
 
-func (o *FlagsBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*DevfileLocation, error) {
-	return &DevfileLocation{
+func (o *FlagsBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*alizer.DevfileLocation, error) {
+	return &alizer.DevfileLocation{
 		Devfile:         flags[FLAG_DEVFILE],
 		DevfileRegistry: flags[FLAG_DEVFILE_REGISTRY],
 		DevfilePath:     flags[FLAG_DEVFILE_PATH],

@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/tests/helper"
-	"github.com/tidwall/gjson"
 )
 
 const promptMessageSubString = "Help odo improve by allowing it to collect usage data."
@@ -96,14 +95,6 @@ var _ = Describe("odo preference and config command tests", func() {
 			}
 			globalConfPath := os.Getenv("HOME")
 			os.RemoveAll(filepath.Join(globalConfPath, ".odo"))
-		})
-
-		It("should show json output", func() {
-			prefJSONOutput, err := helper.Unindented(helper.Cmd("odo", "preference", "view", "-o", "json").ShouldPass().Out())
-			Expect(err).Should(BeNil())
-			values := gjson.GetMany(prefJSONOutput, "kind", "items.0.Description")
-			expected := []string{"PreferenceList", "Flag to control if an update notification is shown or not (Default: true)"}
-			Expect(helper.GjsonMatcher(values, expected)).To(Equal(true))
 		})
 	})
 

@@ -7,8 +7,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -64,27 +62,18 @@ func (plo *ProjectListOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	if log.IsJSON() {
-		machineoutput.OutputSuccess(projects)
-	} else {
-		err = HumanReadableOutput(os.Stdout, projects)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return HumanReadableOutput(os.Stdout, projects)
 }
 
 // NewCmdProjectList implements the odo project list command.
 func NewCmdProjectList(name, fullName string) *cobra.Command {
 	o := NewProjectListOptions()
 	projectListCmd := &cobra.Command{
-		Use:         name,
-		Short:       listLongDesc,
-		Long:        listLongDesc,
-		Example:     fmt.Sprintf(listExample, fullName),
-		Args:        cobra.ExactArgs(0),
-		Annotations: map[string]string{"machineoutput": "json"},
+		Use:     name,
+		Short:   listLongDesc,
+		Long:    listLongDesc,
+		Example: fmt.Sprintf(listExample, fullName),
+		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
