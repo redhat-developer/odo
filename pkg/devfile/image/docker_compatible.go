@@ -66,7 +66,7 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 	}
 	args := image.Dockerfile.Args
 
-	shell := fmt.Sprintf(`%s build -t "%s" -f "%s" %s`, cmdName, imageName, dockerfile, buildpath)
+	shell := fmt.Sprintf(`%s build -t "%s" -f "%s" "%s"`, cmdName, imageName, dockerfile, buildpath)
 	if len(args) > 0 {
 		shell = shell + " " + strings.Join(args, " ")
 	}
