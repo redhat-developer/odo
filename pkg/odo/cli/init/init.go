@@ -10,9 +10,9 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
@@ -65,11 +65,6 @@ type InitOptions struct {
 
 	// Destination directory
 	contextDir string
-}
-
-type jsonOutput struct {
-	DevfilePath string           `json:"devfile-path"`
-	DevfileData data.DevfileData `json:"devfile-data"`
 }
 
 // NewInitOptions creates a new InitOptions instance
@@ -151,9 +146,12 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	return jsonOutput{
-		DevfilePath: devfilePath,
-		DevfileData: devfileObj.Data,
+	return api.Component{
+		DevfilePath:    devfilePath,
+		DevfileData:    api.GetDevfileData(devfileObj),
+		ForwardedPorts: []api.ForwardedPort{},
+		RunningIn:      []api.RunningMode{},
+		ManagedBy:      "odo",
 	}, nil
 }
 
