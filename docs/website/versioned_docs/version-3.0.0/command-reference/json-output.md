@@ -25,7 +25,7 @@ The output of this command contains a devfile name and a registry name:
 $ odo alizer -o json
 {
     "devfile": "nodejs",
-    "registry": "DefaultDevfileRegistry"
+    "devfileRegistry": "DefaultDevfileRegistry"
 }
 $ echo $?
 0
@@ -54,8 +54,8 @@ $ odo init -o json \
     --devfile go \
     --starter go-starter
 {
-  "devfile-path": "/path/to/devfile.yaml",
-  "devfile-data": {
+  "devfilePath": "/path/to/devfile.yaml",
+  "devfileData": {
     "schemaVersion": "2.0.0",
     [...]
   }

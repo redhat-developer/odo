@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
 	"github.com/redhat-developer/odo/pkg/alizer"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -36,7 +37,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 		name         string
 		fields       fields
 		args         args
-		wantLocation *alizer.DevfileLocation
+		wantLocation *api.DevfileLocation
 		wantErr      bool
 	}{
 		{
@@ -61,7 +62,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				fs:  filesystem.DefaultFs{},
 				dir: GetTestProjectPath("nodejs"),
 			},
-			wantLocation: &alizer.DevfileLocation{
+			wantLocation: &api.DevfileLocation{
 				Devfile:         "a-devfile-name",
 				DevfileRegistry: "a-registry",
 			},

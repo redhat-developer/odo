@@ -6,6 +6,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/alizer"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -27,7 +28,7 @@ func (o *AlizerBackend) Validate(flags map[string]string, fs filesystem.Filesyst
 }
 
 // SelectDevfile calls thz Alizer to detect the devfile and asks for confirmation to the user
-func (o *AlizerBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (location *alizer.DevfileLocation, err error) {
+func (o *AlizerBackend) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (location *api.DevfileLocation, err error) {
 	selected, registry, err := o.alizerClient.DetectFramework(dir)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
 )
 
@@ -50,8 +51,8 @@ func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, registry.
 	return typ, registry, nil
 }
 
-func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry registry.Registry) *DevfileLocation {
-	return &DevfileLocation{
+func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry registry.Registry) *api.DevfileLocation {
+	return &api.DevfileLocation{
 		Devfile:         typ.Name,
 		DevfileRegistry: registry.Name,
 	}
