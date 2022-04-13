@@ -177,6 +177,8 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
+	absIgnorePaths := dfutil.GetAbsGlobExps(parameters.Path, parameters.FileIgnores)
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("error setting up filesystem watcher: %v", err)
@@ -185,7 +187,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
-	err = addRecursiveWatch(watcher, parameters.Path, parameters.FileIgnores)
+	err = addRecursiveWatch(watcher, parameters.Path, absIgnorePaths)
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
@@ -219,7 +221,8 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters Wat
 		case <-timer.C:
 			// timer has fired
 			// first find the files that have changed (also includes the ones newly created) or deleted
-			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.FileIgnores, watcher)
+			absIgnorePaths := dfutil.GetAbsGlobExps(parameters.Path, parameters.FileIgnores)
+			changedFiles, deletedPaths := evaluateChangesHandler(events, absIgnorePaths, watcher)
 			// process the changes and sync files with remote pod
 			processEventsHandler(changedFiles, deletedPaths, parameters, out)
 			// empty the events to receive new events

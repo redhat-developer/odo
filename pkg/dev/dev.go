@@ -7,7 +7,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/util"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
@@ -63,15 +62,13 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		return err
 	}
 
-	absIgnorePaths := util.GetAbsGlobExps(path, ignorePaths)
-
 	watchParameters := watch.WatchParameters{
 		Path:                path,
 		ComponentName:       devfileObj.GetMetadataName(),
 		ApplicationName:     "app",
 		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,
-		FileIgnores:         absIgnorePaths,
+		FileIgnores:         ignorePaths,
 		InitialDevfileObj:   devfileObj,
 		Debug:               debug,
 		DebugPort:           envSpecificInfo.GetDebugPort(),
