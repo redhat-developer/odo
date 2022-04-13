@@ -34,7 +34,7 @@ var _ = Describe("odo alizer command tests", func() {
 			Expect(stderr).To(BeEmpty())
 			Expect(helper.IsJSON(stdout)).To(BeTrue())
 			Expect(helper.JsonPathContentIs(stdout, "devfile", "nodejs"))
-			Expect(helper.JsonPathContentIs(stdout, "devfile-registry", "DefaultDevfileRegistry"))
+			Expect(helper.JsonPathContentIs(stdout, "devfileRegistry", "DefaultDevfileRegistry"))
 		})
 	})
 
