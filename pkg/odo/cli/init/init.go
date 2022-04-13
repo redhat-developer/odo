@@ -5,16 +5,19 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -62,6 +65,11 @@ type InitOptions struct {
 
 	// Destination directory
 	contextDir string
+}
+
+type jsonOutput struct {
+	DevfilePath string           `json:"devfile-path"`
+	DevfileData data.DevfileData `json:"devfile-data"`
 }
 
 // NewInitOptions creates a new InitOptions instance
@@ -113,77 +121,10 @@ func (o *InitOptions) Validate() error {
 // Run contains the logic for the odo command
 func (o *InitOptions) Run(ctx context.Context) (err error) {
 
-	var starterDownloaded bool
-
-	defer func() {
-		if err == nil {
-			return
-		}
-		if starterDownloaded {
-			err = fmt.Errorf("%w\nthe command failed after downloading the starter project. By security, the directory is not cleaned up", err)
-		} else {
-			_ = o.clientset.FS.Remove("devfile.yaml")
-			err = fmt.Errorf("%w\nthe command failed, the devfile has been removed from current directory", err)
-		}
-	}()
-
-	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	devfileObj, _, err := o.run(ctx)
 	if err != nil {
 		return err
 	}
-
-	// Show a welcome message for when you initially run `odo init`.
-
-	var infoOutput string
-	if isEmptyDir && len(o.flags) == 0 {
-		infoOutput = messages.NoSourceCodeDetected
-	} else if len(o.flags) == 0 {
-		infoOutput = messages.SourceCodeDetected
-	}
-	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
-	log.Info("\nInteractive mode enabled, please answer the following questions:")
-
-	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
-	if err != nil {
-		return err
-	}
-
-	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
-	if err != nil {
-		return err
-	}
-
-	// Set the name in the devfile but do not write it yet to disk,
-	// because the starter project downloaded at the end might come bundled with a specific Devfile.
-	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
-	if err != nil {
-		return fmt.Errorf("failed to update the devfile's name: %w", err)
-	}
-
-	if starterInfo != nil {
-		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
-		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
-		if err != nil {
-			return fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
-		}
-		starterDownloaded = true
-
-		// in case the starter project contains a devfile, read it again
-		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
-			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
-			if err != nil {
-				return err
-			}
-		}
-	}
-	// WARNING: SetMetadataName writes the Devfile to disk
-	if err = devfileObj.SetMetadataName(name); err != nil {
-		return err
-	}
-	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
-	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
-	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
-	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
 	exitMessage := fmt.Sprintf(`
 Your new component '%s' is ready in the current directory.
@@ -202,6 +143,95 @@ Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata
 	log.Info(exitMessage)
 
 	return nil
+}
+
+// RunForJsonOutput is executed instead of Run when -o json flag is given
+func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	devfileObj, devfilePath, err := o.run(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return jsonOutput{
+		DevfilePath: devfilePath,
+		DevfileData: devfileObj.Data,
+	}, nil
+}
+
+// run downloads the devfile and starter project and returns the content and the path of the devfile
+func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, path string, err error) {
+	var starterDownloaded bool
+
+	defer func() {
+		if err == nil {
+			return
+		}
+		if starterDownloaded {
+			err = fmt.Errorf("%w\nthe command failed after downloading the starter project. By security, the directory is not cleaned up", err)
+		} else {
+			_ = o.clientset.FS.Remove("devfile.yaml")
+			err = fmt.Errorf("%w\nthe command failed, the devfile has been removed from current directory", err)
+		}
+	}()
+
+	isEmptyDir, err := location.DirIsEmpty(o.clientset.FS, o.contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", err
+	}
+
+	// Show a welcome message for when you initially run `odo init`.
+
+	var infoOutput string
+	if isEmptyDir && len(o.flags) == 0 {
+		infoOutput = messages.NoSourceCodeDetected
+	} else if len(o.flags) == 0 {
+		infoOutput = messages.SourceCodeDetected
+	}
+	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Info("\nInteractive mode enabled, please answer the following questions:")
+
+	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", err
+	}
+
+	starterInfo, err := o.clientset.InitClient.SelectStarterProject(devfileObj, o.flags, o.clientset.FS, o.contextDir)
+	if err != nil {
+		return parser.DevfileObj{}, "", err
+	}
+
+	// Set the name in the devfile but do not write it yet to disk,
+	// because the starter project downloaded at the end might come bundled with a specific Devfile.
+	name, err := o.clientset.InitClient.PersonalizeName(devfileObj, o.flags)
+	if err != nil {
+		return parser.DevfileObj{}, "", fmt.Errorf("failed to update the devfile's name: %w", err)
+	}
+
+	if starterInfo != nil {
+		// WARNING: this will remove all the content of the destination directory, ie the devfile.yaml file
+		err = o.clientset.InitClient.DownloadStarterProject(starterInfo, o.contextDir)
+		if err != nil {
+			return parser.DevfileObj{}, "", fmt.Errorf("unable to download starter project %q: %w", starterInfo.Name, err)
+		}
+		starterDownloaded = true
+
+		// in case the starter project contains a devfile, read it again
+		if _, err = o.clientset.FS.Stat(devfilePath); err == nil {
+			devfileObj, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: devfilePath, FlattenedDevfile: pointer.BoolPtr(false)})
+			if err != nil {
+				return parser.DevfileObj{}, "", err
+			}
+		}
+	}
+	// WARNING: SetMetadataName writes the Devfile to disk
+	if err = devfileObj.SetMetadataName(name); err != nil {
+		return parser.DevfileObj{}, "", err
+	}
+	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devfileObj.Data.GetMetadata()))
+	scontext.SetLanguage(ctx, devfileObj.Data.GetMetadata().Language)
+	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
+	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
+
+	return devfileObj, devfilePath, nil
 }
 
 // NewCmdInit implements the odo command
@@ -226,6 +256,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 
+	machineoutput.UsedByCommand(initCmd)
 	// Add a defined annotation in order to appear in the help menu
 	initCmd.Annotations["command"] = "main"
 	initCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
