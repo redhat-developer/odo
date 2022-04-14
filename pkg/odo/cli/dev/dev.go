@@ -168,8 +168,13 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 }
 
 func (o *DevOptions) Validate() error {
-	var err error
-	return err
+	if !o.debugFlag && !libdevfile.HasRunCommand(o.initialDevfileObj.Data) {
+		return errors.New("no command of kind Run found in the devfile")
+	}
+	if o.debugFlag && !libdevfile.HasDebugCommand(o.initialDevfileObj.Data) {
+		return errors.New("no command of kind Debug found in the devfile")
+	}
+	return nil
 }
 
 func (o *DevOptions) Run(ctx context.Context) error {
@@ -304,7 +309,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	}
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
-	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command to start the component inside container")
+	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Excecute the debug command within the component")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu
