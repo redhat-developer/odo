@@ -12,6 +12,7 @@ import (
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 
 	"github.com/fsnotify/fsnotify"
+	gitignore "github.com/sabhiram/go-gitignore"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -74,7 +75,7 @@ type WatchParameters struct {
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
 // any deleted paths from the watcher. It returns a slice of changed files (if any) and paths that are deleted (if any)
 // by the events
-type evaluateChangesFunc func(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
+type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
 type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer)
@@ -88,7 +89,7 @@ type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
 // Taken from https://github.com/openshift/origin/blob/85eb37b34f0657631592356d020cef5a58470f8e/pkg/util/fsnotification/fsnotification.go
 // path is the path of the file or the directory
 // ignores contains the glob rules for matching
-func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string) error {
+func addRecursiveWatch(watcher *fsnotify.Watcher, topPath string, path string, ignores []string) error {
 
 	file, err := os.Stat(path)
 	if err != nil {
@@ -98,12 +99,16 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 		return fmt.Errorf("error introspecting path %s: %v", path, err)
 	}
 
+	ignoreMatcher := gitignore.CompileIgnoreLines(ignores...)
+
 	mode := file.Mode()
 	if mode.IsRegular() {
-		matched, e := dfutil.IsGlobExpMatch(path, ignores)
-		if e != nil {
-			return fmt.Errorf("unable to watcher on %s: %w", path, e)
+		var rel string
+		rel, err = filepath.Rel(topPath, path)
+		if err != nil {
+			return err
 		}
+		matched := ignoreMatcher.MatchesPath(rel)
 		if !matched {
 			klog.V(4).Infof("adding watch on path %s", path)
 
@@ -133,7 +138,11 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
-			matched, err := dfutil.IsGlobExpMatch(newPath, ignores)
+			rel, err := filepath.Rel(topPath, newPath)
+			if err != nil {
+				return err
+			}
+			matched := ignoreMatcher.MatchesPath(rel)
 			if err != nil {
 				return fmt.Errorf("unable to addRecursiveWatch on %s: %w", newPath, err)
 			}
@@ -151,7 +160,13 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	}
 	for _, folder := range folders {
 
-		if matched, _ := dfutil.IsGlobExpMatch(folder, ignores); matched {
+		rel, err := filepath.Rel(topPath, folder)
+		if err != nil {
+			return err
+		}
+		matched := ignoreMatcher.MatchesPath(rel)
+
+		if matched {
 			klog.V(4).Infof("ignoring watch for %s", folder)
 			continue
 		}
@@ -187,7 +202,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
-	err = addRecursiveWatch(watcher, parameters.Path, absIgnorePaths)
+	err = addRecursiveWatch(watcher, parameters.Path, parameters.Path, absIgnorePaths)
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
@@ -221,8 +236,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters Wat
 		case <-timer.C:
 			// timer has fired
 			// first find the files that have changed (also includes the ones newly created) or deleted
-			absIgnorePaths := dfutil.GetAbsGlobExps(parameters.Path, parameters.FileIgnores)
-			changedFiles, deletedPaths := evaluateChangesHandler(events, absIgnorePaths, watcher)
+			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, watcher)
 			// process the changes and sync files with remote pod
 			processEventsHandler(changedFiles, deletedPaths, parameters, out)
 			// empty the events to receive new events
@@ -237,9 +251,11 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters Wat
 
 // evaluateFileChanges evaluates any file changes for the events. It ignores the files in fileIgnores slice and removes
 // any deleted paths from the watcher
-func evaluateFileChanges(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
+func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
 	var changedFiles []string
 	var deletedPaths []string
+
+	ignoreMatcher := gitignore.CompileIgnoreLines(fileIgnores...)
 
 	for _, event := range events {
 		klog.V(4).Infof("filesystem watch event: %s", event)
@@ -260,11 +276,11 @@ func evaluateFileChanges(events []fsnotify.Event, fileIgnores []string, watcher 
 		// because its parent is watched, the fsnotify automatically raises an event
 		// for it.
 		var watchError error
-		matched, globErr := dfutil.IsGlobExpMatch(event.Name, fileIgnores)
-		klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, fileIgnores, matched, globErr)
-		if globErr != nil {
-			watchError = fmt.Errorf("unable to watch changes: %w", globErr)
+		rel, err := filepath.Rel(path, event.Name)
+		if err != nil {
+			watchError = fmt.Errorf("unable to get relative path of %q on %q", event.Name, path)
 		}
+		matched := ignoreMatcher.MatchesPath(rel)
 		if !alreadyInChangedFiles && !matched && !isIgnoreEvent {
 			// Append the new file change event to changedFiles if and only if the event is not a file remove event
 			if event.Op&fsnotify.Remove != fsnotify.Remove {
@@ -288,7 +304,7 @@ func evaluateFileChanges(events []fsnotify.Event, fileIgnores []string, watcher 
 			}
 		} else {
 			// On other ops, recursively watch the resource (if applicable)
-			if e := addRecursiveWatch(watcher, event.Name, fileIgnores); e != nil && watchError == nil {
+			if e := addRecursiveWatch(watcher, path, event.Name, fileIgnores); e != nil && watchError == nil {
 				klog.V(4).Infof("Error occurred in addRecursiveWatch, setting watchError to %v", e)
 				watchError = e
 			}

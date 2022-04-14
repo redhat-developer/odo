@@ -13,7 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func evaluateChangesHandler(events []fsnotify.Event, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
+func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
 	var changedFiles []string
 	var deletedPaths []string
 

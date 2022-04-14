@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
+	gitignore "github.com/sabhiram/go-gitignore"
 
 	"k8s.io/klog"
 )
@@ -77,7 +78,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	uniquePaths := make(map[string]bool)
 	klog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
-		// watchTar
+		ignoreMatcher := gitignore.CompileIgnoreLines(globExps...)
 		for _, fileName := range files {
 
 			if _, ok := uniquePaths[fileName]; ok {
@@ -88,10 +89,12 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 
 			if checkFileExistWithFS(fileName, fs) {
 
-				matched, err := dfutil.IsGlobExpMatch(fileName, globExps)
+				rel, err := filepath.Rel(srcPath, fileName)
 				if err != nil {
 					return err
 				}
+
+				matched := ignoreMatcher.MatchesPath(rel)
 				if matched {
 					continue
 				}
