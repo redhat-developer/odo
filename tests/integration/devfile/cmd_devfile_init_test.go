@@ -35,6 +35,14 @@ var _ = Describe("odo devfile init command tests", func() {
 			helper.Cmd("odo", "init", "--name", "aname").ShouldFail()
 		})
 
+		By("running odo init with json and no other flags", func() {
+			res := helper.Cmd("odo", "init", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+			Expect(helper.JsonPathContentIs(stderr, "message", "parameters are expected to select a devfile"))
+		})
+
 		By("running odo init with incomplete flags and JSON output", func() {
 			res := helper.Cmd("odo", "init", "--name", "aname", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
