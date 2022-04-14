@@ -357,21 +357,8 @@ func runIndexerWithExistingFileIndex(directory string, ignoreRules []string, rem
 					fileRemoteChanged[remote] = true
 				}
 			} else {
-				// check the *absolute* path to the file for glob rules
-				fileAbsolutePath, err := dfutil.GetAbsPath(filepath.Join(directory, fileName))
-				if err != nil {
-					return ret, fmt.Errorf("unable to retrieve absolute path of file %s: %w", fileName, err)
-				}
-
 				ignoreMatcher := gitignore.CompileIgnoreLines(ignoreRules...)
-
-				rel, err := filepath.Rel(directory, fileAbsolutePath)
-				if err != nil {
-					return IndexerRet{}, err
-				}
-
-				matched := ignoreMatcher.MatchesPath(rel)
-
+				matched := ignoreMatcher.MatchesPath(fileName)
 				if matched {
 					continue
 				}

@@ -627,7 +627,7 @@ var _ = Describe("odo dev command tests", func() {
 		waitTerminates := func(timeout time.Duration) bool {
 			done := make(chan bool)
 			go func() {
-				session.WaitSync()
+				_, _, _ = session.WaitSync()
 				done <- true
 			}()
 			select {
@@ -665,8 +665,8 @@ var _ = Describe("odo dev command tests", func() {
 				helper.ReplaceString(newFilePath2, "hello world", "hello world!!!")
 			})
 
-			It("should synchronize it", func() {
-				Expect(waitTerminates(20 * time.Second)).To(BeTrue()) // TODO fix
+			It("should not synchronize it", func() {
+				Expect(waitTerminates(20 * time.Second)).To(BeFalse())
 			})
 		})
 	})

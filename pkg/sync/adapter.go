@@ -147,7 +147,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		dfutil.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles),
+		pushParameters.IgnoredFiles,
 		syncParameters.CompInfo,
 		ret,
 	)
