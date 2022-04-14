@@ -7,15 +7,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/backend"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
@@ -126,13 +125,7 @@ Your new component '%s' is ready in the current directory.
 To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.`, devfileObj.Data.GetMetadata().Name)
 
-	// show information about `odo deploy` command only if the devfile has kind: deploy command defined.
-	commands, _ := devfileObj.Data.GetCommands(common.DevfileOptions{
-		CommandOptions: common.CommandOptions{
-			CommandGroupKind: v1alpha2.DeployCommandGroupKind,
-		},
-	})
-	if len(commands) != 0 {
+	if libdevfile.HasDeployCommand(devfileObj.Data) {
 		exitMessage += "\nTo deploy your component to a cluster use \"odo deploy\"."
 	}
 	log.Info(exitMessage)
