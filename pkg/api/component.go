@@ -3,9 +3,9 @@ package api
 type RunningMode string
 
 const (
-	RunninModeDev     = "Dev"
-	RunninModeDeploy  = "Deploy"
-	RunninModeUnknown = "Unknown"
+	RunningModeDev     RunningMode = "Dev"
+	RunningModeDeploy  RunningMode = "Deploy"
+	RunningModeUnknown RunningMode = "Unknown"
 )
 
 // Component describes the state of a devfile component
