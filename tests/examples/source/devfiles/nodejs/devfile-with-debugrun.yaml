@@ -14,6 +14,8 @@ components:
       endpoints:
         - name: "3000-tcp"
           targetPort: 3000
+        - name: "5858-tcp"
+          targetPort: 5858
       mountSources: true
 commands:
   - id: devbuild
