@@ -54,11 +54,21 @@ $ odo init -o json \
     --devfile go \
     --starter go-starter
 {
-  "devfilePath": "/path/to/devfile.yaml",
-  "devfileData": {
-    "schemaVersion": "2.0.0",
-    [...]
-  }
+	"devfilePath": "/home/user/my-project/devfile.yaml",
+	"devfileData": {
+		"devfile": {
+			"schemaVersion": "2.1.0",
+      [...]
+		},
+		"supportedOdoFeatures": {
+			"dev": true,
+			"deploy": false,
+			"debug": false
+		}
+	},
+	"forwardedPorts": [],
+	"runningIn": [],
+	"managedBy": "odo"
 }
 $ echo $?
 0
