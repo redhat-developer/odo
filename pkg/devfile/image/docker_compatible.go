@@ -3,7 +3,6 @@ package image
 import (
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,10 +44,9 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 		return err
 	}
 
-	//get command to run, expand the environment variables and convert command to array
-	shellCmd, err := util.ParseCommandLine(os.ExpandEnv(getShellCommand(o.name, image, devfilePath)))
-	if err != nil {
-		return err
+	shellCmd := getShellCommand(o.name, image, devfilePath)
+	for i := 0; i < len(shellCmd); i++ {
+		shellCmd[i] = os.ExpandEnv(shellCmd[i])
 	}
 	cmd := exec.Command(shellCmd[0], shellCmd[1:]...)
 	cmdEnv := []string{
@@ -71,7 +69,8 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	return nil
 }
 
-func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) string {
+func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) []string {
+	var shellCmd []string
 	imageName := image.ImageName
 	dockerfile := filepath.Join(devfilePath, image.Dockerfile.Uri)
 	buildpath := image.Dockerfile.BuildContext
@@ -79,13 +78,20 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 		buildpath = devfilePath
 	}
 	args := image.Dockerfile.Args
-
-	shell := fmt.Sprintf(`%s build -t "%s" -f "%s" "%s"`, cmdName, imageName, dockerfile, buildpath)
-	if len(args) > 0 {
-		shell = shell + " " + strings.Join(args, " ")
+	shellCmd = []string{
+		cmdName,
+		"build",
+		"-t",
+		imageName,
+		"-f",
+		dockerfile,
+		buildpath,
 	}
-	klog.V(4).Infof("Running command: %s", shell)
-	return shell
+	if len(args) > 0 {
+		shellCmd = append(shellCmd, args...)
+	}
+	klog.V(4).Infof("Running command: %v", shellCmd)
+	return shellCmd
 }
 
 // Push an image to its registry using a Docker compatible CLI
