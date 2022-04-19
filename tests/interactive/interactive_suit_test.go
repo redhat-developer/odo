@@ -1,6 +1,6 @@
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-//go:build !race
+//go:build !race && (linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd)
 // +build !race
+// +build linux darwin dragonfly solaris openbsd netbsd freebsd
 
 package interactive
 
