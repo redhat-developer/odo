@@ -480,7 +480,7 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 	// else, we copy it to a buffer
 	if followLog {
 
-		c := make(chan os.Signal)
+		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			<-c
