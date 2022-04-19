@@ -55,7 +55,7 @@ func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error
 	return nil
 }
 
-// BuildPushSpecificImage build an image defined in the devfile
+// BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
 func BuildPushSpecificImage(devfilePath string, component devfile.Component, push bool) error {
 	backend, err := selectBackend()
