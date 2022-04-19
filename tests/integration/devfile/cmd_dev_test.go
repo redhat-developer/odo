@@ -330,6 +330,31 @@ var _ = Describe("odo dev command tests", func() {
 				})
 			})
 		})
+
+		When("odo is executed with --no-watch flag", func() {
+			BeforeEach(func() {
+				devSession, _, _, _, err := helper.StartDevMode("--no-watch")
+				Expect(err).ToNot(HaveOccurred())
+				defer func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+				}()
+				// An ENV file should have been created indicating current namespace
+				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+			})
+
+			When("a file in component directory is modified", func() {
+				It("should not trigger a push", func() {
+					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base("server.js"))
+					Expect(execResult).To(ContainSubstring("App started"))
+					Expect(execResult).ToNot(ContainSubstring("App is super started"))
+
+				})
+			})
+		})
 	})
 
 	Context("port-forwarding for the component", func() {

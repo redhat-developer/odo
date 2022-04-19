@@ -62,6 +62,7 @@ type DevOptions struct {
 
 	// Flags
 	randomPorts bool
+	noWatchFlag bool
 }
 
 type Handler struct{}
@@ -230,8 +231,18 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 
-	d := Handler{}
-	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
+	if o.noWatchFlag {
+		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
+		for {
+			select {
+			case <-o.ctx.Done():
+				return o.clientset.WatchClient.CleanupFunc(devFileObj, log.GetStdout())
+			}
+		}
+	} else {
+		d := Handler{}
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
+	}
 
 	return err
 }
@@ -293,6 +304,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 		},
 	}
 	devCmd.Flags().BoolVarP(&o.randomPorts, "random-ports", "f", false, "Assign random ports to redirected ports")
+	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu

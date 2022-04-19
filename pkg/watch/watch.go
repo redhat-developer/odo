@@ -26,6 +26,7 @@ import (
 const (
 	// PushErrorString is the string that is printed when an error occurs during watch's Push operation
 	PushErrorString = "Error occurred on Push"
+	CtrlCMessage    = "Press Ctrl+c to exit `odo dev` and delete resources from the cluster"
 )
 
 type WatchClient struct {
@@ -187,7 +188,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	printInfoMessage(out, parameters.Path)
 
-	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.cleanupFunc)
+	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupFunc)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
@@ -330,7 +331,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 	}
 }
 
-func (o *WatchClient) cleanupFunc(devfileObj parser.DevfileObj, out io.Writer) error {
+func (o *WatchClient) CleanupFunc(devfileObj parser.DevfileObj, out io.Writer) error {
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
@@ -393,6 +394,5 @@ func removeDuplicates(input []string) []string {
 }
 
 func printInfoMessage(out io.Writer, path string) {
-	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+
-		"Press Ctrl+c to exit `odo dev` and delete resources from the cluster\n", path)
+	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
 }
