@@ -234,10 +234,8 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	if o.noWatchFlag {
 		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
 		for {
-			select {
-			case <-o.ctx.Done():
-				return o.clientset.WatchClient.CleanupFunc(devFileObj, log.GetStdout())
-			}
+			<-o.ctx.Done()
+			return o.clientset.WatchClient.CleanupFunc(devFileObj, log.GetStdout())
 		}
 	} else {
 		d := Handler{}
