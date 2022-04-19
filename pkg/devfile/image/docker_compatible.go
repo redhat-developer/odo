@@ -3,6 +3,7 @@ package image
 import (
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/util"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,9 +35,22 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	buildSpinner := log.SpinnerNoSpin("Building image locally")
 	defer buildSpinner.End(false)
 
-	shell := getShellCommand(o.name, image, devfilePath)
+	err := os.Setenv("PROJECTS_ROOT", devfilePath)
+	if err != nil {
+		return err
+	}
 
-	cmd := exec.Command("bash", "-c", shell)
+	err = os.Setenv("PROJECT_SOURCE", devfilePath)
+	if err != nil {
+		return err
+	}
+
+	//get command to run, expand the environment variables and convert command to array
+	shellCmd, err := util.ParseCommandLine(os.ExpandEnv(getShellCommand(o.name, image, devfilePath)))
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(shellCmd[0], shellCmd[1:]...)
 	cmdEnv := []string{
 		"PROJECTS_ROOT=" + devfilePath,
 		"PROJECT_SOURCE=" + devfilePath,
@@ -48,7 +62,7 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	// Set all output as italic when doing a push, then return to normal at the end
 	color.Set(color.Italic)
 	defer color.Unset()
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
