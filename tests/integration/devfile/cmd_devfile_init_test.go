@@ -35,6 +35,22 @@ var _ = Describe("odo devfile init command tests", func() {
 			helper.Cmd("odo", "init", "--name", "aname").ShouldFail()
 		})
 
+		By("running odo init with json and no other flags", func() {
+			res := helper.Cmd("odo", "init", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+			Expect(helper.JsonPathContentIs(stderr, "message", "parameters are expected to select a devfile"))
+		})
+
+		By("running odo init with incomplete flags and JSON output", func() {
+			res := helper.Cmd("odo", "init", "--name", "aname", "-o", "json").ShouldFail()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stdout).To(BeEmpty())
+			Expect(helper.IsJSON(stderr)).To(BeTrue())
+			Expect(helper.JsonPathContentContain(stderr, "message", "either --devfile or --devfile-path parameter should be specified"))
+		})
+
 		By("keeping an empty directory when running odo init with wrong starter name", func() {
 			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "go", "--starter", "wrongname").ShouldFail()
 			files := helper.ListFilesInDir(commonVar.Context)
@@ -95,6 +111,25 @@ var _ = Describe("odo devfile init command tests", func() {
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
 				metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
 				Expect(metadata.Name).To(BeEquivalentTo(compName))
+			})
+		})
+		When("using --devfile flag and JSON output", func() {
+			compName := "aname"
+			var res *helper.CmdWrapper
+			BeforeEach(func() {
+				res = helper.Cmd("odo", "init", "--name", compName, "--devfile", "go", "-o", "json").ShouldPass()
+			})
+
+			It("should return correct values in output", func() {
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stderr).To(BeEmpty())
+				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				Expect(helper.JsonPathContentIs(stdout, "devfilePath", filepath.Join(commonVar.Context, "devfile.yaml")))
+				Expect(helper.JsonPathContentIs(stdout, "devfileData.devfile.schemaVersion", "2.0.0"))
+				Expect(helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.dev", "true"))
+				Expect(helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.debug", "false"))
+				Expect(helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.deploy", "false"))
+				Expect(helper.JsonPathContentIs(stdout, "managedBy", "odo"))
 			})
 		})
 		When("using --devfile-path flag with a local devfile", func() {

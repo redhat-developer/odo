@@ -5,6 +5,7 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 )
 
@@ -89,6 +90,27 @@ func ExecPostStartEvents(devfileObj parser.DevfileObj, componentName string, han
 func ExecPreStopEvents(devfileObj parser.DevfileObj, componentName string, handler Handler) error {
 	preStopEvents := devfileObj.Data.GetEvents().PreStop
 	return execDevfileEvent(devfileObj, preStopEvents, handler)
+}
+
+func hasCommand(devfileData data.DevfileData, kind v1alpha2.CommandGroupKind) bool {
+	commands, err := devfileData.GetCommands(common.DevfileOptions{
+		CommandOptions: common.CommandOptions{
+			CommandGroupKind: kind,
+		},
+	})
+	return err == nil && len(commands) > 0
+}
+
+func HasRunCommand(devfileData data.DevfileData) bool {
+	return hasCommand(devfileData, v1alpha2.RunCommandGroupKind)
+}
+
+func HasDeployCommand(devfileData data.DevfileData) bool {
+	return hasCommand(devfileData, v1alpha2.DeployCommandGroupKind)
+}
+
+func HasDebugCommand(devfileData data.DevfileData) bool {
+	return hasCommand(devfileData, v1alpha2.DebugCommandGroupKind)
 }
 
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them

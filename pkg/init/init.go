@@ -14,6 +14,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/init/backend"
@@ -73,7 +74,7 @@ func (o *InitClient) Validate(flags map[string]string, fs filesystem.Filesystem,
 }
 
 // SelectDevfile calls SelectDevfile methods of the adequate backend
-func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*alizer.DevfileLocation, error) {
+func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesystem, dir string) (*api.DevfileLocation, error) {
 	var backend backend.InitBackend
 
 	empty, err := location.DirIsEmpty(fs, dir)
@@ -105,7 +106,7 @@ func (o *InitClient) SelectDevfile(flags map[string]string, fs filesystem.Filesy
 	return location, err
 }
 
-func (o *InitClient) DownloadDevfile(devfileLocation *alizer.DevfileLocation, destDir string) (string, error) {
+func (o *InitClient) DownloadDevfile(devfileLocation *api.DevfileLocation, destDir string) (string, error) {
 	destDevfile := filepath.Join(destDir, "devfile.yaml")
 	if devfileLocation.DevfilePath != "" {
 		return destDevfile, o.downloadDirect(devfileLocation.DevfilePath, destDevfile)

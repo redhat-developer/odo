@@ -21,22 +21,69 @@ from the devfiles in the registries defined in the list of preferred registries 
 
 The output of this command contains a devfile name and a registry name:
 
-```
+```bash
 $ odo alizer -o json
 {
     "devfile": "nodejs",
-    "registry": "DefaultDevfileRegistry"
+    "devfileRegistry": "DefaultDevfileRegistry"
 }
 $ echo $?
 0
 ```
 
-If the command is executed in an empty directory, it will return an error and terminate with a non-zero exit status:
+If the command is executed in an empty directory, it will return an error in the standard error stream and terminate with a non-zero exit status:
 
-```
+```bash
 $ odo alizer -o json
 {
 	"message": "No valid devfile found for project in /home/user/my/empty/directory"
+}
+$ echo $?
+1
+```
+
+## odo init -o json
+
+The `init` command downloads a devfile and, optionally, a starter project. The usage for this command can be found in the [odo init command reference page](init.md).
+
+The output of this command contains the path of the downloaded devfile and its content, in JSON format.
+
+```bash
+$ odo init -o json \
+    --name aname \
+    --devfile go \
+    --starter go-starter
+{
+	"devfilePath": "/home/user/my-project/devfile.yaml",
+	"devfileData": {
+		"devfile": {
+			"schemaVersion": "2.1.0",
+      [...]
+		},
+		"supportedOdoFeatures": {
+			"dev": true,
+			"deploy": false,
+			"debug": false
+		}
+	},
+	"forwardedPorts": [],
+	"runningIn": [],
+	"managedBy": "odo"
+}
+$ echo $?
+0
+```
+
+If the command fails, it will return an error in the standard error stream and terminate with a non-zero exit status:
+
+```bash
+# Executing the same command again will fail
+$ odo init -o json \
+    --name aname \
+    --devfile go \
+    --starter go-starter
+{
+	"message": "a devfile already exists in the current directory"
 }
 $ echo $?
 1

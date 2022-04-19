@@ -50,17 +50,3 @@ func (mr *MockClientMockRecorder) DetectFramework(path interface{}) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectFramework", reflect.TypeOf((*MockClient)(nil).DetectFramework), path)
 }
-
-// GetDevfileLocationFromDetection mocks base method.
-func (m *MockClient) GetDevfileLocationFromDetection(arg0 recognizer.DevFileType, arg1 registry.Registry) *DevfileLocation {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDevfileLocationFromDetection", arg0, arg1)
-	ret0, _ := ret[0].(*DevfileLocation)
-	return ret0
-}
-
-// GetDevfileLocationFromDetection indicates an expected call of GetDevfileLocationFromDetection.
-func (mr *MockClientMockRecorder) GetDevfileLocationFromDetection(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevfileLocationFromDetection", reflect.TypeOf((*MockClient)(nil).GetDevfileLocationFromDetection), arg0, arg1)
-}

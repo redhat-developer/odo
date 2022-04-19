@@ -286,7 +286,9 @@ func Swarningf(format string, a ...interface{}) string {
 //  \__/
 //
 func Title(firstLine, secondLine, thirdLine string) {
-	fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine, thirdLine))
+	if !IsJSON() {
+		fmt.Fprint(GetStdout(), Stitle(firstLine, secondLine, thirdLine))
+	}
 }
 
 // Stitle is the same as Title but returns the string instead
