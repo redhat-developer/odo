@@ -3,6 +3,7 @@ package create
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -71,7 +72,11 @@ func (o *CreateBindingOptions) Validate() (err error) {
 }
 
 func (o *CreateBindingOptions) Run(ctx context.Context) error {
-	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags)
+	getServices, serviceMap, err := o.clientset.BindingClient.GetServiceInstances()
+	if err != nil {
+		return err
+	}
+	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, getServices)
 	if err != nil {
 		return err
 	}
@@ -83,8 +88,12 @@ func (o *CreateBindingOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return o.clientset.BindingClient.CreateBinding(service, bindingName, bindAsFiles, o.EnvSpecificInfo.GetDevfileObj())
 
+	componentContext, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	return o.clientset.BindingClient.CreateBinding(service, bindingName, bindAsFiles, o.EnvSpecificInfo.GetDevfileObj(), serviceMap, componentContext)
 }
 
 // NewCmdBinding implements the component odo sub-command

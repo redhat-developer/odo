@@ -7,6 +7,7 @@ import (
 	"github.com/go-openapi/spec"
 	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -82,7 +83,10 @@ type ClientInterface interface {
 	GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error)
 	GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error)
 	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
+	GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
+	GetBindableKinds() (sboApi.BindableKinds, error)
+	ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error
 
 	// owner_reference.go
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error

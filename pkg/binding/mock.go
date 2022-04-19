@@ -119,3 +119,18 @@ func (mr *MockClientMockRecorder) CreateBinding(service, bindingName, bindAsFile
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBinding", reflect.TypeOf((*MockClient)(nil).CreateBinding), service, bindingName, bindAsFiles, obj)
 }
+
+// GetServiceInstances mocks base method
+func (m *MockClient) GetServiceInstances() ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServiceInstances")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceInstances indicates an expected call of GetServiceInstances
+func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
+}

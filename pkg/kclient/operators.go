@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"strings"
 
+	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/restmapper"
@@ -76,6 +79,23 @@ func (c *Client) GetResourceSpecDefinition(group, version, kind string) (*spec.S
 		return nil, err
 	}
 	return getResourceSpecDefinitionFromSwagger(data, group, version, kind)
+}
+
+func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
+	if c.DynamicClient == nil {
+		return sboApi.BindableKinds{}, nil
+	}
+	gvr := schema.GroupVersionResource{Group: "binding.operators.coreos.com", Version: "v1alpha1", Resource: "bindablekinds"}
+	unstructuredBK, err := c.DynamicClient.Resource(gvr).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
+	if err != nil {
+		return sboApi.BindableKinds{}, err
+	}
+	var bindableKind sboApi.BindableKinds
+	err = c.ConvertUnstructuredToResource(unstructuredBK.UnstructuredContent(), &bindableKind)
+	if err != nil {
+		return sboApi.BindableKinds{}, err
+	}
+	return bindableKind, nil
 }
 
 // getResourceSpecDefinitionFromSwagger returns the OpenAPI v2 definition of the Kubernetes resource of a given group/version/kind, for a given swagger data
@@ -189,6 +209,23 @@ func (c *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured) (*m
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+func (c *Client) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error) {
+	// TODO: Remove GetRestMappingFromUnstructured, use GetRestMappingFromGVK instead
+	cfg := c.GetClientConfig()
+
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return &meta.RESTMapping{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+func (c *Client) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u, obj)
 }
 
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
