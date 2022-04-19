@@ -56,7 +56,7 @@ type Client struct {
 	// Use IsSSASupported()
 	isSSASupported *bool
 	// checkIngressSupports is used to check ingress support
-	//(used to prevent duplicate checks and disable check in UTs)
+	// (used to prevent duplicate checks and disable check in UTs)
 	checkIngressSupports               bool
 	isNetworkingV1IngressSupported     bool
 	isExtensionV1Beta1IngressSupported bool

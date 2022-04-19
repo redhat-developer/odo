@@ -21,10 +21,8 @@ func (o *InteractiveBackend) Validate(_ map[string]string) error {
 	return nil
 }
 
-func (o *InteractiveBackend) SelectServiceInstance(_ map[string]string) (string, error) {
-	var serviceNames []string
-	// TODO: Get service names from the cluster
-	return o.askerClient.AskServiceInstance(serviceNames)
+func (o *InteractiveBackend) SelectServiceInstance(_ map[string]string, options []string) (string, error) {
+	return o.askerClient.AskServiceInstance(options)
 }
 
 func (o *InteractiveBackend) AskBindingName(componentName string, _ map[string]string) (string, error) {
