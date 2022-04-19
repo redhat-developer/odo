@@ -1,0 +1,95 @@
+commands:
+- exec:
+    commandLine: npm install
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    workingDir: $PROJECT_SOURCE
+  id: install
+- exec:
+    commandLine: npm start
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: $PROJECT_SOURCE
+  id: run
+- apply:
+    component: prod-image
+  id: build-image
+- apply:
+    component: outerloop-deploy
+  id: deploy-deployment
+- apply:
+    component: outerloop-service
+  id: deploy-service
+- composite:
+    commands:
+    - build-image
+    - deploy-deployment
+    - deploy-service
+    group:
+      isDefault: true
+      kind: deploy
+  id: deploy
+components:
+- container:
+    endpoints:
+    - name: http-3000
+      targetPort: 3000
+    image: registry.access.redhat.com/ubi8/nodejs-14:0.1.0
+    memoryLimit: 1024Mi
+    mountSources: true
+  name: runtime
+- image:
+    dockerfile:
+      uri: ./Dockerfile
+    imageName: localhost:5000/devfile-nodejs-deploy:0.1.0
+  name: prod-image
+- kubernetes:
+    inlined: |
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: devfile-nodejs-deploy
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: devfile-nodejs-deploy
+        template:
+          metadata:
+            labels:
+              app: devfile-nodejs-deploy
+          spec:
+            containers:
+              - name: main
+                image: "localhost:5000/devfile-nodejs-deploy:0.1.0"
+                resources: {}
+  name: outerloop-deploy
+- kubernetes:
+    inlined: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        labels:
+          app: devfile-nodejs-deploy
+        name: devfile-nodejs-deploy
+      spec:
+        ports:
+        - name: http-3000
+          port: 3000
+          protocol: TCP
+          targetPort: 3000
+        selector:
+          app: devfile-nodejs-deploy
+        type: LoadBalancer
+  name: outerloop-service
+metadata:
+  language: javascript
+  name: my-nodejs-without-buildctx
+  projectType: nodejs
+schemaVersion: 2.2.0
+variables:
+  CONTAINER_IMAGE: localhost:5000/devfile-nodejs-deploy:0.1.0

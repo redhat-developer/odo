@@ -1,6 +1,7 @@
 package image
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 )
 
 func TestGetShellCommand(t *testing.T) {
+	devfilePath := filepath.Join("home", "user", "project1")
 	tests := []struct {
 		name        string
 		cmdName     string
@@ -33,8 +35,9 @@ func TestGetShellCommand(t *testing.T) {
 					},
 				},
 			},
-			devfilePath: filepath.Join("home", "user", "project1"),
-			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECTS_ROOT}`,
+			devfilePath: devfilePath,
+			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "${PROJECTS_ROOT}"`,
+				filepath.Join(devfilePath, "Dockerfile")),
 		},
 		{
 			name:    "test 2",
@@ -54,8 +57,9 @@ func TestGetShellCommand(t *testing.T) {
 					},
 				},
 			},
-			devfilePath: filepath.Join("home", "user", "project1"),
-			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECTS_ROOT}`,
+			devfilePath: devfilePath,
+			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "${PROJECTS_ROOT}"`,
+				filepath.Join(devfilePath, "Dockerfile")),
 		},
 		{
 			name:    "test with args",
@@ -76,8 +80,28 @@ func TestGetShellCommand(t *testing.T) {
 					},
 				},
 			},
-			devfilePath: filepath.Join("home", "user", "project1"),
-			want:        `cli build -t "registry.io/myimagename:tag" -f "` + filepath.Join("home", "user", "project1", "Dockerfile") + `" ${PROJECTS_ROOT} --flag value`,
+			devfilePath: devfilePath,
+			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "${PROJECTS_ROOT}" --flag value`,
+				filepath.Join(devfilePath, "Dockerfile")),
+		},
+		{
+			name:    "test with no build context in Devfile",
+			cmdName: "cli",
+			image: &devfile.ImageComponent{
+				Image: devfile.Image{
+					ImageName: "registry.io/myimagename:tag",
+					ImageUnion: devfile.ImageUnion{
+						Dockerfile: &devfile.DockerfileImage{
+							DockerfileSrc: devfile.DockerfileSrc{
+								Uri: "Dockerfile.rhel",
+							},
+						},
+					},
+				},
+			},
+			devfilePath: devfilePath,
+			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "%s"`,
+				filepath.Join(devfilePath, "Dockerfile.rhel"), devfilePath),
 		},
 	}
 
