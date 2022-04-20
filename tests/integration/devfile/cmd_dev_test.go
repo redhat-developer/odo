@@ -348,7 +348,7 @@ var _ = Describe("odo dev command tests", func() {
 				It("should not trigger a push", func() {
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/"+filepath.Base("server.js"))
+					execResult := commonVar.CliRunner.Exec(podName, commonVar.Project, "cat", "/projects/server.js")
 					Expect(execResult).To(ContainSubstring("App started"))
 					Expect(execResult).ToNot(ContainSubstring("App is super started"))
 
