@@ -235,7 +235,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
 		for {
 			<-o.ctx.Done()
-			return o.clientset.WatchClient.CleanupFunc(devFileObj, log.GetStdout())
+			return o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
 		}
 	} else {
 		d := Handler{}

@@ -188,7 +188,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	printInfoMessage(out, parameters.Path)
 
-	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupFunc)
+	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.Cleanup)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
@@ -331,7 +331,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 	}
 }
 
-func (o *WatchClient) CleanupFunc(devfileObj parser.DevfileObj, out io.Writer) error {
+func (o *WatchClient) Cleanup(devfileObj parser.DevfileObj, out io.Writer) error {
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
