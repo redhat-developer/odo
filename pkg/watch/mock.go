@@ -9,6 +9,7 @@ import (
 	io "io"
 	reflect "reflect"
 
+	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -33,6 +34,20 @@ func NewMockClient(ctrl *gomock.Controller) *MockClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
+}
+
+// CleanupFunc mocks base method.
+func (m *MockClient) CleanupFunc(devfileObj parser.DevfileObj, out io.Writer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanupFunc", devfileObj, out)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CleanupFunc indicates an expected call of CleanupFunc.
+func (mr *MockClientMockRecorder) CleanupFunc(devfileObj, out interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupFunc", reflect.TypeOf((*MockClient)(nil).CleanupFunc), devfileObj, out)
 }
 
 // WatchAndPush mocks base method.
