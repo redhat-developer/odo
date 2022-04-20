@@ -15,7 +15,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
@@ -74,9 +74,12 @@ func NewDevOptions() *DevOptions {
 	}
 }
 
-var devExample = templates.Examples(`
+var devExample = ktemplates.Examples(`
 	# Deploy component to the development cluster
 	%[1]s
+
+	# Deploy component to the development cluster without automatically syncing the code upon any file changes
+	%[1]s --no-watch
 `)
 
 func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
