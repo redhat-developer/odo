@@ -85,18 +85,13 @@ func (o *Cobra) FlagValueIfSet(flagName string) string {
 	return flag
 }
 
-// CheckIfConfigurationNeeded checks against a set of commands that do *NOT* need configuration.
+// CheckIfConfigurationNeeded checks against a set of commands that need configuration.
 func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 	// Here we will check for parent commands, if the match a certain criteria, we will skip
 	// using the configuration.
 	//
-	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
+	// For example, `odo init` should NOT check to see if there is actually a configuration yet.
 	if o.cmd.HasParent() {
-
-		// Gather necessary preliminary information
-		parentCommand := o.cmd.Parent()
-		rootCommand := o.cmd.Root()
-		flagValue := o.FlagValueIfSet(util.ApplicationFlagName)
 
 		// Find the first child of the command, as some groups are allowed even with non existent configuration
 		firstChildCommand := getFirstChildOfCommand(o.cmd)
@@ -105,58 +100,18 @@ func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 		if firstChildCommand == nil {
 			return false, fmt.Errorf("Unable to get first child of command")
 		}
-		// Case 1 : if command is create operation just allow it
-		if o.cmd.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
-			return true, nil
-		}
-		// Case 2 : if command is describe or delete and app flag is used just allow it
-		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
-			return true, nil
-		}
-		// Case 3 : if command is list, just allow it
-		if firstChildCommand.Name() == "list" {
-			return true, nil
-		}
-		// Case 4 : Check if firstChildCommand is project. If so, skip validation of context
-		if firstChildCommand.Name() == "project" {
-			return true, nil
-		}
-		// Case 5 : Check if specific flags are set for specific first child commands
-		if firstChildCommand.Name() == "app" {
-			return true, nil
-		}
-		// Case 6 : Check if firstChildCommand is catalog and request is to list or search
-		if firstChildCommand.Name() == "catalog" {
-			return true, nil
-		}
-		// Case 7: Check if firstChildCommand is component and  request is list
-		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && o.cmd.Name() == "list" {
-			return true, nil
-		}
-		// Case 8 : Check if firstChildCommand is component and app flag is used
-		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
-			return true, nil
-		}
-		// Case 9 : Check if firstChildCommand is logout and app flag is used
-		if firstChildCommand.Name() == "logout" {
-			return true, nil
-		}
-		// Case 10: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
-		if firstChildCommand.Name() == "service" && (o.cmd.Name() == "create" || o.cmd.Name() == "delete") {
-			return true, nil
-		}
-		// Case 11 : if command is deploy
-		if o.cmd.Name() == "deploy" {
-			return true, nil
-		}
-		// Case 12 : if command is dev
-		if o.cmd.Name() == "dev" {
-			return true, nil
-		}
-	} else {
-		return true, nil
-	}
 
+		// Gather necessary preliminary information
+		componentNameFlagValue := o.FlagValueIfSet(util.ComponentNameFlagName)
+		// if command is `odo delete component` and name flag is not used, require configuration
+		if firstChildCommand.Name() == "delete" && o.cmd.Name() == "component" && len(componentNameFlagValue) == 0 {
+			return true, nil
+		}
+		// if command is `odo build-images`, require configuration
+		if o.cmd.Name() == "build-images" {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 

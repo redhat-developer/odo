@@ -15,6 +15,8 @@ const (
 	OutputFlagName = "o"
 	// ContextFlagName is the name of the flag allowing a user to specify the location of the component settings
 	ContextFlagName = "context"
+	// ComponentNameFlagName is the name of the flag allowing a user to specify which component to operate on
+	ComponentNameFlagName = "name"
 )
 
 // AddContextFlag adds `context` flag to given cobra command
@@ -24,15 +26,5 @@ func AddContextFlag(cmd *cobra.Command, setValueTo *string) {
 		cmd.Flags().StringVar(setValueTo, ContextFlagName, "", helpMessage)
 	} else {
 		cmd.Flags().String(ContextFlagName, "", helpMessage)
-	}
-}
-
-// AddNowFlag adds `now` flag to given cobra command
-func AddNowFlag(cmd *cobra.Command, setValueTo *bool) {
-	helpMessage := "Push changes to the cluster immediately"
-	if setValueTo != nil {
-		cmd.Flags().BoolVar(setValueTo, "now", false, helpMessage)
-	} else {
-		cmd.Flags().Bool("now", false, helpMessage)
 	}
 }

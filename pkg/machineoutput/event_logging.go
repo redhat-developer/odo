@@ -95,14 +95,6 @@ func NewConsoleMachineEventLoggingClient() *ConsoleMachineEventLoggingClient {
 	return &ConsoleMachineEventLoggingClient{}
 }
 
-// NewConsoleMachineEventLoggingClientWithFunction creates a new instance with a custom logging functional,
-// suitable for, for example, unit testing.
-func NewConsoleMachineEventLoggingClientWithFunction(logFunc func(machineOutput MachineEventWrapper)) *ConsoleMachineEventLoggingClient {
-	return &ConsoleMachineEventLoggingClient{
-		logFunc: logFunc,
-	}
-}
-
 var _ MachineEventLoggingClient = &ConsoleMachineEventLoggingClient{}
 
 // DevFileCommandExecutionBegin outputs the provided event as JSON to the console.
@@ -323,20 +315,6 @@ const (
 	// TypeKubernetesPodStatus is the entry type for that event.
 	TypeKubernetesPodStatus MachineEventLogEntryType = 7
 )
-
-// GetCommandName returns a command if the MLE supports that field (otherwise empty string is returned).
-// Currently used for test purposes only.
-func GetCommandName(entry MachineEventLogEntry) string {
-
-	if entry.GetType() == TypeDevFileCommandExecutionBegin {
-		return entry.(*DevFileCommandExecutionBegin).CommandID
-	} else if entry.GetType() == TypeDevFileCommandExecutionComplete {
-		return entry.(*DevFileCommandExecutionComplete).CommandID
-	} else {
-		return ""
-	}
-
-}
 
 // createWriterAndChannel is similar to the exec.CreateConsoleOutputWriterAndChannel(); see that function's comment for details.
 func createWriterAndChannel(stderr bool) (*io.PipeWriter, chan interface{}) {

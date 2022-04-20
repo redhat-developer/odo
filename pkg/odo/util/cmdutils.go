@@ -41,17 +41,6 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 	}
 }
 
-// CheckOutputFlag validates the -o flag
-func CheckOutputFlag(outputFlag string) error {
-	switch outputFlag {
-	case "", "json":
-		return nil
-	default:
-		return fmt.Errorf("Please input valid output format. available format: json")
-	}
-
-}
-
 // GetFullName generates a command's full name based on its parent's full name and its own name
 func GetFullName(parentName, name string) string {
 	return parentName + " " + name

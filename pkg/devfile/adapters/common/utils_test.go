@@ -2,7 +2,6 @@ package common
 
 import (
 	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -12,8 +11,7 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
-	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
-	odotestingutil "github.com/redhat-developer/odo/pkg/testingutil"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -579,113 +577,4 @@ func TestGetCommandsFromEvent(t *testing.T) {
 		})
 	}
 
-}
-
-func Test_removeDevfileURIContents(t *testing.T) {
-	fs := devfileFileSystem.NewFakeFs()
-
-	uriFolderName := "kubernetes"
-
-	fileName0 := "odo-service-some-service.yaml"
-	fileName1 := "odo-url-some-url.yaml"
-
-	err := fs.MkdirAll(uriFolderName, os.ModePerm)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	file0, err := fs.Create(filepath.Join(uriFolderName, fileName0))
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	file1, err := fs.Create(filepath.Join(uriFolderName, fileName1))
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	addURIComponents := func(obj devfileParser.DevfileObj, name, uri string) error {
-		err = obj.Data.AddComponents([]devfilev1.Component{{
-			Name: name,
-			ComponentUnion: devfilev1.ComponentUnion{
-				Kubernetes: &devfilev1.KubernetesComponent{
-					K8sLikeComponent: devfilev1.K8sLikeComponent{
-						BaseComponent: devfilev1.BaseComponent{},
-						K8sLikeComponentLocation: devfilev1.K8sLikeComponentLocation{
-							Uri: uri,
-						},
-					},
-				},
-			},
-		}})
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	devfileObj := odotestingutil.GetTestDevfileObj(fs)
-	err = addURIComponents(devfileObj, "some-service.yaml", file0.Name())
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	err = addURIComponents(devfileObj, "some-ingress.yaml", file1.Name())
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	err = addURIComponents(devfileObj, "some-route.yaml", "https://example.com")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	devfileObjWithMissingFiles := odotestingutil.GetTestDevfileObj(fs)
-	err = addURIComponents(devfileObjWithMissingFiles, "some-blah.yaml", file0.Name()+"blah")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	type args struct {
-		devfile          devfileParser.DevfileObj
-		componentContext string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "case 1: the files mentioned in the URI exists",
-			args: args{
-				devfile:          devfileObj,
-				componentContext: "",
-			},
-		},
-		{
-			name: "case 2: the files mentioned in the URI don't exists",
-			args: args{
-				devfile:          devfileObjWithMissingFiles,
-				componentContext: "",
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := removeDevfileURIContents(tt.args.devfile, tt.args.componentContext, fs); (err != nil) != tt.wantErr {
-				t.Errorf("RemoveDevfileURIContents() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			if !tt.wantErr {
-				files, err := fs.ReadDir(uriFolderName)
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				if len(files) != 0 {
-					t.Errorf("some files were not removed from the folder %v", uriFolderName)
-				}
-			}
-
-			_ = fs.RemoveAll(uriFolderName)
-		})
-	}
 }

@@ -8,10 +8,10 @@ import (
 	"os"
 	"text/tabwriter"
 
-	// Third-party packages
-
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	// Third-party packages
 
 	// odo packages
 	"github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
@@ -23,7 +23,7 @@ import (
 
 const listCommandName = "list"
 
-// "odo registry list" command description and examples
+// "odo preference registry list" command description and examples
 var (
 	listDesc = ktemplates.LongDesc(`List devfile registry`)
 
@@ -32,7 +32,7 @@ var (
 	`)
 )
 
-// ListOptions encapsulates the options for "odo registry list" command
+// ListOptions encapsulates the options for "odo preference registry list" command
 type ListOptions struct {
 	// Clients
 	clientset *clientset.Clientset
@@ -59,11 +59,11 @@ func (o *ListOptions) Validate() (err error) {
 	return nil
 }
 
-// Run contains the logic for "odo registry list" command
+// Run contains the logic for "odo preference registry list" command
 func (o *ListOptions) Run(ctx context.Context) (err error) {
 	registryList := o.clientset.PreferenceClient.RegistryList()
 	if registryList == nil || len(*registryList) == 0 {
-		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
+		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one")
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
@@ -96,7 +96,7 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 	}
 }
 
-// NewCmdList implements the "odo registry list" command
+// NewCmdList implements the "odo preference registry list" command
 func NewCmdList(name, fullName string) *cobra.Command {
 	o := NewListOptions()
 	registryListCmd := &cobra.Command{

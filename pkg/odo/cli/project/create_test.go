@@ -34,7 +34,7 @@ func TestCreate(t *testing.T) {
 		args               []string
 		//		existingApps       []string
 		wantProjectName string
-		//wantErrValidate string
+		// wantErrValidate string
 	}{
 		{
 			name: "project from args",
@@ -71,7 +71,7 @@ func TestCreate(t *testing.T) {
 			cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("o").Return("").AnyTimes()
-			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(false, nil).AnyTimes()
+			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 			cmdline.EXPECT().Context().Return(context.Background()).AnyTimes()
 
 			// Fake odo Kube client

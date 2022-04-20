@@ -3,16 +3,14 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/util"
 	"strings"
+
+	"github.com/redhat-developer/odo/pkg/util"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +19,10 @@ import (
 	authv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	applabels "github.com/redhat-developer/odo/pkg/application/labels"
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/kclient"
 
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	sboKubernetes "github.com/redhat-developer/service-binding-operator/pkg/client/kubernetes"
@@ -94,7 +96,6 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 		delete(deployed, u.GetKind()+"/"+crdName)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
-				// this could be the case when "odo push" was executed after making change to code but there was no change to the service itself
 				// TODO: better way to handle this might be introduced by https://github.com/redhat-developer/odo/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
@@ -103,8 +104,8 @@ func pushLinksWithOperator(client kclient.ClientInterface, k8sComponents []devfi
 		}
 
 		// uncomment/modify when service linking is enabled in v3
-		//name := u.GetName()
-		//log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
+		// name := u.GetName()
+		// log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
 		restartNeeded = true
 	}
 
@@ -226,7 +227,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 			}
 			restartRequired = true
 			// uncomment/modify when service linking is enabled in v3
-			//log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
+			// log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
 		}
 	}
 
@@ -320,7 +321,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, k8sComponents []de
 			}
 			restartRequired = true
 			// uncomment/modify when service linking is enabled in v3
-			//log.Successf("Created link %q on the cluster; component will be restarted", linkName)
+			// log.Successf("Created link %q on the cluster; component will be restarted", linkName)
 		}
 	}
 

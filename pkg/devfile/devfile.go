@@ -7,6 +7,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
 	"github.com/redhat-developer/odo/pkg/log"
 )
@@ -44,12 +45,6 @@ func parseDevfile(args parser.ParserArgs) (parser.DevfileObj, error) {
 // if there are warning it logs them on stdout
 func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{Path: devfilePath})
-}
-
-// ParseAndValidateFromURL parses devfile from given url and does all the validation
-// if there are warning it logs them on stdout
-func ParseAndValidateFromURL(url string) (parser.DevfileObj, error) {
-	return parseDevfile(parser.ParserArgs{URL: url})
 }
 
 func variableWarning(section string, variable string, messages []string) string {

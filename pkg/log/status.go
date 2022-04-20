@@ -32,9 +32,10 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
-	"github.com/redhat-developer/odo/pkg/log/fidget"
 	"github.com/spf13/pflag"
 	"golang.org/x/term"
+
+	"github.com/redhat-developer/odo/pkg/log/fidget"
 )
 
 // Spacing for logging
@@ -218,14 +219,6 @@ func (s *Status) End(success bool) {
 	s.status = ""
 }
 
-// Namef will output the name of the component / application / project in a *bolded* manner
-func Namef(format string, a ...interface{}) {
-	if !IsJSON() {
-		bold := color.New(color.Bold).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintf(format, a...)))
-	}
-}
-
 // Printf will output in an appropriate "information" manner; for e.g.
 // • <message>
 func Printf(format string, a ...interface{}) {
@@ -268,13 +261,6 @@ func Warningf(format string, a ...interface{}) {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 	}
-}
-
-// Swarningf (like Sprintf) will return a string in the "warning" manner
-//	⚠ <message>
-func Swarningf(format string, a ...interface{}) string {
-	yellow := color.New(color.FgYellow).SprintFunc()
-	return fmt.Sprintf(" %s%s%s", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Title Prints the logo as well as the first line being BLUE (indicator of the command information)
@@ -355,25 +341,6 @@ func Error(a ...interface{}) {
 	}
 }
 
-// Italic will simply print out information on a new italic line
-// *Line in italic*
-func Italic(a ...interface{}) {
-	if !IsJSON() {
-		italic := color.New(color.Italic).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s", italic(fmt.Sprintln(a...)))
-	}
-}
-
-// Italicf will simply print out information on a new italic line
-// this is **normally** used as a way to describe what's next within odo.
-// *Line in italic*
-func Italicf(format string, a ...interface{}) {
-	if !IsJSON() {
-		italic := color.New(color.Italic).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s\n", italic(fmt.Sprintf(format, a...)))
-	}
-}
-
 // Info will simply print out information on a new (bolded) line
 // this is intended as information *after* something has been deployed
 // **Line in bold**
@@ -410,27 +377,6 @@ func Finfof(w io.Writer, format string, a ...interface{}) {
 			fmt.Fprintf(w, "%s\n", bold(fmt.Sprintf(format, a...)))
 		}
 
-	}
-}
-
-// Describef will print out the first variable as BOLD and then the second not..
-// this is intended to be used with `odo describe` and other outputs that list
-// a lot of information
-// **Line in bold**
-// Line not in bold
-func Describef(title string, format string, a ...interface{}) {
-	if !IsJSON() {
-		bold := color.New(color.Bold).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s%s\n", bold(title), fmt.Sprintf(format, a...))
-	}
-}
-
-// Askf will print out information, but in an "Ask" way (without newline)
-// Line-without-newline
-func Askf(format string, a ...interface{}) {
-	if !IsJSON() {
-		bold := color.New(color.Bold).SprintFunc()
-		fmt.Fprintf(GetStdout(), "%s", bold(fmt.Sprintf(format, a...)))
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -317,7 +318,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
-		err = libdevfile.ExecPostStartEvents(a.Devfile, a.ComponentName, component.NewExecHandler(a.Client, a.pod.Name, parameters.Show))
+		err = libdevfile.ExecPostStartEvents(a.Devfile, component.NewExecHandler(a.Client, a.pod.Name, parameters.Show))
 		if err != nil {
 			return err
 		}

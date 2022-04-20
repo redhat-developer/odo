@@ -11,15 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
-// ResolveAppFlag resolves the app from the flag
-func ResolveAppFlag(cmdline cmdline.Cmdline) string {
-	appFlag := cmdline.FlagValueIfSet(util.ApplicationFlagName)
-	if len(appFlag) > 0 {
-		return appFlag
-	}
-	return defaultAppName
-}
-
 // resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
 func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, configProvider localConfigProvider.LocalConfigProvider) error {
 	var namespace string

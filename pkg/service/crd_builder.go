@@ -72,7 +72,7 @@ func convertType(crd *spec.Schema, value string) interface{} {
 		if crd.Type.Contains("integer") {
 			intv, err := strconv.ParseInt(value, 10, 64)
 			if err == nil {
-				return int64(intv)
+				return intv
 			}
 		}
 		if crd.Type.Contains("number") {
@@ -91,7 +91,7 @@ func convertType(crd *spec.Schema, value string) interface{} {
 		// no crd information available, guess the type depending on the value
 		intv, err := strconv.ParseInt(value, 10, 64)
 		if err == nil {
-			return int64(intv)
+			return intv
 		}
 
 		floatv, err := strconv.ParseFloat(value, 64)

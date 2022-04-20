@@ -69,7 +69,7 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 			// we retry on success because the user has set “ShouldFail” as true
 			// if exit code is 0 which means the program succeeded and hence we retry
 			if cw.session.ExitCode() == 0 {
-				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
+				time.Sleep(cw.intervalSeconds * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
 				cw.Runner()
 			}
@@ -77,7 +77,7 @@ func (cw *CmdWrapper) Runner() *CmdWrapper {
 		} else {
 			// if exit code is not 0 which means the program Failed and hence we retry
 			if cw.session.ExitCode() != 0 {
-				time.Sleep(time.Duration(cw.intervalSeconds) * time.Second)
+				time.Sleep(cw.intervalSeconds * time.Second)
 				cw.maxRetry = cw.maxRetry - 1
 				cw.Runner()
 			}
@@ -114,13 +114,13 @@ func (cw *CmdWrapper) ShouldRun() *CmdWrapper {
 }
 
 func (cw *CmdWrapper) WithTerminate(timeoutAfter time.Duration, stop chan bool) *CmdWrapper {
-	cw.timeout = time.Duration(timeoutAfter) * time.Second
+	cw.timeout = timeoutAfter * time.Second
 	cw.stopChan = stop
 	return cw
 }
 
 func (cw *CmdWrapper) WithTimeout(timeoutAfter time.Duration) *CmdWrapper {
-	cw.timeout = time.Duration(timeoutAfter) * time.Second
+	cw.timeout = timeoutAfter * time.Second
 	return cw
 }
 

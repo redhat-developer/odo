@@ -4,19 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"sort"
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
 
 	dfutil "github.com/devfile/library/pkg/util"
+
 	"github.com/redhat-developer/odo/pkg/component"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -146,7 +148,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 		devfileComponents = append(devfileComponents, lo.localComponent)
 	}
 
-	lo.HumanReadableOutput(log.GetStdout(), devfileComponents)
+	lo.HumanReadableOutput(devfileComponents)
 
 	return nil
 }
@@ -176,7 +178,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	return listCmd
 }
 
-func (lo *ListOptions) HumanReadableOutput(wr io.Writer, components []component.OdoComponent) {
+func (lo *ListOptions) HumanReadableOutput(components []component.OdoComponent) {
 	if len(components) == 0 {
 		log.Info("There are no components deployed.")
 		return

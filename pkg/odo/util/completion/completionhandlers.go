@@ -1,14 +1,10 @@
 package completion
 
 import (
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/registry"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
-
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 )
 
 // FileCompletionHandler provides suggestions for files and directories
@@ -33,36 +29,5 @@ var ProjectNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, con
 		}
 		completions = append(completions, project)
 	}
-	return completions
-}
-
-// URLCompletionHandler provides completion for the url commands
-var URLCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	return
-}
-
-// CreateCompletionHandler provides component type completion in odo create command
-var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
-	comps := &completions
-
-	prefClient, err := preference.NewClient()
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "unable to set preference, something is wrong with odo, kindly raise an issue at https://github.com/redhat-developer/odo/issues/new?template=Bug.md")
-	}
-	components, _ := registry.NewRegistryClient(filesystem.DefaultFs{}, prefClient).ListDevfileStacks("")
-	for _, devfile := range components.Items {
-		if args.commands[devfile.Name] {
-			return nil
-		}
-		*comps = append(*comps, devfile.Name)
-	}
-
-	return completions
-}
-
-// ComponentNameCompletionHandler provides component name completion
-var ComponentNameCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
-	completions = make([]string, 0)
 	return completions
 }

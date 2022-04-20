@@ -6,59 +6,12 @@ import (
 	"strings"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+
 	"github.com/redhat-developer/odo/pkg/devfile"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-// GetConfigValue returns a local config value of given key or
-// returns an empty string if value is not set
-func GetConfigValue(key string) string {
-	return GetConfigValueWithContext(key, "")
-}
-
-// GetConfigValueWithContext returns a local config value of given key and contextdir or
-// returns an empty string if value is not set
-func GetConfigValueWithContext(key string, context string) string {
-	var stdOut string
-	if context != "" {
-		stdOut = Cmd("odo", "config", "view", "--context", context).ShouldPass().Out()
-	} else {
-		stdOut = Cmd("odo", "config", "view").ShouldPass().Out()
-	}
-	re := regexp.MustCompile(key + `.+`)
-	odoConfigKeyValue := re.FindString(stdOut)
-	if odoConfigKeyValue == "" {
-		return fmt.Sprintf("%s not found", key)
-	}
-	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
-	if strings.Compare(key, trimKeyValue) != 0 {
-		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
-	}
-	return ""
-}
-
-// GetLocalEnvInfoValueWithContext returns an envInfo value of given key and contextdir or
-// returns an empty string if value is not set
-func GetLocalEnvInfoValueWithContext(key string, context string) string {
-	var stdOut string
-	if context != "" {
-		stdOut = Cmd("odo", "env", "view", "--context", context).ShouldPass().Out()
-	} else {
-		stdOut = Cmd("odo", "env", "view").ShouldPass().Out()
-	}
-	re := regexp.MustCompile(key + `.+`)
-	odoConfigKeyValue := re.FindString(stdOut)
-	if odoConfigKeyValue == "" {
-		return fmt.Sprintf("%s not found", key)
-	}
-	trimKeyValue := strings.TrimSpace(odoConfigKeyValue)
-	if strings.Compare(key, trimKeyValue) != 0 {
-		return strings.TrimSpace(strings.SplitN(trimKeyValue, " ", 2)[1])
-	}
-	return ""
-}
 
 // GetPreferenceValue a global config value of given key or
 // returns an empty string if value is not set

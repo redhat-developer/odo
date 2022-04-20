@@ -81,7 +81,7 @@ func (c *Client) GetResourceSpecDefinition(group, version, kind string) (*spec.S
 // getResourceSpecDefinitionFromSwagger returns the OpenAPI v2 definition of the Kubernetes resource of a given group/version/kind, for a given swagger data
 func getResourceSpecDefinitionFromSwagger(data []byte, group, version, kind string) (*spec.Schema, error) {
 	schema := new(spec.Schema)
-	err := json.Unmarshal([]byte(data), schema)
+	err := json.Unmarshal(data, schema)
 	if err != nil {
 		return nil, err
 	}

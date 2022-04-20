@@ -8,7 +8,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,15 +16,17 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/util"
+
 	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
+
+	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 )
 
 func boolPtr(b bool) *bool {
 	return &b
 }
 
-// constants for deployments
 const (
 	DeploymentKind       = "Deployment"
 	DeploymentAPIVersion = "apps/v1"
@@ -33,13 +34,6 @@ const (
 	// TimedOutReason is added in a deployment when its newest replica set fails to show any progress
 	// within the given deadline (progressDeadlineSeconds).
 	timedOutReason = "ProgressDeadlineExceeded"
-
-	// Hardcoded variables since we can't install SBO on k8s using OLM
-	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
-	ServiceBindingGroup    = "binding.operators.coreos.com"
-	ServiceBindingVersion  = "v1alpha1"
-	ServiceBindingKind     = "ServiceBinding"
-	ServiceBindingResource = "servicebindings"
 )
 
 // GetDeploymentByName gets a deployment by querying by name

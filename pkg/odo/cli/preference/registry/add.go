@@ -22,7 +22,7 @@ import (
 
 const addCommandName = "add"
 
-// "odo registry add" command description and examples
+// "odo preference registry add" command description and examples
 var (
 	addLongDesc = ktemplates.LongDesc(`Add devfile registry`)
 
@@ -33,7 +33,7 @@ var (
 	`)
 )
 
-// AddOptions encapsulates the options for the "odo registry add" command
+// AddOptions encapsulates the options for the "odo preference registry add" command
 type AddOptions struct {
 	// Clients
 	clientset *clientset.Clientset
@@ -79,7 +79,7 @@ func (o *AddOptions) Validate() (err error) {
 	return nil
 }
 
-// Run contains the logic for "odo registry add" command
+// Run contains the logic for "odo preference registry add" command
 func (o *AddOptions) Run(ctx context.Context) (err error) {
 	isSecure := false
 	if o.tokenFlag != "" {
@@ -102,7 +102,7 @@ func (o *AddOptions) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-// NewCmdAdd implements the "odo registry add" command
+// NewCmdAdd implements the "odo preference registry add" command
 func NewCmdAdd(name, fullName string) *cobra.Command {
 	o := NewAddOptions()
 	registryAddCmd := &cobra.Command{

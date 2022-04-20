@@ -61,7 +61,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 	//
 	// 2) For every other push/sync call after the first, don't run the file indexer, instead we use
 	//    the watch events to determine what changed, and ensure that the index is then updated based
-	//    on the watch events (to ensure future 'odo push' calls are correct)
+	//    on the watch events (to ensure future calls are correct)
 
 	// True if the index was updated based on the deleted/changed files values from the watch (and
 	// thus the indexer doesn't need to run), false otherwise
@@ -114,7 +114,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 
 		// Run the indexer and find the modified/added/deleted/renamed files
 		var err error
-		ret, err = util.RunIndexerWithRemote(pushParameters.Path, absIgnoreRules, pushParameters.IgnoredFiles, syncParameters.Files)
+		ret, err = util.RunIndexerWithRemote(pushParameters.Path, pushParameters.IgnoredFiles, syncParameters.Files)
 
 		if err != nil {
 			return false, fmt.Errorf("unable to run indexer: %w", err)

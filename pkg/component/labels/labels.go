@@ -8,9 +8,6 @@ import (
 // KubernetesInstanceLabel is a label key used to identify the component name
 const KubernetesInstanceLabel = "app.kubernetes.io/instance"
 
-// KubernetesNameLabel is Kubernetes label that identifies the type of a component being used
-const KubernetesNameLabel = "app.kubernetes.io/name"
-
 // KubernetesManagedByLabel ...
 const KubernetesManagedByLabel = "app.kubernetes.io/managed-by"
 
@@ -19,9 +16,6 @@ const ComponentDevName = "Dev"
 
 // ComponentDeployName ...
 const ComponentDeployName = "Deploy"
-
-// ComponentNoneName ...
-const ComponentNoneName = "None"
 
 // OdoModeLabel ...
 const OdoModeLabel = "odo.dev/mode"

@@ -338,7 +338,7 @@ func TestNew(t *testing.T) {
 			// Fake Cobra
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			cmdline.EXPECT().GetWorkingDirectory().Return(tt.input.workingDir, nil).AnyTimes()
-			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(false, nil).AnyTimes()
+			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("project").Return(tt.input.projectFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("app").Return(tt.input.appFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return(tt.input.componentFlag).AnyTimes()

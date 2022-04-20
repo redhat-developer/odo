@@ -21,7 +21,7 @@ import (
 
 const updateCommandName = "update"
 
-// "odo registry update" command description and examples
+// "odo preference registry update" command description and examples
 var (
 	updateLongDesc = ktemplates.LongDesc(`Update devfile registry URL`)
 
@@ -30,7 +30,7 @@ var (
 	`)
 )
 
-// UpdateOptions encapsulates the options for the "odo registry update" command
+// UpdateOptions encapsulates the options for the "odo preference registry update" command
 type UpdateOptions struct {
 	// Clients
 	clientset *clientset.Clientset
@@ -77,7 +77,7 @@ func (o *UpdateOptions) Validate() (err error) {
 	return nil
 }
 
-// Run contains the logic for "odo registry update" command
+// Run contains the logic for "odo preference registry update" command
 func (o *UpdateOptions) Run(ctx context.Context) (err error) {
 	secureBeforeUpdate := false
 	secureAfterUpdate := false
@@ -111,7 +111,7 @@ func (o *UpdateOptions) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-// NewCmdUpdate implements the "odo registry update" command
+// NewCmdUpdate implements the "odo preference registry update" command
 func NewCmdUpdate(name, fullName string) *cobra.Command {
 	o := NewUpdateOptions()
 	registryUpdateCmd := &cobra.Command{

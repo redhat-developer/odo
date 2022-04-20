@@ -4,10 +4,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/redhat-developer/odo/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/log"
 )
 
 // We use a mutex here in order to make 100% sure that functions such as CollectEvents

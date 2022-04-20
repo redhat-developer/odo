@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/adler32"
 	"io"
 	"io/ioutil"
 	"net"
@@ -759,11 +758,6 @@ func SafeGetBool(b *bool) bool {
 	return *b
 }
 
-// GetAdler32Value returns an adler32 hash of a string on 8 hexadecimal characters
-func GetAdler32Value(s string) string {
-	return fmt.Sprintf("%08x", adler32.Checksum([]byte(s)))
-}
-
 // IsPortFree checks if the port on localhost is free to use
 func IsPortFree(port int) bool {
 	address := fmt.Sprintf("localhost:%d", port)
@@ -776,7 +770,7 @@ func IsPortFree(port int) bool {
 	return err == nil
 }
 
-//WriteToJSONFile writes a struct to json file
+// WriteToJSONFile writes a struct to json file
 func WriteToJSONFile(c interface{}, filename string) error {
 	data, err := json.Marshal(c)
 	if err != nil {

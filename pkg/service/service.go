@@ -143,11 +143,6 @@ func SplitServiceKindName(serviceName string) (string, string, error) {
 	return kind, name, nil
 }
 
-// ListDevfileLinks returns the names of the links defined in a Devfile
-func ListDevfileLinks(devfileObj parser.DevfileObj, context string) ([]string, error) {
-	return listDevfileLinks(devfileObj, context, devfilefs.DefaultFs{})
-}
-
 func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs.Filesystem) ([]string, error) {
 	if devfileObj.Data == nil {
 		return nil, nil

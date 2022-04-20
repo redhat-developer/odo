@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
@@ -131,7 +132,7 @@ func TestClientUploadWithConsent(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			uploadData := fakeTelemetryData("odo create", tt.err, context.Background())
+			uploadData := fakeTelemetryData("odo init", tt.err, context.Background())
 			// upload the data to Segment
 			if err = c.Upload(uploadData); err != nil {
 				t.Error(err)
@@ -256,7 +257,7 @@ func TestClientUploadWithContext(t *testing.T) {
 		switch k {
 		case scontext.ComponentType:
 			scontext.SetComponentType(ctx, v)
-			uploadData = fakeTelemetryData("odo create", nil, ctx)
+			uploadData = fakeTelemetryData("odo init", nil, ctx)
 		case scontext.ClusterType:
 			fakeClient, _ := kclient.FakeNew()
 			scontext.SetClusterType(ctx, fakeClient)

@@ -1,10 +1,11 @@
 package component
 
 import (
-	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/storage"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/storage"
 )
 
 const ComponentKind = "Component"
@@ -109,26 +110,5 @@ func newComponentList(comps []Component) ComponentList {
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    comps,
-	}
-}
-
-// NewCombinedComponentList returns list of devfile, s2i components and other components(not managed by odo) in machine readable format
-func NewCombinedComponentList(devfileComps []Component, otherComps []Component) CombinedComponentList {
-
-	if len(devfileComps) == 0 {
-		devfileComps = []Component{}
-	}
-	if len(otherComps) == 0 {
-		otherComps = []Component{}
-	}
-
-	return CombinedComponentList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       machineoutput.ListKind,
-			APIVersion: machineoutput.APIVersion,
-		},
-		ListMeta:          metav1.ListMeta{},
-		DevfileComponents: devfileComps,
-		OtherComponents:   otherComps,
 	}
 }

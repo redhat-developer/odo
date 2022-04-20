@@ -9,6 +9,7 @@ import (
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 )
@@ -54,9 +55,9 @@ func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error
 	return nil
 }
 
-// BuildPushSpecificImage build an image defined in the devfile
+// BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(devfileObj parser.DevfileObj, devfilePath string, component devfile.Component, push bool) error {
+func BuildPushSpecificImage(devfilePath string, component devfile.Component, push bool) error {
 	backend, err := selectBackend()
 	if err != nil {
 		return err

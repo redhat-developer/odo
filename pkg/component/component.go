@@ -34,28 +34,6 @@ func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) strin
 	return componentType
 }
 
-// GetProjectTypeFromDevfileMetadata returns component type from the devfile metadata
-func GetProjectTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
-	var projectType string
-	if metadata.ProjectType != "" {
-		projectType = metadata.ProjectType
-	} else {
-		projectType = NotAvailable
-	}
-	return projectType
-}
-
-// GetLanguageFromDevfileMetadata returns component type from the devfile metadata
-func GetLanguageFromDevfileMetadata(metadata devfile.DevfileMetadata) string {
-	var language string
-	if metadata.Language != "" {
-		language = metadata.Language
-	} else {
-		language = NotAvailable
-	}
-	return language
-}
-
 // GatherName parses the Devfile and retrieves an appropriate name in two ways.
 // 1. If metadata.name exists, we use it
 // 2. If metadata.name does NOT exist, we use the folder name where the devfile.yaml is located
