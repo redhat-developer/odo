@@ -236,10 +236,8 @@ func (o *DevOptions) Run(ctx context.Context) error {
 
 	if o.noWatchFlag {
 		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
-		for {
-			<-o.ctx.Done()
-			return o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
-		}
+		<-o.ctx.Done()
+		err = o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
 		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
