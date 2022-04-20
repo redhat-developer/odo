@@ -45,8 +45,9 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	}
 
 	shellCmd := getShellCommand(o.name, image, devfilePath)
-	for i := 0; i < len(shellCmd); i++ {
-		shellCmd[i] = os.ExpandEnv(shellCmd[i])
+	klog.V(4).Infof("Running command: %v", shellCmd)
+	for i, cmd := range shellCmd {
+		shellCmd[i] = os.ExpandEnv(cmd)
 	}
 	cmd := exec.Command(shellCmd[0], shellCmd[1:]...)
 	cmdEnv := []string{
@@ -69,6 +70,8 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	return nil
 }
 
+//getShellCommand creates the docker compatible build command from detected backend,
+//container image and devfile path
 func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) []string {
 	var shellCmd []string
 	imageName := image.ImageName
@@ -90,7 +93,6 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 	if len(args) > 0 {
 		shellCmd = append(shellCmd, args...)
 	}
-	klog.V(4).Infof("Running command: %v", shellCmd)
 	return shellCmd
 }
 
