@@ -64,6 +64,8 @@ if [ "$error" == "true" ]; then
     exit -1
 fi
 
+# copy generated artifacts/reports to artifacts dir
+set +e
 cp -r reports tests/reports $ARTIFACT_DIR
 
 oc logout
