@@ -152,14 +152,16 @@ func createRegistryDevfiles(registry Registry, devfileIndex []indexSchema.Schema
 	registryDevfiles := make([]DevfileStack, 0, len(devfileIndex))
 	for _, devfileIndexEntry := range devfileIndex {
 		stackDevfile := DevfileStack{
-			Name:        devfileIndexEntry.Name,
-			DisplayName: devfileIndexEntry.DisplayName,
-			Description: devfileIndexEntry.Description,
-			Link:        devfileIndexEntry.Links["self"],
-			Registry:    registry,
-			Language:    devfileIndexEntry.Language,
-			Tags:        devfileIndexEntry.Tags,
-			ProjectType: devfileIndexEntry.ProjectType,
+			Name:            devfileIndexEntry.Name,
+			DisplayName:     devfileIndexEntry.DisplayName,
+			Description:     devfileIndexEntry.Description,
+			Link:            devfileIndexEntry.Links["self"],
+			Registry:        registry,
+			Language:        devfileIndexEntry.Language,
+			Tags:            devfileIndexEntry.Tags,
+			ProjectType:     devfileIndexEntry.ProjectType,
+			StarterProjects: devfileIndexEntry.StarterProjects,
+			Version:         devfileIndexEntry.Version,
 		}
 		registryDevfiles = append(registryDevfiles, stackDevfile)
 	}

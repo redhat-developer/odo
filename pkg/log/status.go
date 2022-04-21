@@ -380,6 +380,12 @@ func Finfof(w io.Writer, format string, a ...interface{}) {
 	}
 }
 
+// Sboldf will return a bold string
+func Sbold(s string) string {
+	bold := color.New(color.Bold).SprintFunc()
+	return bold(fmt.Sprint(s))
+}
+
 // Spinner creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)

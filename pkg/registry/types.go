@@ -9,14 +9,16 @@ type Registry struct {
 
 // DevfileStack is the main struct for devfile catalog components
 type DevfileStack struct {
-	Name        string
-	DisplayName string
-	Description string
-	Link        string
-	Registry    Registry
-	Language    string
-	Tags        []string
-	ProjectType string
+	Name            string
+	DisplayName     string
+	Description     string
+	Link            string
+	Registry        Registry
+	Language        string
+	Tags            []string
+	ProjectType     string
+	Version         string
+	StarterProjects []string
 }
 
 // DevfileStackList lists all the Devfile Stacks
