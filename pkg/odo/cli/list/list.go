@@ -180,7 +180,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 
 func (lo *ListOptions) HumanReadableOutput(components []component.OdoComponent) {
 	if len(components) == 0 {
-		log.Info("There are no components deployed.")
+		log.Error("There are no components deployed.")
 		return
 	}
 
