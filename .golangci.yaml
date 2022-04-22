@@ -32,3 +32,13 @@ linters-settings:
     # Report about shadowed variables.
     # Default: false
     check-shadowing: true
+
+issues:
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  # Default: 50
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 0
