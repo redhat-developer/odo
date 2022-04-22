@@ -34,9 +34,22 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	buildSpinner := log.SpinnerNoSpin("Building image locally")
 	defer buildSpinner.End(false)
 
-	shell := getShellCommand(o.name, image, devfilePath)
+	err := os.Setenv("PROJECTS_ROOT", devfilePath)
+	if err != nil {
+		return err
+	}
 
-	cmd := exec.Command("bash", "-c", shell)
+	err = os.Setenv("PROJECT_SOURCE", devfilePath)
+	if err != nil {
+		return err
+	}
+
+	shellCmd := getShellCommand(o.name, image, devfilePath)
+	klog.V(4).Infof("Running command: %v", shellCmd)
+	for i, cmd := range shellCmd {
+		shellCmd[i] = os.ExpandEnv(cmd)
+	}
+	cmd := exec.Command(shellCmd[0], shellCmd[1:]...)
 	cmdEnv := []string{
 		"PROJECTS_ROOT=" + devfilePath,
 		"PROJECT_SOURCE=" + devfilePath,
@@ -48,7 +61,7 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	// Set all output as italic when doing a push, then return to normal at the end
 	color.Set(color.Italic)
 	defer color.Unset()
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error running %s command: %w", o.name, err)
 	}
@@ -57,7 +70,10 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	return nil
 }
 
-func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) string {
+//getShellCommand creates the docker compatible build command from detected backend,
+//container image and devfile path
+func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) []string {
+	var shellCmd []string
 	imageName := image.ImageName
 	dockerfile := filepath.Join(devfilePath, image.Dockerfile.Uri)
 	buildpath := image.Dockerfile.BuildContext
@@ -65,13 +81,19 @@ func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath 
 		buildpath = devfilePath
 	}
 	args := image.Dockerfile.Args
-
-	shell := fmt.Sprintf(`%s build -t "%s" -f "%s" "%s"`, cmdName, imageName, dockerfile, buildpath)
-	if len(args) > 0 {
-		shell = shell + " " + strings.Join(args, " ")
+	shellCmd = []string{
+		cmdName,
+		"build",
+		"-t",
+		imageName,
+		"-f",
+		dockerfile,
+		buildpath,
 	}
-	klog.V(4).Infof("Running command: %s", shell)
-	return shell
+	if len(args) > 0 {
+		shellCmd = append(shellCmd, args...)
+	}
+	return shellCmd
 }
 
 // Push an image to its registry using a Docker compatible CLI

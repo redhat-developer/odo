@@ -1,8 +1,8 @@
 package image
 
 import (
-	"fmt"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -15,7 +15,7 @@ func TestGetShellCommand(t *testing.T) {
 		cmdName     string
 		image       *devfile.ImageComponent
 		devfilePath string
-		want        string
+		want        []string
 	}{
 		{
 			name:    "test 1",
@@ -36,8 +36,9 @@ func TestGetShellCommand(t *testing.T) {
 				},
 			},
 			devfilePath: devfilePath,
-			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "${PROJECTS_ROOT}"`,
-				filepath.Join(devfilePath, "Dockerfile")),
+			want: []string{
+				"cli", "build", "-t", "registry.io/myimagename:tag", "-f", filepath.Join(devfilePath, "Dockerfile"), "${PROJECTS_ROOT}",
+			},
 		},
 		{
 			name:    "test 2",
@@ -58,8 +59,9 @@ func TestGetShellCommand(t *testing.T) {
 				},
 			},
 			devfilePath: devfilePath,
-			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "${PROJECTS_ROOT}"`,
-				filepath.Join(devfilePath, "Dockerfile")),
+			want: []string{
+				"cli", "build", "-t", "registry.io/myimagename:tag", "-f", filepath.Join(devfilePath, "Dockerfile"), "${PROJECTS_ROOT}",
+			},
 		},
 		{
 			name:    "test with args",
@@ -81,8 +83,9 @@ func TestGetShellCommand(t *testing.T) {
 				},
 			},
 			devfilePath: devfilePath,
-			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "${PROJECTS_ROOT}" --flag value`,
-				filepath.Join(devfilePath, "Dockerfile")),
+			want: []string{
+				"cli", "build", "-t", "registry.io/myimagename:tag", "-f", filepath.Join(devfilePath, "Dockerfile"), "${PROJECTS_ROOT}", "--flag", "value",
+			},
 		},
 		{
 			name:    "test with no build context in Devfile",
@@ -100,16 +103,17 @@ func TestGetShellCommand(t *testing.T) {
 				},
 			},
 			devfilePath: devfilePath,
-			want: fmt.Sprintf(`cli build -t "registry.io/myimagename:tag" -f "%s" "%s"`,
-				filepath.Join(devfilePath, "Dockerfile.rhel"), devfilePath),
+			want: []string{
+				"cli", "build", "-t", "registry.io/myimagename:tag", "-f", filepath.Join(devfilePath, "Dockerfile.rhel"), devfilePath,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getShellCommand(tt.cmdName, tt.image, tt.devfilePath)
-			if got != tt.want {
-				t.Errorf("%s:\n  Expected %q,\n       got %q", tt.name, tt.want, got)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("%s:\n  Expected %v,\n       got %v", tt.name, tt.want, got)
 			}
 		})
 	}
