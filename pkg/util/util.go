@@ -206,7 +206,7 @@ func IsValidProjectDir(path string, devfilePath string) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("Folder %s doesn't contain the devfile used.", path)
+		return fmt.Errorf("folder %s doesn't contain the devfile used", path)
 	}
 
 	return nil

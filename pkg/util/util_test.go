@@ -1377,21 +1377,21 @@ func TestIsValidProjectDir(t *testing.T) {
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{"file1.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder %s doesn't contain the devfile used.",
+			expectedError: "folder %s doesn't contain the devfile used",
 		},
 		{
 			name:          "Case 4: Folder contains a hidden file which is not the devfile",
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{".file1.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder %s doesn't contain the devfile used.",
+			expectedError: "folder %s doesn't contain the devfile used",
 		},
 		{
 			name:          "Case 5: Folder contains devfile.yaml and more files",
 			devfilePath:   "devfile.yaml",
 			filesToCreate: []string{"devfile.yaml", "file1.yaml", "file2.yaml"},
 			dirToCreate:   []string{},
-			expectedError: "Folder %s is not empty. It can only contain the devfile used.",
+			expectedError: "folder %s is not empty. It can only contain the devfile used",
 		},
 	}
 

@@ -121,5 +121,7 @@ func selectBackend() (Backend, error) {
 	if _, err := lookPathCmd(dockerCmd); err == nil {
 		return NewDockerCompatibleBackend(dockerCmd), nil
 	}
+	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 	return nil, errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")
+	//revive:enable:error-strings
 }
