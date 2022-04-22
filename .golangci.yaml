@@ -22,12 +22,26 @@ linters:
   # Note that some linters not listed below are enabled by default.
   # See https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
+    # Go linter that checks if package imports are in a list of acceptable packages
+    - depguard
     # check whether code was gofmt-ed. By default, this tool runs with -s option to check for code simplification
     - gofmt
     # analyze code for common mistakes
     - govet
 
 linters-settings:
+  depguard:
+    # A list of packages for the list type specified. Default list type is 'denylist'
+    # Default: []
+    packages:
+      - github.com/pkg/errors
+    # A list of packages for the list type specified.
+    # Specify an error message to output when a denied package is used.
+    # Default: []
+    packages-with-error-message:
+      - github.com/pkg/errors: >
+          This package is deprecated since Go 1.13. Use the errors package from the standard library instead.
+          See https://github.com/redhat-developer/odo/pull/5557 for some examples.
   govet:
     # Report about shadowed variables.
     # Default: false
