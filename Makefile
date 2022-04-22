@@ -111,7 +111,7 @@ clean:
 .PHONY: goget-tools
 goget-tools:
 	mkdir -p $(shell go env GOPATH)/bin
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.30.0
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.37.0
 
 .PHONY: goget-ginkgo
 goget-ginkgo:

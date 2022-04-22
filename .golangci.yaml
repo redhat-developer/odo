@@ -28,6 +28,9 @@ linters:
     - gofmt
     # analyze code for common mistakes
     - govet
+    # Fast, configurable, extensible, flexible, and beautiful linter for Go.
+    # Drop-in replacement of golint, which has been deprecated
+    - revive
 
 linters-settings:
   depguard:
