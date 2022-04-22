@@ -49,6 +49,24 @@ linters-settings:
     # Report about shadowed variables.
     # Default: false
     check-shadowing: true
+  revive:
+    # Maximum number of open files at the same time.
+    # See https://github.com/mgechev/revive#command-line-flags
+    # Defaults to unlimited.
+    max-open-files: 2048
+    # When set to false, ignores files with "GENERATED" header, similar to golint.
+    # See https://github.com/mgechev/revive#available-rules for details.
+    # Default: false
+    ignore-generated-header: true
+    # Sets the default severity.
+    # See https://github.com/mgechev/revive#configuration
+    # Default: warning
+    severity: error
+    # Explicitly list all rules enabled. We can enable all existing rules by setting 'enable-all-rules' to true.
+    # See https://github.com/mgechev/revive#available-rules for the available rules.
+    rules:
+      # Conventions around error strings. See https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
+      - name: error-strings
 
 issues:
   # Maximum issues count per one linter.
