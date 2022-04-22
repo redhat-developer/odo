@@ -25,6 +25,9 @@ var Example = `  # Get all devfile components
 # Filter by name
 %[1]s --filter nodejs
 
+# Filter by name and devfile registry
+%[1]s --filter nodejs --devfile-registry DefaultDevfileRegistry
+
 # Show more details
 %[1]s --details`
 
@@ -36,10 +39,10 @@ type ListOptions struct {
 	DevfileList registry.DevfileStackList
 
 	// Flags
-	filterFlag          string
-	devfileFlag         string
-	devfileRegistryFlag string
-	detailsFlag         bool
+	filterFlag   string
+	devfileFlag  string
+	registryFlag string
+	detailsFlag  bool
 }
 
 // NewListOptions creates a new ListOptions instance
@@ -98,7 +101,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	// Flags
 	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
-	listCmd.Flags().StringVar(&o.devfileRegistryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
+	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of each component")
 
 	// Add a defined annotation in order to appear in the help menu
@@ -142,22 +145,21 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 		{Name: "REGISTRY", Mode: table.Asc},
 	})
 
+	devfiles := []registry.DevfileStack{}
+	// Filter through all the devfile components per the filters / parameters passed in.
 	for _, devfileComponent := range DevfileList {
-
-		// Mark the name as yellow in the index to it's easier to see.
-		name := text.Colors{text.FgHiYellow}.Sprint(devfileComponent.Name)
 
 		// If the user has specified a filter with variable o.filterFlag, then only show the components
 		// containing that specific string.
 		if o.filterFlag != "" {
-			if !strings.Contains(devfileComponent.Name, o.filterFlag) {
+			if !strings.Contains(devfileComponent.Name, o.filterFlag) && !strings.Contains(devfileComponent.Description, o.filterFlag) {
 				continue
 			}
 		}
 
 		// If the user passed in --devfile-registry <REGISTRY-NAME>, then only show the components from that Devfile stack
-		if o.devfileRegistryFlag != "" {
-			if !strings.Contains(devfileComponent.Registry.Name, o.devfileRegistryFlag) {
+		if o.registryFlag != "" {
+			if !strings.Contains(devfileComponent.Registry.Name, o.registryFlag) {
 				continue
 			}
 		}
@@ -168,6 +170,12 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 				continue
 			}
 		}
+		devfiles = append(devfiles, devfileComponent)
+	}
+
+	for _, devfileComponent := range devfiles {
+		// Mark the name as yellow in the index so it's easier to see.
+		name := text.Colors{text.FgHiYellow}.Sprint(devfileComponent.Name)
 
 		if o.detailsFlag {
 
@@ -204,6 +212,13 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 
 	}
 
+	// Exit with an error if there are no components to show, so we don't render the table / continue
+	if len(devfiles) == 0 {
+		log.Error("There are no Devfiles available to show")
+		return
+	}
+
+	// Render the table
 	if !o.detailsFlag {
 		t.Render()
 	}

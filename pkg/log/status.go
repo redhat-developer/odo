@@ -380,7 +380,7 @@ func Finfof(w io.Writer, format string, a ...interface{}) {
 	}
 }
 
-// Sboldf will return a bold string
+// Sbold will return a bold string
 func Sbold(s string) string {
 	bold := color.New(color.Bold).SprintFunc()
 	return bold(fmt.Sprint(s))
