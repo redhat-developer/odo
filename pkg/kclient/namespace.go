@@ -194,7 +194,7 @@ func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName 
 					}
 				}
 			case <-timeout:
-				return errors.New("Timed out waiting for service to be ready")
+				return errors.New("timed out waiting for service to be ready")
 			}
 		}
 	}

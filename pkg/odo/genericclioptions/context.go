@@ -168,7 +168,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
 		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we return an error
 		if !allowEmpty && len(o.component) == 0 {
-			return "", fmt.Errorf("No component is set")
+			return "", fmt.Errorf("no component is set")
 		}
 	case 1:
 		cmp := optionalComponent[0]

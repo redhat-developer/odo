@@ -257,7 +257,9 @@ func ShowSubcommands(cmd *cobra.Command, args []string) error {
 			strs = append(strs, subcmd.Name())
 		}
 	}
+	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 	return fmt.Errorf("Subcommand not found, use one of the available commands: %s", strings.Join(strs, ", "))
+	//revive:enable:error-strings
 }
 
 // ShowHelp will show the help correctly (and whether or not the command is invalid...)
@@ -276,5 +278,7 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 	return fmt.Errorf("Invalid command - see available commands/subcommands above")
+	//revive:enable:error-strings
 }

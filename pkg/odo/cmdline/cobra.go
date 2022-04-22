@@ -98,7 +98,7 @@ func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 
 		// This should *never* happen, but added just to be safe
 		if firstChildCommand == nil {
-			return false, fmt.Errorf("Unable to get first child of command")
+			return false, fmt.Errorf("unable to get first child of command")
 		}
 
 		// Gather necessary preliminary information

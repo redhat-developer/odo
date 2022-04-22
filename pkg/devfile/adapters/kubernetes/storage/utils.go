@@ -39,7 +39,7 @@ func GetVolumeInfos(pvcs []corev1.PersistentVolumeClaim) (odoSourcePVCName strin
 
 		generatedVolumeName, e := generateVolumeNameFromPVC(pvc.Name)
 		if e != nil {
-			return "", nil, fmt.Errorf("Unable to generate volume name from pvc name: %w", e)
+			return "", nil, fmt.Errorf("unable to generate volume name from pvc name: %w", e)
 		}
 
 		if pvc.Labels[storagelabels.StorageLabel] == storagepkg.OdoSourceVolume {

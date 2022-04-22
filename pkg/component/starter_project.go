@@ -40,7 +40,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 	if contextDir == "" {
 		path, err = os.Getwd()
 		if err != nil {
-			return fmt.Errorf("Could not get the current working directory: %w", err)
+			return fmt.Errorf("could not get the current working directory: %w", err)
 		}
 	} else {
 		path = contextDir
@@ -81,7 +81,7 @@ func DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedT
 			downloadSpinner.End(true)
 		}
 	} else {
-		return errors.New("Project type not supported")
+		return errors.New("project type not supported")
 	}
 
 	return nil

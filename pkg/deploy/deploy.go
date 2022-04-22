@@ -101,5 +101,5 @@ func (o *deployHandler) Execute(command v1alpha2.Command) error {
 	// TODO:
 	// * Make sure we inject the "deploy" mode label once we implement exec in `odo deploy`
 	// * Make sure you inject the "component type" label once we implement exec.
-	return errors.New("Exec command is not implemented for Deploy")
+	return errors.New("exec command is not implemented for Deploy")
 }

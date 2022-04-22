@@ -35,7 +35,7 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 
 	err := k.componentAdapter.Push(parameters)
 	if err != nil {
-		return fmt.Errorf("Failed to create the component: %w", err)
+		return fmt.Errorf("failed to create the component: %w", err)
 	}
 
 	return nil
@@ -45,7 +45,7 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
 	err := k.componentAdapter.CheckSupervisordCommandStatus(command)
 	if err != nil {
-		return fmt.Errorf("Failed to check the status: %w", err)
+		return fmt.Errorf("failed to check the status: %w", err)
 	}
 
 	return nil

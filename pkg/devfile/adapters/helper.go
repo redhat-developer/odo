@@ -22,7 +22,7 @@ func NewComponentAdapter(componentName string, context string, appName string, d
 
 	kc, ok := platformContext.(kubernetes.KubernetesContext)
 	if !ok {
-		return nil, fmt.Errorf("Error retrieving context for Kubernetes")
+		return nil, fmt.Errorf("error retrieving context for Kubernetes")
 	}
 	return createKubernetesAdapter(adapterContext, kc.Namespace)
 

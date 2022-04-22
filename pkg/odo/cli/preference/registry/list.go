@@ -63,7 +63,9 @@ func (o *ListOptions) Validate() (err error) {
 func (o *ListOptions) Run(ctx context.Context) (err error) {
 	registryList := o.clientset.PreferenceClient.RegistryList()
 	if registryList == nil || len(*registryList) == 0 {
+		//revive:enable:error-strings
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one")
+		//revive:enable:error-strings
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)

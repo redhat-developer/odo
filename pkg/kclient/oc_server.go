@@ -55,7 +55,7 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 
 	// checking if the server is reachable
 	if !isServerUp(config.Host, timeout) {
-		return nil, errors.New("Unable to connect to OpenShift cluster, is it down?")
+		return nil, errors.New("unable to connect to OpenShift cluster, it may be down")
 	}
 
 	// fail fast if user is not connected (same logic as `oc whoami`)

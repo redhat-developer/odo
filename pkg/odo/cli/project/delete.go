@@ -71,7 +71,9 @@ func (pdo *ProjectDeleteOptions) Validate() error {
 		return &odoerrors.Unauthorized{}
 	}
 	if !isValidProject {
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 		return fmt.Errorf("The project %q does not exist. Please check the list of projects using `odo project list`", pdo.projectName)
+		//revive:enable:error-strings
 	}
 	return nil
 }
