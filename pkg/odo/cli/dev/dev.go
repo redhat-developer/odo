@@ -15,7 +15,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
@@ -62,6 +62,7 @@ type DevOptions struct {
 
 	// Flags
 	randomPorts bool
+	noWatchFlag bool
 }
 
 type Handler struct{}
@@ -73,9 +74,12 @@ func NewDevOptions() *DevOptions {
 	}
 }
 
-var devExample = templates.Examples(`
+var devExample = ktemplates.Examples(`
 	# Deploy component to the development cluster
 	%[1]s
+
+	# Deploy component to the development cluster without automatically syncing the code upon any file changes
+	%[1]s --no-watch
 `)
 
 func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
@@ -230,8 +234,14 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 
-	d := Handler{}
-	err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
+	if o.noWatchFlag {
+		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
+		<-o.ctx.Done()
+		err = o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
+	} else {
+		d := Handler{}
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
+	}
 
 	return err
 }
@@ -293,6 +303,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 		},
 	}
 	devCmd.Flags().BoolVarP(&o.randomPorts, "random-ports", "f", false, "Assign random ports to redirected ports")
+	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu

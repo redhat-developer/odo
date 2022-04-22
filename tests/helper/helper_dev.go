@@ -118,7 +118,7 @@ func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) 
 	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
 	session := CmdRunner("odo", args...)
-	WaitForOutputToContain("Watching for changes in the current directory", 360, 10, session)
+	WaitForOutputToContain("Press Ctrl+c to exit `odo dev` and delete resources from the cluster", 360, 10, session)
 	result := DevSession{
 		session: session,
 	}
