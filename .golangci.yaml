@@ -2,14 +2,33 @@
 # https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
 
 run:
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
   timeout: 5m
+  # If set we pass it to "go list -mod={option}". From "go help modules":
+  # If invoked with -mod=readonly, the go command is disallowed from the implicit
+  # automatic updating of go.mod described above. Instead, it fails when any changes
+  # to go.mod are needed. This setting is most useful to check that go.mod does
+  # not need updates, such as in a continuous integration and testing system.
+  # If invoked with -mod=vendor, the go command assumes that the vendor
+  # directory holds the correct copies of dependencies and ignores
+  # the dependency descriptions in go.mod.
+  #
+  # Allowed values: readonly|vendor|mod
+  # By default, it isn't set.
   modules-download-mode: readonly
 
 linters:
+  # Note that some linters not listed below are enabled by default.
+  # See https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
+    # check whether code was gofmt-ed. By default, this tool runs with -s option to check for code simplification
     - gofmt
+    # analyze code for common mistakes
     - govet
 
 linters-settings:
   govet:
+    # Report about shadowed variables.
+    # Default: false
     check-shadowing: true
