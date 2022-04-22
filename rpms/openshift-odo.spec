@@ -7,7 +7,8 @@
 %global product_name odo
 %global golang_version ${GOLANG_VERSION}
 %global golang_version_nodot ${GOLANG_VERSION_NODOT}
-%global odo_version ${ODO_RPM_VERSION}
+%global odo_version ${ODO_VERSION}
+%global odo_rpm_version ${ODO_RPM_VERSION}
 %global odo_release ${ODO_RELEASE}
 %global git_commit  ${GIT_COMMIT}
 %global odo_cli_version v%{odo_version}
@@ -17,7 +18,7 @@
 %global _missing_build_ids_terminate_build 0
 
 Name:           %{package_name}
-Version:        %{odo_version}
+Version:        %{odo_rpm_version}
 Release:        %{odo_release}%{?dist}
 Summary:        %{product_name} client odo CLI binary
 License:        ASL 2.0
@@ -26,8 +27,8 @@ URL:            https://github.com/redhat-developer/odo/tree/%{odo_cli_version}
 Source0:        %{source_tar}
 BuildRequires:  gcc
 BuildRequires:  golang >= %{golang_version}
-Provides:       %{package_name} = %{odo_version}
-Obsoletes:      %{package_name} <= %{odo_version}
+Provides:       %{package_name} = %{odo_rpm_version}
+Obsoletes:      %{package_name} <= %{odo_rpm_version}
 
 %description
 odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
@@ -75,8 +76,8 @@ cp -avrf dist/release/VERSION %{buildroot}%{_datadir}/%{name}-redistributable
 Summary:        %{product_name} client CLI binaries for Linux, macOS and Windows
 BuildRequires:  gcc
 BuildRequires:  golang >= %{golang_version}
-Provides:       %{package_name}-redistributable = %{odo_version}
-Obsoletes:      %{package_name}-redistributable <= %{odo_version}
+Provides:       %{package_name}-redistributable = %{odo_rpm_version}
+Obsoletes:      %{package_name}-redistributable <= %{odo_rpm_version}
 
 %description redistributable
 %{product_name} client odo cross platform binaries for Linux, macOS and Windows.
