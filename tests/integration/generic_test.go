@@ -87,5 +87,4 @@ var _ = Describe("odo generic", func() {
 			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 		})
 	})
-
 })
