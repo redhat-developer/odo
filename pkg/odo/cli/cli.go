@@ -10,7 +10,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
-	_create "github.com/redhat-developer/odo/pkg/odo/cli/create"
+	"github.com/redhat-developer/odo/pkg/odo/cli/create"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
 	"github.com/redhat-developer/odo/pkg/odo/cli/describe"
@@ -160,7 +160,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", capitalizeFlagDescriptions)
 	cobra.AddTemplateFunc("ModifyAdditionalFlags", modifyAdditionalFlags)
 
-	var rootCmdList = append([]*cobra.Command{},
+	rootCmdList := append([]*cobra.Command{},
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
 		project.NewCmdProject(project.RecommendedCommandName, util.GetFullName(fullName, project.RecommendedCommandName)),
@@ -173,7 +173,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
 		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),
 		_delete.NewCmdDelete(_delete.RecommendedCommandName, util.GetFullName(fullName, _delete.RecommendedCommandName)),
-		_create.NewCmdCreate(_create.RecommendedCommandName, util.GetFullName(fullName, _create.RecommendedCommandName)),
+		create.NewCmdCreate(create.RecommendedCommandName, util.GetFullName(fullName, create.RecommendedCommandName)),
 		dev.NewCmdDev(dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName)),
 		alizer.NewCmdAlizer(alizer.RecommendedCommandName, util.GetFullName(fullName, alizer.RecommendedCommandName)),
 		describe.NewCmdDescribe(describe.RecommendedCommandName, util.GetFullName(fullName, describe.RecommendedCommandName)),

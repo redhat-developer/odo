@@ -28,7 +28,7 @@ func (s *Survey) AskServiceInstance(serviceInstances []string) (string, error) {
 
 func (s *Survey) AskServiceBindingName(defaultName string) (string, error) {
 	question := &survey.Input{
-		Message: "Enter the ServiceBinding's name:",
+		Message: "Enter the Binding's name:",
 		Default: defaultName,
 	}
 	var answer string

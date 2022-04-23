@@ -1,10 +1,6 @@
 package libdevfile
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -12,7 +8,6 @@ import (
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/redhat-developer/odo/pkg/devfile/consts"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -64,50 +59,6 @@ func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.Devfile
 					BaseComponent: v1alpha2.BaseComponent{},
 					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
 						Inlined: crd,
-					},
-				},
-			},
-		},
-	}})
-	if err != nil {
-		return err
-	}
-
-	return devfileObj.WriteYamlDevfile()
-}
-
-// AddKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func AddKubernetesComponent(crd, name, componentContext string, devfile parser.DevfileObj) error {
-	return addKubernetesComponent(crd, name, componentContext, devfile, devfilefs.DefaultFs{}, "odo-service")
-}
-
-// addKubernetesComponent adds the crd information to a separate file and adds the uri information to a devfile component
-func addKubernetesComponent(crd, name, componentContext string, devfileObj parser.DevfileObj, fs devfilefs.Filesystem, filePrefix string) error {
-	filePath := filepath.Join(componentContext, consts.UriFolder, filePrefix+name+".yaml")
-	if _, err := fs.Stat(filepath.Join(componentContext, consts.UriFolder)); os.IsNotExist(err) {
-		err = fs.MkdirAll(filepath.Join(componentContext, consts.UriFolder), os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := fs.Stat(filePath); !os.IsNotExist(err) {
-		return fmt.Errorf("the file %q already exists", filePath)
-	}
-
-	err := fs.WriteFile(filePath, []byte(crd), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = devfileObj.Data.AddComponents([]v1alpha2.Component{{
-		Name: name,
-		ComponentUnion: v1alpha2.ComponentUnion{
-			Kubernetes: &v1alpha2.KubernetesComponent{
-				K8sLikeComponent: v1alpha2.K8sLikeComponent{
-					BaseComponent: v1alpha2.BaseComponent{},
-					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
-						Uri: filepath.Join(consts.UriFolder, filePrefix+name+".yaml"),
 					},
 				},
 			},

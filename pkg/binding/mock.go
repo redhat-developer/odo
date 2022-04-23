@@ -7,6 +7,7 @@ package binding
 import (
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
+	v1alpha1 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	reflect "reflect"
 )
 
@@ -62,18 +63,18 @@ func (mr *MockClientMockRecorder) Validate(flags interface{}) *gomock.Call {
 }
 
 // SelectServiceInstance mocks base method
-func (m *MockClient) SelectServiceInstance(flags map[string]string) (string, error) {
+func (m *MockClient) SelectServiceInstance(flags map[string]string, options []string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectServiceInstance", flags)
+	ret := m.ctrl.Call(m, "SelectServiceInstance", flags, options)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectServiceInstance indicates an expected call of SelectServiceInstance
-func (mr *MockClientMockRecorder) SelectServiceInstance(flags interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SelectServiceInstance(flags, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags, options)
 }
 
 // AskBindingName mocks base method
@@ -107,26 +108,27 @@ func (mr *MockClientMockRecorder) AskBindAsFiles(flags interface{}) *gomock.Call
 }
 
 // CreateBinding mocks base method
-func (m *MockClient) CreateBinding(service, bindingName string, bindAsFiles bool, obj parser.DevfileObj) error {
+func (m *MockClient) CreateBinding(service, bindingName string, bindAsFiles bool, obj parser.DevfileObj, serviceMap map[string]v1alpha1.Ref, componentContext string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBinding", service, bindingName, bindAsFiles, obj)
+	ret := m.ctrl.Call(m, "CreateBinding", service, bindingName, bindAsFiles, obj, serviceMap, componentContext)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateBinding indicates an expected call of CreateBinding
-func (mr *MockClientMockRecorder) CreateBinding(service, bindingName, bindAsFiles, obj interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CreateBinding(service, bindingName, bindAsFiles, obj, serviceMap, componentContext interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBinding", reflect.TypeOf((*MockClient)(nil).CreateBinding), service, bindingName, bindAsFiles, obj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBinding", reflect.TypeOf((*MockClient)(nil).CreateBinding), service, bindingName, bindAsFiles, obj, serviceMap, componentContext)
 }
 
 // GetServiceInstances mocks base method
-func (m *MockClient) GetServiceInstances() ([]string, error) {
+func (m *MockClient) GetServiceInstances() ([]string, map[string]v1alpha1.Ref, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetServiceInstances")
 	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(map[string]v1alpha1.Ref)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetServiceInstances indicates an expected call of GetServiceInstances
