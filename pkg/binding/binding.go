@@ -153,18 +153,8 @@ func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bi
 	if err != nil {
 		return err
 	}
-	if bindAsFiles {
-		err = libdevfile.AddKubernetesComponent(string(yamlDesc), serviceBinding.Name, componentContext, obj)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = libdevfile.AddKubernetesComponentToDevfile(string(yamlDesc), serviceBinding.Name, obj)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	err = libdevfile.AddKubernetesComponentToDevfile(string(yamlDesc), serviceBinding.Name, obj)
+	return err
 }
 
 func (o *BindingClient) GetServiceInstances() ([]string, map[string]servicebinding.Ref, error) {
@@ -218,7 +208,7 @@ func (o *BindingClient) GetServiceInstances() ([]string, map[string]servicebindi
 			Version: option.Version,
 			Kind:    option.Kind,
 		}
-		serviceName := fmt.Sprintf("%s (%s)", option.Name, gvk.String())
+		serviceName := fmt.Sprintf("%s (%s.%s)", option.Name, gvk.Kind, gvk.Group)
 		options = append(options, serviceName)
 		bindableObjectMap[serviceName] = option
 	}

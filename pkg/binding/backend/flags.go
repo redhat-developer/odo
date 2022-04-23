@@ -42,21 +42,31 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 }
 
 func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, options []string) (string, error) {
-	var serviceName = flags[FLAG_SERVICE]
+	var serviceName = strings.Split(flags[FLAG_SERVICE], "/")
 	var counter int
 	var service string
 	for _, option := range options {
-		if strings.Contains(option, serviceName) {
+		if strings.Contains(option, serviceName[0]) {
+			if len(serviceName) > 1 {
+				kindGroup := strings.SplitN(serviceName[1], ".", 2)
+				if strings.Contains(option, kindGroup[0]) && strings.Contains(option, kindGroup[1]) {
+					counter++
+					service = option
+					continue
+				}
+			}
 			counter++
 			service = option
 		}
 	}
 	if counter == 0 {
-		return "", fmt.Errorf("%q service not found", serviceName)
+		return "", fmt.Errorf("%q service not found", flags[FLAG_SERVICE])
 	}
 	if counter > 1 {
-		return "", fmt.Errorf("Found more than one services with name %q. Please mention <name>/<kind>.<apigroup>", serviceName)
+		return "", fmt.Errorf("Found more than one services with name %q. Please mention <name>/<kind>.<apigroup>", flags[FLAG_SERVICE])
 	}
+
+	fmt.Printf(service)
 
 	// 	TODO: if a service with the name exists, do nothing, else error out and tell the user they need to mention <name>/<kind>.<apigroup>
 	return service, nil

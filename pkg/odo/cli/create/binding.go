@@ -28,7 +28,7 @@ var createBindingExample = ktemplates.Examples(`
 `)
 
 type CreateBindingOptions struct {
-	// name of the service to bind
+	// name of ServiceBinding instance
 	name string
 	// service is name of the service to be bound to the component
 	service string
@@ -71,10 +71,13 @@ func (o *CreateBindingOptions) Validate() (err error) {
 	return o.clientset.BindingClient.Validate(o.flags)
 }
 
-func (o *CreateBindingOptions) Run(ctx context.Context) error {
+func (o *CreateBindingOptions) Run(_ context.Context) error {
 	getServices, serviceMap, err := o.clientset.BindingClient.GetServiceInstances()
 	if err != nil {
 		return err
+	}
+	if len(getServices) == 0 {
+		return fmt.Errorf("No bindable service instances found")
 	}
 	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, getServices)
 	if err != nil {
@@ -102,8 +105,8 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 
 	var bindingCmd = &cobra.Command{
 		Use:     name,
-		Short:   "Create ServiceBinding",
-		Long:    "Bind a new service to the component with ServiceBinding",
+		Short:   "Create Binding",
+		Long:    "Bind a service to the component with ServiceBinding",
 		Args:    cobra.NoArgs,
 		Example: fmt.Sprintf(createBindingExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -112,8 +115,8 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	}
 	bindingCmd.Flags().StringVar(&o.name, "name", "", "Name of the Binding to create")
 	bindingCmd.Flags().StringVar(&o.service, "service", "", "Name of the service to bind")
-	bindingCmd.Flags().BoolVarP(&o.bindAsFiles, "bind-as-files", "", false, "Create the ServiceBinding as a file")
-	clientset.Add(bindingCmd, clientset.KUBERNETES, clientset.BINDING)
+	bindingCmd.Flags().BoolVarP(&o.bindAsFiles, "bind-as-files", "", true, "Bind the service as a file")
+	clientset.Add(bindingCmd, clientset.BINDING)
 
 	return bindingCmd
 }
