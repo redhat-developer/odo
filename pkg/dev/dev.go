@@ -28,7 +28,7 @@ func NewDevClient(watchClient watch.Client) *DevClient {
 	}
 }
 
-func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error {
+func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, debug bool) error {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter, err := adapters.NewComponentAdapter(devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext)
 	if err != nil {
@@ -45,6 +45,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 		DebugPort:       envSpecificInfo.GetDebugPort(),
 		Path:            path,
 		IgnoredFiles:    ignorePaths,
+		Debug:           debug,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
@@ -56,7 +57,7 @@ func (o *DevClient) Start(devfileObj parser.DevfileObj, platformContext kubernet
 	return nil
 }
 
-func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context) error {
+func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool) error {
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
 		return err
@@ -72,6 +73,8 @@ func (o *DevClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths
 		EnvSpecificInfo:     envSpecificInfo,
 		FileIgnores:         absIgnorePaths,
 		InitialDevfileObj:   devfileObj,
+		Debug:               debug,
+		DebugPort:           envSpecificInfo.GetDebugPort(),
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx)
