@@ -13,12 +13,14 @@ import (
 
 type Client interface {
 	// Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container.
-	Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error
+	// If debug is true, executes the debug command, or the run command by default
+	Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, debug bool) error
 
 	// Watch watches for any changes to the files under path while ignoring the files/directories in ignorePaths.
 	// It logs messages to out and uses the Handler h to perform push operation when anything changes in path.
 	// It uses devfileObj to notify user to restart odo dev if they change endpoint information in the devfile.
-	Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context) error
+	// If debug is true, the debug command will be started after a sync, or the run command by default
+	Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool) error
 }
 
 type Handler interface {
