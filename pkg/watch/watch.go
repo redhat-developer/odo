@@ -83,9 +83,10 @@ type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
 // Files matching glob pattern defined in ignores will be ignored.
 // Taken from https://github.com/openshift/origin/blob/85eb37b34f0657631592356d020cef5a58470f8e/pkg/util/fsnotification/fsnotification.go
-// path is the path of the file or the directory
+// rootPath is the root path of the file or directory,
+// path is the recursive path of the file or the directory,
 // ignores contains the glob rules for matching
-func addRecursiveWatch(watcher *fsnotify.Watcher, topPath string, path string, ignores []string) error {
+func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, ignores []string) error {
 
 	file, err := os.Stat(path)
 	if err != nil {
@@ -100,7 +101,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, topPath string, path string, i
 	mode := file.Mode()
 	if mode.IsRegular() {
 		var rel string
-		rel, err = filepath.Rel(topPath, path)
+		rel, err = filepath.Rel(rootPath, path)
 		if err != nil {
 			return err
 		}
@@ -134,7 +135,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, topPath string, path string, i
 
 		if info.IsDir() {
 			// If the current directory matches any of the ignore patterns, ignore them so that their contents are also not ignored
-			rel, err := filepath.Rel(topPath, newPath)
+			rel, err := filepath.Rel(rootPath, newPath)
 			if err != nil {
 				return err
 			}
@@ -156,7 +157,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, topPath string, path string, i
 	}
 	for _, folder := range folders {
 
-		rel, err := filepath.Rel(topPath, folder)
+		rel, err := filepath.Rel(rootPath, folder)
 		if err != nil {
 			return err
 		}
@@ -245,7 +246,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters Wat
 	}
 }
 
-// evaluateFileChanges evaluates any file changes for the events. It ignores the files in fileIgnores slice and removes
+// evaluateFileChanges evaluates any file changes for the events. It ignores the files in fileIgnores slice related to path, and removes
 // any deleted paths from the watcher
 func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) ([]string, []string) {
 	var changedFiles []string
