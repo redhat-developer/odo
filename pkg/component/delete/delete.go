@@ -96,7 +96,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 	var deploymentName string
 	deploymentName, err = util.NamespaceKubernetesObject(componentName, appName)
 	if err != nil {
-		return isInnerLoopDeployed, resources, fmt.Errorf("Failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
+		return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
 	}
 
 	deployment, err := do.kubeClient.GetDeploymentByName(deploymentName)
@@ -112,7 +112,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 		var unstructuredDeploy unstructured.Unstructured
 		unstructuredDeploy, err = kclient.ConvertK8sResourceToUnstructured(deployment)
 		if err != nil {
-			return isInnerLoopDeployed, resources, fmt.Errorf("Failed to parse the resource %q: %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
+			return isInnerLoopDeployed, resources, fmt.Errorf("failed to parse the resource %q: %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
 		}
 		resources = append(resources, unstructuredDeploy)
 	}
@@ -121,7 +121,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 	// Parse the devfile for outerloop K8s resources
 	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, devfileObj.Ctx.GetAbsPath())
 	if err != nil {
-		return isInnerLoopDeployed, resources, fmt.Errorf("Failed to gather resources for deletion: %w", err)
+		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
 	}
 	for _, lr := range localResources {
 		var gvr *meta.RESTMapping

@@ -124,7 +124,7 @@ func BindingDefinitions(ctx pipeline.Context) {
 		for k, v := range anns {
 			definition, err := makeBindingDefinition(k, v, ctx)
 			if err != nil {
-				condition := notCollectionReadyCond(collect.InvalidAnnotation, fmt.Errorf("Failed to create binding definition from \"%v: %v\": %v", k, v, err))
+				condition := notCollectionReadyCond(collect.InvalidAnnotation, fmt.Errorf("failed to create binding definition from \"%v: %v\": %v", k, v, err))
 				ctx.SetCondition(condition)
 				ctx.Error(err)
 				ctx.StopProcessing()

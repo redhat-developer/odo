@@ -199,7 +199,7 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 				}
 			case "Nothing":
 			default:
-				return zeroDevfile, fmt.Errorf("Unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
+				return zeroDevfile, fmt.Errorf("unknown configuration selected %q", fmt.Sprintf("%v %v %v", configOps.Ops, configOps.Kind, configOps.Key))
 			}
 			// Update the current configuration
 			config[selectContainerAnswer] = selectedContainer

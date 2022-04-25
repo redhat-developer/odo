@@ -206,7 +206,7 @@ func IsValidProjectDir(path string, devfilePath string) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("Folder %s doesn't contain the devfile used.", path)
+		return fmt.Errorf("folder %s doesn't contain the devfile used", path)
 	}
 
 	return nil
@@ -218,7 +218,7 @@ func IsValidProjectDir(path string, devfilePath string) error {
 // TODO(feloy) sync with devfile library?
 func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, starterToken string) error {
 	if zipURL == "" {
-		return fmt.Errorf("Empty zip url: %s", zipURL)
+		return fmt.Errorf("empty zip url: %s", zipURL)
 	}
 
 	var pathToZip string
@@ -251,7 +251,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string, sta
 			}
 		}()
 	} else {
-		return fmt.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
+		return fmt.Errorf("invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
 	filenames, err := Unzip(pathToZip, destination, pathToUnzip)

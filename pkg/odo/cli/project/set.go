@@ -77,7 +77,9 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 		return &odoerrors.Unauthorized{}
 	}
 	if !exists {
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 		return fmt.Errorf("The project %s does not exist", pso.projectName)
+		//revive:enable:error-strings
 	}
 
 	return nil

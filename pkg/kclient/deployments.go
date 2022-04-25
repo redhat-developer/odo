@@ -349,7 +349,7 @@ func (c *Client) UnlinkSecret(secretName, componentName, applicationName string)
 		}
 
 		if indexForRemoval == -1 {
-			return "", fmt.Errorf("Deployment does not contain a link to %s", secretName)
+			return "", fmt.Errorf("deployment does not contain a link to %s", secretName)
 		}
 
 		return fmt.Sprintf(`[{"op": "remove", "path": "/spec/template/spec/containers/0/envFrom/%d"}]`, indexForRemoval), nil
@@ -372,13 +372,13 @@ func (c *Client) jsonPatchDeployment(deploymentSelector string, deploymentPatchP
 	if deploymentPatchProvider != nil {
 		patch, e := deploymentPatchProvider(deployment)
 		if e != nil {
-			return fmt.Errorf("Unable to create a patch for the Deployment: %w", e)
+			return fmt.Errorf("unable to create a patch for the Deployment: %w", e)
 		}
 
 		// patch the Deployment with the secret
 		_, e = c.KubeClient.AppsV1().Deployments(c.Namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, []byte(patch), metav1.PatchOptions{FieldManager: FieldManager})
 		if e != nil {
-			return fmt.Errorf("Deployment not patched %s: %w", deployment.Name, e)
+			return fmt.Errorf("deployment not patched %s: %w", deployment.Name, e)
 		}
 	} else {
 		return errors.New("deploymentPatch was not properly set")

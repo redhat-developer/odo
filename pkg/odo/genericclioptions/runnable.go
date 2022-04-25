@@ -3,6 +3,7 @@ package genericclioptions
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -189,7 +190,9 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
 
 	// Check the valid output
 	if hasFlagChanged && outputFlag.Value.String() != "json" {
-		return fmt.Errorf("Please input a valid output format for -o, available format: json")
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return errors.New("Please input a valid output format for -o, available format: json")
+		//revive:enable:error-strings
 	}
 
 	// Check that if -o json has been passed, that the command actually USES json.. if not, error out.
@@ -199,7 +202,9 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) error {
 		_ = flag.Set("o", "")
 
 		// Return the error
-		return fmt.Errorf("Machine readable output is not yet implemented for this command")
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return errors.New("Machine readable output is not yet implemented for this command")
+		//revive:enable:error-strings
 	}
 
 	// Before running anything, we will make sure that no verbose output is made

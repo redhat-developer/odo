@@ -106,7 +106,7 @@ func (o *internalCxt) checkComponentExistsOrFail() error {
 		return err
 	}
 	if !exists {
-		return fmt.Errorf("Component %v does not exist in application %s", o.component, o.application)
+		return fmt.Errorf("component %v does not exist in application %s", o.component, o.application)
 	}
 	return nil
 }

@@ -2,8 +2,7 @@ package cmdline
 
 import (
 	"context"
-	"fmt"
-
+	"errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -30,7 +29,7 @@ func (o *Cobra) Context() context.Context {
 func (o *Cobra) GetArgsAfterDashes(args []string) ([]string, error) {
 	l := o.cmd.ArgsLenAtDash()
 	if l < 0 {
-		return nil, fmt.Errorf("no argument passed after dash")
+		return nil, errors.New("no argument passed after dash")
 	}
 	return args[l:], nil
 }
@@ -98,7 +97,7 @@ func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
 
 		// This should *never* happen, but added just to be safe
 		if firstChildCommand == nil {
-			return false, fmt.Errorf("Unable to get first child of command")
+			return false, errors.New("unable to get first child of command")
 		}
 
 		// Gather necessary preliminary information

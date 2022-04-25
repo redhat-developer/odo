@@ -157,7 +157,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 	if forceWrite {
 		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
 		if err != nil {
-			return false, fmt.Errorf("Failed to write file: %w", err)
+			return false, fmt.Errorf("failed to write file: %w", err)
 		}
 	}
 
@@ -240,7 +240,7 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	// Parse the existing index
 	fileIndex, err := util.ReadFileIndex(indexFilePath)
 	if err != nil {
-		return fmt.Errorf("Unable to read index from path: %s: %w", indexFilePath, err)
+		return fmt.Errorf("unable to read index from path: %s: %w", indexFilePath, err)
 	}
 
 	rootDir := pushParameters.Path

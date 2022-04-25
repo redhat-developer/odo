@@ -2,14 +2,78 @@
 # https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
 
 run:
+  # Timeout for analysis, e.g. 30s, 5m.
+  # Default: 1m
   timeout: 5m
+  # If set we pass it to "go list -mod={option}". From "go help modules":
+  # If invoked with -mod=readonly, the go command is disallowed from the implicit
+  # automatic updating of go.mod described above. Instead, it fails when any changes
+  # to go.mod are needed. This setting is most useful to check that go.mod does
+  # not need updates, such as in a continuous integration and testing system.
+  # If invoked with -mod=vendor, the go command assumes that the vendor
+  # directory holds the correct copies of dependencies and ignores
+  # the dependency descriptions in go.mod.
+  #
+  # Allowed values: readonly|vendor|mod
+  # By default, it isn't set.
   modules-download-mode: readonly
 
 linters:
+  # Note that some linters not listed below are enabled by default.
+  # See https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
+    # Go linter that checks if package imports are in a list of acceptable packages
+    - depguard
+    # check whether code was gofmt-ed. By default, this tool runs with -s option to check for code simplification
     - gofmt
+    # analyze code for common mistakes
     - govet
+    # Fast, configurable, extensible, flexible, and beautiful linter for Go.
+    # Drop-in replacement of golint, which has been deprecated
+    - revive
 
 linters-settings:
+  depguard:
+    # A list of packages for the list type specified. Default list type is 'denylist'
+    # Default: []
+    packages:
+      - github.com/pkg/errors
+    # A list of packages for the list type specified.
+    # Specify an error message to output when a denied package is used.
+    # Default: []
+    packages-with-error-message:
+      - github.com/pkg/errors: >
+          This package is deprecated since Go 1.13. Use the errors package from the standard library instead.
+          See https://github.com/redhat-developer/odo/pull/5557 for some examples.
   govet:
+    # Report about shadowed variables.
+    # Default: false
     check-shadowing: true
+  revive:
+    # Maximum number of open files at the same time.
+    # See https://github.com/mgechev/revive#command-line-flags
+    # Defaults to unlimited.
+    max-open-files: 2048
+    # When set to false, ignores files with "GENERATED" header, similar to golint.
+    # See https://github.com/mgechev/revive#available-rules for details.
+    # Default: false
+    ignore-generated-header: true
+    # Sets the default severity.
+    # See https://github.com/mgechev/revive#configuration
+    # Default: warning
+    severity: error
+    # Explicitly list all rules enabled. We can enable all existing rules by setting 'enable-all-rules' to true.
+    # See https://github.com/mgechev/revive#available-rules for the available rules.
+    rules:
+      # Conventions around error strings. See https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
+      - name: error-strings
+
+issues:
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  # Default: 50
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 0

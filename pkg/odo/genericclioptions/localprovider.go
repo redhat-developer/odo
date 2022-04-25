@@ -1,7 +1,7 @@
 package genericclioptions
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -33,10 +33,12 @@ func GetValidEnvInfo(cmdline cmdline.Cmdline) (*envinfo.EnvSpecificInfo, error) 
 
 	// Check to see if the environment file exists
 	if !envInfo.Exists() {
-		return nil, fmt.Errorf(`The current directory does not represent an odo component.
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return nil, errors.New(`The current directory does not represent an odo component.
 To start editing your component, use "odo dev" and open this folder in your favorite IDE. Changes will be directly reflected on the cluster.
 To deploy your component to a cluster use "odo deploy".
 Or switch to directory with a component.`)
+		//revive:enable:error-strings
 	}
 
 	return envInfo, nil

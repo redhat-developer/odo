@@ -41,7 +41,7 @@ const ServiceKind = "app.kubernetes.io/service-kind"
 func DeleteOperatorService(client kclient.ClientInterface, serviceName string) error {
 	kind, name, err := SplitServiceKindName(serviceName)
 	if err != nil {
-		return fmt.Errorf("Refer %q to see list of running services: %w", serviceName, err)
+		return fmt.Errorf("refer %q to see list of running services: %w", serviceName, err)
 	}
 
 	csv, err := client.GetCSVWithCR(kind)
@@ -79,7 +79,7 @@ func ListOperatorServices(client kclient.ClientInterface) ([]unstructured.Unstru
 	}
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to list operator backed services: %w", err)
+		return nil, nil, fmt.Errorf("unable to list operator backed services: %w", err)
 	}
 
 	var allCRInstances []unstructured.Unstructured

@@ -269,7 +269,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
-		return fmt.Errorf("Failed to update config to component deployed: %w", err)
+		return fmt.Errorf("failed to update config to component deployed: %w", err)
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
@@ -311,7 +311,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
-		return fmt.Errorf("Failed to sync to component with name %s: %w", a.ComponentName, err)
+		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
 	}
 	s.End(true)
 

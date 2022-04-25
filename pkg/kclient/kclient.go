@@ -238,18 +238,18 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 		case event, ok := <-eventCh:
 			_, typeOk := event.Object.(*appsv1.Deployment)
 			if !ok || !typeOk {
-				return errors.New("Unable to watch deployments")
+				return errors.New("unable to watch deployments")
 			}
 			if event.Type == watch.Deleted {
 				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted")
 				return nil
 			} else if event.Type == watch.Error {
 				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted ")
-				return errors.New("Unable to watch deployments")
+				return errors.New("unable to watch deployments")
 			}
 		case <-time.After(waitForComponentDeletionTimeout):
 			klog.V(3).Infof("WaitForComponentDeletion, Timeout")
-			return errors.New("Time out waiting for component to get deleted")
+			return errors.New("timed out waiting for component to get deleted")
 		}
 	}
 }
