@@ -29,14 +29,17 @@ var Example = `  # Get all devfile components
 %[1]s --filter nodejs --devfile-registry DefaultDevfileRegistry
 
 # Show more details
-%[1]s --details`
+%[1]s --details
+
+# Show more details from a specific devfile and registry
+%[1]s --details --devfile nodejs --devfile-registry DefaultDevfileRegistry`
 
 // ListOptions encapsulates the options for the odo registry command
 type ListOptions struct {
 	clientset *clientset.Clientset
 
 	// List of known devfiles
-	DevfileList registry.DevfileStackList
+	devfileList registry.DevfileStackList
 
 	// Flags
 	filterFlag   string
@@ -57,12 +60,12 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.DevfileList, err = o.clientset.RegistryClient.ListDevfileStacks("")
+	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks("")
 	if err != nil {
 		return err
 	}
 
-	if o.DevfileList.DevfileRegistries == nil {
+	if o.devfileList.DevfileRegistries == nil {
 		log.Warning("Please run 'odo preference registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 	}
 
@@ -71,7 +74,7 @@ func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() error {
-	if len(o.DevfileList.Items) == 0 {
+	if len(o.devfileList.Items) == 0 {
 		return fmt.Errorf("no deployable components found")
 	}
 	return nil
@@ -79,7 +82,7 @@ func (o *ListOptions) Validate() error {
 
 // Run contains the logic for the command associated with ListOptions
 func (o *ListOptions) Run(ctx context.Context) (err error) {
-	o.printDevfileList(o.DevfileList.Items)
+	o.printDevfileList(o.devfileList.Items)
 	return nil
 }
 
@@ -140,10 +143,6 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 	t.SetOutputMirror(log.GetStdout())
 
 	t.AppendHeader(table.Row{"NAME", "REGISTRY", "DESCRIPTION"})
-	t.SortBy([]table.SortBy{
-		{Name: "NAME", Mode: table.Asc},
-		{Name: "REGISTRY", Mode: table.Asc},
-	})
 
 	devfiles := []registry.DevfileStack{}
 	// Filter through all the devfile components per the filters / parameters passed in.
