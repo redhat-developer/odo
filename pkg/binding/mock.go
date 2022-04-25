@@ -63,18 +63,18 @@ func (mr *MockClientMockRecorder) Validate(flags interface{}) *gomock.Call {
 }
 
 // SelectServiceInstance mocks base method
-func (m *MockClient) SelectServiceInstance(flags map[string]string, options []string) (string, error) {
+func (m *MockClient) SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]v1alpha1.Ref) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectServiceInstance", flags, options)
+	ret := m.ctrl.Call(m, "SelectServiceInstance", flags, options, serviceMap)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectServiceInstance indicates an expected call of SelectServiceInstance
-func (mr *MockClientMockRecorder) SelectServiceInstance(flags, options interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) SelectServiceInstance(flags, options, serviceMap interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags, options)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags, options, serviceMap)
 }
 
 // AskBindingName mocks base method

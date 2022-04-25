@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	dfutil "github.com/devfile/library/pkg/util"
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 )
 
 const (
@@ -41,34 +42,39 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 	return nil
 }
 
-func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, options []string) (string, error) {
-	var serviceName = strings.Split(flags[FLAG_SERVICE], "/")
-	var counter int
+// SelectServiceInstance returns the service name in the form of '<name> (<kind>.<apigroup>)'
+func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error) {
 	var service string
+	serviceName, kind, group := parseServiceName(flags[FLAG_SERVICE])
+	// services tracks all the services that matches flags[FLAG_SERVICE]
+	var services []string
 	for _, option := range options {
-		if strings.Contains(option, serviceName[0]) {
-			if len(serviceName) > 1 {
-				kindGroup := strings.SplitN(serviceName[1], ".", 2)
-				if strings.Contains(option, kindGroup[0]) && strings.Contains(option, kindGroup[1]) {
-					counter++
+		// option has format `<name> (<kind>.<apigroup>)`
+		optionName := strings.Split(option, " ")[0]
+		if optionName == serviceName {
+			if kind != "" && serviceMap[option].Kind == kind {
+				if group != "" && serviceMap[option].Group == group {
 					service = option
+					services = append(services, service)
+					continue
+				} else if group == "" {
+					service = option
+					services = append(services, service)
 					continue
 				}
+			} else if kind == "" {
+				service = option
+				services = append(services, service)
 			}
-			counter++
-			service = option
 		}
 	}
-	if counter == 0 {
+	if len(services) == 0 {
 		return "", fmt.Errorf("%q service not found", flags[FLAG_SERVICE])
 	}
-	if counter > 1 {
-		return "", fmt.Errorf("Found more than one services with name %q. Please mention <name>/<kind>.<apigroup>", flags[FLAG_SERVICE])
+	if len(services) > 1 {
+		return "", fmt.Errorf("Found more than one services with name %q [%+v]. Please mention <name>/<kind>.<apigroup>", flags[FLAG_SERVICE], strings.Join(services, ","))
 	}
 
-	fmt.Printf(service)
-
-	// 	TODO: if a service with the name exists, do nothing, else error out and tell the user they need to mention <name>/<kind>.<apigroup>
 	return service, nil
 }
 
@@ -85,4 +91,35 @@ func (o *FlagsBackend) AskBindAsFiles(flags map[string]string) (bool, error) {
 		return false, fmt.Errorf("unable to set %q to --%v, value must be a boolean", flags[FLAG_BIND_AS_FILES], FLAG_BIND_AS_FILES)
 	}
 	return bindAsFiles, nil
+}
+
+// parseServiceName parses various service name formats. It supports the following formats:
+// - <name>
+// - <name>.<kind>
+// - <name>.<kind>.<apigroup>
+// - <name>/<kind>
+// - <name>/<kind>.<apigroup>
+func parseServiceName(service string) (name, kind, group string) {
+	if serviceNKG := strings.Split(service, "/"); len(serviceNKG) > 1 {
+		// Parse <name>/<kind>
+		name = serviceNKG[0]
+		kindGroup := strings.SplitN(serviceNKG[1], ".", 2)
+		kind = kindGroup[0]
+		if len(kindGroup) > 1 {
+			// Parse <name>/<kind>.<apigroup>
+			group = kindGroup[1]
+		}
+	} else if serviceNKG = strings.SplitN(service, ".", 3); len(serviceNKG) > 1 {
+		// Parse <name>.<kind>
+		name = serviceNKG[0]
+		kind = serviceNKG[1]
+		if len(serviceNKG) > 2 {
+			// Parse <name>.<kind>.<apigroup>
+			group = serviceNKG[2]
+		}
+	} else {
+		// Parse <name>
+		name = service
+	}
+	return
 }

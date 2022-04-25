@@ -23,6 +23,12 @@ import (
 	"k8s.io/klog"
 )
 
+const (
+	ServiceBindingGroup   = "binding.operators.coreos.com"
+	ServiceBindingVersion = "v1alpha1"
+	ServiceBindingKind    = "ServiceBinding"
+)
+
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
 	// Detection of SBO has been removed from issue https://github.com/redhat-developer/odo/issues/5084
@@ -88,6 +94,9 @@ func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 	gvr := schema.GroupVersionResource{Group: "binding.operators.coreos.com", Version: "v1alpha1", Resource: "bindablekinds"}
 	unstructuredBK, err := c.DynamicClient.Resource(gvr).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
 	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return sboApi.BindableKinds{}, errors.New("Service Binding Operator is not installed, please install it before proceeding")
+		}
 		return sboApi.BindableKinds{}, err
 	}
 	var bindableKind sboApi.BindableKinds
