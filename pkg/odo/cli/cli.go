@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -279,6 +280,6 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 	}
 
 	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
-	return fmt.Errorf("Invalid command - see available commands/subcommands above")
+	return errors.New("Invalid command - see available commands/subcommands above")
 	//revive:enable:error-strings
 }

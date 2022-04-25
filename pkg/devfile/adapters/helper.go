@@ -1,8 +1,7 @@
 package adapters
 
 import (
-	"fmt"
-
+	"errors"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
@@ -22,7 +21,7 @@ func NewComponentAdapter(componentName string, context string, appName string, d
 
 	kc, ok := platformContext.(kubernetes.KubernetesContext)
 	if !ok {
-		return nil, fmt.Errorf("error retrieving context for Kubernetes")
+		return nil, errors.New("error retrieving context for Kubernetes")
 	}
 	return createKubernetesAdapter(adapterContext, kc.Namespace)
 
