@@ -79,11 +79,11 @@ func (o *CreateBindingOptions) Run(_ context.Context) error {
 	if len(getServices) == 0 {
 		return fmt.Errorf("No bindable service instances found")
 	}
-	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, getServices)
+	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, getServices, serviceMap)
 	if err != nil {
 		return err
 	}
-	bindingName, err := o.clientset.BindingClient.AskBindingName(o.EnvSpecificInfo.GetName(), o.flags)
+	bindingName, err := o.clientset.BindingClient.AskBindingName(o.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), o.flags)
 	if err != nil {
 		return err
 	}

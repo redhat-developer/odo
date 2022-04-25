@@ -58,14 +58,14 @@ func (o *BindingClient) Validate(flags map[string]string) error {
 	return backend.Validate(flags)
 }
 
-func (o *BindingClient) SelectServiceInstance(flags map[string]string, options []string) (string, error) {
+func (o *BindingClient) SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error) {
 	var backend backend.CreateBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.SelectServiceInstance(flags, options)
+	return backend.SelectServiceInstance(flags, options, serviceMap)
 }
 
 func (o *BindingClient) AskBindingName(componentName string, flags map[string]string) (string, error) {
@@ -89,15 +89,7 @@ func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
 }
 
 func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bindAsFiles bool, obj parser.DevfileObj, serviceMap map[string]servicebinding.Ref, componentContext string) error {
-	deploymentName := fmt.Sprintf("%s-app", obj.GetMetadataName())
-	deployment, err := o.kubernetesClient.GetDeploymentByName(deploymentName)
-	if err != nil {
-		return err
-	}
-	deploymentGVR, err := o.kubernetesClient.GetRestMappingFromGVK(deployment.GroupVersionKind())
-	if err != nil {
-		return err
-	}
+	// serviceName format is <name> (<kind>.<apigroup>)
 	serviceRef := serviceMap[serviceName]
 	gvr, err := o.kubernetesClient.GetRestMappingFromGVK(schema.GroupVersionKind{
 		Group:   serviceRef.Group,
@@ -120,6 +112,12 @@ func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bi
 			},
 		},
 	}
+
+	deploymentGVR, err := o.kubernetesClient.GetDeploymentAPIVersion()
+	if err != nil {
+		return err
+	}
+
 	serviceBinding := &servicebinding.ServiceBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"),
@@ -133,10 +131,10 @@ func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bi
 			BindAsFiles:            bindAsFiles,
 			Application: servicebinding.Application{
 				Ref: servicebinding.Ref{
-					Name:     deployment.Name,
-					Group:    deploymentGVR.Resource.Group,
-					Version:  deploymentGVR.Resource.Version,
-					Resource: deploymentGVR.Resource.Resource,
+					Name:     fmt.Sprintf("%s-app", obj.GetMetadataName()),
+					Group:    deploymentGVR.Group,
+					Version:  deploymentGVR.Version,
+					Resource: deploymentGVR.Resource,
 				},
 			},
 			Mappings: []servicebinding.Mapping{},
@@ -153,6 +151,7 @@ func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bi
 	if err != nil {
 		return err
 	}
+
 	err = libdevfile.AddKubernetesComponentToDevfile(string(yamlDesc), serviceBinding.Name, obj)
 	return err
 }
@@ -212,6 +211,6 @@ func (o *BindingClient) GetServiceInstances() ([]string, map[string]servicebindi
 		options = append(options, serviceName)
 		bindableObjectMap[serviceName] = option
 	}
-	// TODO: if options is empty; then return a more user friendly error
+
 	return options, bindableObjectMap, nil
 }
