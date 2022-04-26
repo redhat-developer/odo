@@ -234,7 +234,7 @@ func Test_makeTar(t *testing.T) {
 					filepath.Join(dir0, "README.txt"),
 					filepath.Join(dir0, "views"),
 					filepath.Join(dir0, "views", "view.html")},
-				globExps: []string{filepath.Join(dir0, "README.txt")},
+				globExps: []string{"README.txt"},
 				ret: util.IndexerRet{
 					NewFileMap: map[string]util.FileData{
 						"red.js": {

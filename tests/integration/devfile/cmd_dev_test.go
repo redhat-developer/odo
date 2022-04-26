@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -609,15 +610,64 @@ var _ = Describe("odo dev command tests", func() {
 			session.WaitEnd()
 		})
 
-		It("should not sync ignored files to the container", func() {
-			podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-
+		checkSyncedFiles := func(podName string) {
 			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 			helper.MatchAllInOutput(stdOut, []string{"testdir"})
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
 			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/testdir")
 			helper.MatchAllInOutput(stdOut, []string{"baz.txt"})
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
+		}
+
+		It("should not sync ignored files to the container", func() {
+			podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+			checkSyncedFiles(podName)
+		})
+
+		waitTerminates := func(timeout time.Duration) bool {
+			done := make(chan bool)
+			go func() {
+				_, _, _ = session.WaitSync()
+				done <- true
+			}()
+			select {
+			case <-time.Tick(timeout):
+				return false
+			case <-done:
+				return true
+			}
+		}
+
+		When("modifying /testdir/baz.txt file", func() {
+			BeforeEach(func() {
+				helper.ReplaceString(newFilePath3, "hello world", "hello world!!!")
+			})
+
+			It("should synchronize it only", func() {
+				Expect(waitTerminates(20 * time.Second)).To(BeTrue())
+				podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				checkSyncedFiles(podName)
+			})
+		})
+
+		When("modifying /foobar.txt file", func() {
+			BeforeEach(func() {
+				helper.ReplaceString(newFilePath1, "hello world", "hello world!!!")
+			})
+
+			It("should not synchronize it", func() {
+				Expect(waitTerminates(20 * time.Second)).To(BeFalse())
+			})
+		})
+
+		When("modifying /testdir/foobar.txt file", func() {
+			BeforeEach(func() {
+				helper.ReplaceString(newFilePath2, "hello world", "hello world!!!")
+			})
+
+			It("should not synchronize it", func() {
+				Expect(waitTerminates(20 * time.Second)).To(BeFalse())
+			})
 		})
 	})
 
