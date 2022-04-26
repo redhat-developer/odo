@@ -17,6 +17,7 @@ cleanup_namespaces
     make test-interactive
     make test-e2e-devfile
     make test-cmd-project
+    make test-generic
 ) |& tee "/tmp/${LOGFILE}"
 RESULT=${PIPESTATUS[0]}
 
