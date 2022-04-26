@@ -20,7 +20,7 @@ echo "RESULT: $RESULT"
 # save log
 source .ibm/pipelines/functions.sh
 ibmcloud login --apikey "${API_KEY}" -r "${IBM_REGION}"
-sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:/tmp/${LOGFILE} /tmp/${LOGFILE}
+sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no Administrator@$WINDOWS_IP:~/AppData/Local/Temp/${LOGFILE} /tmp/${LOGFILE}
 save_logs "${LOGFILE}" "Windows Tests (OCP)" $RESULT
 
 # cleanup
