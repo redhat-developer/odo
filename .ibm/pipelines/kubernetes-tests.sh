@@ -19,6 +19,7 @@ cleanup_namespaces
     make test-cmd-project
     make test-generic
 ) |& tee "/tmp/${LOGFILE}"
+
 RESULT=${PIPESTATUS[0]}
 
 save_logs "${LOGFILE}" "Kubernetes Tests" ${RESULT}
