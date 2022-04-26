@@ -63,7 +63,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 		It("should fail running odo dev --debug", func() {
 			output := helper.Cmd("odo", "dev", "--debug").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("no command of kind Debug found in the devfile"))
+			Expect(output).To(ContainSubstring("no command of kind \"debug\" found in the devfile"))
 		})
 	})
 })

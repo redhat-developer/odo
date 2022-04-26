@@ -25,6 +25,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -169,10 +170,10 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 func (o *DevOptions) Validate() error {
 	if !o.debugFlag && !libdevfile.HasRunCommand(o.initialDevfileObj.Data) {
-		return errors.New("no command of kind Run found in the devfile")
+		return clierrors.NewNoCommandInDevfileError("run")
 	}
 	if o.debugFlag && !libdevfile.HasDebugCommand(o.initialDevfileObj.Data) {
-		return errors.New("no command of kind Debug found in the devfile")
+		return clierrors.NewNoCommandInDevfileError("debug")
 	}
 	return nil
 }
