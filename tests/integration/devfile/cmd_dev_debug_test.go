@@ -54,4 +54,16 @@ var _ = Describe("odo dev debug command tests", func() {
 		})
 	})
 
+	When("a component without debug command is bootstrapped", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-without-debugrun.yaml")).ShouldPass()
+			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+		})
+
+		It("should fail running odo dev --debug", func() {
+			output := helper.Cmd("odo", "dev", "--debug").ShouldFail().Err()
+			Expect(output).To(ContainSubstring("no command of kind Debug found in the devfile"))
+		})
+	})
 })

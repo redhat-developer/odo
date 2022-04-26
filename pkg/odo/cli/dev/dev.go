@@ -309,7 +309,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	}
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
-	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Excecute the debug command within the component")
+	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu
