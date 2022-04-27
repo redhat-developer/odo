@@ -90,7 +90,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if err != nil {
 		return err
 	}
-	bindingName, err := o.clientset.BindingClient.AskBindingName(o.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), o.flags)
+	bindingName, err := o.clientset.BindingClient.AskBindingName(service, o.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), o.flags)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,6 @@
 package backend
 
 import (
-	"fmt"
-
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
@@ -27,8 +25,8 @@ func (o *InteractiveBackend) SelectServiceInstance(_ map[string]string, options 
 	return o.askerClient.AskServiceInstance(options)
 }
 
-func (o *InteractiveBackend) AskBindingName(componentName string, _ map[string]string) (string, error) {
-	return o.askerClient.AskServiceBindingName(fmt.Sprintf("%s-binding", componentName))
+func (o *InteractiveBackend) AskBindingName(defaultName string, _ map[string]string) (string, error) {
+	return o.askerClient.AskServiceBindingName(defaultName)
 }
 
 func (o *InteractiveBackend) AskBindAsFiles(_ map[string]string) (bool, error) {

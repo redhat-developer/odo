@@ -13,7 +13,7 @@ type Client interface {
 	// SelectServiceInstance returns the service to bind to the component
 	SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error)
 	// AskBindingName returns the name to be set for the binding
-	AskBindingName(componentName string, flags map[string]string) (string, error)
+	AskBindingName(serviceName, componentName string, flags map[string]string) (string, error)
 	// AskBindAsFiles asks if the service should be binded as files
 	AskBindAsFiles(flags map[string]string) (bool, error)
 

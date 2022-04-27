@@ -11,7 +11,7 @@ type CreateBindingBackend interface {
 	// it returns the service name in the form of '<name> (<kind>.<apigroup>)'
 	SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error)
 	// AskBindingName asks for the service name to be set
-	AskBindingName(componentName string, flags map[string]string) (string, error)
+	AskBindingName(defaultName string, flags map[string]string) (string, error)
 	// AskBindAsFiles asks if service should be binded as files
 	AskBindAsFiles(flags map[string]string) (bool, error)
 }
