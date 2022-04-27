@@ -66,6 +66,10 @@ type WatchParameters struct {
 	DevfileDebugCmd string
 	// InitialDevfileObj is used to compare the devfile between the very first run of odo dev and subsequent ones
 	InitialDevfileObj parser.DevfileObj
+	// Debug indicates if the debug command should be started after sync, or the run command by default
+	Debug bool
+	// DebugPort indicates which debug port to use for pushing after sync
+	DebugPort int
 }
 
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
@@ -337,8 +341,8 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		DevfileDebugCmd:          parameters.DevfileDebugCmd,
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
-		Debug:                    parameters.EnvSpecificInfo.GetRunMode() == envinfo.Debug,
-		DebugPort:                parameters.EnvSpecificInfo.GetDebugPort(),
+		Debug:                    parameters.Debug,
+		DebugPort:                parameters.DebugPort,
 	}
 	err := parameters.DevfileWatchHandler(pushParams, parameters)
 	if err != nil {

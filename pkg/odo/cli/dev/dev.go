@@ -9,12 +9,11 @@ import (
 	"path/filepath"
 	"reflect"
 
-	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/spf13/cobra"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -26,10 +25,12 @@ import (
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
+	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -61,8 +62,9 @@ type DevOptions struct {
 	contextDir string
 
 	// Flags
-	randomPorts bool
-	noWatchFlag bool
+	noWatchFlag     bool
+	randomPortsFlag bool
+	debugFlag       bool
 }
 
 type Handler struct{}
@@ -167,8 +169,13 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 }
 
 func (o *DevOptions) Validate() error {
-	var err error
-	return err
+	if !o.debugFlag && !libdevfile.HasRunCommand(o.initialDevfileObj.Data) {
+		return clierrors.NewNoCommandInDevfileError("run")
+	}
+	if o.debugFlag && !libdevfile.HasDebugCommand(o.initialDevfileObj.Data) {
+		return clierrors.NewNoCommandInDevfileError("debug")
+	}
+	return nil
 }
 
 func (o *DevOptions) Run(ctx context.Context) error {
@@ -186,7 +193,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path)
+	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, o.debugFlag)
 	if err != nil {
 		return err
 	}
@@ -200,7 +207,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	}
 	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
 	var portPairs map[string][]string
-	if o.randomPorts {
+	if o.randomPortsFlag {
 		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
 	} else {
 		portPairs = portPairsFromContainerEndpoints(ceMapping)
@@ -240,9 +247,8 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		err = o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
-		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx)
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag)
 	}
-
 	return err
 }
 
@@ -302,8 +308,9 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	devCmd.Flags().BoolVarP(&o.randomPorts, "random-ports", "f", false, "Assign random ports to redirected ports")
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
+	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
+	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
 
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
 	// Add a defined annotation in order to appear in the help menu

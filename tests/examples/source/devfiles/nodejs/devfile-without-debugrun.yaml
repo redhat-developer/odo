@@ -34,18 +34,3 @@ commands:
       group:
         kind: run
         isDefault: true
-  - id: debugrun
-    exec:
-      component: runtime
-      commandLine: npm run debug
-      workingDir: ${PROJECTS_ROOT}
-      group:
-        kind: debug
-        isDefault: true
-  - id: debug
-    exec:
-      component: runtime
-      commandLine: npm run debug
-      workingDir: ${PROJECTS_ROOT}
-      group:
-        kind: debug

@@ -92,9 +92,10 @@ import (
 	To run independent tests, previous formats should be used instead.
 
 	It("should do ... in dev mode", func() {
-		helper.RunDevMode(func(session *gexec.Session, outContents []byte, errContents []byte) {
+		helper.RunDevMode(func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 			// test on dev mode
 			// outContents and errContents are contents of std/err output when dev mode is started
+			// ports contains a map where keys are container ports and associated values are local IP:port redirecting to these local ports
 		})
 	})
 
@@ -104,8 +105,6 @@ import (
 	The method returns the contents of std/err output since the end of the dev mode started or previous sync, and until the end of the synchronization.
 */
 
-const localhostRegexp = "127.0.0.1:[0-9]*"
-
 type DevSession struct {
 	session *gexec.Session
 }
@@ -114,7 +113,7 @@ type DevSession struct {
 // It returns a session structure, the contents of the standard and error outputs
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) {
+func StartDevMode(opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
 	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
 	session := CmdRunner("odo", args...)
@@ -132,7 +131,7 @@ func StartDevMode(opts ...string) (DevSession, []byte, []byte, []string, error) 
 	if err != nil {
 		return DevSession{}, nil, nil, nil, err
 	}
-	return result, outContents, errContents, FindAllMatchingStrings(string(outContents), localhostRegexp), nil
+	return result, outContents, errContents, getPorts(string(outContents)), nil
 
 }
 
@@ -172,8 +171,8 @@ func (o DevSession) WaitSync() ([]byte, []byte, error) {
 
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
 // The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
-// and a slice of strings - urls - giving the redirections in the form localhost:<port_number> to access ports opened by component
-func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte, urls []string)) error {
+// and a slice of strings - ports - giving the redirections in the form localhost:<port_number> to access ports opened by component
+func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
 	session, outContents, errContents, urls, err := StartDevMode()
 	if err != nil {
 		return err
@@ -186,8 +185,14 @@ func RunDevMode(inside func(session *gexec.Session, outContents []byte, errConte
 	return nil
 }
 
-// FindAllMatchingStrings returns all matches for the provided regExp as a slice of strings
-func FindAllMatchingStrings(s, regExp string) []string {
-	re := regexp.MustCompile(regExp)
-	return re.FindAllString(s, -1)
+// getPorts returns a map of ports redirected depending on the information in s
+//  `- Forwarding from 127.0.0.1:40001 -> 3000` will return { "3000": "127.0.0.1:40001" }
+func getPorts(s string) map[string]string {
+	result := map[string]string{}
+	re := regexp.MustCompile("(127.0.0.1:[0-9]+) -> ([0-9]+)")
+	matches := re.FindAllStringSubmatch(s, -1)
+	for _, match := range matches {
+		result[match[2]] = match[1]
+	}
+	return result
 }
