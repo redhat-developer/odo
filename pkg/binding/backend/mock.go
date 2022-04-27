@@ -63,18 +63,18 @@ func (mr *MockCreateBindingBackendMockRecorder) SelectServiceInstance(flags, opt
 }
 
 // AskBindingName mocks base method
-func (m *MockCreateBindingBackend) AskBindingName(componentName string, flags map[string]string) (string, error) {
+func (m *MockCreateBindingBackend) AskBindingName(defaultName string, flags map[string]string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AskBindingName", componentName, flags)
+	ret := m.ctrl.Call(m, "AskBindingName", defaultName, flags)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AskBindingName indicates an expected call of AskBindingName
-func (mr *MockCreateBindingBackendMockRecorder) AskBindingName(componentName, flags interface{}) *gomock.Call {
+func (mr *MockCreateBindingBackendMockRecorder) AskBindingName(defaultName, flags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockCreateBindingBackend)(nil).AskBindingName), componentName, flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockCreateBindingBackend)(nil).AskBindingName), defaultName, flags)
 }
 
 // AskBindAsFiles mocks base method

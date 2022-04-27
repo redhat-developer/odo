@@ -68,14 +68,15 @@ func (o *BindingClient) SelectServiceInstance(flags map[string]string, options [
 	return backend.SelectServiceInstance(flags, options, serviceMap)
 }
 
-func (o *BindingClient) AskBindingName(componentName string, flags map[string]string) (string, error) {
+func (o *BindingClient) AskBindingName(serviceName, componentName string, flags map[string]string) (string, error) {
 	var backend backend.CreateBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.AskBindingName(componentName, flags)
+	defaultName := fmt.Sprintf("%v-%v", componentName, strings.Split(serviceName, " ")[0])
+	return backend.AskBindingName(defaultName, flags)
 }
 
 func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
