@@ -1,9 +1,9 @@
 ---
-blacklist:
+denylist:
   # https://www.apache.org/licenses/GPL-compatibility.html
   - GPL-2.0
 
-whitelist:
+allowlist:
   - Apache-2.0
   - MIT
   - NewBSD
