@@ -1,6 +1,7 @@
 package api
 
 type RunningMode string
+type RunningModeList []RunningMode
 
 const (
 	RunningModeDev     RunningMode = "Dev"
@@ -8,11 +9,22 @@ const (
 	RunningModeUnknown RunningMode = "Unknown"
 )
 
+func (u RunningModeList) Len() int {
+	return len(u)
+}
+func (u RunningModeList) Swap(i, j int) {
+	u[i], u[j] = u[j], u[i]
+}
+func (u RunningModeList) Less(i, j int) bool {
+	// Set Dev before Deploy
+	return u[i] > u[j]
+}
+
 // Component describes the state of a devfile component
 type Component struct {
-	DevfilePath    string          `json:"devfilePath"`
-	DevfileData    DevfileData     `json:"devfileData"`
-	ForwardedPorts []ForwardedPort `json:"forwardedPorts"`
+	DevfilePath    string          `json:"devfilePath,omitempty"`
+	DevfileData    *DevfileData    `json:"devfileData,omitempty"`
+	ForwardedPorts []ForwardedPort `json:"forwardedPorts,omitempty"`
 	RunningIn      []RunningMode   `json:"runningIn"`
 	ManagedBy      string          `json:"managedBy"`
 }

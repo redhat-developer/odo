@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -11,7 +12,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	dfutil "github.com/devfile/library/pkg/util"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	corev1 "k8s.io/api/core/v1"
@@ -205,6 +208,35 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 	}
 
 	return components, nil
+}
+
+// GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
+// the resources deployed with matching labels, based on the "odo.dev/mode" label
+func GetRunningModes(client kclient.ClientInterface, name string, namespace string) []api.RunningMode {
+	mapResult := map[string]bool{}
+	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode)
+	fmt.Printf("%s\n", selector)
+	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
+	if err != nil {
+		return []api.RunningMode{api.RunningModeUnknown}
+	}
+	for _, resource := range resourceList {
+		resourceLabels := resource.GetLabels()
+		// ignore "PackageManifest" as they are not components, it is just a record in OpenShift catalog.
+		if resource.GetKind() == "PackageManifest" {
+			continue
+		}
+		mode := labels.GetMode(resourceLabels)
+		if mode != "" {
+			mapResult[mode] = true
+		}
+	}
+	keys := make(api.RunningModeList, 0, len(mapResult))
+	for k := range mapResult {
+		keys = append(keys, api.RunningMode(k))
+	}
+	sort.Sort(keys)
+	return keys
 }
 
 // Contains checks to see if the component exists in an array or not

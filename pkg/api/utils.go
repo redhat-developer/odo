@@ -6,8 +6,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 
-func GetDevfileData(devfileObj parser.DevfileObj) DevfileData {
-	return DevfileData{
+func GetDevfileData(devfileObj parser.DevfileObj) *DevfileData {
+	return &DevfileData{
 		Devfile:              devfileObj.Data,
 		SupportedOdoFeatures: getSupportedOdoFeatures(devfileObj.Data),
 	}

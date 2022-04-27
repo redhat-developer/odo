@@ -1,15 +1,18 @@
 package component
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -271,4 +274,111 @@ func getUnstructured(name, kind, apiVersion, managed, componentType, namespace s
 		WithProjectType(componentType).
 		Labels())
 	return
+}
+
+func TestGetRunningModes(t *testing.T) {
+
+	resourceDev1 := unstructured.Unstructured{}
+	resourceDev1.SetLabels(labels.Builder().WithMode(labels.ComponentDevMode).Labels())
+
+	resourceDev2 := unstructured.Unstructured{}
+	resourceDev2.SetLabels(labels.Builder().WithMode(labels.ComponentDevMode).Labels())
+
+	resourceDeploy1 := unstructured.Unstructured{}
+	resourceDeploy1.SetLabels(labels.Builder().WithMode(labels.ComponentDeployMode).Labels())
+
+	resourceDeploy2 := unstructured.Unstructured{}
+	resourceDeploy2.SetLabels(labels.Builder().WithMode(labels.ComponentDeployMode).Labels())
+
+	otherResource := unstructured.Unstructured{}
+
+	packageManifestResource := unstructured.Unstructured{}
+	packageManifestResource.SetKind("PackageManifest")
+	packageManifestResource.SetLabels(labels.Builder().WithMode(labels.ComponentDevMode).Labels())
+
+	type args struct {
+		client    func(ctrl *gomock.Controller) kclient.ClientInterface
+		name      string
+		namespace string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []api.RunningMode
+	}{
+		{
+			name: "No resources",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource}, nil)
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want: []api.RunningMode{},
+		},
+		{
+			name: "Only Dev resources",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource, resourceDev1, resourceDev2}, nil)
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want: []api.RunningMode{api.RunningModeDev},
+		},
+		{
+			name: "Only Deploy resources",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource, resourceDeploy1, resourceDeploy2}, nil)
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want: []api.RunningMode{api.RunningModeDeploy},
+		},
+		{
+			name: "Dev and Deploy resources",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource, resourceDev1, resourceDev2, resourceDeploy1, resourceDeploy2}, nil)
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want: []api.RunningMode{api.RunningModeDev, api.RunningModeDeploy},
+		},
+		{
+			name: "Unknown",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want: []api.RunningMode{api.RunningModeUnknown},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			got := GetRunningModes(tt.args.client(ctrl), tt.args.name, tt.args.namespace)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetRunningModes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
