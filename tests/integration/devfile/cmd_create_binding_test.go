@@ -38,7 +38,7 @@ var _ = Describe("odo create binding command tests", func() {
 		})
 		When("creating a binding", func() {
 			BeforeEach(func() {
-				helper.Cmd("odo", "create", "binding", "--name", "my-binding", "--service", "cluster-sample").ShouldPass()
+				helper.Cmd("odo", "add", "binding", "--name", "my-binding", "--service", "cluster-sample").ShouldPass()
 			})
 			It("should successfully add binding between component and service in the devfile", func() {
 				components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), "my-binding")

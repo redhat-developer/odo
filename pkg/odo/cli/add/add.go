@@ -1,4 +1,4 @@
-package create
+package add
 
 import (
 	"github.com/spf13/cobra"
@@ -7,13 +7,13 @@ import (
 )
 
 // RecommendedCommandName is the recommended create command name
-const RecommendedCommandName = "create"
+const RecommendedCommandName = "add"
 
 // NewCmdDelete implements the delete odo command
-func NewCmdCreate(name, fullName string) *cobra.Command {
+func NewCmdAdd(name, fullName string) *cobra.Command {
 	var createCmd = &cobra.Command{
 		Use:   name,
-		Short: "Create resources",
+		Short: "Add resources to devfile",
 	}
 
 	bindingCmd := NewCmdBinding(BindingRecommendedCommandName, util.GetFullName(fullName, BindingRecommendedCommandName))
