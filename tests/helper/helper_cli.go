@@ -37,4 +37,7 @@ type CliRunner interface {
 	GetVolumeNamesFromDeployment(componentName, appName, projectName string) map[string]string
 	ScalePodToZero(componentName, appName, projectName string)
 	GetAllPodNames(namespace string) []string
+	EnsureOperatorIsInstalled(partialOperatorName string)
+	GetBindableKinds() (string, string)
+	GetServiceBinding(name, projectName string) (string, string)
 }
