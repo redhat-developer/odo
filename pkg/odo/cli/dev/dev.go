@@ -224,7 +224,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	// Output that the application is running, and then show the port-forwarding information
 	log.Info("\nYour application is now running on the cluster")
 
-	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice))
+	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
 	go func() {
 		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, o.errOut)
 		if err != nil {
@@ -233,6 +233,10 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	}()
 
 	portsBuf.Wait()
+	err = o.clientset.StateClient.SetForwardedPorts(portsBuf.GetForwaredPorts())
+	if err != nil {
+		fmt.Printf("unable to save forwarded ports to state file: %v", err)
+	}
 
 	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 
@@ -312,7 +316,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
 
-	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
+	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

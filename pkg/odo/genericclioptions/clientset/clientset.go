@@ -14,6 +14,7 @@ package clientset
 import (
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/dev"
+	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/spf13/cobra"
 
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
@@ -50,6 +51,8 @@ const (
 	PROJECT = "DEP_PROJECT"
 	// REGISTRY instantiates client for pkg/registry
 	REGISTRY = "DEP_REGISTRY"
+	// STATE instantiates client for pkg/state
+	STATE = "DEP_STATE"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
 
@@ -66,7 +69,8 @@ var subdeps map[string][]string = map[string][]string{
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
-	WATCH:            {DELETE_COMPONENT},
+	STATE:            {FILESYSTEM},
+	WATCH:            {DELETE_COMPONENT, STATE},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -81,6 +85,7 @@ type Clientset struct {
 	PreferenceClient preference.Client
 	ProjectClient    project.Client
 	RegistryClient   registry.Client
+	StateClient      state.Client
 	WatchClient      watch.Client
 	/* Add client here */
 }
@@ -144,8 +149,11 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)
 	}
+	if isDefined(command, STATE) {
+		dep.StateClient = state.NewStateClient(dep.FS)
+	}
 	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient)
+		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient, dep.StateClient)
 	}
 	if isDefined(command, DEV) {
 		dep.DevClient = dev.NewDevClient(dep.WatchClient)
