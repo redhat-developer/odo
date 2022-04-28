@@ -1,0 +1,23 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: my-component
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-app
+  template:
+    metadata:
+      labels:
+        app: node-app
+    spec:
+      containers:
+        - name: main
+          # CONTAINER_IMAGE is a variable defined in Devfile, and it needs to be substituted accordingly.
+          # See https://github.com/redhat-developer/odo/issues/5451
+          image: {{CONTAINER_IMAGE}}
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
