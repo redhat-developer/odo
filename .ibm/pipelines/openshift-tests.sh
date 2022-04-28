@@ -21,6 +21,7 @@ cleanup_namespaces
     make test-cmd-project
     make test-e2e-devfile
 ) |& tee "/tmp/${LOGFILE}"
+
 RESULT=${PIPESTATUS[0]}
 
 save_logs "${LOGFILE}" "OpenShift Tests" ${RESULT}
