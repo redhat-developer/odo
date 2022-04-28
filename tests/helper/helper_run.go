@@ -10,8 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/component/labels"
+	"github.com/redhat-developer/odo/pkg/labels"
 )
 
 func runningCmd(cmd *exec.Cmd) string {
@@ -84,8 +83,7 @@ func WaitAndCheckForTerminatingState(path, resourceType, namespace string, timeo
 // belonging to the given component, app and project
 func GetAnnotationsDeployment(path, componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
-
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).SelectorFlag()
 	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "go-template='{{ range $k, $v := (index .items 0).metadata.annotations}}{{$k}}:{{$v}}{{\"\\n\"}}{{end}}'").ShouldPass().Out()
 
@@ -112,7 +110,7 @@ func GetSecrets(path, project string) string {
 
 // GetEnvRefNames gets the ref values from the envFroms of the deployment belonging to the given data
 func GetEnvRefNames(path, componentName, appName, projectName string) []string {
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).SelectorFlag()
 	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.containers[0].envFrom[*]}{.secretRef.name}{\"\\n\"}{end}'").ShouldPass().Out()
 
@@ -134,7 +132,7 @@ func GetEnvFromEntry(path string, componentName string, appName string, projectN
 // GetVolumeNamesFromDeployment gets the volumes from the deployment belonging to the given data
 func GetVolumeNamesFromDeployment(path, componentName, appName, projectName string) map[string]string {
 	var mapOutput = make(map[string]string)
-	selector := fmt.Sprintf("--selector=%s=%s,%s=%s", labels.KubernetesInstanceLabel, componentName, applabels.ApplicationLabel, appName)
+	selector := labels.Builder().WithComponentName(componentName).WithAppName(appName).SelectorFlag()
 	output := Cmd(path, "get", "deployment", selector, "--namespace", projectName,
 		"-o", "jsonpath='{range .items[0].spec.template.spec.volumes[*]}{.name}{\":\"}{.persistentVolumeClaim.claimName}{\"\\n\"}{end}'").ShouldPass().Out()
 

@@ -8,9 +8,8 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -314,7 +313,7 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 		name := svc.GetName()
 		kind := svc.GetKind()
 		deployedLabels := svc.GetLabels()
-		if deployedLabels[applabels.ManagedBy] == "odo" && deployedLabels[componentlabels.KubernetesInstanceLabel] == labels[componentlabels.KubernetesInstanceLabel] {
+		if odolabels.IsManagedByOdo(deployedLabels) && odolabels.GetComponentName(deployedLabels) == odolabels.GetComponentName(labels) {
 			deployed[kind+"/"+name] = DeployedInfo{
 				Kind:           kind,
 				Name:           name,

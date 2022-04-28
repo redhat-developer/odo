@@ -5,13 +5,15 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	storageLabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func getStorageLabels(storageName, componentName, applicationName string) map[string]string {
-	return storageLabels.GetLabels(storageName, componentName, applicationName, true)
+	labels := odolabels.GetLabels(componentName, applicationName, odolabels.ComponentDevMode)
+	odolabels.AddStorageInfo(labels, storageName, false)
+	return labels
 }
 
 func TestPush(t *testing.T) {

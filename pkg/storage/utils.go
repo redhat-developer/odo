@@ -4,17 +4,14 @@ import (
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // getPVCNameFromStorageName returns the PVC associated with the given storage
 func getPVCNameFromStorageName(client kclient.ClientInterface, storageName string) (string, error) {
-	var labels = make(map[string]string)
-	labels[storagelabels.StorageLabel] = storageName
-
-	selector := util.ConvertLabelsToSelector(labels)
+	var selector = odolabels.Builder().WithStorageName(storageName).Selector()
 	pvcs, err := client.ListPVCNames(selector)
 	if err != nil {
 		return "", fmt.Errorf("unable to get PVC names for selector %v: %w", selector, err)

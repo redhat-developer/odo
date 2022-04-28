@@ -3,9 +3,8 @@ package storage
 import (
 	"fmt"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
-	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 	v1 "k8s.io/api/apps/v1"
@@ -55,8 +54,8 @@ func NewClient(options ClientOptions) Client {
 	}
 
 	if options.Deployment != nil {
-		genericInfo.appName = options.Deployment.Labels[applabels.ApplicationLabel]
-		genericInfo.componentName = options.Deployment.Labels[labels.KubernetesInstanceLabel]
+		genericInfo.appName = labels.GetAppName(options.Deployment.Labels)
+		genericInfo.componentName = labels.GetComponentName(options.Deployment.Labels)
 	}
 
 	return kubernetesClient{

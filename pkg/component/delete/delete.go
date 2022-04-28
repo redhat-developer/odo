@@ -11,10 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
-	applabels "github.com/redhat-developer/odo/pkg/application/labels"
 	"github.com/redhat-developer/odo/pkg/component"
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -34,9 +33,7 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
 func (do *DeleteComponentClient) ListClusterResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
-	labels := componentlabels.GetLabels(componentName, "app", false)
-	labels[applabels.ManagedBy] = "odo"
-	selector := util.ConvertLabelsToSelector(labels)
+	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentAnyMode)
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -149,7 +146,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 	klog.V(4).Infof("Gathering information for component: %q", componentName)
 
 	klog.V(3).Infof("Checking component status for %q", componentName)
-	selector := componentlabels.GetSelector(componentName, appName)
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
 	pod, err := do.kubeClient.GetOnePodFromSelector(selector)
 	if err != nil {
 		klog.V(1).Info("Component not found on the cluster.")

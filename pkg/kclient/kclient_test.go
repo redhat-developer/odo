@@ -1,15 +1,12 @@
 package kclient
 
 import (
-	"errors"
 	"fmt"
 	"runtime"
 	"testing"
 
-	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"
-	ktesting "k8s.io/client-go/testing"
 )
 
 func (c *fakeDiscovery) ServerVersion() (*version.Info, error) {
@@ -84,24 +81,5 @@ func TestClient_IsSSASupported(t *testing.T) {
 				t.Errorf("IsSSASupported() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestDelete(t *testing.T) {
-	fkclient, fkclientset := FakeNew()
-	fkclient.Namespace = "default"
-	fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, kruntime.Object, error) {
-		if "a-selector=a-value" != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
-			return true, nil, errors.New("not found")
-		}
-		return true, nil, nil
-	})
-
-	selectors := map[string]string{
-		"a-selector": "a-value",
-	}
-	err := fkclient.Delete(selectors, false)
-	if err != nil {
-		t.Errorf("Expected no error, got %s", err)
 	}
 }

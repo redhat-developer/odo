@@ -207,34 +207,6 @@ func (mr *MockClientInterfaceMockRecorder) CreateTLSSecret(tlsCertificate, tlsPr
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTLSSecret", reflect.TypeOf((*MockClientInterface)(nil).CreateTLSSecret), tlsCertificate, tlsPrivKey, objectMeta)
 }
 
-// Delete mocks base method.
-func (m *MockClientInterface) Delete(labels map[string]string, wait bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", labels, wait)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockClientInterfaceMockRecorder) Delete(labels, wait interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClientInterface)(nil).Delete), labels, wait)
-}
-
-// DeleteDeployment mocks base method.
-func (m *MockClientInterface) DeleteDeployment(labels map[string]string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDeployment", labels)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteDeployment indicates an expected call of DeleteDeployment.
-func (mr *MockClientInterfaceMockRecorder) DeleteDeployment(labels interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDeployment", reflect.TypeOf((*MockClientInterface)(nil).DeleteDeployment), labels)
-}
-
 // DeleteDynamicResource mocks base method.
 func (m *MockClientInterface) DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error {
 	m.ctrl.T.Helper()
@@ -537,21 +509,6 @@ func (m *MockClientInterface) GetDeploymentFromSelector(selector string) ([]v10.
 func (mr *MockClientInterfaceMockRecorder) GetDeploymentFromSelector(selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentFromSelector), selector)
-}
-
-// GetDeploymentLabelValues mocks base method.
-func (m *MockClientInterface) GetDeploymentLabelValues(label, selector string) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeploymentLabelValues", label, selector)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDeploymentLabelValues indicates an expected call of GetDeploymentLabelValues.
-func (mr *MockClientInterfaceMockRecorder) GetDeploymentLabelValues(label, selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentLabelValues", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentLabelValues), label, selector)
 }
 
 // GetDynamicClient mocks base method.
@@ -927,20 +884,6 @@ func (mr *MockClientInterfaceMockRecorder) IsServiceBindingSupported() *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsServiceBindingSupported", reflect.TypeOf((*MockClientInterface)(nil).IsServiceBindingSupported))
 }
 
-// LinkSecret mocks base method.
-func (m *MockClientInterface) LinkSecret(secretName, componentName, applicationName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LinkSecret", secretName, componentName, applicationName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LinkSecret indicates an expected call of LinkSecret.
-func (mr *MockClientInterfaceMockRecorder) LinkSecret(secretName, componentName, applicationName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkSecret", reflect.TypeOf((*MockClientInterface)(nil).LinkSecret), secretName, componentName, applicationName)
-}
-
 // ListClusterServiceVersions mocks base method.
 func (m *MockClientInterface) ListClusterServiceVersions() (*v1alpha1.ClusterServiceVersionList, error) {
 	m.ctrl.T.Helper()
@@ -954,21 +897,6 @@ func (m *MockClientInterface) ListClusterServiceVersions() (*v1alpha1.ClusterSer
 func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
-}
-
-// ListDeployments mocks base method.
-func (m *MockClientInterface) ListDeployments(selector string) (*v10.DeploymentList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDeployments", selector)
-	ret0, _ := ret[0].(*v10.DeploymentList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListDeployments indicates an expected call of ListDeployments.
-func (mr *MockClientInterfaceMockRecorder) ListDeployments(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDeployments", reflect.TypeOf((*MockClientInterface)(nil).ListDeployments), selector)
 }
 
 // ListDynamicResources mocks base method.
@@ -1141,20 +1069,6 @@ func (mr *MockClientInterfaceMockRecorder) TryWithBlockOwnerDeletion(ownerRefere
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryWithBlockOwnerDeletion", reflect.TypeOf((*MockClientInterface)(nil).TryWithBlockOwnerDeletion), ownerReference, exec)
 }
 
-// UnlinkSecret mocks base method.
-func (m *MockClientInterface) UnlinkSecret(secretName, componentName, applicationName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UnlinkSecret", secretName, componentName, applicationName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UnlinkSecret indicates an expected call of UnlinkSecret.
-func (mr *MockClientInterfaceMockRecorder) UnlinkSecret(secretName, componentName, applicationName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkSecret", reflect.TypeOf((*MockClientInterface)(nil).UnlinkSecret), secretName, componentName, applicationName)
-}
-
 // UpdateDeployment mocks base method.
 func (m *MockClientInterface) UpdateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
 	m.ctrl.T.Helper()
@@ -1275,20 +1189,6 @@ func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Sec
 func (mr *MockClientInterfaceMockRecorder) WaitAndGetSecret(name, namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetSecret", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetSecret), name, namespace)
-}
-
-// WaitForComponentDeletion mocks base method.
-func (m *MockClientInterface) WaitForComponentDeletion(selector string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForComponentDeletion", selector)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WaitForComponentDeletion indicates an expected call of WaitForComponentDeletion.
-func (mr *MockClientInterfaceMockRecorder) WaitForComponentDeletion(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForComponentDeletion", reflect.TypeOf((*MockClientInterface)(nil).WaitForComponentDeletion), selector)
 }
 
 // WaitForDeploymentRollout mocks base method.

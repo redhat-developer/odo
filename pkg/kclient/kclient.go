@@ -1,20 +1,13 @@
 package kclient
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/blang/semver"
 
-	"github.com/redhat-developer/odo/pkg/util"
-
-	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -40,8 +33,6 @@ Please ensure you have an active kubernetes context to your cluster.
 Consult your Kubernetes distribution's documentation for more details.
 Error: %w
 `
-	waitForComponentDeletionTimeout = 120 * time.Second
-
 	defaultQPS   = 200
 	defaultBurst = 200
 )
@@ -179,79 +170,6 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	}
 
 	return client, nil
-}
-
-// Delete takes labels as a input and based on it, deletes respective resource
-func (c *Client) Delete(labels map[string]string, wait bool) error {
-
-	// convert labels to selector
-	selector := util.ConvertLabelsToSelector(labels)
-	klog.V(3).Infof("Selectors used for deletion: %s", selector)
-
-	var errorList []string
-	var deletionPolicy = metav1.DeletePropagationBackground
-
-	// for --wait flag, it deletes component dependents first and then delete component
-	if wait {
-		deletionPolicy = metav1.DeletePropagationForeground
-	}
-	// Delete Deployments
-	klog.V(3).Info("Deleting Deployments")
-	err := c.appsClient.Deployments(c.Namespace).DeleteCollection(context.TODO(), metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		errorList = append(errorList, "unable to delete deployments")
-	}
-
-	// for --wait it waits for component to be deleted
-	// TODO: Need to modify for `odo app delete`, currently wait flag is added only in `odo component delete`
-	//       so only one component gets passed in selector
-	if wait {
-		err = c.WaitForComponentDeletion(selector)
-		if err != nil {
-			errorList = append(errorList, err.Error())
-		}
-	}
-
-	// Error string
-	errString := strings.Join(errorList, ",")
-	if len(errString) != 0 {
-		return errors.New(errString)
-	}
-	return nil
-
-}
-
-// WaitForComponentDeletion waits for component to be deleted
-func (c *Client) WaitForComponentDeletion(selector string) error {
-
-	klog.V(3).Infof("Waiting for component to get deleted")
-
-	watcher, err := c.appsClient.Deployments(c.Namespace).Watch(context.TODO(), metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return err
-	}
-	defer watcher.Stop()
-	eventCh := watcher.ResultChan()
-
-	for {
-		select {
-		case event, ok := <-eventCh:
-			_, typeOk := event.Object.(*appsv1.Deployment)
-			if !ok || !typeOk {
-				return errors.New("unable to watch deployments")
-			}
-			if event.Type == watch.Deleted {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted")
-				return nil
-			} else if event.Type == watch.Error {
-				klog.V(3).Infof("WaitForComponentDeletion, Event Received:Deleted ")
-				return errors.New("unable to watch deployments")
-			}
-		case <-time.After(waitForComponentDeletionTimeout):
-			klog.V(3).Infof("WaitForComponentDeletion, Timeout")
-			return errors.New("timed out waiting for component to get deleted")
-		}
-	}
 }
 
 // GeneratePortForwardReq builds a port forward request

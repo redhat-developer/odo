@@ -7,8 +7,8 @@ import (
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
-	"github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -263,12 +263,12 @@ func getUnstructured(name, kind, apiVersion, managed, componentType, namespace s
 	u.SetKind(kind)
 	u.SetAPIVersion(apiVersion)
 	u.SetNamespace(namespace)
-	u.SetLabels(map[string]string{
-		labels.KubernetesInstanceLabel:  name,
-		labels.KubernetesManagedByLabel: managed,
-	})
-	u.SetAnnotations(map[string]string{
-		labels.OdoProjectTypeAnnotation: componentType,
-	})
+	u.SetLabels(labels.Builder().
+		WithComponentName(name).
+		WithManager(managed).
+		Labels())
+	u.SetAnnotations(labels.Builder().
+		WithProjectType(componentType).
+		Labels())
 	return
 }

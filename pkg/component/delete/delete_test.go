@@ -16,8 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -498,7 +498,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := componentlabels.GetSelector(componentName, "app")
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					client.EXPECT().GetOnePodFromSelector(selector).Return(&corev1.Pod{}, &kclient.PodNotFoundError{Selector: selector})
 					return client
 				},
@@ -515,7 +515,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := componentlabels.GetSelector(componentName, "app")
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					client.EXPECT().GetOnePodFromSelector(selector).Return(nil, errors.New("some un-ignorable error"))
 					return client
 				},
@@ -532,7 +532,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := componentlabels.GetSelector(componentName, "app")
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					client.EXPECT().GetOnePodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && echo \"Hello World!\""}
@@ -553,7 +553,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := componentlabels.GetSelector(componentName, "app")
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					pod := odoTestingUtil.CreateFakePod(componentName, "runtime")
 					pod.Status.Phase = corev1.PodFailed
 					client.EXPECT().GetOnePodFromSelector(selector).Return(pod, nil)
@@ -572,7 +572,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := componentlabels.GetSelector(componentName, "app")
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					client.EXPECT().GetOnePodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && echo \"Hello World!\""}

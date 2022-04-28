@@ -7,7 +7,8 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	storagelabels "github.com/redhat-developer/odo/pkg/storage/labels"
+	"github.com/redhat-developer/odo/pkg/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -38,15 +39,8 @@ func (k kubernetesClient) Create(storage Storage) error {
 		return err
 	}
 
-	labels := storagelabels.GetLabels(storage.Name, k.componentName, k.appName, true)
-
-	labels["component"] = k.componentName
-	labels[storagelabels.DevfileStorageLabel] = storage.Name
-
-	if strings.Contains(storage.Name, OdoSourceVolume) {
-		// Add label for source pvc
-		labels[storagelabels.SourcePVCLabel] = storage.Name
-	}
+	labels := odolabels.GetLabels(k.componentName, k.appName, odolabels.ComponentDevMode)
+	odolabels.AddStorageInfo(labels, storage.Name, strings.Contains(storage.Name, OdoSourceVolume))
 
 	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetCurrentNamespace(), labels, nil)
 
@@ -141,11 +135,10 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 		return StorageList{}, nil
 	}
 
-	selector := fmt.Sprintf("%v=%s,%s!=odo-projects", "component", k.componentName, storagelabels.SourcePVCLabel)
-
+	selector := labels.SelectorBuilder().WithComponent(k.componentName).WithoutSourcePVC(OdoSourceVolume).Selector()
 	pvcs, err := k.client.ListPVCs(selector)
 	if err != nil {
-		return StorageList{}, fmt.Errorf("unable to get PVC using selector %v: %w", storagelabels.StorageLabel, err)
+		return StorageList{}, fmt.Errorf("unable to get PVC using selector %q: %w", selector, err)
 	}
 
 	// to track volume mounts used by a PVC
@@ -160,7 +153,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 
 				found = true
 				size := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-				storage = append(storage, NewStorageWithContainer(pvc.Labels[storagelabels.DevfileStorageLabel], size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName, nil))
+				storage = append(storage, NewStorageWithContainer(odolabels.GetDevfileStorageName(pvc.Labels), size.String(), volumeMount.Spec.Path, volumeMount.Spec.ContainerName, nil))
 			}
 		}
 		if !found {

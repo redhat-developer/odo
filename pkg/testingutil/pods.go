@@ -1,7 +1,7 @@
 package testingutil
 
 import (
-	componentlabels "github.com/redhat-developer/odo/pkg/component/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -11,7 +11,7 @@ func CreateFakePod(componentName, podName string) *corev1.Pod {
 	fakePod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   podName,
-			Labels: componentlabels.GetLabels(componentName, "app", false),
+			Labels: odolabels.GetLabels(componentName, "app", odolabels.ComponentDevMode),
 		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
