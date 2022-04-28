@@ -37,7 +37,7 @@ function Run-Test {
     $PATH = [Environment]::GetEnvironmentVariable("PATH")
     $GOBIN="$(Get-Location)\bin"
     [Environment]::SetEnvironmentVariable("GOBIN", "$GOBIN")
-    [Environment]::SetEnvironmentVariable("PATH", "$PATH;$GOBIN")
+    [Environment]::SetEnvironmentVariable("PATH", "$GOBIN;$PATH")
 
     # Set kubeconfig to current dir. This ensures no clashes with other test runs
     [Environment]::SetEnvironmentVariable("KUBECONFIG","$(Get-Location)\config")
