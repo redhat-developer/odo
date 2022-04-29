@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -167,6 +168,12 @@ func (o DevSession) WaitSync() ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 	return outContents, errContents, nil
+}
+
+func (o DevSession) CheckNotSynced(timeout time.Duration) {
+	Consistently(func() string {
+		return string(o.session.Out.Contents())
+	}, timeout).ShouldNot(ContainSubstring("Pushing files..."))
 }
 
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started

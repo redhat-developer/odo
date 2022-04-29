@@ -624,27 +624,13 @@ var _ = Describe("odo dev command tests", func() {
 			checkSyncedFiles(podName)
 		})
 
-		waitTerminates := func(timeout time.Duration) bool {
-			done := make(chan bool)
-			go func() {
-				_, _, _ = session.WaitSync()
-				done <- true
-			}()
-			select {
-			case <-time.Tick(timeout):
-				return false
-			case <-done:
-				return true
-			}
-		}
-
 		When("modifying /testdir/baz.txt file", func() {
 			BeforeEach(func() {
 				helper.ReplaceString(newFilePath3, "hello world", "hello world!!!")
 			})
 
 			It("should synchronize it only", func() {
-				Expect(waitTerminates(20 * time.Second)).To(BeTrue())
+				_, _, _ = session.WaitSync()
 				podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 				checkSyncedFiles(podName)
 			})
@@ -656,7 +642,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should not synchronize it", func() {
-				Expect(waitTerminates(20 * time.Second)).To(BeFalse())
+				session.CheckNotSynced(10 * time.Second)
 			})
 		})
 
@@ -666,7 +652,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should not synchronize it", func() {
-				Expect(waitTerminates(20 * time.Second)).To(BeFalse())
+				session.CheckNotSynced(10 * time.Second)
 			})
 		})
 	})
