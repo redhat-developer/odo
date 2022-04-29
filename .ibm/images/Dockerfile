@@ -1,4 +1,4 @@
-FROM golang:1.16
+FROM golang:1.17
 
 RUN curl -fsSL https://clis.cloud.ibm.com/install/linux | sh && \
     ibmcloud plugin install -f cloud-object-storage && \
