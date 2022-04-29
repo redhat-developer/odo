@@ -19,6 +19,10 @@
   --ifm-color-primary-lightest: #7ca4ed;
 }
 
+.menu__link {
+  font-size:14px !important;
+}
+
 .docusaurus-highlight-code-line {
   background-color: rgba(0, 0, 0, 0.1);
   display: block;
