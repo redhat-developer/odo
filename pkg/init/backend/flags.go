@@ -3,6 +3,7 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -45,8 +46,16 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 		return errors.New("only one of --devfile or --devfile-path parameter should be specified")
 	}
 
-	if flags[FLAG_DEVFILE_REGISTRY] != "" && !o.preferenceClient.RegistryNameExists(flags[FLAG_DEVFILE_REGISTRY]) {
-		return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo preference registry` command to configure devfile registries", flags[FLAG_DEVFILE_REGISTRY])
+	if flags[FLAG_DEVFILE_REGISTRY] != "" {
+		if !o.preferenceClient.RegistryNameExists(flags[FLAG_DEVFILE_REGISTRY]) {
+			return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo preference registry` command to configure devfile registries", flags[FLAG_DEVFILE_REGISTRY])
+		}
+		registries := o.preferenceClient.RegistryList()
+		for _, r := range *registries {
+			if r.Name == flags[FLAG_DEVFILE_REGISTRY] && util.IsGithubBasedRegistry(r.URL) {
+				return util.ErrGithubRegistryNotSupported
+			}
+		}
 	}
 
 	if flags[FLAG_DEVFILE_PATH] != "" && flags[FLAG_DEVFILE_REGISTRY] != "" {
