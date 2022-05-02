@@ -95,7 +95,7 @@ func TestIsGitBasedRegistry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := IsGitBasedRegistry(tt.registryURL); actual != tt.want {
+			if actual := IsGithubBasedRegistry(tt.registryURL); actual != tt.want {
 				t.Errorf("failed checking if registry is git based, got %t want %t", actual, tt.want)
 			}
 		})

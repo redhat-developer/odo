@@ -73,7 +73,7 @@ func (o *AddOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-	if util2.IsGitBasedRegistry(o.registryURL) {
+	if util2.IsGithubBasedRegistry(o.registryURL) {
 		return util2.ErrGithubRegistryNotSupported
 	}
 	return nil

@@ -30,6 +30,6 @@ func IsSecure(prefClient preference.Client, registryName string) bool {
 	return isSecure
 }
 
-func IsGitBasedRegistry(url string) bool {
+func IsGithubBasedRegistry(url string) bool {
 	return strings.Contains(url, "github.com") || strings.Contains(url, "raw.githubusercontent.com")
 }

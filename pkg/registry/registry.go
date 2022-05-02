@@ -135,7 +135,7 @@ const indexPath = "/devfiles/index.json"
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
 func getRegistryStacks(preferenceClient preference.Client, registry Registry) ([]DevfileStack, error) {
-	if !registryUtil.IsGitBasedRegistry(registry.URL) {
+	if !registryUtil.IsGithubBasedRegistry(registry.URL) {
 		// OCI-based registry
 		devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
 		if err != nil {
