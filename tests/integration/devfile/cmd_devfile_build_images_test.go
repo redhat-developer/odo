@@ -79,6 +79,9 @@ var _ = Describe("odo devfile build-images command tests", func() {
 
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes",
+				"devfile-outerloop-project_source-in-docker-build-context"),
+				filepath.Join(commonVar.Context, "kubernetes", "devfile-outerloop-project_source-in-docker-build-context"))
 			helper.Cmd("odo", "init", "--name", "aname",
 				"--devfile-path",
 				helper.GetExamplePath("source", "devfiles", "nodejs",
@@ -121,6 +124,10 @@ var _ = Describe("odo devfile build-images command tests", func() {
 
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes",
+				"issue-5600-devfile-with-image-component-and-no-buildContext"),
+				filepath.Join(commonVar.Context, "kubernetes",
+					"issue-5600-devfile-with-image-component-and-no-buildContext"))
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs",
 					"issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),

@@ -1,0 +1,18 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: devfile-nodejs-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devfile-nodejs-deploy
+  template:
+    metadata:
+      labels:
+        app: devfile-nodejs-deploy
+    spec:
+      containers:
+        - name: main
+          image: "{{CONTAINER_IMAGE}}"
+          resources: {}

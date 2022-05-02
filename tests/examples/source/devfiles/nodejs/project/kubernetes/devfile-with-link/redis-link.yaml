@@ -1,0 +1,20 @@
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  creationTimestamp: null
+  name: redis-link
+spec:
+  application:
+    group: apps
+    name: api-app
+    resource: deployments
+    version: v1
+  bindAsFiles: true
+  detectBindingResources: true
+  services:
+    - group: redis.redis.opstreelabs.in
+      kind: Redis
+      name: myredis
+      version: v1beta1
+status:
+  secret: ""

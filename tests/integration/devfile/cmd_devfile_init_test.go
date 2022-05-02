@@ -268,6 +268,8 @@ var _ = Describe("odo devfile init command tests", func() {
 			var out string
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), devfilePath)
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes", "devfile-deploy"),
+					filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy"))
 				out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
 			})
 			It("should show information about both `odo dev`, and `odo deploy`", func() {

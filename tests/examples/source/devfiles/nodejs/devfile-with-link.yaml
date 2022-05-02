@@ -42,71 +42,10 @@ components:
     sourceMapping: /project
   name: runtime
 - kubernetes:
-    inlined: |
-      apiVersion: redis.redis.opstreelabs.in/v1beta1
-      kind: Redis
-      metadata:
-        name: myredis
-        annotations:
-          service.binding/name: path={.metadata.name}
-      spec:
-        redisExporter:
-          enabled: true
-          image: 'quay.io/opstree/redis-exporter:1.0'
-          imagePullPolicy: Always
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 100m
-              memory: 128Mi
-        kubernetesConfig:
-          image: 'quay.io/opstree/redis:v6.2'
-          imagePullPolicy: IfNotPresent
-          resources:
-            requests:
-              cpu: 101m
-              memory: 128Mi
-            limits:
-              cpu: 101m
-              memory: 128Mi
-          redisSecret:
-            name: redis-secret
-            key: password
-          serviceType: LoadBalancer
-        redisConfig: {}
-        storage:
-          volumeClaimTemplate:
-            spec:
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 1Gi
+    uri: kubernetes/devfile-with-link/myredis.yaml
   name: myredis
 - kubernetes:
-    inlined: |
-      apiVersion: binding.operators.coreos.com/v1alpha1
-      kind: ServiceBinding
-      metadata:
-        creationTimestamp: null
-        name: redis-link
-      spec:
-        application:
-          group: apps
-          name: api-app
-          resource: deployments
-          version: v1
-        bindAsFiles: true
-        detectBindingResources: true
-        services:
-        - group: redis.redis.opstreelabs.in
-          kind: Redis
-          name: myredis
-          version: v1beta1
-      status:
-        secret: ""
+    uri: kubernetes/devfile-with-link/redis-link.yaml
   name: redis-link
 metadata:
   description: Stack with Node.js 14
