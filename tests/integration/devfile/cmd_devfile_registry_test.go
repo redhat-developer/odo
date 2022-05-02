@@ -83,7 +83,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		When("adding git based registries", func() {
 			It("should fail with error", func() {
 				err = helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
-				helper.MatchAllInOutput(err, []string{"git", "no", "supported"})
+				helper.MatchAllInOutput(err, []string{"github", "no", "supported", "https://github.com/devfile/registry-support"})
 			})
 		})
 	})

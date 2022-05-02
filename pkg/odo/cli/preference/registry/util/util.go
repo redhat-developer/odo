@@ -13,7 +13,7 @@ const (
 	RegistryUser = "default"
 )
 
-var ErrGithubRegistryNotSupported = errors.New("github based registries are no longer supported")
+var ErrGithubRegistryNotSupported = errors.New("github based registries are no longer supported, use https://github.com/devfile/registry-support instead")
 
 // IsSecure checks if the registry is secure
 func IsSecure(prefClient preference.Client, registryName string) bool {
