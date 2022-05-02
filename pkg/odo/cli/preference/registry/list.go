@@ -15,8 +15,6 @@ import (
 
 	// Third-party packages
 
-	// odo packages
-	"github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -38,8 +36,6 @@ var (
 type ListOptions struct {
 	// Clients
 	clientset *clientset.Clientset
-
-	printGitRegistryDeprecationWarning bool
 }
 
 // NewListOptions creates a new ListOptions instance
@@ -74,9 +70,6 @@ func (o *ListOptions) Run(ctx context.Context) (err error) {
 	fmt.Fprintln(w, "NAME", "\t", "URL", "\t", "SECURE")
 	o.printRegistryList(w, registryList)
 	w.Flush()
-	if o.printGitRegistryDeprecationWarning {
-		util.PrintGitRegistryDeprecationWarning()
-	}
 	return nil
 }
 
@@ -94,9 +87,6 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 			secure = "Yes"
 		}
 		fmt.Fprintln(w, registry.Name, "\t", registry.URL, "\t", secure)
-		if util.IsGitBasedRegistry(registry.URL) {
-			o.printGitRegistryDeprecationWarning = true
-		}
 	}
 }
 

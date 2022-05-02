@@ -72,7 +72,7 @@ func (o *UpdateOptions) Validate() (err error) {
 		return err
 	}
 	if registryUtil.IsGitBasedRegistry(o.registryURL) {
-		registryUtil.PrintGitRegistryDeprecationWarning()
+		return registryUtil.ErrGithubRegistryNotSupported
 	}
 	return nil
 }

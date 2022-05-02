@@ -74,7 +74,7 @@ func (o *AddOptions) Validate() (err error) {
 		return err
 	}
 	if util2.IsGitBasedRegistry(o.registryURL) {
-		util2.PrintGitRegistryDeprecationWarning()
+		return util2.ErrGithubRegistryNotSupported
 	}
 	return nil
 }
