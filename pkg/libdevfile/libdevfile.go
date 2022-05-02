@@ -2,11 +2,17 @@ package libdevfile
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/api/v2/pkg/validation/variables"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 type Handler interface {
@@ -192,4 +198,84 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 		}
 	}
 	return endpoints, nil
+}
+
+// GetComponentResourceManifestContentWithVariablesResolved returns the full content of either a Kubernetes or an Openshift
+// Devfile component, either Inlined or referenced via a URI.
+// No matter how the component is defined, it returns
+// the content with all variables substituted using the global variables map defined in `devfileObj`.
+// An error is returned if the content references an invalid variable key not defined in the Devfile object.
+func GetComponentResourceManifestContentWithVariablesResolved(devfileObj parser.DevfileObj, devfileCmp interface{},
+	context string, fs devfilefs.Filesystem) (string, error) {
+
+	var content, uri string
+	switch devfileCmp := devfileCmp.(type) {
+	case v1alpha2.Component:
+		componentType, err := common.GetComponentType(devfileCmp)
+		if err != nil {
+			return "", err
+		}
+		switch componentType {
+		case v1alpha2.KubernetesComponentType:
+			return GetComponentResourceManifestContentWithVariablesResolved(devfileObj, devfileCmp.Kubernetes, context, fs)
+
+		case v1alpha2.OpenshiftComponentType:
+			return GetComponentResourceManifestContentWithVariablesResolved(devfileObj, devfileCmp.Openshift, context, fs)
+
+		default:
+			return "", fmt.Errorf("unexpected component type %s", componentType)
+		}
+	case *v1alpha2.KubernetesComponent:
+		content = devfileCmp.Inlined
+		if devfileCmp.Uri != "" {
+			uri = devfileCmp.Uri
+		}
+
+	case *v1alpha2.OpenshiftComponent:
+		content = devfileCmp.Inlined
+		if devfileCmp.Uri != "" {
+			uri = devfileCmp.Uri
+		}
+	default:
+		return "", fmt.Errorf("unexpected type for %v", devfileCmp)
+	}
+
+	if uri == "" {
+		return substituteVariables(devfileObj.Data.GetDevfileWorkspaceSpec().Variables, content)
+	}
+
+	return loadResourceManifestFromUriAndResolveVariables(devfileObj, uri, context, fs)
+}
+
+func loadResourceManifestFromUriAndResolveVariables(devfileObj parser.DevfileObj, uri string,
+	context string, fs devfilefs.Filesystem) (string, error) {
+	content, err := util.GetDataFromURI(uri, context, fs)
+	if err != nil {
+		return content, err
+	}
+	return substituteVariables(devfileObj.Data.GetDevfileWorkspaceSpec().Variables, content)
+}
+
+// substituteVariables validates the string for a global variable in the given `devfileObj` and replaces it.
+// An error is returned if the string references an invalid variable key not defined in the Devfile object.
+//
+//Inspired from variables.validateAndReplaceDataWithVariable, which is unfortunately not exported
+func substituteVariables(devfileVars map[string]string, val string) (string, error) {
+	// example of the regex: {{variable}} / {{ variable }}
+	matches := regexp.MustCompile(`\{\{\s*(.*?)\s*\}\}`).FindAllStringSubmatch(val, -1)
+	var invalidKeys []string
+	for _, match := range matches {
+		varValue, ok := devfileVars[match[1]]
+		if !ok {
+			invalidKeys = append(invalidKeys, match[1])
+		} else {
+			val = strings.Replace(val, match[0], varValue, -1)
+		}
+	}
+
+	if len(invalidKeys) > 0 {
+		return val, &variables.InvalidKeysError{Keys: invalidKeys}
+	}
+
+	return val, nil
 }

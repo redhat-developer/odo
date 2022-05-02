@@ -59,7 +59,7 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 
 	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := service.ValidateResourceExist(o.kubeClient, kubernetes, o.path)
+	_, err := service.ValidateResourceExist(o.kubeClient, o.devfileObj, kubernetes, o.path)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
 
 	// Get the Kubernetes component
-	u, err := libdevfile.GetK8sComponentAsUnstructured(kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(o.devfileObj, kubernetes.Kubernetes, o.path, devfilefs.DefaultFs{})
 	if err != nil {
 		return err
 	}
