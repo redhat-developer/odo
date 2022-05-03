@@ -359,6 +359,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 }
 
 func (o *WatchClient) Cleanup(devfileObj parser.DevfileObj, out io.Writer) error {
+	fmt.Fprintln(out, "Cleaning resources, please wait")
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)

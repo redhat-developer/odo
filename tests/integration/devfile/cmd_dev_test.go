@@ -167,6 +167,22 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		When("a state file is not writable", func() {
+			BeforeEach(func() {
+				stateFile := filepath.Join(commonVar.Context, ".odo", "state.json")
+				helper.MakeDir(filepath.Dir(stateFile))
+				Expect(helper.CreateFileWithContent(stateFile, "")).ToNot(HaveOccurred())
+				Expect(os.Chmod(stateFile, 0400)).ToNot(HaveOccurred())
+			})
+			It("should fail running odo dev", func() {
+				res := helper.Cmd("odo", "dev", "--random-ports").ShouldFail()
+				stdout := res.Out()
+				stderr := res.Err()
+				Expect(stdout).To(ContainSubstring("Cleaning"))
+				Expect(stderr).To(ContainSubstring("unable to save forwarded ports to state file"))
+			})
+		})
+
 		When("odo dev is executed", func() {
 
 			BeforeEach(func() {
