@@ -75,7 +75,7 @@ func NewComponentsWithSameNameError(name string) ComponentsWithSameNameError {
 }
 
 func (e ComponentsWithSameNameError) Error() string {
-	return fmt.Sprintf("more than one component with the same name (%q), should not happen", e.name)
+	return fmt.Sprintf("more than one component with the same name %q, should not happen", e.name)
 }
 
 // ComponentTypeNotFoundError is returned when no component with the specified type has been found in Devfile
