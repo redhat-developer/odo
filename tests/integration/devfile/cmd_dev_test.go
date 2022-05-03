@@ -172,7 +172,7 @@ var _ = Describe("odo dev command tests", func() {
 				stateFile := filepath.Join(commonVar.Context, ".odo", "devstate.json")
 				helper.MakeDir(filepath.Dir(stateFile))
 				Expect(helper.CreateFileWithContent(stateFile, "")).ToNot(HaveOccurred())
-				Expect(os.Chmod(stateFile, 0000)).ToNot(HaveOccurred())
+				Expect(os.Chmod(stateFile, 0400)).ToNot(HaveOccurred())
 			})
 			It("should fail running odo dev", func() {
 				res := helper.Cmd("odo", "dev", "--random-ports").ShouldFail()
