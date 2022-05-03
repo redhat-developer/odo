@@ -62,12 +62,6 @@ func TestState_SetForwardedPorts(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if content.Timestamp != 13000 {
-					return fmt.Errorf("timestamp is %d, should be 13000", content.Timestamp)
-				}
-				if content.PID != 100 {
-					return fmt.Errorf("PID is %d, should be 100", content.PID)
-				}
 				expected := []api.ForwardedPort{forwardedPort1}
 				if !reflect.DeepEqual(content.ForwardedPorts, expected) {
 					return fmt.Errorf("Forwarded ports is %+v, should be %+v", content.ForwardedPorts, expected)
@@ -80,9 +74,7 @@ func TestState_SetForwardedPorts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := tt.fields.fs()
 			o := State{
-				fs:                  fs,
-				getSecondsFromEpoch: tt.fields.getSecondsFromEpoch,
-				getpid:              tt.fields.getpid,
+				fs: fs,
 			}
 			if err := o.SetForwardedPorts(tt.args.fwPorts); (err != nil) != tt.wantErr {
 				t.Errorf("State.SetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
@@ -130,12 +122,6 @@ func TestState_SaveExit(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if content.Timestamp != 13000 {
-					return fmt.Errorf("timestamp is %d, should be 13000", content.Timestamp)
-				}
-				if content.PID != 0 {
-					return fmt.Errorf("PID is %d, should be 0", content.PID)
-				}
 				if len(content.ForwardedPorts) != 0 {
 					return fmt.Errorf("Forwarded ports is %+v, should be empty", content.ForwardedPorts)
 				}
@@ -147,9 +133,7 @@ func TestState_SaveExit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := tt.fields.fs()
 			o := State{
-				fs:                  fs,
-				getSecondsFromEpoch: tt.fields.getSecondsFromEpoch,
-				getpid:              tt.fields.getpid,
+				fs: fs,
 			}
 			if err := o.SaveExit(); (err != nil) != tt.wantErr {
 				t.Errorf("State.SaveExit() error = %v, wantErr %v", err, tt.wantErr)

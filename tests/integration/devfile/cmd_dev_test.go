@@ -169,10 +169,10 @@ var _ = Describe("odo dev command tests", func() {
 
 		When("a state file is not writable", func() {
 			BeforeEach(func() {
-				stateFile := filepath.Join(commonVar.Context, ".odo", "state.json")
+				stateFile := filepath.Join(commonVar.Context, ".odo", "devstate.json")
 				helper.MakeDir(filepath.Dir(stateFile))
 				Expect(helper.CreateFileWithContent(stateFile, "")).ToNot(HaveOccurred())
-				Expect(os.Chmod(stateFile, 0400)).ToNot(HaveOccurred())
+				Expect(os.Chmod(stateFile, 0000)).ToNot(HaveOccurred())
 			})
 			It("should fail running odo dev", func() {
 				res := helper.Cmd("odo", "dev", "--random-ports").ShouldFail()
@@ -1417,13 +1417,13 @@ var _ = Describe("odo dev command tests", func() {
 	})
 
 	When("a component with multiple endpoints is run", func() {
-		stateFile := ".odo/state.json"
+		stateFile := ".odo/devstate.json"
 		var devSession helper.DevSession
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
 			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
-			Expect(helper.VerifyFileExists(".odo/state.json")).To(BeFalse())
+			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 			var err error
 			devSession, _, _, _, err = helper.StartDevMode()
 			Expect(err).ToNot(HaveOccurred())

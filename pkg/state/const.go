@@ -1,3 +1,3 @@
 package state
 
-const _filepath = "./.odo/state.json"
+const _filepath = "./.odo/devstate.json"
