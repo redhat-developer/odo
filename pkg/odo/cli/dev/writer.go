@@ -65,7 +65,7 @@ func (o *PortWriter) Wait() {
 	<-o.end
 }
 
-func (o *PortWriter) GetForwaredPorts() []api.ForwardedPort {
+func (o *PortWriter) GetForwardedPorts() []api.ForwardedPort {
 	return o.fwPorts
 }
 

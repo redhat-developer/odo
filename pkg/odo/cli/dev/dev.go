@@ -241,7 +241,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	}()
 
 	portsBuf.Wait()
-	err = o.clientset.StateClient.SetForwardedPorts(portsBuf.GetForwaredPorts())
+	err = o.clientset.StateClient.SetForwardedPorts(portsBuf.GetForwardedPorts())
 	if err != nil {
 		return fmt.Errorf("unable to save forwarded ports to state file: %v", err)
 	}
