@@ -258,23 +258,25 @@ func CommonAfterEach(commonVar CommonVar) {
 }
 
 // JsonPathContentIs expects that the content of the path to equal value
-func JsonPathContentIs(json string, path string, value string) bool {
+func JsonPathContentIs(json string, path string, value string) {
 	result := gjson.Get(json, path)
 	Expect(result.String()).To(Equal(value), fmt.Sprintf("content of path %q should be %q but is %q", path, value, result.String()))
-	return true
 }
 
 // JsonPathContentContain expects that the content of the path to contain value
-func JsonPathContentContain(json string, path string, value string) bool {
+func JsonPathContentContain(json string, path string, value string) {
 	result := gjson.Get(json, path)
 	Expect(result.String()).To(ContainSubstring(value), fmt.Sprintf("content of path %q should contain %q but is %q", path, value, result.String()))
-	return true
 }
 
-func JsonPathContentMatch(json string, path string, regexp string) bool {
+func JsonPathContentIsValidUserPort(json string, path string) {
 	result := gjson.Get(json, path)
-	Expect(result.String()).To(MatchRegexp(regexp), fmt.Sprintf("content of path %q should match %q but is %q", path, regexp, result.String()))
-	return true
+	intVal, err := strconv.Atoi(result.String())
+	Expect(err).ToNot(HaveOccurred())
+	Expect(intVal).To(SatisfyAll(
+		BeNumerically(">=", 1024),
+		BeNumerically("<=", 65535),
+	))
 }
 
 // SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters

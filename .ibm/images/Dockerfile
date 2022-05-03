@@ -14,9 +14,7 @@ RUN curl -fsSL https://clis.cloud.ibm.com/install/linux | sh && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and associated home directory
-RUN useradd -u 2001 tester
-RUN mkdir /home/tester
-RUN chown tester:tester /home/tester
+RUN useradd -u 2001 --create-home tester
 # Change to non-root privilege
 USER tester
 
