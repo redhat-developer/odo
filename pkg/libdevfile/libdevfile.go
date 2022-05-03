@@ -200,12 +200,12 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 	return endpoints, nil
 }
 
-// GetComponentResourceManifestContentWithVariablesResolved returns the full content of either a Kubernetes or an Openshift
+// GetK8sManifestWithVariablesSubstituted returns the full content of either a Kubernetes or an Openshift
 // Devfile component, either Inlined or referenced via a URI.
 // No matter how the component is defined, it returns the content with all variables substituted
 // using the global variables map defined in `devfileObj`.
 // An error is returned if the content references an invalid variable key not defined in the Devfile object.
-func GetComponentResourceManifestContentWithVariablesResolved(devfileObj parser.DevfileObj, devfileCmpName string,
+func GetK8sManifestWithVariablesSubstituted(devfileObj parser.DevfileObj, devfileCmpName string,
 	context string, fs devfilefs.Filesystem) (string, error) {
 
 	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{FilterByName: devfileCmpName})

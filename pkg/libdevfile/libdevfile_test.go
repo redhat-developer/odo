@@ -439,7 +439,7 @@ func TestGetEndpointsFromDevfile(t *testing.T) {
 	}
 }
 
-func TestGetComponentResourceManifestContentWithVariablesResolved(t *testing.T) {
+func TestGetK8sManifestWithVariablesSubstituted(t *testing.T) {
 	fakeFs := devfileFileSystem.NewFakeFs()
 	cmpName := "my-cmp-1"
 	for _, tt := range []struct {
@@ -757,14 +757,14 @@ func TestGetComponentResourceManifestContentWithVariablesResolved(t *testing.T) 
 				return
 			}
 
-			got, err := GetComponentResourceManifestContentWithVariablesResolved(tt.devfileObjFunc(), cmpName, "", fakeFs)
+			got, err := GetK8sManifestWithVariablesSubstituted(tt.devfileObjFunc(), cmpName, "", fakeFs)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetComponentResourceManifestContentWithVariablesResolved() error = %v, wantErr %v",
+				t.Errorf("GetK8sManifestWithVariablesSubstituted() error = %v, wantErr %v",
 					err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("GetComponentResourceManifestContentWithVariablesResolved() got = %v, want %v",
+				t.Errorf("GetK8sManifestWithVariablesSubstituted() got = %v, want %v",
 					got, tt.want)
 			}
 		})

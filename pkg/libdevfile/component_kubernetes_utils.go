@@ -13,7 +13,7 @@ import (
 func GetK8sComponentAsUnstructured(devfileObj parser.DevfileObj, componentName string,
 	context string, fs devfilefs.Filesystem) (unstructured.Unstructured, error) {
 
-	strCRD, err := GetComponentResourceManifestContentWithVariablesResolved(devfileObj, componentName, context, fs)
+	strCRD, err := GetK8sManifestWithVariablesSubstituted(devfileObj, componentName, context, fs)
 	if err != nil {
 		return unstructured.Unstructured{}, err
 	}
