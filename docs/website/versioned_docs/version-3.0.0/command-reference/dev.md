@@ -236,8 +236,6 @@ at which the state has been last saved, and the currently forwarded ports.
 
 ```
 {
- "timestamp": 1651247240,
- "pid": 154474,
  "forwardedPorts": [
   {
    "containerName": "runtime",
