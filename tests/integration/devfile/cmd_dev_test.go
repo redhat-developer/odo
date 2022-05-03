@@ -1445,6 +1445,8 @@ var _ = Describe("odo dev command tests", func() {
 			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.localAddress", "127.0.0.1")
 			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerPort", "3000")
 			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
+			helper.JsonPathContentMatch(string(contentJSON), "forwardedPorts.0.localPort", "[0-9]+")
+			helper.JsonPathContentMatch(string(contentJSON), "forwardedPorts.1.localPort", "[0-9]+")
 		})
 
 		When("odo dev is stopped", func() {

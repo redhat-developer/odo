@@ -271,6 +271,12 @@ func JsonPathContentContain(json string, path string, value string) bool {
 	return true
 }
 
+func JsonPathContentMatch(json string, path string, regexp string) bool {
+	result := gjson.Get(json, path)
+	Expect(result.String()).To(MatchRegexp(regexp), fmt.Sprintf("content of path %q should match %q but is %q", path, regexp, result.String()))
+	return true
+}
+
 // SetProjectName sets projectNames based on the neame of the test file name (withouth path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
 func SetProjectName() string {
 	// Get current test filename and remove file path, file extension and replace undescores with hyphens
