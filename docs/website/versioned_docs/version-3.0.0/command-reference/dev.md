@@ -229,7 +229,7 @@ components:
 
 ### State file
 
-When the command `odo dev` is executed, the state of the command isa saved in the file `./.odo/state.json`. 
+When the command `odo dev` is executed, the state of the command is saved in the file `./.odo/state.json`. 
 
 This state file contains the PID of the `odo dev` running process (`0` if no command is running), the timestamp 
 at which the state has been last saved, and the currently forwarded ports.
