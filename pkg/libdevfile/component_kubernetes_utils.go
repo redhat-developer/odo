@@ -10,10 +10,10 @@ import (
 )
 
 // GetK8sComponentAsUnstructured parses the Inlined/URI K8s of the devfile K8s component
-func GetK8sComponentAsUnstructured(devfileObj parser.DevfileObj, component *v1alpha2.KubernetesComponent,
+func GetK8sComponentAsUnstructured(devfileObj parser.DevfileObj, componentName string,
 	context string, fs devfilefs.Filesystem) (unstructured.Unstructured, error) {
 
-	strCRD, err := GetComponentResourceManifestContentWithVariablesResolved(devfileObj, component, context, fs)
+	strCRD, err := GetComponentResourceManifestContentWithVariablesResolved(devfileObj, componentName, context, fs)
 	if err != nil {
 		return unstructured.Unstructured{}, err
 	}
@@ -37,7 +37,7 @@ func ListKubernetesComponents(devfileObj parser.DevfileObj, path string) (list [
 	var u unstructured.Unstructured
 	for _, kComponent := range components {
 		if kComponent.Kubernetes != nil {
-			u, err = GetK8sComponentAsUnstructured(devfileObj, kComponent.Kubernetes, path, devfilefs.DefaultFs{})
+			u, err = GetK8sComponentAsUnstructured(devfileObj, kComponent.Name, path, devfilefs.DefaultFs{})
 			if err != nil {
 				return
 			}

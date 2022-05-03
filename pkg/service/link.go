@@ -69,7 +69,7 @@ func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.Dev
 	var strCRD string
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		strCRD, err = libdevfile.GetComponentResourceManifestContentWithVariablesResolved(devfileObj, c.Kubernetes, context, devfilefs.DefaultFs{})
+		strCRD, err = libdevfile.GetComponentResourceManifestContentWithVariablesResolved(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return false, err
 		}
@@ -153,7 +153,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 	var strCRD string
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		strCRD, err = libdevfile.GetComponentResourceManifestContentWithVariablesResolved(devfileObj, c.Kubernetes, context, devfilefs.DefaultFs{})
+		strCRD, err = libdevfile.GetComponentResourceManifestContentWithVariablesResolved(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return false, err
 		}

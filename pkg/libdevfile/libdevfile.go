@@ -202,49 +202,53 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 
 // GetComponentResourceManifestContentWithVariablesResolved returns the full content of either a Kubernetes or an Openshift
 // Devfile component, either Inlined or referenced via a URI.
-// No matter how the component is defined, it returns
-// the content with all variables substituted using the global variables map defined in `devfileObj`.
+// No matter how the component is defined, it returns the content with all variables substituted
+// using the global variables map defined in `devfileObj`.
 // An error is returned if the content references an invalid variable key not defined in the Devfile object.
-func GetComponentResourceManifestContentWithVariablesResolved(devfileObj parser.DevfileObj, devfileCmp interface{},
+func GetComponentResourceManifestContentWithVariablesResolved(devfileObj parser.DevfileObj, devfileCmpName string,
 	context string, fs devfilefs.Filesystem) (string, error) {
 
+	components, err := devfileObj.Data.GetComponents(common.DevfileOptions{FilterByName: devfileCmpName})
+	if err != nil {
+		return "", err
+	}
+
+	if len(components) == 0 {
+		return "", NewComponentNotExistError(devfileCmpName)
+	}
+
+	if len(components) != 1 {
+		return "", NewComponentsWithSameNameError(devfileCmpName)
+	}
+
+	devfileCmp := components[0]
+	componentType, err := common.GetComponentType(devfileCmp)
+	if err != nil {
+		return "", err
+	}
+
 	var content, uri string
-	switch devfileCmp := devfileCmp.(type) {
-	case v1alpha2.Component:
-		componentType, err := common.GetComponentType(devfileCmp)
-		if err != nil {
-			return "", err
-		}
-		switch componentType {
-		case v1alpha2.KubernetesComponentType:
-			return GetComponentResourceManifestContentWithVariablesResolved(devfileObj, devfileCmp.Kubernetes, context, fs)
-
-		case v1alpha2.OpenshiftComponentType:
-			return GetComponentResourceManifestContentWithVariablesResolved(devfileObj, devfileCmp.Openshift, context, fs)
-
-		default:
-			return "", fmt.Errorf("unexpected component type %s", componentType)
-		}
-	case *v1alpha2.KubernetesComponent:
-		content = devfileCmp.Inlined
-		if devfileCmp.Uri != "" {
-			uri = devfileCmp.Uri
+	switch componentType {
+	case v1alpha2.KubernetesComponentType:
+		content = devfileCmp.Kubernetes.Inlined
+		if devfileCmp.Kubernetes.Uri != "" {
+			uri = devfileCmp.Kubernetes.Uri
 		}
 
-	case *v1alpha2.OpenshiftComponent:
-		content = devfileCmp.Inlined
-		if devfileCmp.Uri != "" {
-			uri = devfileCmp.Uri
+	case v1alpha2.OpenshiftComponentType:
+		content = devfileCmp.Openshift.Inlined
+		if devfileCmp.Openshift.Uri != "" {
+			uri = devfileCmp.Openshift.Uri
 		}
+
 	default:
-		return "", fmt.Errorf("unexpected type for %v", devfileCmp)
+		return "", fmt.Errorf("unexpected component type %s", componentType)
 	}
 
-	if uri == "" {
-		return substituteVariables(devfileObj.Data.GetDevfileWorkspaceSpec().Variables, content)
+	if uri != "" {
+		return loadResourceManifestFromUriAndResolveVariables(devfileObj, uri, context, fs)
 	}
-
-	return loadResourceManifestFromUriAndResolveVariables(devfileObj, uri, context, fs)
+	return substituteVariables(devfileObj.Data.GetDevfileWorkspaceSpec().Variables, content)
 }
 
 func loadResourceManifestFromUriAndResolveVariables(devfileObj parser.DevfileObj, uri string,

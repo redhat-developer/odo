@@ -154,7 +154,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 	}
 	var services []string
 	for _, c := range components {
-		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Kubernetes, context, fs)
+		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, fs)
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +209,7 @@ func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.D
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
-		u, er := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Kubernetes, context, devfilefs.DefaultFs{})
+		u, er := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if er != nil {
 			return er
 		}
@@ -330,7 +330,7 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Kubernetes, context, devfilefs.DefaultFs{})
+		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return err
 		}
@@ -424,7 +424,7 @@ func ValidateResourcesExist(client kclient.ClientInterface, devfileObj parser.De
 
 func ValidateResourceExist(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponent devfile.Component, context string) (kindErr string, err error) {
 	// get the string representation of the YAML definition of a CRD
-	u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, k8sComponent.Kubernetes, context, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, k8sComponent.Name, context, devfilefs.DefaultFs{})
 	if err != nil {
 		return "", err
 	}
