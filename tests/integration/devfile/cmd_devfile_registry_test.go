@@ -78,13 +78,8 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 	})
 
-	When("using a git based registries", func() {
-		var err string
-		When("adding git based registries", func() {
-			It("should fail with error", func() {
-				err = helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
-				helper.MatchAllInOutput(err, []string{"github", "no", "supported", "https://github.com/devfile/registry-support"})
-			})
-		})
+	It("should fail when adding a git based registry", func() {
+		err := helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
+		helper.MatchAllInOutput(err, []string{"github", "no", "supported", "https://github.com/devfile/registry-support"})
 	})
 })
