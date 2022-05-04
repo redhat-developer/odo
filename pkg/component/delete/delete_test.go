@@ -324,7 +324,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 				},
 			},
 			args: args{
-				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-inlined.yaml"),
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
 			},
 			wantIsInnerLoopDeployed: true,
@@ -371,7 +371,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 				},
 			},
 			args: args{
-				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-inlined.yaml"),
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
 			},
 			wantIsInnerLoopDeployed: false,
@@ -388,7 +388,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 				},
 			},
 			args: args{
-				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-inlined.yaml"),
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
 			},
 			wantIsInnerLoopDeployed: false,
@@ -406,7 +406,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 				},
 			},
 			args: args{
-				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-inlined.yaml"),
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
 			},
 			wantIsInnerLoopDeployed: true,
@@ -427,7 +427,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 				},
 			},
 			args: args{
-				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-inlined.yaml"),
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
 			},
 			wantIsInnerLoopDeployed: true,
@@ -487,7 +487,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				},
 			},
 			args: args{
-				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-inlined.yaml"),
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
 			},
 			wantErr: false,

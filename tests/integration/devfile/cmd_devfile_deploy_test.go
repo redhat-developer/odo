@@ -40,7 +40,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		})
 	})
 
-	for _, testCtx := range []struct {
+	for _, ctx := range []struct {
 		title       string
 		devfileName string
 		setupFunc   func()
@@ -48,27 +48,28 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		{
 			title:       "using a devfile.yaml containing a deploy command",
 			devfileName: "devfile-deploy.yaml",
-			setupFunc: func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes", "devfile-deploy"),
-					filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy"))
-			},
+			setupFunc:   nil,
 		},
 		{
-			title:       "using a devfile.yaml containing an outer-loop Kubernetes component inlined",
-			devfileName: "devfile-deploy-with-k8s-inlined.yaml",
+			title:       "using a devfile.yaml containing an outer-loop Kubernetes component referenced via an URI",
+			devfileName: "devfile-deploy-with-k8s-uri.yaml",
+			setupFunc: func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes"),
+					filepath.Join(commonVar.Context, "kubernetes"))
+			},
 		},
 	} {
 
-		When(testCtx.title, func() {
+		When(ctx.title, func() {
 			// from devfile
 			cmpName := "nodejs-prj1-api-abhz"
 			deploymentName := "my-component"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", testCtx.devfileName),
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", ctx.devfileName),
 					path.Join(commonVar.Context, "devfile.yaml"))
-				if testCtx.setupFunc != nil {
-					testCtx.setupFunc()
+				if ctx.setupFunc != nil {
+					ctx.setupFunc()
 				}
 			})
 
@@ -134,8 +135,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 	When("using a devfile.yaml containing two deploy commands", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes", "devfile-with-two-deploy-commands"),
-				filepath.Join(commonVar.Context, "kubernetes", "devfile-with-two-deploy-commands"))
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-two-deploy-commands.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 		})
 		It("should run odo deploy", func() {
@@ -154,8 +153,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 	When("recording telemetry data", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes", "devfile-deploy"),
-				filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy"))
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 			helper.EnableTelemetryDebug()
 			helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
@@ -179,9 +176,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes",
-				"devfile-outerloop-project_source-in-docker-build-context"),
-				filepath.Join(commonVar.Context, "kubernetes", "devfile-outerloop-project_source-in-docker-build-context"))
 			helper.Cmd("odo", "init", "--name", "aname",
 				"--devfile-path",
 				helper.GetExamplePath("source", "devfiles", "nodejs",
@@ -226,10 +220,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes",
-				"issue-5600-devfile-with-image-component-and-no-buildContext"),
-				filepath.Join(commonVar.Context, "kubernetes",
-					"issue-5600-devfile-with-image-component-and-no-buildContext"))
 			helper.CopyExampleDevFile(
 				filepath.Join("source", "devfiles", "nodejs",
 					"issue-5600-devfile-with-image-component-and-no-buildContext.yaml"),

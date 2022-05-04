@@ -69,8 +69,6 @@ components:
 
   - name: outerloop-deploy
     kubernetes:
-      # TODO(rm3l): Move this as a URI by default once https://github.com/redhat-developer/odo/issues/5637 is fixed
-      #  Also consider keeping an "Inlined" version for testing
       inlined: |
         kind: Deployment
         apiVersion: apps/v1
@@ -95,8 +93,6 @@ components:
                       cpu: "500m"
   - name: outerloop-deploy-2
     kubernetes:
-      # TODO(rm3l): Move this as a URI by default once https://github.com/redhat-developer/odo/issues/5637 is fixed
-      #  Also consider keeping an "Inlined" version for testing
       inlined: |
         apiVersion: v1
         kind: Service

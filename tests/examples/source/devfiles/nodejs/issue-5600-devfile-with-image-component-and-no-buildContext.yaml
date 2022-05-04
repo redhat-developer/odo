@@ -48,10 +48,43 @@ components:
     imageName: localhost:5000/devfile-nodejs-deploy:0.1.0
   name: prod-image
 - kubernetes:
-    uri: kubernetes/issue-5600-devfile-with-image-component-and-no-buildContext/outerloop-deploy.yaml
+    inlined: |
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: devfile-nodejs-deploy
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: devfile-nodejs-deploy
+        template:
+          metadata:
+            labels:
+              app: devfile-nodejs-deploy
+          spec:
+            containers:
+              - name: main
+                image: "localhost:5000/devfile-nodejs-deploy:0.1.0"
+                resources: {}
   name: outerloop-deploy
 - kubernetes:
-    uri: kubernetes/issue-5600-devfile-with-image-component-and-no-buildContext/outerloop-service.yaml
+    inlined: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        labels:
+          app: devfile-nodejs-deploy
+        name: devfile-nodejs-deploy
+      spec:
+        ports:
+        - name: http-3000
+          port: 3000
+          protocol: TCP
+          targetPort: 3000
+        selector:
+          app: devfile-nodejs-deploy
+        type: LoadBalancer
   name: outerloop-service
 metadata:
   language: javascript

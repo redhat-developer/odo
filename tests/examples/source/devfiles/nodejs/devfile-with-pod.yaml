@@ -24,10 +24,31 @@ components:
       sourceMapping: /project
     name: runtime
   - kubernetes:
-      uri: kubernetes/devfile-with-pod/etcdcluster.yaml
+      inlined: |
+        apiVersion: etcd.database.coreos.com/v1beta2
+        kind: EtcdCluster
+        metadata:
+          annotations:
+            etcd.database.coreos.com/scope: clusterwide
+          name: etcdcluster
+        spec:
+          size: 3
+          version: 3.2.13
     name: etcdcluster
   - kubernetes:
-      uri: kubernetes/devfile-with-pod/nginx.yaml
+      inlined: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            name: nginx
+          name: nginx
+        spec:
+          containers:
+          - image: quay.io/bitnami/nginx
+            name: nginx
+            ports:
+            - containerPort: 80
     name: nginx
 commands:
   - exec:

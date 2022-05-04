@@ -1,9 +1,0 @@
-apiVersion: etcd.database.coreos.com/v1beta2
-kind: EtcdCluster
-metadata:
-  annotations:
-    etcd.database.coreos.com/scope: clusterwide
-  name: etcdcluster
-spec:
-  size: 3
-  version: 3.2.13

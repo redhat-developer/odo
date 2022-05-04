@@ -32,8 +32,6 @@ var _ = Describe("odo list with devfile", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes", "devfile-deploy"),
-				filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy"))
 			helper.Chdir(commonVar.Context)
 			var err error
 			devSession, _, _, _, err = helper.StartDevMode()

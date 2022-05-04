@@ -58,7 +58,41 @@ components:
         buildContext: ${PROJECT_SOURCE}
   - name: outerloop-deploy
     kubernetes:
-      uri: kubernetes/devfile-outerloop-project_source-in-docker-build-context/outerloop-deploy.yaml
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: devfile-nodejs-deploy
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: devfile-nodejs-deploy
+          template:
+            metadata:
+              labels:
+                app: devfile-nodejs-deploy
+            spec:
+              containers:
+                - name: main
+                  image: "{{CONTAINER_IMAGE}}"
+                  resources: {}
   - name: outerloop-service
     kubernetes:
-      uri: kubernetes/devfile-outerloop-project_source-in-docker-build-context/outerloop-service.yaml
+      inlined: |
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            app: devfile-nodejs-deploy
+          name: devfile-nodejs-deploy
+        spec:
+          ports:
+          - name: http-3000
+            port: 3000
+            protocol: TCP
+            targetPort: 3000
+          selector:
+            app: devfile-nodejs-deploy
+          type: LoadBalancer
+

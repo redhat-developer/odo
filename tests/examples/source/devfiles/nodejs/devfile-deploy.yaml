@@ -65,7 +65,28 @@ components:
   
 - name: outerloop-deploy
   kubernetes:
-    uri: kubernetes/devfile-deploy/outerloop-deploy.yaml
+    inlined: |
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: my-component
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: node-app
+        template:
+          metadata:
+            labels:
+              app: node-app
+          spec:
+            containers:
+              - name: main
+                image: {{CONTAINER_IMAGE}}
+                resources:
+                  limits:
+                    memory: "128Mi"
+                    cpu: "500m"
 metadata:
   description: Stack with Node.js 14
   displayName: Node.js Runtime
