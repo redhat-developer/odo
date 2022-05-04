@@ -131,8 +131,6 @@ func (o RegistryClient) ListDevfileStacks(registryName string) (DevfileStackList
 	return *catalogDevfileList, nil
 }
 
-// const indexPath = "/devfiles/index.json" :Not sure if this should be removed but it is not used for now
-
 // getRegistryStacks retrieves the registry's index devfile stack entries
 func getRegistryStacks(preferenceClient preference.Client, registry Registry) ([]DevfileStack, error) {
 	if !registryUtil.IsGithubBasedRegistry(registry.URL) {
