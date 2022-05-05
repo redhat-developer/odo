@@ -45,7 +45,7 @@ components:
           name: nginx
         spec:
           containers:
-          - image: quay.io/bitnami/nginx
+          - image: quay.io/odo-dev/nginx
             name: nginx
             ports:
             - containerPort: 80
