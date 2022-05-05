@@ -91,11 +91,20 @@ func TestIsGitBasedRegistry(t *testing.T) {
 			registryURL: "https://raw.githubusercontent.com/odo-devfiles/registry",
 			want:        true,
 		},
+		{
+			name:        "Case 4: Returns false if URL contains github.com in a non-host position",
+			registryURL: "https://my.registry.example.com/github.com",
+			want:        false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := IsGithubBasedRegistry(tt.registryURL); actual != tt.want {
+			actual, err := IsGithubBasedRegistry(tt.registryURL)
+			if err != nil {
+				t.Errorf("unexpected error %s occoured", err.Error())
+			}
+			if actual != tt.want {
 				t.Errorf("failed checking if registry is git based, got %t want %t", actual, tt.want)
 			}
 		})

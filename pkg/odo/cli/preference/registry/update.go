@@ -71,7 +71,11 @@ func (o *UpdateOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-	if registryUtil.IsGithubBasedRegistry(o.registryURL) {
+	isGithubBasedRegistry, err := registryUtil.IsGithubBasedRegistry(o.registryURL)
+	if err != nil {
+		return err
+	}
+	if isGithubBasedRegistry {
 		return registryUtil.ErrGithubRegistryNotSupported
 	}
 	return nil

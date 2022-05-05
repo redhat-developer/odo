@@ -133,7 +133,11 @@ func (o RegistryClient) ListDevfileStacks(registryName string) (DevfileStackList
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
 func getRegistryStacks(preferenceClient preference.Client, registry Registry) ([]DevfileStack, error) {
-	if registryUtil.IsGithubBasedRegistry(registry.URL) {
+	isGithubregistry, err := registryUtil.IsGithubBasedRegistry(registry.URL)
+	if err != nil {
+		return nil, err
+	}
+	if isGithubregistry {
 		return nil, registryUtil.ErrGithubRegistryNotSupported
 	}
 	// OCI-based registry

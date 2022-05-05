@@ -4,9 +4,11 @@ import (
 	// odo packages
 
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/preference"
+	url2 "net/url"
 )
 
 const (
@@ -30,6 +32,10 @@ func IsSecure(prefClient preference.Client, registryName string) bool {
 	return isSecure
 }
 
-func IsGithubBasedRegistry(url string) bool {
-	return strings.Contains(url, "github.com") || strings.Contains(url, "raw.githubusercontent.com")
+func IsGithubBasedRegistry(url string) (bool, error) {
+	pu, err := url2.Parse(url)
+	if err != nil {
+		return false, fmt.Errorf("unable to parse registry url %w", err)
+	}
+	return strings.Contains(pu.Host, "github.com") || strings.Contains(url, "raw.githubusercontent.com"), nil
 }

@@ -52,7 +52,11 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 		}
 		registries := o.preferenceClient.RegistryList()
 		for _, r := range *registries {
-			if r.Name == flags[FLAG_DEVFILE_REGISTRY] && util.IsGithubBasedRegistry(r.URL) {
+			isGithubRegistry, err := util.IsGithubBasedRegistry(r.URL)
+			if err != nil {
+				return err
+			}
+			if r.Name == flags[FLAG_DEVFILE_REGISTRY] && isGithubRegistry {
 				return util.ErrGithubRegistryNotSupported
 			}
 		}
