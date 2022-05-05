@@ -30,22 +30,24 @@ import (
 	"text/tabwriter"
 	"time"
 
-	orasctx "github.com/deislabs/oras/pkg/context"
+	orasctx "oras.land/oras-go/pkg/context"
 
 	"github.com/containerd/containerd/remotes/docker"
-	"github.com/deislabs/oras/pkg/content"
-	"github.com/deislabs/oras/pkg/oras"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
+	versionpkg "github.com/hashicorp/go-version"
+	"oras.land/oras-go/pkg/content"
+	"oras.land/oras-go/pkg/oras"
 )
 
 const (
-	// Devfile media types
-	DevfileConfigMediaType  = "application/vnd.devfileio.devfile.config.v2+json"
+	// Supported Devfile media types
 	DevfileMediaType        = "application/vnd.devfileio.devfile.layer.v1"
 	DevfileVSXMediaType     = "application/vnd.devfileio.vsx.layer.v1.tar"
 	DevfileSVGLogoMediaType = "image/svg+xml"
 	DevfilePNGLogoMediaType = "image/png"
 	DevfileArchiveMediaType = "application/x-tar"
+
+	OwnersFile = "OWNERS"
 
 	httpRequestTimeout    = 30 * time.Second // httpRequestTimeout configures timeout of all HTTP requests
 	responseHeaderTimeout = 30 * time.Second // responseHeaderTimeout is the timeout to retrieve the server's response headers
@@ -54,6 +56,7 @@ const (
 var (
 	DevfileMediaTypeList     = []string{DevfileMediaType}
 	DevfileAllMediaTypesList = []string{DevfileMediaType, DevfilePNGLogoMediaType, DevfileSVGLogoMediaType, DevfileVSXMediaType, DevfileArchiveMediaType}
+	ExcludedFiles            = []string{OwnersFile}
 )
 
 type Registry struct {
@@ -63,28 +66,44 @@ type Registry struct {
 }
 
 //TelemetryData structure to pass in client telemetry information
+// The User and Locale fields should be passed in by clients if telemetry opt-in is enabled
+// the generic Client name will be passed in regardless of opt-in/out choice.  The value
+// will be assigned to the UserId field for opt-outs
 type TelemetryData struct {
-	// The User and Locale fields will be passed in by the clients if telemetry opt-in is enabled
-	User   string
+	// User is a generated UUID or generic client name
+	User string
+	// Locale is the OS or browser locale
 	Locale string
-	// the generic client name will be passed in regardless of opt-in/out choice.  The value
-	// will be assigned to the UserId field for opt-outs
+	//Client is a generic name that describes the client
 	Client string
 }
 
 type RegistryOptions struct {
+	// SkipTLSVerify is false by default which is the recommended setting for a devfile registry deployed in production.  SkipTLSVerify should only be set to true
+	// if you are testing a devfile registry that is set up with self-signed certificates in a pre-production environment.
 	SkipTLSVerify bool
-	Telemetry     TelemetryData
-	Filter        RegistryFilter
+	// Telemetry allows clients to send telemetry data to the community Devfile Registry
+	Telemetry TelemetryData
+	// Filter allows clients to specify which architectures they want to filter their devfiles on
+	Filter RegistryFilter
+	// NewIndexSchema is false by default, which calls GET /index and returns index of default version of each stack using the old index schema struct.
+	// If specified to true, calls GET /v2index and returns the new Index schema with multi-version support
+	NewIndexSchema bool
 }
 
 type RegistryFilter struct {
 	Architectures []string
+	// MinSchemaVersion is set to filter devfile index equal and above a particular devfile schema version (inclusive)
+	// only major version and minor version are required. e.g. 2.1, 2.2 ect. service version should not be provided.
+	// will only be applied if `NewIndexSchema=true`
+	MinSchemaVersion string
+	// MaxSchemaVersion is set to filter devfile index equal and below a particular devfile schema version (inclusive)
+	// only major version and minor version are required. e.g. 2.1, 2.2 ect. service version should not be provided.
+	// will only be applied if `NewIndexSchema=true`
+	MaxSchemaVersion string
 }
 
-// GetRegistryIndex returns the list of stacks and/or samples, more specifically
-// it gets the stacks and/or samples content of the index of the specified registry
-// for listing the stacks and/or samples
+// GetRegistryIndex returns the list of index schema structured stacks and/or samples from a specified devfile registry.
 func GetRegistryIndex(registryURL string, options RegistryOptions, devfileTypes ...indexSchema.DevfileType) ([]indexSchema.Schema, error) {
 	var registryIndex []indexSchema.Schema
 
@@ -104,33 +123,44 @@ func GetRegistryIndex(registryURL string, options RegistryOptions, devfileTypes 
 	}
 
 	var endpoint string
+	indexEndpoint := "index"
+	if options.NewIndexSchema {
+		indexEndpoint = "v2index"
+	}
 	if getStack && getSample {
-		endpoint = path.Join("index", "all")
+		endpoint = path.Join(indexEndpoint, "all")
 	} else if getStack && !getSample {
-		endpoint = "index"
+		endpoint = indexEndpoint
 	} else if getSample && !getStack {
-		endpoint = path.Join("index", "sample")
+		endpoint = path.Join(indexEndpoint, "sample")
 	} else {
 		return registryIndex, nil
-	}
-
-	if !reflect.DeepEqual(options.Filter, RegistryFilter{}) {
-		endpoint = endpoint + "?"
-	}
-
-	if len(options.Filter.Architectures) > 0 {
-		for _, arch := range options.Filter.Architectures {
-			endpoint = endpoint + "arch=" + arch + "&"
-		}
-		endpoint = strings.TrimSuffix(endpoint, "&")
 	}
 
 	endpointURL, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
 	}
-
 	urlObj = urlObj.ResolveReference(endpointURL)
+
+	if !reflect.DeepEqual(options.Filter, RegistryFilter{}) {
+		q := urlObj.Query()
+		if len(options.Filter.Architectures) > 0 {
+			for _, arch := range options.Filter.Architectures {
+				q.Add("arch", arch)
+			}
+		}
+
+		if options.NewIndexSchema && (options.Filter.MaxSchemaVersion != "" || options.Filter.MinSchemaVersion != "") {
+			if options.Filter.MinSchemaVersion != "" {
+				q.Add("minSchemaVersion", options.Filter.MinSchemaVersion)
+			}
+			if options.Filter.MaxSchemaVersion != "" {
+				q.Add("maxSchemaVersion", options.Filter.MaxSchemaVersion)
+			}
+		}
+		urlObj.RawQuery = q.Encode()
+	}
 
 	url := urlObj.String()
 	req, err := http.NewRequest("GET", url, nil)
@@ -162,7 +192,7 @@ func GetRegistryIndex(registryURL string, options RegistryOptions, devfileTypes 
 	return registryIndex, nil
 }
 
-// GetMultipleRegistryIndices returns returns the list of stacks and/or samples of multiple registries
+// GetMultipleRegistryIndices returns the list of stacks and/or samples from multiple registries
 func GetMultipleRegistryIndices(registryURLs []string, options RegistryOptions, devfileTypes ...indexSchema.DevfileType) []Registry {
 	registryList := make([]Registry, len(registryURLs))
 	registryContentsChannel := make(chan []indexSchema.Schema)
@@ -210,8 +240,15 @@ func PrintRegistry(registryURLs string, devfileType string, options RegistryOpti
 	return nil
 }
 
-// PullStackByMediaTypesFromRegistry pulls stack from registry with allowed media types to the destination directory
+// PullStackByMediaTypesFromRegistry pulls a specified stack with allowed media types from a given registry URL to the destination directory.
+// OWNERS files present in the registry will be excluded
 func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMediaTypes []string, destDir string, options RegistryOptions) error {
+	var requestVersion string
+	if strings.Contains(stack, ":") {
+		stackWithVersion := strings.Split(stack, ":")
+		stack = stackWithVersion[0]
+		requestVersion = stackWithVersion[1]
+	}
 	// Get the registry index
 	registryIndex, err := GetRegistryIndex(registry, options, indexSchema.StackDevfileType)
 	if err != nil {
@@ -230,6 +267,38 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	}
 	if !exist {
 		return fmt.Errorf("stack %s does not exist in the registry %s", stack, registry)
+	}
+	var stackLink string
+
+	if options.NewIndexSchema {
+		latestVersionIndex := 0
+		latest, err := versionpkg.NewVersion(stackIndex.Versions[latestVersionIndex].Version)
+		if err != nil {
+			return fmt.Errorf("failed to parse the stack version %s for stack %s", stackIndex.Versions[latestVersionIndex].Version, stack)
+		}
+		for index, version := range stackIndex.Versions {
+			if (requestVersion == "" && version.Default) || (version.Version == requestVersion) {
+				stackLink = version.Links["self"]
+				break
+			} else if requestVersion == "latest" {
+				current, err := versionpkg.NewVersion(version.Version)
+				if err != nil {
+					return fmt.Errorf("failed to parse the stack version %s for stack %s", version.Version, stack)
+				}
+				if current.GreaterThan(latest) {
+					latestVersionIndex = index
+					latest = current
+				}
+			}
+		}
+		if requestVersion == "latest" {
+			stackLink = stackIndex.Versions[latestVersionIndex].Links["self"]
+		}
+		if stackLink == "" {
+			return fmt.Errorf("the requested verion %s for stack %s does not exist in the registry %s", requestVersion, stack, registry)
+		}
+	} else {
+		stackLink = stackIndex.Links["self"]
 	}
 
 	// Pull stack initialization
@@ -251,7 +320,7 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	setHeaders(&headers, options)
 
 	resolver := docker.NewResolver(docker.ResolverOptions{Headers: headers, PlainHTTP: plainHTTP, Client: httpClient})
-	ref := path.Join(urlObj.Host, stackIndex.Links["self"])
+	ref := path.Join(urlObj.Host, stackLink)
 	fileStore := content.NewFileStore(destDir)
 	defer fileStore.Close()
 
@@ -264,7 +333,7 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	// Decompress archive.tar
 	archivePath := filepath.Join(destDir, "archive.tar")
 	if _, err := os.Stat(archivePath); err == nil {
-		err := decompress(destDir, archivePath)
+		err := decompress(destDir, archivePath, ExcludedFiles)
 		if err != nil {
 			return err
 		}
@@ -278,13 +347,13 @@ func PullStackByMediaTypesFromRegistry(registry string, stack string, allowedMed
 	return nil
 }
 
-// PullStackFromRegistry pulls stack from registry with all stack resources (all media types) to the destination directory
+// PullStackFromRegistry pulls a specified stack with all devfile supported media types from a registry URL to the destination directory
 func PullStackFromRegistry(registry string, stack string, destDir string, options RegistryOptions) error {
 	return PullStackByMediaTypesFromRegistry(registry, stack, DevfileAllMediaTypesList, destDir, options)
 }
 
 // decompress extracts the archive file
-func decompress(targetDir string, tarFile string) error {
+func decompress(targetDir string, tarFile string, excludeFiles []string) error {
 	reader, err := os.Open(tarFile)
 	if err != nil {
 		return err
@@ -304,6 +373,9 @@ func decompress(targetDir string, tarFile string) error {
 			break
 		} else if err != nil {
 			return err
+		}
+		if isExcluded(header.Name, excludeFiles) {
+			continue
 		}
 
 		target := path.Join(targetDir, header.Name)
@@ -329,6 +401,16 @@ func decompress(targetDir string, tarFile string) error {
 	}
 
 	return nil
+}
+
+func isExcluded(name string, excludeFiles []string) bool {
+	basename := filepath.Base(name)
+	for _, excludeFile := range excludeFiles {
+		if basename == excludeFile {
+			return true
+		}
+	}
+	return false
 }
 
 //setHeaders sets the request headers
