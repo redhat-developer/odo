@@ -3,6 +3,7 @@ package add
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/add/binding"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
@@ -16,7 +17,7 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 		Short: "Add resources to devfile",
 	}
 
-	bindingCmd := NewCmdBinding(BindingRecommendedCommandName, util.GetFullName(fullName, BindingRecommendedCommandName))
+	bindingCmd := binding.NewCmdBinding(binding.BindingRecommendedCommandName, util.GetFullName(fullName, binding.BindingRecommendedCommandName))
 	createCmd.AddCommand(bindingCmd)
 	createCmd.Annotations = map[string]string{"command": "main"}
 	createCmd.SetUsageTemplate(util.CmdUsageTemplate)

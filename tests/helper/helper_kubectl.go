@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/redhat-developer/odo/pkg/labels"
 )
 
@@ -373,7 +374,7 @@ func (kubectl KubectlRunner) GetServiceBinding(name, projectName string) (string
 }
 
 func (kubectl KubectlRunner) EnsureOperatorIsInstalled(partialOperatorName string) {
-	WaitForCmdOut(kubectl.path, []string{"get", "csv", "-o", "jsonpath={.items[?(@.status.phase==\"Succeeded\")].metadata.name}"}, 180, true, func(output string) bool {
+	WaitForCmdOut(kubectl.path, []string{"get", "csv", "-o", "jsonpath={.items[?(@.status.phase==\"Succeeded\")].metadata.name}"}, 4, true, func(output string) bool {
 		return strings.Contains(output, partialOperatorName)
 	})
 }

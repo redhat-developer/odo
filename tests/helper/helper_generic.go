@@ -35,20 +35,20 @@ func RandString(n int) string {
 // the expected output.
 // It accepts 5 arguments, program (program to be run)
 // args (arguments to the program)
-// timeout (the time to wait for the output)
+// timeoutInMinutes (the time to wait for the output)
 // errOnFail (flag to set if test should fail if command fails)
 // check (function with output check logic)
 // It times out if the command doesn't fetch the
 // expected output  within the timeout period.
-func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, check func(output string) bool, includeStdErr ...bool) bool {
-	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
+func WaitForCmdOut(program string, args []string, timeoutInMinutes int, errOnFail bool, check func(output string) bool, includeStdErr ...bool) bool {
+	pingTimeout := time.After(time.Duration(timeoutInMinutes) * time.Minute)
 	// this is a test package so time.Tick() is acceptable
 	// nolint
 	tick := time.Tick(time.Second)
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout after %v minutes", timeout))
+			Fail(fmt.Sprintf("Timeout after %v minutes", timeoutInMinutes))
 
 		case <-tick:
 			session := CmdRunner(program, args...)
