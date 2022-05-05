@@ -196,13 +196,13 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = service.ValidateResourcesExist(a.Client, k8sComponents, a.Context)
+	err = service.ValidateResourcesExist(a.Client, a.Devfile, k8sComponents, a.Context)
 	if err != nil {
 		return err
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.Client, k8sComponents, labels, annotations, a.Context)
+	err = service.PushKubernetesResources(a.Client, a.Devfile, k8sComponents, labels, annotations, a.Context)
 	if err != nil {
 		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
@@ -246,14 +246,14 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Update all services with owner references
 	err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-		return service.UpdateServicesWithOwnerReferences(a.Client, k8sComponents, ownerRef, a.Context)
+		return service.UpdateServicesWithOwnerReferences(a.Client, a.Devfile, k8sComponents, ownerRef, a.Context)
 	})
 	if err != nil {
 		return err
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushLinks(a.Client, k8sComponents, labels, a.deployment, a.Context)
+	needRestart, err := service.PushLinks(a.Client, a.Devfile, k8sComponents, labels, a.deployment, a.Context)
 	if err != nil {
 		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}

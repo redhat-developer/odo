@@ -1,12 +1,14 @@
 package libdevfile
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
+	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
 	"k8s.io/utils/pointer"
@@ -432,6 +434,338 @@ func TestGetEndpointsFromDevfile(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetEndpointsFromDevfile() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetK8sManifestWithVariablesSubstituted(t *testing.T) {
+	fakeFs := devfileFileSystem.NewFakeFs()
+	cmpName := "my-cmp-1"
+	for _, tt := range []struct {
+		name           string
+		setupFunc      func() error
+		devfileObjFunc func() parser.DevfileObj
+		wantErr        bool
+		want           string
+	}{
+		{
+			name: "Missing Component",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetContainerComponent(generator.ContainerComponentParams{
+					Name: "a-different-component",
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+		},
+		{
+			name: "Multiple Components with the same name",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp1 := generator.GetContainerComponent(generator.ContainerComponentParams{
+					Name: cmpName,
+				})
+				cmp2 := generator.GetImageComponent(generator.ImageComponentParams{
+					Name: cmpName,
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp1, cmp2},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+		},
+		{
+			name: "Container Component",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetContainerComponent(generator.ContainerComponentParams{
+					Name: cmpName,
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+		},
+		{
+			name: "Image Component",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetImageComponent(generator.ImageComponentParams{
+					Name: cmpName,
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+		},
+		{
+			name: "Kubernetes Component - Inlined with no variables",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Inlined: "some-text-inlined",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: false,
+			want:    "some-text-inlined",
+		},
+		{
+			name: "Kubernetes Component - Inlined with variables",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Inlined: "image: {{MY_CONTAINER_IMAGE}}",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Variables: map[string]string{
+							"MY_CONTAINER_IMAGE": "quay.io/unknown-account/my-image:1.2.3",
+						},
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: false,
+			want:    "image: quay.io/unknown-account/my-image:1.2.3",
+		},
+		{
+			name: "Kubernetes Component - Inlined with unknown variables",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Inlined: "image: {{MY_CONTAINER_IMAGE}}:{{ MY_CONTAINER_IMAGE_VERSION_UNKNOWN }}",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Variables: map[string]string{
+							"MY_CONTAINER_IMAGE": "quay.io/unknown-account/my-image",
+						},
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+			want:    "image: quay.io/unknown-account/my-image:{{ MY_CONTAINER_IMAGE_VERSION_UNKNOWN }}",
+		},
+		{
+			name: "Kubernetes Component - non-existing external file",
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Uri: "kubernetes/my-external-file-with-should-not-exist",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+		},
+		{
+			name: "Kubernetes Component - URI with no variables",
+			setupFunc: func() error {
+				return fakeFs.WriteFile("kubernetes/my-external-file",
+					[]byte("some-text-with-no-variables"),
+					os.ModePerm)
+			},
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Uri: "kubernetes/my-external-file",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: false,
+			want:    "some-text-with-no-variables",
+		},
+		{
+			name: "Kubernetes Component - URI with variables",
+			setupFunc: func() error {
+				return fakeFs.WriteFile("kubernetes/my-deployment.yaml",
+					[]byte("image: {{ MY_CONTAINER_IMAGE }}:{{MY_CONTAINER_IMAGE_VERSION}}"),
+					os.ModePerm)
+			},
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Uri: "kubernetes/my-deployment.yaml",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Variables: map[string]string{
+							"MY_CONTAINER_IMAGE":         "quay.io/unknown-account/my-image",
+							"MY_CONTAINER_IMAGE_VERSION": "1.2.3",
+						},
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: false,
+			want:    "image: quay.io/unknown-account/my-image:1.2.3",
+		},
+		{
+			name: "Kubernetes Component - URI with unknown variables",
+			setupFunc: func() error {
+				return fakeFs.WriteFile("kubernetes/my-external-file.yaml",
+					[]byte("image: {{MY_CONTAINER_IMAGE}}:{{ MY_CONTAINER_IMAGE_VERSION_UNKNOWN }}"),
+					os.ModePerm)
+			},
+			devfileObjFunc: func() parser.DevfileObj {
+				devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+				cmp := generator.GetKubernetesComponent(generator.KubernetesComponentParams{
+					Name: cmpName,
+					Kubernetes: &v1alpha2.KubernetesComponent{
+						K8sLikeComponent: v1alpha2.K8sLikeComponent{
+							K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+								Uri: "kubernetes/my-external-file.yaml",
+							},
+						},
+					},
+				})
+				s := v1alpha2.DevWorkspaceTemplateSpec{
+					DevWorkspaceTemplateSpecContent: v1alpha2.DevWorkspaceTemplateSpecContent{
+						Variables: map[string]string{
+							"MY_CONTAINER_IMAGE": "quay.io/unknown-account/my-image",
+						},
+						Components: []v1alpha2.Component{cmp},
+					},
+				}
+				devfileData.SetDevfileWorkspaceSpec(s)
+				return parser.DevfileObj{
+					Data: devfileData,
+				}
+			},
+			wantErr: true,
+			want:    "image: quay.io/unknown-account/my-image:{{ MY_CONTAINER_IMAGE_VERSION_UNKNOWN }}",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setupFunc != nil {
+				if err := tt.setupFunc(); err != nil {
+					t.Errorf("setup function returned an error: %v", err)
+					return
+				}
+			}
+			if tt.devfileObjFunc == nil {
+				t.Error("devfileObjFunc function not defined for test case")
+				return
+			}
+
+			got, err := GetK8sManifestWithVariablesSubstituted(tt.devfileObjFunc(), cmpName, "", fakeFs)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetK8sManifestWithVariablesSubstituted() error = %v, wantErr %v",
+					err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetK8sManifestWithVariablesSubstituted() got = %v, want %v",
+					got, tt.want)
 			}
 		})
 	}

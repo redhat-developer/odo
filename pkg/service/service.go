@@ -154,7 +154,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 	}
 	var services []string
 	for _, c := range components {
-		u, err := libdevfile.GetK8sComponentAsUnstructured(c.Kubernetes, context, fs)
+		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, fs)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 }
 
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context string) error {
+func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context string) error {
 	// check csv support before proceeding
 	csvSupported, err := client.IsCSVSupported()
 	if err != nil {
@@ -209,7 +209,7 @@ func PushKubernetesResources(client kclient.ClientInterface, k8sComponents []dev
 
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	for _, c := range k8sComponents {
-		u, er := libdevfile.GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
+		u, er := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if er != nil {
 			return er
 		}
@@ -327,10 +327,10 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 
 // UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
 // if not already present in the list of owner references
-func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
+func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
-		u, err := libdevfile.GetK8sComponentAsUnstructured(c.Kubernetes, context, devfilefs.DefaultFs{})
+		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
 			return err
 		}
@@ -398,14 +398,14 @@ func createOperatorService(client kclient.ClientInterface, u unstructured.Unstru
 }
 
 // ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
-func ValidateResourcesExist(client kclient.ClientInterface, k8sComponents []devfile.Component, context string) error {
+func ValidateResourcesExist(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, context string) error {
 	if len(k8sComponents) == 0 {
 		return nil
 	}
 
 	var unsupportedResources []string
 	for _, c := range k8sComponents {
-		kindErr, err := ValidateResourceExist(client, c, context)
+		kindErr, err := ValidateResourceExist(client, devfileObj, c, context)
 		if err != nil {
 			if kindErr != "" {
 				unsupportedResources = append(unsupportedResources, kindErr)
@@ -422,9 +422,9 @@ func ValidateResourcesExist(client kclient.ClientInterface, k8sComponents []devf
 	return nil
 }
 
-func ValidateResourceExist(client kclient.ClientInterface, k8sComponent devfile.Component, context string) (kindErr string, err error) {
+func ValidateResourceExist(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponent devfile.Component, context string) (kindErr string, err error) {
 	// get the string representation of the YAML definition of a CRD
-	u, err := libdevfile.GetK8sComponentAsUnstructured(k8sComponent.Kubernetes, context, devfilefs.DefaultFs{})
+	u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, k8sComponent.Name, context, devfilefs.DefaultFs{})
 	if err != nil {
 		return "", err
 	}

@@ -37,7 +37,7 @@ func (o *applyCommand) Execute(handler Handler) error {
 	}
 
 	if len(devfileComponents) != 1 {
-		return NewComponentsWithSameNameError()
+		return NewComponentsWithSameNameError(o.command.Apply.Component)
 	}
 
 	component, err := newComponent(o.devfileObj, devfileComponents[0])

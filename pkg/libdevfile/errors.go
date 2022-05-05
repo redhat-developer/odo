@@ -64,14 +64,18 @@ func (e ComponentNotExistError) Error() string {
 	return fmt.Sprintf("component %q does not exists", e.name)
 }
 
-type ComponentsWithSameNameError struct{}
+type ComponentsWithSameNameError struct {
+	name string
+}
 
-func NewComponentsWithSameNameError() ComponentsWithSameNameError {
-	return ComponentsWithSameNameError{}
+func NewComponentsWithSameNameError(name string) ComponentsWithSameNameError {
+	return ComponentsWithSameNameError{
+		name: name,
+	}
 }
 
 func (e ComponentsWithSameNameError) Error() string {
-	return "more than one component with the same name, should not happen"
+	return fmt.Sprintf("more than one component with the same name %q, should not happen", e.name)
 }
 
 // ComponentTypeNotFoundError is returned when no component with the specified type has been found in Devfile
