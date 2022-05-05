@@ -3,6 +3,7 @@ package devfile
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -164,6 +165,22 @@ var _ = Describe("odo dev command tests", func() {
 				}, 180, 10).Should(Equal(true))
 			})
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		When("a state file is not writable", func() {
+			BeforeEach(func() {
+				stateFile := filepath.Join(commonVar.Context, ".odo", "devstate.json")
+				helper.MakeDir(filepath.Dir(stateFile))
+				Expect(helper.CreateFileWithContent(stateFile, "")).ToNot(HaveOccurred())
+				Expect(os.Chmod(stateFile, 0400)).ToNot(HaveOccurred())
+			})
+			It("should fail running odo dev", func() {
+				res := helper.Cmd("odo", "dev", "--random-ports").ShouldFail()
+				stdout := res.Out()
+				stderr := res.Err()
+				Expect(stdout).To(ContainSubstring("Cleaning"))
+				Expect(stderr).To(ContainSubstring("unable to save forwarded ports to state file"))
+			})
 		})
 
 		When("odo dev is executed", func() {
@@ -1396,6 +1413,54 @@ var _ = Describe("odo dev command tests", func() {
 					},
 				)
 			}
+		})
+	})
+
+	When("a component with multiple endpoints is run", func() {
+		stateFile := ".odo/devstate.json"
+		var devSession helper.DevSession
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
+			var err error
+			devSession, _, _, _, err = helper.StartDevMode()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			// We stop the process so the process does not remain after the end of the tests
+			devSession.Kill()
+			devSession.WaitEnd()
+		})
+
+		It("should create a state file containing forwarded ports", func() {
+			Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
+			contentJSON, err := ioutil.ReadFile(stateFile)
+			Expect(err).ToNot(HaveOccurred())
+			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerName", "runtime")
+			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerName", "runtime")
+			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.localAddress", "127.0.0.1")
+			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.localAddress", "127.0.0.1")
+			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.0.containerPort", "3000")
+			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
+			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
+			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
+		})
+
+		When("odo dev is stopped", func() {
+			BeforeEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			It("should remove forwarded ports from state file", func() {
+				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
+				contentJSON, err := ioutil.ReadFile(stateFile)
+				Expect(err).ToNot(HaveOccurred())
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
+			})
 		})
 	})
 })

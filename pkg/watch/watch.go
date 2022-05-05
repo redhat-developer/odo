@@ -10,6 +10,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
+	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
@@ -32,11 +33,13 @@ const (
 
 type WatchClient struct {
 	deleteClient _delete.Client
+	stateClient  state.Client
 }
 
-func NewWatchClient(deleteClient _delete.Client) *WatchClient {
+func NewWatchClient(deleteClient _delete.Client, stateClient state.Client) *WatchClient {
 	return &WatchClient{
 		deleteClient: deleteClient,
+		stateClient:  stateClient,
 	}
 }
 
@@ -356,6 +359,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 }
 
 func (o *WatchClient) Cleanup(devfileObj parser.DevfileObj, out io.Writer) error {
+	fmt.Fprintln(out, "Cleaning resources, please wait")
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
@@ -373,7 +377,8 @@ func (o *WatchClient) Cleanup(devfileObj parser.DevfileObj, out io.Writer) error
 	for _, fail := range failed {
 		fmt.Fprintf(out, "Failed to delete the %q resource: %s\n", fail.GetKind(), fail.GetName())
 	}
-	return nil
+
+	return o.stateClient.SaveExit()
 }
 
 func shouldIgnoreEvent(event fsnotify.Event) (ignoreEvent bool) {

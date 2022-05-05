@@ -226,3 +226,22 @@ components:
     memoryLimit: 1024Mi
     mountSources: true
 ```
+
+### State file
+
+When the command `odo dev` is executed, the state of the command is saved in the file `./.odo/devstate.json`. 
+
+This state file contains the currently forwarded ports.
+
+```
+{
+ "forwardedPorts": [
+  {
+   "containerName": "runtime",
+   "localAddress": "127.0.0.1",
+   "localPort": 40001,
+   "containerPort": 3000
+  }
+ ]
+}
+```

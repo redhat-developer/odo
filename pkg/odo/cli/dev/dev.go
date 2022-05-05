@@ -178,14 +178,22 @@ func (o *DevOptions) Validate() error {
 	return nil
 }
 
-func (o *DevOptions) Run(ctx context.Context) error {
-	var err error
-	var platformContext = kubernetes.KubernetesContext{
-		Namespace: o.Context.GetProject(),
-	}
-	var path = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-	devfileName := o.EnvSpecificInfo.GetDevfileObj().GetMetadataName()
-	namespace := o.GetProject()
+func (o *DevOptions) Run(ctx context.Context) (err error) {
+	var (
+		devFileObj      = o.Context.EnvSpecificInfo.GetDevfileObj()
+		platformContext = kubernetes.KubernetesContext{
+			Namespace: o.Context.GetProject(),
+		}
+		path        = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+		devfileName = devFileObj.GetMetadataName()
+		namespace   = o.GetProject()
+	)
+
+	defer func() {
+		if err != nil {
+			_ = o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
+		}
+	}()
 
 	// Output what the command is doing / information
 	log.Title("Developing using the "+devfileName+" Devfile",
@@ -193,13 +201,13 @@ func (o *DevOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(o.Context.EnvSpecificInfo.GetDevfileObj(), platformContext, o.ignorePaths, path, o.debugFlag)
+	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag)
 	if err != nil {
 		return err
 	}
 
 	// get the endpoint/port information for containers in devfile and setup port-forwarding
-	containers, err := o.Context.EnvSpecificInfo.GetDevfileObj().Data.GetComponents(parsercommon.DevfileOptions{
+	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
 	})
 	if err != nil {
@@ -216,7 +224,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
 	}
-	pod, err := o.clientset.KubernetesClient.GetPodUsingComponentName(o.Context.EnvSpecificInfo.GetDevfileObj().GetMetadataName())
+	pod, err := o.clientset.KubernetesClient.GetPodUsingComponentName(devFileObj.GetMetadataName())
 	if err != nil {
 		return err
 	}
@@ -224,7 +232,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	// Output that the application is running, and then show the port-forwarding information
 	log.Info("\nYour application is now running on the cluster")
 
-	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice))
+	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
 	go func() {
 		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, o.errOut)
 		if err != nil {
@@ -233,8 +241,10 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	}()
 
 	portsBuf.Wait()
-
-	devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+	err = o.clientset.StateClient.SetForwardedPorts(portsBuf.GetForwardedPorts())
+	if err != nil {
+		return fmt.Errorf("unable to save forwarded ports to state file: %v", err)
+	}
 
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
@@ -312,7 +322,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
 
-	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES)
+	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

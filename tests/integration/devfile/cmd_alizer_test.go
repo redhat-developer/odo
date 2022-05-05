@@ -33,8 +33,8 @@ var _ = Describe("odo alizer command tests", func() {
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stderr).To(BeEmpty())
 			Expect(helper.IsJSON(stdout)).To(BeTrue())
-			Expect(helper.JsonPathContentIs(stdout, "devfile", "nodejs"))
-			Expect(helper.JsonPathContentIs(stdout, "devfileRegistry", "DefaultDevfileRegistry"))
+			helper.JsonPathContentIs(stdout, "devfile", "nodejs")
+			helper.JsonPathContentIs(stdout, "devfileRegistry", "DefaultDevfileRegistry")
 		})
 	})
 
@@ -43,7 +43,7 @@ var _ = Describe("odo alizer command tests", func() {
 		stdout, stderr := res.Out(), res.Err()
 		Expect(stdout).To(BeEmpty())
 		Expect(helper.IsJSON(stderr)).To(BeTrue())
-		Expect(helper.JsonPathContentContain(stderr, "message", "No valid devfile found for project in"))
+		helper.JsonPathContentContain(stderr, "message", "No valid devfile found for project in")
 	})
 
 	It("alizer should fail without json output", func() {
