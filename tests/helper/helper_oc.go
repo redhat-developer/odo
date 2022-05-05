@@ -566,7 +566,7 @@ func (oc OcRunner) GetServiceBinding(name, projectName string) (string, string) 
 }
 
 func (oc OcRunner) EnsureOperatorIsInstalled(partialOperatorName string) {
-	WaitForCmdOut(oc.path, []string{"get", "csv", "-o", "jsonpath={.items[?(@.status.phase==\"Succeeded\")].metadata.name}"}, 180, true, func(output string) bool {
+	WaitForCmdOut(oc.path, []string{"get", "csv", "-o", "jsonpath={.items[?(@.status.phase==\"Succeeded\")].metadata.name}"}, 4, true, func(output string) bool {
 		return strings.Contains(output, partialOperatorName)
 	})
 }
