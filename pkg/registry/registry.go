@@ -1,18 +1,12 @@
 package registry
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strings"
 	"sync"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	"github.com/devfile/registry-support/registry-library/library"
-	"github.com/zalando/go-keyring"
-
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -137,91 +131,19 @@ func (o RegistryClient) ListDevfileStacks(registryName string) (DevfileStackList
 	return *catalogDevfileList, nil
 }
 
-// convertURL converts GitHub regular URL to GitHub raw URL, do nothing if the URL is not GitHub URL
-// For example:
-// GitHub regular URL: https://github.com/elsony/devfile-registry/tree/johnmcollier-crw
-// GitHub raw URL: https://raw.githubusercontent.com/elsony/devfile-registry/johnmcollier-crw
-func convertURL(URL string) (string, error) {
-	url, err := url.Parse(URL)
-	if err != nil {
-		return "", err
-	}
-
-	if strings.Contains(url.Host, "github") && !strings.Contains(url.Host, "raw") {
-		// Convert path part of the URL
-		URLSlice := strings.Split(URL, "/")
-		if len(URLSlice) > 2 && URLSlice[len(URLSlice)-2] == "tree" {
-			// GitHub raw URL doesn't have "tree" structure in the URL, need to remove it
-			URL = strings.Replace(URL, "/tree", "", 1)
-		} else {
-			// Add "master" branch for GitHub raw URL by default if branch is not specified
-			URL = URL + "/master"
-		}
-
-		// Convert host part of the URL
-		if url.Host == "github.com" {
-			URL = strings.Replace(URL, "github.com", "raw.githubusercontent.com", 1)
-		} else {
-			URL = strings.Replace(URL, url.Host, "raw."+url.Host, 1)
-		}
-	}
-
-	return URL, nil
-}
-
-const indexPath = "/devfiles/index.json"
-
 // getRegistryStacks retrieves the registry's index devfile stack entries
 func getRegistryStacks(preferenceClient preference.Client, registry Registry) ([]DevfileStack, error) {
-	if !strings.Contains(registry.URL, "github") {
-		// OCI-based registry
-		devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
-		if err != nil {
-			return nil, err
-		}
-		return createRegistryDevfiles(registry, devfileIndex)
-	}
-	// Github-based registry
-	URL, err := convertURL(registry.URL)
+	isGithubregistry, err := registryUtil.IsGithubBasedRegistry(registry.URL)
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert URL %s: %w", registry.URL, err)
+		return nil, err
 	}
-	registry.URL = URL
-	indexLink := registry.URL + indexPath
-	request := dfutil.HTTPRequestParams{
-		URL: indexLink,
+	if isGithubregistry {
+		return nil, registryUtil.ErrGithubRegistryNotSupported
 	}
-
-	secure := registryUtil.IsSecure(preferenceClient, registry.Name)
-	if secure {
-		token, e := keyring.Get(fmt.Sprintf("%s%s", dfutil.CredentialPrefix, registry.Name), registryUtil.RegistryUser)
-		if e != nil {
-			return nil, fmt.Errorf("unable to get secure registry credential from keyring: %w", e)
-		}
-		request.Token = token
-	}
-
-	jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
+	// OCI-based registry
+	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)
 	if err != nil {
-		return nil, fmt.Errorf("unable to download the devfile index.json from %s: %w", indexLink, err)
-	}
-
-	var devfileIndex []indexSchema.Schema
-	err = json.Unmarshal(jsonBytes, &devfileIndex)
-	if err != nil {
-		if err := util.CleanDefaultHTTPCacheDir(); err != nil {
-			log.Warning("Error while cleaning up cache dir.")
-		}
-		// we try once again
-		jsonBytes, err := dfutil.HTTPGetRequest(request, preferenceClient.GetRegistryCacheTime())
-		if err != nil {
-			return nil, fmt.Errorf("unable to download the devfile index.json from %s: %w", indexLink, err)
-		}
-
-		err = json.Unmarshal(jsonBytes, &devfileIndex)
-		if err != nil {
-			return nil, fmt.Errorf("unable to unmarshal the devfile index.json from %s: %w", indexLink, err)
-		}
+		return nil, err
 	}
 	return createRegistryDevfiles(registry, devfileIndex)
 }

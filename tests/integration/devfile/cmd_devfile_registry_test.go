@@ -1,8 +1,6 @@
 package devfile
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 
 	"github.com/redhat-developer/odo/tests/helper"
@@ -80,43 +78,8 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 	})
 
-	When("using a git based registries", func() {
-		var deprecated, docLink, out, err, co string
-		BeforeEach(func() {
-			deprecated = "Deprecated"
-			docLink = "https://github.com/redhat-developer/odo/tree/main/docs/public/git-registry-deprecation.adoc"
-		})
-
-		It("should not show deprication warning, if git registry is not used", func() {
-			out, err = helper.Cmd("odo", "preference", "registry", "list").ShouldPass().OutAndErr()
-			helper.DontMatchAllInOutput(fmt.Sprintln(out, err), []string{deprecated, docLink})
-		})
-
-		When("adding git based registries", func() {
-			BeforeEach(func() {
-				out, err = helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldPass().OutAndErr()
-
-			})
-			It("should show deprecation warning", func() {
-				co = fmt.Sprintln(out, err)
-				helper.MatchAllInOutput(co, []string{deprecated, docLink})
-
-				By("odo preference registry list is executed, should show the warning", func() {
-					out, err = helper.Cmd("odo", "preference", "registry", "list").ShouldPass().OutAndErr()
-					co = fmt.Sprintln(out, err)
-					helper.MatchAllInOutput(co, []string{deprecated, docLink})
-				})
-				// TODO: Should `odo init` support GitHub based registries
-				// By("should successfully delete registry", func() {
-				// 	out, err = helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", "RegistryFromGitHub").ShouldPass().OutAndErr()
-				// 	co = fmt.Sprintln(out, err)
-				// 	helper.MatchAllInOutput(co, []string{deprecated, docLink})
-				// })
-			})
-			It("should not show deprecation warning if git registry is not used for component creation", func() {
-				out, err = helper.Cmd("odo", "init", "--name", "aname", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().OutAndErr()
-				helper.DontMatchAllInOutput(fmt.Sprintln(out, err), []string{deprecated, docLink})
-			})
-		})
+	It("should fail when adding a git based registry", func() {
+		err := helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
+		helper.MatchAllInOutput(err, []string{"github", "no", "supported", "https://github.com/devfile/registry-support"})
 	})
 })
