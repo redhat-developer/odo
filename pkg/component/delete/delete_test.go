@@ -379,6 +379,30 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			wantErr:                 false,
 		},
 		{
+			name: "only uri-referenced outerloop resources are deployed; innerloop resource is not found",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).
+						Return(&appsv1.Deployment{},
+							kerrors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "Deployments"},
+								innerLoopDeploymentName))
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
+					kubeClient.EXPECT().
+						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
+						Return(&deployedOuterLoopResource, nil)
+					return kubeClient
+				},
+			},
+			args: args{
+				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-uri.yaml"),
+				appName:    appName,
+			},
+			wantIsInnerLoopDeployed: false,
+			wantResources:           []unstructured.Unstructured{deployedOuterLoopResource},
+			wantErr:                 false,
+		},
+		{
 			name: "fetching inner loop resource failed due to some error(!NotFoundError)",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
