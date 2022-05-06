@@ -4,7 +4,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/storage"
 )
 
@@ -76,39 +75,3 @@ const (
 	// StateTypeNone means that it has not been pushed to the cluster *at all* in either deploy or dev
 	StateTypeNone = "None"
 )
-
-func newComponentWithType(componentName, componentType string) Component {
-	cmp := NewComponent(componentName)
-	cmp.Spec.Type = componentType
-	return cmp
-}
-
-// NewComponent provides a constructor to component struct with some metadata prefilled
-func NewComponent(componentName string) Component {
-	return Component{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       ComponentKind,
-			APIVersion: machineoutput.APIVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: componentName,
-		},
-		Status: ComponentStatus{},
-	}
-}
-
-// newComponentList returns list of devfile and s2i components in machine readable format
-func newComponentList(comps []Component) ComponentList {
-	if len(comps) == 0 {
-		comps = []Component{}
-	}
-
-	return ComponentList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       machineoutput.ListKind,
-			APIVersion: machineoutput.APIVersion,
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    comps,
-	}
-}
