@@ -5,20 +5,6 @@
    - community.kubernetes
   tasks:
 
-  - name: Create a Subscription for Redis Operator
-    k8s:
-      state: present
-      definition:
-        apiVersion: operators.coreos.com/v1alpha1
-        kind: Subscription
-        metadata:
-          name: my-redis-operator
-          namespace: openshift-operators
-        spec:
-          channel: stable
-          name: redis-operator
-          source: community-operators
-          sourceNamespace: openshift-marketplace
   - name: Create a Subscription for Service Binding Operator
     k8s:
       state: present

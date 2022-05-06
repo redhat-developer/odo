@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/binding/backend"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -35,13 +38,7 @@ var addBindingExample = ktemplates.Examples(`
 `)
 
 type AddBindingOptions struct {
-	// name of ServiceBinding instance
-	name string
-	// service is name of the service to be bound to the component
-	service string
-	// bindAsFiles decides if the service should be bind as a file
-	bindAsFiles bool
-
+	// Flags passed to the command
 	flags map[string]string
 
 	// Context
@@ -79,14 +76,14 @@ func (o *AddBindingOptions) Validate() (err error) {
 }
 
 func (o *AddBindingOptions) Run(_ context.Context) error {
-	getServices, serviceMap, err := o.clientset.BindingClient.GetServiceInstances()
+	serviceMap, err := o.clientset.BindingClient.GetServiceInstances()
 	if err != nil {
 		return err
 	}
-	if len(getServices) == 0 {
+	if serviceMap == nil {
 		return fmt.Errorf("No bindable service instances found")
 	}
-	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, getServices, serviceMap)
+	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, serviceMap)
 	if err != nil {
 		return err
 	}
@@ -103,7 +100,25 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if err != nil {
 		return err
 	}
-	return o.clientset.BindingClient.CreateBinding(service, bindingName, bindAsFiles, o.EnvSpecificInfo.GetDevfileObj(), serviceMap, componentContext)
+	err = o.clientset.BindingClient.CreateBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj(), componentContext)
+	if err != nil {
+		return err
+	}
+
+	log.Success("Successfully added the binding to the devfile.")
+
+	exitMessage := "Run `odo dev` to create it on the cluster."
+	if len(o.flags) == 0 {
+		splitService := strings.Split(service, " ")
+		serviceName := splitService[0]
+		kindGroup := strings.ReplaceAll(strings.ReplaceAll(splitService[1], "(", ""), ")", "")
+		exitMessage += fmt.Sprintf("\nYou can automate this command by executing:\n  odo add binding --service %s.%s --name %s", serviceName, kindGroup, bindingName)
+		if !bindAsFiles {
+			exitMessage += " --bind-as-files false"
+		}
+	}
+	log.Infof(exitMessage)
+	return nil
 }
 
 // NewCmdBinding implements the component odo sub-command
@@ -120,9 +135,9 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	bindingCmd.Flags().StringVar(&o.name, "name", "", "Name of the Binding to create")
-	bindingCmd.Flags().StringVar(&o.service, "service", "", "Name of the service to bind")
-	bindingCmd.Flags().BoolVarP(&o.bindAsFiles, "bind-as-files", "", true, "Bind the service as a file")
+	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")
+	bindingCmd.Flags().String(backend.FLAG_SERVICE, "", "Name of the service to bind")
+	bindingCmd.Flags().Bool(backend.FLAG_BIND_AS_FILES, true, "Bind the service as a file")
 	clientset.Add(bindingCmd, clientset.BINDING)
 
 	return bindingCmd

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,18 +21,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
-
-const (
-	ServiceBindingGroup   = "binding.operators.coreos.com"
-	ServiceBindingVersion = "v1alpha1"
-	ServiceBindingKind    = "ServiceBinding"
-)
-
-// IsServiceBindingSupported checks if resource of type service binding request present on the cluster
-func (c *Client) IsServiceBindingSupported() (bool, error) {
-	// Detection of SBO has been removed from issue https://github.com/redhat-developer/odo/issues/5084
-	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
-}
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsCSVSupported() (bool, error) {
@@ -85,26 +72,6 @@ func (c *Client) GetResourceSpecDefinition(group, version, kind string) (*spec.S
 		return nil, err
 	}
 	return getResourceSpecDefinitionFromSwagger(data, group, version, kind)
-}
-
-func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
-	if c.DynamicClient == nil {
-		return sboApi.BindableKinds{}, nil
-	}
-	gvr := schema.GroupVersionResource{Group: "binding.operators.coreos.com", Version: "v1alpha1", Resource: "bindablekinds"}
-	unstructuredBK, err := c.DynamicClient.Resource(gvr).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
-	if err != nil {
-		if kerrors.IsNotFound(err) {
-			return sboApi.BindableKinds{}, errors.New("Service Binding Operator is not installed, please install it before proceeding")
-		}
-		return sboApi.BindableKinds{}, err
-	}
-	var bindableKind sboApi.BindableKinds
-	err = c.ConvertUnstructuredToResource(unstructuredBK.UnstructuredContent(), &bindableKind)
-	if err != nil {
-		return sboApi.BindableKinds{}, err
-	}
-	return bindableKind, nil
 }
 
 // getResourceSpecDefinitionFromSwagger returns the OpenAPI v2 definition of the Kubernetes resource of a given group/version/kind, for a given swagger data

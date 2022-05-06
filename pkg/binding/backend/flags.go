@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	dfutil "github.com/devfile/library/pkg/util"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -34,7 +34,7 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 		return errors.New("missing --name parameter: please add --name <name> to specify a name for the service binding instance")
 	}
 
-	err := dfutil.ValidateK8sResourceName("name", flags[FLAG_NAME])
+	err := dfutil.ValidateK8sResourceName(FLAG_NAME, flags[FLAG_NAME])
 	if err != nil {
 		return err
 	}
@@ -42,27 +42,29 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 	return nil
 }
 
-// SelectServiceInstance returns the service name in the form of '<name> (<kind>.<apigroup>)'
-func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error) {
+// SelectServiceInstance parses the service's name, kind, and group from arg:flags,
+// after which it checks if the service is available in arg:serviceMap, it further checks for kind, and group
+// If a single service is found, it returns the service name in the form of '<name> (<kind>.<apigroup>)', else errors out.
+// serviceMap: a map of bindable service name with it's unstructured.Unstructured; this map is used to stay independent of the service name format.
+func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
 	var service string
-	serviceName, kind, group := parseServiceName(flags[FLAG_SERVICE])
+	selectedServiceName, selectedServiceKind, selectedServiceGroup := parseServiceName(flags[FLAG_SERVICE])
 	// services tracks all the services that matches flags[FLAG_SERVICE]
 	var services []string
-	for _, option := range options {
+	for option, unstructuredService := range serviceMap {
 		// option has format `<name> (<kind>.<apigroup>)`
-		optionName := strings.Split(option, " ")[0]
-		if optionName == serviceName {
-			if kind != "" && serviceMap[option].Kind == kind {
-				if group != "" && serviceMap[option].Group == group {
+		if unstructuredService.GetName() == selectedServiceName {
+			if selectedServiceKind != "" && unstructuredService.GetKind() == selectedServiceKind {
+				if selectedServiceGroup != "" && unstructuredService.GroupVersionKind().Group == selectedServiceGroup {
 					service = option
 					services = append(services, service)
 					continue
-				} else if group == "" {
+				} else if selectedServiceGroup == "" {
 					service = option
 					services = append(services, service)
 					continue
 				}
-			} else if kind == "" {
+			} else if selectedServiceKind == "" {
 				service = option
 				services = append(services, service)
 			}
@@ -84,7 +86,8 @@ func (o *FlagsBackend) AskBindingName(_ string, flags map[string]string) (string
 
 func (o *FlagsBackend) AskBindAsFiles(flags map[string]string) (bool, error) {
 	if flags[FLAG_BIND_AS_FILES] == "" {
-		return false, nil
+		// default value for bindAsFiles must be true
+		return true, nil
 	}
 	bindAsFiles, err := strconv.ParseBool(flags[FLAG_BIND_AS_FILES])
 	if err != nil {

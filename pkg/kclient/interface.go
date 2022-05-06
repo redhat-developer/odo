@@ -76,7 +76,6 @@ type ClientInterface interface {
 	GetServerVersion(timeout time.Duration) (*ServerInfo, error)
 
 	// operators.go
-	IsServiceBindingSupported() (bool, error)
 	IsCSVSupported() (bool, error)
 	ListClusterServiceVersions() (*olm.ClusterServiceVersionList, error)
 	GetCustomResourcesFromCSV(csv *olm.ClusterServiceVersion) *[]olm.CRDDescription
@@ -85,8 +84,14 @@ type ClientInterface interface {
 	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
 	GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
-	GetBindableKinds() (sboApi.BindableKinds, error)
 	ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error
+
+	// binding.go
+	IsServiceBindingSupported() (bool, error)
+	GetBindableKinds() (sboApi.BindableKinds, error)
+	GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
+	NewServiceBindingServiceObject(serviceRESTMapping *meta.RESTMapping, bindingName string, serviceName string) sboApi.Service
+	NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR metav1.GroupVersionResource, mappings []sboApi.Mapping, services []sboApi.Service) *sboApi.ServiceBinding
 
 	// owner_reference.go
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error

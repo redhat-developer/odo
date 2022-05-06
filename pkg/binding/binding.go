@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"gopkg.in/yaml.v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
 	"github.com/redhat-developer/odo/pkg/binding/backend"
@@ -40,7 +39,7 @@ func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 	initFlags := map[string]string{}
 	for flag, value := range flags {
-		if flag == backend.FLAG_NAME || flag == backend.FLAG_SERVICE {
+		if flag == backend.FLAG_NAME || flag == backend.FLAG_SERVICE || flag == backend.FLAG_BIND_AS_FILES {
 			initFlags[flag] = value
 		}
 	}
@@ -58,14 +57,14 @@ func (o *BindingClient) Validate(flags map[string]string) error {
 	return backend.Validate(flags)
 }
 
-func (o *BindingClient) SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error) {
+func (o *BindingClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
 	var backend backend.CreateBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.SelectServiceInstance(flags, options, serviceMap)
+	return backend.SelectServiceInstance(flags, serviceMap)
 }
 
 func (o *BindingClient) AskBindingName(serviceName, componentName string, flags map[string]string) (string, error) {
@@ -89,65 +88,28 @@ func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
 	return backend.AskBindAsFiles(flags)
 }
 
-func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bindAsFiles bool, obj parser.DevfileObj, serviceMap map[string]servicebinding.Ref, componentContext string) error {
+func (o *BindingClient) CreateBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
 	// serviceName format is <name> (<kind>.<apigroup>)
-	serviceRef := serviceMap[serviceName]
-	gvr, err := o.kubernetesClient.GetRestMappingFromGVK(schema.GroupVersionKind{
-		Group:   serviceRef.Group,
-		Version: serviceRef.Version,
-		Kind:    serviceRef.Kind,
-	})
+	restMapping, err := o.kubernetesClient.GetRestMappingFromUnstructured(unstructuredService)
 	if err != nil {
 		return err
 	}
 
-	service := servicebinding.Service{
-		Id: &bindingName, // Id field is helpful if user wants to inject mappings (custom binding data)
-		NamespacedRef: servicebinding.NamespacedRef{
-			Ref: servicebinding.Ref{
-				Group:    gvr.GroupVersionKind.Group,
-				Version:  gvr.GroupVersionKind.Version,
-				Kind:     gvr.GroupVersionKind.Kind,
-				Name:     strings.Split(serviceName, " ")[0],
-				Resource: gvr.Resource.Resource,
-			},
-		},
-	}
+	service := o.kubernetesClient.NewServiceBindingServiceObject(restMapping, bindingName, unstructuredService.GetName())
 
+	deploymentName := fmt.Sprintf("%s-app", obj.GetMetadataName())
 	deploymentGVR, err := o.kubernetesClient.GetDeploymentAPIVersion()
 	if err != nil {
 		return err
 	}
 
-	serviceBinding := &servicebinding.ServiceBinding{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: strings.Join([]string{kclient.ServiceBindingGroup, kclient.ServiceBindingVersion}, "/"),
-			Kind:       kclient.ServiceBindingKind,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: bindingName,
-		},
-		Spec: servicebinding.ServiceBindingSpec{
-			DetectBindingResources: true,
-			BindAsFiles:            bindAsFiles,
-			Application: servicebinding.Application{
-				Ref: servicebinding.Ref{
-					Name:     fmt.Sprintf("%s-app", obj.GetMetadataName()),
-					Group:    deploymentGVR.Group,
-					Version:  deploymentGVR.Version,
-					Resource: deploymentGVR.Resource,
-				},
-			},
-			Mappings: []servicebinding.Mapping{},
-			Services: []servicebinding.Service{service},
-		},
-	}
+	serviceBinding := o.kubernetesClient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []sboApi.Mapping{}, []sboApi.Service{service})
 
+	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
 	serviceBindingUnstructured, err := kclient.ConvertK8sResourceToUnstructured(serviceBinding)
 	if err != nil {
 		return err
 	}
-
 	yamlDesc, err := yaml.Marshal(serviceBindingUnstructured.UnstructuredContent())
 	if err != nil {
 		return err
@@ -157,61 +119,35 @@ func (o *BindingClient) CreateBinding(serviceName string, bindingName string, bi
 	return err
 }
 
-func (o *BindingClient) GetServiceInstances() ([]string, map[string]servicebinding.Ref, error) {
-	var bindableObjectMap = map[string]servicebinding.Ref{}
+func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
+	// Get all the GVKs present in the BindableKinds/bindable-kinds' Status
 	bindableKind, err := o.kubernetesClient.GetBindableKinds()
 	if err != nil {
-		return nil, bindableObjectMap, err
+		return nil, err
 	}
-	var bindableObjects []servicebinding.Ref
 
-	for _, bks := range bindableKind.Status {
-		// check every GroupKind only once
-		gkAlreadyAdded := false
-		for _, bo := range bindableObjects {
-			if bo.Group == bks.Group && bo.Kind == bks.Kind {
-				gkAlreadyAdded = true
-				continue
-			}
-		}
-		if gkAlreadyAdded {
-			continue
-		}
-		gvk := schema.GroupVersionKind{
-			Group:   bks.Group,
-			Version: bks.Version,
-			Kind:    bks.Kind,
-		}
-		gvr, err := o.kubernetesClient.GetRestMappingFromGVK(gvk)
-		if err != nil {
-			return nil, bindableObjectMap, err
-		}
+	// get a list of restMappings of all the GVKs present in bindableKind's Status
+	bindableKindRestMappings, err := o.kubernetesClient.GetBindableKindStatusRestMapping(bindableKind.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	var bindableObjectMap = map[string]unstructured.Unstructured{}
+	for _, restMapping := range bindableKindRestMappings {
 		// TODO: Debug into why List returns all the versions instead of the GVR version
-		resources, err := o.kubernetesClient.ListDynamicResources(gvr.Resource)
+		// List all the instances of the restMapping object
+		resources, err := o.kubernetesClient.ListDynamicResources(restMapping.Resource)
 		if err != nil {
-			return nil, bindableObjectMap, err
+			return nil, err
 		}
-		for _, result := range resources.Items {
-			bindableObjects = append(bindableObjects, servicebinding.Ref{
-				Name:    result.GetName(),
-				Group:   result.GroupVersionKind().Group,
-				Version: result.GroupVersionKind().Version,
-				Kind:    result.GroupVersionKind().Kind,
-			})
-		}
-	}
-	var options []string
 
-	for _, option := range bindableObjects {
-		gvk := schema.GroupVersionKind{
-			Group:   option.Group,
-			Version: option.Version,
-			Kind:    option.Kind,
+		for _, item := range resources.Items {
+			// format: `<name> (<kind>.<group>)`
+			serviceName := fmt.Sprintf("%s (%s.%s)", item.GetName(), item.GetKind(), item.GroupVersionKind().Group)
+			bindableObjectMap[serviceName] = item
 		}
-		serviceName := fmt.Sprintf("%s (%s.%s)", option.Name, gvk.Kind, gvk.Group)
-		options = append(options, serviceName)
-		bindableObjectMap[serviceName] = option
+
 	}
 
-	return options, bindableObjectMap, nil
+	return bindableObjectMap, nil
 }

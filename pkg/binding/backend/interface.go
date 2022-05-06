@@ -1,7 +1,7 @@
 package backend
 
 import (
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type CreateBindingBackend interface {
@@ -9,7 +9,7 @@ type CreateBindingBackend interface {
 	Validate(flags map[string]string) error
 	// SelectServiceInstance asks user to select the service to be bound to the component;
 	// it returns the service name in the form of '<name> (<kind>.<apigroup>)'
-	SelectServiceInstance(flags map[string]string, options []string, serviceMap map[string]servicebinding.Ref) (string, error)
+	SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error)
 	// AskBindingName asks for the service name to be set
 	AskBindingName(defaultName string, flags map[string]string) (string, error)
 	// AskBindAsFiles asks if service should be binded as files
