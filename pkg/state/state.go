@@ -24,6 +24,14 @@ func (o *State) SetForwardedPorts(fwPorts []api.ForwardedPort) error {
 	return o.save()
 }
 
+func (o *State) GetForwardedPorts() ([]api.ForwardedPort, error) {
+	err := o.read()
+	if err != nil {
+		return nil, err
+	}
+	return o.content.ForwardedPorts, err
+}
+
 func (o *State) SaveExit() error {
 	o.content.ForwardedPorts = nil
 	return o.save()
@@ -37,4 +45,12 @@ func (o *State) save() error {
 	}
 	// .odo directory is supposed to exist, don't create it
 	return o.fs.WriteFile(_filepath, jsonContent, 0644)
+}
+
+func (o *State) read() error {
+	jsonContent, err := o.fs.ReadFile(_filepath)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(jsonContent, &o.content)
 }

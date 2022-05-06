@@ -215,7 +215,6 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 func GetRunningModes(client kclient.ClientInterface, name string, namespace string) []api.RunningMode {
 	mapResult := map[string]bool{}
 	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode)
-	fmt.Printf("%s\n", selector)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return []api.RunningMode{api.RunningModeUnknown}

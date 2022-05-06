@@ -97,7 +97,7 @@ func (o *ComponentOptions) run(ctx context.Context) (result api.Component, err e
 
 // describeNamedComponent describes a component given its name
 func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, err error) {
-	forwardedPorts, err := getForwardedPorts()
+	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
 	if err != nil {
 		return api.Component{}, err
 	}
@@ -116,7 +116,7 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, err
 	if err != nil {
 		return api.Component{}, err
 	}
-	forwardedPorts, err := getForwardedPorts()
+	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
 	if err != nil {
 		return api.Component{}, err
 	}
@@ -128,11 +128,6 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, err
 		RunningIn:      runningIn,
 		ManagedBy:      "odo",
 	}, nil
-}
-
-func getForwardedPorts() ([]api.ForwardedPort, error) {
-	// TODO(feloy) when #5676 is done
-	return nil, nil
 }
 
 // NewCmdComponent implements the component odo sub-command
@@ -151,7 +146,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	}
 	componentCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the component to describe, optional. By default, the component in the local devfile is described")
 	componentCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace in which to find the component to describe, optional. By default, the current namespace defined in kubeconfig is used")
-	clientset.Add(componentCmd, clientset.KUBERNETES)
+	clientset.Add(componentCmd, clientset.KUBERNETES, clientset.STATE)
 	machineoutput.UsedByCommand(componentCmd)
 
 	return componentCmd
