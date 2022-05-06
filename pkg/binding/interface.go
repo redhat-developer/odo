@@ -19,7 +19,7 @@ type Client interface {
 
 	// CreateBinding adds the ServiceBinding manifest to the devfile
 	CreateBinding(service string, bindingName string, bindAsFiles bool, obj parser.DevfileObj, serviceMap map[string]servicebinding.Ref, componentContext string) error
-	// GetServiceInstances gets a list of all the bindable instance names, an error, and a map of bindable instance name with it's servicebinding.Ref;
+	// GetServiceInstances gets a list of all the bindable instance names, an error, and a map of bindable instance name with its servicebinding.Ref;
 	// the map will be passed onto CreateBinding, and SelectServiceInstance
 	GetServiceInstances() ([]string, map[string]servicebinding.Ref, error)
 }
