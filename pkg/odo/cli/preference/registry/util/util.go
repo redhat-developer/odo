@@ -37,5 +37,10 @@ func IsGithubBasedRegistry(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("unable to parse registry url %w", err)
 	}
-	return strings.Contains(pu.Host, "github.com") || strings.Contains(url, "raw.githubusercontent.com"), nil
+	for _, d := range []string{"github.com", "raw.githubusercontent.com"} {
+		if pu.Host == d || strings.HasSuffix(pu.Host, "."+d) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
