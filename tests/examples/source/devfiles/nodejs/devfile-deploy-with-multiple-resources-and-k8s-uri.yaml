@@ -1,0 +1,96 @@
+commands:
+  - exec:
+      commandLine: npm install
+      component: runtime
+      group:
+        isDefault: true
+        kind: build
+      workingDir: /project
+    id: install
+  - exec:
+      commandLine: npm start
+      component: runtime
+      group:
+        isDefault: true
+        kind: run
+      workingDir: /project
+    id: run
+  - exec:
+      commandLine: npm run debug
+      component: runtime
+      group:
+        isDefault: true
+        kind: debug
+      workingDir: /project
+    id: debug
+  - exec:
+      commandLine: npm test
+      component: runtime
+      group:
+        isDefault: true
+        kind: test
+      workingDir: /project
+    id: test
+  - id: build-image
+    apply:
+      component: outerloop-build
+  - id: deployk8s
+    apply:
+      component: outerloop-deploy
+  - id: deployservice
+    apply:
+      component: outerloop-deploy-2
+  - id: deploy
+    composite:
+      commands:
+        - build-image
+        - deployk8s
+        - deployservice
+      group:
+        kind: deploy
+        isDefault: true
+components:
+  - container:
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+      image: registry.access.redhat.com/ubi8/nodejs-14:latest
+      memoryLimit: 1024Mi
+      mountSources: true
+      sourceMapping: /project
+    name: runtime
+  - name: outerloop-build
+    image:
+      imageName: "{{CONTAINER_IMAGE}}"
+      dockerfile:
+        uri: ./Dockerfile
+        buildContext: ${PROJECTS_ROOT}
+        rootRequired: false
+
+  - name: outerloop-deploy
+    kubernetes:
+      uri: kubernetes/outerloop-deploy.yaml
+  - name: outerloop-deploy-2
+    kubernetes:
+      uri: kubernetes/outerloop-deploy-2.yaml
+
+metadata:
+  description: Stack with Node.js 14
+  displayName: Node.js Runtime
+  icon: https://nodejs.org/static/images/logos/nodejs-new-pantone-black.svg
+  language: javascript
+  name: mynodejs
+  projectType: nodejs
+  tags:
+    - NodeJS
+    - Express
+    - ubi8
+  version: 1.0.1
+schemaVersion: 2.2.0
+starterProjects:
+  - git:
+      remotes:
+        origin: https://github.com/odo-devfiles/nodejs-ex.git
+    name: nodejs-starter
+variables:
+  CONTAINER_IMAGE: quay.io/unknown-account/myimage
