@@ -2,6 +2,7 @@ package delete
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	corev1 "k8s.io/api/core/v1"
@@ -116,7 +117,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 
 	// Outer Loop
 	// Parse the devfile for outerloop K8s resources
-	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, devfileObj.Ctx.GetAbsPath())
+	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
 	if err != nil {
 		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
 	}
