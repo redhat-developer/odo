@@ -90,7 +90,7 @@ type ClientInterface interface {
 	IsServiceBindingSupported() (bool, error)
 	GetBindableKinds() (sboApi.BindableKinds, error)
 	GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
-	NewServiceBindingServiceObject(serviceRESTMapping *meta.RESTMapping, bindingName string, serviceName string) sboApi.Service
+	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (sboApi.Service, error)
 	NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR metav1.GroupVersionResource, mappings []sboApi.Mapping, services []sboApi.Service) *sboApi.ServiceBinding
 
 	// owner_reference.go

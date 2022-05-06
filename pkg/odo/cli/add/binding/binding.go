@@ -80,17 +80,23 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	if serviceMap == nil {
 		return fmt.Errorf("No bindable service instances found")
 	}
+
 	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, serviceMap)
 	if err != nil {
 		return err
 	}
-	bindingName, err := o.clientset.BindingClient.AskBindingName(service, o.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), o.flags)
+	splitService := strings.Split(service, " ")
+	serviceName := splitService[0]
+
+	bindingName, err := o.clientset.BindingClient.AskBindingName(serviceName, o.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), o.flags)
 	if err != nil {
 		return err
 	}
+
 	bindAsFiles, err := o.clientset.BindingClient.AskBindAsFiles(o.flags)
 	if err != nil {
 		return err
@@ -100,7 +106,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = o.clientset.BindingClient.CreateBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj(), componentContext)
+	err = o.clientset.BindingClient.AddBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj(), componentContext)
 	if err != nil {
 		return err
 	}
@@ -109,8 +115,6 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 
 	exitMessage := "Run `odo dev` to create it on the cluster."
 	if len(o.flags) == 0 {
-		splitService := strings.Split(service, " ")
-		serviceName := splitService[0]
 		kindGroup := strings.ReplaceAll(strings.ReplaceAll(splitService[1], "(", ""), ")", "")
 		exitMessage += fmt.Sprintf("\nYou can automate this command by executing:\n  odo add binding --service %s.%s --name %s", serviceName, kindGroup, bindingName)
 		if !bindAsFiles {

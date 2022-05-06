@@ -26,7 +26,7 @@ func (c *Client) IsServiceBindingSupported() (bool, error) {
 	return c.IsResourceSupported(ServiceBindingGroup, ServiceBindingVersion, ServiceBindingResource)
 }
 
-// GetBindableKinds returns BindableKind of name "bindable-kinds".
+// GetBindableKinds returns BindableKinds of name "bindable-kinds".
 // "bindable-kinds" is the default resource provided by SBO
 func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 	if c.DynamicClient == nil {
@@ -43,14 +43,16 @@ func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 	unstructuredBK, err = c.DynamicClient.Resource(gvr).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
-			return sboApi.BindableKinds{}, errors.New("Service Binding Operator is not installed, please install it before proceeding")
+			//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+			return bindableKind, errors.New("Service Binding Operator is not installed or it is not completely installed. Please ensure that it is installed successfully before proceeding.")
+			//revive:enable:error-strings
 		}
-		return sboApi.BindableKinds{}, err
+		return bindableKind, err
 	}
 
 	err = c.ConvertUnstructuredToResource(unstructuredBK.UnstructuredContent(), &bindableKind)
 	if err != nil {
-		return sboApi.BindableKinds{}, err
+		return bindableKind, err
 	}
 	return bindableKind, nil
 }
@@ -76,19 +78,26 @@ func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.B
 }
 
 // NewServiceBindingServiceObject returns the sboApi.Service object based on the RESTMapping
-func (c *Client) NewServiceBindingServiceObject(serviceRESTMapping *meta.RESTMapping, bindingName string, serviceName string) sboApi.Service {
-	return sboApi.Service{
+func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (sboApi.Service, error) {
+	var service sboApi.Service
+	serviceRESTMapping, err := c.GetRestMappingFromUnstructured(unstructuredService)
+	if err != nil {
+		return service, err
+	}
+
+	service = sboApi.Service{
 		Id: &bindingName, // Id field is helpful if user wants to inject mappings (custom binding data)
 		NamespacedRef: sboApi.NamespacedRef{
 			Ref: sboApi.Ref{
 				Group:    serviceRESTMapping.GroupVersionKind.Group,
 				Version:  serviceRESTMapping.GroupVersionKind.Version,
 				Kind:     serviceRESTMapping.GroupVersionKind.Kind,
-				Name:     serviceName,
+				Name:     unstructuredService.GetName(),
 				Resource: serviceRESTMapping.Resource.Resource,
 			},
 		},
 	}
+	return service, nil
 }
 
 // NewServiceBindingObject returns the sboApi.ServiceBinding object

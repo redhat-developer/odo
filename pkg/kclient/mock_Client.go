@@ -745,17 +745,18 @@ func (mr *MockClientInterfaceMockRecorder) GetBindableKindStatusRestMapping(bind
 }
 
 // NewServiceBindingServiceObject mocks base method
-func (m *MockClientInterface) NewServiceBindingServiceObject(serviceRESTMapping *meta.RESTMapping, bindingName, serviceName string) v1alpha10.Service {
+func (m *MockClientInterface) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (v1alpha10.Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewServiceBindingServiceObject", serviceRESTMapping, bindingName, serviceName)
+	ret := m.ctrl.Call(m, "NewServiceBindingServiceObject", unstructuredService, bindingName)
 	ret0, _ := ret[0].(v1alpha10.Service)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // NewServiceBindingServiceObject indicates an expected call of NewServiceBindingServiceObject
-func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(serviceRESTMapping, bindingName, serviceName interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(unstructuredService, bindingName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), serviceRESTMapping, bindingName, serviceName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), unstructuredService, bindingName)
 }
 
 // NewServiceBindingObject mocks base method

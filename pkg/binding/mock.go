@@ -107,18 +107,18 @@ func (mr *MockClientMockRecorder) AskBindAsFiles(flags interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindAsFiles", reflect.TypeOf((*MockClient)(nil).AskBindAsFiles), flags)
 }
 
-// CreateBinding mocks base method
-func (m *MockClient) CreateBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
+// AddBinding mocks base method
+func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBinding", bindingName, bindAsFiles, unstructuredService, obj, componentContext)
+	ret := m.ctrl.Call(m, "AddBinding", bindingName, bindAsFiles, unstructuredService, obj, componentContext)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateBinding indicates an expected call of CreateBinding
-func (mr *MockClientMockRecorder) CreateBinding(bindingName, bindAsFiles, unstructuredService, obj, componentContext interface{}) *gomock.Call {
+// AddBinding indicates an expected call of AddBinding
+func (mr *MockClientMockRecorder) AddBinding(bindingName, bindAsFiles, unstructuredService, obj, componentContext interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBinding", reflect.TypeOf((*MockClient)(nil).CreateBinding), bindingName, bindAsFiles, unstructuredService, obj, componentContext)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), bindingName, bindAsFiles, unstructuredService, obj, componentContext)
 }
 
 // GetServiceInstances mocks base method

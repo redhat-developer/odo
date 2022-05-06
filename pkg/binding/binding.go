@@ -2,7 +2,6 @@ package binding
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
@@ -10,15 +9,15 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
-	"github.com/redhat-developer/odo/pkg/binding/backend"
+	backendpkg "github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 
 type BindingClient struct {
 	// Backends
-	flagsBackend       *backend.FlagsBackend
-	interactiveBackend *backend.InteractiveBackend
+	flagsBackend       *backendpkg.FlagsBackend
+	interactiveBackend *backendpkg.InteractiveBackend
 
 	// Clients
 	kubernetesClient kclient.ClientInterface
@@ -28,8 +27,8 @@ func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()
 	return &BindingClient{
-		flagsBackend:       backend.NewFlagsBackend(),
-		interactiveBackend: backend.NewInteractiveBackend(askerClient),
+		flagsBackend:       backendpkg.NewFlagsBackend(),
+		interactiveBackend: backendpkg.NewInteractiveBackend(askerClient),
 		kubernetesClient:   kubernetesClient,
 	}
 }
@@ -37,18 +36,18 @@ func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 // GetFlags gets the flag specific to add binding operation so that it can correctly decide on the backend to be used
 // It ignores all the flags except the ones specific to add binding operation, for e.g. verbosity flag
 func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
-	initFlags := map[string]string{}
+	bindingFlags := map[string]string{}
 	for flag, value := range flags {
-		if flag == backend.FLAG_NAME || flag == backend.FLAG_SERVICE || flag == backend.FLAG_BIND_AS_FILES {
-			initFlags[flag] = value
+		if flag == backendpkg.FLAG_NAME || flag == backendpkg.FLAG_SERVICE || flag == backendpkg.FLAG_BIND_AS_FILES {
+			bindingFlags[flag] = value
 		}
 	}
-	return initFlags
+	return bindingFlags
 }
 
 // Validate calls Validate method of the adequate backend
 func (o *BindingClient) Validate(flags map[string]string) error {
-	var backend backend.CreateBindingBackend
+	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
@@ -58,28 +57,28 @@ func (o *BindingClient) Validate(flags map[string]string) error {
 }
 
 func (o *BindingClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
-	var backend backend.CreateBindingBackend
+	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.SelectServiceInstance(flags, serviceMap)
+	return backend.SelectServiceInstance(flags[backendpkg.FLAG_SERVICE], serviceMap)
 }
 
 func (o *BindingClient) AskBindingName(serviceName, componentName string, flags map[string]string) (string, error) {
-	var backend backend.CreateBindingBackend
+	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	defaultName := fmt.Sprintf("%v-%v", componentName, strings.Split(serviceName, " ")[0])
-	return backend.AskBindingName(defaultName, flags)
+	defaultBindingName := fmt.Sprintf("%v-%v", componentName, serviceName)
+	return backend.AskBindingName(defaultBindingName, flags)
 }
 
 func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
-	var backend backend.CreateBindingBackend
+	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
@@ -88,14 +87,11 @@ func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
 	return backend.AskBindAsFiles(flags)
 }
 
-func (o *BindingClient) CreateBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
-	// serviceName format is <name> (<kind>.<apigroup>)
-	restMapping, err := o.kubernetesClient.GetRestMappingFromUnstructured(unstructuredService)
+func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
+	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
 	if err != nil {
 		return err
 	}
-
-	service := o.kubernetesClient.NewServiceBindingServiceObject(restMapping, bindingName, unstructuredService.GetName())
 
 	deploymentName := fmt.Sprintf("%s-app", obj.GetMetadataName())
 	deploymentGVR, err := o.kubernetesClient.GetDeploymentAPIVersion()
@@ -120,7 +116,7 @@ func (o *BindingClient) CreateBinding(bindingName string, bindAsFiles bool, unst
 }
 
 func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
-	// Get all the GVKs present in the BindableKinds/bindable-kinds' Status
+	// Get the BindableKinds/bindable-kinds object
 	bindableKind, err := o.kubernetesClient.GetBindableKinds()
 	if err != nil {
 		return nil, err

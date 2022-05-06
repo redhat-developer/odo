@@ -16,11 +16,8 @@ const (
 	FLAG_BIND_AS_FILES = "bind-as-files"
 )
 
-var BINDING_FLAGS = []string{FLAG_NAME, FLAG_SERVICE, FLAG_BIND_AS_FILES}
-
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
-type FlagsBackend struct {
-}
+type FlagsBackend struct{}
 
 func NewFlagsBackend() *FlagsBackend {
 	return &FlagsBackend{}
@@ -34,21 +31,15 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 		return errors.New("missing --name parameter: please add --name <name> to specify a name for the service binding instance")
 	}
 
-	err := dfutil.ValidateK8sResourceName(FLAG_NAME, flags[FLAG_NAME])
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return dfutil.ValidateK8sResourceName(FLAG_NAME, flags[FLAG_NAME])
 }
 
-// SelectServiceInstance parses the service's name, kind, and group from arg:flags,
+// SelectServiceInstance parses the service's name, kind, and group from arg:serviceName,
 // after which it checks if the service is available in arg:serviceMap, it further checks for kind, and group
 // If a single service is found, it returns the service name in the form of '<name> (<kind>.<apigroup>)', else errors out.
 // serviceMap: a map of bindable service name with it's unstructured.Unstructured; this map is used to stay independent of the service name format.
-func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
-	var service string
-	selectedServiceName, selectedServiceKind, selectedServiceGroup := parseServiceName(flags[FLAG_SERVICE])
+func (o *FlagsBackend) SelectServiceInstance(serviceName string, serviceMap map[string]unstructured.Unstructured) (string, error) {
+	selectedServiceName, selectedServiceKind, selectedServiceGroup := parseServiceName(serviceName)
 	// services tracks all the services that matches flags[FLAG_SERVICE]
 	var services []string
 	for option, unstructuredService := range serviceMap {
@@ -56,28 +47,25 @@ func (o *FlagsBackend) SelectServiceInstance(flags map[string]string, serviceMap
 		if unstructuredService.GetName() == selectedServiceName {
 			if selectedServiceKind != "" && unstructuredService.GetKind() == selectedServiceKind {
 				if selectedServiceGroup != "" && unstructuredService.GroupVersionKind().Group == selectedServiceGroup {
-					service = option
-					services = append(services, service)
+					services = append(services, option)
 					continue
 				} else if selectedServiceGroup == "" {
-					service = option
-					services = append(services, service)
+					services = append(services, option)
 					continue
 				}
 			} else if selectedServiceKind == "" {
-				service = option
-				services = append(services, service)
+				services = append(services, option)
 			}
 		}
 	}
 	if len(services) == 0 {
-		return "", fmt.Errorf("%q service not found", flags[FLAG_SERVICE])
+		return "", fmt.Errorf("%q service not found", serviceName)
 	}
 	if len(services) > 1 {
-		return "", fmt.Errorf("Found more than one services with name %q [%+v]. Please mention <name>/<kind>.<apigroup>", flags[FLAG_SERVICE], strings.Join(services, ","))
+		return "", fmt.Errorf("Found more than one services with name %q [%+v]. Please mention <name>/<kind>.<apigroup>", serviceName, strings.Join(services, ","))
 	}
 
-	return service, nil
+	return services[0], nil
 }
 
 func (o *FlagsBackend) AskBindingName(_ string, flags map[string]string) (string, error) {
