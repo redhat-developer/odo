@@ -35,7 +35,7 @@ func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 	}
 }
 
-// GetFlags gets the flag specific to init operation so that it can correctly decide on the backend to be used
+// GetFlags gets the flag specific to add binding operation so that it can correctly decide on the backend to be used
 // It ignores all the flags except the ones specific to init operation, for e.g. verbosity flag
 func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 	initFlags := map[string]string{}
