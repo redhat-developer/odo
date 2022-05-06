@@ -212,12 +212,15 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(client kclient.ClientInterface, name string, namespace string) []api.RunningMode {
+func GetRunningModes(client kclient.ClientInterface, name string, namespace string) ([]api.RunningMode, error) {
 	mapResult := map[string]bool{}
 	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
-		return []api.RunningMode{api.RunningModeUnknown}
+		return []api.RunningMode{api.RunningModeUnknown}, nil
+	}
+	if len(resourceList) == 0 {
+		return nil, NewNoComponentFoundError(name, namespace)
 	}
 	for _, resource := range resourceList {
 		resourceLabels := resource.GetLabels()
@@ -235,7 +238,7 @@ func GetRunningModes(client kclient.ClientInterface, name string, namespace stri
 		keys = append(keys, api.RunningMode(k))
 	}
 	sort.Sort(keys)
-	return keys
+	return keys, nil
 }
 
 // Contains checks to see if the component exists in an array or not

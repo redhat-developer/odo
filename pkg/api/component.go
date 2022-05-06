@@ -22,11 +22,11 @@ func (u RunningModeList) Less(i, j int) bool {
 
 // Component describes the state of a devfile component
 type Component struct {
-	DevfilePath    string          `json:"devfilePath,omitempty"`
-	DevfileData    *DevfileData    `json:"devfileData,omitempty"`
-	ForwardedPorts []ForwardedPort `json:"forwardedPorts,omitempty"`
-	RunningIn      []RunningMode   `json:"runningIn"`
-	ManagedBy      string          `json:"managedBy"`
+	DevfilePath       string          `json:"devfilePath,omitempty"`
+	DevfileData       *DevfileData    `json:"devfileData,omitempty"`
+	DevForwardedPorts []ForwardedPort `json:"devForwardedPorts,omitempty"`
+	RunningIn         []RunningMode   `json:"runningIn"`
+	ManagedBy         string          `json:"managedBy"`
 }
 
 type ForwardedPort struct {

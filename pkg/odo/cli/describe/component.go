@@ -2,6 +2,7 @@ package describe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -53,6 +54,11 @@ func (o *ComponentOptions) SetClientset(clientset *clientset.Clientset) {
 func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	// 1. Name is not passed, and odo has access to devfile.yaml; Name is not passed so we assume that odo has access to the devfile.yaml
 	if o.nameFlag == "" {
+
+		if len(o.namespaceFlag) > 0 && len(o.nameFlag) == 0 {
+			return errors.New("--namespace can be used only with --name")
+		}
+
 		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 		if err != nil {
 			return err
@@ -79,7 +85,7 @@ func (o *ComponentOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_ = result
+	printHumanReadableOutput(result)
 	return nil
 }
 
@@ -97,15 +103,13 @@ func (o *ComponentOptions) run(ctx context.Context) (result api.Component, err e
 
 // describeNamedComponent describes a component given its name
 func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, err error) {
-	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
+	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, name, o.clientset.KubernetesClient.GetCurrentNamespace())
 	if err != nil {
 		return api.Component{}, err
 	}
-	runningIn := component.GetRunningModes(o.clientset.KubernetesClient, name, o.clientset.KubernetesClient.GetCurrentNamespace())
 	return api.Component{
-		ForwardedPorts: forwardedPorts,
-		RunningIn:      runningIn,
-		ManagedBy:      "odo",
+		RunningIn: runningIn,
+		ManagedBy: "odo",
 	}, nil
 }
 
@@ -120,14 +124,26 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, err
 	if err != nil {
 		return api.Component{}, err
 	}
-	runningIn := component.GetRunningModes(o.clientset.KubernetesClient, devfileObj.GetMetadataName(), o.clientset.KubernetesClient.GetCurrentNamespace())
+	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, devfileObj.GetMetadataName(), o.clientset.KubernetesClient.GetCurrentNamespace())
+	if err != nil {
+		if !errors.As(err, &component.NoComponentFoundError{}) {
+			return api.Component{}, err
+		} else {
+			// it is ok if the component is not deployed
+			forwardedPorts = nil
+		}
+	}
 	return api.Component{
-		DevfilePath:    path,
-		DevfileData:    api.GetDevfileData(devfileObj),
-		ForwardedPorts: forwardedPorts,
-		RunningIn:      runningIn,
-		ManagedBy:      "odo",
+		DevfilePath:       filepath.Join(path, o.Context.GetDevfilePath()),
+		DevfileData:       api.GetDevfileData(devfileObj),
+		DevForwardedPorts: forwardedPorts,
+		RunningIn:         runningIn,
+		ManagedBy:         "odo",
 	}, nil
+}
+
+func printHumanReadableOutput(component api.Component) {
+	// TODO(feloy) #5661
 }
 
 // NewCmdComponent implements the component odo sub-command

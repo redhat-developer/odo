@@ -27,7 +27,7 @@ func (o *State) SetForwardedPorts(fwPorts []api.ForwardedPort) error {
 func (o *State) GetForwardedPorts() ([]api.ForwardedPort, error) {
 	err := o.read()
 	if err != nil {
-		return nil, err
+		return nil, nil // if the state file does not exist, no ports are forwarded
 	}
 	return o.content.ForwardedPorts, err
 }

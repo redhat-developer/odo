@@ -144,11 +144,11 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 		return nil, err
 	}
 	return api.Component{
-		DevfilePath:    devfilePath,
-		DevfileData:    api.GetDevfileData(devfileObj),
-		ForwardedPorts: []api.ForwardedPort{},
-		RunningIn:      []api.RunningMode{},
-		ManagedBy:      "odo",
+		DevfilePath:       devfilePath,
+		DevfileData:       api.GetDevfileData(devfileObj),
+		DevForwardedPorts: []api.ForwardedPort{},
+		RunningIn:         []api.RunningMode{},
+		ManagedBy:         "odo",
 	}, nil
 }
 

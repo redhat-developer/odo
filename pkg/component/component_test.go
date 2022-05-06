@@ -302,9 +302,10 @@ func TestGetRunningModes(t *testing.T) {
 		namespace string
 	}
 	tests := []struct {
-		name string
-		args args
-		want []api.RunningMode
+		name    string
+		args    args
+		want    []api.RunningMode
+		wantErr bool
 	}{
 		{
 			name: "No resources",
@@ -375,7 +376,11 @@ func TestGetRunningModes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			got := GetRunningModes(tt.args.client(ctrl), tt.args.name, tt.args.namespace)
+			got, err := GetRunningModes(tt.args.client(ctrl), tt.args.name, tt.args.namespace)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetRunningModes() = %v, want %v", got, tt.want)
 			}
