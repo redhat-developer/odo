@@ -42,9 +42,9 @@ var _ = Describe("odo delete command tests", func() {
 			title:       "a component is bootstrapped using a devfile.yaml with URI-referenced Kubernetes components",
 			devfileName: "devfile-deploy-with-multiple-resources-and-k8s-uri.yaml",
 			setupFunc: func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project",
-					"kubernetes", "devfile-deploy-with-multiple-resources-and-k8s-uri"),
-					filepath.Join(commonVar.Context, "kubernetes"))
+				helper.CopyExample(
+					filepath.Join("source", "devfiles", "nodejs", "kubernetes", "devfile-deploy-with-multiple-resources-and-k8s-uri"),
+					filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy-with-multiple-resources-and-k8s-uri"))
 			},
 		},
 	} {

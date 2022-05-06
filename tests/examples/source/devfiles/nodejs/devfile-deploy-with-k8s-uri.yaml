@@ -86,4 +86,4 @@ components:
       uri: ./Dockerfile
 - name: outerloop-deploy
   kubernetes:
-    uri: 'kubernetes/outerloop-deployment.yaml'
+    uri: 'kubernetes/devfile-deploy-with-k8s-uri/outerloop-deployment.yaml'

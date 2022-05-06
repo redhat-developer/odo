@@ -69,10 +69,10 @@ components:
 
   - name: outerloop-deploy
     kubernetes:
-      uri: kubernetes/outerloop-deploy.yaml
+      uri: kubernetes/devfile-deploy-with-multiple-resources-and-k8s-uri/outerloop-deploy.yaml
   - name: outerloop-deploy-2
     kubernetes:
-      uri: kubernetes/outerloop-deploy-2.yaml
+      uri: kubernetes/devfile-deploy-with-multiple-resources-and-k8s-uri/outerloop-deploy-2.yaml
 
 metadata:
   description: Stack with Node.js 14
