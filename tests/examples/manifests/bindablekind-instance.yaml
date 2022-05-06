@@ -3,7 +3,7 @@ kind: Cluster
 metadata:
   name: cluster-sample
 spec:
-  instances: 3
+  instances: 1
   logLevel: info
   primaryUpdateStrategy: unsupervised
   storage:

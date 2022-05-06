@@ -21,7 +21,7 @@ func (o *InteractiveBackend) Validate(_ map[string]string) error {
 	return nil
 }
 
-func (o *InteractiveBackend) SelectServiceInstance(_ map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
+func (o *InteractiveBackend) SelectServiceInstance(_ string, serviceMap map[string]unstructured.Unstructured) (string, error) {
 	var options []string
 	for name := range serviceMap {
 		options = append(options, name)

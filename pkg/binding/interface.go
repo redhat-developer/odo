@@ -14,11 +14,11 @@ type Client interface {
 	SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error)
 	// AskBindingName returns the name to be set for the binding
 	AskBindingName(serviceName, componentName string, flags map[string]string) (string, error)
-	// AskBindAsFiles asks if the service should be binded as files
+	// AskBindAsFiles asks if the service should be bound as files
 	AskBindAsFiles(flags map[string]string) (bool, error)
 
-	// CreateBinding adds the ServiceBinding manifest to the devfile
-	CreateBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error
-	// GetServiceInstances gets a map of bindable instance name with its unstructured.Unstructured object, and an error;
+	// AddBinding adds the ServiceBinding manifest to the devfile
+	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error
+	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
 	GetServiceInstances() (map[string]unstructured.Unstructured, error)
 }
