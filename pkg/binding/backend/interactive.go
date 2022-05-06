@@ -1,7 +1,7 @@
 package backend
 
 import (
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
 )
@@ -21,7 +21,11 @@ func (o *InteractiveBackend) Validate(_ map[string]string) error {
 	return nil
 }
 
-func (o *InteractiveBackend) SelectServiceInstance(_ map[string]string, options []string, _ map[string]servicebinding.Ref) (string, error) {
+func (o *InteractiveBackend) SelectServiceInstance(_ map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
+	var options []string
+	for name := range serviceMap {
+		options = append(options, name)
+	}
 	return o.askerClient.AskServiceInstance(options)
 }
 

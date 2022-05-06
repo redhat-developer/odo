@@ -1,21 +1,6 @@
 #!/bin/bash
 set -x
 
-install_redis_operator(){
-  $1 create -f - <<EOF
-  apiVersion: operators.coreos.com/v1alpha1
-  kind: Subscription
-  metadata:
-    name: my-redis-operator
-    namespace: $2
-  spec:
-    channel: stable
-    name: redis-operator
-    source: $3
-    sourceNamespace: $4
-EOF
-}
-
 install_postgres_operator(){
   $1 create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
@@ -47,9 +32,6 @@ EOF
 }
 
 if [ "$KUBERNETES" == "true" ]; then
-  # install "redis-operator" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog source from "olm" namespace
-  install_redis_operator kubectl operators operatorhubio-catalog olm
-
   # install "cloud-native-postgresql" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog source from "olm" namespace
   install_postgres_operator kubectl operators operatorhubio-catalog olm
 
@@ -59,18 +41,12 @@ elif [ $(uname -m) == "s390x" ]; then
   # create "operator-ibm-catalog" CatalogSource for s390x
   oc apply -f https://raw.githubusercontent.com/redhat-developer/odo/main/docs/website/manifests/catalog-source-$(uname -m).yaml
 
-  # install "redis-operator" using "oc" in "openshift-operators" namespace; use "operator-ibm-catalog" catalog source from "openshift-marketplace" namespace
-  install_redis_operator oc openshift-operators operator-ibm-catalog openshift-marketplace
-
   # install "cloud-native-postgresql" using "oc" in "openshift-operators" namespace; use "operator-ibm-catalog" catalog source from "openshift-marketplace" namespace
   install_postgres_operator oc openshift-operators operator-ibm-catalog openshift-marketplace
 
   # install "service-binding-operator" using "oc" in "openshift-operators" namespace; use "operator-ibm-catalog" catalog source from "openshift-marketplace" namespace
   install_service_binding_operator oc openshift-operators service-binding-operator operator-ibm-catalog openshift-marketplace
 else
-  # install "redis-operator" using "oc" in "openshift-operators" namespace; use "community-operators" catalog source from "openshift-marketplace" namespace
-  install_redis_operator oc openshift-operators community-operators openshift-marketplace
-
   # install "cloud-native-postgresql" using "oc" in "openshift-operators" namespace; use "certified-operators" catalog source from "openshift-marketplace" namespace
   install_postgres_operator oc openshift-operators certified-operators openshift-marketplace
 

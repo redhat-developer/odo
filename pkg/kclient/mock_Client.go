@@ -566,21 +566,6 @@ func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
 }
 
-// IsServiceBindingSupported mocks base method
-func (m *MockClientInterface) IsServiceBindingSupported() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsServiceBindingSupported")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsServiceBindingSupported indicates an expected call of IsServiceBindingSupported
-func (mr *MockClientInterfaceMockRecorder) IsServiceBindingSupported() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsServiceBindingSupported", reflect.TypeOf((*MockClientInterface)(nil).IsServiceBindingSupported))
-}
-
 // IsCSVSupported mocks base method
 func (m *MockClientInterface) IsCSVSupported() (bool, error) {
 	m.ctrl.T.Helper()
@@ -700,6 +685,35 @@ func (mr *MockClientInterfaceMockRecorder) GetOperatorGVRList() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperatorGVRList", reflect.TypeOf((*MockClientInterface)(nil).GetOperatorGVRList))
 }
 
+// ConvertUnstructuredToResource mocks base method
+func (m *MockClientInterface) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConvertUnstructuredToResource", u, obj)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ConvertUnstructuredToResource indicates an expected call of ConvertUnstructuredToResource
+func (mr *MockClientInterfaceMockRecorder) ConvertUnstructuredToResource(u, obj interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertUnstructuredToResource", reflect.TypeOf((*MockClientInterface)(nil).ConvertUnstructuredToResource), u, obj)
+}
+
+// IsServiceBindingSupported mocks base method
+func (m *MockClientInterface) IsServiceBindingSupported() (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsServiceBindingSupported")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsServiceBindingSupported indicates an expected call of IsServiceBindingSupported
+func (mr *MockClientInterfaceMockRecorder) IsServiceBindingSupported() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsServiceBindingSupported", reflect.TypeOf((*MockClientInterface)(nil).IsServiceBindingSupported))
+}
+
 // GetBindableKinds mocks base method
 func (m *MockClientInterface) GetBindableKinds() (v1alpha10.BindableKinds, error) {
 	m.ctrl.T.Helper()
@@ -715,18 +729,47 @@ func (mr *MockClientInterfaceMockRecorder) GetBindableKinds() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKinds", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKinds))
 }
 
-// ConvertUnstructuredToResource mocks base method
-func (m *MockClientInterface) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
+// GetBindableKindStatusRestMapping mocks base method
+func (m *MockClientInterface) GetBindableKindStatusRestMapping(bindableKindStatuses []v1alpha10.BindableKindsStatus) ([]*meta.RESTMapping, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConvertUnstructuredToResource", u, obj)
-	ret0, _ := ret[0].(error)
+	ret := m.ctrl.Call(m, "GetBindableKindStatusRestMapping", bindableKindStatuses)
+	ret0, _ := ret[0].([]*meta.RESTMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindableKindStatusRestMapping indicates an expected call of GetBindableKindStatusRestMapping
+func (mr *MockClientInterfaceMockRecorder) GetBindableKindStatusRestMapping(bindableKindStatuses interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKindStatusRestMapping", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKindStatusRestMapping), bindableKindStatuses)
+}
+
+// NewServiceBindingServiceObject mocks base method
+func (m *MockClientInterface) NewServiceBindingServiceObject(serviceRESTMapping *meta.RESTMapping, bindingName, serviceName string) v1alpha10.Service {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewServiceBindingServiceObject", serviceRESTMapping, bindingName, serviceName)
+	ret0, _ := ret[0].(v1alpha10.Service)
 	return ret0
 }
 
-// ConvertUnstructuredToResource indicates an expected call of ConvertUnstructuredToResource
-func (mr *MockClientInterfaceMockRecorder) ConvertUnstructuredToResource(u, obj interface{}) *gomock.Call {
+// NewServiceBindingServiceObject indicates an expected call of NewServiceBindingServiceObject
+func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(serviceRESTMapping, bindingName, serviceName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertUnstructuredToResource", reflect.TypeOf((*MockClientInterface)(nil).ConvertUnstructuredToResource), u, obj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), serviceRESTMapping, bindingName, serviceName)
+}
+
+// NewServiceBindingObject mocks base method
+func (m *MockClientInterface) NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR v12.GroupVersionResource, mappings []v1alpha10.Mapping, services []v1alpha10.Service) *v1alpha10.ServiceBinding {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewServiceBindingObject", bindingName, bindAsFiles, deploymentName, deploymentGVR, mappings, services)
+	ret0, _ := ret[0].(*v1alpha10.ServiceBinding)
+	return ret0
+}
+
+// NewServiceBindingObject indicates an expected call of NewServiceBindingObject
+func (mr *MockClientInterfaceMockRecorder) NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, mappings, services interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingObject), bindingName, bindAsFiles, deploymentName, deploymentGVR, mappings, services)
 }
 
 // TryWithBlockOwnerDeletion mocks base method
