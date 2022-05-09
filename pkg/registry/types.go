@@ -1,5 +1,7 @@
 package registry
 
+import "github.com/redhat-developer/odo/pkg/api"
+
 // Registry is the main struct of devfile registry
 type Registry struct {
 	Name   string
@@ -9,16 +11,17 @@ type Registry struct {
 
 // DevfileStack is the main struct for devfile catalog components
 type DevfileStack struct {
-	Name            string
-	DisplayName     string
-	Description     string
-	Link            string
-	Registry        Registry
-	Language        string
-	Tags            []string
-	ProjectType     string
-	Version         string
-	StarterProjects []string
+	Name                 string
+	DisplayName          string
+	Description          string
+	Link                 string
+	Registry             Registry
+	Language             string
+	Tags                 []string
+	ProjectType          string
+	Version              string
+	StarterProjects      []string
+	SupportedOdoFeatures api.SupportedOdoFeatures
 }
 
 // DevfileStackList lists all the Devfile Stacks

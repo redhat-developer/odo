@@ -60,7 +60,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(o.registryFlag, o.devfileFlag, o.filterFlag)
+	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(o.registryFlag, o.devfileFlag, o.filterFlag, o.detailsFlag)
 	if err != nil {
 		return err
 	}
@@ -150,14 +150,6 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 
 		if o.detailsFlag {
 
-			// If details are being shown, we must download the Devfile from the registry
-			// parse it, in order to retrieve command information such as if debug, dev, deploy and test is enabled.
-			devfileData, err := o.clientset.RegistryClient.RetrieveDevfileDataFromRegistry(devfileComponent.Registry.Name, devfileComponent.Name)
-			if err != nil {
-				log.Errorf("Error retrieving devfile %s from registry %s: %v", devfileComponent.Name, devfileComponent.Registry.Name, err)
-				return
-			}
-
 			// Output the details of the component
 			fmt.Printf(`%s: %s
 %s: %s
@@ -186,9 +178,9 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 				log.Sbold("Language"), devfileComponent.Language,
 				log.Sbold("Starter Projects"), strings.Join(devfileComponent.StarterProjects, "\n  - "),
 				log.Sbold("Supported odo Features"),
-				boolToYesNo(devfileData.SupportedOdoFeatures.Dev),
-				boolToYesNo(devfileData.SupportedOdoFeatures.Deploy),
-				boolToYesNo(devfileData.SupportedOdoFeatures.Debug),
+				boolToYesNo(devfileComponent.SupportedOdoFeatures.Dev),
+				boolToYesNo(devfileComponent.SupportedOdoFeatures.Deploy),
+				boolToYesNo(devfileComponent.SupportedOdoFeatures.Debug),
 				"\n")
 		} else {
 			// Create a simplified row only showing the name, registry and description.

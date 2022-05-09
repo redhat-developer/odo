@@ -11,7 +11,6 @@ import (
 	util "github.com/devfile/library/pkg/util"
 	library "github.com/devfile/registry-support/registry-library/library"
 	gomock "github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/api"
 )
 
 // MockClient is a mock of Client interface.
@@ -82,27 +81,18 @@ func (mr *MockClientMockRecorder) GetDevfileRegistries(registryName interface{})
 }
 
 // ListDevfileStacks mocks base method.
-func (m *MockClient) ListDevfileStacks(registryName, devfileName, filter string) (DevfileStackList, error) {
+func (m *MockClient) ListDevfileStacks(registryName, devfileName, filter string, detailsFlag bool) (DevfileStackList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDevfileStacks", registryName, devfileName, filter)
+	ret := m.ctrl.Call(m, "ListDevfileStacks", registryName, devfileName, filter, detailsFlag)
 	ret0, _ := ret[0].(DevfileStackList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDevfileStacks mocks base method.
-func (m *MockClient) RetrieveDevfileDataFromRegistry(registryName, devfileName string) (api.DevfileData, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RetrieveDevfileDataFromRegistry", registryName, devfileName)
-	ret0, _ := ret[0].(api.DevfileData)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
 // ListDevfileStacks indicates an expected call of ListDevfileStacks.
-func (mr *MockClientMockRecorder) ListDevfileStacks(registryName, devfileName, filter interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListDevfileStacks(registryName, devfileName, filter, detailsFlag interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileStacks", reflect.TypeOf((*MockClient)(nil).ListDevfileStacks), registryName, devfileName, filter)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileStacks", reflect.TypeOf((*MockClient)(nil).ListDevfileStacks), registryName, devfileName, filter, detailsFlag)
 }
 
 // PullStackFromRegistry mocks base method.

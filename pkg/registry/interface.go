@@ -5,7 +5,6 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/devfile/registry-support/registry-library/library"
-	"github.com/redhat-developer/odo/pkg/api"
 )
 
 type Client interface {
@@ -13,6 +12,5 @@ type Client interface {
 	DownloadFileInMemory(params dfutil.HTTPRequestParams) ([]byte, error)
 	DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error
 	GetDevfileRegistries(registryName string) ([]Registry, error)
-	ListDevfileStacks(registryName, devfileFlag, filterFlag string) (DevfileStackList, error)
-	RetrieveDevfileDataFromRegistry(registryName, devfile string) (api.DevfileData, error)
+	ListDevfileStacks(registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error)
 }

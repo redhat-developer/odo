@@ -22,7 +22,7 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 // to use depending on the files in the path
 func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, registry.Registry, error) {
 	types := []recognizer.DevFileType{}
-	components, err := o.registryClient.ListDevfileStacks("", "", "")
+	components, err := o.registryClient.ListDevfileStacks("", "", "", false)
 	if err != nil {
 		return recognizer.DevFileType{}, registry.Registry{}, err
 	}

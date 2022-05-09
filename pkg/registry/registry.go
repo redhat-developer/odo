@@ -91,7 +91,7 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]Registry, e
 }
 
 // ListDevfileStacks lists all the available devfile stacks in devfile registry
-func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag string) (DevfileStackList, error) {
+func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error) {
 	catalogDevfileList := &DevfileStackList{}
 	var err error
 
@@ -132,11 +132,18 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 		return *catalogDevfileList, err
 	}
 
+	// Go through all the devfiles and filter based on:
+	// What's in the name or description
+	// The exact name of the devfile
+	//
+	// We also add additional details such as supported odo features (which we
+	// manually http get) if the details flag has been passed in.
 	for _, registryDevfiles := range registrySlice {
 
 		devfiles := []DevfileStack{}
 
 		for _, devfile := range registryDevfiles {
+
 			if filterFlag != "" {
 				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) {
 					continue
@@ -147,6 +154,14 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 				if devfileFlag != devfile.Name {
 					continue
 				}
+			}
+
+			if detailsFlag {
+				devfileData, err := o.retrieveDevfileDataFromRegistry(devfile.Registry.Name, devfile.Name)
+				if err != nil {
+					return *catalogDevfileList, err
+				}
+				devfile.SupportedOdoFeatures = devfileData.SupportedOdoFeatures
 			}
 
 			devfiles = append(devfiles, devfile)
@@ -196,7 +211,7 @@ func createRegistryDevfiles(registry Registry, devfileIndex []indexSchema.Schema
 	return registryDevfiles, nil
 }
 
-func (o RegistryClient) RetrieveDevfileDataFromRegistry(registryName string, devfileName string) (api.DevfileData, error) {
+func (o RegistryClient) retrieveDevfileDataFromRegistry(registryName string, devfileName string) (api.DevfileData, error) {
 
 	// Create random temporary file
 	tmpFile, err := ioutil.TempDir("", "odo")
@@ -234,5 +249,5 @@ func (o RegistryClient) RetrieveDevfileDataFromRegistry(registryName string, dev
 
 	// Convert DevfileObj to DevfileData
 	// use api.GetDevfileData to get supported features
-	return api.GetDevfileData(devfileObj), nil
+	return *api.GetDevfileData(devfileObj), nil
 }

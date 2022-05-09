@@ -264,7 +264,7 @@ func TestListDevfileStacks(t *testing.T) {
 				},
 			}).AnyTimes()
 			catClient := NewRegistryClient(filesystem.NewFakeFs(), prefClient)
-			got, err := catClient.ListDevfileStacks(tt.registryName, tt.devfileName, tt.filter)
+			got, err := catClient.ListDevfileStacks(tt.registryName, tt.devfileName, tt.filter, false)
 			if err != nil {
 				t.Error(err)
 			}

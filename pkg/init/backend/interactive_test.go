@@ -45,7 +45,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				},
 				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any())
+					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 					return client
 				},
 			},
@@ -72,7 +72,7 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				},
 				buildCatalogClient: func(ctrl *gomock.Controller) registry.Client {
 					client := registry.NewMockClient(ctrl)
-					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any())
+					client.EXPECT().ListDevfileStacks(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 					return client
 				},
 			},
