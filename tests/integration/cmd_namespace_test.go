@@ -6,7 +6,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = FDescribe("create/delete/list/get/set namespace tests", func() {
+var _ = Describe("create/delete/list/get/set namespace tests", func() {
 	var commonVar helper.CommonVar
 
 	BeforeEach(func() {
