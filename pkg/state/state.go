@@ -2,6 +2,8 @@ package state
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -27,7 +29,10 @@ func (o *State) SetForwardedPorts(fwPorts []api.ForwardedPort) error {
 func (o *State) GetForwardedPorts() ([]api.ForwardedPort, error) {
 	err := o.read()
 	if err != nil {
-		return nil, nil // if the state file does not exist, no ports are forwarded
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil // if the state file does not exist, no ports are forwarded
+		}
+		return nil, err
 	}
 	return o.content.ForwardedPorts, err
 }
