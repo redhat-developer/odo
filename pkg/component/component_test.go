@@ -186,6 +186,34 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{}, nil)
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Only PackageManifest resource",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource}, nil)
+					return c
+				},
+				name:      "aname",
+				namespace: "anamespace",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "No dev/deploy resources",
+			args: args{
+				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					c := kclient.NewMockClientInterface(ctrl)
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource}, nil)
 					return c
 				},

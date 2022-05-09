@@ -18,6 +18,7 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 )
 
@@ -219,15 +220,21 @@ func GetRunningModes(client kclient.ClientInterface, name string, namespace stri
 	if err != nil {
 		return []api.RunningMode{api.RunningModeUnknown}, nil
 	}
-	if len(resourceList) == 0 {
-		return nil, NewNoComponentFoundError(name, namespace)
-	}
+	filteredList := []unstructured.Unstructured{}
 	for _, resource := range resourceList {
-		resourceLabels := resource.GetLabels()
 		// ignore "PackageManifest" as they are not components, it is just a record in OpenShift catalog.
 		if resource.GetKind() == "PackageManifest" {
 			continue
 		}
+		filteredList = append(filteredList, resource)
+	}
+
+	if len(filteredList) == 0 {
+		return nil, NewNoComponentFoundError(name, namespace)
+	}
+
+	for _, resource := range filteredList {
+		resourceLabels := resource.GetLabels()
 		mode := labels.GetMode(resourceLabels)
 		if mode != "" {
 			mapResult[mode] = true
