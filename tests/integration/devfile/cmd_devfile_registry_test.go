@@ -37,7 +37,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 	It("Should list detailed information regarding nodejs", func() {
 		output := helper.Cmd("odo", "registry", "--details", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
-		helper.MatchAllInOutput(output, []string{"nodejs-starter", "javascript", "Node.js Runtime"})
+		helper.MatchAllInOutput(output, []string{"nodejs-starter", "javascript", "Node.js Runtime", "Dev: Y"})
 	})
 
 	It("Should list python specifically", func() {

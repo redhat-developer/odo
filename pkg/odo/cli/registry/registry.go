@@ -60,7 +60,7 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes ListOptions after they've been created
 func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 
-	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks("")
+	o.devfileList, err = o.clientset.RegistryClient.ListDevfileStacks(o.registryFlag, o.devfileFlag, o.filterFlag)
 	if err != nil {
 		return err
 	}
@@ -144,39 +144,19 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 
 	t.AppendHeader(table.Row{"NAME", "REGISTRY", "DESCRIPTION"})
 
-	devfiles := []registry.DevfileStack{}
-	// Filter through all the devfile components per the filters / parameters passed in.
 	for _, devfileComponent := range DevfileList {
-
-		// If the user has specified a filter with variable o.filterFlag, then only show the components
-		// containing that specific string.
-		if o.filterFlag != "" {
-			if !strings.Contains(devfileComponent.Name, o.filterFlag) && !strings.Contains(devfileComponent.Description, o.filterFlag) {
-				continue
-			}
-		}
-
-		// If the user passed in --devfile-registry <REGISTRY-NAME>, then only show the components from that Devfile stack
-		if o.registryFlag != "" {
-			if !strings.Contains(devfileComponent.Registry.Name, o.registryFlag) {
-				continue
-			}
-		}
-
-		// If the user passed in --devfile <NAME> only show that specific component matching that name
-		if o.devfileFlag != "" {
-			if devfileComponent.Name != o.devfileFlag {
-				continue
-			}
-		}
-		devfiles = append(devfiles, devfileComponent)
-	}
-
-	for _, devfileComponent := range devfiles {
 		// Mark the name as yellow in the index so it's easier to see.
 		name := text.Colors{text.FgHiYellow}.Sprint(devfileComponent.Name)
 
 		if o.detailsFlag {
+
+			// If details are being shown, we must download the Devfile from the registry
+			// parse it, in order to retrieve command information such as if debug, dev, deploy and test is enabled.
+			devfileData, err := o.clientset.RegistryClient.RetrieveDevfileDataFromRegistry(devfileComponent.Registry.Name, devfileComponent.Name)
+			if err != nil {
+				log.Errorf("Error retrieving devfile %s from registry %s: %v", devfileComponent.Name, devfileComponent.Registry.Name, err)
+				return
+			}
 
 			// Output the details of the component
 			fmt.Printf(`%s: %s
@@ -190,6 +170,10 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 %s: %s
 %s:
   - %s
+%s:
+  - Dev: %s
+  - Deploy: %s
+  - Debug: %s
 %s`,
 				log.Sbold("Name"), name,
 				log.Sbold("Display Name"), devfileComponent.DisplayName,
@@ -201,8 +185,10 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 				log.Sbold("Project Type"), devfileComponent.ProjectType,
 				log.Sbold("Language"), devfileComponent.Language,
 				log.Sbold("Starter Projects"), strings.Join(devfileComponent.StarterProjects, "\n  - "),
-				// TODO, showing dev / deploy / debug NOT yet implemented
-				// log.Sbold("Supported odo Features"), "Y", "Y", "Y",
+				log.Sbold("Supported odo Features"),
+				boolToYesNo(devfileData.SupportedOdoFeatures.Dev),
+				boolToYesNo(devfileData.SupportedOdoFeatures.Deploy),
+				boolToYesNo(devfileData.SupportedOdoFeatures.Debug),
 				"\n")
 		} else {
 			// Create a simplified row only showing the name, registry and description.
@@ -212,7 +198,7 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 	}
 
 	// Exit with an error if there are no components to show, so we don't render the table / continue
-	if len(devfiles) == 0 {
+	if len(DevfileList) == 0 {
 		log.Error("There are no Devfiles available to show")
 		return
 	}
@@ -222,4 +208,12 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 		t.Render()
 	}
 
+}
+
+// Take a boolean and return Y or N
+func boolToYesNo(b bool) string {
+	if b {
+		return "Y"
+	}
+	return "N"
 }

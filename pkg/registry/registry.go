@@ -1,12 +1,20 @@
 package registry
 
 import (
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
 	"sync"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	dfutil "github.com/devfile/library/pkg/util"
 	indexSchema "github.com/devfile/registry-support/index/generator/schema"
 	"github.com/devfile/registry-support/registry-library/library"
+
+	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -83,7 +91,7 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]Registry, e
 }
 
 // ListDevfileStacks lists all the available devfile stacks in devfile registry
-func (o RegistryClient) ListDevfileStacks(registryName string) (DevfileStackList, error) {
+func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag string) (DevfileStackList, error) {
 	catalogDevfileList := &DevfileStackList{}
 	var err error
 
@@ -125,7 +133,26 @@ func (o RegistryClient) ListDevfileStacks(registryName string) (DevfileStackList
 	}
 
 	for _, registryDevfiles := range registrySlice {
-		catalogDevfileList.Items = append(catalogDevfileList.Items, registryDevfiles...)
+
+		devfiles := []DevfileStack{}
+
+		for _, devfile := range registryDevfiles {
+			if filterFlag != "" {
+				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) {
+					continue
+				}
+			}
+
+			if devfileFlag != "" {
+				if devfileFlag != devfile.Name {
+					continue
+				}
+			}
+
+			devfiles = append(devfiles, devfile)
+		}
+
+		catalogDevfileList.Items = append(catalogDevfileList.Items, devfiles...)
 	}
 
 	return *catalogDevfileList, nil
@@ -167,4 +194,45 @@ func createRegistryDevfiles(registry Registry, devfileIndex []indexSchema.Schema
 	}
 
 	return registryDevfiles, nil
+}
+
+func (o RegistryClient) RetrieveDevfileDataFromRegistry(registryName string, devfileName string) (api.DevfileData, error) {
+
+	// Create random temporary file
+	tmpFile, err := ioutil.TempDir("", "odo")
+	if err != nil {
+		return api.DevfileData{}, err
+	}
+	defer os.Remove(tmpFile)
+
+	registries := o.preferenceClient.RegistryList()
+	var reg preference.Registry
+
+	// Get the file and save it to the temporary file
+	// Why do we do that?
+	// 1. We need to get the file from the registry
+	// 2. The devfile api library does not support saving in memory
+	// 3. We need to get the file from the registry and save it to the temporary file
+	// 4. We need to read the file from the temporary file, unmarshal it and then return the devfile data
+	for _, reg = range *registries {
+		if reg.Name == registryName {
+			err = o.PullStackFromRegistry(reg.URL, devfileName, tmpFile, segment.GetRegistryOptions())
+			if err != nil {
+				return api.DevfileData{}, err
+			}
+		}
+	}
+
+	// Get the devfile yaml file from the directory
+	devfileYamlFile := location.DevfileFilenamesProvider(tmpFile)
+
+	// Parse and validate the file and return the devfile data
+	devfileObj, err := devfile.ParseAndValidateFromFile(path.Join(tmpFile, devfileYamlFile))
+	if err != nil {
+		return api.DevfileData{}, err
+	}
+
+	// Convert DevfileObj to DevfileData
+	// use api.GetDevfileData to get supported features
+	return api.GetDevfileData(devfileObj), nil
 }
