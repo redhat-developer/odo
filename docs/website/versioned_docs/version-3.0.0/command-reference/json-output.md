@@ -94,12 +94,15 @@ $ echo $?
 ## odo describe component -o json
 
 The `describe component` command returns information about a component, either the component
-defined by a Devfile in the current directory, of a deployed component given its name and namespace.
+defined by a Devfile in the current directory, or a deployed component given its name and namespace.
 
-When the `describe component`  command is executed without parameter from a directory containing a Devfile, it will return:
-- information about the Devfile,
+When the `describe component` command is executed without parameter from a directory containing a Devfile, it will return:
+- information about the Devfile
+  - the path of the Devfile,
+  - the content of the Devfile,
+  - supported `odo` features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
 - the status of the component
-  - the forwarded port if odo is currently running in Dev mode,
+  - the forwarded ports if odo is currently running in Dev mode,
   - the modes in which the component is deployed (either none, Dev, Deploy or both)
 
 ```bash
