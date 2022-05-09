@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: my-cs
+  name: my-cs
+spec:
+  ports:
+    - name: 5678-8080
+      port: 5678
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: my-cs
+  type: ClusterIP
+status:
+  loadBalancer: {}

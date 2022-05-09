@@ -54,8 +54,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			title:       "using a devfile.yaml containing an outer-loop Kubernetes component referenced via an URI",
 			devfileName: "devfile-deploy-with-k8s-uri.yaml",
 			setupFunc: func() {
-				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project", "kubernetes"),
-					filepath.Join(commonVar.Context, "kubernetes"))
+				helper.CopyExample(
+					filepath.Join("source", "devfiles", "nodejs", "kubernetes", "devfile-deploy-with-k8s-uri"),
+					filepath.Join(commonVar.Context, "kubernetes", "devfile-deploy-with-k8s-uri"))
 			},
 		},
 	} {
