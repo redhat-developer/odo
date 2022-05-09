@@ -13,17 +13,14 @@ import (
 )
 
 const (
-	ServiceBindingGroup    = "binding.operators.coreos.com"
-	ServiceBindingVersion  = "v1alpha1"
-	ServiceBindingKind     = "ServiceBinding"
-	ServiceBindingResource = "servicebindings"
-	BindableKindsResource  = "bindablekinds"
+	ServiceBindingKind    = "ServiceBinding"
+	BindableKindsResource = "bindablekinds"
 )
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
-	// Detection of SBO has been removed from issue https://github.com/redhat-developer/odo/issues/5084
-	return c.IsResourceSupported(ServiceBindingGroup, ServiceBindingVersion, ServiceBindingResource)
+	gvr := sboApi.GroupVersionResource
+	return c.IsResourceSupported(gvr.Group, gvr.Version, gvr.Resource)
 }
 
 // GetBindableKinds returns BindableKinds of name "bindable-kinds".
@@ -39,8 +36,7 @@ func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 		err            error
 	)
 
-	gvr := schema.GroupVersionResource{Group: ServiceBindingGroup, Version: ServiceBindingVersion, Resource: BindableKindsResource}
-	unstructuredBK, err = c.DynamicClient.Resource(gvr).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
+	unstructuredBK, err = c.DynamicClient.Resource(sboApi.GroupVersion.WithResource(BindableKindsResource)).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			//revive:disable:error-strings This is a top-level error message displayed as is to the end user
@@ -59,9 +55,9 @@ func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 
 // GetBindableKindStatusRestMapping retuns a list of *meta.RESTMapping of all the bindable kind operator CRD
 func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.BindableKindsStatus) ([]*meta.RESTMapping, error) {
-	var bindableObjectRESTMappings []*meta.RESTMapping
+	var result []*meta.RESTMapping
 	for _, bks := range bindableKindStatuses {
-		if isBindableKindStatusGKAlreadyAdded(bindableObjectRESTMappings, bks) {
+		if mappingContainsBKS(result, bks) {
 			continue
 		}
 		restMapping, err := c.GetRestMappingFromGVK(schema.GroupVersionKind{
@@ -72,20 +68,19 @@ func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.B
 		if err != nil {
 			return nil, err
 		}
-		bindableObjectRESTMappings = append(bindableObjectRESTMappings, restMapping)
+		result = append(result, restMapping)
 	}
-	return bindableObjectRESTMappings, nil
+	return result, nil
 }
 
 // NewServiceBindingServiceObject returns the sboApi.Service object based on the RESTMapping
 func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (sboApi.Service, error) {
-	var service sboApi.Service
 	serviceRESTMapping, err := c.GetRestMappingFromUnstructured(unstructuredService)
 	if err != nil {
-		return service, err
+		return sboApi.Service{}, err
 	}
 
-	service = sboApi.Service{
+	return sboApi.Service{
 		Id: &bindingName, // Id field is helpful if user wants to inject mappings (custom binding data)
 		NamespacedRef: sboApi.NamespacedRef{
 			Ref: sboApi.Ref{
@@ -96,19 +91,15 @@ func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured
 				Resource: serviceRESTMapping.Resource.Resource,
 			},
 		},
-	}
-	return service, nil
+	}, nil
 }
 
 // NewServiceBindingObject returns the sboApi.ServiceBinding object
 func (c *Client) NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR v1.GroupVersionResource, mappings []sboApi.Mapping, services []sboApi.Service) *sboApi.ServiceBinding {
 	return &sboApi.ServiceBinding{
 		TypeMeta: v1.TypeMeta{
-			APIVersion: schema.GroupVersion{
-				Group:   ServiceBindingGroup,
-				Version: ServiceBindingVersion,
-			}.String(),
-			Kind: ServiceBindingKind,
+			APIVersion: sboApi.GroupVersion.String(),
+			Kind:       ServiceBindingKind,
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name: bindingName,
@@ -130,7 +121,8 @@ func (c *Client) NewServiceBindingObject(bindingName string, bindAsFiles bool, d
 	}
 }
 
-func isBindableKindStatusGKAlreadyAdded(bindableObjects []*meta.RESTMapping, bks sboApi.BindableKindsStatus) (gkAlreadyAdded bool) {
+func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks sboApi.BindableKindsStatus) bool {
+	var gkAlreadyAdded bool
 	// check every GroupKind only once
 	for _, bo := range bindableObjects {
 		if bo.GroupVersionKind.Group == bks.Group && bo.GroupVersionKind.Kind == bks.Kind {
@@ -138,5 +130,5 @@ func isBindableKindStatusGKAlreadyAdded(bindableObjects []*meta.RESTMapping, bks
 			break
 		}
 	}
-	return
+	return gkAlreadyAdded
 }
