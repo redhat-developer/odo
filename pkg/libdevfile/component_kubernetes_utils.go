@@ -7,8 +7,6 @@ import (
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // GetK8sComponentAsUnstructured parses the Inlined/URI K8s of the devfile K8s component
