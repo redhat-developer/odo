@@ -2,6 +2,8 @@ package state
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -24,6 +26,17 @@ func (o *State) SetForwardedPorts(fwPorts []api.ForwardedPort) error {
 	return o.save()
 }
 
+func (o *State) GetForwardedPorts() ([]api.ForwardedPort, error) {
+	err := o.read()
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil // if the state file does not exist, no ports are forwarded
+		}
+		return nil, err
+	}
+	return o.content.ForwardedPorts, err
+}
+
 func (o *State) SaveExit() error {
 	o.content.ForwardedPorts = nil
 	return o.save()
@@ -37,4 +50,12 @@ func (o *State) save() error {
 	}
 	// .odo directory is supposed to exist, don't create it
 	return o.fs.WriteFile(_filepath, jsonContent, 0644)
+}
+
+func (o *State) read() error {
+	jsonContent, err := o.fs.ReadFile(_filepath)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(jsonContent, &o.content)
 }

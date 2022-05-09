@@ -14,6 +14,8 @@ When used with the `-o json` flags, a command:
   - terminate with a non-zero exit status,
   - will return an error message in its standard error stream, in the unique field `message` of a JSON object, as in `{ "message": "file not found" }`
 
+The structures used to return information using JSON output are defined in [the `pkg/api` package](https://github.com/redhat-developer/odo/tree/main/pkg/api).
+
 ## odo alizer -o json
 
 The `alizer` command analyzes the files in the current directory to select the best devfile to use,
@@ -87,4 +89,63 @@ $ odo init -o json \
 }
 $ echo $?
 1
+```
+
+## odo describe component -o json
+
+The `describe component` command returns information about a component, either the component
+defined by a Devfile in the current directory, or a deployed component given its name and namespace.
+
+When the `describe component` command is executed without parameter from a directory containing a Devfile, it will return:
+- information about the Devfile
+  - the path of the Devfile,
+  - the content of the Devfile,
+  - supported `odo` features, indicating if the Devfile defines necessary information to run `odo dev`, `odo dev --debug` and `odo deploy`
+- the status of the component
+  - the forwarded ports if odo is currently running in Dev mode,
+  - the modes in which the component is deployed (either none, Dev, Deploy or both)
+
+```bash
+$ odo describe component -o json
+{
+	"devfilePath": "/home/phmartin/Documents/tests/tmp/devfile.yaml",
+	"devfileData": {
+		"devfile": {
+			"schemaVersion": "2.0.0",
+			[ devfile.yaml file content ]
+		},
+		"supportedOdoFeatures": {
+			"dev": true,
+			"deploy": false,
+			"debug": true
+		}
+	},
+	"devForwardedPorts": [
+		{
+			"containerName": "runtime",
+			"localAddress": "127.0.0.1",
+			"localPort": 40001,
+			"containerPort": 3000
+		}
+	],
+	"runningIn": ["Dev"],
+	"managedBy": "odo"
+}
+```
+
+When the `describe component` commmand is executed with a name and namespace, it will return:
+- the modes in which the component is deployed (either Dev, Deploy or both)
+
+The command with name and namespace is not able to return information about a component that has not been deployed. 
+
+The command with name and namespace will never return information about the Devfile, even if a Devfile is present in the current directory.
+
+The command with name and namespace will never return information about the forwarded ports, as the information resides in the directory of the Devfile.
+
+```bash
+$ odo describe component --name aname -o json
+{
+	"runningIn": ["Dev"],
+	"managedBy": "odo"
+}
 ```

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 )
@@ -20,7 +21,7 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 		if log.IsJSON() {
 
 			// Machine readble error output
-			machineOutput := machineoutput.GenericError{
+			machineOutput := api.GenericError{
 				Message: err.Error(),
 			}
 			// Output the error

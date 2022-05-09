@@ -144,3 +144,63 @@ func TestState_SaveExit(t *testing.T) {
 		})
 	}
 }
+
+func TestState_GetForwardedPorts(t *testing.T) {
+	content1 := Content{
+		ForwardedPorts: []api.ForwardedPort{
+			{
+				ContainerName: "acontainer",
+				LocalAddress:  "localhost",
+				LocalPort:     40001,
+				ContainerPort: 3000,
+			},
+		},
+	}
+	type fields struct {
+		content Content
+		fs      func(t *testing.T) filesystem.Filesystem
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    []api.ForwardedPort
+		wantErr bool
+	}{
+		{
+			name: "get forwarded ports",
+			fields: fields{
+				content: Content{},
+				fs: func(t *testing.T) filesystem.Filesystem {
+					fs := filesystem.NewFakeFs()
+					jsonContent, err := json.Marshal(content1)
+					if err != nil {
+						t.Errorf("Error marshaling data")
+					}
+					err = fs.WriteFile(_filepath, jsonContent, 0644)
+					if err != nil {
+						t.Errorf("Error saving content to file")
+					}
+					return fs
+				},
+			},
+			want:    content1.ForwardedPorts,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &State{
+				content: tt.fields.content,
+				fs:      tt.fields.fs(t),
+			}
+			got, err := o.GetForwardedPorts()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("State.GetForwardedPorts() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("State.GetForwardedPorts() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
