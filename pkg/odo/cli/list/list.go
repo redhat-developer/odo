@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -190,6 +191,9 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES)
+
+	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
+	listCmd.AddCommand(namespaceCmd)
 
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
