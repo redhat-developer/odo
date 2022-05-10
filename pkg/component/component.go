@@ -127,7 +127,7 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 //
 // We then return a list of "components" intended for listing / output purposes specifically for commands such as:
 // `odo list`
-func ListAllClusterComponents(client kclient.ClientInterface, namespace string) ([]OdoComponent, error) {
+func ListAllClusterComponents(client kclient.ClientInterface, namespace string) ([]api.ComponentAbstract, error) {
 
 	// Get all the dynamic resources available
 	resourceList, err := client.GetAllResourcesFromSelector("", namespace)
@@ -135,7 +135,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		return nil, fmt.Errorf("unable to list all dynamic resources required to find components: %w", err)
 	}
 
-	var components []OdoComponent
+	var components []api.ComponentAbstract
 
 	for _, resource := range resourceList {
 
@@ -165,7 +165,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		// Get the component type (if there is any..)
 		componentType, err := odolabels.GetProjectType(nil, annotations)
 		if err != nil || componentType == "" {
-			componentType = StateTypeUnknown
+			componentType = api.TypeUnknown
 		}
 
 		// Get the managedBy label
@@ -179,34 +179,39 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		}
 
 		// Generate the appropriate "component" with all necessary information
-		component := OdoComponent{
+		component := api.ComponentAbstract{
 			Name:      name,
 			ManagedBy: managedBy,
 			Type:      componentType,
 		}
 		mode := odolabels.GetMode(labels)
-		found := false
+		componentFound := false
 		for v, otherCompo := range components {
 			if component.Name == otherCompo.Name {
-				found = true
+				componentFound = true
 				if mode != "" {
-					components[v].Modes[mode] = true
+					modeFound := false
+					for _, m := range components[v].RunningIn {
+						if m == api.RunningMode(mode) {
+							modeFound = true
+							break
+						}
+					}
+					if !modeFound {
+						components[v].RunningIn = append(components[v].RunningIn, api.RunningMode(mode))
+					}
 				}
-				if otherCompo.Type == StateTypeUnknown && component.Type != StateTypeUnknown {
+				if otherCompo.Type == api.TypeUnknown && component.Type != api.TypeUnknown {
 					components[v].Type = component.Type
 				}
-				if otherCompo.ManagedBy == StateTypeUnknown && component.ManagedBy != StateTypeUnknown {
+				if otherCompo.ManagedBy == api.TypeUnknown && component.ManagedBy != api.TypeUnknown {
 					components[v].ManagedBy = component.ManagedBy
 				}
 			}
 		}
-		if !found {
+		if !componentFound {
 			if mode != "" {
-				component.Modes = map[string]bool{
-					mode: true,
-				}
-			} else {
-				component.Modes = map[string]bool{}
+				component.RunningIn = []api.RunningMode{api.RunningMode(mode)}
 			}
 			components = append(components, component)
 		}
@@ -262,7 +267,7 @@ func GetRunningModes(client kclient.ClientInterface, name string) ([]api.Running
 
 // Contains checks to see if the component exists in an array or not
 // by checking the name
-func Contains(component OdoComponent, components []OdoComponent) bool {
+func Contains(component api.ComponentAbstract, components []api.ComponentAbstract) bool {
 	for _, comp := range components {
 		if component.Name == comp.Name {
 			return true

@@ -1,6 +1,8 @@
 package api
 
-import "strings"
+import (
+	"strings"
+)
 
 type RunningMode string
 type RunningModeList []RunningMode

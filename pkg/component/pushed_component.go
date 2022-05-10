@@ -20,6 +20,14 @@ type provider interface {
 	GetLinkedSecrets() []SecretMount
 }
 
+// SecretMount describes a Secret mount (either as environment variables with envFrom or as a volume)
+type SecretMount struct {
+	ServiceName string
+	SecretName  string
+	MountVolume bool
+	MountPath   string
+}
+
 // PushedComponent is an abstraction over the cluster representation of the component
 type PushedComponent interface {
 	provider

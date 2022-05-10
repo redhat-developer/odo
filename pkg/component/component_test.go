@@ -30,7 +30,7 @@ func TestListAllClusterComponents(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []OdoComponent
+		want    []api.ComponentAbstract
 		wantErr bool
 	}{
 		{
@@ -48,10 +48,10 @@ func TestListAllClusterComponents(t *testing.T) {
 			args: args{
 				namespace: "my-ns",
 			},
-			want: []OdoComponent{{
+			want: []api.ComponentAbstract{{
 				Name:      "dep1",
 				ManagedBy: "Unknown",
-				Modes:     map[string]bool{},
+				RunningIn: nil,
 				Type:      "Unknown",
 			}},
 			wantErr: false,
@@ -71,15 +71,15 @@ func TestListAllClusterComponents(t *testing.T) {
 			args: args{
 				namespace: "my-ns",
 			},
-			want: []OdoComponent{{
+			want: []api.ComponentAbstract{{
 				Name:      "dep1",
 				ManagedBy: "Unknown",
-				Modes:     map[string]bool{},
+				RunningIn: nil,
 				Type:      "Unknown",
 			}, {
 				Name:      "svc1",
 				ManagedBy: "odo",
-				Modes:     map[string]bool{},
+				RunningIn: nil,
 				Type:      "nodejs",
 			}},
 			wantErr: false,
