@@ -74,9 +74,6 @@ OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "openshift"}}
 Utility Commands:{{range .Commands}}{{if eq .Annotations.command "utility" }}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
 
-GUI Commands:{{range .Commands}}{{if or (eq .Annotations.command "gui") }}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
-
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
 
