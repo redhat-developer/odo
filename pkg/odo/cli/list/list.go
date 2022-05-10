@@ -128,26 +128,24 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run(ctx context.Context) error {
-	devfileComponents, err := lo.run(ctx)
+	list, err := lo.run(ctx)
 	if err != nil {
 		return err
 	}
-	lo.HumanReadableOutput(devfileComponents)
+	humanReadableOutput(list)
 	return nil
 }
 
 // Run contains the logic for the odo command
 func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	components, err := lo.run(ctx)
+	list, err := lo.run(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return api.ResourcesList{
-		Components: components,
-	}, nil
+	return list, nil
 }
 
-func (lo *ListOptions) run(cts context.Context) ([]api.ComponentAbstract, error) {
+func (lo *ListOptions) run(cts context.Context) (api.ResourcesList, error) {
 	listSpinner := log.Spinnerf("Listing components from namespace '%s'", lo.namespaceFilter)
 	defer listSpinner.End(false)
 
@@ -155,7 +153,7 @@ func (lo *ListOptions) run(cts context.Context) ([]api.ComponentAbstract, error)
 	// Retrieve all related components from the Kubernetes cluster, from the given namespace
 	devfileComponents, err := component.ListAllClusterComponents(lo.clientset.KubernetesClient, lo.namespaceFilter)
 	if err != nil {
-		return nil, err
+		return api.ResourcesList{}, err
 	}
 	listSpinner.End(true)
 
@@ -163,10 +161,17 @@ func (lo *ListOptions) run(cts context.Context) ([]api.ComponentAbstract, error)
 	// If we have a local component, let's add it to the list of Devfiles
 	// This checks lo.localComponent.Name. If it's empty, we didn't parse one in the Complete() function, so there is no local devfile.
 	// We will only append the local component to the devfile if it doesn't exist in the list.
-	if (lo.localComponent.Name != "") && !component.Contains(lo.localComponent, devfileComponents) {
-		devfileComponents = append(devfileComponents, lo.localComponent)
+	componentsInDevfile := []string{}
+	if lo.localComponent.Name != "" {
+		if !component.Contains(lo.localComponent, devfileComponents) {
+			devfileComponents = append(devfileComponents, lo.localComponent)
+		}
+		componentsInDevfile = []string{lo.localComponent.Name}
 	}
-	return devfileComponents, nil
+	return api.ResourcesList{
+		ComponentsInDevfile: componentsInDevfile,
+		Components:          devfileComponents,
+	}, nil
 }
 
 // NewCmdList implements the list odo command
@@ -195,7 +200,8 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	return listCmd
 }
 
-func (lo *ListOptions) HumanReadableOutput(components []api.ComponentAbstract) {
+func humanReadableOutput(list api.ResourcesList) {
+	components := list.Components
 	if len(components) == 0 {
 		log.Error("There are no components deployed.")
 		return
@@ -259,11 +265,14 @@ func (lo *ListOptions) HumanReadableOutput(components []api.ComponentAbstract) {
 			}
 
 			// If we find our local unpushed component, let's change the output appropriately.
-			if (lo.localComponent.Name == comp.Name) && (lo.localComponent.Type == comp.Type) {
-				name = fmt.Sprintf("* %s", name)
+			for _, inDevfile := range list.ComponentsInDevfile {
+				if inDevfile == comp.Name {
+					name = fmt.Sprintf("* %s", name)
 
-				if comp.ManagedBy == "" {
-					managedBy = "odo"
+					if comp.ManagedBy == "" {
+						managedBy = "odo"
+					}
+					break
 				}
 			}
 
