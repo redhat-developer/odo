@@ -574,3 +574,7 @@ func (oc OcRunner) EnsureOperatorIsInstalled(partialOperatorName string) {
 func (oc OcRunner) GetNamespaceProject() string {
 	return Cmd(oc.path, "get", "project").ShouldPass().Out()
 }
+
+func (oc OcRunner) CheckNamespaceProjectExists(name string) bool {
+	return Cmd(oc.path, "get", "project", name).ShouldPass().pass
+}

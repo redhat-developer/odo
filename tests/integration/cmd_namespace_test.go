@@ -18,30 +18,24 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
+	for _, command := range []string{"namespace", "project"} {
+		When(fmt.Sprintf("using the alias %[1]s to create a %[1]s", command), func() {
+			var namespace string
+			BeforeEach(func() {
+				namespace = fmt.Sprintf("%s-%s", helper.RandString(4), command)
+				helper.Cmd("odo", "create", command, namespace, "--wait").ShouldPass()
+			})
+			AfterEach(func() {
+				commonVar.CliRunner.DeleteNamespaceProject(namespace)
+			})
+			It(fmt.Sprintf("should successfully create the %s", command), func() {
+				Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
+			})
+		})
 
-	When("using the alias namespace to create a namespace", func() {
-		namespace := fmt.Sprintf("%s-namespace", helper.RandString(4))
-		AfterEach(func() {
-			commonVar.CliRunner.DeleteNamespaceProject(namespace)
-		})
-		It("should successfully create the namespace", func() {
-			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
-			Expect(commonVar.CliRunner.GetNamespaceProject()).To(ContainSubstring(namespace))
-		})
-	})
+	}
 
 	It("should fail to create an existent namespace", func() {
 		helper.Cmd("odo", "create", "namespace", commonVar.Project).ShouldFail()
-	})
-
-	When("using the alias project to create a project", func() {
-		project := fmt.Sprintf("%s-project", helper.RandString(4))
-		AfterEach(func() {
-			commonVar.CliRunner.DeleteNamespaceProject(project)
-		})
-		It("should successfully create the project", func() {
-			helper.Cmd("odo", "create", "project", project, "--wait").ShouldPass()
-			Expect(commonVar.CliRunner.GetNamespaceProject()).To(ContainSubstring(project))
-		})
 	})
 })
