@@ -25,7 +25,7 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 			commonVar.CliRunner.DeleteNamespaceProject(namespace)
 		})
 		It("should successfully create the namespace", func() {
-			helper.Cmd("odo", "create", "namespace", namespace).ShouldPass()
+			helper.Cmd("odo", "create", "namespace", namespace, "--wait").ShouldPass()
 			Expect(commonVar.CliRunner.GetNamespaceProject()).To(ContainSubstring(namespace))
 		})
 	})
@@ -40,7 +40,7 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 			commonVar.CliRunner.DeleteNamespaceProject(project)
 		})
 		It("should successfully create the project", func() {
-			helper.Cmd("odo", "create", "project", project).ShouldPass()
+			helper.Cmd("odo", "create", "project", project, "--wait").ShouldPass()
 			Expect(commonVar.CliRunner.GetNamespaceProject()).To(ContainSubstring(project))
 		})
 	})

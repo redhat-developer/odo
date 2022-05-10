@@ -35,3 +35,6 @@ odo create project myproject
 Using either of the aliases will not make any change to the resource created on the cluster. This command is smart enough to detect the resources supported by your cluster and make an informed decision on the type of resource that should be created.
 So you can run `odo create project` on a Kubernetes cluster, and it will create a Namespace resource, and you can run `odo create namespace` on an OpenShift cluster, it will create a Project resource.
 :::
+
+## Available Flags
+* `--wait` - Use this flag to wait until the new namespace is ready
