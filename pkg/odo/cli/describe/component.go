@@ -5,7 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -81,22 +85,23 @@ func (o *ComponentOptions) Validate() (err error) {
 }
 
 func (o *ComponentOptions) Run(ctx context.Context) error {
-	result, err := o.run(ctx)
+	result, devfileObj, err := o.run(ctx)
 	if err != nil {
 		return err
 	}
-	printHumanReadableOutput(result)
-	return nil
+	return printHumanReadableOutput(result, devfileObj)
 }
 
 // Run contains the logic for the odo command
 func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	return o.run(ctx)
+	result, _, err := o.run(ctx)
+	return result, err
 }
 
-func (o *ComponentOptions) run(ctx context.Context) (result api.Component, err error) {
+func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 	if o.nameFlag != "" {
-		return o.describeNamedComponent(o.nameFlag)
+		result, err := o.describeNamedComponent(o.nameFlag)
+		return result, nil, err
 	}
 	return o.describeDevfileComponent()
 }
@@ -114,23 +119,23 @@ func (o *ComponentOptions) describeNamedComponent(name string) (result api.Compo
 }
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
-func (o *ComponentOptions) describeDevfileComponent() (result api.Component, err error) {
+func (o *ComponentOptions) describeDevfileComponent() (result api.Component, devfile *parser.DevfileObj, err error) {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
 	path, err := filepath.Abs(".")
 	if err != nil {
-		return api.Component{}, err
+		return api.Component{}, nil, err
 	}
 	forwardedPorts, err := o.clientset.StateClient.GetForwardedPorts()
 	if err != nil {
-		return api.Component{}, err
+		return api.Component{}, nil, err
 	}
 	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, devfileObj.GetMetadataName(), o.clientset.KubernetesClient.GetCurrentNamespace())
 	if err != nil {
 		if !errors.As(err, &component.NoComponentFoundError{}) {
-			return api.Component{}, err
+			return api.Component{}, nil, err
 		} else {
 			// it is ok if the component is not deployed
-			forwardedPorts = nil
+			runningIn = nil
 		}
 	}
 	return api.Component{
@@ -139,11 +144,76 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, err
 		DevForwardedPorts: forwardedPorts,
 		RunningIn:         runningIn,
 		ManagedBy:         "odo",
-	}, nil
+	}, &devfileObj, nil
 }
 
-func printHumanReadableOutput(component api.Component) {
-	// TODO(feloy) #5661
+func printHumanReadableOutput(component api.Component, devfileObj *parser.DevfileObj) error {
+	if component.DevfileData != nil {
+		fmt.Printf("Name: %s\n", component.DevfileData.Devfile.GetMetadata().Name)
+		fmt.Printf("Display Name: %s\n", component.DevfileData.Devfile.GetMetadata().DisplayName)
+		fmt.Printf("Project Type: %s\n", component.DevfileData.Devfile.GetMetadata().ProjectType)
+		fmt.Printf("Language: %s\n", component.DevfileData.Devfile.GetMetadata().Language)
+		fmt.Printf("Version: %s\n", component.DevfileData.Devfile.GetMetadata().Version)
+		fmt.Printf("Description: %s\n", component.DevfileData.Devfile.GetMetadata().Description)
+		fmt.Printf("Tags: %s\n", strings.Join(component.DevfileData.Devfile.GetMetadata().Tags, ", "))
+		fmt.Println()
+	}
+
+	fmt.Printf("Running in: %s\n", component.RunningIn.String())
+	fmt.Println()
+
+	if len(component.DevForwardedPorts) > 0 {
+		fmt.Println("Forwarded ports:")
+		for _, port := range component.DevForwardedPorts {
+			fmt.Printf(" - %s:%d -> %s:%d\n", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+		}
+		fmt.Println()
+	}
+
+	fmt.Println("Supported odo features:")
+	if component.DevfileData != nil {
+		fmt.Printf(" - Dev: %v\n", component.DevfileData.SupportedOdoFeatures.Dev)
+		fmt.Printf(" - Deploy: %v\n", component.DevfileData.SupportedOdoFeatures.Deploy)
+		fmt.Printf(" - Debug: %v\n", component.DevfileData.SupportedOdoFeatures.Debug)
+	} else {
+		fmt.Printf(" - Dev: Unknown\n")
+		fmt.Printf(" - Deploy: Unknown\n")
+		fmt.Printf(" - Debug: Unknown\n")
+	}
+	fmt.Println()
+
+	err := listComponentsNames("Container components:", devfileObj, v1alpha2.ContainerComponentType)
+	if err != nil {
+		return err
+	}
+
+	err = listComponentsNames("Kubernetes components:", devfileObj, v1alpha2.KubernetesComponentType)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alpha2.ComponentType) error {
+	if devfileObj == nil {
+		fmt.Printf("%s Unknown\n\n", title)
+		return nil
+	}
+	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
+		ComponentOptions: common.ComponentOptions{ComponentType: typ},
+	})
+	if err != nil {
+		return err
+	}
+	if len(containers) == 0 {
+		return nil
+	}
+	fmt.Println(title)
+	for _, container := range containers {
+		fmt.Printf(" - %s\n", container.Name)
+	}
+	fmt.Println()
+	return nil
 }
 
 // NewCmdComponent implements the component odo sub-command
