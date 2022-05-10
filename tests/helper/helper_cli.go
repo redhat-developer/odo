@@ -18,6 +18,7 @@ type CliRunner interface {
 	SetProject(namespace string) string
 	DeleteNamespaceProject(projectName string)
 	DeletePod(podName string, projectName string)
+	GetNamespaceProject() string
 	GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string
 	GetEnvRefNames(componentName, appName, projectName string) []string
 	GetPVCSize(compName, storageName, namespace string) string

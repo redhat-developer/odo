@@ -378,3 +378,7 @@ func (kubectl KubectlRunner) EnsureOperatorIsInstalled(partialOperatorName strin
 		return strings.Contains(output, partialOperatorName)
 	})
 }
+
+func (kubectl KubectlRunner) GetNamespaceProject() string {
+	return Cmd(kubectl.path, "get", "namespace").ShouldPass().Out()
+}

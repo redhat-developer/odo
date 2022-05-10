@@ -570,3 +570,7 @@ func (oc OcRunner) EnsureOperatorIsInstalled(partialOperatorName string) {
 		return strings.Contains(output, partialOperatorName)
 	})
 }
+
+func (oc OcRunner) GetNamespaceProject() string {
+	return Cmd(oc.path, "get", "project").ShouldPass().Out()
+}
