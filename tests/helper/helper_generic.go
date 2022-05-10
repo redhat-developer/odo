@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -228,7 +229,9 @@ func CommonAfterEach(commonVar CommonVar) {
 	testDate := strings.Split(time.Now().Format(time.RFC3339), "T")[0]
 	resultsRow = prNum + "," + testDate + "," + clusterType + "," + commonVar.testFileName + "," + commonVar.testCase + "," + passedOrFailed + "," + strconv.FormatFloat(commonVar.testDuration, 'E', -1, 64) + "\n"
 	testResultsFile := filepath.Join("/", "tmp", "testResults.txt")
-
+	if runtime.GOOS == "windows" {
+		testResultsFile = filepath.Join(os.Getenv("TEMP"), "testResults.txt")
+	}
 	f, err := os.OpenFile(testResultsFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		fmt.Println("Error when opening file: ", err)
