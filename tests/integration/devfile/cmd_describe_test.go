@@ -78,7 +78,7 @@ var _ = Describe("odo describe command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-registry.yaml")).ShouldPass()
 		})
 
-		checkDevfileDescription := func(jsonContent string, devfileName string) {
+		checkDevfileJSONDescription := func(jsonContent string, devfileName string) {
 			helper.JsonPathContentIs(jsonContent, "devfilePath", filepath.Join(commonVar.Context, devfileName))
 			helper.JsonPathContentIs(jsonContent, "devfileData.devfile.metadata.name", cmpName)
 			helper.JsonPathContentIs(jsonContent, "devfileData.supportedOdoFeatures.dev", "true")
@@ -87,13 +87,23 @@ var _ = Describe("odo describe command tests", func() {
 			helper.JsonPathContentIs(jsonContent, "managedBy", "odo")
 		}
 
+		checkDevfileDescription := func(content string, withUnknown bool) {
+			Expect(content).To(ContainSubstring("Name: " + cmpName))
+			Expect(content).To(ContainSubstring("Project Type: nodejs"))
+			if withUnknown {
+				for _, v := range []string{"Version", "Display Name", "Description", "Language"} {
+					Expect(content).To(ContainSubstring(v + ": Unknown"))
+				}
+			}
+		}
+
 		It("should describe the component in the current directory", func() {
 			By("running with json output", func() {
 				res := helper.Cmd("odo", "describe", "component", "-o", "json").ShouldPass()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
 				Expect(stderr).To(BeEmpty())
-				checkDevfileDescription(stdout, "devfile.yaml")
+				checkDevfileJSONDescription(stdout, "devfile.yaml")
 				helper.JsonPathContentIs(stdout, "runningIn", "")
 				helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 			})
@@ -101,6 +111,7 @@ var _ = Describe("odo describe command tests", func() {
 			By("running with default output", func() {
 				res := helper.Cmd("odo", "describe", "component").ShouldPass()
 				stdout := res.Out()
+				checkDevfileDescription(stdout, false)
 				Expect(stdout).To(ContainSubstring("Running in: None"))
 				Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
 			})
@@ -139,7 +150,7 @@ var _ = Describe("odo describe command tests", func() {
 					stdout, stderr := res.Out(), res.Err()
 					Expect(helper.IsJSON(stdout)).To(BeTrue())
 					Expect(stderr).To(BeEmpty())
-					checkDevfileDescription(stdout, ".devfile.yaml")
+					checkDevfileJSONDescription(stdout, ".devfile.yaml")
 					helper.JsonPathContentIs(stdout, "runningIn", "")
 					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 				})
@@ -147,6 +158,7 @@ var _ = Describe("odo describe command tests", func() {
 				By("running with default output", func() {
 					res := helper.Cmd("odo", "describe", "component").ShouldPass()
 					stdout := res.Out()
+					checkDevfileDescription(stdout, false)
 					Expect(stdout).To(ContainSubstring("Running in: None"))
 					Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
 				})
@@ -174,7 +186,7 @@ var _ = Describe("odo describe command tests", func() {
 					stdout, stderr := res.Out(), res.Err()
 					Expect(helper.IsJSON(stdout)).To(BeTrue())
 					Expect(stderr).To(BeEmpty())
-					checkDevfileDescription(stdout, "devfile.yaml")
+					checkDevfileJSONDescription(stdout, "devfile.yaml")
 					helper.JsonPathContentIs(stdout, "devForwardedPorts.#", "1")
 					helper.JsonPathContentIs(stdout, "devForwardedPorts.0.containerName", "runtime")
 					helper.JsonPathContentIs(stdout, "devForwardedPorts.0.localAddress", "127.0.0.1")
@@ -185,6 +197,7 @@ var _ = Describe("odo describe command tests", func() {
 				By("running with default output", func() {
 					res := helper.Cmd("odo", "describe", "component").ShouldPass()
 					stdout := res.Out()
+					checkDevfileDescription(stdout, false)
 					Expect(stdout).To(ContainSubstring("Forwarded ports"))
 					Expect(stdout).To(ContainSubstring("127.0.0.1:" + ports["3000"][len("127.0.0.1:"):] + " -> runtime:3000"))
 				})
@@ -199,7 +212,11 @@ var _ = Describe("odo describe command tests", func() {
 					Expect(helper.IsJSON(stdout)).To(BeTrue())
 					Expect(stderr).To(BeEmpty())
 					helper.JsonPathContentIs(stdout, "devfilePath", "")
-					helper.JsonPathContentIs(stdout, "devfileData", "")
+					helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.name", cmpName)
+					helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.projectType", "nodejs")
+					for _, v := range []string{"version", "displayName", "description", "language"} {
+						helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata."+v, "Unknown")
+					}
 					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 					helper.JsonPathContentIs(stdout, "runningIn.#", "1")
 					helper.JsonPathContentIs(stdout, "runningIn.0", "Dev")
@@ -211,8 +228,12 @@ var _ = Describe("odo describe command tests", func() {
 					Expect(err).NotTo(HaveOccurred())
 					res := helper.Cmd("odo", "describe", "component", "--name", cmpName).ShouldPass()
 					stdout := res.Out()
+					checkDevfileDescription(stdout, true)
 					Expect(stdout).ToNot(ContainSubstring("Forwarded ports"))
 					Expect(stdout).To(ContainSubstring("Running in: Dev"))
+					Expect(stdout).To(ContainSubstring("Dev: Unknown"))
+					Expect(stdout).To(ContainSubstring("Deploy: Unknown"))
+					Expect(stdout).To(ContainSubstring("Debug: Unknown"))
 				})
 			})
 

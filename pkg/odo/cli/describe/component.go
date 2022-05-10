@@ -100,22 +100,28 @@ func (o *ComponentOptions) RunForJsonOutput(ctx context.Context) (out interface{
 
 func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 	if o.nameFlag != "" {
-		result, err := o.describeNamedComponent(o.nameFlag)
-		return result, nil, err
+		return o.describeNamedComponent(o.nameFlag)
 	}
 	return o.describeDevfileComponent()
 }
 
 // describeNamedComponent describes a component given its name
-func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, err error) {
+func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
 	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, name, o.clientset.KubernetesClient.GetCurrentNamespace())
 	if err != nil {
-		return api.Component{}, err
+		return api.Component{}, nil, err
+	}
+	devfile, err := component.GetDevfileInfoFromCluster(o.clientset.KubernetesClient, name, o.clientset.KubernetesClient.GetCurrentNamespace())
+	if err != nil {
+		return api.Component{}, nil, err
 	}
 	return api.Component{
+		DevfileData: &api.DevfileData{
+			Devfile: devfile.Data,
+		},
 		RunningIn: runningIn,
 		ManagedBy: "odo",
-	}, nil
+	}, &devfile, nil
 }
 
 // describeDevfileComponent describes the component defined by the devfile in the current directory
@@ -147,34 +153,34 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, dev
 	}, &devfileObj, nil
 }
 
-func printHumanReadableOutput(component api.Component, devfileObj *parser.DevfileObj) error {
-	if component.DevfileData != nil {
-		fmt.Printf("Name: %s\n", component.DevfileData.Devfile.GetMetadata().Name)
-		fmt.Printf("Display Name: %s\n", component.DevfileData.Devfile.GetMetadata().DisplayName)
-		fmt.Printf("Project Type: %s\n", component.DevfileData.Devfile.GetMetadata().ProjectType)
-		fmt.Printf("Language: %s\n", component.DevfileData.Devfile.GetMetadata().Language)
-		fmt.Printf("Version: %s\n", component.DevfileData.Devfile.GetMetadata().Version)
-		fmt.Printf("Description: %s\n", component.DevfileData.Devfile.GetMetadata().Description)
-		fmt.Printf("Tags: %s\n", strings.Join(component.DevfileData.Devfile.GetMetadata().Tags, ", "))
+func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) error {
+	if cmp.DevfileData != nil {
+		fmt.Printf("Name: %s\n", cmp.DevfileData.Devfile.GetMetadata().Name)
+		fmt.Printf("Display Name: %s\n", cmp.DevfileData.Devfile.GetMetadata().DisplayName)
+		fmt.Printf("Project Type: %s\n", cmp.DevfileData.Devfile.GetMetadata().ProjectType)
+		fmt.Printf("Language: %s\n", cmp.DevfileData.Devfile.GetMetadata().Language)
+		fmt.Printf("Version: %s\n", cmp.DevfileData.Devfile.GetMetadata().Version)
+		fmt.Printf("Description: %s\n", cmp.DevfileData.Devfile.GetMetadata().Description)
+		fmt.Printf("Tags: %s\n", strings.Join(cmp.DevfileData.Devfile.GetMetadata().Tags, ", "))
 		fmt.Println()
 	}
 
-	fmt.Printf("Running in: %s\n", component.RunningIn.String())
+	fmt.Printf("Running in: %s\n", cmp.RunningIn.String())
 	fmt.Println()
 
-	if len(component.DevForwardedPorts) > 0 {
+	if len(cmp.DevForwardedPorts) > 0 {
 		fmt.Println("Forwarded ports:")
-		for _, port := range component.DevForwardedPorts {
+		for _, port := range cmp.DevForwardedPorts {
 			fmt.Printf(" - %s:%d -> %s:%d\n", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
 		}
 		fmt.Println()
 	}
 
 	fmt.Println("Supported odo features:")
-	if component.DevfileData != nil {
-		fmt.Printf(" - Dev: %v\n", component.DevfileData.SupportedOdoFeatures.Dev)
-		fmt.Printf(" - Deploy: %v\n", component.DevfileData.SupportedOdoFeatures.Deploy)
-		fmt.Printf(" - Debug: %v\n", component.DevfileData.SupportedOdoFeatures.Debug)
+	if cmp.DevfileData != nil && cmp.DevfileData.SupportedOdoFeatures != nil {
+		fmt.Printf(" - Dev: %v\n", cmp.DevfileData.SupportedOdoFeatures.Dev)
+		fmt.Printf(" - Deploy: %v\n", cmp.DevfileData.SupportedOdoFeatures.Deploy)
+		fmt.Printf(" - Debug: %v\n", cmp.DevfileData.SupportedOdoFeatures.Debug)
 	} else {
 		fmt.Printf(" - Dev: Unknown\n")
 		fmt.Printf(" - Deploy: Unknown\n")

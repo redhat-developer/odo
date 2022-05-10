@@ -13,8 +13,8 @@ func GetDevfileData(devfileObj parser.DevfileObj) *DevfileData {
 	}
 }
 
-func getSupportedOdoFeatures(devfileData data.DevfileData) SupportedOdoFeatures {
-	return SupportedOdoFeatures{
+func getSupportedOdoFeatures(devfileData data.DevfileData) *SupportedOdoFeatures {
+	return &SupportedOdoFeatures{
 		Dev:    libdevfile.HasRunCommand(devfileData),
 		Deploy: libdevfile.HasDeployCommand(devfileData),
 		Debug:  libdevfile.HasDebugCommand(devfileData),
