@@ -176,5 +176,11 @@ ComponentSettings:
 				})
 			})
 		})
+
+		Describe("list " + commandName, func() {
+			It(fmt.Sprintf("should successfully list all the %ss", commandName), func() {
+				helper.Cmd("odo", "list", commandName).ShouldPass()
+			})
+		})
 	}
 })
