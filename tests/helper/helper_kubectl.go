@@ -386,3 +386,7 @@ func (kubectl KubectlRunner) GetNamespaceProject() string {
 func (kubectl KubectlRunner) CheckNamespaceProjectExists(name string) bool {
 	return Cmd(kubectl.path, "get", "namespace", name).ShouldPass().pass
 }
+
+func (kubectl KubectlRunner) GetActiveNamespace() string {
+	return Cmd(kubectl.path, "config", "view", "--minify", "-ojsonpath={..namespace}").ShouldPass().Out()
+}

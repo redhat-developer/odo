@@ -20,6 +20,7 @@ type CliRunner interface {
 	DeletePod(podName string, projectName string)
 	GetNamespaceProject() string
 	CheckNamespaceProjectExists(name string) bool
+	GetActiveNamespace() string
 	GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string
 	GetEnvRefNames(componentName, appName, projectName string) []string
 	GetPVCSize(compName, storageName, namespace string) string

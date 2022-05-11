@@ -30,12 +30,18 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 			})
 			It(fmt.Sprintf("should successfully create the %s", command), func() {
 				Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
+				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(namespace))
 			})
 		})
 
 	}
 
-	It("should fail to create an existent namespace", func() {
-		helper.Cmd("odo", "create", "namespace", commonVar.Project).ShouldFail()
+	It("should fail to create namespace", func() {
+		By("using an existent namespace name", func() {
+			helper.Cmd("odo", "create", "namespace", commonVar.Project).ShouldFail()
+		})
+		By("using an invalid namespace name", func() {
+			helper.Cmd("odo", "create", "namespace", "12345").ShouldFail()
+		})
 	})
 })

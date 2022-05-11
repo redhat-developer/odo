@@ -7,6 +7,7 @@ import (
 
 	"context"
 
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -74,7 +75,7 @@ func (nco *NamespaceCreateOptions) Complete(cmdline cmdline.Cmdline, args []stri
 
 // Validate validates the parameters of the NamespaceCreateOptions
 func (nco *NamespaceCreateOptions) Validate() error {
-	return nil
+	return dfutil.ValidateK8sResourceName("namespace name", nco.namespaceName)
 }
 
 // Run runs the namespace create command
