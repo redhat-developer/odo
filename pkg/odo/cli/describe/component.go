@@ -202,7 +202,7 @@ func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) 
 
 func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alpha2.ComponentType) error {
 	if devfileObj == nil {
-		fmt.Printf("%s Unknown\n\n", title)
+		log.Describef(title, " Unknown")
 		return nil
 	}
 	containers, err := devfileObj.Data.GetComponents(common.DevfileOptions{
