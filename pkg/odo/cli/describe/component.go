@@ -214,9 +214,9 @@ func listComponentsNames(title string, devfileObj *parser.DevfileObj, typ v1alph
 	if len(containers) == 0 {
 		return nil
 	}
-	fmt.Println(title)
+	log.Info(title)
 	for _, container := range containers {
-		fmt.Printf(" - %s\n", container.Name)
+		log.Printf("%s", container.Name)
 	}
 	fmt.Println()
 	return nil
