@@ -47,8 +47,8 @@ func ListKubernetesComponents(devfileObj parser.DevfileObj, path string) (list [
 	return
 }
 
-// AddKubernetesComponentToDevfile adds a resource definition to devfile as an inlined Kubernetes component
-func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) error {
+// AddKubernetesComponentToDevfile adds a resource definition to devfile object as an inlined Kubernetes component
+func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) (parser.DevfileObj, error) {
 	err := devfileObj.Data.AddComponents([]v1alpha2.Component{{
 		Name: name,
 		ComponentUnion: v1alpha2.ComponentUnion{
@@ -63,8 +63,8 @@ func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.Devfile
 		},
 	}})
 	if err != nil {
-		return err
+		return devfileObj, err
 	}
 
-	return devfileObj.WriteYamlDevfile()
+	return devfileObj, nil
 }

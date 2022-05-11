@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo create binding command tests", func() {
+var _ = Describe("odo add binding command tests", func() {
 	var commonVar helper.CommonVar
 	var devSession helper.DevSession
 	var err error
@@ -27,19 +27,20 @@ var _ = Describe("odo create binding command tests", func() {
 			out, _ := commonVar.CliRunner.GetBindableKinds()
 			return out
 		}, 120, 3).Should(ContainSubstring("Cluster"))
-		createdBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
-		Expect(createdBindableKind.ExitCode()).To(BeEquivalentTo(0))
+		addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+		Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-	When("the component is created", func() {
+	When("the component is bootstrapped", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "init", "--name", "mynode", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml"), "--starter", "nodejs-starter").ShouldPass()
 		})
-		When("creating a binding", func() {
+
+		When("adding a binding", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "add", "binding", "--name", "my-binding", "--service", "cluster-sample").ShouldPass()
 			})
@@ -71,6 +72,17 @@ var _ = Describe("odo create binding command tests", func() {
 						Expect(errOut).To(ContainSubstring("not found"))
 					})
 				})
+			})
+		})
+
+		When("no bindable instance is present on the cluster", func() {
+			BeforeEach(func() {
+				deleteBindableKind := commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+				Expect(deleteBindableKind.ExitCode()).To(BeEquivalentTo(0))
+			})
+			It("should fail to add binding with no bindable instance found error message", func() {
+				errOut := helper.Cmd("odo", "add", "binding", "--name", "my-binding", "--service", "cluster-sample").ShouldFail().Err()
+				Expect(errOut).To(ContainSubstring("No bindable service instances found"))
 			})
 		})
 	})

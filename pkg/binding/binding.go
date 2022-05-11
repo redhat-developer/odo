@@ -87,32 +87,31 @@ func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
 	return backend.AskBindAsFiles(flags)
 }
 
-func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
+func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) (parser.DevfileObj, error) {
 	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
 	if err != nil {
-		return err
+		return obj, err
 	}
 
 	deploymentName := fmt.Sprintf("%s-app", obj.GetMetadataName())
 	deploymentGVR, err := o.kubernetesClient.GetDeploymentAPIVersion()
 	if err != nil {
-		return err
+		return obj, err
 	}
 
-	serviceBinding := o.kubernetesClient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []sboApi.Mapping{}, []sboApi.Service{service})
+	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []sboApi.Mapping{}, []sboApi.Service{service})
 
 	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
 	serviceBindingUnstructured, err := kclient.ConvertK8sResourceToUnstructured(serviceBinding)
 	if err != nil {
-		return err
+		return obj, err
 	}
 	yamlDesc, err := yaml.Marshal(serviceBindingUnstructured.UnstructuredContent())
 	if err != nil {
-		return err
+		return obj, err
 	}
 
-	err = libdevfile.AddKubernetesComponentToDevfile(string(yamlDesc), serviceBinding.Name, obj)
-	return err
+	return libdevfile.AddKubernetesComponentToDevfile(string(yamlDesc), serviceBinding.Name, obj)
 }
 
 func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
