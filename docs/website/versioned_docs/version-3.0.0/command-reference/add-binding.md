@@ -45,7 +45,7 @@ The `--service` flag supports the following formats to specify the service name:
 * `<name>/<kind>`
 * `<name>/<kind>.<apigroup>`
 
-The above formats are helpful when multiple services with the same name exists on the cluster.
+The above formats are helpful when multiple services with the same name exist on the cluster.
 
 #### Examples - 
 ```shell
