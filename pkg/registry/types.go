@@ -4,9 +4,10 @@ import "github.com/redhat-developer/odo/pkg/api"
 
 // Registry is the main struct of devfile registry
 type Registry struct {
-	Name   string
-	URL    string
-	Secure bool
+	Name     string
+	URL      string
+	Secure   bool
+	Priority int // The "priority" of the registry for listing purposes. The higher the number, the higher the priority
 }
 
 // DevfileStack is the main struct for devfile catalog components

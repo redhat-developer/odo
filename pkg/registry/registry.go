@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"sync"
 
@@ -138,11 +139,14 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 	//
 	// We also add additional details such as supported odo features (which we
 	// manually http get) if the details flag has been passed in.
-	for _, registryDevfiles := range registrySlice {
+	for priorityNumber, registryDevfiles := range registrySlice {
 
 		devfiles := []DevfileStack{}
 
 		for _, devfile := range registryDevfiles {
+
+			// Add the "priority" of the registry to the devfile
+			devfile.Registry.Priority = priorityNumber
 
 			if filterFlag != "" {
 				if !strings.Contains(devfile.Name, filterFlag) && !strings.Contains(devfile.Description, filterFlag) {
@@ -169,6 +173,16 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 
 		catalogDevfileList.Items = append(catalogDevfileList.Items, devfiles...)
 	}
+
+	// Sort catalogDevfileList.Items by:
+	// 1. Priority of the registry (highest priority has highest index)
+	// 2. Name of the devfile
+	sort.Slice(catalogDevfileList.Items[:], func(i, j int) bool {
+		if catalogDevfileList.Items[i].Name == catalogDevfileList.Items[j].Name {
+			return catalogDevfileList.Items[i].Registry.Priority < catalogDevfileList.Items[j].Registry.Priority
+		}
+		return catalogDevfileList.Items[i].Name < catalogDevfileList.Items[j].Name
+	})
 
 	return *catalogDevfileList, nil
 }
