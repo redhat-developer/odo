@@ -108,6 +108,7 @@ import (
 
 type DevSession struct {
 	session *gexec.Session
+	stopped bool
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -142,9 +143,13 @@ func (o DevSession) Kill() {
 }
 
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
-func (o DevSession) Stop() {
+func (o *DevSession) Stop() {
+	if o.stopped {
+		return
+	}
 	err := terminateProc(o.session)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	o.stopped = true
 }
 
 func (o DevSession) WaitEnd() {
