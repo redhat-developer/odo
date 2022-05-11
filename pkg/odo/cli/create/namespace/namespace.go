@@ -22,12 +22,14 @@ const RecommendedCommandName = "namespace"
 
 var (
 	createExample = ktemplates.Examples(`
-	# Create a new namespace
+	# Create a new namespace and set it as the current active namespace
 	%[1]s my-namespace
 	`)
 
 	createLongDesc = ktemplates.LongDesc(`Create a new namespace.
 	This command directly performs actions on the cluster and doesn't require a push.
+
+	Any new namespace created with this command will also be set as the current active namespace.
 	`)
 
 	createShortDesc = `Create a new namespace`

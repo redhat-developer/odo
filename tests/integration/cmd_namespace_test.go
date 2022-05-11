@@ -42,6 +42,7 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 		})
 		By("using an invalid namespace name", func() {
 			helper.Cmd("odo", "create", "namespace", "12345").ShouldFail()
+			Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(commonVar.Project))
 		})
 	})
 })
