@@ -81,18 +81,18 @@ func (mr *MockClientMockRecorder) GetDevfileRegistries(registryName interface{})
 }
 
 // ListDevfileStacks mocks base method.
-func (m *MockClient) ListDevfileStacks(registryName string) (DevfileStackList, error) {
+func (m *MockClient) ListDevfileStacks(registryName, devfileName, filter string, detailsFlag bool) (DevfileStackList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDevfileStacks", registryName)
+	ret := m.ctrl.Call(m, "ListDevfileStacks", registryName, devfileName, filter, detailsFlag)
 	ret0, _ := ret[0].(DevfileStackList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListDevfileStacks indicates an expected call of ListDevfileStacks.
-func (mr *MockClientMockRecorder) ListDevfileStacks(registryName interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListDevfileStacks(registryName, devfileName, filter, detailsFlag interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileStacks", reflect.TypeOf((*MockClient)(nil).ListDevfileStacks), registryName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileStacks", reflect.TypeOf((*MockClient)(nil).ListDevfileStacks), registryName, devfileName, filter, detailsFlag)
 }
 
 // PullStackFromRegistry mocks base method.

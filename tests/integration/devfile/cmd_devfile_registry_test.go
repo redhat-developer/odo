@@ -30,6 +30,21 @@ var _ = Describe("odo devfile registry command tests", func() {
 		helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 	})
 
+	It("Should list at least one nodejs component from the default registry", func() {
+		output := helper.Cmd("odo", "registry").ShouldPass().Out()
+		helper.MatchAllInOutput(output, []string{"nodejs"})
+	})
+
+	It("Should list detailed information regarding nodejs", func() {
+		output := helper.Cmd("odo", "registry", "--details", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
+		helper.MatchAllInOutput(output, []string{"nodejs-starter", "javascript", "Node.js Runtime", "Dev: Y"})
+	})
+
+	It("Should list python specifically", func() {
+		output := helper.Cmd("odo", "registry", "--devfile", "python", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
+		helper.MatchAllInOutput(output, []string{"python"})
+	})
+
 	It("Should fail with an error with no registries", func() {
 		helper.Cmd("odo", "preference", "registry", "delete", "DefaultDevfileRegistry", "-f").ShouldPass()
 		output := helper.Cmd("odo", "preference", "registry", "list").ShouldFail().Err()

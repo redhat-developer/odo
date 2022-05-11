@@ -42,7 +42,7 @@ func (o *InteractiveBackend) Validate(flags map[string]string, fs filesystem.Fil
 
 func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem.Filesystem, _ string) (*api.DevfileLocation, error) {
 	result := &api.DevfileLocation{}
-	devfileEntries, _ := o.registryClient.ListDevfileStacks("")
+	devfileEntries, _ := o.registryClient.ListDevfileStacks("", "", "", false)
 
 	langs := devfileEntries.GetLanguages()
 	state := STATE_ASK_LANG
