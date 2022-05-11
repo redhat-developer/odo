@@ -171,9 +171,8 @@ func TestGetRunningModes(t *testing.T) {
 	packageManifestResource.SetLabels(labels.Builder().WithMode(labels.ComponentDevMode).Labels())
 
 	type args struct {
-		client    func(ctrl *gomock.Controller) kclient.ClientInterface
-		name      string
-		namespace string
+		client func(ctrl *gomock.Controller) kclient.ClientInterface
+		name   string
 	}
 	tests := []struct {
 		name    string
@@ -186,11 +185,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{}, nil)
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want:    nil,
 			wantErr: true,
@@ -200,11 +199,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource}, nil)
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want:    nil,
 			wantErr: true,
@@ -214,11 +213,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource}, nil)
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want: []api.RunningMode{},
 		},
@@ -227,11 +226,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource, resourceDev1, resourceDev2}, nil)
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want: []api.RunningMode{api.RunningModeDev},
 		},
@@ -240,11 +239,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource, resourceDeploy1, resourceDeploy2}, nil)
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want: []api.RunningMode{api.RunningModeDeploy},
 		},
@@ -253,11 +252,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return([]unstructured.Unstructured{packageManifestResource, otherResource, resourceDev1, resourceDev2, resourceDeploy1, resourceDeploy2}, nil)
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want: []api.RunningMode{api.RunningModeDev, api.RunningModeDeploy},
 		},
@@ -266,11 +265,11 @@ func TestGetRunningModes(t *testing.T) {
 			args: args{
 				client: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					c := kclient.NewMockClientInterface(ctrl)
+					c.EXPECT().GetCurrentNamespace().Return("a-namespace").AnyTimes()
 					c.EXPECT().GetAllResourcesFromSelector(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 					return c
 				},
-				name:      "aname",
-				namespace: "anamespace",
+				name: "aname",
 			},
 			want: []api.RunningMode{api.RunningModeUnknown},
 		},
@@ -278,7 +277,7 @@ func TestGetRunningModes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			got, err := GetRunningModes(tt.args.client(ctrl), tt.args.name, tt.args.namespace)
+			got, err := GetRunningModes(tt.args.client(ctrl), tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 				return

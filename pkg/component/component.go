@@ -234,14 +234,14 @@ func getResourcesForComponent(client kclient.ClientInterface, name string, names
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(client kclient.ClientInterface, name string, namespace string) ([]api.RunningMode, error) {
-	list, err := getResourcesForComponent(client, name, namespace)
+func GetRunningModes(client kclient.ClientInterface, name string) ([]api.RunningMode, error) {
+	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
 	if err != nil {
 		return []api.RunningMode{api.RunningModeUnknown}, nil
 	}
 
 	if len(list) == 0 {
-		return nil, NewNoComponentFoundError(name, namespace)
+		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
 	}
 
 	mapResult := map[string]bool{}
@@ -272,8 +272,8 @@ func Contains(component OdoComponent, components []OdoComponent) bool {
 }
 
 // GetDevfileInfoFromCluster extracts information from the labels and annotations of resources to rebuild a Devfile
-func GetDevfileInfoFromCluster(client kclient.ClientInterface, name string, namespace string) (parser.DevfileObj, error) {
-	list, err := getResourcesForComponent(client, name, namespace)
+func GetDevfileInfoFromCluster(client kclient.ClientInterface, name string) (parser.DevfileObj, error) {
+	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
 	if err != nil {
 		return parser.DevfileObj{}, nil
 	}

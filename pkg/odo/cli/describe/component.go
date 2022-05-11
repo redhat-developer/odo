@@ -108,11 +108,11 @@ func (o *ComponentOptions) run(ctx context.Context) (result api.Component, devfi
 
 // describeNamedComponent describes a component given its name
 func (o *ComponentOptions) describeNamedComponent(name string) (result api.Component, devfileObj *parser.DevfileObj, err error) {
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, name, o.clientset.KubernetesClient.GetCurrentNamespace())
+	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	devfile, err := component.GetDevfileInfoFromCluster(o.clientset.KubernetesClient, name, o.clientset.KubernetesClient.GetCurrentNamespace())
+	devfile, err := component.GetDevfileInfoFromCluster(o.clientset.KubernetesClient, name)
 	if err != nil {
 		return api.Component{}, nil, err
 	}
@@ -136,7 +136,7 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, dev
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, devfileObj.GetMetadataName(), o.clientset.KubernetesClient.GetCurrentNamespace())
+	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, devfileObj.GetMetadataName())
 	if err != nil {
 		if !errors.As(err, &component.NoComponentFoundError{}) {
 			return api.Component{}, nil, err
