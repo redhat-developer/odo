@@ -108,11 +108,12 @@ func (mr *MockClientMockRecorder) AskBindAsFiles(flags interface{}) *gomock.Call
 }
 
 // AddBinding mocks base method
-func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error {
+func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddBinding", bindingName, bindAsFiles, unstructuredService, obj, componentContext)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AddBinding indicates an expected call of AddBinding

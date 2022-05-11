@@ -18,7 +18,7 @@ type Client interface {
 	AskBindAsFiles(flags map[string]string) (bool, error)
 
 	// AddBinding adds the ServiceBinding manifest to the devfile
-	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) error
+	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) (parser.DevfileObj, error)
 	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
 	GetServiceInstances() (map[string]unstructured.Unstructured, error)
 }

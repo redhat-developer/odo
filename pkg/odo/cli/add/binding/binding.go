@@ -81,7 +81,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		return err
 	}
 
-	if serviceMap == nil {
+	if len(serviceMap) == 0 {
 		return fmt.Errorf("No bindable service instances found")
 	}
 
@@ -106,11 +106,15 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = o.clientset.BindingClient.AddBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj(), componentContext)
+	devfileobj, err := o.clientset.BindingClient.AddBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj(), componentContext)
 	if err != nil {
 		return err
 	}
 
+	err = devfileobj.WriteYamlDevfile()
+	if err != nil {
+		return err
+	}
 	log.Success("Successfully added the binding to the devfile.")
 
 	exitMessage := "Run `odo dev` to create it on the cluster."
