@@ -149,3 +149,39 @@ $ odo describe component --name aname -o json
 	"managedBy": "odo"
 }
 ```
+
+## odo list -o json
+
+The `odo list` command returns information about components running on a specific namespace, and defined in the local Devfile, if any.
+
+The `components` field lists the components either deployed in the cluster, or defined in the local Devfile.
+
+The `componentsInDevfile` field lists the names of components present in the `components` list that are defined in the local Devfile.
+
+In this example, the `component2` component is running in Deploy mode, and the command has been executed from a directory containing a Devfile defining a `component1` component, not running.
+
+```bash
+$ odo list --namespace project1
+{
+	"componentsInDevfile": [
+		"component1"
+	],
+	"components": [
+		{
+			"name": "component2",
+			"managedBy": "odo",
+			"runningIn": [
+				"Deploy"
+			],
+			"projectType": "nodejs"
+		},
+		{
+			"name": "component1",
+			"managedBy": "",
+			"runningIn": [],
+			"projectType": "nodejs"
+		}
+	]
+}
+
+```
