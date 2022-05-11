@@ -11,7 +11,7 @@ This guide is helpful in setting up a development environment intended to be use
 
 `odo` can be used with ANY Kubernetes cluster. However, this development environment will ensure complete coverage of all features of `odo`.
 
-## Prerequisites
+## Requirements
 
 * You have a Kubernetes cluster set up (such as [minikube](https://minikube.sigs.k8s.io/docs/start/))
 * You have admin privileges to the cluster
