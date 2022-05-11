@@ -155,36 +155,36 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, dev
 
 func printHumanReadableOutput(cmp api.Component, devfileObj *parser.DevfileObj) error {
 	if cmp.DevfileData != nil {
-		fmt.Printf("Name: %s\n", cmp.DevfileData.Devfile.GetMetadata().Name)
-		fmt.Printf("Display Name: %s\n", cmp.DevfileData.Devfile.GetMetadata().DisplayName)
-		fmt.Printf("Project Type: %s\n", cmp.DevfileData.Devfile.GetMetadata().ProjectType)
-		fmt.Printf("Language: %s\n", cmp.DevfileData.Devfile.GetMetadata().Language)
-		fmt.Printf("Version: %s\n", cmp.DevfileData.Devfile.GetMetadata().Version)
-		fmt.Printf("Description: %s\n", cmp.DevfileData.Devfile.GetMetadata().Description)
-		fmt.Printf("Tags: %s\n", strings.Join(cmp.DevfileData.Devfile.GetMetadata().Tags, ", "))
+		log.Describef("Name: ", cmp.DevfileData.Devfile.GetMetadata().Name)
+		log.Describef("Display Name: ", cmp.DevfileData.Devfile.GetMetadata().DisplayName)
+		log.Describef("Project Type: ", cmp.DevfileData.Devfile.GetMetadata().ProjectType)
+		log.Describef("Language: ", cmp.DevfileData.Devfile.GetMetadata().Language)
+		log.Describef("Version: ", cmp.DevfileData.Devfile.GetMetadata().Version)
+		log.Describef("Description: ", cmp.DevfileData.Devfile.GetMetadata().Description)
+		log.Describef("Tags: ", strings.Join(cmp.DevfileData.Devfile.GetMetadata().Tags, ", "))
 		fmt.Println()
 	}
 
-	fmt.Printf("Running in: %s\n", cmp.RunningIn.String())
+	log.Describef("Running in: ", cmp.RunningIn.String())
 	fmt.Println()
 
 	if len(cmp.DevForwardedPorts) > 0 {
-		fmt.Println("Forwarded ports:")
+		log.Info("Forwarded ports:")
 		for _, port := range cmp.DevForwardedPorts {
-			fmt.Printf(" - %s:%d -> %s:%d\n", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
+			log.Printf("%s:%d -> %s:%d", port.LocalAddress, port.LocalPort, port.ContainerName, port.ContainerPort)
 		}
 		fmt.Println()
 	}
 
-	fmt.Println("Supported odo features:")
+	log.Info("Supported odo features:")
 	if cmp.DevfileData != nil && cmp.DevfileData.SupportedOdoFeatures != nil {
-		fmt.Printf(" - Dev: %v\n", cmp.DevfileData.SupportedOdoFeatures.Dev)
-		fmt.Printf(" - Deploy: %v\n", cmp.DevfileData.SupportedOdoFeatures.Deploy)
-		fmt.Printf(" - Debug: %v\n", cmp.DevfileData.SupportedOdoFeatures.Debug)
+		log.Printf("Dev: %v", cmp.DevfileData.SupportedOdoFeatures.Dev)
+		log.Printf("Deploy: %v", cmp.DevfileData.SupportedOdoFeatures.Deploy)
+		log.Printf("Debug: %v", cmp.DevfileData.SupportedOdoFeatures.Debug)
 	} else {
-		fmt.Printf(" - Dev: Unknown\n")
-		fmt.Printf(" - Deploy: Unknown\n")
-		fmt.Printf(" - Debug: Unknown\n")
+		log.Printf("Dev: Unknown")
+		log.Printf("Deploy: Unknown")
+		log.Printf("Debug: Unknown")
 	}
 	fmt.Println()
 
