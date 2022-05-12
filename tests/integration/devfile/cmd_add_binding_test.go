@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -41,11 +42,13 @@ var _ = Describe("odo add binding command tests", func() {
 		})
 
 		When("adding a binding", func() {
+			var bindingName string
 			BeforeEach(func() {
-				helper.Cmd("odo", "add", "binding", "--name", "my-binding", "--service", "cluster-sample").ShouldPass()
+				bindingName = fmt.Sprintf("binding-%s", helper.RandString(4))
+				helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-sample").ShouldPass()
 			})
 			It("should successfully add binding between component and service in the devfile", func() {
-				components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), "my-binding")
+				components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), bindingName)
 				Expect(components).ToNot(BeNil())
 			})
 			When("odo dev is run", func() {
@@ -58,7 +61,7 @@ var _ = Describe("odo add binding command tests", func() {
 					devSession.WaitEnd()
 				})
 				It("should successfully bind component and service", func() {
-					stdout := commonVar.CliRunner.Run("get", "servicebinding", "my-binding").Out.Contents()
+					stdout := commonVar.CliRunner.Run("get", "servicebinding", bindingName).Out.Contents()
 					Expect(stdout).To(ContainSubstring("ApplicationsBound"))
 				})
 				When("odo dev command is stopped", func() {
@@ -68,7 +71,7 @@ var _ = Describe("odo add binding command tests", func() {
 					})
 
 					It("should have successfully delete the binding", func() {
-						_, errOut := commonVar.CliRunner.GetServiceBinding("my-binding", commonVar.Project)
+						_, errOut := commonVar.CliRunner.GetServiceBinding(bindingName, commonVar.Project)
 						Expect(errOut).To(ContainSubstring("not found"))
 					})
 				})
