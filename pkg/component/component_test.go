@@ -95,7 +95,7 @@ func TestListAllClusterComponents(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "TODO",
+			name: "one resource in Dev and Deploy modes",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					var resources []unstructured.Unstructured
