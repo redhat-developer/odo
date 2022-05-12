@@ -20,6 +20,16 @@ func TestListAllClusterComponents(t *testing.T) {
 	res1 := getUnstructured("dep1", "deployment", "v1", "Unknown", "Unknown", "my-ns")
 	res2 := getUnstructured("svc1", "service", "v1", "odo", "nodejs", "my-ns")
 
+	commonLabels := labels.Builder().WithComponentName("comp1").WithManager("odo")
+
+	resDev := getUnstructured("depDev", "deployment", "v1", "odo", "nodejs", "my-ns")
+	labelsDev := commonLabels.WithMode("Dev").Labels()
+	resDev.SetLabels(labelsDev)
+
+	resDeploy := getUnstructured("depDeploy", "deployment", "v1", "odo", "nodejs", "my-ns")
+	labelsDeploy := commonLabels.WithMode("Deploy").Labels()
+	resDeploy.SetLabels(labelsDeploy)
+
 	type fields struct {
 		kubeClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
@@ -30,7 +40,7 @@ func TestListAllClusterComponents(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    []OdoComponent
+		want    []api.ComponentAbstract
 		wantErr bool
 	}{
 		{
@@ -48,10 +58,10 @@ func TestListAllClusterComponents(t *testing.T) {
 			args: args{
 				namespace: "my-ns",
 			},
-			want: []OdoComponent{{
+			want: []api.ComponentAbstract{{
 				Name:      "dep1",
 				ManagedBy: "Unknown",
-				Modes:     map[string]bool{},
+				RunningIn: nil,
 				Type:      "Unknown",
 			}},
 			wantErr: false,
@@ -71,15 +81,38 @@ func TestListAllClusterComponents(t *testing.T) {
 			args: args{
 				namespace: "my-ns",
 			},
-			want: []OdoComponent{{
+			want: []api.ComponentAbstract{{
 				Name:      "dep1",
 				ManagedBy: "Unknown",
-				Modes:     map[string]bool{},
+				RunningIn: nil,
 				Type:      "Unknown",
 			}, {
 				Name:      "svc1",
 				ManagedBy: "odo",
-				Modes:     map[string]bool{},
+				RunningIn: nil,
+				Type:      "nodejs",
+			}},
+			wantErr: false,
+		},
+		{
+			name: "one resource in Dev and Deploy modes",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					var resources []unstructured.Unstructured
+					resources = append(resources, resDev, resDeploy)
+					client := kclient.NewMockClientInterface(ctrl)
+					selector := ""
+					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					return client
+				},
+			},
+			args: args{
+				namespace: "my-ns",
+			},
+			want: []api.ComponentAbstract{{
+				Name:      "comp1",
+				ManagedBy: "odo",
+				RunningIn: api.RunningModeList{api.RunningModeDev, api.RunningModeDeploy},
 				Type:      "nodejs",
 			}},
 			wantErr: false,

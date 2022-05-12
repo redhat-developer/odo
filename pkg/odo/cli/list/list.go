@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -48,7 +48,7 @@ type ListOptions struct {
 	project         string
 	namespaceFilter string
 	devfilePath     string
-	localComponent  component.OdoComponent
+	localComponent  api.ComponentAbstract
 
 	// Flags
 	namespaceFlag string
@@ -94,10 +94,10 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 		}
 
 		// Create a local component from the parse devfile
-		localComponent := component.OdoComponent{
+		localComponent := api.ComponentAbstract{
 			Name:      devObj.Data.GetMetadata().Name,
 			ManagedBy: "",
-			Modes:     map[string]bool{},
+			RunningIn: []api.RunningMode{},
 			Type:      component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()),
 		}
 
@@ -128,7 +128,24 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run(ctx context.Context) error {
+	list, err := lo.run(ctx)
+	if err != nil {
+		return err
+	}
+	humanReadableOutput(list)
+	return nil
+}
 
+// Run contains the logic for the odo command
+func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	list, err := lo.run(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func (lo *ListOptions) run(cts context.Context) (api.ResourcesList, error) {
 	listSpinner := log.Spinnerf("Listing components from namespace '%s'", lo.namespaceFilter)
 	defer listSpinner.End(false)
 
@@ -136,7 +153,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 	// Retrieve all related components from the Kubernetes cluster, from the given namespace
 	devfileComponents, err := component.ListAllClusterComponents(lo.clientset.KubernetesClient, lo.namespaceFilter)
 	if err != nil {
-		return err
+		return api.ResourcesList{}, err
 	}
 	listSpinner.End(true)
 
@@ -144,13 +161,17 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 	// If we have a local component, let's add it to the list of Devfiles
 	// This checks lo.localComponent.Name. If it's empty, we didn't parse one in the Complete() function, so there is no local devfile.
 	// We will only append the local component to the devfile if it doesn't exist in the list.
-	if (lo.localComponent.Name != "") && !component.Contains(lo.localComponent, devfileComponents) {
-		devfileComponents = append(devfileComponents, lo.localComponent)
+	componentInDevfile := ""
+	if lo.localComponent.Name != "" {
+		if !component.Contains(lo.localComponent, devfileComponents) {
+			devfileComponents = append(devfileComponents, lo.localComponent)
+		}
+		componentInDevfile = lo.localComponent.Name
 	}
-
-	lo.HumanReadableOutput(devfileComponents)
-
-	return nil
+	return api.ResourcesList{
+		ComponentInDevfile: componentInDevfile,
+		Components:         devfileComponents,
+	}, nil
 }
 
 // NewCmdList implements the list odo command
@@ -174,11 +195,13 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	completion.RegisterCommandFlagHandler(listCmd, "path", completion.FileCompletionHandler)
+	machineoutput.UsedByCommand(listCmd)
 
 	return listCmd
 }
 
-func (lo *ListOptions) HumanReadableOutput(components []component.OdoComponent) {
+func humanReadableOutput(list api.ResourcesList) {
+	components := list.Components
 	if len(components) == 0 {
 		log.Error("There are no components deployed.")
 		return
@@ -229,37 +252,21 @@ func (lo *ListOptions) HumanReadableOutput(components []component.OdoComponent) 
 			// Get the managed by label
 			managedBy := comp.ManagedBy
 			if managedBy == "" {
-				managedBy = component.StateTypeUnknown
+				managedBy = api.TypeUnknown
 			}
 
 			// Get the mode (dev or deploy)
-			modes := comp.Modes
-			var mode string
-			if len(modes) == 0 {
-				mode = component.StateTypeUnknown
-			} else {
-				keys := make([]string, 0, len(modes))
-				for k := range modes {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
-				mode = strings.Join(keys, ", ")
-			}
+			mode := comp.RunningIn.String()
 
 			// Get the type of the component
 			componentType := comp.Type
 			if componentType == "" {
-				componentType = component.StateTypeUnknown
+				componentType = api.TypeUnknown
 			}
 
 			// If we find our local unpushed component, let's change the output appropriately.
-			if (lo.localComponent.Name == comp.Name) && (lo.localComponent.Type == comp.Type) {
+			if list.ComponentInDevfile == comp.Name {
 				name = fmt.Sprintf("* %s", name)
-
-				// If we found the local component, but mode len is 0, we will set it to "None" since it's not pushed..
-				if len(modes) == 0 {
-					mode = component.StateTypeNone
-				}
 
 				if comp.ManagedBy == "" {
 					managedBy = "odo"
