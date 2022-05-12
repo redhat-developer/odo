@@ -199,6 +199,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 					}
 					if !modeFound {
 						components[v].RunningIn = append(components[v].RunningIn, api.RunningMode(mode))
+						sort.Sort(components[v].RunningIn)
 					}
 				}
 				if otherCompo.Type == api.TypeUnknown && component.Type != api.TypeUnknown {

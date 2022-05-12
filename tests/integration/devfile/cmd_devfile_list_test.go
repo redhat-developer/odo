@@ -54,6 +54,15 @@ var _ = Describe("odo list with devfile", func() {
 				checkList("Dev")
 			})
 
+			By("should display the component as 'Dev' in odo list -o json", func() {
+				res := helper.Cmd("odo", "list", "-o", "json").ShouldPass()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stderr).To(BeEmpty())
+				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.#", "1")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.0", "Dev")
+			})
+
 			// Fake the odo deploy image build / push passing in "echo" to PODMAN
 			stdout := helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
 			By("building and pushing image to registry", func() {
@@ -62,10 +71,17 @@ var _ = Describe("odo list with devfile", func() {
 			})
 
 			By("should display the component as 'Deploy' in odo list", func() {
-				// SEPARATE checks, because it may go unordered in the list depending on the query
-				// ex, it could first appear Deploy, Dev or Dev, Deploy
-				checkList("Dev")
-				checkList("Deploy")
+				checkList("Dev, Deploy")
+			})
+
+			By("should display the component as 'Dev, Deploy' in odo list -o json", func() {
+				res := helper.Cmd("odo", "list", "-o", "json").ShouldPass()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stderr).To(BeEmpty())
+				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.#", "2")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.0", "Dev")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.1", "Deploy")
 			})
 
 		})
@@ -85,6 +101,14 @@ var _ = Describe("odo list with devfile", func() {
 			By("checking the normal output", func() {
 				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring(componentType))
+			})
+
+			By("checking the JSON output", func() {
+				res := helper.Cmd("odo", "list", "-o", "json").ShouldPass()
+				stdout, stderr := res.Out(), res.Err()
+				Expect(stderr).To(BeEmpty())
+				Expect(helper.IsJSON(stdout)).To(BeTrue())
+				helper.JsonPathContentContain(stdout, "components.0.projectType", componentType)
 			})
 		}
 
