@@ -74,3 +74,11 @@ mockgen -source=pkg/dev/interface.go \
 mockgen -source=pkg/alizer/interface.go \
     -package alizer \
     -destination pkg/alizer/mock.go
+
+mockgen -source=pkg/binding/interface.go \
+    -package binding \
+    -destination pkg/binding/mock.go
+
+mockgen -source=pkg/binding/backend/interface.go \
+    -package backend \
+    -destination pkg/binding/backend/mock.go

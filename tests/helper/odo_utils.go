@@ -5,7 +5,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
 
@@ -52,4 +54,14 @@ func GetMetadataFromDevfile(devfilePath string) devfilepkg.DevfileMetadata {
 	devObj, err := devfile.ParseAndValidateFromFile(devfilePath)
 	Expect(err).ToNot(HaveOccurred())
 	return devObj.Data.GetMetadata()
+}
+
+func GetDevfileComponents(devfilePath, componentName string) []v1alpha2.Component {
+	devObj, err := devfile.ParseAndValidateFromFile(devfilePath)
+	Expect(err).ToNot(HaveOccurred())
+	components, err := devObj.Data.GetComponents(common.DevfileOptions{
+		FilterByName: componentName,
+	})
+	Expect(err).ToNot(HaveOccurred())
+	return components
 }

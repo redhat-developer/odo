@@ -556,3 +556,17 @@ func (oc OcRunner) ScalePodToZero(componentName, appName, projectName string) {
 		return !strings.Contains(output, podName)
 	})
 }
+
+func (oc OcRunner) GetBindableKinds() (string, string) {
+	return Cmd(oc.path, "get", "bindablekinds", "bindable-kinds", "-ojsonpath={.status[*].kind}").ShouldRun().OutAndErr()
+}
+
+func (oc OcRunner) GetServiceBinding(name, projectName string) (string, string) {
+	return Cmd(oc.path, "get", "servicebinding", name, "-n", projectName).ShouldRun().OutAndErr()
+}
+
+func (oc OcRunner) EnsureOperatorIsInstalled(partialOperatorName string) {
+	WaitForCmdOut(oc.path, []string{"get", "csv", "-o", "jsonpath={.items[?(@.status.phase==\"Succeeded\")].metadata.name}"}, 4, true, func(output string) bool {
+		return strings.Contains(output, partialOperatorName)
+	})
+}

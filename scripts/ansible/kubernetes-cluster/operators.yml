@@ -5,17 +5,31 @@
    - community.kubernetes
   tasks:
 
-  - name: Create a Subscription for Redis Operator
+  - name: Create a Subscription for Service Binding Operator
     k8s:
       state: present
       definition:
         apiVersion: operators.coreos.com/v1alpha1
         kind: Subscription
         metadata:
-          name: my-redis-operator
+          name: my-service-binding-operator
           namespace: openshift-operators
         spec:
           channel: stable
-          name: redis-operator
-          source: community-operators
+          name: rh-service-binding-operator
+          source: redhat-operators
+          sourceNamespace: openshift-marketplace
+  - name: Create a Subscription for EDB Postgresql Operator
+    k8s:
+      state: present
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+          name: my-cloud-native-postgresql
+          namespace: openshift-operators
+        spec:
+          channel: stable
+          name: cloud-native-postgresql
+          source: certified-operators
           sourceNamespace: openshift-marketplace

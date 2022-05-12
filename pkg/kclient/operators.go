@@ -9,6 +9,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/restmapper"
@@ -19,12 +21,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
-
-// IsServiceBindingSupported checks if resource of type service binding request present on the cluster
-func (c *Client) IsServiceBindingSupported() (bool, error) {
-	// Detection of SBO has been removed from issue https://github.com/redhat-developer/odo/issues/5084
-	return c.IsResourceSupported("binding.operators.coreos.com", "v1alpha1", "servicebindings")
-}
 
 // IsCSVSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsCSVSupported() (bool, error) {
@@ -189,6 +185,23 @@ func (c *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured) (*m
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+func (c *Client) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error) {
+	// TODO: Remove GetRestMappingFromUnstructured, use GetRestMappingFromGVK instead
+	cfg := c.GetClientConfig()
+
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return &meta.RESTMapping{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+}
+
+func (c *Client) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u, obj)
 }
 
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)

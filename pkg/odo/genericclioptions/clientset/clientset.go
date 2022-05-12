@@ -12,11 +12,13 @@
 package clientset
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/dev"
 	"github.com/redhat-developer/odo/pkg/state"
-	"github.com/spf13/cobra"
 
+	"github.com/redhat-developer/odo/pkg/binding"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/deploy"
 	_init "github.com/redhat-developer/odo/pkg/init"
@@ -55,7 +57,8 @@ const (
 	STATE = "DEP_STATE"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
-
+	// BINDING instantiates client for pkg/binding
+	BINDING = "DEP_BINDING"
 	/* Add key for new package here */
 )
 
@@ -71,6 +74,7 @@ var subdeps map[string][]string = map[string][]string{
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
 	WATCH:            {DELETE_COMPONENT, STATE},
+	BINDING:          {KUBERNETES},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -87,6 +91,7 @@ type Clientset struct {
 	RegistryClient   registry.Client
 	StateClient      state.Client
 	WatchClient      watch.Client
+	BindingClient    binding.Client
 	/* Add client here */
 }
 
@@ -157,6 +162,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 	if isDefined(command, DEV) {
 		dep.DevClient = dev.NewDevClient(dep.WatchClient)
+	}
+	if isDefined(command, BINDING) {
+		dep.BindingClient = binding.NewBindingClient(dep.KubernetesClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

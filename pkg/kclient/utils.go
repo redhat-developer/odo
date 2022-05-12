@@ -85,6 +85,7 @@ func GetGVRFromCR(cr *olm.CRDDescription) schema.GroupVersionResource {
 }
 
 // ConvertK8sResourceToUnstructured converts any K8s resource to unstructured.Unstructured format
+// TODO: Remove this method and use https://github.com/redhat-developer/service-binding-operator/blob/master/pkg/converter/unstructured.go#L11
 func ConvertK8sResourceToUnstructured(resource interface{}) (unstructuredResource unstructured.Unstructured, err error) {
 	var data []byte
 	data, err = json.Marshal(&resource)

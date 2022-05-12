@@ -46,3 +46,25 @@ func ListKubernetesComponents(devfileObj parser.DevfileObj, path string) (list [
 	}
 	return
 }
+
+// AddKubernetesComponentToDevfile adds a resource definition to devfile object as an inlined Kubernetes component
+func AddKubernetesComponentToDevfile(crd, name string, devfileObj parser.DevfileObj) (parser.DevfileObj, error) {
+	err := devfileObj.Data.AddComponents([]v1alpha2.Component{{
+		Name: name,
+		ComponentUnion: v1alpha2.ComponentUnion{
+			Kubernetes: &v1alpha2.KubernetesComponent{
+				K8sLikeComponent: v1alpha2.K8sLikeComponent{
+					BaseComponent: v1alpha2.BaseComponent{},
+					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+						Inlined: crd,
+					},
+				},
+			},
+		},
+	}})
+	if err != nil {
+		return devfileObj, err
+	}
+
+	return devfileObj, nil
+}

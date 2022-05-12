@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/add"
 	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
@@ -173,6 +174,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		deploy.NewCmdDeploy(deploy.RecommendedCommandName, util.GetFullName(fullName, deploy.RecommendedCommandName)),
 		_init.NewCmdInit(_init.RecommendedCommandName, util.GetFullName(fullName, _init.RecommendedCommandName)),
 		_delete.NewCmdDelete(_delete.RecommendedCommandName, util.GetFullName(fullName, _delete.RecommendedCommandName)),
+		add.NewCmdAdd(add.RecommendedCommandName, util.GetFullName(fullName, add.RecommendedCommandName)),
 		dev.NewCmdDev(dev.RecommendedCommandName, util.GetFullName(fullName, dev.RecommendedCommandName)),
 		alizer.NewCmdAlizer(alizer.RecommendedCommandName, util.GetFullName(fullName, alizer.RecommendedCommandName)),
 		describe.NewCmdDescribe(describe.RecommendedCommandName, util.GetFullName(fullName, describe.RecommendedCommandName)),

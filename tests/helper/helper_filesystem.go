@@ -121,6 +121,21 @@ func CopyExample(exampleName string, targetDir string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+func CopyManifestFile(fileName, targetDst string) {
+	// filename of this file
+	_, filename, _, _ := runtime.Caller(0)
+	// path to the examples directory
+	manifestsDir := filepath.Join(filepath.Dir(filename), "..", "examples", "manifests")
+
+	src := filepath.Join(manifestsDir, fileName)
+	info, err := os.Stat(src)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = dfutil.CopyFile(src, targetDst, info)
+	Expect(err).NotTo(HaveOccurred())
+
+}
+
 func GetExamplePath(args ...string) string {
 	_, filename, _, _ := runtime.Caller(0)
 	path := append([]string{filepath.Dir(filename), "..", "examples"}, args...)
