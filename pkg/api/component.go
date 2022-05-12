@@ -1,5 +1,7 @@
 package api
 
+import "strings"
+
 type RunningMode string
 type RunningModeList []RunningMode
 
@@ -8,6 +10,17 @@ const (
 	RunningModeDeploy  RunningMode = "Deploy"
 	RunningModeUnknown RunningMode = "Unknown"
 )
+
+func (o RunningModeList) String() string {
+	if len(o) == 0 {
+		return "None"
+	}
+	strs := make([]string, 0, len(o))
+	for _, s := range o {
+		strs = append(strs, string(s))
+	}
+	return strings.Join(strs, ", ")
+}
 
 func (u RunningModeList) Len() int {
 	return len(u)
@@ -25,7 +38,7 @@ type Component struct {
 	DevfilePath       string          `json:"devfilePath,omitempty"`
 	DevfileData       *DevfileData    `json:"devfileData,omitempty"`
 	DevForwardedPorts []ForwardedPort `json:"devForwardedPorts,omitempty"`
-	RunningIn         []RunningMode   `json:"runningIn"`
+	RunningIn         RunningModeList `json:"runningIn"`
 	ManagedBy         string          `json:"managedBy"`
 }
 

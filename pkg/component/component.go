@@ -10,6 +10,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
+	"github.com/devfile/library/pkg/devfile/parser/data"
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/api"
@@ -22,7 +23,10 @@ import (
 	"k8s.io/klog"
 )
 
-const NotAvailable = "Not available"
+const (
+	NotAvailable = "Not available"
+	UnknownValue = "Unknown"
+)
 
 // GetComponentTypeFromDevfileMetadata returns component type from the devfile metadata;
 // it could either be projectType or language, if neither of them are set, return 'Not available'
@@ -211,14 +215,11 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 	return components, nil
 }
 
-// GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
-// the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(client kclient.ClientInterface, name string, namespace string) ([]api.RunningMode, error) {
-	mapResult := map[string]bool{}
+func getResourcesForComponent(client kclient.ClientInterface, name string, namespace string) ([]unstructured.Unstructured, error) {
 	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
-		return []api.RunningMode{api.RunningModeUnknown}, nil
+		return nil, err
 	}
 	filteredList := []unstructured.Unstructured{}
 	for _, resource := range resourceList {
@@ -228,12 +229,23 @@ func GetRunningModes(client kclient.ClientInterface, name string, namespace stri
 		}
 		filteredList = append(filteredList, resource)
 	}
+	return filteredList, nil
+}
 
-	if len(filteredList) == 0 {
-		return nil, NewNoComponentFoundError(name, namespace)
+// GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
+// the resources deployed with matching labels, based on the "odo.dev/mode" label
+func GetRunningModes(client kclient.ClientInterface, name string) ([]api.RunningMode, error) {
+	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
+	if err != nil {
+		return []api.RunningMode{api.RunningModeUnknown}, nil
 	}
 
-	for _, resource := range filteredList {
+	if len(list) == 0 {
+		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
+	}
+
+	mapResult := map[string]bool{}
+	for _, resource := range list {
 		resourceLabels := resource.GetLabels()
 		mode := labels.GetMode(resourceLabels)
 		if mode != "" {
@@ -257,4 +269,48 @@ func Contains(component OdoComponent, components []OdoComponent) bool {
 		}
 	}
 	return false
+}
+
+// GetDevfileInfoFromCluster extracts information from the labels and annotations of resources to rebuild a Devfile
+func GetDevfileInfoFromCluster(client kclient.ClientInterface, name string) (parser.DevfileObj, error) {
+	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
+	if err != nil {
+		return parser.DevfileObj{}, nil
+	}
+
+	if len(list) == 0 {
+		return parser.DevfileObj{}, nil
+	}
+
+	devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+	if err != nil {
+		return parser.DevfileObj{}, err
+	}
+	metadata := devfileData.GetMetadata()
+	metadata.Name = UnknownValue
+	metadata.DisplayName = UnknownValue
+	metadata.ProjectType = UnknownValue
+	metadata.Language = UnknownValue
+	metadata.Version = UnknownValue
+	metadata.Description = UnknownValue
+
+	for _, resource := range list {
+		labels := resource.GetLabels()
+		annotations := resource.GetAnnotations()
+		name := odolabels.GetComponentName(labels)
+		if len(name) > 0 && metadata.Name == UnknownValue {
+			metadata.Name = name
+		}
+		typ, err := odolabels.GetProjectType(labels, annotations)
+		if err != nil {
+			continue
+		}
+		if len(typ) > 0 && metadata.ProjectType == UnknownValue {
+			metadata.ProjectType = typ
+		}
+	}
+	devfileData.SetMetadata(metadata)
+	return parser.DevfileObj{
+		Data: devfileData,
+	}, nil
 }

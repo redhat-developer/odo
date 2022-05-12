@@ -386,6 +386,16 @@ func Sbold(s string) string {
 	return bold(fmt.Sprint(s))
 }
 
+// Describef will print out the first variable as BOLD and then the second not..
+// this is intended to be used with `odo describe` and other outputs that list
+// a lot of information
+func Describef(title string, format string, a ...interface{}) {
+	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
+		fmt.Fprintf(GetStdout(), "%s%s\n", bold(title), fmt.Sprintf(format, a...))
+	}
+}
+
 // Spinner creates a spinner, sets the prefix then returns it.
 // Remember to use .End(bool) to stop the spin / when you're done.
 // For example: defer s.End(false)

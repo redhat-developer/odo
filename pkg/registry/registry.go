@@ -165,7 +165,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 				if err != nil {
 					return *catalogDevfileList, err
 				}
-				devfile.SupportedOdoFeatures = devfileData.SupportedOdoFeatures
+				devfile.SupportedOdoFeatures = *devfileData.SupportedOdoFeatures
 			}
 
 			devfiles = append(devfiles, devfile)
