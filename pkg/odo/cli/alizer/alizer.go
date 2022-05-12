@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const RecommendedCommandName = "alizer"
+const RecommendedCommandName = "analyze"
 
 type AlizerOptions struct {
 	clientset *clientset.Clientset

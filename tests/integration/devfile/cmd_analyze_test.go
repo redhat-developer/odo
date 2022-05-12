@@ -9,7 +9,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo alizer command tests", func() {
+var _ = Describe("odo analyze command tests", func() {
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
@@ -28,8 +28,8 @@ var _ = Describe("odo alizer command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 
-		It("alizer should return correct value", func() {
-			res := helper.Cmd("odo", "alizer", "-o", "json").ShouldPass()
+		It("analyze should return correct value", func() {
+			res := helper.Cmd("odo", "analyze", "-o", "json").ShouldPass()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stderr).To(BeEmpty())
 			Expect(helper.IsJSON(stdout)).To(BeTrue())
@@ -38,16 +38,16 @@ var _ = Describe("odo alizer command tests", func() {
 		})
 	})
 
-	It("alizer should fail in an empty directory", func() {
-		res := helper.Cmd("odo", "alizer", "-o", "json").ShouldFail()
+	It("analyze should fail in an empty directory", func() {
+		res := helper.Cmd("odo", "analyze", "-o", "json").ShouldFail()
 		stdout, stderr := res.Out(), res.Err()
 		Expect(stdout).To(BeEmpty())
 		Expect(helper.IsJSON(stderr)).To(BeTrue())
 		helper.JsonPathContentContain(stderr, "message", "No valid devfile found for project in")
 	})
 
-	It("alizer should fail without json output", func() {
-		stderr := helper.Cmd("odo", "alizer").ShouldFail().Err()
+	It("analyze should fail without json output", func() {
+		stderr := helper.Cmd("odo", "analyze").ShouldFail().Err()
 		Expect(stderr).To(ContainSubstring("this command can be run with json output only"))
 	})
 })

@@ -16,15 +16,15 @@ When used with the `-o json` flags, a command:
 
 The structures used to return information using JSON output are defined in [the `pkg/api` package](https://github.com/redhat-developer/odo/tree/main/pkg/api).
 
-## odo alizer -o json
+## odo analyze -o json
 
-The `alizer` command analyzes the files in the current directory to select the best devfile to use,
+The `analyze` command analyzes the files in the current directory to select the best devfile to use,
 from the devfiles in the registries defined in the list of preferred registries with the command `odo preference registry`.
 
 The output of this command contains a devfile name and a registry name:
 
 ```bash
-$ odo alizer -o json
+$ odo analyze -o json
 {
     "devfile": "nodejs",
     "devfileRegistry": "DefaultDevfileRegistry"
@@ -36,7 +36,7 @@ $ echo $?
 If the command is executed in an empty directory, it will return an error in the standard error stream and terminate with a non-zero exit status:
 
 ```bash
-$ odo alizer -o json
+$ odo analyze -o json
 {
 	"message": "No valid devfile found for project in /home/user/my/empty/directory"
 }
