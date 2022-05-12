@@ -161,16 +161,16 @@ func (lo *ListOptions) run(cts context.Context) (api.ResourcesList, error) {
 	// If we have a local component, let's add it to the list of Devfiles
 	// This checks lo.localComponent.Name. If it's empty, we didn't parse one in the Complete() function, so there is no local devfile.
 	// We will only append the local component to the devfile if it doesn't exist in the list.
-	componentsInDevfile := []string{}
+	componentInDevfile := ""
 	if lo.localComponent.Name != "" {
 		if !component.Contains(lo.localComponent, devfileComponents) {
 			devfileComponents = append(devfileComponents, lo.localComponent)
 		}
-		componentsInDevfile = []string{lo.localComponent.Name}
+		componentInDevfile = lo.localComponent.Name
 	}
 	return api.ResourcesList{
-		ComponentsInDevfile: componentsInDevfile,
-		Components:          devfileComponents,
+		ComponentInDevfile: componentInDevfile,
+		Components:         devfileComponents,
 	}, nil
 }
 
@@ -265,14 +265,11 @@ func humanReadableOutput(list api.ResourcesList) {
 			}
 
 			// If we find our local unpushed component, let's change the output appropriately.
-			for _, inDevfile := range list.ComponentsInDevfile {
-				if inDevfile == comp.Name {
-					name = fmt.Sprintf("* %s", name)
+			if list.ComponentInDevfile == comp.Name {
+				name = fmt.Sprintf("* %s", name)
 
-					if comp.ManagedBy == "" {
-						managedBy = "odo"
-					}
-					break
+				if comp.ManagedBy == "" {
+					managedBy = "odo"
 				}
 			}
 
