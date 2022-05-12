@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 // GetOrderedLabels returns a list of labels for a list of project types
@@ -25,7 +27,7 @@ func (types TypesWithDetails) GetOrderedLabels() []string {
 
 // GetAtOrderedPosition returns the project type at the given position,
 // when the list of project types is ordered by GetOrderedLabels
-func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileStack, error) {
+func (types TypesWithDetails) GetAtOrderedPosition(pos int) (api.DevfileStack, error) {
 	sortedTypes := sortTypes(types)
 	for _, typ := range sortedTypes {
 		detailsList := types[typ]
@@ -35,7 +37,7 @@ func (types TypesWithDetails) GetAtOrderedPosition(pos int) (DevfileStack, error
 		}
 		return detailsList[pos], nil
 	}
-	return DevfileStack{}, errors.New("index not found")
+	return api.DevfileStack{}, errors.New("index not found")
 }
 
 func sortTypes(types TypesWithDetails) []string {

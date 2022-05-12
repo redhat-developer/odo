@@ -3,6 +3,8 @@ package registry
 import (
 	"reflect"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 func TestTypesWithDetails_GetOrderedLabels(t *testing.T) {
@@ -14,24 +16,24 @@ func TestTypesWithDetails_GetOrderedLabels(t *testing.T) {
 		{
 			name: "some entries",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileStack{
+				"second devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileStack{
+				"first devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 					},
@@ -61,30 +63,30 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		name    string
 		types   TypesWithDetails
 		args    args
-		want    DevfileStack
+		want    api.DevfileStack
 		wantErr bool
 	}{
 		{
 			name: "get a pos 0",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileStack{
+				"second devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileStack{
+				"first devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 					},
@@ -93,9 +95,9 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 0,
 			},
-			want: DevfileStack{
+			want: api.DevfileStack{
 				Name: "devfile1",
-				Registry: Registry{
+				Registry: api.Registry{
 					Name: "Registry1",
 				},
 			},
@@ -104,24 +106,24 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		{
 			name: "get a pos 1",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileStack{
+				"second devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileStack{
+				"first devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 					},
@@ -130,9 +132,9 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 1,
 			},
-			want: DevfileStack{
+			want: api.DevfileStack{
 				Name: "devfile1",
-				Registry: Registry{
+				Registry: api.Registry{
 					Name: "Registry2",
 				},
 			},
@@ -141,24 +143,24 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		{
 			name: "get a pos 2",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileStack{
+				"second devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileStack{
+				"first devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 					},
@@ -167,9 +169,9 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 2,
 			},
-			want: DevfileStack{
+			want: api.DevfileStack{
 				Name: "devfile2",
-				Registry: Registry{
+				Registry: api.Registry{
 					Name: "Registry1",
 				},
 			},
@@ -178,24 +180,24 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 		{
 			name: "get a pos 4: not found",
 			types: TypesWithDetails{
-				"second devfile for lang1": []DevfileStack{
+				"second devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 				},
-				"first devfile for lang1": []DevfileStack{
+				"first devfile for lang1": []api.DevfileStack{
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
 					{
 						Name: "devfile1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 					},
@@ -204,7 +206,7 @@ func TestTypesWithDetails_GetAtOrderedPosition(t *testing.T) {
 			args: args{
 				pos: 4,
 			},
-			want:    DevfileStack{},
+			want:    api.DevfileStack{},
 			wantErr: true,
 		}}
 	for _, tt := range tests {

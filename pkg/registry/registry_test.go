@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
@@ -41,12 +42,12 @@ OdoSettings:
 	tests := []struct {
 		name         string
 		registryName string
-		want         []Registry
+		want         []api.Registry
 	}{
 		{
 			name:         "Case 1: Test get all devfile registries",
 			registryName: "",
-			want: []Registry{
+			want: []api.Registry{
 				{
 					Name:   "CheDevfileRegistry",
 					URL:    "https://che-devfile-registry.openshift.io/",
@@ -62,7 +63,7 @@ OdoSettings:
 		{
 			name:         "Case 2: Test get specific devfile registry",
 			registryName: "CheDevfileRegistry",
-			want: []Registry{
+			want: []api.Registry{
 				{
 					Name:   "CheDevfileRegistry",
 					URL:    "https://che-devfile-registry.openshift.io/",
@@ -149,19 +150,19 @@ func TestListDevfileStacks(t *testing.T) {
 			name:         "Case 1: Test getting ALL registries and looking for nodejs",
 			registryName: "",
 			want: DevfileStackList{
-				DevfileRegistries: []Registry{
+				DevfileRegistries: []api.Registry{
 					{
 						Name:   "TestRegistry",
 						URL:    server.URL,
 						Secure: false,
 					},
 				},
-				Items: []DevfileStack{
+				Items: []api.DevfileStack{
 					{
 						Name:        "nodejs",
 						DisplayName: "NodeJS Angular Web Application",
 						Description: "Stack for developing NodeJS Angular Web Application",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: registryName,
 							URL:  server.URL,
 						},
@@ -172,7 +173,7 @@ func TestListDevfileStacks(t *testing.T) {
 						Name:        "python",
 						DisplayName: "Python",
 						Description: "Python Stack with Python 3.7",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: registryName,
 							URL:  server.URL,
 						},
@@ -187,19 +188,19 @@ func TestListDevfileStacks(t *testing.T) {
 			registryName: "TestRegistry",
 			devfileName:  "nodejs",
 			want: DevfileStackList{
-				DevfileRegistries: []Registry{
+				DevfileRegistries: []api.Registry{
 					{
 						Name:   "TestRegistry",
 						URL:    server.URL,
 						Secure: false,
 					},
 				},
-				Items: []DevfileStack{
+				Items: []api.DevfileStack{
 					{
 						Name:        "nodejs",
 						DisplayName: "NodeJS Angular Web Application",
 						Description: "Stack for developing NodeJS Angular Web Application",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: registryName,
 							URL:  server.URL,
 						},
@@ -214,19 +215,19 @@ func TestListDevfileStacks(t *testing.T) {
 			registryName: "TestRegistry",
 			filter:       "Python Stack",
 			want: DevfileStackList{
-				DevfileRegistries: []Registry{
+				DevfileRegistries: []api.Registry{
 					{
 						Name:   "TestRegistry",
 						URL:    server.URL,
 						Secure: false,
 					},
 				},
-				Items: []DevfileStack{
+				Items: []api.DevfileStack{
 					{
 						Name:        "python",
 						DisplayName: "Python",
 						Description: "Python Stack with Python 3.7",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: registryName,
 							URL:  server.URL,
 						},
@@ -310,18 +311,18 @@ func TestGetRegistryDevfiles(t *testing.T) {
 	const registryName = "some registry"
 	tests := []struct {
 		name     string
-		registry Registry
-		want     []DevfileStack
+		registry api.Registry
+		want     []api.DevfileStack
 	}{
 		{
 			name:     "Test NodeJS devfile index",
-			registry: Registry{Name: registryName, URL: server.URL},
-			want: []DevfileStack{
+			registry: api.Registry{Name: registryName, URL: server.URL},
+			want: []api.DevfileStack{
 				{
 					Name:        "nodejs",
 					DisplayName: "NodeJS Angular Web Application",
 					Description: "Stack for developing NodeJS Angular Web Application",
-					Registry: Registry{
+					Registry: api.Registry{
 						Name: registryName,
 						URL:  server.URL,
 					},

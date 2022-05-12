@@ -5,109 +5,37 @@
 package binding
 
 import (
+	reflect "reflect"
+
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	reflect "reflect"
 )
 
-// MockClient is a mock of Client interface
+// MockClient is a mock of Client interface.
 type MockClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientMockRecorder
 }
 
-// MockClientMockRecorder is the mock recorder for MockClient
+// MockClientMockRecorder is the mock recorder for MockClient.
 type MockClientMockRecorder struct {
 	mock *MockClient
 }
 
-// NewMockClient creates a new mock instance
+// NewMockClient creates a new mock instance.
 func NewMockClient(ctrl *gomock.Controller) *MockClient {
 	mock := &MockClient{ctrl: ctrl}
 	mock.recorder = &MockClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// GetFlags mocks base method
-func (m *MockClient) GetFlags(flags map[string]string) map[string]string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFlags", flags)
-	ret0, _ := ret[0].(map[string]string)
-	return ret0
-}
-
-// GetFlags indicates an expected call of GetFlags
-func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlags", reflect.TypeOf((*MockClient)(nil).GetFlags), flags)
-}
-
-// Validate mocks base method
-func (m *MockClient) Validate(flags map[string]string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Validate indicates an expected call of Validate
-func (mr *MockClientMockRecorder) Validate(flags interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockClient)(nil).Validate), flags)
-}
-
-// SelectServiceInstance mocks base method
-func (m *MockClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectServiceInstance", flags, serviceMap)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SelectServiceInstance indicates an expected call of SelectServiceInstance
-func (mr *MockClientMockRecorder) SelectServiceInstance(flags, serviceMap interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags, serviceMap)
-}
-
-// AskBindingName mocks base method
-func (m *MockClient) AskBindingName(serviceName, componentName string, flags map[string]string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AskBindingName", serviceName, componentName, flags)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AskBindingName indicates an expected call of AskBindingName
-func (mr *MockClientMockRecorder) AskBindingName(serviceName, componentName, flags interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockClient)(nil).AskBindingName), serviceName, componentName, flags)
-}
-
-// AskBindAsFiles mocks base method
-func (m *MockClient) AskBindAsFiles(flags map[string]string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AskBindAsFiles", flags)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AskBindAsFiles indicates an expected call of AskBindAsFiles
-func (mr *MockClientMockRecorder) AskBindAsFiles(flags interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindAsFiles", reflect.TypeOf((*MockClient)(nil).AskBindAsFiles), flags)
-}
-
-// AddBinding mocks base method
+// AddBinding mocks base method.
 func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddBinding", bindingName, bindAsFiles, unstructuredService, obj, componentContext)
@@ -116,13 +44,57 @@ func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructur
 	return ret0, ret1
 }
 
-// AddBinding indicates an expected call of AddBinding
+// AddBinding indicates an expected call of AddBinding.
 func (mr *MockClientMockRecorder) AddBinding(bindingName, bindAsFiles, unstructuredService, obj, componentContext interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), bindingName, bindAsFiles, unstructuredService, obj, componentContext)
 }
 
-// GetServiceInstances mocks base method
+// AskBindAsFiles mocks base method.
+func (m *MockClient) AskBindAsFiles(flags map[string]string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AskBindAsFiles", flags)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AskBindAsFiles indicates an expected call of AskBindAsFiles.
+func (mr *MockClientMockRecorder) AskBindAsFiles(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindAsFiles", reflect.TypeOf((*MockClient)(nil).AskBindAsFiles), flags)
+}
+
+// AskBindingName mocks base method.
+func (m *MockClient) AskBindingName(serviceName, componentName string, flags map[string]string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AskBindingName", serviceName, componentName, flags)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AskBindingName indicates an expected call of AskBindingName.
+func (mr *MockClientMockRecorder) AskBindingName(serviceName, componentName, flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockClient)(nil).AskBindingName), serviceName, componentName, flags)
+}
+
+// GetFlags mocks base method.
+func (m *MockClient) GetFlags(flags map[string]string) map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFlags", flags)
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// GetFlags indicates an expected call of GetFlags.
+func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlags", reflect.TypeOf((*MockClient)(nil).GetFlags), flags)
+}
+
+// GetServiceInstances mocks base method.
 func (m *MockClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetServiceInstances")
@@ -131,8 +103,37 @@ func (m *MockClient) GetServiceInstances() (map[string]unstructured.Unstructured
 	return ret0, ret1
 }
 
-// GetServiceInstances indicates an expected call of GetServiceInstances
+// GetServiceInstances indicates an expected call of GetServiceInstances.
 func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
+}
+
+// SelectServiceInstance mocks base method.
+func (m *MockClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectServiceInstance", flags, serviceMap)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectServiceInstance indicates an expected call of SelectServiceInstance.
+func (mr *MockClientMockRecorder) SelectServiceInstance(flags, serviceMap interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags, serviceMap)
+}
+
+// Validate mocks base method.
+func (m *MockClient) Validate(flags map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Validate", flags)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Validate indicates an expected call of Validate.
+func (mr *MockClientMockRecorder) Validate(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockClient)(nil).Validate), flags)
 }

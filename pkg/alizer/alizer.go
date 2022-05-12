@@ -20,11 +20,11 @@ func NewAlizerClient(registryClient registry.Client) *Alizer {
 
 // DetectFramework uses the alizer library in order to detect the devfile
 // to use depending on the files in the path
-func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, registry.Registry, error) {
+func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, api.Registry, error) {
 	types := []recognizer.DevFileType{}
 	components, err := o.registryClient.ListDevfileStacks("", "", "", false)
 	if err != nil {
-		return recognizer.DevFileType{}, registry.Registry{}, err
+		return recognizer.DevFileType{}, api.Registry{}, err
 	}
 	for _, component := range components.Items {
 		types = append(types, recognizer.DevFileType{
@@ -36,7 +36,7 @@ func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, registry.
 	}
 	typ, err := recognizer.SelectDevFileFromTypes(path, types)
 	if err != nil {
-		return recognizer.DevFileType{}, registry.Registry{}, err
+		return recognizer.DevFileType{}, api.Registry{}, err
 	}
 
 	// TODO(feloy): This part won't be necessary when SelectDevFileFromTypes returns the index
@@ -51,7 +51,7 @@ func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, registry.
 	return typ, registry, nil
 }
 
-func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry registry.Registry) *api.DevfileLocation {
+func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry api.Registry) *api.DevfileLocation {
 	return &api.DevfileLocation{
 		Devfile:         typ.Name,
 		DevfileRegistry: registry.Name,

@@ -48,7 +48,7 @@ func (o *InteractiveBackend) SelectDevfile(flags map[string]string, _ filesystem
 	state := STATE_ASK_LANG
 	var lang string
 	var err error
-	var details registry.DevfileStack
+	var details api.DevfileStack
 loop:
 	for {
 		switch state {

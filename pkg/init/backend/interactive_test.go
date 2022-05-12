@@ -35,9 +35,9 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(false, registry.DevfileStack{
+					client.EXPECT().AskType(gomock.Any()).Return(false, api.DevfileStack{
 						Name: "a-devfile-name",
-						Registry: registry.Registry{
+						Registry: api.Registry{
 							Name: "MyRegistry1",
 						},
 					}, nil)
@@ -60,11 +60,11 @@ func TestInteractiveBackend_SelectDevfile(t *testing.T) {
 				buildAsker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("java", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(true, registry.DevfileStack{}, nil)
+					client.EXPECT().AskType(gomock.Any()).Return(true, api.DevfileStack{}, nil)
 					client.EXPECT().AskLanguage(gomock.Any()).Return("go", nil)
-					client.EXPECT().AskType(gomock.Any()).Return(false, registry.DevfileStack{
+					client.EXPECT().AskType(gomock.Any()).Return(false, api.DevfileStack{
 						Name: "a-devfile-name",
-						Registry: registry.Registry{
+						Registry: api.Registry{
 							Name: "MyRegistry1",
 						},
 					}, nil)

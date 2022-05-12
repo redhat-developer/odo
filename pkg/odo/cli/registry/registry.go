@@ -7,6 +7,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -121,7 +122,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	return listCmd
 }
 
-func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
+func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 
 	// Create the table and use our own style
 	t := table.NewWriter()

@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	api "github.com/redhat-developer/odo/pkg/api"
 	registry "github.com/redhat-developer/odo/pkg/registry"
 )
 
@@ -157,11 +158,11 @@ func (mr *MockAskerMockRecorder) AskStarterProject(projects interface{}) *gomock
 }
 
 // AskType mocks base method.
-func (m *MockAsker) AskType(types registry.TypesWithDetails) (bool, registry.DevfileStack, error) {
+func (m *MockAsker) AskType(types registry.TypesWithDetails) (bool, api.DevfileStack, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AskType", types)
 	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(registry.DevfileStack)
+	ret1, _ := ret[1].(api.DevfileStack)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

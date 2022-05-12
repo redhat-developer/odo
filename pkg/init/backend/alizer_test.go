@@ -11,7 +11,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
-	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -52,7 +51,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 					alizerClient := alizer.NewMockClient(ctrl)
 					alizerClient.EXPECT().DetectFramework(gomock.Any()).Return(recognizer.DevFileType{
 						Name: "a-devfile-name",
-					}, registry.Registry{
+					}, api.Registry{
 						Name: "a-registry",
 					}, nil)
 					return alizerClient
@@ -77,7 +76,7 @@ func TestAlizerBackend_SelectDevfile(t *testing.T) {
 				},
 				alizerClient: func(ctrl *gomock.Controller) alizer.Client {
 					alizerClient := alizer.NewMockClient(ctrl)
-					alizerClient.EXPECT().DetectFramework(gomock.Any()).Return(recognizer.DevFileType{}, registry.Registry{}, nil)
+					alizerClient.EXPECT().DetectFramework(gomock.Any()).Return(recognizer.DevFileType{}, api.Registry{}, nil)
 					return alizerClient
 				},
 			},

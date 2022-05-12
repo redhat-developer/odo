@@ -11,6 +11,7 @@ import (
 	util "github.com/devfile/library/pkg/util"
 	library "github.com/devfile/registry-support/registry-library/library"
 	gomock "github.com/golang/mock/gomock"
+	api "github.com/redhat-developer/odo/pkg/api"
 )
 
 // MockClient is a mock of Client interface.
@@ -66,10 +67,10 @@ func (mr *MockClientMockRecorder) DownloadStarterProject(starterProject, decrypt
 }
 
 // GetDevfileRegistries mocks base method.
-func (m *MockClient) GetDevfileRegistries(registryName string) ([]Registry, error) {
+func (m *MockClient) GetDevfileRegistries(registryName string) ([]api.Registry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDevfileRegistries", registryName)
-	ret0, _ := ret[0].([]Registry)
+	ret0, _ := ret[0].([]api.Registry)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,18 +82,18 @@ func (mr *MockClientMockRecorder) GetDevfileRegistries(registryName interface{})
 }
 
 // ListDevfileStacks mocks base method.
-func (m *MockClient) ListDevfileStacks(registryName, devfileName, filter string, detailsFlag bool) (DevfileStackList, error) {
+func (m *MockClient) ListDevfileStacks(registryName, devfileFlag, filterFlag string, detailsFlag bool) (DevfileStackList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDevfileStacks", registryName, devfileName, filter, detailsFlag)
+	ret := m.ctrl.Call(m, "ListDevfileStacks", registryName, devfileFlag, filterFlag, detailsFlag)
 	ret0, _ := ret[0].(DevfileStackList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListDevfileStacks indicates an expected call of ListDevfileStacks.
-func (mr *MockClientMockRecorder) ListDevfileStacks(registryName, devfileName, filter, detailsFlag interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListDevfileStacks(registryName, devfileFlag, filterFlag, detailsFlag interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileStacks", reflect.TypeOf((*MockClient)(nil).ListDevfileStacks), registryName, devfileName, filter, detailsFlag)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDevfileStacks", reflect.TypeOf((*MockClient)(nil).ListDevfileStacks), registryName, devfileFlag, filterFlag, detailsFlag)
 }
 
 // PullStackFromRegistry mocks base method.
