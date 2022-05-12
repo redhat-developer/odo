@@ -8,6 +8,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -86,6 +87,11 @@ func (o *ListOptions) Run(ctx context.Context) (err error) {
 	return nil
 }
 
+// Run contains the logic for the command associated with ListOptions
+func (o *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	return o.devfileList.Items, nil
+}
+
 func NewCmdRegistry(name, fullName string) *cobra.Command {
 	o := NewListOptions()
 
@@ -111,6 +117,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Annotations["command"] = "main"
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
+	machineoutput.UsedByCommand(listCmd)
 	return listCmd
 }
 
@@ -178,9 +185,9 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 				log.Sbold("Language"), devfileComponent.Language,
 				log.Sbold("Starter Projects"), strings.Join(devfileComponent.StarterProjects, "\n  - "),
 				log.Sbold("Supported odo Features"),
-				boolToYesNo(devfileComponent.SupportedOdoFeatures.Dev),
-				boolToYesNo(devfileComponent.SupportedOdoFeatures.Deploy),
-				boolToYesNo(devfileComponent.SupportedOdoFeatures.Debug),
+				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Dev),
+				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Deploy),
+				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Debug),
 				"\n")
 		} else {
 			// Create a simplified row only showing the name, registry and description.
