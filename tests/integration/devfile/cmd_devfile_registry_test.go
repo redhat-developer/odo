@@ -2,6 +2,7 @@ package devfile
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -36,13 +37,50 @@ var _ = Describe("odo devfile registry command tests", func() {
 	})
 
 	It("Should list detailed information regarding nodejs", func() {
-		output := helper.Cmd("odo", "registry", "--details", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
-		helper.MatchAllInOutput(output, []string{"nodejs-starter", "javascript", "Node.js Runtime", "Dev: Y"})
+		args := []string{"registry", "--details", "--devfile", "nodejs", "--devfile-registry", "DefaultDevfileRegistry"}
+
+		By("using human readable output", func() {
+			output := helper.Cmd("odo", args...).ShouldPass().Out()
+			helper.MatchAllInOutput(output, []string{"nodejs-starter", "javascript", "Node.js Runtime", "Dev: Y"})
+		})
+		By("using JSON output", func() {
+			args = append(args, "-o", "json")
+			res := helper.Cmd("odo", args...).ShouldPass()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stderr).To(BeEmpty())
+			Expect(helper.IsJSON(stdout)).To(BeTrue())
+			helper.JsonPathContentIs(stdout, "0.name", "nodejs")
+			helper.JsonPathContentContain(stdout, "0.displayName", "Node")
+			helper.JsonPathContentContain(stdout, "0.description", "Node")
+			helper.JsonPathContentContain(stdout, "0.language", "javascript")
+			helper.JsonPathContentContain(stdout, "0.projectType", "nodejs")
+			helper.JsonPathContentContain(stdout, "0.starterProjects.0", "nodejs-starter")
+			helper.JsonPathContentContain(stdout, "0.devfileData.devfile.metadata.name", "nodejs")
+			helper.JsonPathContentContain(stdout, "0.devfileData.supportedOdoFeatures.dev", "true")
+		})
 	})
 
 	It("Should list python specifically", func() {
-		output := helper.Cmd("odo", "registry", "--devfile", "python", "--devfile-registry", "DefaultDevfileRegistry").ShouldPass().Out()
-		helper.MatchAllInOutput(output, []string{"python"})
+		args := []string{"registry", "--devfile", "python", "--devfile-registry", "DefaultDevfileRegistry"}
+		By("using human readable output", func() {
+			output := helper.Cmd("odo", args...).ShouldPass().Out()
+			helper.MatchAllInOutput(output, []string{"python"})
+		})
+		By("using JSON output", func() {
+			args = append(args, "-o", "json")
+			res := helper.Cmd("odo", args...).ShouldPass()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stderr).To(BeEmpty())
+			Expect(helper.IsJSON(stdout)).To(BeTrue())
+			helper.JsonPathContentIs(stdout, "0.name", "python")
+			helper.JsonPathContentContain(stdout, "0.displayName", "Python")
+			helper.JsonPathContentContain(stdout, "0.description", "Python")
+			helper.JsonPathContentContain(stdout, "0.language", "python")
+			helper.JsonPathContentContain(stdout, "0.projectType", "python")
+			helper.JsonPathContentContain(stdout, "0.starterProjects.0", "python-example")
+			helper.JsonPathContentContain(stdout, "0.devfileData", "")
+
+		})
 	})
 
 	It("Should fail with an error with no registries", func() {
