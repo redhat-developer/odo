@@ -156,16 +156,14 @@ The `odo list` command returns information about components running on a specifi
 
 The `components` field lists the components either deployed in the cluster, or defined in the local Devfile.
 
-The `componentsInDevfile` field lists the names of components present in the `components` list that are defined in the local Devfile.
+The `componentInDevfile` field gives the name of components present in the `components` list that are defined in the local Devfile, or is empty if no local Devfile is present.
 
 In this example, the `component2` component is running in Deploy mode, and the command has been executed from a directory containing a Devfile defining a `component1` component, not running.
 
 ```bash
 $ odo list --namespace project1
 {
-	"componentsInDevfile": [
-		"component1"
-	],
+	"componentInDevfile": "component1",
 	"components": [
 		{
 			"name": "component2",
@@ -183,5 +181,77 @@ $ odo list --namespace project1
 		}
 	]
 }
-
 ```
+
+## odo registry -o json
+
+The `odo registry` command lists all the Devfile stacks from Devfile registries. You can get the available flag in the [registry command reference](registry.md).
+
+The default output will return information found into the registry index for stacks:
+
+```shell
+$ odo registry -o json
+[
+	{
+		"name": "python-django",
+		"displayName": "Django",
+		"description": "Python3.7 with Django",
+		"registry": {
+			"name": "DefaultDevfileRegistry",
+			"url": "https://registry.devfile.io",
+			"secure": false
+		},
+		"language": "python",
+		"tags": [
+			"Python",
+			"pip",
+			"Django"
+		],
+		"projectType": "django",
+		"version": "1.0.0",
+		"starterProjects": [
+			"django-example"
+		]
+	}, [...]
+]
+```
+
+Using the `--details` flag, you will also get information about the Devfile:
+
+```shell
+$ odo registry --details -o json
+[
+	{
+		"name": "python-django",
+		"displayName": "Django",
+		"description": "Python3.7 with Django",
+		"registry": {
+			"name": "DefaultDevfileRegistry",
+			"url": "https://registry.devfile.io",
+			"secure": false
+		},
+		"language": "python",
+		"tags": [
+			"Python",
+			"pip",
+			"Django"
+		],
+		"projectType": "django",
+		"version": "1.0.0",
+		"starterProjects": [
+			"django-example"
+		],
+		"devfileData": {
+			"devfile": {
+				"schemaVersion": "2.0.0",
+				[ devfile.yaml file content ]
+			},
+			"supportedOdoFeatures": {
+				"dev": true,
+				"deploy": false,
+				"debug": true
+			}
+		},
+	}, [...]
+]
+
