@@ -390,3 +390,11 @@ func (kubectl KubectlRunner) CheckNamespaceProjectExists(name string) bool {
 func (kubectl KubectlRunner) GetActiveNamespace() string {
 	return Cmd(kubectl.path, "config", "view", "--minify", "-ojsonpath={..namespace}").ShouldPass().Out()
 }
+
+func (kubectl KubectlRunner) GetAllNamespaceProjects() []string {
+	output := Cmd(kubectl.path, "get", "namespaces",
+		"-o", "custom-columns=NAME:.metadata.name").ShouldPass().Out()
+	result, err := ExtractLines(output)
+	Expect(err).ShouldNot(HaveOccurred())
+	return result
+}
