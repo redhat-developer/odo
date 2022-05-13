@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -92,6 +93,77 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 					helper.Cmd("odo", "delete", commandName, fakeNamespace, "--force", "--wait").ShouldFail()
 				})
 			})
+		})
+	}
+
+	for _, commandName := range []string{"namespace", "project"} {
+		When(fmt.Sprintf("using the alias %[1]s to set the current active %[1]s", commandName), func() {
+
+			It(fmt.Sprintf("should succeed to set the current active %s", commandName), func() {
+				By("using a namespace already set as current", func() {
+					Expect(commonVar.CliRunner.GetActiveNamespace()).Should(Equal(commonVar.Project))
+					helper.Cmd("odo", "set", commandName, commonVar.Project).ShouldPass()
+					Expect(commonVar.CliRunner.GetActiveNamespace()).Should(Equal(commonVar.Project))
+				})
+
+				By("using a namespace that does not exist in the cluster", func() {
+					fakeNamespace := "my-fake-ns-" + helper.RandString(3)
+					Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(fakeNamespace))
+					helper.Cmd("odo", "set", commandName, fakeNamespace).ShouldPass()
+					Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(fakeNamespace))
+				})
+			})
+
+			It(fmt.Sprintf("should not succeed to set the %s", commandName), func() {
+				invalidNs := "234567"
+				helper.Cmd("odo", "set", commandName, invalidNs).ShouldFail()
+				Expect(commonVar.CliRunner.GetActiveNamespace()).ShouldNot(Equal(invalidNs))
+			})
+
+			When("running inside a component directory", func() {
+				activeNs := "my-current-ns"
+
+				BeforeEach(func() {
+					helper.CopyExampleDevFile(
+						filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"),
+						filepath.Join(commonVar.Context, "devfile.yaml"))
+					helper.Chdir(commonVar.Context)
+
+					// Bootstrap the component with a .odo/env/env.yaml file
+					odoDir := filepath.Join(commonVar.Context, ".odo", "env")
+					helper.MakeDir(odoDir)
+					err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), fmt.Sprintf(`
+ComponentSettings:
+  Name: my-component
+  Project: %s
+  AppName: app
+`, commonVar.Project))
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
+				It(fmt.Sprintf("should succeed to set the %s", commandName), func() {
+					var stdout, stderr string
+					By("setting the current active " + commandName, func() {
+						Expect(commonVar.CliRunner.GetActiveNamespace()).ToNot(Equal(activeNs))
+						cmd := helper.Cmd("odo", "set", commandName, activeNs).ShouldPass()
+						Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(activeNs))
+						stdout, stderr = cmd.OutAndErr()
+					})
+
+					By("displaying warning message", func() {
+						Expect(stdout).To(
+							ContainSubstring(fmt.Sprintf("Current active %s set to %q", commandName, activeNs)))
+						Expect(stderr).To(
+							ContainSubstring(fmt.Sprintf("This is being executed inside a component directory. " +
+								"This will not update the %s of the existing component", commandName)))
+					})
+
+					By("not changing the namespace of the existing component", func() {
+						helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+					})
+				})
+			})
+
 		})
 	}
 })
