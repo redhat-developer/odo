@@ -1,6 +1,8 @@
 package delete
 
 import (
+	"github.com/redhat-developer/odo/pkg/odo/cli/delete/component"
+	"github.com/redhat-developer/odo/pkg/odo/cli/delete/namespace"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 )
@@ -11,13 +13,19 @@ const RecommendedCommandName = "delete"
 // NewCmdDelete implements the delete odo command
 func NewCmdDelete(name, fullName string) *cobra.Command {
 	var deleteCmd = &cobra.Command{
-		Use:   name,
-		Short: "Delete resources",
+		Use:         name,
+		Short:       "Delete resources",
+		Annotations: map[string]string{"command": "main"},
 	}
 
-	componentCmd := NewCmdComponent(ComponentRecommendedCommandName, util.GetFullName(fullName, ComponentRecommendedCommandName))
+	componentCmd := component.NewCmdComponent(component.ComponentRecommendedCommandName,
+		util.GetFullName(fullName, component.ComponentRecommendedCommandName))
 	deleteCmd.AddCommand(componentCmd)
-	deleteCmd.Annotations = map[string]string{"command": "main"}
+
+	namespaceDeleteCmd := namespace.NewCmdNamespaceDelete(namespace.RecommendedCommandName,
+		util.GetFullName(fullName, namespace.RecommendedCommandName))
+	deleteCmd.AddCommand(namespaceDeleteCmd)
+
 	deleteCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return deleteCmd

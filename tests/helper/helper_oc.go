@@ -582,3 +582,12 @@ func (oc OcRunner) CheckNamespaceProjectExists(name string) bool {
 func (oc OcRunner) GetActiveNamespace() string {
 	return Cmd(oc.path, "config", "view", "--minify", "-ojsonpath={..namespace}").ShouldPass().Out()
 }
+
+func (oc OcRunner) GetAllNamespaceProjects() []string {
+	output := Cmd(oc.path, "get", "projects",
+		"-o", "custom-columns=NAME:.metadata.name",
+		"--no-headers").ShouldPass().Out()
+	result, err := ExtractLines(output)
+	Expect(err).ShouldNot(HaveOccurred())
+	return result
+}

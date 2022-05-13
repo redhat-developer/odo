@@ -18,6 +18,7 @@ type CliRunner interface {
 	SetProject(namespace string) string
 	DeleteNamespaceProject(projectName string)
 	DeletePod(podName string, projectName string)
+	GetAllNamespaceProjects() []string
 	GetNamespaceProject() string
 	CheckNamespaceProjectExists(name string) bool
 	GetActiveNamespace() string

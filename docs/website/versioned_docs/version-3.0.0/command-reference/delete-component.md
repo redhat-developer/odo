@@ -1,5 +1,5 @@
 ---
-title: odo delete
+title: odo delete component
 sidebar_position: 3
 ---
 
