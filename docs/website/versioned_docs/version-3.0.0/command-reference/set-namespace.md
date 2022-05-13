@@ -1,0 +1,37 @@
+---
+title: odo set namespace
+sidebar_position: 3
+---
+
+`odo set namespace` lets you set a namespace/project as the current active one in your local `kubeconfig` configuration.
+
+Executing this command inside a component directory will not update the namespace or project of the existing component.
+
+To set the current active namespace you can run `odo set namespace <name>`:
+```shell
+odo set namespace mynamespace
+```
+
+Example:
+```shell
+odo set namespace mynamespace
+ ✓  Current active namespace set to "mynamespace"
+```
+
+Optionally, you can also use `project` as an alias to `namespace`.
+
+To set the current active project you can run `odo set project <name>`:
+```shell
+odo set project myproject
+```
+
+Example:
+```shell
+odo set project myproject    
+  ✓  Current active project set to "myproject"
+```
+
+:::note
+This command updates your current `kubeconfig` configuration, using either of the aliases.
+So running either `odo set project` or `odo set namespace` performs the exact same operation in your configuration.
+:::
