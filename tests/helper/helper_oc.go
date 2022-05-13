@@ -585,7 +585,8 @@ func (oc OcRunner) GetActiveNamespace() string {
 
 func (oc OcRunner) GetAllNamespaceProjects() []string {
 	output := Cmd(oc.path, "get", "projects",
-		"-o", "custom-columns=NAME:.metadata.name").ShouldPass().Out()
+		"-o", "custom-columns=NAME:.metadata.name",
+		"--no-headers").ShouldPass().Out()
 	result, err := ExtractLines(output)
 	Expect(err).ShouldNot(HaveOccurred())
 	return result
