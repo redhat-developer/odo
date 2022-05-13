@@ -67,15 +67,18 @@ func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 		return err
 	}
 
-	if o.devfileList.DevfileRegistries == nil {
-		log.Warning("Please run 'odo preference registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-	}
-
 	return nil
 }
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() error {
+	if o.devfileList.DevfileRegistries == nil {
+		if len(o.registryFlag) > 0 {
+			return fmt.Errorf("the registry %q is not in preferences", o.registryFlag)
+		}
+		return fmt.Errorf("no registry in preferences, please add a registry using 'odo preference registry add' command")
+	}
+
 	if len(o.devfileList.Items) == 0 {
 		return fmt.Errorf("no deployable components found")
 	}
@@ -109,7 +112,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	clientset.Add(listCmd, clientset.REGISTRY)
 
 	// Flags
-	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name of the component")
+	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of each component")

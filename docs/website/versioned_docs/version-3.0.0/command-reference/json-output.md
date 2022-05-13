@@ -156,7 +156,7 @@ The `odo list` command returns information about components running on a specifi
 
 The `components` field lists the components either deployed in the cluster, or defined in the local Devfile.
 
-The `componentInDevfile` field gives the name of components present in the `components` list that are defined in the local Devfile, or is empty if no local Devfile is present.
+The `componentInDevfile` field gives the name of the component present in the `components` list that is defined in the local Devfile, or is empty if no local Devfile is present.
 
 In this example, the `component2` component is running in Deploy mode, and the command has been executed from a directory containing a Devfile defining a `component1` component, not running.
 
