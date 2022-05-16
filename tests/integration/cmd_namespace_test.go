@@ -111,16 +111,19 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 				}
 			})
 
-			It("should set again the " + commandName, func() {
-				helper.Cmd("odo", "set", commandName, commonVar.Project).ShouldPass()
-				Expect(commonVar.CliRunner.GetActiveNamespace()).Should(Equal(commonVar.Project))
-			})
+			It("should successfully set the "+commandName, func() {
+				anotherNs := "my-fake-ns-" + helper.RandString(3)
 
-			It(fmt.Sprintf("should set the %s even if it does not exist in the cluster", commandName), func() {
-				fakeNamespace := "my-fake-ns-" + helper.RandString(3)
-				Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(fakeNamespace))
-				helper.Cmd("odo", "set", commandName, fakeNamespace).ShouldPass()
-				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(fakeNamespace))
+				By(fmt.Sprintf("setting it to a valid %s", commandName), func() {
+					Expect(commonVar.CliRunner.GetActiveNamespace()).ShouldNot(Equal(anotherNs))
+					helper.Cmd("odo", "set", commandName, anotherNs).ShouldPass()
+					Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(anotherNs))
+				})
+
+				By("setting it again to its previous value", func() {
+					helper.Cmd("odo", "set", commandName, anotherNs).ShouldPass()
+					Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(anotherNs))
+				})
 			})
 
 			It(fmt.Sprintf("should not succeed to set the %s", commandName), func() {
