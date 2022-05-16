@@ -33,7 +33,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 				defer func(ns string) {
 					commonVar.CliRunner.DeleteNamespaceProject(ns)
 				}(namespace)
-				Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
+				Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
 				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(namespace))
 			})
 
@@ -55,7 +55,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 
 				BeforeEach(func() {
 					namespace = helper.CreateRandProject()
-					Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
+					Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
 				})
 
 				checkNsDeletionFunc := func(additionalArgs []string, nsCheckerFunc func()) {
@@ -73,15 +73,15 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 
 				It(fmt.Sprintf("should successfully delete the %s asynchronously", commandName), func() {
 					checkNsDeletionFunc(nil, func() {
-						Eventually(func() []string {
-							return commonVar.CliRunner.GetAllNamespaceProjects()
-						}, 60*time.Second).ShouldNot(ContainElement(namespace))
+						Eventually(func() bool {
+							return commonVar.CliRunner.HasNamespaceProject(namespace)
+						}, 60*time.Second).Should(BeFalse())
 					})
 				})
 
 				It(fmt.Sprintf("should successfully delete the %s synchronously with --wait", commandName), func() {
 					checkNsDeletionFunc([]string{"--wait"}, func() {
-						Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(namespace))
+						Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeFalse())
 					})
 				})
 			})

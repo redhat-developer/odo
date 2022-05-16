@@ -575,8 +575,10 @@ func (oc OcRunner) GetNamespaceProject() string {
 	return Cmd(oc.path, "get", "project").ShouldPass().Out()
 }
 
-func (oc OcRunner) CheckNamespaceProjectExists(name string) bool {
-	return Cmd(oc.path, "get", "project", name).ShouldPass().pass
+func (oc OcRunner) HasNamespaceProject(name string) bool {
+	out := Cmd(oc.path, "get", "project", name, "-o", "jsonpath={.metadata.name}").
+		ShouldRun().Out()
+	return strings.Contains(out, name)
 }
 
 func (oc OcRunner) GetActiveNamespace() string {

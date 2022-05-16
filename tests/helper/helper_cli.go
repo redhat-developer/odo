@@ -20,7 +20,10 @@ type CliRunner interface {
 	DeletePod(podName string, projectName string)
 	GetAllNamespaceProjects() []string
 	GetNamespaceProject() string
-	CheckNamespaceProjectExists(name string) bool
+
+	// HasNamespaceProject returns whether the specified namespace or project exists in the cluster
+	HasNamespaceProject(name string) bool
+
 	GetActiveNamespace() string
 	GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string
 	GetEnvRefNames(componentName, appName, projectName string) []string
