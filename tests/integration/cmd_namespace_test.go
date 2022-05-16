@@ -6,84 +6,87 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redhat-developer/odo/tests/helper"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("create/delete/list/get/set namespace tests", func() {
+var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 	var commonVar helper.CommonVar
 
 	BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
 	})
+
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-	for _, command := range []string{"namespace", "project"} {
-		When(fmt.Sprintf("using the alias %[1]s to create a %[1]s", command), func() {
-			var namespace string
-			BeforeEach(func() {
-				namespace = fmt.Sprintf("%s-%s", helper.RandString(4), command)
-				helper.Cmd("odo", "create", command, namespace, "--wait").ShouldPass()
-			})
-			AfterEach(func() {
-				commonVar.CliRunner.DeleteNamespaceProject(namespace)
-			})
-			It(fmt.Sprintf("should successfully create the %s", command), func() {
+
+	for _, commandName := range []string{"namespace", "project"} {
+
+		Describe("create "+commandName, func() {
+			namespace := fmt.Sprintf("%s-%s", helper.RandString(4), commandName)
+
+			It(fmt.Sprintf("should successfully create the %s", commandName), func() {
+				helper.Cmd("odo", "create", commandName, namespace, "--wait").ShouldPass()
+				defer func(ns string) {
+					commonVar.CliRunner.DeleteNamespaceProject(ns)
+				}(namespace)
 				Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
 				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(namespace))
 			})
-		})
 
-	}
-
-	It("should fail to create namespace", func() {
-		By("using an existent namespace name", func() {
-			helper.Cmd("odo", "create", "namespace", commonVar.Project).ShouldFail()
-		})
-		By("using an invalid namespace name", func() {
-			helper.Cmd("odo", "create", "namespace", "12345").ShouldFail()
-			Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(commonVar.Project))
-		})
-	})
-
-	for _, commandName := range []string{"namespace", "project"} {
-		When(fmt.Sprintf("using the alias %[1]s to delete a %[1]s", commandName), func() {
-			var namespace string
-
-			BeforeEach(func() {
-				namespace = helper.CreateRandProject()
-				Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
+			It(fmt.Sprintf("should fail to create %s", commandName), func() {
+				By("using an existent name", func() {
+					helper.Cmd("odo", "create", commandName, commonVar.Project).ShouldFail()
+				})
+				By("using an invalid name", func() {
+					helper.Cmd("odo", "create", commandName, "12345").ShouldFail()
+					Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(commonVar.Project))
+				})
 			})
+		})
 
-			checkNsDeletionFunc := func(wait bool) {
-				args := []string{"delete", commandName, namespace, "--force"}
-				if wait {
-					args = append(args, "--wait")
+		Describe("delete "+commandName, func() {
+
+			When("force-deleting a valid "+commandName, func() {
+				var namespace string
+
+				BeforeEach(func() {
+					namespace = helper.CreateRandProject()
+					Expect(commonVar.CliRunner.CheckNamespaceProjectExists(namespace)).To(BeTrue())
+				})
+
+				checkNsDeletionFunc := func(additionalArgs []string, nsCheckerFunc func()) {
+					args := []string{"delete", commandName, namespace, "--force"}
+					if additionalArgs != nil {
+						args = append(args, additionalArgs...)
+					}
+					out := helper.Cmd("odo", args...).ShouldPass().Out()
+					if nsCheckerFunc != nil {
+						nsCheckerFunc()
+					}
+					Expect(out).To(
+						ContainSubstring(fmt.Sprintf("%s %q deleted", strings.Title(commandName), namespace)))
 				}
-				out := helper.Cmd("odo", args...).ShouldPass().Out()
-				if wait {
-					Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(namespace))
-				} else {
-					Eventually(func() []string {
-						return commonVar.CliRunner.GetAllNamespaceProjects()
-					}, 60*time.Second).ShouldNot(ContainElement(namespace))
-				}
-				Expect(out).To(
-					ContainSubstring(fmt.Sprintf("%s %q deleted", strings.Title(commandName), namespace)))
-			}
 
-			It(fmt.Sprintf("should successfully delete the %s using the force flag and asynchronously", commandName), func() {
-				checkNsDeletionFunc(false)
+				It(fmt.Sprintf("should successfully delete the %s asynchronously", commandName), func() {
+					checkNsDeletionFunc(nil, func() {
+						Eventually(func() []string {
+							return commonVar.CliRunner.GetAllNamespaceProjects()
+						}, 60*time.Second).ShouldNot(ContainElement(namespace))
+					})
+				})
+
+				It(fmt.Sprintf("should successfully delete the %s synchronously with --wait", commandName), func() {
+					checkNsDeletionFunc([]string{"--wait"}, func() {
+						Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(namespace))
+					})
+				})
 			})
 
-			It(fmt.Sprintf("should successfully delete the %s using the force flag and waiting", commandName), func() {
-				checkNsDeletionFunc(true)
-			})
-
-			It(fmt.Sprintf("should not succeed to delete a non-existent %s", commandName), func() {
+			It("should not succeed to delete a non-existent "+commandName, func() {
 				fakeNamespace := "my-fake-ns-" + helper.RandString(3)
 				By("using the force flag and asynchronously", func() {
 					helper.Cmd("odo", "delete", commandName, fakeNamespace, "--force").ShouldFail()
@@ -93,25 +96,31 @@ var _ = Describe("create/delete/list/get/set namespace tests", func() {
 					helper.Cmd("odo", "delete", commandName, fakeNamespace, "--force", "--wait").ShouldFail()
 				})
 			})
+
 		})
-	}
 
-	for _, commandName := range []string{"namespace", "project"} {
-		When(fmt.Sprintf("using the alias %[1]s to set the current active %[1]s", commandName), func() {
+		Describe("set "+commandName, func() {
 
-			It(fmt.Sprintf("should succeed to set the current active %s", commandName), func() {
-				By("using a namespace already set as current", func() {
-					Expect(commonVar.CliRunner.GetActiveNamespace()).Should(Equal(commonVar.Project))
-					helper.Cmd("odo", "set", commandName, commonVar.Project).ShouldPass()
-					Expect(commonVar.CliRunner.GetActiveNamespace()).Should(Equal(commonVar.Project))
-				})
+			BeforeEach(func() {
+				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(commonVar.Project))
+			})
 
-				By("using a namespace that does not exist in the cluster", func() {
-					fakeNamespace := "my-fake-ns-" + helper.RandString(3)
-					Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(fakeNamespace))
-					helper.Cmd("odo", "set", commandName, fakeNamespace).ShouldPass()
-					Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(fakeNamespace))
-				})
+			AfterEach(func() {
+				if commonVar.CliRunner.GetActiveNamespace() != commonVar.Project {
+					commonVar.CliRunner.SetProject(commonVar.Project)
+				}
+			})
+
+			It("should set again the " + commandName, func() {
+				helper.Cmd("odo", "set", commandName, commonVar.Project).ShouldPass()
+				Expect(commonVar.CliRunner.GetActiveNamespace()).Should(Equal(commonVar.Project))
+			})
+
+			It(fmt.Sprintf("should set the %s even if it does not exist in the cluster", commandName), func() {
+				fakeNamespace := "my-fake-ns-" + helper.RandString(3)
+				Expect(commonVar.CliRunner.GetAllNamespaceProjects()).ShouldNot(ContainElement(fakeNamespace))
+				helper.Cmd("odo", "set", commandName, fakeNamespace).ShouldPass()
+				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(fakeNamespace))
 			})
 
 			It(fmt.Sprintf("should not succeed to set the %s", commandName), func() {
@@ -141,9 +150,9 @@ ComponentSettings:
 					Expect(err).ShouldNot(HaveOccurred())
 				})
 
-				It(fmt.Sprintf("should succeed to set the %s", commandName), func() {
+				It(fmt.Sprintf("should set the %s", commandName), func() {
 					var stdout, stderr string
-					By("setting the current active " + commandName, func() {
+					By("setting the current active "+commandName, func() {
 						Expect(commonVar.CliRunner.GetActiveNamespace()).ToNot(Equal(activeNs))
 						cmd := helper.Cmd("odo", "set", commandName, activeNs).ShouldPass()
 						Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(activeNs))
@@ -154,7 +163,7 @@ ComponentSettings:
 						Expect(stdout).To(
 							ContainSubstring(fmt.Sprintf("Current active %s set to %q", commandName, activeNs)))
 						Expect(stderr).To(
-							ContainSubstring(fmt.Sprintf("This is being executed inside a component directory. " +
+							ContainSubstring(fmt.Sprintf("This is being executed inside a component directory. "+
 								"This will not update the %s of the existing component", commandName)))
 					})
 
@@ -163,7 +172,6 @@ ComponentSettings:
 					})
 				})
 			})
-
 		})
 	}
 })
