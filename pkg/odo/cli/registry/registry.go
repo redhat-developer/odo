@@ -7,7 +7,9 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -65,15 +67,18 @@ func (o *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err erro
 		return err
 	}
 
-	if o.devfileList.DevfileRegistries == nil {
-		log.Warning("Please run 'odo preference registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-	}
-
 	return nil
 }
 
 // Validate validates the ListOptions based on completed values
 func (o *ListOptions) Validate() error {
+	if o.devfileList.DevfileRegistries == nil {
+		if len(o.registryFlag) > 0 {
+			return fmt.Errorf("the registry %q is not in preferences", o.registryFlag)
+		}
+		return fmt.Errorf("no registry in preferences, please add a registry using 'odo preference registry add' command")
+	}
+
 	if len(o.devfileList.Items) == 0 {
 		return fmt.Errorf("no deployable components found")
 	}
@@ -84,6 +89,11 @@ func (o *ListOptions) Validate() error {
 func (o *ListOptions) Run(ctx context.Context) (err error) {
 	o.printDevfileList(o.devfileList.Items)
 	return nil
+}
+
+// Run contains the logic for the command associated with ListOptions
+func (o *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	return o.devfileList.Items, nil
 }
 
 func NewCmdRegistry(name, fullName string) *cobra.Command {
@@ -102,7 +112,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	clientset.Add(listCmd, clientset.REGISTRY)
 
 	// Flags
-	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name of the component")
+	listCmd.Flags().StringVar(&o.filterFlag, "filter", "", "Filter based on the name or description of the component")
 	listCmd.Flags().StringVar(&o.devfileFlag, "devfile", "", "Only the specific Devfile component")
 	listCmd.Flags().StringVar(&o.registryFlag, "devfile-registry", "", "Only show components from the specific Devfile registry")
 	listCmd.Flags().BoolVar(&o.detailsFlag, "details", false, "Show details of each component")
@@ -111,10 +121,11 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	listCmd.Annotations["command"] = "main"
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
+	machineoutput.UsedByCommand(listCmd)
 	return listCmd
 }
 
-func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
+func (o *ListOptions) printDevfileList(DevfileList []api.DevfileStack) {
 
 	// Create the table and use our own style
 	t := table.NewWriter()
@@ -178,9 +189,9 @@ func (o *ListOptions) printDevfileList(DevfileList []registry.DevfileStack) {
 				log.Sbold("Language"), devfileComponent.Language,
 				log.Sbold("Starter Projects"), strings.Join(devfileComponent.StarterProjects, "\n  - "),
 				log.Sbold("Supported odo Features"),
-				boolToYesNo(devfileComponent.SupportedOdoFeatures.Dev),
-				boolToYesNo(devfileComponent.SupportedOdoFeatures.Deploy),
-				boolToYesNo(devfileComponent.SupportedOdoFeatures.Debug),
+				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Dev),
+				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Deploy),
+				boolToYesNo(devfileComponent.DevfileData.SupportedOdoFeatures.Debug),
 				"\n")
 		} else {
 			// Create a simplified row only showing the name, registry and description.

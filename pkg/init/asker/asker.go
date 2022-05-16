@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/registry"
 )
@@ -29,7 +30,7 @@ func (o *Survey) AskLanguage(langs []string) (string, error) {
 	return answer, nil
 }
 
-func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ registry.DevfileStack, _ error) {
+func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ api.DevfileStack, _ error) {
 	stringTypes := types.GetOrderedLabels()
 	stringTypes = append(stringTypes, "** GO BACK **")
 	question := &survey.Select{
@@ -39,10 +40,10 @@ func (o *Survey) AskType(types registry.TypesWithDetails) (back bool, _ registry
 	var answerPos int
 	err := survey.AskOne(question, &answerPos)
 	if err != nil {
-		return false, registry.DevfileStack{}, err
+		return false, api.DevfileStack{}, err
 	}
 	if answerPos == len(stringTypes)-1 {
-		return true, registry.DevfileStack{}, nil
+		return true, api.DevfileStack{}, nil
 	}
 	compType, err := types.GetAtOrderedPosition(answerPos)
 	return false, compType, err

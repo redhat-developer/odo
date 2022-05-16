@@ -3,11 +3,13 @@ package registry
 import (
 	"reflect"
 	"testing"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 func TestDevfileStackList_GetLanguages(t *testing.T) {
 	type fields struct {
-		Items []DevfileStack
+		Items []api.DevfileStack
 	}
 	tests := []struct {
 		name   string
@@ -21,11 +23,11 @@ func TestDevfileStackList_GetLanguages(t *testing.T) {
 		{
 			name: "some devfiles",
 			fields: fields{
-				Items: []DevfileStack{
+				Items: []api.DevfileStack{
 					{
 						Name:        "devfile4",
 						DisplayName: "first devfile for lang3",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang3",
@@ -33,7 +35,7 @@ func TestDevfileStackList_GetLanguages(t *testing.T) {
 					{
 						Name:        "devfile1",
 						DisplayName: "first devfile for lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 						Language: "lang1",
@@ -41,7 +43,7 @@ func TestDevfileStackList_GetLanguages(t *testing.T) {
 					{
 						Name:        "devfile3",
 						DisplayName: "another devfile for lang2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang2",
@@ -49,7 +51,7 @@ func TestDevfileStackList_GetLanguages(t *testing.T) {
 					{
 						Name:        "devfile2",
 						DisplayName: "second devfile for lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang1",
@@ -73,7 +75,7 @@ func TestDevfileStackList_GetLanguages(t *testing.T) {
 
 func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 	type fields struct {
-		Items []DevfileStack
+		Items []api.DevfileStack
 	}
 	type args struct {
 		language string
@@ -91,11 +93,11 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 		{
 			name: "project types for lang1",
 			fields: fields{
-				Items: []DevfileStack{
+				Items: []api.DevfileStack{
 					{
 						Name:        "devfile4",
 						DisplayName: "first devfile for lang3",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang3",
@@ -103,7 +105,7 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 					{
 						Name:        "devfile1",
 						DisplayName: "first devfile for lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang1",
@@ -111,7 +113,7 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 					{
 						Name:        "devfile1",
 						DisplayName: "first devfile for lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 						Language: "lang1",
@@ -119,7 +121,7 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 					{
 						Name:        "devfile3",
 						DisplayName: "another devfile for lang2",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang2",
@@ -127,7 +129,7 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 					{
 						Name:        "devfile2",
 						DisplayName: "second devfile for lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 						Language: "lang1",
@@ -138,12 +140,12 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 				language: "lang1",
 			},
 			want: TypesWithDetails{
-				"first devfile for lang1": []DevfileStack{
+				"first devfile for lang1": []api.DevfileStack{
 					{
 						Name:        "devfile1",
 						DisplayName: "first devfile for lang1",
 						Language:    "lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},
@@ -151,17 +153,17 @@ func TestDevfileStackList_GetProjectTypes(t *testing.T) {
 						Name:        "devfile1",
 						DisplayName: "first devfile for lang1",
 						Language:    "lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry2",
 						},
 					},
 				},
-				"second devfile for lang1": []DevfileStack{
+				"second devfile for lang1": []api.DevfileStack{
 					{
 						Name:        "devfile2",
 						DisplayName: "second devfile for lang1",
 						Language:    "lang1",
-						Registry: Registry{
+						Registry: api.Registry{
 							Name: "Registry1",
 						},
 					},

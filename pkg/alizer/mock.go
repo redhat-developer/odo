@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	recognizer "github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
-	registry "github.com/redhat-developer/odo/pkg/registry"
+	api "github.com/redhat-developer/odo/pkg/api"
 )
 
 // MockClient is a mock of Client interface.
@@ -36,11 +36,11 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // DetectFramework mocks base method.
-func (m *MockClient) DetectFramework(path string) (recognizer.DevFileType, registry.Registry, error) {
+func (m *MockClient) DetectFramework(path string) (recognizer.DevFileType, api.Registry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DetectFramework", path)
 	ret0, _ := ret[0].(recognizer.DevFileType)
-	ret1, _ := ret[1].(registry.Registry)
+	ret1, _ := ret[1].(api.Registry)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }

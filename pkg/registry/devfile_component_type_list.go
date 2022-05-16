@@ -1,6 +1,10 @@
 package registry
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/redhat-developer/odo/pkg/api"
+)
 
 // GetLanguages returns the list of unique languages, ordered by name,
 // from a list of registry items
@@ -27,7 +31,7 @@ func (o *DevfileStackList) GetProjectTypes(language string) TypesWithDetails {
 			continue
 		}
 		if _, found := types[item.DisplayName]; !found {
-			types[item.DisplayName] = []DevfileStack{}
+			types[item.DisplayName] = []api.DevfileStack{}
 		}
 		types[item.DisplayName] = append(types[item.DisplayName], item)
 	}

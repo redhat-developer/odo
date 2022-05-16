@@ -56,8 +56,8 @@ func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.Starter
 
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
-func (o RegistryClient) GetDevfileRegistries(registryName string) ([]Registry, error) {
-	var devfileRegistries []Registry
+func (o RegistryClient) GetDevfileRegistries(registryName string) ([]api.Registry, error) {
+	var devfileRegistries []api.Registry
 
 	hasName := len(registryName) != 0
 	if o.preferenceClient.RegistryList() != nil {
@@ -67,7 +67,7 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]Registry, e
 			registry := registryList[i]
 			if hasName {
 				if registryName == registry.Name {
-					reg := Registry{
+					reg := api.Registry{
 						Name:   registry.Name,
 						URL:    registry.URL,
 						Secure: registry.Secure,
@@ -76,7 +76,7 @@ func (o RegistryClient) GetDevfileRegistries(registryName string) ([]Registry, e
 					return devfileRegistries, nil
 				}
 			} else {
-				reg := Registry{
+				reg := api.Registry{
 					Name:   registry.Name,
 					URL:    registry.URL,
 					Secure: registry.Secure,
@@ -112,7 +112,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 
 	// The 2D slice index is the priority of the registry (highest priority has highest index)
 	// and the element is the devfile slice that belongs to the registry
-	registrySlice := make([][]DevfileStack, len(catalogDevfileList.DevfileRegistries))
+	registrySlice := make([][]api.DevfileStack, len(catalogDevfileList.DevfileRegistries))
 	for regPriority, reg := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
 		registry := reg                 // Needed to prevent the lambda from capturing the value
@@ -141,7 +141,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 	// manually http get) if the details flag has been passed in.
 	for priorityNumber, registryDevfiles := range registrySlice {
 
-		devfiles := []DevfileStack{}
+		devfiles := []api.DevfileStack{}
 
 		for _, devfile := range registryDevfiles {
 
@@ -165,7 +165,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 				if err != nil {
 					return *catalogDevfileList, err
 				}
-				devfile.SupportedOdoFeatures = *devfileData.SupportedOdoFeatures
+				devfile.DevfileData = &devfileData
 			}
 
 			devfiles = append(devfiles, devfile)
@@ -188,7 +188,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 }
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
-func getRegistryStacks(preferenceClient preference.Client, registry Registry) ([]DevfileStack, error) {
+func getRegistryStacks(preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
 	isGithubregistry, err := registryUtil.IsGithubBasedRegistry(registry.URL)
 	if err != nil {
 		return nil, err
@@ -204,14 +204,13 @@ func getRegistryStacks(preferenceClient preference.Client, registry Registry) ([
 	return createRegistryDevfiles(registry, devfileIndex)
 }
 
-func createRegistryDevfiles(registry Registry, devfileIndex []indexSchema.Schema) ([]DevfileStack, error) {
-	registryDevfiles := make([]DevfileStack, 0, len(devfileIndex))
+func createRegistryDevfiles(registry api.Registry, devfileIndex []indexSchema.Schema) ([]api.DevfileStack, error) {
+	registryDevfiles := make([]api.DevfileStack, 0, len(devfileIndex))
 	for _, devfileIndexEntry := range devfileIndex {
-		stackDevfile := DevfileStack{
+		stackDevfile := api.DevfileStack{
 			Name:            devfileIndexEntry.Name,
 			DisplayName:     devfileIndexEntry.DisplayName,
 			Description:     devfileIndexEntry.Description,
-			Link:            devfileIndexEntry.Links["self"],
 			Registry:        registry,
 			Language:        devfileIndexEntry.Language,
 			Tags:            devfileIndexEntry.Tags,

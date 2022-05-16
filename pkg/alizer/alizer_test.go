@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
 )
 
@@ -17,13 +18,13 @@ func GetTestProjectPath(folder string) string {
 	return filepath.Join(basepath, "..", "..", "tests/examples/source/", folder)
 }
 
-var types = []registry.DevfileStack{
+var types = []api.DevfileStack{
 	{
 		Name:        "java-maven",
 		Language:    "java",
 		ProjectType: "maven",
 		Tags:        []string{"Java", "Maven"},
-		Registry: registry.Registry{
+		Registry: api.Registry{
 			Name: "registry1",
 		},
 	},
@@ -32,7 +33,7 @@ var types = []registry.DevfileStack{
 		Language:    "java",
 		ProjectType: "quarkus",
 		Tags:        []string{"Java", "Quarkus"},
-		Registry: registry.Registry{
+		Registry: api.Registry{
 			Name: "registry1",
 		},
 	},
@@ -41,7 +42,7 @@ var types = []registry.DevfileStack{
 		Language:    "java",
 		ProjectType: "wildfly",
 		Tags:        []string{"Java", "WildFly"},
-		Registry: registry.Registry{
+		Registry: api.Registry{
 			Name: "registry2",
 		},
 	},
@@ -50,7 +51,7 @@ var types = []registry.DevfileStack{
 		Language:    "javascript",
 		ProjectType: "nodejs",
 		Tags:        []string{"NodeJS", "Express", "ubi8"},
-		Registry: registry.Registry{
+		Registry: api.Registry{
 			Name: "registry2",
 		},
 	},
@@ -59,7 +60,7 @@ var types = []registry.DevfileStack{
 		Language:    "python",
 		ProjectType: "python",
 		Tags:        []string{"Python", "pip"},
-		Registry: registry.Registry{
+		Registry: api.Registry{
 			Name: "registry3",
 		},
 	},

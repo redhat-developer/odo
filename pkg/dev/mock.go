@@ -40,31 +40,31 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string) error {
+func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, debug bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, ignorePaths, path)
+	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, ignorePaths, path, debug)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths, path interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths, path, debug interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, ignorePaths, path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, ignorePaths, path, debug)
 }
 
 // Watch mocks base method.
-func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context) error {
+func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx)
+	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug)
 }
 
 // MockHandler is a mock of Handler interface.

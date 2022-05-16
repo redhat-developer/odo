@@ -125,7 +125,7 @@ var _ = Describe("odo devfile init command tests", func() {
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
 				helper.JsonPathContentIs(stdout, "devfilePath", filepath.Join(commonVar.Context, "devfile.yaml"))
-				helper.JsonPathContentIs(stdout, "devfileData.devfile.schemaVersion", "2.0.0")
+				helper.JsonPathContentIs(stdout, "devfileData.devfile.metadata.name", compName)
 				helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.dev", "true")
 				helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.debug", "false")
 				helper.JsonPathContentIs(stdout, "devfileData.supportedOdoFeatures.deploy", "false")

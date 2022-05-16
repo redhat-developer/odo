@@ -160,7 +160,7 @@ func GetCliRunner() CliRunner {
 
 // IsJSON returns true if a string is in json format
 func IsJSON(s string) bool {
-	var js map[string]interface{}
+	var js interface{}
 	return json.Unmarshal([]byte(s), &js) == nil
 }
 
