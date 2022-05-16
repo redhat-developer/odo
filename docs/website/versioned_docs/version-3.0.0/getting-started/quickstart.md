@@ -5,222 +5,389 @@ sidebar_position: 5
 
 # Quickstart Guide
 
-In this guide, we will be using odo to create a to-do list application, with the following:
-* ReactJS for the frontend
-* Java Spring Boot for the backend
-* PostgreSQL to store all persistent data
-
-At the end of the guide, you will be able to list, add and delete to-do items from the web browser.
+In this guide, we will be using odo to create a "Hello World" application with Node.js
 
 ## Prerequisites
 
 * Have the odo binary [installed](./installation.md).
-* A [Kubernetes cluster](/docs/getting-started/cluster-setup/kubernetes) set up with a [ingress controller](/docs/getting-started/cluster-setup/kubernetes#installing-an-ingress-controller), [operator lifecycle manager](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) and (optional) [service binding operator](/docs/getting-started/cluster-setup/kubernetes#installing-the-service-binding-operator).
-* Or a [OpenShift cluster](/docs/getting-started/cluster-setup/openshift) set up with the (optional) [service binding operator](/docs/getting-started/cluster-setup/openshift#installing-the-service-binding-operator)
+* A [Kubernetes](/docs/getting-started/cluster-setup/kubernetes) or [OpenShift cluster](/docs/getting-started/cluster-setup/openshift) 
 
-## Clone the quickstart guide
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-Clone the [quickstart](https://github.com/odo-devfiles/odo-quickstart) repo from GitHub:
-```shell
-git clone https://github.com/odo-devfiles/odo-quickstart
-cd odo-quickstart
+## Step 0. Creating the initial source code (optional)
+
+We will create the example source code by using some popular frameworks.
+
+This is *optional* and you may use an existing project instead or a starter project from `odo init`.
+
+<Tabs groupId="quickstart">
+  <TabItem value="nodejs" label="Node.js">
+
+For Node.JS we will use the [Express](https://expressjs.com/) framework for our example.
+
+1. Install Express:
+```console
+$ npm install express --save
 ```
 
-## Create a project
+2. Generate an example project:
+```console
+$ npx express-generator
 
-We will create a project named `quickstart` on the cluster to keep all quickstart-related activities separate from rest of the cluster:
-```shell
-odo project create quickstart
+  warning: the default view engine will not be jade in future releases
+  warning: use `--view=jade' or `--help' for additional options
+
+
+   create : public/
+   create : public/javascripts/
+   create : public/images/
+   create : public/stylesheets/
+   create : public/stylesheets/style.css
+   create : routes/
+   create : routes/index.js
+   create : routes/users.js
+   create : views/
+   create : views/error.jade
+   create : views/index.jade
+   create : views/layout.jade
+   create : app.js
+   create : package.json
+   create : bin/
+   create : bin/www
+
+   install dependencies:
+     $ npm install
+
+   run the app:
+     $ DEBUG=express:* npm start
 ```
 
-## Create the frontend Node.JS component
+Your source code has now been generated and created in the directory.
 
-Our frontend component is a React application that communicates with the backend component. 
+</TabItem>
+</Tabs>
 
-We will use the catalog command to list all available components and find `nodejs`:
-```shell
-odo catalog list components
+## Step 1. Creating your application (`odo init`)
+
+Now we'll initialize your application by creating a `devfile.yaml` to be deployed.
+
+`odo` handles this automatically with the `odo init` command by autodetecting your source code and downloading the appropriate Devfile.
+
+**Note:** If you skipped *Step 0*, select a "starter project" when running `odo init`.
+
+<Tabs groupId="quickstart">
+  <TabItem value="nodejs" label="Node.js">
+
+Let's run `odo init` and select Node.js:
+
+```console
+$ odo init
+  __
+ /  \__     Initializing new component
+ \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
+ /  \__/    odo version: v3.0.0-alpha1
+ \__/
+
+Interactive mode enabled, please answer the following questions:
+Based on the files in the current directory odo detected
+Language: javascript
+Project type: nodejs
+The devfile "nodejs" from the registry "DefaultDevfileRegistry" will be downloaded.
+? Is this correct? Yes
+ ✓  Downloading devfile "nodejs" from registry "DefaultDevfileRegistry" [501ms]
+Current component configuration:
+Container "runtime":
+  Opened ports:
+   - 3000
+  Environment variables:
+? Select container for which you want to change configuration? NONE - configuration is correct
+? Enter component name: my-nodejs-app
+
+Your new component 'my-nodejs-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
 ```
 
-Example output of `odo catalog list components`:
-```shell
-Odo Devfile Components:
-NAME                             DESCRIPTION                                                         REGISTRY
-nodejs                           Stack with Node.js 14                                               DefaultDevfileRegistry
-nodejs-angular                   Stack with Angular 12                                               DefaultDevfileRegistry
-nodejs-nextjs                    Stack with Next.js 11                                               DefaultDevfileRegistry
-nodejs-nuxtjs                    Stack with Nuxt.js 2                                                DefaultDevfileRegistry
-...
+A `devfile.yaml` has now been added to your directory and now you're ready to start development.
+
+  </TabItem>
+</Tabs>
+
+## Step 2. Developing your application continuously (`odo dev`)
+
+Now that we've generated our code as well as our Devfile, let's start on development.
+
+`odo` uses inner loop development and allows you to code, build, run and test the application in a continuous workflow.
+
+Once you run `odo dev`, you can freely edit code in your favourite IDE and watch as `odo` rebuilds and redeploys it.
+
+<Tabs groupId="quickstart">
+  <TabItem value="nodejs" label="Node.js">
+
+Let's run `odo dev` to start development on your Node.JS application:
+```console
+$ odo dev
+  __
+ /  \__     Developing using the my-nodejs-app Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.0.0-alpha1
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [3s]
+ ✓  Syncing files into the container [330ms]
+ ✓  Building your application in container on cluster [4s]
+ ✓  Executing the application [1s]
+
+Your application is now running on the cluster
+ - Forwarding from 127.0.0.1:40001 -> 3000
+
+Watching for changes in the current directory /Users/user/syncthing/dev/k8s/devfiles/express
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
 
-Pick `nodejs` to create the frontend component:
-```shell
-cd frontend
-odo create nodejs frontend
+You can now access the application at [127.0.0.1:40001](http://127.0.0.1:40001) in your local browser and start your development loop. `odo` will watch for changes and push the code for real-time updates.
+
+  </TabItem>
+</Tabs>
+
+## Step 3. Deploying your application to the world (`odo deploy`)
+
+**Prerequisites:**
+
+Before we begin, you must login to a container registry that we will be pushing our application to.
+
+Login to your container registry with either `podman` or `docker`:
+
+```console
+$ podman login
+# or
+$ docker login
 ```
 
-Create a URL in order to access the component in the browser:
-```shell
-odo url create --port 3000 --host <CLUSTER-HOSTNAME>
+**NOTE:** If you are running Apple Silicon (M1), you must set your Docker build platform to the cluster you are deploying to.
+
+For example, if you are deploying to `linux/amd64`:
+
+```console
+export DOCKER_DEFAULT_PLATFORM=linux/amd64  
 ```
 
-**Minikube users:** Use `minikube ip` to find out the hostname and then use `<MINIKUBE-HOSTNAME>.nip.io`  for `--host`.
+**Overview:**
 
+There are three steps to deploy your application:
 
-Push the component to the cluster:
-```shell
-odo push
+1. Containerize your application by creating a `Dockerfile`
+2. Modify `devfile.yaml` to add your Kubernetes code
+3. Run `odo deploy`
+
+<Tabs groupId="quickstart">
+  <TabItem value="nodejs" label="Node.js">
+
+#### 1. Containerize the application
+
+In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
+
+```dockerfile
+# Sample copied from https://github.com/nodeshift-starters/devfile-sample/blob/main/Dockerfile
+
+# Install the app dependencies in a full Node docker image
+FROM registry.access.redhat.com/ubi8/nodejs-14:latest
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install app dependencies
+RUN npm install --production
+
+# Copy the dependencies into a Slim Node docker image
+FROM registry.access.redhat.com/ubi8/nodejs-14-minimal:latest
+
+# Install app dependencies
+COPY --from=0 /opt/app-root/src/node_modules /opt/app-root/src/node_modules
+COPY . /opt/app-root/src
+
+ENV NODE_ENV production
+ENV PORT 3000
+
+CMD ["npm", "start"]
 ```
 
-The URL will be listed in the `odo push` output, or can be found in `odo url list`.
+#### 2. Modify the Devfile
 
-Browse the site and try it out! Note that you will not be able to add, remove or list the to-dos yet, as we have not linked the frontend and the backend components yet.
+Let's modify the `devfile.yaml` and add the respective deployment code.
 
-## Create the backend Java component
-
-The backend application is a Java Spring Boot based REST API which will list, insert and delete to-dos from the database.
-
-Find `java-springboot` in the catalog:
-```shell
-odo catalog list components
-```
-
-Example output of `odo catalog list components`:
-```shell
-Odo Devfile Components:
-NAME                             DESCRIPTION                                                         REGISTRY
-java-quarkus                     Quarkus with Java                                                   DefaultDevfileRegistry
-java-springboot                  Spring Boot® using Java                                             DefaultDevfileRegistry
-java-vertx                       Upstream Vert.x using Java                                          DefaultDevfileRegistry
-...
-```
-
-Let's create the component below:
-```shell
-cd ../backend
-odo create java-springboot backend
-odo url create --port 8080 --host <CLUSTER-HOSTNAME>
-odo push
-```
-
-Note, you will not be able to access `http://<YOUR-URL>/api/v1/todos` yet until we link the backend component to the database service.
-
-## Create the Postgres service
-
-Use `odo catalog list services` to list all available operators.
-
-By default, [Operator Lifecycle Manager (OLM)](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) includes no Operators and they must be installed via [Operator Hub](https://operatorhub.io/)
-
-Install the [Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster:
-```shell
-kubectl create -f https://operatorhub.io/install/postgresql.yaml
-```
-
-Find `postgresql` in the catalog:
-```shell
-odo catalog list services
-```
-
-Example output of `odo catalog list services`:
-```shell
-Services available through Operators
-NAME                        CRDs
-postgresoperator.v5.0.3     PostgresCluster
-```
-
-If you don't see the PostgreSQL Operator listed yet, it may still be installing. Check out our [Operator troubleshooting guide](/docs/getting-started/cluster-setup/kubernetes#checking-to-see-if-an-operator-has-been-installed) for more information.
-
-[//]: # (This needs to fixed in the future and a parameter-based command added rather than a .yaml file)
-[//]: # (Right now this is blocked on: https://github.com/redhat-developer/odo/issues/5215)
-Create the service usng the provided `postgrescluster.yaml` file from [CrunchyData's Postgres guide](https://access.crunchydata.com/documentation/postgres-operator/5.0.0/tutorial/create-cluster/):
-```sh
-odo service create --from-file ../postgrescluster.yaml
-````
-
-The service from `postgrescluster.yaml` should now be added to your `devfile.yaml`, do a push to create the database on the cluster:
-```shell
-odo push
-```
-
-## Link the backend component and the service
-
-Now we will link the the backend component (Java API) to the service (Postgres).
-
-First, see if the service has been deployed:
-
-```shell
-odo service list
-NAME                      MANAGED BY ODO     STATE      AGE
-PostgresCluster/hippo     Yes (backend)      Pushed     3m42s
-```
-
-Link the backend component with the above service:
-```shell
-odo link PostgresCluster/hippo
-```
-
-Push the changes and `odo` will link the service to the component:
-```shell
-odo push
-```
-
-Now your service is linked to the backend component!
-
-## Link the frontend and backend components
-
-
-For our last step, we will now link the backend Java component (which also uses the Postgres service) and the frontend Node.JS component.
-
-This will allow both to communicate with each other in order to store persistent data.
-
-
-Change to the `frontend` component directory and link it to the backend:
-```shell
-cd ../frontend
-odo link backend
-```
-
-Push the changes:
-```shell
-odo push
-```
-
-We're done! Now it's time to test your new multi-component and service application.
-
-## Testing your application
-
-### Frontend Node.JS component
-
-Find out what URL is being used by the frontend:
-```shell
-odo url list
-Found the following URLs for component frontend
-NAME          STATE      URL                           PORT     SECURE     KIND
-http-3000     Pushed     http://<URL-OUTPUT>           3000     false      ingress
-```
-
-Visit the link and type in some to-dos!
-
-
-### Backend Java component
-
-Let's see if each to-do is being stored in the backend api and database.
-
-Find out what URL is being used by the backend:
-```shell
-odo url list
-Found the following URLs for component backend
-NAME         STATE      URL                                       PORT     SECURE     KIND
-8080-tcp     Pushed     http://<URL-OUTPUT>                       8080     false      ingress
-```
-
-When you `curl` or view the URL on your browser, you'll now see the list of your to-dos:
+`odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
 
 ```yaml
-curl http://<URL-OUTPUT>/api/v1/todos
-[{"id":1,"description":"hello"},{"id":2,"description":"world"}]
+# Deploy "kind" ID's use schema 2.2.0+
+schemaVersion: 2.2.0
 ```
 
-## Further reading
+Add the `variables` section:
 
-Want to learn what else `odo` can do? Check out the [Tutorials](/docs/intro) on the sidebar.
+```yaml
+# Add the following variables code anywhere in devfile.yaml
+# This MUST be a container registry you are able to access
+variables:
+  CONTAINER_IMAGE: quay.io/MYUSERNAME/nodejs-odo-example
+  RESOURCE_NAME: my-nodejs-app
+  CONTAINER_PORT: "3000"
+  DOMAIN_NAME: nodejs.example.com
+```
+
+Add the commands used to deploy:
+
+```yaml
+# This is the main "composite" command that will run all below commands
+- id: deploy
+  composite:
+    commands:
+    - build-image
+    - k8s-deployment
+    - k8s-service
+    - k8s-ingress
+    group:
+      isDefault: true
+      kind: deploy
+
+# Below are the commands and their respective components that they are "linked" to deploy
+- id: build-image
+  apply:
+    component: outerloop-build
+- id: k8s-deployment
+  apply:
+    component: outerloop-deployment
+- id: k8s-service
+  apply:
+    component: outerloop-service
+- id: k8s-ingress
+  apply:
+    component: outerloop-ingress
+```
+
+Add the Kubernetes Service and Ingress inline code to `components`:
+```yaml
+components:
+
+# This will build the container image before deployment
+- name: outerloop-build
+  image:
+    dockerfile:
+      buildContext: ${PROJECT_SOURCE}
+      rootRequired: false
+      uri: ./Dockerfile
+    imageName: "{{CONTAINER_IMAGE}}"
+
+# This will create a Deployment in order to run your container image across
+# the cluster.
+- name: outerloop-deployment
+  kubernetes:
+    inlined: |
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: {{RESOURCE_NAME}}
+        template:
+          metadata:
+            labels:
+              app: {{RESOURCE_NAME}}
+          spec:
+            containers:
+              - name: nodejs
+                image: {{CONTAINER_IMAGE}}
+                ports:
+                  - name: http
+                    containerPort: {{CONTAINER_PORT}}
+                    protocol: TCP
+                resources:
+                  limits:
+                    memory: "1024Mi"
+                    cpu: "500m"
+
+# This will create a Service so your Deployment is accessible.
+# Depending on your cluster, you may modify this code so it's a
+# NodePort, ClusterIP or a LoadBalancer service.
+- name: outerloop-service
+  kubernetes:
+    inlined: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        ports:
+        - name: "{{CONTAINER_PORT}}"
+          port: {{CONTAINER_PORT}}
+          protocol: TCP
+          targetPort: {{CONTAINER_PORT}}
+        selector:
+          app: {{RESOURCE_NAME}}
+        type: ClusterIP
+
+# Let's create an Ingress so we can access the application via a domain name
+- name: outerloop-ingress
+  kubernetes:
+    inlined: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        rules:
+          - host: "{{DOMAIN_NAME}}"
+            http:
+              paths:
+                - path: "/"
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: {{RESOURCE_NAME}} 
+                      port:
+                        number: {{CONTAINER_PORT}}
+```
+
+
+#### 3. Run the `odo deploy` command
+
+Now we're ready to run `odo deploy`:
+
+```console
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-nodejs-app Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.0.0-alpha1
+ \__/
+
+↪ Building & Pushing Container: cdrage/test
+ •  Building image locally  ...
+ ✓  Building image locally [880ms]
+ •  Pushing image to container registry  ...
+ ✓  Pushing image to container registry [5s]
+
+↪ Deploying Kubernetes Component: nodejs-example
+ ✓  Searching resource in cluster
+ ✓  Creating kind Deployment [48ms]
+
+↪ Deploying Kubernetes Component: nodejs-example
+ ✓  Searching resource in cluster
+ ✓  Creating kind Service [51ms]
+
+↪ Deploying Kubernetes Component: nodejs-example
+ ✓  Searching resource in cluster
+ ✓  Creating kind Ingress [49ms]
+
+Your Devfile has been successfully deployed
+```
+
+Your application has now been deployed to the Kubernetes cluster with Deployment and Service resources.
+
+  </TabItem>
+</Tabs>
