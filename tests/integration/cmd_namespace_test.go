@@ -178,20 +178,9 @@ ComponentSettings:
 		})
 
 		Describe("list "+commandName, func() {
-			var name string
-
-			BeforeEach(func() {
-				name = helper.CreateRandProject()
-			})
-
-			AfterEach(func() {
-				commonVar.CliRunner.DeleteNamespaceProject(name)
-			})
-
 			It(fmt.Sprintf("should successfully list all the %ss", commandName), func() {
-				session := helper.CmdRunner("odo", "list", commandName)
-				// Adding a wait function here because project creation on OpenShift in done asynchronously
-				helper.WaitForOutputToContain(name, 60, 3, session)
+				out := helper.Cmd("odo", "list", commandName).ShouldPass().Out()
+				Expect(out).To(ContainSubstring(commonVar.Project))
 			})
 		})
 	}
