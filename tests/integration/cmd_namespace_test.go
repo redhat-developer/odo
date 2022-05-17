@@ -176,5 +176,12 @@ ComponentSettings:
 				})
 			})
 		})
+
+		Describe("list "+commandName, func() {
+			It(fmt.Sprintf("should successfully list all the %ss", commandName), func() {
+				out := helper.Cmd("odo", "list", commandName).ShouldPass().Out()
+				Expect(out).To(ContainSubstring(commonVar.Project))
+			})
+		})
 	}
 })
