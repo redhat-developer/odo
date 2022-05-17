@@ -3,12 +3,19 @@ title: odo list namespace
 sidebar_position: 2
 ---
 
-You can use `odo list namespace` to list all the available namespaces within the cluster. If you are on a Kubernetes cluster, this command will return a list of Namespace resources, but on an OpenShift cluster, it will return a list of Project resources.
+## Description
+
+You can use `odo list namespace` to list all the available namespaces within the cluster. 
+If you are on a Kubernetes cluster, this command will return a list of Namespace resources, but on an OpenShift cluster, 
+it will return a list of Project resources.
+
+## Running the Command
 
 To list all the namespaces, you can run `odo list namespace`:
 ```shell
 odo list namespace
 ```
+
 Example - 
 ```sh
 $ odo list namespace
