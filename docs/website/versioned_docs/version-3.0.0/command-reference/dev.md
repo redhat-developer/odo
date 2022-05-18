@@ -41,6 +41,9 @@ In the above example, three things have happened:
   * `odo` has port-forwarded your application for local accessability
   * `odo` will watch for changes in the current directory and rebuild the application when changes are detected
 
+You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
+will first delete all resources deployed into the cluster for this session before to terminate.
+
 ## Devfile (Advanced Usage)
 
 
