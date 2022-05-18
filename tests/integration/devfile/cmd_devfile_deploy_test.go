@@ -129,6 +129,20 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					})
 
 				})
+
+				When("running and stopping odo dev", func() {
+					BeforeEach(func() {
+						session, _, _, _, err := helper.StartDevMode()
+						Expect(err).ShouldNot(HaveOccurred())
+						session.Stop()
+						session.WaitEnd()
+					})
+
+					It("should not delete the resources created with odo deploy", func() {
+						output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
+						Expect(string(output)).To(ContainSubstring(deploymentName))
+					})
+				})
 			})
 		})
 	}
