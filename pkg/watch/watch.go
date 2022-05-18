@@ -10,6 +10,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
@@ -213,7 +214,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	printInfoMessage(out, parameters.Path)
 
-	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.Cleanup)
+	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
@@ -358,9 +359,9 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 	}
 }
 
-func (o *WatchClient) Cleanup(devfileObj parser.DevfileObj, out io.Writer) error {
+func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, out io.Writer) error {
 	fmt.Fprintln(out, "Cleaning resources, please wait")
-	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app")
+	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", labels.ComponentDevMode)
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
 		return err

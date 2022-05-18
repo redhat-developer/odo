@@ -15,5 +15,6 @@ type Client interface {
 	ExecutePreStopEvents(devfileObj parser.DevfileObj, appName string) error
 	// ListResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on the cluster that can be deleted,
 	// and a bool that indicates if the devfile component has been pushed to the innerloop
-	ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string) (bool, []unstructured.Unstructured, error)
+	// the mode indicates which component to list, either Dev, Deploy or Any (using constant labels.Component*Mode)
+	ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, mode string) (bool, []unstructured.Unstructured, error)
 }

@@ -18,6 +18,7 @@ import (
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -129,7 +130,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component with access to devfile",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
@@ -144,7 +145,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component should not fail even if ExecutePreStopEvents fails",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
 				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
@@ -159,7 +160,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component should fail if ListResourcesToDeleteFromDevfile fails",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(false, nil, errors.New("some error"))
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(false, nil, errors.New("some error"))
 				return deleteClient
 			},
 			fields: fields{
@@ -171,7 +172,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component should be aborted if forceFlag is not passed",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(true, resources, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(true, resources, nil)
 				return deleteClient
 			},
 			fields: fields{
@@ -183,7 +184,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "nothing to delete",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName).Return(false, nil, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(false, nil, nil)
 				return deleteClient
 			},
 			fields: fields{

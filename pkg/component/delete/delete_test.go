@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -465,7 +466,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			do := DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName)
+			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, labels.ComponentAnyMode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
