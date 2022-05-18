@@ -1,6 +1,6 @@
 ---
 title: Installation
-sidebar_position: 3
+sidebar_position: 4
 ---
 
 `odo` can be used as either a [CLI tool](/docs/getting-started/installation#cli-binary-installation) or an [IDE plugin](/docs/getting-started/installation#ide-installation) on Mac, Windows or Linux.

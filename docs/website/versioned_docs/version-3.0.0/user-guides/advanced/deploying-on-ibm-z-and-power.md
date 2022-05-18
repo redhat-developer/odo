@@ -1,5 +1,5 @@
 ---
-title: Using odo on IBM-Z and Power
+title: Deploying to IBM-Z and Power Architectures
 sidebar_position: 3
 ---
 [//]: # (Add prerequisite section)

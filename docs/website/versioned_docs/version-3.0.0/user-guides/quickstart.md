@@ -9,8 +9,8 @@ In this guide, we will be using odo to create a "Hello World" application with N
 
 ## Prerequisites
 
-* Have the odo binary [installed](./installation.md).
-* A [Kubernetes](/docs/getting-started/cluster-setup/kubernetes) or [OpenShift cluster](/docs/getting-started/cluster-setup/openshift) 
+* Have the odo binary [installed](../overview/installation.md).
+* A [Kubernetes](../overview/cluster-setup/kubernetes) or [OpenShift cluster](../overview/cluster-setup/openshift) 
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

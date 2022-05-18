@@ -1,5 +1,5 @@
 ---
-title: Using the odo.dev.push.path related attribute
+title: Only Push Specific Files
 sidebar_position: 4
 ---
 `odo` uses the `odo.dev.push.path` related attribute from the devfile's run commands to push only the specified files and folders to the component.

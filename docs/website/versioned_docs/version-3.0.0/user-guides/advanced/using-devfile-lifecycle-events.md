@@ -1,5 +1,5 @@
 ---
-title: Using devfile lifecycle events
+title: Using Devfile Lifecycle Events
 sidebar_position: 5
 ---
 
