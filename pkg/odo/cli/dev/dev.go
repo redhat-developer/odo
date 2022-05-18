@@ -69,6 +69,7 @@ type DevOptions struct {
 	varFileFlag     string
 	varsFlag        []string
 
+	// Variables to override Devfile variables
 	variables map[string]string
 }
 
@@ -95,11 +96,6 @@ func (o *DevOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 	var err error
-
-	o.variables, err = vars.GetVariables(o.clientset.FS, o.varFileFlag, o.varsFlag, os.LookupEnv)
-	if err != nil {
-		return err
-	}
 
 	// Define this first so that if user hits Ctrl+c very soon after running odo dev, odo doesn't panic
 	o.ctx, o.cancel = context.WithCancel(context.Background())
@@ -128,6 +124,11 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		func(newDevfileObj parser.DevfileObj) error {
 			return newDevfileObj.WriteYamlDevfile()
 		})
+	if err != nil {
+		return err
+	}
+
+	o.variables, err = vars.GetVariables(o.clientset.FS, o.varFileFlag, o.varsFlag, os.LookupEnv)
 	if err != nil {
 		return err
 	}
