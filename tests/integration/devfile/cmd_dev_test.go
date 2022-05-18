@@ -489,6 +489,71 @@ var _ = Describe("odo dev command tests", func() {
 				Expect(envVars["FOO"]).To(Equal("bar"))
 			})
 		})
+
+		When("doing odo dev with --var flag", func() {
+			var session helper.DevSession
+			BeforeEach(func() {
+				var err error
+				session, _, _, _, err = helper.StartDevMode("--var", "VALUE_TEST=baz")
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should check if the env variable has a correct value", func() {
+				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+				// check if the env variable has a correct value. This value was substituted from in devfile from variable
+				Expect(envVars["FOO"]).To(Equal("baz"))
+			})
+		})
+
+		When("doing odo dev with --var-file flag", func() {
+			var session helper.DevSession
+			varfilename := "vars.txt"
+			BeforeEach(func() {
+				var err error
+				helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
+				session, _, _, _, err = helper.StartDevMode("--var-file", "vars.txt")
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+				helper.DeleteFile(varfilename)
+			})
+
+			It("should check if the env variable has a correct value", func() {
+				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+				// check if the env variable has a correct value. This value was substituted from in devfile from variable
+				Expect(envVars["FOO"]).To(Equal("baz"))
+			})
+		})
+
+		When("doing odo dev with --var-file flag and setting value in env", func() {
+			var session helper.DevSession
+			varfilename := "vars.txt"
+			BeforeEach(func() {
+				var err error
+				_ = os.Setenv("VALUE_TEST", "baz")
+				helper.CreateFileWithContent(varfilename, "VALUE_TEST")
+				session, _, _, _, err = helper.StartDevMode("--var-file", "vars.txt")
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+				helper.DeleteFile(varfilename)
+				_ = os.Unsetenv("VALUE_TEST")
+			})
+
+			It("should check if the env variable has a correct value", func() {
+				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+				// check if the env variable has a correct value. This value was substituted from in devfile from variable
+				Expect(envVars["FOO"]).To(Equal("baz"))
+			})
+		})
 	})
 
 	When("running odo dev and single env var is set", func() {
