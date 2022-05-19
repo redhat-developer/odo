@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -124,7 +125,7 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 	appName := "app"
 
 	log.Info("Searching resources to delete, please wait...")
-	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName)
+	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName, labels.ComponentAnyMode)
 	if err != nil {
 		return err
 	}

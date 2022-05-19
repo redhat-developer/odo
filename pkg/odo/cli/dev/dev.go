@@ -191,7 +191,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 	defer func() {
 		if err != nil {
-			_ = o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
+			_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 		}
 	}()
 
@@ -254,7 +254,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	if o.noWatchFlag {
 		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
 		<-o.ctx.Done()
-		err = o.clientset.WatchClient.Cleanup(devFileObj, log.GetStdout())
+		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
 		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag)
