@@ -96,7 +96,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 		var deploymentName string
 		deploymentName, err = util.NamespaceKubernetesObject(componentName, appName)
 		if err != nil {
-			return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, deploymentName, err)
+			return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, componentName, err)
 		}
 
 		deployment, err := do.kubeClient.GetDeploymentByName(deploymentName)
