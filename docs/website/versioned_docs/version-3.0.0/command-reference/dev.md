@@ -42,7 +42,7 @@ In the above example, three things have happened:
   * `odo` will watch for changes in the current directory and rebuild the application when changes are detected
 
 You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
-will first delete all resources deployed into the cluster for this session before to terminate.
+will first delete all resources deployed into the cluster for this session before terminating.
 
 ## Devfile (Advanced Usage)
 
