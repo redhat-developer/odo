@@ -12,6 +12,7 @@
 package clientset
 
 import (
+	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
@@ -33,6 +34,8 @@ import (
 const (
 	// ALIZER instantiates client for pkg/alizer
 	ALIZER = "DEP_ALIZER"
+	// BINDING instantiates client for pkg/binding
+	BINDING = "DEP_BINDING"
 	// DELETE_COMPONENT instantiates client for pkg/component/delete
 	DELETE_COMPONENT = "DEP_DELETE_COMPONENT"
 	// DEPLOY instantiates client for pkg/deploy
@@ -47,6 +50,8 @@ const (
 	KUBERNETES_NULLABLE = "DEP_KUBERNETES_NULLABLE"
 	// KUBERNETES instantiates client for pkg/kclient
 	KUBERNETES = "DEP_KUBERNETES"
+	// LOGS instantiates client for pkg/logs
+	LOGS = "DEP_LOGS"
 	// PREFERENCE instantiates client for pkg/preference
 	PREFERENCE = "DEP_PREFERENCE"
 	// PROJECT instantiates client for pkg/project
@@ -57,8 +62,6 @@ const (
 	STATE = "DEP_STATE"
 	// WATCH instantiates client for pkg/watch
 	WATCH = "DEP_WATCH"
-	// BINDING instantiates client for pkg/binding
-	BINDING = "DEP_BINDING"
 	/* Add key for new package here */
 )
 
@@ -70,6 +73,7 @@ var subdeps map[string][]string = map[string][]string{
 	DEPLOY:           {KUBERNETES},
 	DEV:              {WATCH},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
+	LOGS:             {KUBERNETES},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
@@ -86,6 +90,7 @@ type Clientset struct {
 	FS               filesystem.Filesystem
 	InitClient       _init.Client
 	KubernetesClient kclient.ClientInterface
+	LogsClient       logs.Client
 	PreferenceClient preference.Client
 	ProjectClient    project.Client
 	RegistryClient   registry.Client
@@ -150,6 +155,9 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	}
 	if isDefined(command, INIT) {
 		dep.InitClient = _init.NewInitClient(dep.FS, dep.PreferenceClient, dep.RegistryClient, dep.AlizerClient)
+	}
+	if isDefined(command, LOGS) {
+		dep.LogsClient = logs.NewLogsClient(dep.KubernetesClient)
 	}
 	if isDefined(command, PROJECT) {
 		dep.ProjectClient = project.NewClient(dep.KubernetesClient)

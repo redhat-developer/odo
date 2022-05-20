@@ -29,6 +29,14 @@ type ClientInterface interface {
 	// GetAllResourcesFromSelector returns all resources of any kind (including CRs) matching the given label selector
 	GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error)
 
+	// binding.go
+	IsServiceBindingSupported() (bool, error)
+	GetBindableKinds() (bindingApi.BindableKinds, error)
+	GetBindableKindStatusRestMapping(bindableKindStatuses []bindingApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
+	GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error)
+	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
+	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
+
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
 	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)
@@ -87,14 +95,6 @@ type ClientInterface interface {
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
 	ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error
 
-	// binding.go
-	IsServiceBindingSupported() (bool, error)
-	GetBindableKinds() (bindingApi.BindableKinds, error)
-	GetBindableKindStatusRestMapping(bindableKindStatuses []bindingApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
-	GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error)
-	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
-	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
-
 	// owner_reference.go
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
 
@@ -105,6 +105,7 @@ type ClientInterface interface {
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
 	GetOnePodFromSelector(selector string) (*corev1.Pod, error)
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
+	GetAllPodsInNamespace() (*corev1.PodList, error)
 
 	// port_forwarding.go
 	// SetupPortForwarding creates port-forwarding for the pod on the port pairs provided in the
@@ -119,6 +120,9 @@ type ClientInterface interface {
 	GetProject(projectName string) (*projectv1.Project, error)
 	IsProjectSupported() (bool, error)
 	ListProjectNames() ([]string, error)
+
+	//replicaset.go
+	GetReplicaSetByName(name string) (*appsv1.ReplicaSet, error)
 
 	// secrets.go
 	CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objectMeta metav1.ObjectMeta) (*corev1.Secret, error)
