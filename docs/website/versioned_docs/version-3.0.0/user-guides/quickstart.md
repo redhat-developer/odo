@@ -387,7 +387,7 @@ $ odo deploy
 Your Devfile has been successfully deployed
 ```
 
-Your application has now been deployed to the Kubernetes cluster with Deployment, Service and Ingress resources.
+Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress resources.
 
 Test your application by visiting the `DOMAIN_NAME` variable that you had set in the `devfile.yaml`.
 
