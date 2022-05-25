@@ -366,7 +366,7 @@ $ odo deploy
  /  \__/    odo version: v3.0.0-alpha1
  \__/
 
-↪ Building & Pushing Container: cdrage/test
+↪ Building & Pushing Container: MYUSERNAME/test
  •  Building image locally  ...
  ✓  Building image locally [880ms]
  •  Pushing image to container registry  ...
@@ -387,7 +387,9 @@ $ odo deploy
 Your Devfile has been successfully deployed
 ```
 
-Your application has now been deployed to the Kubernetes cluster with Deployment and Service resources.
+Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress resources.
+
+Test your application by visiting the `DOMAIN_NAME` variable that you had set in the `devfile.yaml`.
 
   </TabItem>
 </Tabs>
