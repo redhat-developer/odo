@@ -121,9 +121,6 @@ type ClientInterface interface {
 	IsProjectSupported() (bool, error)
 	ListProjectNames() ([]string, error)
 
-	//replicaset.go
-	GetReplicaSetByName(name string) (*appsv1.ReplicaSet, error)
-
 	// secrets.go
 	CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, objectMeta metav1.ObjectMeta) (*corev1.Secret, error)
 	GetSecret(name, namespace string) (*corev1.Secret, error)

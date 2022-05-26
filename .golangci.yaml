@@ -67,6 +67,10 @@ linters-settings:
     rules:
       # Conventions around error strings. See https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
       - name: error-strings
+  nolintlint:
+    # Disable to ensure that all nolint directives actually have an effect.
+    # Default: false
+    allow-unused: true
 
 issues:
   # Maximum issues count per one linter.

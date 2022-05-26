@@ -2,6 +2,9 @@ package logs
 
 import (
 	"io"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -88,24 +91,37 @@ func (o *LogsClient) matchOwnerReferenceWithResources(owner metav1.OwnerReferenc
 		}
 	}
 	// second, get the resource indicated by ownerReference and check its ownerReferences field
-	var ownerReferences []metav1.OwnerReference
-	switch owner.Kind {
-	case "ReplicaSet":
-		rs, err := o.kubernetesClient.GetReplicaSetByName(owner.Name)
-		if err != nil {
-			return false, err
-		}
-		ownerReferences = rs.GetOwnerReferences()
-	case "Deployment":
-		deployment, err := o.kubernetesClient.GetDeploymentByName(owner.Name)
-		if err != nil {
-			return false, err
-		}
-		ownerReferences = deployment.GetOwnerReferences()
+	group, version := getGroupVersion(owner.APIVersion)
+	restMapping, err := o.kubernetesClient.GetRestMappingFromGVK(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    owner.Kind,
+	})
+	if err != nil {
+		return false, err
 	}
+	resource, err := o.kubernetesClient.GetDynamicResource(restMapping.Resource, owner.Name)
+	if err != nil {
+		return false, err
+	}
+	ownerReferences := resource.GetOwnerReferences()
 	// recursively check if ownerReference matches any of the resources' UID
 	for _, ownerReference := range ownerReferences {
 		return o.matchOwnerReferenceWithResources(ownerReference, resources)
 	}
 	return false, nil
+}
+
+func getGroupVersion(apiVersion string) (string, string) {
+	var group, version string
+	groupVersion := strings.SplitN(apiVersion, "/", 2)
+	if len(groupVersion) == 1 {
+		// this could be the case where apiVersion only has version info
+		group = ""
+		version = groupVersion[0]
+	} else {
+		group = groupVersion[0]
+		version = groupVersion[1]
+	}
+	return group, version
 }
