@@ -1,6 +1,5 @@
 ---
 title: odo delete component
-sidebar_position: 3
 ---
 
 `odo delete component` command is useful for deleting resources that are managed by `odo`. It deletes the component and its related innerloop, and outerloop resources from the cluster.

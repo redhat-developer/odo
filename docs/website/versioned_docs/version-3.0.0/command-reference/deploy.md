@@ -1,6 +1,5 @@
 ---
 title: odo deploy
-sidebar_position: 2
 ---
 
 odo can be used to deploy components in a similar manner they would be deployed by a CI/CD system, 

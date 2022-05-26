@@ -1,6 +1,5 @@
 ---
 title: odo list namespace
-sidebar_position: 2
 ---
 
 ## Description

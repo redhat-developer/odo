@@ -1,6 +1,5 @@
 ---
 title: odo delete namespace
-sidebar_position: 3
 ---
 
 `odo delete namespace` lets you delete a namespace/project on your cluster. If you are on a Kubernetes cluster, running the command will delete a Namespace resource for you, and for an OpenShift cluster, it will delete a Project resource.

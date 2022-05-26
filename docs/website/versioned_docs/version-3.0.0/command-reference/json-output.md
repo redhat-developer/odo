@@ -1,6 +1,7 @@
 ---
 title: JSON Output
-sidebar_position: 20
+# Put JSON output to the top
+sidebar_position: 1
 ---
 
 For `odo` to be used as a backend by graphical user interfaces (GUIs),

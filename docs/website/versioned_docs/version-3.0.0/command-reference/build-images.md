@@ -1,6 +1,5 @@
 ---
 title: odo build-images
-sidebar_position: 4
 ---
 
 odo can build container images based on Dockerfiles, and push these images to their registries.

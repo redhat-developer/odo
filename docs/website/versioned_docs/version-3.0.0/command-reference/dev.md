@@ -1,6 +1,5 @@
 ---
 title: odo dev
-sidebar_position: 2
 ---
 
 ## Description

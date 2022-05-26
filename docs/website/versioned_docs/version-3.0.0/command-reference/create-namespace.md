@@ -1,6 +1,5 @@
 ---
 title: odo create namespace
-sidebar_position: 3
 ---
 
 `odo create namespace` lets you create a namespace/project on your cluster. If you are on a Kubernetes cluster, running the command will create a Namespace resource for you, and for an OpenShift cluster, it will create a Project resource.

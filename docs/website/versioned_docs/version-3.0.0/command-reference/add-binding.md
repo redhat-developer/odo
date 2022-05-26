@@ -1,6 +1,5 @@
 ---
 title: odo add binding
-sidebar_position: 4
 ---
 
 The `odo add binding` command can add a link between an operator-backed service and a component. odo uses the Service Binding Operator to create this link. Running this command will make the necessary changes to the Devfile, and once pushed to the cluster, it creates an instance of the `ServiceBinding` resource.
