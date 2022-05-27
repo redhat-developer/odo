@@ -255,7 +255,7 @@ ComponentSettings:
 					projectName = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				})
 				AfterEach(func() {
-					commonVar.CliRunner.DeleteNamespaceProject(projectName)
+					commonVar.CliRunner.DeleteNamespaceProject(projectName, false)
 				})
 				When("the component is deleted", func() {
 					BeforeEach(func() {

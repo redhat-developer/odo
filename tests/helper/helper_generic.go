@@ -246,7 +246,7 @@ func CommonAfterEach(commonVar CommonVar) {
 	}
 
 	// delete the random project/namespace created in CommonBeforeEach
-	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project)
+	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project, false)
 
 	// restores the original kubeconfig and working directory
 	Chdir(commonVar.OriginalWorkingDirectory)

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -338,9 +339,9 @@ func (oc OcRunner) SetProject(namespace string) string {
 }
 
 // DeleteNamespaceProject deletes a specified project in oc cluster
-func (oc OcRunner) DeleteNamespaceProject(projectName string) {
+func (oc OcRunner) DeleteNamespaceProject(projectName string, wait bool) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	session := Cmd("odo", "project", "delete", projectName, "-f").ShouldPass().Out()
+	session := Cmd("odo", "project", "delete", projectName, "-f", "--wait="+strconv.FormatBool(wait)).ShouldPass().Out()
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
 }
 
