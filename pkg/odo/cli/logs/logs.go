@@ -132,7 +132,7 @@ func printLogs(containerName string, rd io.ReadCloser, out io.Writer) error {
 func selectRandomColor() color.Attribute {
 	colors := []color.Attribute{color.FgRed, color.FgGreen, color.FgYellow, color.FgBlue, color.FgMagenta, color.FgCyan, color.FgWhite}
 	rand.Seed(time.Now().UnixNano())
-	i := rand.Intn(len(colors)) //nolint
+	i := rand.Intn(len(colors)) //#nosec G404
 	return colors[i]
 }
 func NewCmdLogs(name, fullname string) *cobra.Command {
