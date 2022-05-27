@@ -3,11 +3,18 @@ package binding
 import (
 	"fmt"
 
-	"github.com/devfile/library/pkg/devfile/parser"
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	//	sbcApi "github.com/servicebinding/service-binding-controller/apis/v1alpha3"
+
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
+	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/binding/asker"
 	backendpkg "github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -145,4 +152,49 @@ func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructu
 	}
 
 	return bindableObjectMap, nil
+}
+
+func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
+	var result []api.ServiceBinding
+	kubeComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{
+			ComponentType: devfilev1alpha2.KubernetesComponentType,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, component := range kubeComponents {
+		strCRD, err := libdevfile.GetK8sManifestWithVariablesSubstituted(devfileObj, component.Name, context, devfilefs.DefaultFs{})
+		if err != nil {
+			return nil, err
+		}
+
+		u := unstructured.Unstructured{}
+		if err := yaml.Unmarshal([]byte(strCRD), &u.Object); err != nil {
+			return nil, err
+		}
+
+		switch u.GetObjectKind().GroupVersionKind() {
+		case sboApi.GroupVersionKind:
+			var sb sboApi.ServiceBinding
+			err = o.kubernetesClient.ConvertUnstructuredToResource(u, &sb)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Printf("%+v\n", sb)
+			result = append(result, api.ServiceBinding{
+				Name:                   sb.Name,
+				Services:               sb.Spec.Services,
+				Application:            sb.Spec.Application,
+				DetectBindingResources: sb.Spec.DetectBindingResources,
+				BindAsFiles:            sb.Spec.BindAsFiles,
+			})
+
+			//		case sbcApi.GroupVersionKind:
+			// TODO
+		}
+	}
+	return result, nil
 }

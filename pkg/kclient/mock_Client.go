@@ -78,7 +78,7 @@ func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit 
 }
 
 // ConvertUnstructuredToResource mocks base method.
-func (m *MockClientInterface) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
+func (m *MockClientInterface) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConvertUnstructuredToResource", u, obj)
 	ret0, _ := ret[0].(error)

@@ -46,7 +46,7 @@ func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 		return bindableKind, err
 	}
 
-	err = c.ConvertUnstructuredToResource(unstructuredBK.UnstructuredContent(), &bindableKind)
+	err = c.ConvertUnstructuredToResource(*unstructuredBK, &bindableKind)
 	if err != nil {
 		return bindableKind, err
 	}

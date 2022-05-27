@@ -1,0 +1,98 @@
+package describe
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+)
+
+// ComponentRecommendedCommandName is the recommended component sub-command name
+const BindingRecommendedCommandName = "binding"
+
+var describeBindingExample = ktemplates.Examples(`
+# Describe the bindings in the current devfile
+%[1]s
+
+# Describe a binding in the cluster
+%[1]s --name frontend
+`)
+
+type BindingOptions struct {
+	// nameFlag of the component to describe, optional
+	nameFlag string
+
+	// Context
+	*genericclioptions.Context
+
+	// Clients
+	clientset *clientset.Clientset
+}
+
+// NewComponentOptions returns new instance of ComponentOptions
+func NewBindingOptions() *BindingOptions {
+	return &BindingOptions{}
+}
+
+func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
+}
+
+func (o *BindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+	if o.nameFlag == "" {
+		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+		if err != nil {
+			return err
+		}
+		// this ensures that the namespace set in env.yaml is used
+		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
+		return nil
+	}
+	return nil
+}
+
+func (o *BindingOptions) Validate() (err error) {
+	return nil
+}
+
+func (o *BindingOptions) Run(ctx context.Context) error {
+	_, err := o.run()
+	return err
+}
+
+// Run contains the logic for the odo command
+func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	return o.run()
+}
+
+func (o *BindingOptions) run() ([]api.ServiceBinding, error) {
+	return o.clientset.BindingClient.GetBindingsFromDevfile(o.EnvSpecificInfo.GetDevfileObj(), ".")
+}
+
+// NewCmdComponent implements the component odo sub-command
+func NewCmdBinding(name, fullName string) *cobra.Command {
+	o := NewBindingOptions()
+
+	var bindingCmd = &cobra.Command{
+		Use:     name,
+		Short:   "Describe bindings",
+		Long:    "Describe bindings",
+		Args:    cobra.NoArgs,
+		Example: fmt.Sprintf(describeBindingExample, fullName),
+		Run: func(cmd *cobra.Command, args []string) {
+			genericclioptions.GenericRun(o, cmd, args)
+		},
+	}
+	bindingCmd.Flags().StringVar(&o.nameFlag, "name", "", "Name of the binding to describe, optional. By default, the bindings in the local devfile are described")
+	clientset.Add(bindingCmd, clientset.KUBERNETES, clientset.BINDING)
+	machineoutput.UsedByCommand(bindingCmd)
+
+	return bindingCmd
+}

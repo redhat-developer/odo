@@ -84,7 +84,7 @@ type ClientInterface interface {
 	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
 	GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
-	ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error
+	ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error
 
 	// binding.go
 	IsServiceBindingSupported() (bool, error)
