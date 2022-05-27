@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	sbcApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,6 +120,42 @@ func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentNam
 			Services: services,
 		},
 	}
+}
+
+func (c Client) GetServiceBinding(name string) (sboApi.ServiceBinding, error) {
+	if c.DynamicClient == nil {
+		return sboApi.ServiceBinding{}, nil
+	}
+
+	u, err := c.GetDynamicResource(sboApi.GroupVersionResource, name)
+	if err != nil {
+		return sboApi.ServiceBinding{}, err
+	}
+
+	var result sboApi.ServiceBinding
+	err = c.ConvertUnstructuredToResource(*u, &result)
+	if err != nil {
+		return sboApi.ServiceBinding{}, err
+	}
+	return result, nil
+}
+
+func (c Client) GetSpecServiceBinding(name string) (sbcApi.ServiceBinding, error) {
+	if c.DynamicClient == nil {
+		return sbcApi.ServiceBinding{}, nil
+	}
+
+	u, err := c.GetDynamicResource(sbcApi.GroupVersionResource, name)
+	if err != nil {
+		return sbcApi.ServiceBinding{}, err
+	}
+
+	var result sbcApi.ServiceBinding
+	err = c.ConvertUnstructuredToResource(*u, &result)
+	if err != nil {
+		return sbcApi.ServiceBinding{}, err
+	}
+	return result, nil
 }
 
 func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks sboApi.BindableKindsStatus) bool {

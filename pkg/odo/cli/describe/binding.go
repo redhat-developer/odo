@@ -3,6 +3,7 @@ package describe
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -34,6 +35,9 @@ type BindingOptions struct {
 
 	// Clients
 	clientset *clientset.Clientset
+
+	// working directory
+	contextDir string
 }
 
 // NewComponentOptions returns new instance of ComponentOptions
@@ -47,6 +51,11 @@ func (o *BindingOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *BindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	if o.nameFlag == "" {
+		o.contextDir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
+
 		o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
 		if err != nil {
 			return err
@@ -73,7 +82,7 @@ func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{},
 }
 
 func (o *BindingOptions) run() ([]api.ServiceBinding, error) {
-	return o.clientset.BindingClient.GetBindingsFromDevfile(o.EnvSpecificInfo.GetDevfileObj(), ".")
+	return o.clientset.BindingClient.GetBindingsFromDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.contextDir)
 }
 
 // NewCmdComponent implements the component odo sub-command
