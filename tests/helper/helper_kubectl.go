@@ -182,7 +182,7 @@ func (kubectl KubectlRunner) CreateAndSetRandNamespaceProjectOfLength(i int) str
 // DeleteNamespaceProject deletes a specified project in kubernetes cluster
 func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	Cmd("kubectl", "delete", "namespaces", projectName).ShouldPass()
+	Cmd("kubectl", "delete", "namespaces", projectName, "--wait=false").ShouldPass()
 }
 
 func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {
