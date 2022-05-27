@@ -31,7 +31,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 			It(fmt.Sprintf("should successfully create the %s", commandName), func() {
 				helper.Cmd("odo", "create", commandName, namespace, "--wait").ShouldPass()
 				defer func(ns string) {
-					commonVar.CliRunner.DeleteNamespaceProject(ns)
+					commonVar.CliRunner.DeleteNamespaceProject(ns, false)
 				}(namespace)
 				Expect(commonVar.CliRunner.HasNamespaceProject(namespace)).To(BeTrue())
 				Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(namespace))

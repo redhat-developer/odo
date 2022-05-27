@@ -16,7 +16,10 @@ type CliRunner interface {
 	CreateAndSetRandNamespaceProject() string
 	CreateAndSetRandNamespaceProjectOfLength(i int) string
 	SetProject(namespace string) string
-	DeleteNamespaceProject(projectName string)
+
+	// DeleteNamespaceProject deletes the specified namespace or project, optionally waiting until it is gone
+	DeleteNamespaceProject(projectName string, wait bool)
+
 	DeletePod(podName string, projectName string)
 	GetAllNamespaceProjects() []string
 	GetNamespaceProject() string

@@ -3,6 +3,7 @@ package helper
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -180,9 +181,9 @@ func (kubectl KubectlRunner) CreateAndSetRandNamespaceProjectOfLength(i int) str
 }
 
 // DeleteNamespaceProject deletes a specified project in kubernetes cluster
-func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
+func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string, wait bool) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	Cmd("kubectl", "delete", "namespaces", projectName, "--wait=false").ShouldPass()
+	Cmd("kubectl", "delete", "namespaces", projectName, "--wait="+strconv.FormatBool(wait)).ShouldPass()
 }
 
 func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string {

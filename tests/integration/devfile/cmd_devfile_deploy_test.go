@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -114,7 +115,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					})
 
 					AfterEach(func() {
-						commonVar.CliRunner.DeleteNamespaceProject(otherNS)
+						commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
 					})
 
 					It("should run odo deploy on initial namespace", func() {

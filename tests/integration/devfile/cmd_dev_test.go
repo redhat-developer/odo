@@ -13,11 +13,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/redhat-developer/odo/tests/helper"
 	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
 )
@@ -212,7 +214,7 @@ var _ = Describe("odo dev command tests", func() {
 				})
 
 				AfterEach(func() {
-					commonVar.CliRunner.DeleteNamespaceProject(otherNS)
+					commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
 				})
 
 				It("should run odo dev on initial namespace", func() {
