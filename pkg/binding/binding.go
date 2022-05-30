@@ -182,7 +182,13 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		switch u.GetObjectKind().GroupVersionKind() {
 		case sboApi.GroupVersionKind:
 
-			sb, err := o.getApiServiceBindingFromBinding(u)
+			var sbo sboApi.ServiceBinding
+			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbo)
+			if err != nil {
+				return nil, err
+			}
+
+			sb, err := o.getApiServiceBindingFromBinding(sbo)
 			if err != nil {
 				return nil, err
 			}
@@ -196,7 +202,13 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 
 		case sbcApi.GroupVersion.WithKind("ServiceBinding"):
 
-			sb, err := o.getApiServiceBindingFromSpecBinding(u)
+			var sbc sbcApi.ServiceBinding
+			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbc)
+			if err != nil {
+				return nil, err
+			}
+
+			sb, err := o.getApiServiceBindingFromSpecBinding(sbc)
 			if err != nil {
 				return nil, err
 			}
@@ -213,12 +225,45 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 	return result, nil
 }
 
-func (o *BindingClient) getApiServiceBindingFromBinding(u unstructured.Unstructured) (api.ServiceBinding, error) {
-	var sb sboApi.ServiceBinding
-	err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sb)
-	if err != nil {
+func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
+
+	sb, err := o.kubernetesClient.GetServiceBinding(name)
+	if err == nil {
+		sbo, err := o.getApiServiceBindingFromBinding(sb)
+		if err != nil {
+			return api.ServiceBinding{}, err
+		}
+		sbo.Status, err = o.getStatusFromBinding(sb.Name)
+		if err != nil {
+			return api.ServiceBinding{}, err
+		}
+		return sbo, nil
+	}
+	if err != nil && !kerrors.IsNotFound(err) {
 		return api.ServiceBinding{}, err
 	}
+
+	sbc, err := o.kubernetesClient.GetSpecServiceBinding(name)
+	if err == nil {
+		sb, err := o.getApiServiceBindingFromSpecBinding(sbc)
+		if err != nil {
+			return api.ServiceBinding{}, err
+		}
+		sb.Status, err = o.getStatusFromSpecBinding(sbc.Name)
+		if err != nil {
+			return api.ServiceBinding{}, err
+		}
+		return sb, nil
+	}
+
+	// In case of notFound error, this time we return the error
+	if kerrors.IsNotFound(err) {
+		return api.ServiceBinding{}, fmt.Errorf("ServiceBinding %q not found", name)
+	}
+	return api.ServiceBinding{}, err
+}
+
+func (o *BindingClient) getApiServiceBindingFromBinding(sb sboApi.ServiceBinding) (api.ServiceBinding, error) {
 
 	var dstSvcs []sbcApi.ServiceBindingServiceReference
 	for _, srcSvc := range sb.Spec.Services {
@@ -306,12 +351,7 @@ func (o *BindingClient) getStatusFromSpecBinding(name string) (*api.ServiceBindi
 	}, nil
 }
 
-func (o *BindingClient) getApiServiceBindingFromSpecBinding(u unstructured.Unstructured) (api.ServiceBinding, error) {
-	var sb sbcApi.ServiceBinding
-	err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sb)
-	if err != nil {
-		return api.ServiceBinding{}, err
-	}
+func (o *BindingClient) getApiServiceBindingFromSpecBinding(sb sbcApi.ServiceBinding) (api.ServiceBinding, error) {
 	return api.ServiceBinding{
 		Name: sb.Name,
 		Spec: api.ServiceBindingSpec{

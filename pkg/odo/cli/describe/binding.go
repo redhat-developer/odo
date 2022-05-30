@@ -75,21 +75,37 @@ func (o *BindingOptions) Validate() (err error) {
 }
 
 func (o *BindingOptions) Run(ctx context.Context) error {
-	bindings, err := o.run()
+	if len(o.nameFlag) == 0 {
+		bindings, err := o.runWithoutName()
+		if err != nil {
+			return err
+		}
+		printBindingsHumanReadableOutput(bindings)
+		return nil
+	}
+
+	binding, err := o.runWithName()
 	if err != nil {
 		return err
 	}
-	printBindingsHumanReadableOutput(bindings)
+	printSingleBindingHumanReadableOutput(binding)
 	return nil
 }
 
 // Run contains the logic for the odo command
 func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	return o.run()
+	if len(o.nameFlag) == 0 {
+		return o.runWithoutName()
+	}
+	return o.runWithName()
 }
 
-func (o *BindingOptions) run() ([]api.ServiceBinding, error) {
+func (o *BindingOptions) runWithoutName() ([]api.ServiceBinding, error) {
 	return o.clientset.BindingClient.GetBindingsFromDevfile(o.EnvSpecificInfo.GetDevfileObj(), o.contextDir)
+}
+
+func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
+	return o.clientset.BindingClient.GetBinding(o.nameFlag)
 }
 
 // NewCmdComponent implements the component odo sub-command
@@ -113,6 +129,29 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	return bindingCmd
 }
 
+func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) {
+	log.Describef("Service Binding Name: ", binding.Name)
+	log.Info("Services:")
+	for _, service := range binding.Spec.Services {
+		gvk := schema.FromAPIVersionAndKind(service.APIVersion, service.Kind)
+		log.Printf("%s (%s.%s)", service.Name, gvk.Kind, gvk.Group)
+	}
+	log.Describef("Bind as files: ", strconv.FormatBool(binding.Spec.BindAsFiles))
+	log.Describef("Detect binding resources: ", strconv.FormatBool(binding.Spec.DetectBindingResources))
+
+	if binding.Status == nil {
+		log.Describef("Available binding information: ", "unknown")
+		return
+	}
+	log.Info("Available binding information:")
+	for _, info := range binding.Status.BindingFiles {
+		log.Printf(info)
+	}
+	for _, info := range binding.Status.BindingEnvVars {
+		log.Printf(info)
+	}
+}
+
 func printBindingsHumanReadableOutput(bindings []api.ServiceBinding) {
 	if len(bindings) == 0 {
 		log.Info("No ServiceBinding used by the current component")
@@ -122,25 +161,6 @@ func printBindingsHumanReadableOutput(bindings []api.ServiceBinding) {
 	log.Info("ServiceBinding used by the current component:")
 	for _, binding := range bindings {
 		fmt.Println()
-		log.Describef("Service Binding Name: ", binding.Name)
-		log.Info("Services:")
-		for _, service := range binding.Spec.Services {
-			gvk := schema.FromAPIVersionAndKind(service.APIVersion, service.Kind)
-			log.Printf("%s (%s.%s)", service.Name, gvk.Kind, gvk.Group)
-		}
-		log.Describef("Bind as files: ", strconv.FormatBool(binding.Spec.BindAsFiles))
-		log.Describef("Detect binding resources: ", strconv.FormatBool(binding.Spec.DetectBindingResources))
-
-		if binding.Status == nil {
-			log.Describef("Available binding information: ", "unknown")
-			continue
-		}
-		log.Info("Available binding information:")
-		for _, info := range binding.Status.BindingFiles {
-			log.Printf(info)
-		}
-		for _, info := range binding.Status.BindingEnvVars {
-			log.Printf(info)
-		}
+		printSingleBindingHumanReadableOutput(binding)
 	}
 }

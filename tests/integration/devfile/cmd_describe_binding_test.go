@@ -1,6 +1,8 @@
 package devfile
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -60,26 +62,32 @@ var _ = Describe("odo describe binding command tests", func() {
 	for _, ctx := range []struct {
 		title                     string
 		devfile                   string
-		assertJsonOutput          func(stdout, stderr string)
-		assertHumanReadableOutput func(stdout, stderr string)
+		assertJsonOutput          func(list bool, stdout, stderr string)
+		assertHumanReadableOutput func(list bool, stdout, stderr string)
 	}{
 		{
 			title:   "creating a component with a binding as files",
 			devfile: helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"),
-			assertJsonOutput: func(stdout, stderr string) {
+			assertJsonOutput: func(list bool, stdout, stderr string) {
+				prefix := ""
+				if list {
+					prefix = "0."
+				}
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
-				helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
-				helper.JsonPathContentContain(stdout, "0.status.bindingsFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
-				helper.JsonPathContentIs(stdout, "0.status.bindingEnvVars", "")
+				helper.JsonPathContentIs(stdout, prefix+"name", "my-nodejs-app-cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.kind", "Cluster")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.name", "cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.detectBindingResources", "true")
+				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "true")
+				helper.JsonPathContentContain(stdout, prefix+"status.bindingsFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
+				helper.JsonPathContentIs(stdout, prefix+"status.bindingEnvVars", "")
 			},
-			assertHumanReadableOutput: func(stdout, stderr string) {
-				Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+			assertHumanReadableOutput: func(list bool, stdout, stderr string) {
+				if list {
+					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+				}
 				Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
 				Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
@@ -90,20 +98,26 @@ var _ = Describe("odo describe binding command tests", func() {
 		{
 			title:   "creating a component with a binding as environment variables",
 			devfile: helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-service-binding-envvars.yaml"),
-			assertJsonOutput: func(stdout, stderr string) {
+			assertJsonOutput: func(list bool, stdout, stderr string) {
+				prefix := ""
+				if list {
+					prefix = "0."
+				}
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
-				helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "false")
-				helper.JsonPathContentIs(stdout, "0.status.bindingsFiles", "")
-				helper.JsonPathContentContain(stdout, "0.status.bindingEnvVars", "PASSWORD")
+				helper.JsonPathContentIs(stdout, prefix+"name", "my-nodejs-app-cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.kind", "Cluster")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.name", "cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.detectBindingResources", "true")
+				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "false")
+				helper.JsonPathContentIs(stdout, prefix+"status.bindingsFiles", "")
+				helper.JsonPathContentContain(stdout, prefix+"status.bindingEnvVars", "PASSWORD")
 			},
-			assertHumanReadableOutput: func(stdout, stderr string) {
-				Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+			assertHumanReadableOutput: func(list bool, stdout, stderr string) {
+				if list {
+					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+				}
 				Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
 				Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
 				Expect(stdout).To(ContainSubstring("Bind as files: false"))
@@ -114,20 +128,26 @@ var _ = Describe("odo describe binding command tests", func() {
 		{
 			title:   "creating a component with a spec binding",
 			devfile: helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-spec-service-binding.yaml"),
-			assertJsonOutput: func(stdout, stderr string) {
+			assertJsonOutput: func(list bool, stdout, stderr string) {
+				prefix := ""
+				if list {
+					prefix = "0."
+				}
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "false")
-				helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
-				helper.JsonPathContentContain(stdout, "0.status.bindingsFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
-				helper.JsonPathContentIs(stdout, "0.status.bindingEnvVars", "")
+				helper.JsonPathContentIs(stdout, prefix+"name", "my-nodejs-app-cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.kind", "Cluster")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.name", "cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.detectBindingResources", "false")
+				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "true")
+				helper.JsonPathContentContain(stdout, prefix+"status.bindingsFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
+				helper.JsonPathContentIs(stdout, prefix+"status.bindingEnvVars", "")
 			},
-			assertHumanReadableOutput: func(stdout, stderr string) {
-				Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+			assertHumanReadableOutput: func(list bool, stdout, stderr string) {
+				if list {
+					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+				}
 				Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
 				Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
@@ -138,20 +158,26 @@ var _ = Describe("odo describe binding command tests", func() {
 		{
 			title:   "creating a component with a spec binding and envvars",
 			devfile: helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-spec-service-binding-envvars.yaml"),
-			assertJsonOutput: func(stdout, stderr string) {
+			assertJsonOutput: func(list bool, stdout, stderr string) {
+				prefix := ""
+				if list {
+					prefix = "0."
+				}
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentIs(stdout, "0.name", "my-nodejs-app-cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.kind", "Cluster")
-				helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
-				helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "false")
-				helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
-				helper.JsonPathContentContain(stdout, "0.status.bindingsFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
-				helper.JsonPathContentContain(stdout, "0.status.bindingEnvVars", "PASSWD")
+				helper.JsonPathContentIs(stdout, prefix+"name", "my-nodejs-app-cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.kind", "Cluster")
+				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.name", "cluster-sample")
+				helper.JsonPathContentIs(stdout, prefix+"spec.detectBindingResources", "false")
+				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "true")
+				helper.JsonPathContentContain(stdout, prefix+"status.bindingsFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
+				helper.JsonPathContentContain(stdout, prefix+"status.bindingEnvVars", "PASSWD")
 			},
-			assertHumanReadableOutput: func(stdout, stderr string) {
-				Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+			assertHumanReadableOutput: func(list bool, stdout, stderr string) {
+				if list {
+					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
+				}
 				Expect(stdout).To(ContainSubstring("Service Binding Name: my-nodejs-app-cluster-sample"))
 				Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
@@ -197,13 +223,29 @@ var _ = Describe("odo describe binding command tests", func() {
 						By("JSON output", func() {
 							res := helper.Cmd("odo", "describe", "binding", "-o", "json").ShouldPass()
 							stdout, stderr := res.Out(), res.Err()
-							ctx.assertJsonOutput(stdout, stderr)
+							ctx.assertJsonOutput(true, stdout, stderr)
 						})
 						By("human readable output", func() {
 							res := helper.Cmd("odo", "describe", "binding").ShouldPass()
 							stdout, stderr := res.Out(), res.Err()
-							ctx.assertHumanReadableOutput(stdout, stderr)
+							ctx.assertHumanReadableOutput(true, stdout, stderr)
 						})
+
+						By("JSON output from another directory with name flag", func() {
+							err := os.Chdir("/")
+							Expect(err).ToNot(HaveOccurred())
+							res := helper.Cmd("odo", "describe", "binding", "--name", "my-nodejs-app-cluster-sample", "-o", "json").ShouldPass()
+							stdout, stderr := res.Out(), res.Err()
+							ctx.assertJsonOutput(false, stdout, stderr)
+						})
+						By("human readable output from another directory with name flag", func() {
+							err := os.Chdir("/")
+							Expect(err).ToNot(HaveOccurred())
+							res := helper.Cmd("odo", "describe", "binding", "--name", "my-nodejs-app-cluster-sample").ShouldPass()
+							stdout, stderr := res.Out(), res.Err()
+							ctx.assertHumanReadableOutput(false, stdout, stderr)
+						})
+
 					})
 				})
 			})

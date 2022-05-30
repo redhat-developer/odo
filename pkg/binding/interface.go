@@ -23,5 +23,9 @@ type Client interface {
 	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
 	GetServiceInstances() (map[string]unstructured.Unstructured, error)
 
+	// GetBindingsFromDevfile returns the bindings defined in the devfile with the status extracted from cluster
 	GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error)
+
+	// GetBinding returns information about a binding in the cluster (either from group binding.operators.coreos.com or servicebinding.io)
+	GetBinding(name string) (api.ServiceBinding, error)
 }
