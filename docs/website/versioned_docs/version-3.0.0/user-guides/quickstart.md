@@ -81,6 +81,7 @@ $ npx express-generator
 
 ```console
 $ dotnet new mvc --name app
+>>>>>>> 00061e81b (Adds .NET 6.0 as a quickstart example)
 
 Welcome to .NET 6.0!
 ---------------------
@@ -98,6 +99,20 @@ Running 'dotnet restore' on /Users/user/app/app.csproj...
 Restore succeeded.
 ```
 
+=======
+Running 'dotnet restore' on /Users/user/dotnet/dotnet.csproj...
+  Determining projects to restore...
+  Restored /Users/user/dotnet/dotnet.csproj (in 84 ms).
+Restore succeeded.
+```
+
+2. Rename the `dotnet.csproj` file to `app.csproj`:
+
+```console
+$ mv dotnet.csproj app.csproj
+```
+
+>>>>>>> 00061e81b (Adds .NET 6.0 as a quickstart example)
   </TabItem>
 </Tabs>
 
