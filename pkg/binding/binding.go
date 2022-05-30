@@ -227,17 +227,18 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 
 func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 
-	sb, err := o.kubernetesClient.GetServiceBinding(name)
+	sbo, err := o.kubernetesClient.GetServiceBinding(name)
 	if err == nil {
-		sbo, err := o.getApiServiceBindingFromBinding(sb)
+		var sb api.ServiceBinding
+		sb, err = o.getApiServiceBindingFromBinding(sbo)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
-		sbo.Status, err = o.getStatusFromBinding(sb.Name)
+		sb.Status, err = o.getStatusFromBinding(sbo.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
-		return sbo, nil
+		return sb, nil
 	}
 	if err != nil && !kerrors.IsNotFound(err) {
 		return api.ServiceBinding{}, err
@@ -245,7 +246,8 @@ func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 
 	sbc, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err == nil {
-		sb, err := o.getApiServiceBindingFromSpecBinding(sbc)
+		var sb api.ServiceBinding
+		sb, err = o.getApiServiceBindingFromSpecBinding(sbc)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
