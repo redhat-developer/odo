@@ -1,6 +1,5 @@
 ---
 title: odo registry
-sidebar_position: 1
 ---
 
 The `odo registry` command lists all the Devfile stacks from Devfile registries.

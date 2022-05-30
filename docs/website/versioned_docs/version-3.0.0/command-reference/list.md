@@ -1,6 +1,5 @@
 ---
 title: odo list
-sidebar_position: 3
 ---
 
 `odo list` command is useful for getting information about components running on a specific namespace.

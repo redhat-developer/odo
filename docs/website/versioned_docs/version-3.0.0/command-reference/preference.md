@@ -1,6 +1,5 @@
 ---
 title: odo preference
-sidebar_position: 8
 ---
 
 

@@ -1,6 +1,5 @@
 ---
 title: odo describe
-sidebar_position: 3
 ---
 
 `odo describe component` command is useful for getting information about a component managed by `odo`. 
