@@ -158,7 +158,7 @@ func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructu
 }
 
 func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
-	var result []api.ServiceBinding
+	result := []api.ServiceBinding{}
 	kubeComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{
 			ComponentType: devfilev1alpha2.KubernetesComponentType,
