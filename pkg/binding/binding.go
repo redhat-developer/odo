@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 
 	"gopkg.in/yaml.v2"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -278,6 +280,11 @@ func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingSt
 		}
 		return nil, err
 	}
+
+	if injected := meta.IsStatusConditionTrue(bindingSB.Status.Conditions, bindingApis.InjectionReady); !injected {
+		return nil, nil
+	}
+
 	secretName := bindingSB.Status.Secret
 	secret, err := o.kubernetesClient.GetSecret(secretName, o.kubernetesClient.GetCurrentNamespace())
 	if err != nil {
@@ -314,6 +321,11 @@ func (o *BindingClient) getStatusFromSpec(name string) (*api.ServiceBindingStatu
 		}
 		return nil, err
 	}
+
+	if injected := meta.IsStatusConditionTrue(specSB.Status.Conditions, bindingApis.InjectionReady); !injected {
+		return nil, nil
+	}
+
 	if specSB.Status.Binding == nil {
 		return nil, nil
 	}
