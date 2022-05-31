@@ -81,6 +81,21 @@ func (mr *MockClientMockRecorder) AskBindingName(serviceName, componentName, fla
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockClient)(nil).AskBindingName), serviceName, componentName, flags)
 }
 
+// GetBinding mocks base method.
+func (m *MockClient) GetBinding(name string) (api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBinding", name)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBinding indicates an expected call of GetBinding.
+func (mr *MockClientMockRecorder) GetBinding(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBinding", reflect.TypeOf((*MockClient)(nil).GetBinding), name)
+}
+
 // GetBindingsFromDevfile mocks base method.
 func (m *MockClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
 	m.ctrl.T.Helper()

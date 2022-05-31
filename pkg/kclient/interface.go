@@ -7,8 +7,8 @@ import (
 	"github.com/go-openapi/spec"
 	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	sbcApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -89,11 +89,11 @@ type ClientInterface interface {
 
 	// binding.go
 	IsServiceBindingSupported() (bool, error)
-	GetBindableKinds() (sboApi.BindableKinds, error)
-	GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
-	GetServiceBinding(name string) (sboApi.ServiceBinding, error)
-	GetSpecServiceBinding(name string) (sbcApi.ServiceBinding, error)
-	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (sboApi.Service, error)
+	GetBindableKinds() (bindingApi.BindableKinds, error)
+	GetBindableKindStatusRestMapping(bindableKindStatuses []bindingApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
+	GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error)
+	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
+	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
 
 	// owner_reference.go
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error

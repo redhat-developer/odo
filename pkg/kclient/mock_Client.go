@@ -413,6 +413,21 @@ func (mr *MockClientInterfaceMockRecorder) GetBindableKinds() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKinds", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKinds))
 }
 
+// GetBindingServiceBinding mocks base method.
+func (m *MockClientInterface) GetBindingServiceBinding(name string) (v1alpha10.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindingServiceBinding", name)
+	ret0, _ := ret[0].(v1alpha10.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindingServiceBinding indicates an expected call of GetBindingServiceBinding.
+func (mr *MockClientInterfaceMockRecorder) GetBindingServiceBinding(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetBindingServiceBinding), name)
+}
+
 // GetCSVWithCR mocks base method.
 func (m *MockClientInterface) GetCSVWithCR(name string) (*v1alpha1.ClusterServiceVersion, error) {
 	m.ctrl.T.Helper()
@@ -854,21 +869,6 @@ func (m *MockClientInterface) GetServerVersion(timeout time.Duration) (*ServerIn
 func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
-}
-
-// GetServiceBinding mocks base method.
-func (m *MockClientInterface) GetServiceBinding(name string) (v1alpha10.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServiceBinding", name)
-	ret0, _ := ret[0].(v1alpha10.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetServiceBinding indicates an expected call of GetServiceBinding.
-func (mr *MockClientInterfaceMockRecorder) GetServiceBinding(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetServiceBinding), name)
 }
 
 // GetSpecServiceBinding mocks base method.

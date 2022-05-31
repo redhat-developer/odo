@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	sbcApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,24 +20,24 @@ const (
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
-	gvr := sboApi.GroupVersionResource
+	gvr := bindingApi.GroupVersionResource
 	return c.IsResourceSupported(gvr.Group, gvr.Version, gvr.Resource)
 }
 
 // GetBindableKinds returns BindableKinds of name "bindable-kinds".
 // "bindable-kinds" is the default resource provided by SBO
-func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
+func (c *Client) GetBindableKinds() (bindingApi.BindableKinds, error) {
 	if c.DynamicClient == nil {
-		return sboApi.BindableKinds{}, nil
+		return bindingApi.BindableKinds{}, nil
 	}
 
 	var (
 		unstructuredBK *unstructured.Unstructured
-		bindableKind   sboApi.BindableKinds
+		bindableKind   bindingApi.BindableKinds
 		err            error
 	)
 
-	unstructuredBK, err = c.DynamicClient.Resource(sboApi.GroupVersion.WithResource(BindableKindsResource)).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
+	unstructuredBK, err = c.DynamicClient.Resource(bindingApi.GroupVersion.WithResource(BindableKindsResource)).Get(context.TODO(), "bindable-kinds", v1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			//revive:disable:error-strings This is a top-level error message displayed as is to the end user
@@ -55,7 +55,7 @@ func (c *Client) GetBindableKinds() (sboApi.BindableKinds, error) {
 }
 
 // GetBindableKindStatusRestMapping retuns a list of *meta.RESTMapping of all the bindable kind operator CRD
-func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.BindableKindsStatus) ([]*meta.RESTMapping, error) {
+func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []bindingApi.BindableKindsStatus) ([]*meta.RESTMapping, error) {
 	var result []*meta.RESTMapping
 	for _, bks := range bindableKindStatuses {
 		if mappingContainsBKS(result, bks) {
@@ -74,17 +74,17 @@ func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []sboApi.B
 	return result, nil
 }
 
-// NewServiceBindingServiceObject returns the sboApi.Service object based on the RESTMapping
-func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (sboApi.Service, error) {
+// NewServiceBindingServiceObject returns the bindingApi.Service object based on the RESTMapping
+func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error) {
 	serviceRESTMapping, err := c.GetRestMappingFromUnstructured(unstructuredService)
 	if err != nil {
-		return sboApi.Service{}, err
+		return bindingApi.Service{}, err
 	}
 
-	return sboApi.Service{
+	return bindingApi.Service{
 		Id: &bindingName, // Id field is helpful if user wants to inject mappings (custom binding data)
-		NamespacedRef: sboApi.NamespacedRef{
-			Ref: sboApi.Ref{
+		NamespacedRef: bindingApi.NamespacedRef{
+			Ref: bindingApi.Ref{
 				Group:    serviceRESTMapping.GroupVersionKind.Group,
 				Version:  serviceRESTMapping.GroupVersionKind.Version,
 				Kind:     serviceRESTMapping.GroupVersionKind.Kind,
@@ -95,21 +95,21 @@ func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured
 	}, nil
 }
 
-// NewServiceBindingObject returns the sboApi.ServiceBinding object
-func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR v1.GroupVersionResource, mappings []sboApi.Mapping, services []sboApi.Service) *sboApi.ServiceBinding {
-	return &sboApi.ServiceBinding{
+// NewServiceBindingObject returns the bindingApi.ServiceBinding object
+func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR v1.GroupVersionResource, mappings []bindingApi.Mapping, services []bindingApi.Service) *bindingApi.ServiceBinding {
+	return &bindingApi.ServiceBinding{
 		TypeMeta: v1.TypeMeta{
-			APIVersion: sboApi.GroupVersion.String(),
+			APIVersion: bindingApi.GroupVersion.String(),
 			Kind:       ServiceBindingKind,
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name: bindingName,
 		},
-		Spec: sboApi.ServiceBindingSpec{
+		Spec: bindingApi.ServiceBindingSpec{
 			DetectBindingResources: true,
 			BindAsFiles:            bindAsFiles,
-			Application: sboApi.Application{
-				Ref: sboApi.Ref{
+			Application: bindingApi.Application{
+				Ref: bindingApi.Ref{
 					Name:     deploymentName,
 					Group:    deploymentGVR.Group,
 					Version:  deploymentGVR.Version,
@@ -122,43 +122,45 @@ func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentNam
 	}
 }
 
-func (c Client) GetServiceBinding(name string) (sboApi.ServiceBinding, error) {
+// GetBindingServiceBinding returns a ServiceBinding from group binding.operators.coreos.com/v1alpha1
+func (c Client) GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error) {
 	if c.DynamicClient == nil {
-		return sboApi.ServiceBinding{}, nil
+		return bindingApi.ServiceBinding{}, nil
 	}
 
-	u, err := c.GetDynamicResource(sboApi.GroupVersionResource, name)
+	u, err := c.GetDynamicResource(bindingApi.GroupVersionResource, name)
 	if err != nil {
-		return sboApi.ServiceBinding{}, err
+		return bindingApi.ServiceBinding{}, err
 	}
 
-	var result sboApi.ServiceBinding
+	var result bindingApi.ServiceBinding
 	err = c.ConvertUnstructuredToResource(*u, &result)
 	if err != nil {
-		return sboApi.ServiceBinding{}, err
+		return bindingApi.ServiceBinding{}, err
 	}
 	return result, nil
 }
 
-func (c Client) GetSpecServiceBinding(name string) (sbcApi.ServiceBinding, error) {
+// GetSpecServiceBinding returns a ServiceBinding from group servicebinding.io/v1alpha3
+func (c Client) GetSpecServiceBinding(name string) (specApi.ServiceBinding, error) {
 	if c.DynamicClient == nil {
-		return sbcApi.ServiceBinding{}, nil
+		return specApi.ServiceBinding{}, nil
 	}
 
-	u, err := c.GetDynamicResource(sbcApi.GroupVersionResource, name)
+	u, err := c.GetDynamicResource(specApi.GroupVersionResource, name)
 	if err != nil {
-		return sbcApi.ServiceBinding{}, err
+		return specApi.ServiceBinding{}, err
 	}
 
-	var result sbcApi.ServiceBinding
+	var result specApi.ServiceBinding
 	err = c.ConvertUnstructuredToResource(*u, &result)
 	if err != nil {
-		return sbcApi.ServiceBinding{}, err
+		return specApi.ServiceBinding{}, err
 	}
 	return result, nil
 }
 
-func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks sboApi.BindableKindsStatus) bool {
+func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks bindingApi.BindableKindsStatus) bool {
 	var gkAlreadyAdded bool
 	// check every GroupKind only once
 	for _, bo := range bindableObjects {

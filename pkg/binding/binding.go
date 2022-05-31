@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	sbcApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 
 	"gopkg.in/yaml.v2"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -109,7 +108,7 @@ func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstruc
 		return obj, err
 	}
 
-	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []sboApi.Mapping{}, []sboApi.Service{service})
+	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []bindingApi.Mapping{}, []bindingApi.Service{service})
 
 	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
 	serviceBindingUnstructured, err := kclient.ConvertK8sResourceToUnstructured(serviceBinding)
@@ -157,6 +156,8 @@ func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructu
 	return bindableObjectMap, nil
 }
 
+// GetBindingsFromDevfile returns all ServiceBinding resources declared as Kubernertes component from a Devfile
+// from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
 func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
 	result := []api.ServiceBinding{}
 	kubeComponents, err := devfileObj.Data.GetComponents(parsercommon.DevfileOptions{
@@ -180,15 +181,15 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		}
 
 		switch u.GetObjectKind().GroupVersionKind() {
-		case sboApi.GroupVersionKind:
+		case bindingApi.GroupVersionKind:
 
-			var sbo sboApi.ServiceBinding
+			var sbo bindingApi.ServiceBinding
 			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbo)
 			if err != nil {
 				return nil, err
 			}
 
-			sb, err := o.getApiServiceBindingFromBinding(sbo)
+			sb, err := api.ServiceBindingFromBinding(sbo)
 			if err != nil {
 				return nil, err
 			}
@@ -200,20 +201,20 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 
 			result = append(result, sb)
 
-		case sbcApi.GroupVersion.WithKind("ServiceBinding"):
+		case specApi.GroupVersion.WithKind("ServiceBinding"):
 
-			var sbc sbcApi.ServiceBinding
+			var sbc specApi.ServiceBinding
 			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbc)
 			if err != nil {
 				return nil, err
 			}
 
-			sb, err := o.getApiServiceBindingFromSpecBinding(sbc)
+			sb, err := api.ServiceBindingFromSpec(sbc)
 			if err != nil {
 				return nil, err
 			}
 
-			sb.Status, err = o.getStatusFromSpecBinding(sb.Name)
+			sb.Status, err = o.getStatusFromSpec(sb.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -225,16 +226,18 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 	return result, nil
 }
 
+// GetBinding returns the ServiceBinding retource with the given name
+// from the cluster, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
 func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 
-	sbo, err := o.kubernetesClient.GetServiceBinding(name)
+	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err == nil {
 		var sb api.ServiceBinding
-		sb, err = o.getApiServiceBindingFromBinding(sbo)
+		sb, err = api.ServiceBindingFromBinding(bindingSB)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
-		sb.Status, err = o.getStatusFromBinding(sbo.Name)
+		sb.Status, err = o.getStatusFromBinding(bindingSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
@@ -244,14 +247,14 @@ func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 		return api.ServiceBinding{}, err
 	}
 
-	sbc, err := o.kubernetesClient.GetSpecServiceBinding(name)
+	specSB, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err == nil {
 		var sb api.ServiceBinding
-		sb, err = o.getApiServiceBindingFromSpecBinding(sbc)
+		sb, err = api.ServiceBindingFromSpec(specSB)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
-		sb.Status, err = o.getStatusFromSpecBinding(sbc.Name)
+		sb.Status, err = o.getStatusFromSpec(specSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err
 		}
@@ -265,44 +268,23 @@ func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 	return api.ServiceBinding{}, err
 }
 
-func (o *BindingClient) getApiServiceBindingFromBinding(sb sboApi.ServiceBinding) (api.ServiceBinding, error) {
-
-	var dstSvcs []sbcApi.ServiceBindingServiceReference
-	for _, srcSvc := range sb.Spec.Services {
-		dstSvc := sbcApi.ServiceBindingServiceReference{
-			Name: srcSvc.Name,
-		}
-		dstSvc.APIVersion, dstSvc.Kind = schema.GroupVersion{
-			Group:   srcSvc.Group,
-			Version: srcSvc.Version,
-		}.WithKind(srcSvc.Kind).ToAPIVersionAndKind()
-		dstSvcs = append(dstSvcs, dstSvc)
-	}
-	return api.ServiceBinding{
-		Name: sb.Name,
-		Spec: api.ServiceBindingSpec{
-			Services:               dstSvcs,
-			DetectBindingResources: sb.Spec.DetectBindingResources,
-			BindAsFiles:            sb.Spec.BindAsFiles,
-		},
-	}, nil
-}
-
+// getStatusFromBinding returns status information from a ServiceBinding in the cluster
+// from group binding.operators.coreos.com/v1alpha1
 func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingStatus, error) {
-	sb, err := o.kubernetesClient.GetServiceBinding(name)
+	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	secretName := sb.Status.Secret
+	secretName := bindingSB.Status.Secret
 	secret, err := o.kubernetesClient.GetSecret(secretName, o.kubernetesClient.GetCurrentNamespace())
 	if err != nil {
 		return nil, err
 	}
 
-	if sb.Spec.BindAsFiles {
+	if bindingSB.Spec.BindAsFiles {
 		bindings := make([]string, 0, len(secret.Data))
 		for k := range secret.Data {
 			bindingName := filepath.ToSlash(filepath.Join("${SERVICE_BINDING_ROOT}", name, k))
@@ -322,44 +304,35 @@ func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingSt
 	}, nil
 }
 
-func (o *BindingClient) getStatusFromSpecBinding(name string) (*api.ServiceBindingStatus, error) {
-	sb, err := o.kubernetesClient.GetSpecServiceBinding(name)
+// getStatusFromSpec returns status information from a ServiceBinding in the cluster
+// from group servicebinding.io/v1alpha3
+func (o *BindingClient) getStatusFromSpec(name string) (*api.ServiceBindingStatus, error) {
+	specSB, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	if sb.Status.Binding == nil {
+	if specSB.Status.Binding == nil {
 		return nil, nil
 	}
-	secretName := sb.Status.Binding.Name
+	secretName := specSB.Status.Binding.Name
 	secret, err := o.kubernetesClient.GetSecret(secretName, o.kubernetesClient.GetCurrentNamespace())
 	if err != nil {
 		return nil, err
 	}
 	bindingFiles := make([]string, 0, len(secret.Data))
-	bindingEnvVars := make([]string, 0, len(sb.Spec.Env))
+	bindingEnvVars := make([]string, 0, len(specSB.Spec.Env))
 	for k := range secret.Data {
 		bindingName := filepath.ToSlash(filepath.Join("${SERVICE_BINDING_ROOT}", name, k))
 		bindingFiles = append(bindingFiles, bindingName)
 	}
-	for _, env := range sb.Spec.Env {
+	for _, env := range specSB.Spec.Env {
 		bindingEnvVars = append(bindingEnvVars, env.Name)
 	}
 	return &api.ServiceBindingStatus{
 		BindingFiles:   bindingFiles,
 		BindingEnvVars: bindingEnvVars,
-	}, nil
-}
-
-func (o *BindingClient) getApiServiceBindingFromSpecBinding(sb sbcApi.ServiceBinding) (api.ServiceBinding, error) {
-	return api.ServiceBinding{
-		Name: sb.Name,
-		Spec: api.ServiceBindingSpec{
-			Services:               []sbcApi.ServiceBindingServiceReference{sb.Spec.Service},
-			DetectBindingResources: false,
-			BindAsFiles:            true,
-		},
 	}, nil
 }
