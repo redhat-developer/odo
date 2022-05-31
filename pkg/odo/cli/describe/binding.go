@@ -18,7 +18,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 )
 
-// ComponentRecommendedCommandName is the recommended component sub-command name
+// BindingRecommendedCommandName is the recommended binding sub-command name
 const BindingRecommendedCommandName = "binding"
 
 var describeBindingExample = ktemplates.Examples(`
@@ -43,7 +43,7 @@ type BindingOptions struct {
 	contextDir string
 }
 
-// NewComponentOptions returns new instance of ComponentOptions
+// NewBindingOptions returns new instance of BindingOptions
 func NewBindingOptions() *BindingOptions {
 	return &BindingOptions{}
 }
@@ -108,7 +108,7 @@ func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
 	return o.clientset.BindingClient.GetBinding(o.nameFlag)
 }
 
-// NewCmdComponent implements the component odo sub-command
+// NewCmdBinding implements the binding odo sub-command
 func NewCmdBinding(name, fullName string) *cobra.Command {
 	o := NewBindingOptions()
 
