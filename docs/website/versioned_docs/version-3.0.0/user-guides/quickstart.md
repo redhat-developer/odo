@@ -74,7 +74,7 @@ $ npx express-generator
   1. Generate an example project:
 
 ```console
-$ dotnet new mvc
+$ dotnet new mvc --name app
 
 Welcome to .NET 6.0!
 ---------------------
@@ -86,16 +86,10 @@ The template "ASP.NET Core Web App (Model-View-Controller)" was created successf
 This template contains technologies from parties other than Microsoft, see https://aka.ms/aspnetcore/6.0-third-party-notices for details.
 
 Processing post-creation actions...
-Running 'dotnet restore' on /Users/user/dotnet/dotnet.csproj...
+Running 'dotnet restore' on /Users/user/app/app.csproj...
   Determining projects to restore...
-  Restored /Users/user/dotnet/dotnet.csproj (in 84 ms).
+  Restored /Users/user/app/app.csproj (in 84 ms).
 Restore succeeded.
-```
-
-2. Rename the `dotnet.csproj` file to `app.csproj`:
-
-```console
-$ mv dotnet.csproj app.csproj
 ```
 
   </TabItem>
