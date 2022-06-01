@@ -129,7 +129,8 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	return bindingCmd
 }
 
-func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) {
+// printSingleBindingHumanReadableOutput prints information about a binding and returns true if status is unknown
+func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) bool {
 	log.Describef("Service Binding Name: ", binding.Name)
 	log.Info("Services:")
 	for _, service := range binding.Spec.Services {
@@ -141,7 +142,7 @@ func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) {
 
 	if binding.Status == nil {
 		log.Describef("Available binding information: ", "unknown")
-		return
+		return true
 	}
 	log.Info("Available binding information:")
 	for _, info := range binding.Status.BindingFiles {
@@ -150,6 +151,7 @@ func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) {
 	for _, info := range binding.Status.BindingEnvVars {
 		log.Printf(info)
 	}
+	return false
 }
 
 func printBindingsHumanReadableOutput(bindings []api.ServiceBinding) {
@@ -159,8 +161,17 @@ func printBindingsHumanReadableOutput(bindings []api.ServiceBinding) {
 	}
 
 	log.Info("ServiceBinding used by the current component:")
+	someStatusUnknown := false
 	for _, binding := range bindings {
 		fmt.Println()
-		printSingleBindingHumanReadableOutput(binding)
+		statusUnknown := printSingleBindingHumanReadableOutput(binding)
+		if statusUnknown {
+			someStatusUnknown = true
+		}
+	}
+	if someStatusUnknown {
+		fmt.Println()
+		log.Info(`Binding information for one or more ServiceBinding is not available because they don't exist on the cluster yet.
+Start "odo dev" first to see binding information.`)
 	}
 }

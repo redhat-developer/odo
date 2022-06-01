@@ -55,6 +55,7 @@ var _ = Describe("odo describe binding command tests", func() {
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
 				Expect(stdout).To(ContainSubstring("Detect binding resources: true"))
 				Expect(stdout).To(ContainSubstring("Available binding information: unknown"))
+				Expect(stdout).To(ContainSubstring("Binding information for one or more ServiceBinding is not available"))
 			})
 		})
 	})
