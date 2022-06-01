@@ -8,8 +8,6 @@ save_logs() {
     LOGFILE="$1"
     NAME="$2"
     RESULT="$3"
-    apt update
-    apt install jq colorized-logs --yes
 
     ansi2html <"/tmp/${LOGFILE}" >"/tmp/${LOGFILE}.html"
     ansi2txt <"/tmp/${LOGFILE}" >"/tmp/${LOGFILE}.txt"

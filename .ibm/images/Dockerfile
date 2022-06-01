@@ -10,7 +10,7 @@ RUN curl -fsSL https://clis.cloud.ibm.com/install/linux | sh && \
     chmod +x install-oc-tools.sh && \
     ./install-oc-tools.sh --latest 4.7 && \
     apt-get update -y && \
-    apt-get install -y sshpass && \
+    apt-get install -y sshpass jq colorized-logs && \
     rm -rf /var/lib/apt/lists/*
 
 # Create non-root user and associated home directory
