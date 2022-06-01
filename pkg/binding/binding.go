@@ -191,11 +191,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 				return nil, err
 			}
 
-			sb, err := api.ServiceBindingFromBinding(sbo)
-			if err != nil {
-				return nil, err
-			}
-
+			sb := api.ServiceBindingFromBinding(sbo)
 			sb.Status, err = o.getStatusFromBinding(sb.Name)
 			if err != nil {
 				return nil, err
@@ -211,11 +207,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 				return nil, err
 			}
 
-			sb, err := api.ServiceBindingFromSpec(sbc)
-			if err != nil {
-				return nil, err
-			}
-
+			sb := api.ServiceBindingFromSpec(sbc)
 			sb.Status, err = o.getStatusFromSpec(sb.Name)
 			if err != nil {
 				return nil, err
@@ -234,11 +226,7 @@ func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 
 	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err == nil {
-		var sb api.ServiceBinding
-		sb, err = api.ServiceBindingFromBinding(bindingSB)
-		if err != nil {
-			return api.ServiceBinding{}, err
-		}
+		sb := api.ServiceBindingFromBinding(bindingSB)
 		sb.Status, err = o.getStatusFromBinding(bindingSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err
@@ -251,11 +239,7 @@ func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
 
 	specSB, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err == nil {
-		var sb api.ServiceBinding
-		sb, err = api.ServiceBindingFromSpec(specSB)
-		if err != nil {
-			return api.ServiceBinding{}, err
-		}
+		sb := api.ServiceBindingFromSpec(specSB)
 		sb.Status, err = o.getStatusFromSpec(specSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err

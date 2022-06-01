@@ -26,7 +26,7 @@ type ServiceBindingStatus struct {
 
 // ServiceBindingFromBinding returns a common api.ServiceBinding structure
 // from a ServiceBinding.binding.operators.coreos.com/v1alpha1
-func ServiceBindingFromBinding(binding bindingApi.ServiceBinding) (ServiceBinding, error) {
+func ServiceBindingFromBinding(binding bindingApi.ServiceBinding) ServiceBinding {
 
 	var dstSvcs []specApi.ServiceBindingServiceReference
 	for _, srcSvc := range binding.Spec.Services {
@@ -46,12 +46,12 @@ func ServiceBindingFromBinding(binding bindingApi.ServiceBinding) (ServiceBindin
 			DetectBindingResources: binding.Spec.DetectBindingResources,
 			BindAsFiles:            binding.Spec.BindAsFiles,
 		},
-	}, nil
+	}
 }
 
 // ServiceBindingFromSpec returns a common api.ServiceBinding structure
 // from a ServiceBinding.servicebinding.io/v1alpha3
-func ServiceBindingFromSpec(spec specApi.ServiceBinding) (ServiceBinding, error) {
+func ServiceBindingFromSpec(spec specApi.ServiceBinding) ServiceBinding {
 	return ServiceBinding{
 		Name: spec.Name,
 		Spec: ServiceBindingSpec{
@@ -59,5 +59,5 @@ func ServiceBindingFromSpec(spec specApi.ServiceBinding) (ServiceBinding, error)
 			DetectBindingResources: false,
 			BindAsFiles:            true,
 		},
-	}, nil
+	}
 }
