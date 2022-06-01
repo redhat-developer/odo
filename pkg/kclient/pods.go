@@ -244,11 +244,5 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 }
 
 func (c *Client) GetAllPodsInNamespace() (*corev1.PodList, error) {
-	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		// Don't wrap error since we want to know if it's a forbidden error
-		// if we wrap, we lose the err status reason and callers of this api rely on it
-		return nil, err
-	}
-	return pods, nil
+	return c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{})
 }

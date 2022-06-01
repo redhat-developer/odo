@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/fatih/color"
 
@@ -102,7 +100,9 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 // printLogs prints the logs of the containers with container name prefixed to the log message
 func printLogs(containerName string, rd io.ReadCloser, out io.Writer) error {
 	reader := bufio.NewReader(rd)
-	var lines []string
+	color.Set(log.ColorPicker())
+	defer color.Unset()
+
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -113,28 +113,15 @@ func printLogs(containerName string, rd io.ReadCloser, out io.Writer) error {
 			}
 		}
 		line = strings.Join([]string{containerName, line}, ": ")
-		lines = append(lines, line)
-	}
-
-	randomColor := selectRandomColor()
-	color.Set(randomColor)
-	defer color.Unset()
-
-	for i := 0; i < len(lines); i++ {
-		_, err := fmt.Fprintf(out, lines[i])
+		_, err = fmt.Fprintf(out, line)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
-func selectRandomColor() color.Attribute {
-	colors := []color.Attribute{color.FgRed, color.FgGreen, color.FgYellow, color.FgBlue, color.FgMagenta, color.FgCyan, color.FgWhite}
-	rand.Seed(time.Now().UnixNano())
-	i := rand.Intn(len(colors)) //#nosec G404
-	return colors[i]
-}
 func NewCmdLogs(name, fullname string) *cobra.Command {
 	o := NewLogsOptions()
 	logsCmd := &cobra.Command{

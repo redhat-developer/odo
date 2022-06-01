@@ -86,17 +86,12 @@ func (o *LogsClient) DevModeLogs(componentName string, namespace string) (map[st
 func (o *LogsClient) matchOwnerReferenceWithResources(owner metav1.OwnerReference, resources []unstructured.Unstructured) (bool, error) {
 	// first, check if ownerReference belongs to any of the resources
 	for _, resource := range resources {
-		if resource.GetUID() == owner.UID {
+		if resource.GetUID() != "" && owner.UID != "" && resource.GetUID() == owner.UID {
 			return true, nil
 		}
 	}
 	// second, get the resource indicated by ownerReference and check its ownerReferences field
-	group, version := getGroupVersion(owner.APIVersion)
-	restMapping, err := o.kubernetesClient.GetRestMappingFromGVK(schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    owner.Kind,
-	})
+	restMapping, err := o.kubernetesClient.GetRestMappingFromGVK(schema.FromAPIVersionAndKind(owner.APIVersion, owner.Kind))
 	if err != nil {
 		return false, err
 	}
