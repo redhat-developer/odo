@@ -5,7 +5,13 @@ sidebar_position: 5
 
 # Quickstart Guide
 
-In this guide, we will be using odo to create a "Hello World" application with Node.js
+In this guide, we will be using odo to create a "Hello World" application.
+
+You have the option of choosing from the following frameworks for the quickstart guide:
+* Node.js
+* .NET
+
+A full list of example applications can be viewed with the `odo registry` command.
 
 ## Prerequisites
 
@@ -397,7 +403,7 @@ components:
               app: {{RESOURCE_NAME}}
           spec:
             containers:
-              - name: nodejs
+              - name: {{RESOURCE_NAME}}
                 image: {{CONTAINER_IMAGE}}
                 ports:
                   - name: http
@@ -595,7 +601,7 @@ components:
               app: {{RESOURCE_NAME}}
           spec:
             containers:
-              - name: nodejs
+              - name: {{RESOURCE_NAME}}
                 image: {{CONTAINER_IMAGE}}
                 ports:
                   - name: http
