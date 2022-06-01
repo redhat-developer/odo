@@ -15,7 +15,7 @@ import (
 )
 
 func fakePod(name string) unstructured.Unstructured {
-	return unstructured.Unstructured{map[string]interface{}{
+	return unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "v1",
 		"kind":       "Pod",
 		"metadata": map[string]interface{}{
