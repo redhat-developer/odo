@@ -74,6 +74,8 @@ type WatchParameters struct {
 	Debug bool
 	// DebugPort indicates which debug port to use for pushing after sync
 	DebugPort int
+	// Variables override Devfile variables
+	Variables map[string]string
 }
 
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes

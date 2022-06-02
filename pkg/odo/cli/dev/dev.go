@@ -65,6 +65,10 @@ type DevOptions struct {
 	noWatchFlag     bool
 	randomPortsFlag bool
 	debugFlag       bool
+	varFileFlag     string
+	varsFlag        []string
+
+	variables map[string]string
 }
 
 type Handler struct{}
@@ -122,7 +126,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return err
 	}
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
@@ -257,7 +261,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
-		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag)
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.variables)
 	}
 	return err
 }
@@ -280,7 +284,7 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, wat
 }
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
-	devObj, err := ododevfile.ParseAndValidateFromFile(location.DevfileLocation(""))
+	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +325,8 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
-
+	devCmd.Flags().StringArrayVar(&o.varsFlag, "var", []string{}, "Variable to override Devfile variable and variables in var-file")
+	devCmd.Flags().StringVar(&o.varFileFlag, "var-file", "", "File containing variables to override Devfile variables")
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
