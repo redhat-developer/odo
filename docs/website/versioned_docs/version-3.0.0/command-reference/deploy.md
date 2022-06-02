@@ -64,3 +64,10 @@ components:
                 - name: main
                   image: {{CONTAINER_IMAGE}}
 ```
+
+## Sustituting variables
+
+The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
+can override the values for variables from the command line when running `odo deploy`, using the `--var` and `--var-file` options.
+
+See [Sustituting variables in odo dev](dev.md#sustituting-variables) for more information.
