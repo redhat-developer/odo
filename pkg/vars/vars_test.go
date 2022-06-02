@@ -85,7 +85,7 @@ G
 		t.Run(tt.name, func(t *testing.T) {
 			filename := "vars.txt"
 			fs := filesystem.NewFakeFs()
-			fs.WriteFile(filename, []byte(tt.args.fileContent), 0444)
+			_ = fs.WriteFile(filename, []byte(tt.args.fileContent), 0444)
 
 			got, err := parseKeyValueFile(fs, filename, tt.args.lookupEnv)
 			if (err != nil) != tt.wantErr {
@@ -304,7 +304,7 @@ func TestGetVariables(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			filename := "vars.txt"
 			fs := filesystem.NewFakeFs()
-			fs.WriteFile(filename, []byte(tt.args.fileContent), 0444)
+			_ = fs.WriteFile(filename, []byte(tt.args.fileContent), 0444)
 
 			got, err := GetVariables(fs, filename, tt.args.override, tt.args.lookupEnv)
 			if (err != nil) != tt.wantErr {

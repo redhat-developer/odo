@@ -514,7 +514,8 @@ var _ = Describe("odo dev command tests", func() {
 			varfilename := "vars.txt"
 			BeforeEach(func() {
 				var err error
-				helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
+				err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
+				Expect(err).ToNot(HaveOccurred())
 				session, _, _, _, err = helper.StartDevMode("--var-file", "vars.txt")
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -537,7 +538,8 @@ var _ = Describe("odo dev command tests", func() {
 			BeforeEach(func() {
 				var err error
 				_ = os.Setenv("VALUE_TEST", "baz")
-				helper.CreateFileWithContent(varfilename, "VALUE_TEST")
+				err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
+				Expect(err).ToNot(HaveOccurred())
 				session, _, _, _, err = helper.StartDevMode("--var-file", "vars.txt")
 				Expect(err).ToNot(HaveOccurred())
 			})
