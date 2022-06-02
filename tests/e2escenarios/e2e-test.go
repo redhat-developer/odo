@@ -27,8 +27,7 @@ var _ = Describe("E2E Test", func() {
 
 	checkIfDevEnvIsUp := func(url, assertString string) {
 		Eventually(func() string {
-			url := fmt.Sprintf("http://%s", url)
-			resp, err := http.Get(url)
+			resp, err := http.Get(fmt.Sprintf("http://%s", url))
 			Expect(err).ToNot(HaveOccurred())
 			defer resp.Body.Close()
 
@@ -137,11 +136,12 @@ var _ = Describe("E2E Test", func() {
 
 			// "run odo delete and check if the component is deleted"
 			command = []string{"odo", "delete", "component"}
-			helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+			_, err = helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 				helper.ExpectString(ctx, "Are you sure you want to delete \""+componentName+"\" and all its resources?")
 				helper.SendLine(ctx, "y")
 				helper.ExpectString(ctx, "successfully deleted")
 			})
+			Expect(err).To(BeNil())
 			Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
 			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
 		})
@@ -246,11 +246,12 @@ var _ = Describe("E2E Test", func() {
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
 
 			command = []string{"odo", "delete", "component"}
-			helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+			_, err = helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 				helper.ExpectString(ctx, "Are you sure you want to delete \""+componentName+"\" and all its resources?")
 				helper.SendLine(ctx, "y")
 				helper.ExpectString(ctx, "successfully deleted")
 			})
+			Expect(err).To(BeNil())
 			Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
 			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
 		})
