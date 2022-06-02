@@ -99,7 +99,7 @@ The four groups are: build, run, test and debug.
 
 Build is what is initially ran when deploying to the cluster. It is what builds the command from the sources synced to the container.
 
-Run executes the command after the container has been built. 
+Run executes the command after it has been built from sources. 
 
 Debug is used instead of Run when running `odo dev --debug`.
 
