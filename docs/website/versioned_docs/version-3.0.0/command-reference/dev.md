@@ -105,7 +105,7 @@ Debug is used when running `odo dev --debug`.
 
 Test executes any tests which are available and part of your application. (This is NOT-YET-IMPLEMENTED in odo)
 
-All of these commands are needed to: build the program, execute the code, debug the application and run any applicable tests.
+All of these commands are needed to: build the program, execute the program, debug the application and run any applicable tests.
 ```yaml
 commands:
 - exec:
