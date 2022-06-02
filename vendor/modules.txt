@@ -118,7 +118,7 @@ github.com/danieljoos/wincred
 github.com/davecgh/go-spew/spew
 # github.com/deislabs/oras v0.8.1
 ## explicit; go 1.13
-# github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c
+# github.com/devfile/api/v2 v2.0.0-20220309195345-48ebbf1e51cf
 ## explicit; go 1.13
 github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2
 github.com/devfile/api/v2/pkg/attributes
@@ -127,7 +127,7 @@ github.com/devfile/api/v2/pkg/utils/overriding
 github.com/devfile/api/v2/pkg/utils/unions
 github.com/devfile/api/v2/pkg/validation
 github.com/devfile/api/v2/pkg/validation/variables
-# github.com/devfile/library v1.2.1-0.20220217161036-0f5995513e92
+# github.com/devfile/library v1.2.1-0.20220602130922-85a4805bd59c
 ## explicit; go 1.15
 github.com/devfile/library/pkg/devfile
 github.com/devfile/library/pkg/devfile/generator
