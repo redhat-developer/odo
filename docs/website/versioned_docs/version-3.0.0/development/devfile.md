@@ -76,7 +76,8 @@ These commands are typically ran within the `container` component that has been 
 
 The order in which the commands are ran for `odo dev` are:
 
-1. `build`: We first build the necessary parts of the container for the application to correctly run
+0. the sources are synchronized to the container
+1. `build`: We build the program from the sources
 2. `test`: NOT YET IMPLEMENTED?
 3. `run`: The application is ran within the container
 4. `debug`: This is ran when `odo dev --debug` is executed
