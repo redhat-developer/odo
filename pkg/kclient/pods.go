@@ -168,7 +168,7 @@ func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string,
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
 func (c *Client) ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error {
 	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--no-same-owner"}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	klog.V(3).Infof("Executing command %s", strings.Join(cmdArr, " "))
