@@ -19,7 +19,7 @@ For this reference, we use one singular (working) Node.js example which can be r
 
 When `odo dev` is ran, `odo` creates the following Kubernetes resources from `container` (component) and `exec` (command) sections of the Devfile:
 * Deployment for running the containers
-* Service for accessability 
+* Service for accessibility 
 
 ### File Synchronization
 
