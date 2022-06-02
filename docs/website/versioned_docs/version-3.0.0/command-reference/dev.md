@@ -101,7 +101,7 @@ Build is what is initially ran when deploying to the cluster. It is what builds 
 
 Run executes the command after the container has been built. 
 
-Debug is used when running `odo dev --debug`.
+Debug is used instead of Run when running `odo dev --debug`.
 
 Test executes any tests which are available and part of your application. (This is NOT-YET-IMPLEMENTED in odo)
 
