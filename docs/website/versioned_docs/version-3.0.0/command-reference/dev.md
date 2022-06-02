@@ -97,7 +97,7 @@ Each command contains what will be ran within the container.
 
 The four groups are: build, run, test and debug.
 
-Build is what is initially ran when deploying to the cluster. It is what builds the initial codebase.
+Build is what is initially ran when deploying to the cluster. It is what builds the command from the sources synced to the container.
 
 Run executes the command after the container has been built. 
 
