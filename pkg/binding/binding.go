@@ -3,20 +3,21 @@ package binding
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/binding/asker"
@@ -330,4 +331,44 @@ func (o *BindingClient) getStatusFromSpec(name string) (*api.ServiceBindingStatu
 		BindingFiles:   bindingFiles,
 		BindingEnvVars: bindingEnvVars,
 	}, nil
+}
+
+// ValidateRemoveBinding validates if the command has adequate arguments/flags
+func (o *BindingClient) ValidateRemoveBinding(flags map[string]string) error {
+	if flags[backendpkg.FLAG_NAME] == "" {
+		return fmt.Errorf("you must specify the service binding name with --%s flag", backendpkg.FLAG_NAME)
+	}
+	return nil
+}
+
+// RemoveBinding removes the binding from devfile
+func (o *BindingClient) RemoveBinding(servicebindingName string, obj parser.DevfileObj) (parser.DevfileObj, error) {
+	var componentName string
+	var options []string
+	components, err := obj.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: devfilev1alpha2.KubernetesComponentType},
+	})
+	if err != nil {
+		return obj, err
+	}
+	for _, component := range components {
+		var unstructuredObj unstructured.Unstructured
+		unstructuredObj, err = libdevfile.GetK8sComponentAsUnstructured(obj, component.Name, filepath.Dir(obj.Ctx.GetAbsPath()), devfilefs.DefaultFs{})
+		if err != nil {
+			continue
+		}
+		if unstructuredObj.GetKind() == kclient.ServiceBindingKind {
+			options = append(options, unstructuredObj.GetName())
+			if unstructuredObj.GetName() == servicebindingName {
+				componentName = component.Name
+				break
+			}
+		}
+	}
+
+	err = obj.Data.DeleteComponent(componentName)
+	if err != nil {
+		err = fmt.Errorf("Failed to remove Service Binding %q from the the devfile. Available Service Bindings: %s", servicebindingName, strings.Join(options, ", "))
+	}
+	return obj, err
 }

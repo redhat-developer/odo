@@ -29,4 +29,9 @@ type Client interface {
 
 	// GetBindingFromCluster returns information about a binding in the cluster (either from group binding.operators.coreos.com or servicebinding.io)
 	GetBindingFromCluster(name string) (api.ServiceBinding, error)
+
+	// ValidateRemoveBinding validates if the command has adequate arguments/flags
+	ValidateRemoveBinding(flags map[string]string) error
+	// RemoveBinding removes the binding from devfile
+	RemoveBinding(bindingName string, obj parser.DevfileObj) (parser.DevfileObj, error)
 }

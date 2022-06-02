@@ -7,10 +7,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
-// RecommendedCommandName is the recommended create command name
+// RecommendedCommandName is the recommended add command name
 const RecommendedCommandName = "add"
 
-// NewCmdDelete implements the delete odo command
+// NewCmdAdd implements the odo add command
 func NewCmdAdd(name, fullName string) *cobra.Command {
 	var createCmd = &cobra.Command{
 		Use:   name,

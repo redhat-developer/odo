@@ -167,3 +167,32 @@ func (mr *MockClientMockRecorder) GetBindingFromCluster(name interface{}) *gomoc
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingFromCluster", reflect.TypeOf((*MockClient)(nil).GetBindingFromCluster), name)
 }
+
+// ValidateRemoveBinding mocks base method
+func (m *MockClient) ValidateRemoveBinding(flags map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateRemoveBinding", flags)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateRemoveBinding indicates an expected call of ValidateRemoveBinding
+func (mr *MockClientMockRecorder) ValidateRemoveBinding(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateRemoveBinding", reflect.TypeOf((*MockClient)(nil).ValidateRemoveBinding), flags)
+}
+
+// RemoveBinding mocks base method
+func (m *MockClient) RemoveBinding(bindingName string, obj parser.DevfileObj) (parser.DevfileObj, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveBinding", bindingName, obj)
+	ret0, _ := ret[0].(parser.DevfileObj)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveBinding indicates an expected call of RemoveBinding
+func (mr *MockClientMockRecorder) RemoveBinding(bindingName, obj interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveBinding", reflect.TypeOf((*MockClient)(nil).RemoveBinding), bindingName, obj)
+}
