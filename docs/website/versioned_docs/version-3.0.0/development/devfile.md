@@ -7,7 +7,7 @@ sidebar_position: 30
 
 ### Overview
 
-We implement the latest [Devfile 2.2.0 reference](https://devfile.io/docs/devfile/2.2.0/user-guide/api-reference/) in `odo`.
+We use the latest [Devfile 2.2.0 reference](https://devfile.io/docs/devfile/2.2.0/user-guide/api-reference/) in `odo`.
 
 Below are `odo`-specific examples regarding the Devfile reference. Everything we have listed below is implemented in the current version of `odo`.
 
@@ -76,15 +76,19 @@ These commands are typically ran within the `container` component that has been 
 
 The order in which the commands are ran for `odo dev` are:
 
-0. the sources are synchronized to the container
+0. The source code is synchronized to the container
 1. `build`: We build the program from the sources
-2. `test`: NOT YET IMPLEMENTED?
+2. `test`: NOT YET IMPLEMENTED
 3. `run`: The application is ran within the container
 4. `debug`: This is ran when `odo dev --debug` is executed
 
 When `odo deploy` is executed, we use: deploy.
 
 These commands are typically tied to Kubernetes or OpenShift inline resources. They are defined as a component. However, you can use `container` or `image` components as well under the deploy group.
+
+The most common deploy scenario is the following:
+1. Use the `image` component to build a container
+2. Deploy a `kubernetes` component(s) with a Kubernetes resource defined
 
 ## File Reference
 
