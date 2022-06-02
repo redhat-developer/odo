@@ -16,27 +16,40 @@ import (
 	"k8s.io/klog"
 )
 
-// CreateDynamicResource creates a dynamic custom resource
-func (c *Client) CreateDynamicResource(resource unstructured.Unstructured) error {
+// PatchDynamicResource patches a dynamic custom resource and returns true
+// if the generation of the resource increased or the resource is created
+func (c *Client) PatchDynamicResource(resource unstructured.Unstructured) (bool, error) {
 	klog.V(5).Infoln("Applying resource via server-side apply:")
 	klog.V(5).Infoln(resourceAsJson(resource.Object))
 	data, err := json.Marshal(resource.Object)
 	if err != nil {
-		return fmt.Errorf("unable to marshal resource: %w", err)
+		return false, fmt.Errorf("unable to marshal resource: %w", err)
 	}
 
 	gvr, err := c.GetRestMappingFromUnstructured(resource)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	var previousGeneration int64 = -1
+	// Get the generation of the current resource
+	previous, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Get(context.TODO(), resource.GetName(), metav1.GetOptions{})
+	if err != nil {
+		if !kerrors.IsNotFound(err) {
+			return false, err
+		}
+	} else {
+		previousGeneration = previous.GetGeneration()
 	}
 
 	// Patch the dynamic resource
-	_, err = c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), resource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
+	current, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), resource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
-		return err
+		return false, err
 	}
+	newGeneration := current.GetGeneration()
 
-	return nil
+	return newGeneration > previousGeneration, nil
 }
 
 // ListDynamicResource returns an unstructured list of instances of a Custom

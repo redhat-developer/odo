@@ -257,7 +257,7 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 	// Pass in all annotations to the k8s resource
 	u.SetAnnotations(mergeMaps(u.GetAnnotations(), annotations))
 
-	err = createOperatorService(client, u)
+	_, err = updateOperatorService(client, u)
 	return isOp, err
 }
 
@@ -374,27 +374,21 @@ func isLinkResource(kind string) bool {
 	return kind == "ServiceBinding"
 }
 
-// createOperatorService creates the given operator on the cluster
-// it returns the CR,Kind and errors
-func createOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) error {
-
-	// Check resource
-	checkSpinner := log.Spinner("Searching resource in cluster")
-	defer checkSpinner.End(false)
-
-	checkSpinner.End(true)
+// updateOperatorService creates the given operator on the cluster
+// it returns true if the generation of the resource increased or the resource is created
+func updateOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
 
 	// Create the service on cluster
 	createSpinner := log.Spinnerf("Creating kind %s", u.GetKind())
 	defer createSpinner.End(false)
 
-	err := client.CreateDynamicResource(u)
+	updated, err := client.PatchDynamicResource(u)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	createSpinner.End(true)
-	return err
+	return updated, err
 }
 
 // ValidateResourcesExist validates if the Kubernetes inlined components are installed on the cluster
