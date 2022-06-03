@@ -11,6 +11,7 @@ You have the option of choosing from the following frameworks for the quickstart
 * Node.js
 * .NET
 * Java (Spring Boot)
+* Go
 
 A full list of example applications can be viewed with the `odo registry` command.
 
@@ -133,6 +134,36 @@ Project extracted to '/Users/user/my-springboot-project'
 
 Finally, open a terminal and navigate to the directory.
 
+  </TabItem>
+  <TabItem value="go" label="Go">
+
+For Go, we will create our own application using the standard library:
+
+1. Create the following `main.go` file:
+
+```go
+package main
+
+import (
+  "fmt"
+  "net/http"
+)
+
+func main() {
+  http.HandleFunc("/", HelloServer)
+  http.ListenAndServe("0.0.0.0:8080", nil)
+}
+
+func HelloServer(w http.ResponseWriter, r *http.Request) {
+  fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
+}
+```
+
+2. Initialize a `go.mod` file:
+
+```console
+$ go mod init my.example.go.project
+```
   </TabItem>
 </Tabs>
 
@@ -260,6 +291,39 @@ Changes will be directly reflected on the cluster.
 
 A `devfile.yaml` has now been added to your directory and now you're ready to start development.
   </TabItem>
+  <TabItem value="go" label="Go">
+
+Let's run `odo init` and select Go:
+
+```console
+$ odo init
+  __
+ /  \__     Initializing new component
+ \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
+ /  \__/    odo version: v3.0.0-alpha2
+ \__/
+
+Interactive mode enabled, please answer the following questions:
+Based on the files in the current directory odo detected
+Language: go
+Project type: go
+The devfile "go" from the registry "DefaultDevfileRegistry" will be downloaded.
+? Is this correct? Yes
+ ✓  Downloading devfile "go" from registry "DefaultDevfileRegistry" [769ms]
+Current component configuration:
+Container "runtime":
+  Opened ports:
+   - 8080
+  Environment variables:
+? Select container for which you want to change configuration? NONE - configuration is correct
+? Enter component name: my-go-app
+
+Your new component 'my-go-app' is ready in the current directory.
+To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
+Changes will be directly reflected on the cluster.
+```
+
+  </TabItem>
 
 </Tabs>
 
@@ -348,6 +412,32 @@ Watching for changes in the current directory /Users/user/java
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
 
+
+  </TabItem>
+  <TabItem value="go" label="Go">
+
+Let's run `odo dev` to start development on your .NET application:
+
+```console
+odo dev
+  __
+ /  \__     Developing using the my-go-app Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.0.0-alpha2
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [375ms]
+ ✓  Syncing files into the container [213ms]
+ ✓  Building your application in container on cluster [684ms]
+ ✓  Executing the application [1s]
+
+Your application is now running on the cluster
+ - Forwarding from 127.0.0.1:40001 -> 8080
+
+Watching for changes in the current directory /Users/user/go
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+```
 
   </TabItem>
 </Tabs>
@@ -471,7 +561,7 @@ commands:
     component: outerloop-ingress
 ```
 
-Add the Kubernetes Service and Ingress inline code to `components`:
+Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
 ```yaml
 components:
 
@@ -670,7 +760,7 @@ commands:
     component: outerloop-ingress
 ```
 
-Add the Kubernetes Service and Ingress inline code to `components`:
+Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
 ```yaml
 components:
 
@@ -867,7 +957,7 @@ commands:
     component: outerloop-ingress
 ```
 
-Add the Kubernetes Service and Ingress inline code to `components`:
+Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
 ```yaml
 components:
 
@@ -981,6 +1071,214 @@ $ odo deploy
  ✓  Creating kind Service [51ms]
 
 ↪ Deploying Kubernetes Component: java-springboot-example
+ ✓  Searching resource in cluster
+ ✓  Creating kind Ingress [49ms]
+
+Your Devfile has been successfully deployed
+```
+
+Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress resources.
+
+Test your application by visiting the `DOMAIN_NAME` variable that you had set in the `devfile.yaml`.
+
+  </TabItem>
+  <TabItem value="go" label="Go">
+
+#### 1. Containerize the application
+
+In order to deploy our application, we must containerize it in order to build and push to a registry. Create the following `Dockerfile` in the same directory:
+
+```dockerfile
+# This Dockerfile is referenced from:
+# https://github.com/GoogleCloudPlatform/golang-samples/blob/main/run/helloworld/Dockerfile
+
+# Build
+FROM golang:1.17-buster as builder
+WORKDIR /app
+COPY go.* ./
+RUN go mod download
+COPY . ./
+RUN go build -v -o server
+
+# Create a "lean" container
+FROM debian:buster-slim
+RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/server /app/server
+
+# Run
+CMD ["/app/server"]
+```
+
+#### 2. Modify the Devfile
+
+Let's modify the `devfile.yaml` and add the respective deployment code.
+
+`odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
+
+```yaml
+# Deploy "kind" ID's use schema 2.2.0+
+schemaVersion: 2.2.0
+```
+
+Add the `variables` section:
+
+```yaml
+# Add the following variables code anywhere in devfile.yaml
+# This MUST be a container registry you are able to access
+variables:
+  CONTAINER_IMAGE: quay.io/MYUSERNAME/go-odo-example
+  RESOURCE_NAME: my-go-app
+  CONTAINER_PORT: "8080"
+  DOMAIN_NAME: go.example.com
+```
+
+Add the commands used to deploy:
+
+```yaml
+# This is the main "composite" command that will run all below commands
+commands:
+- id: deploy
+  composite:
+    commands:
+    - build-image
+    - k8s-deployment
+    - k8s-service
+    - k8s-ingress
+    group:
+      isDefault: true
+      kind: deploy
+
+# Below are the commands and their respective components that they are "linked" to deploy
+- id: build-image
+  apply:
+    component: outerloop-build
+- id: k8s-deployment
+  apply:
+    component: outerloop-deployment
+- id: k8s-service
+  apply:
+    component: outerloop-service
+- id: k8s-ingress
+  apply:
+    component: outerloop-ingress
+```
+
+Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
+```yaml
+components:
+
+# This will build the container image before deployment
+- name: outerloop-build
+  image:
+    dockerfile:
+      buildContext: ${PROJECT_SOURCE}
+      rootRequired: false
+      uri: ./Dockerfile
+    imageName: "{{CONTAINER_IMAGE}}"
+
+# This will create a Deployment in order to run your container image across
+# the cluster.
+- name: outerloop-deployment
+  kubernetes:
+    inlined: |
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: {{RESOURCE_NAME}}
+        template:
+          metadata:
+            labels:
+              app: {{RESOURCE_NAME}}
+          spec:
+            containers:
+              - name: {{RESOURCE_NAME}}
+                image: {{CONTAINER_IMAGE}}
+                ports:
+                  - name: http
+                    containerPort: {{CONTAINER_PORT}}
+                    protocol: TCP
+                resources:
+                  limits:
+                    memory: "1024Mi"
+                    cpu: "500m"
+
+# This will create a Service so your Deployment is accessible.
+# Depending on your cluster, you may modify this code so it's a
+# NodePort, ClusterIP or a LoadBalancer service.
+- name: outerloop-service
+  kubernetes:
+    inlined: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        ports:
+        - name: "{{CONTAINER_PORT}}"
+          port: {{CONTAINER_PORT}}
+          protocol: TCP
+          targetPort: {{CONTAINER_PORT}}
+        selector:
+          app: {{RESOURCE_NAME}}
+        type: ClusterIP
+
+# Let's create an Ingress so we can access the application via a domain name
+- name: outerloop-ingress
+  kubernetes:
+    inlined: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        rules:
+          - host: "{{DOMAIN_NAME}}"
+            http:
+              paths:
+                - path: "/"
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: {{RESOURCE_NAME}} 
+                      port:
+                        number: {{CONTAINER_PORT}}
+```
+
+
+#### 3. Run the `odo deploy` command
+
+Now we're ready to run `odo deploy`:
+
+```console
+$ odo deploy
+  __
+ /  \__     Deploying the application using my-go-app Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.0.0-alpha2
+ \__/
+
+↪ Building & Pushing Container: MYUSERNAME/go-example
+ •  Building image locally  ...
+ ✓  Building image locally [880ms]
+ •  Pushing image to container registry  ...
+ ✓  Pushing image to container registry [5s]
+
+↪ Deploying Kubernetes Component: go-example
+ ✓  Searching resource in cluster
+ ✓  Creating kind Deployment [48ms]
+
+↪ Deploying Kubernetes Component: go-example
+ ✓  Searching resource in cluster
+ ✓  Creating kind Service [51ms]
+
+↪ Deploying Kubernetes Component: go-example
  ✓  Searching resource in cluster
  ✓  Creating kind Ingress [49ms]
 
