@@ -67,6 +67,7 @@ linters-settings:
     rules:
       # Conventions around error strings. See https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#error-strings
       - name: error-strings
+
 issues:
   # Maximum issues count per one linter.
   # Set to 0 to disable.
