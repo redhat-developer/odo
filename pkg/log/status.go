@@ -523,12 +523,6 @@ func getSpacingString() string {
 // ColorPicker picks a color from colors slice defined at the starting of this file
 // It increments the colorCounter variable so that next iteration returns a different color
 func ColorPicker() color.Attribute {
-	var c color.Attribute
-	if colorCounter > len(colors) {
-		c = colors[colorCounter%len(colors)]
-	} else {
-		c = colors[colorCounter]
-	}
 	colorCounter++
-	return c
+	return colors[(colorCounter)%len(colors)]
 }

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
+	"strconv"
 
 	"github.com/fatih/color"
 
@@ -88,32 +88,47 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	for container, logs := range containersLogs {
-		err = printLogs(container, logs, o.out)
-		if err != nil {
-			return err
+	uniqueContainerNames := map[string]struct{}{}
+	for _, entry := range containersLogs {
+		for container, logs := range entry {
+			uniqueName := getUniqueContainerName(container, uniqueContainerNames)
+			uniqueContainerNames[uniqueName] = struct{}{}
+			err = printLogs(uniqueName, logs, o.out)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
+func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string {
+	if _, ok := uniqueNames[name]; ok {
+		// name already present in uniqueNames; find another name
+		// first check if last character in name is a number; if so increment it, else append name with 1
+		last, err := strconv.Atoi(string(name[len(name)-1]))
+		if err == nil {
+			last++
+			name = fmt.Sprintf("%s%d", name[:len(name)-1], last)
+		} else {
+			last = 1
+			name = fmt.Sprintf("%s%d", name, last)
+		}
+		return getUniqueContainerName(name, uniqueNames)
+	}
+	return name
+}
+
 // printLogs prints the logs of the containers with container name prefixed to the log message
 func printLogs(containerName string, rd io.ReadCloser, out io.Writer) error {
-	reader := bufio.NewReader(rd)
 	color.Set(log.ColorPicker())
 	defer color.Unset()
+	scanner := bufio.NewScanner(rd)
+	scanner.Split(bufio.ScanLines)
 
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				return err
-			} else {
-				break
-			}
-		}
-		line = strings.Join([]string{containerName, line}, ": ")
-		_, err = fmt.Fprintf(out, line)
+	for scanner.Scan() {
+		line := scanner.Text()
+		_, err := fmt.Fprintln(out, containerName+": "+line)
 		if err != nil {
 			return err
 		}

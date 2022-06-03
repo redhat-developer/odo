@@ -2,7 +2,6 @@ package logs
 
 import (
 	"io"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -26,7 +25,7 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 
 var _ Client = (*LogsClient)(nil)
 
-func (o *LogsClient) DevModeLogs(componentName string, namespace string) (map[string]io.ReadCloser, error) {
+func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
 	// get all resources in the namespace which are running in Dev mode
 	selector := odolabels.Builder().WithComponentName(componentName).WithMode(odolabels.ComponentDevMode).Selector()
 	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
@@ -67,14 +66,15 @@ func (o *LogsClient) DevModeLogs(componentName string, namespace string) (map[st
 	}
 
 	// get logs of all containers
-	logs := map[string]io.ReadCloser{}
+	logs := []map[string]io.ReadCloser{}
+
 	for pod, containers := range podContainersMap {
 		for _, container := range containers {
 			containerLogs, err := o.kubernetesClient.GetPodLogs(pod, container.Name, false)
 			if err != nil {
 				return nil, err
 			}
-			logs[container.Name] = containerLogs
+			logs = append(logs, map[string]io.ReadCloser{container.Name: containerLogs})
 		}
 	}
 
@@ -105,18 +105,4 @@ func (o *LogsClient) matchOwnerReferenceWithResources(owner metav1.OwnerReferenc
 		return o.matchOwnerReferenceWithResources(ownerReference, resources)
 	}
 	return false, nil
-}
-
-func getGroupVersion(apiVersion string) (string, string) {
-	var group, version string
-	groupVersion := strings.SplitN(apiVersion, "/", 2)
-	if len(groupVersion) == 1 {
-		// this could be the case where apiVersion only has version info
-		group = ""
-		version = groupVersion[0]
-	} else {
-		group = groupVersion[0]
-		version = groupVersion[1]
-	}
-	return group, version
 }
