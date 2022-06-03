@@ -70,7 +70,6 @@ func generateOwnerRefernce(object unstructured.Unstructured) metav1.OwnerReferen
 
 func TestLogsClient_matchOwnerReferenceWithResources_PodsWithOwnerInResources(t *testing.T) {
 	type args struct {
-		owner     metav1.OwnerReference
 		resources func() []unstructured.Unstructured
 	}
 	tests := []struct {
@@ -121,7 +120,6 @@ func TestLogsClient_matchOwnerReferenceWithResources_PodsWithNoOwnerInResources(
 	independentPod.SetOwnerReferences([]metav1.OwnerReference{generateOwnerRefernce(independentDeploy)})
 
 	type args struct {
-		owner     metav1.OwnerReference
 		resources func() []unstructured.Unstructured
 	}
 	tests := []struct {
