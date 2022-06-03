@@ -255,4 +255,113 @@ $ odo registry --details -o json
 		},
 	}, [...]
 ]
+```
 
+## odo describe binding -o json
+
+The `odo describe binding` command lists all the service binding resources declared in the devfile
+and, if the resource is deployed to the cluster, also displays the variables that can be used from
+the component.
+
+If a name is given, the command does not extract information from the Devfile, but instead extracts
+information from the deployed resource with the given name.
+
+Without a name, the output of the command is a list of service binding details, for example:
+
+```shell
+$ odo describe binding -o json
+[
+	{
+		"name": "my-first-binding",
+		"spec": {
+			"services": [
+				{
+					"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
+					"kind": "Cluster",
+					"name": "cluster-sample"
+				}
+			],
+			"detectBindingResources": false,
+			"bindAsFiles": true
+		},
+		"status": {
+			"bindingsFiles": [
+				"${SERVICE_BINDING_ROOT}/my-first-binding/host",
+				"${SERVICE_BINDING_ROOT}/my-first-binding/password",
+				"${SERVICE_BINDING_ROOT}/my-first-binding/pgpass",
+				"${SERVICE_BINDING_ROOT}/my-first-binding/provider",
+				"${SERVICE_BINDING_ROOT}/my-first-binding/type",
+				"${SERVICE_BINDING_ROOT}/my-first-binding/username",
+				"${SERVICE_BINDING_ROOT}/my-first-binding/database"
+			],
+			"bindingEnvVars": [
+				"PASSWD"
+			]
+		}
+	},
+	{
+		"name": "my-second-binding",
+		"spec": {
+			"services": [
+				{
+					"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
+					"kind": "Cluster",
+					"name": "cluster-sample-2"
+				}
+			],
+			"detectBindingResources": true,
+			"bindAsFiles": true
+		},
+		"status": {
+			"bindingsFiles": [
+				"${SERVICE_BINDING_ROOT}/my-second-binding/ca.crt",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/clusterIP",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/database",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/host",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/ca.key",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/password",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/pgpass",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/provider",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/tls.crt",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/tls.key",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/type",
+				"${SERVICE_BINDING_ROOT}/my-second-binding/username"
+			]
+		}
+	}
+]
+```
+
+When specifying a name, the output is a unique service binding:
+
+```shell
+$ odo describe binding --name my-first-binding -o json
+{
+	"name": "my-first-binding",
+	"spec": {
+		"services": [
+			{
+				"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
+				"kind": "Cluster",
+				"name": "cluster-sample"
+			}
+		],
+		"detectBindingResources": false,
+		"bindAsFiles": true
+	},
+	"status": {
+		"bindingsFiles": [
+			"${SERVICE_BINDING_ROOT}/my-first-binding/host",
+			"${SERVICE_BINDING_ROOT}/my-first-binding/password",
+			"${SERVICE_BINDING_ROOT}/my-first-binding/pgpass",
+			"${SERVICE_BINDING_ROOT}/my-first-binding/provider",
+			"${SERVICE_BINDING_ROOT}/my-first-binding/type",
+			"${SERVICE_BINDING_ROOT}/my-first-binding/username",
+			"${SERVICE_BINDING_ROOT}/my-first-binding/database"
+		],
+		"bindingEnvVars": [
+			"PASSWD"
+		]
+	}
+}
+```

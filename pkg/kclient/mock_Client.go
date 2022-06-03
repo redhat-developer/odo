@@ -14,6 +14,7 @@ import (
 	v1 "github.com/openshift/api/project/v1"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
 	v11 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
@@ -78,7 +79,7 @@ func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit 
 }
 
 // ConvertUnstructuredToResource mocks base method.
-func (m *MockClientInterface) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
+func (m *MockClientInterface) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConvertUnstructuredToResource", u, obj)
 	ret0, _ := ret[0].(error)
@@ -410,6 +411,21 @@ func (m *MockClientInterface) GetBindableKinds() (v1alpha10.BindableKinds, error
 func (mr *MockClientInterfaceMockRecorder) GetBindableKinds() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKinds", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKinds))
+}
+
+// GetBindingServiceBinding mocks base method.
+func (m *MockClientInterface) GetBindingServiceBinding(name string) (v1alpha10.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindingServiceBinding", name)
+	ret0, _ := ret[0].(v1alpha10.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindingServiceBinding indicates an expected call of GetBindingServiceBinding.
+func (mr *MockClientInterfaceMockRecorder) GetBindingServiceBinding(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetBindingServiceBinding), name)
 }
 
 // GetCSVWithCR mocks base method.
@@ -853,6 +869,21 @@ func (m *MockClientInterface) GetServerVersion(timeout time.Duration) (*ServerIn
 func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
+}
+
+// GetSpecServiceBinding mocks base method.
+func (m *MockClientInterface) GetSpecServiceBinding(name string) (v1alpha3.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSpecServiceBinding", name)
+	ret0, _ := ret[0].(v1alpha3.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSpecServiceBinding indicates an expected call of GetSpecServiceBinding.
+func (mr *MockClientInterfaceMockRecorder) GetSpecServiceBinding(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpecServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetSpecServiceBinding), name)
 }
 
 // IsCSVSupported mocks base method.

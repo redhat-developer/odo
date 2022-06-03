@@ -1,5 +1,5 @@
 ---
-title: odo describe
+title: odo describe component
 ---
 
 `odo describe component` command is useful for getting information about a component managed by `odo`. 

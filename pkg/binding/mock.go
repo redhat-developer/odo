@@ -9,6 +9,7 @@ import (
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
+	api "github.com/redhat-developer/odo/pkg/api"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -78,6 +79,36 @@ func (m *MockClient) AskBindingName(serviceName, componentName string, flags map
 func (mr *MockClientMockRecorder) AskBindingName(serviceName, componentName, flags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockClient)(nil).AskBindingName), serviceName, componentName, flags)
+}
+
+// GetBinding mocks base method.
+func (m *MockClient) GetBinding(name string) (api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBinding", name)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBinding indicates an expected call of GetBinding.
+func (mr *MockClientMockRecorder) GetBinding(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBinding", reflect.TypeOf((*MockClient)(nil).GetBinding), name)
+}
+
+// GetBindingsFromDevfile mocks base method.
+func (m *MockClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindingsFromDevfile", devfileObj, context)
+	ret0, _ := ret[0].([]api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindingsFromDevfile indicates an expected call of GetBindingsFromDevfile.
+func (mr *MockClientMockRecorder) GetBindingsFromDevfile(devfileObj, context interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingsFromDevfile", reflect.TypeOf((*MockClient)(nil).GetBindingsFromDevfile), devfileObj, context)
 }
 
 // GetFlags mocks base method.

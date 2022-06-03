@@ -10,7 +10,7 @@ import (
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
-var _ = Describe("odo describe command tests", func() {
+var _ = Describe("odo describe component command tests", func() {
 	var commonVar helper.CommonVar
 	var cmpName string
 

@@ -200,8 +200,8 @@ func (c *Client) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTM
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
 
-func (c *Client) ConvertUnstructuredToResource(u map[string]interface{}, obj interface{}) error {
-	return runtime.DefaultUnstructuredConverter.FromUnstructured(u, obj)
+func (c *Client) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), obj)
 }
 
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)

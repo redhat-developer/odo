@@ -16,7 +16,8 @@ func NewCmdDescribe(name, fullName string) *cobra.Command {
 	}
 
 	componentCmd := NewCmdComponent(ComponentRecommendedCommandName, util.GetFullName(fullName, ComponentRecommendedCommandName))
-	describeCmd.AddCommand(componentCmd)
+	bindingCmd := NewCmdBinding(BindingRecommendedCommandName, util.GetFullName(fullName, BindingRecommendedCommandName))
+	describeCmd.AddCommand(componentCmd, bindingCmd)
 	describeCmd.Annotations = map[string]string{"command": "main"}
 	describeCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
