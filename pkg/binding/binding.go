@@ -220,9 +220,9 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 	return result, nil
 }
 
-// GetBinding returns the ServiceBinding retource with the given name
+// GetBindingFromCluster returns the ServiceBinding resource with the given name
 // from the cluster, from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
-func (o *BindingClient) GetBinding(name string) (api.ServiceBinding, error) {
+func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, error) {
 
 	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err == nil {
@@ -275,8 +275,8 @@ func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingSt
 		return nil, err
 	}
 
+	bindings := make([]string, 0, len(secret.Data))
 	if bindingSB.Spec.BindAsFiles {
-		bindings := make([]string, 0, len(secret.Data))
 		for k := range secret.Data {
 			bindingName := filepath.ToSlash(filepath.Join("${SERVICE_BINDING_ROOT}", name, k))
 			bindings = append(bindings, bindingName)
@@ -286,7 +286,6 @@ func (o *BindingClient) getStatusFromBinding(name string) (*api.ServiceBindingSt
 		}, nil
 	}
 
-	bindings := make([]string, 0, len(secret.Data))
 	for k := range secret.Data {
 		bindings = append(bindings, k)
 	}

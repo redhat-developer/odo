@@ -25,7 +25,7 @@ var describeBindingExample = ktemplates.Examples(`
 # Describe the bindings in the current devfile
 %[1]s
 
-# Describe a binding in the cluster
+# Describe a binding on the cluster
 %[1]s --name frontend
 `)
 
@@ -75,7 +75,7 @@ func (o *BindingOptions) Validate() (err error) {
 }
 
 func (o *BindingOptions) Run(ctx context.Context) error {
-	if len(o.nameFlag) == 0 {
+	if o.nameFlag == "" {
 		bindings, err := o.runWithoutName()
 		if err != nil {
 			return err
@@ -94,7 +94,7 @@ func (o *BindingOptions) Run(ctx context.Context) error {
 
 // Run contains the logic for the odo command
 func (o *BindingOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	if len(o.nameFlag) == 0 {
+	if o.nameFlag == "" {
 		return o.runWithoutName()
 	}
 	return o.runWithName()
@@ -105,7 +105,7 @@ func (o *BindingOptions) runWithoutName() ([]api.ServiceBinding, error) {
 }
 
 func (o *BindingOptions) runWithName() (api.ServiceBinding, error) {
-	return o.clientset.BindingClient.GetBinding(o.nameFlag)
+	return o.clientset.BindingClient.GetBindingFromCluster(o.nameFlag)
 }
 
 // NewCmdBinding implements the binding odo sub-command
