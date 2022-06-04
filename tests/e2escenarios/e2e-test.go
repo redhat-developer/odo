@@ -74,20 +74,19 @@ var _ = Describe("E2E Test", func() {
 
 			// "execute odo dev and add changes to application"
 			var devSession helper.DevSession
-			var outContents []byte
 			var ports map[string]string
 
-			devSession, outContents, _, ports, err = helper.StartDevMode()
+			devSession, _, _, ports, err = helper.StartDevMode()
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
-			helper.MatchAllInOutput(string(outContents), []string{"Watching for changes in the current directory"})
+			devSession.WaitSync()
 
 			// "should update the changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
 
 			// "changes are made made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			helper.MatchAllInOutput(string(outContents), []string{"Watching for changes in the current directory"})
+			devSession.WaitSync()
 
 			// "should deploy new changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
@@ -99,6 +98,14 @@ var _ = Describe("E2E Test", func() {
 			// "exit dev mode and run odo deploy"
 			devSession.Stop()
 			devSession.WaitEnd()
+
+			// all resources should be deleted from the namespace
+			services := commonVar.CliRunner.GetServices(commonVar.Project)
+			Expect(services).To(BeEmpty())
+			pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+			Expect(pvcs).To(BeEmpty())
+			pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+			Expect(pods).To(BeEmpty())
 
 			// "run odo deploy"
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
@@ -113,12 +120,12 @@ var _ = Describe("E2E Test", func() {
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
 
 			// start dev mode again
-			devSession, outContents, _, ports, err = helper.StartDevMode()
+			devSession, _, _, ports, err = helper.StartDevMode()
 			Expect(err).ToNot(HaveOccurred())
 
 			// making changes to the project again
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
-			helper.MatchAllInOutput(string(outContents), []string{"Watching for changes in the current directory"})
+			devSession.WaitSync()
 
 			// "should update the changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
@@ -186,14 +193,13 @@ var _ = Describe("E2E Test", func() {
 
 			// "execute odo dev and add changes to application"
 			var devSession helper.DevSession
-			var outContents []byte
 			var ports map[string]string
 
-			devSession, outContents, _, ports, err = helper.StartDevMode()
+			devSession, _, _, ports, err = helper.StartDevMode()
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
 
-			helper.MatchAllInOutput(string(outContents), []string{"Watching for changes in the current directory"})
+			devSession.WaitSync()
 			// "should update the changes"
 
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
@@ -201,7 +207,7 @@ var _ = Describe("E2E Test", func() {
 			// "changes are made made to the applications"
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			helper.MatchAllInOutput(string(outContents), []string{"Watching for changes in the current directory"})
+			devSession.WaitSync()
 
 			// "should deploy new changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
@@ -214,7 +220,15 @@ var _ = Describe("E2E Test", func() {
 			devSession.Stop()
 			devSession.WaitEnd()
 
-			// // "run odo deploy"
+			// all resources should be deleted from the namespace
+			services := commonVar.CliRunner.GetServices(commonVar.Project)
+			Expect(services).To(BeEmpty())
+			pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+			Expect(pvcs).To(BeEmpty())
+			pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+			Expect(pods).To(BeEmpty())
+
+			// "run odo deploy"
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), path.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "nodejs-prj1-api-abhz", componentName)
 			stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
