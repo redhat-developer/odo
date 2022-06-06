@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -14,20 +13,9 @@ var _ = Describe("odo remove binding command tests", func() {
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
-		if helper.IsKubernetesCluster() {
-			Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
-		}
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
-		// Ensure that the operators are installed
-		commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
-		commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
-		Eventually(func() string {
-			out, _ := commonVar.CliRunner.GetBindableKinds()
-			return out
-		}, 120, 3).Should(ContainSubstring("Cluster"))
-		addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
-		Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+		// Note: We do not add any operators here because `odo remove binding` is simply about removing the ServiceBinding from devfile.
 	})
 
 	// This is run after every Spec (It)
@@ -35,11 +23,9 @@ var _ = Describe("odo remove binding command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 	When("the component with binding is bootstrapped", func() {
-		var bindingName string
+		var bindingName = "my-nodejs-app-cluster-sample" // Hard coded from the devfile-with-service-binding-files.yaml
 		BeforeEach(func() {
-			helper.Cmd("odo", "init", "--name", "mynode", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml"), "--starter", "nodejs-starter").ShouldPass()
-			bindingName = fmt.Sprintf("binding-%s", helper.RandString(4))
-			helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-sample").ShouldPass()
+			helper.Cmd("odo", "init", "--name", "mynode", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"), "--starter", "nodejs-starter").ShouldPass()
 		})
 
 		When("removing the binding", func() {
