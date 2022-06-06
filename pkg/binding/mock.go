@@ -49,18 +49,63 @@ func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlags", reflect.TypeOf((*MockClient)(nil).GetFlags), flags)
 }
 
-// Validate mocks base method
-func (m *MockClient) Validate(flags map[string]string) error {
+// GetServiceInstances mocks base method
+func (m *MockClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags)
+	ret := m.ctrl.Call(m, "GetServiceInstances")
+	ret0, _ := ret[0].(map[string]unstructured.Unstructured)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceInstances indicates an expected call of GetServiceInstances
+func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
+}
+
+// GetBindingsFromDevfile mocks base method
+func (m *MockClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindingsFromDevfile", devfileObj, context)
+	ret0, _ := ret[0].([]api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindingsFromDevfile indicates an expected call of GetBindingsFromDevfile
+func (mr *MockClientMockRecorder) GetBindingsFromDevfile(devfileObj, context interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingsFromDevfile", reflect.TypeOf((*MockClient)(nil).GetBindingsFromDevfile), devfileObj, context)
+}
+
+// GetBindingFromCluster mocks base method
+func (m *MockClient) GetBindingFromCluster(name string) (api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindingFromCluster", name)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindingFromCluster indicates an expected call of GetBindingFromCluster
+func (mr *MockClientMockRecorder) GetBindingFromCluster(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingFromCluster", reflect.TypeOf((*MockClient)(nil).GetBindingFromCluster), name)
+}
+
+// ValidateAddBinding mocks base method
+func (m *MockClient) ValidateAddBinding(flags map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateAddBinding", flags)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Validate indicates an expected call of Validate
-func (mr *MockClientMockRecorder) Validate(flags interface{}) *gomock.Call {
+// ValidateAddBinding indicates an expected call of ValidateAddBinding
+func (mr *MockClientMockRecorder) ValidateAddBinding(flags interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockClient)(nil).Validate), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAddBinding", reflect.TypeOf((*MockClient)(nil).ValidateAddBinding), flags)
 }
 
 // SelectServiceInstance mocks base method
@@ -121,51 +166,6 @@ func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructur
 func (mr *MockClientMockRecorder) AddBinding(bindingName, bindAsFiles, unstructuredService, obj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), bindingName, bindAsFiles, unstructuredService, obj)
-}
-
-// GetServiceInstances mocks base method
-func (m *MockClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServiceInstances")
-	ret0, _ := ret[0].(map[string]unstructured.Unstructured)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetServiceInstances indicates an expected call of GetServiceInstances
-func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
-}
-
-// GetBindingsFromDevfile mocks base method
-func (m *MockClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBindingsFromDevfile", devfileObj, context)
-	ret0, _ := ret[0].([]api.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBindingsFromDevfile indicates an expected call of GetBindingsFromDevfile
-func (mr *MockClientMockRecorder) GetBindingsFromDevfile(devfileObj, context interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingsFromDevfile", reflect.TypeOf((*MockClient)(nil).GetBindingsFromDevfile), devfileObj, context)
-}
-
-// GetBindingFromCluster mocks base method
-func (m *MockClient) GetBindingFromCluster(name string) (api.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBindingFromCluster", name)
-	ret0, _ := ret[0].(api.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBindingFromCluster indicates an expected call of GetBindingFromCluster
-func (mr *MockClientMockRecorder) GetBindingFromCluster(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingFromCluster", reflect.TypeOf((*MockClient)(nil).GetBindingFromCluster), name)
 }
 
 // ValidateRemoveBinding mocks base method

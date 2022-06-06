@@ -10,6 +10,8 @@ import (
 type Client interface {
 	// GetFlags gets the necessary flags for binding
 	GetFlags(flags map[string]string) map[string]string
+	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
+	GetServiceInstances() (map[string]unstructured.Unstructured, error)
 	// GetBindingsFromDevfile returns the bindings defined in the devfile with the status extracted from cluster
 	GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error)
 	// GetBindingFromCluster returns information about a binding in the cluster (either from group binding.operators.coreos.com or servicebinding.io)
@@ -27,8 +29,6 @@ type Client interface {
 	AskBindAsFiles(flags map[string]string) (bool, error)
 	// AddBinding adds the ServiceBinding manifest to the devfile
 	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
-	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
-	GetServiceInstances() (map[string]unstructured.Unstructured, error)
 
 	// remove_binding.go
 

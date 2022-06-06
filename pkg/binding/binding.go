@@ -56,6 +56,39 @@ func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 	return bindingFlags
 }
 
+func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
+	// Get the BindableKinds/bindable-kinds object
+	bindableKind, err := o.kubernetesClient.GetBindableKinds()
+	if err != nil {
+		return nil, err
+	}
+
+	// get a list of restMappings of all the GVKs present in bindableKind's Status
+	bindableKindRestMappings, err := o.kubernetesClient.GetBindableKindStatusRestMapping(bindableKind.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	var bindableObjectMap = map[string]unstructured.Unstructured{}
+	for _, restMapping := range bindableKindRestMappings {
+		// TODO: Debug into why List returns all the versions instead of the GVR version
+		// List all the instances of the restMapping object
+		resources, err := o.kubernetesClient.ListDynamicResources(restMapping.Resource)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, item := range resources.Items {
+			// format: `<name> (<kind>.<group>)`
+			serviceName := fmt.Sprintf("%s (%s.%s)", item.GetName(), item.GetKind(), item.GroupVersionKind().Group)
+			bindableObjectMap[serviceName] = item
+		}
+
+	}
+
+	return bindableObjectMap, nil
+}
+
 // GetBindingsFromDevfile returns all ServiceBinding resources declared as Kubernertes component from a Devfile
 // from group binding.operators.coreos.com/v1alpha1 or servicebinding.io/v1alpha3
 func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error) {
