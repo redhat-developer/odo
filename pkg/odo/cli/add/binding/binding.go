@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -102,11 +101,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		return err
 	}
 
-	componentContext, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	devfileobj, err := o.clientset.BindingClient.AddBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj(), componentContext)
+	devfileobj, err := o.clientset.BindingClient.AddBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return err
 	}

@@ -2,8 +2,9 @@ package binding
 
 import (
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/redhat-developer/odo/pkg/api"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 type Client interface {
@@ -19,7 +20,7 @@ type Client interface {
 	AskBindAsFiles(flags map[string]string) (bool, error)
 
 	// AddBinding adds the ServiceBinding manifest to the devfile
-	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) (parser.DevfileObj, error)
+	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
 	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
 	GetServiceInstances() (map[string]unstructured.Unstructured, error)
 
