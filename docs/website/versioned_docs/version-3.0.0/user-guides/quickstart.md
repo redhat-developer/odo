@@ -459,7 +459,10 @@ $ podman login
 $ docker login
 ```
 
-**NOTE:** If you are running Apple Silicon (M1), you must set your Docker build platform to the cluster you are deploying to.
+In order for `odo deploy` to push your image, your container registry needs to be accessible.
+
+
+**NOTE for MacOS:** If you are running Apple Silicon (M1/M2), you must set your Docker build platform to the cluster you are deploying to.
 
 For example, if you are deploying to `linux/amd64`:
 
