@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -53,7 +54,7 @@ func (o *AlizerOptions) RunForJsonOutput(ctx context.Context) (out interface{}, 
 		return nil, err
 	}
 	result := alizer.GetDevfileLocationFromDetection(df, reg)
-	return result, nil
+	return []api.DevfileLocation{*result}, nil
 }
 
 func NewCmdAlizer(name, fullName string) *cobra.Command {
