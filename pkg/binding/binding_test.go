@@ -10,6 +10,7 @@ import (
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -18,6 +19,14 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 )
+
+var deploymentGVR = appsv1.SchemeGroupVersion.WithResource("deployments")
+var clusterGV = schema.GroupVersion{
+	Group:   "postgresql.k8s.enterprisedb.io",
+	Version: "v1",
+}
+var clusterGVK = clusterGV.WithKind("Cluster")
+var clusterGVR = clusterGV.WithResource("clusters")
 
 func TestBindingClient_GetFlags(t *testing.T) {
 	type args struct {
@@ -247,24 +256,6 @@ func TestBindingClient_AddBinding(t *testing.T) {
 			}
 		})
 	}
-}
-
-var clusterGVK = schema.GroupVersionKind{
-	Group:   "postgresql.k8s.enterprisedb.io",
-	Kind:    "Cluster",
-	Version: "v1",
-}
-
-var clusterGVR = schema.GroupVersionResource{
-	Group:    clusterGVK.Group,
-	Version:  clusterGVK.Version,
-	Resource: "clusters",
-}
-
-var deploymentGVR = metav1.GroupVersionResource{
-	Group:    "apps",
-	Version:  "v1",
-	Resource: "deployments",
 }
 
 func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool) parser.DevfileObj {
