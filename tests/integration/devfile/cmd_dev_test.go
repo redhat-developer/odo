@@ -593,6 +593,74 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
+	When("Starting a PostgreSQL service", func() {
+		BeforeEach(func() {
+			if helper.IsKubernetesCluster() {
+				Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
+			}
+			// Ensure that the operators are installed
+			commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
+			commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
+			Eventually(func() string {
+				out, _ := commonVar.CliRunner.GetBindableKinds()
+				return out
+			}, 120, 3).Should(ContainSubstring("Cluster"))
+			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+		})
+
+		When("creating local files and dir and running odo dev", func() {
+			var newDirPath, newFilePath, stdOut, podName string
+			var session helper.DevSession
+			// from devfile
+			devfileCmpName := "my-nodejs-app"
+			BeforeEach(func() {
+				newFilePath = filepath.Join(commonVar.Context, "foobar.txt")
+				newDirPath = filepath.Join(commonVar.Context, "testdir")
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				// Create a new file that we plan on deleting later...
+				if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
+					fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+				}
+				// Create a new directory
+				helper.MakeDir(newDirPath)
+				var err error
+				session, _, _, _, err = helper.StartDevMode()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should correctly propagate changes to the container", func() {
+
+				// Check to see if it's been pushed (foobar.txt abd directory testdir)
+				podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+
+				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+				helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
+			})
+
+			When("deleting local files and dir and waiting for sync", func() {
+				BeforeEach(func() {
+					// Now we delete the file and dir and push
+					helper.DeleteDir(newFilePath)
+					helper.DeleteDir(newDirPath)
+					_, _, err := session.WaitSync()
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("should not list deleted dir and file in container", func() {
+					podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					// Then check to see if it's truly been deleted
+					stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+					helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
+				})
+			})
+		})
+	})
+
 	When("adding local files to gitignore and running odo dev", func() {
 		var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, stdOut, podName string
 		var session helper.DevSession
