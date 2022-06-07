@@ -49,7 +49,9 @@ func (j GoEnricher) DoEnrichLanguage(language *language.Language, files *[]strin
 		if err != nil {
 			return
 		}
-		language.Tools = []string{goModFile.Go.Version}
+		if goModFile.Go != nil {
+			language.Tools = []string{goModFile.Go.Version}
+		}
 		detectGoFrameworks(language, goModFile)
 	}
 }

@@ -1152,6 +1152,8 @@ github.com/pseudomuto/protokit v0.2.0/go.mod h1:2PdH30hxVHsup8KpBTOXTBeMVhJZVio3
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae h1:N2wsIYtziHQ51GNcJY5YcB0YldpR5BwPoTvby+l0vy8=
 github.com/redhat-developer/alizer/go v0.0.0-20220215154256-33df7feef4ae/go.mod h1:EKkrP0Am7Xt/yg3dF8uH1SSoOcaZmBom8Iy6CJPPDok=
+github.com/redhat-developer/alizer/go v0.0.0-20220530162645-f27a60be88a1 h1:uhf+ll3f7uFvNGBndseVpiGEt6vLiw9vjCg2YH13uk4=
+github.com/redhat-developer/alizer/go v0.0.0-20220530162645-f27a60be88a1/go.mod h1:EKkrP0Am7Xt/yg3dF8uH1SSoOcaZmBom8Iy6CJPPDok=
 github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3 h1:hj+Y8vIzfQzzGx0az0MbIqDcW0+MZMc2rht8LuKt8uA=
 github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3/go.mod h1:pODWh91lgIyjf2n9ZqWYb1EBrLTmvKnjusKw0eG4vcE=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
