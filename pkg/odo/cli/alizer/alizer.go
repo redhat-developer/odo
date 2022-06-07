@@ -72,6 +72,6 @@ func NewCmdAlizer(name, fullName string) *cobra.Command {
 	clientset.Add(alizerCmd, clientset.ALIZER)
 	machineoutput.UsedByCommand(alizerCmd)
 	alizerCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	alizerCmd.Annotations["command"] = "gui"
+	alizerCmd.Annotations["command"] = "utility"
 	return alizerCmd
 }
