@@ -1294,3 +1294,23 @@ Test your application by visiting the `DOMAIN_NAME` variable that you had set in
 
   </TabItem>
 </Tabs>
+
+#### (OPTIONAL) 4. Delete the resources
+
+After testing your application, you may optionally undeploy using the `odo delete component` command:
+
+```console
+odo delete component
+Searching resources to delete, please wait...
+This will delete "my-app" from the namespace "default".
+ •  The component contains the following resources that will get deleted:
+        - Deployment: my-app
+        - Service: my-app
+        - Ingress: my-app
+? Are you sure you want to delete "my-app" and all its resources? Yes
+The component "my-app" is successfully deleted from namespace "default"
+ •  There are still resources left in the cluster that might be belonging to the deleted component.
+        - Endpoints: svc
+        - Service: svc
+If you want to delete those, execute `odo delete component --name my-app --namespace default`
+```
