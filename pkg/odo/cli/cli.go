@@ -72,7 +72,7 @@ OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "openshift"}}
   {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}
 
 Utility Commands:{{range .Commands}}{{if eq .Annotations.command "utility" }}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableLocalFlags}}
 
 Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace }}{{end}}{{ if .HasAvailableInheritedFlags}}
