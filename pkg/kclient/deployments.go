@@ -7,14 +7,16 @@ import (
 	"fmt"
 	"time"
 
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
 )
@@ -290,22 +292,22 @@ func (c *Client) removeDuplicateEnv(deploymentName string) error {
 
 // GetDeploymentAPIVersion returns a map with Group, Version, Resource information of Deployment objects
 // depending on the GVR supported by the cluster
-func (c *Client) GetDeploymentAPIVersion() (metav1.GroupVersionResource, error) {
+func (c *Client) GetDeploymentAPIVersion() (schema.GroupVersionResource, error) {
 	extV1Beta1, err := c.IsDeploymentExtensionsV1Beta1()
 	if err != nil {
-		return metav1.GroupVersionResource{}, err
+		return schema.GroupVersionResource{}, err
 	}
 
 	if extV1Beta1 {
 		// this indicates we're running on OCP 3.11 cluster
-		return metav1.GroupVersionResource{
+		return schema.GroupVersionResource{
 			Group:    "extensions",
 			Version:  "v1beta1",
 			Resource: "deployments",
 		}, nil
 	}
 
-	return metav1.GroupVersionResource{
+	return schema.GroupVersionResource{
 		Group:    "apps",
 		Version:  "v1",
 		Resource: "deployments",
