@@ -71,7 +71,7 @@ func (o *AddBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (er
 }
 
 func (o *AddBindingOptions) Validate() (err error) {
-	return o.clientset.BindingClient.Validate(o.flags)
+	return o.clientset.BindingClient.ValidateAddBinding(o.flags)
 }
 
 func (o *AddBindingOptions) Run(_ context.Context) error {
