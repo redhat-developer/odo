@@ -50,7 +50,7 @@ var _ = Describe("E2E Test", func() {
 			getSVCArgs := []string{"get", "svc", "-n", commonVar.Project}
 
 			command := []string{"odo", "init"}
-			output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
 				helper.ExpectString(ctx, "Select language")
 				helper.SendLine(ctx, "javascript")
@@ -68,7 +68,6 @@ var _ = Describe("E2E Test", func() {
 
 			})
 			Expect(err).To(BeNil())
-			Expect(output).To(ContainSubstring("Your new component '" + componentName + "' is ready in the current directory"))
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("server.js"))
 
@@ -84,7 +83,7 @@ var _ = Describe("E2E Test", func() {
 			// "should update the changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
 
-			// "changes are made made to the applications"
+			// "changes are made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
 			_, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
@@ -166,7 +165,7 @@ var _ = Describe("E2E Test", func() {
 			getSVCArgs := []string{"get", "svc", "-n", commonVar.Project}
 
 			command := []string{"odo", "init"}
-			output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
 				// helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
 				helper.ExpectString(ctx, "Language: javascript")
@@ -187,7 +186,6 @@ var _ = Describe("E2E Test", func() {
 
 			})
 			Expect(err).To(BeNil())
-			Expect(output).To(ContainSubstring("Your new component '" + componentName + "' is ready in the current directory"))
 			Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElement("devfile.yaml"))
 
 			// "execute odo dev and add changes to application"
