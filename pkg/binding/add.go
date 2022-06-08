@@ -55,7 +55,7 @@ func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
 	return backend.AskBindAsFiles(flags)
 }
 
-func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj, componentContext string) (parser.DevfileObj, error) {
+func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error) {
 	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
 	if err != nil {
 		return obj, err
