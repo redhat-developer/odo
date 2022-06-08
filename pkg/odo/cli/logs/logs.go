@@ -142,7 +142,7 @@ func NewCmdLogs(name, fullname string) *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   name,
 		Short: "Show logs of all containers of the component",
-		Long: `odo logs shows logs of all containers of the component, whether they are running in Dev mode or Deploy mode.
+		Long: `odo logs shows logs of all containers of the component running in the Dev mode.
 It prefixes each log message with the container name.`,
 		Example: fmt.Sprintf(logsExample, fullname),
 		Args:    cobra.MaximumNArgs(0),
