@@ -549,7 +549,7 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			fakeClient.Namespace = "project-0"
 
 			a := Adapter{
-				Client: fakeClient,
+				kubeClient: fakeClient,
 				AdapterContext: adaptersCommon.AdapterContext{
 					ComponentName: tt.fields.componentName,
 					AppName:       tt.fields.appName,

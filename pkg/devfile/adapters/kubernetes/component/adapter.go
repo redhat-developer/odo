@@ -37,9 +37,9 @@ import (
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
+func New(adapterContext common.AdapterContext, kubeClient kclient.ClientInterface, prefClient preference.Client) Adapter {
 	return Adapter{
-		Client:         client,
+		kubeClient:     kubeClient,
 		prefClient:     prefClient,
 		AdapterContext: adapterContext,
 		logger:         machineoutput.NewMachineEventLoggingClient(),
@@ -53,7 +53,7 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		pod, err := a.Client.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, time.Duration(a.prefClient.GetPushTimeout())*time.Second)
+		pod, err := a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, time.Duration(a.prefClient.GetPushTimeout())*time.Second)
 		if err != nil {
 			return nil, fmt.Errorf("error while waiting for pod %s: %w", podSelector, err)
 		}
@@ -75,7 +75,7 @@ func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
-	Client     kclient.ClientInterface
+	kubeClient kclient.ClientInterface
 	prefClient preference.Client
 
 	common.AdapterContext
@@ -97,7 +97,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
 	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
 	selectorLabels := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
-	a.deployment, err = a.Client.GetOneDeploymentFromSelector(selectorLabels)
+	a.deployment, err = a.kubeClient.GetOneDeploymentFromSelector(selectorLabels)
 
 	if err != nil {
 		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
@@ -117,7 +117,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// If the component already exists, retrieve the pod's name before it's potentially updated
 	if componentExists {
 		// First see if the component does have a pod. it could have been scaled down to zero
-		_, err = a.Client.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
+		_, err = a.kubeClient.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
 		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
 		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
 		if err == nil {
@@ -178,13 +178,13 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = service.ValidateResourcesExist(a.Client, a.Devfile, k8sComponents, a.Context)
+	err = service.ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
 	if err != nil {
 		return err
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.Client, a.Devfile, k8sComponents, labels, annotations, a.Context)
+	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context)
 	if err != nil {
 		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
@@ -195,7 +195,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 
-	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
+	a.deployment, err = a.kubeClient.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
 		return fmt.Errorf("error while waiting for deployment rollout: %w", err)
 	}
@@ -207,7 +207,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// list the latest state of the PVCs
-	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
 	if err != nil {
 		return err
 	}
@@ -218,8 +218,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
 			continue
 		}
-		err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-			return a.Client.UpdateStorageOwnerReference(&pvcs[i], ownerRef)
+		err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+			return a.kubeClient.UpdateStorageOwnerReference(&pvcs[i], ownerRef)
 		})
 		if err != nil {
 			return err
@@ -227,27 +227,27 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Update all services with owner references
-	err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-		return service.UpdateServicesWithOwnerReferences(a.Client, a.Devfile, k8sComponents, ownerRef, a.Context)
+	err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+		return service.UpdateServicesWithOwnerReferences(a.kubeClient, a.Devfile, k8sComponents, ownerRef, a.Context)
 	})
 	if err != nil {
 		return err
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushLinks(a.Client, a.Devfile, k8sComponents, labels, a.deployment, a.Context)
+	needRestart, err := service.PushLinks(a.kubeClient, a.Devfile, k8sComponents, labels, a.deployment, a.Context)
 	if err != nil {
 		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	if needRestart {
-		err = a.Client.WaitForPodDeletion(pod.Name)
+		err = a.kubeClient.WaitForPodDeletion(pod.Name)
 		if err != nil {
 			return err
 		}
 	}
 
-	a.deployment, err = a.Client.WaitForDeploymentRollout(a.deployment.Name)
+	a.deployment, err = a.kubeClient.WaitForDeploymentRollout(a.deployment.Name)
 	if err != nil {
 		return fmt.Errorf("failed to update config to component deployed: %w", err)
 	}
@@ -275,7 +275,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	s = log.Spinner("Syncing files into the container")
 	defer s.End(false)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(a.AdapterContext, &a, a.Client)
+	syncAdapter := sync.New(a.AdapterContext, &a, a.kubeClient)
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
@@ -298,7 +298,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
-		err = libdevfile.ExecPostStartEvents(a.Devfile, component.NewExecHandler(a.Client, a.pod.Name, parameters.Show))
+		err = libdevfile.ExecPostStartEvents(a.Devfile, component.NewExecHandler(a.kubeClient, a.pod.Name, parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -341,12 +341,12 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	componentName := a.ComponentName
 
 	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
-		Client:              a.Client,
+		Client:              a.kubeClient,
 		LocalConfigProvider: &ei,
 	})
 
 	// handle the ephemeral storage
-	err = storage.HandleEphemeralStorage(a.Client, storageClient, componentName, isMainStorageEphemeral)
+	err = storage.HandleEphemeralStorage(a.kubeClient, storageClient, componentName, isMainStorageEphemeral)
 	if err != nil {
 		return err
 	}
@@ -393,7 +393,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	}
 
 	// list all the pvcs for the component
-	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
+	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
 	if err != nil {
 		return err
 	}
@@ -461,7 +461,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if err != nil {
 		return err
 	}
-	serviceObjectMeta := generator.GetObjectMeta(serviceName, a.Client.GetCurrentNamespace(), labels, serviceAnnotations)
+	serviceObjectMeta := generator.GetObjectMeta(serviceName, a.kubeClient.GetCurrentNamespace(), labels, serviceAnnotations)
 	serviceParams := generator.ServiceParams{
 		ObjectMeta:     serviceObjectMeta,
 		SelectorLabels: selectorLabels,
@@ -476,12 +476,12 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(2).Info("The component already exists, attempting to update it")
-		if a.Client.IsSSASupported() {
+		if a.kubeClient.IsSSASupported() {
 			klog.V(4).Info("Applying deployment")
-			a.deployment, err = a.Client.ApplyDeployment(*deployment)
+			a.deployment, err = a.kubeClient.ApplyDeployment(*deployment)
 		} else {
 			klog.V(4).Info("Updating deployment")
-			a.deployment, err = a.Client.UpdateDeployment(*deployment)
+			a.deployment, err = a.kubeClient.UpdateDeployment(*deployment)
 		}
 		if err != nil {
 			return err
@@ -492,10 +492,10 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 			return err
 		}
 	} else {
-		if a.Client.IsSSASupported() {
-			a.deployment, err = a.Client.ApplyDeployment(*deployment)
+		if a.kubeClient.IsSSASupported() {
+			a.deployment, err = a.kubeClient.ApplyDeployment(*deployment)
 		} else {
-			a.deployment, err = a.Client.CreateDeployment(*deployment)
+			a.deployment, err = a.kubeClient.CreateDeployment(*deployment)
 		}
 
 		if err != nil {
@@ -506,9 +506,9 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		if len(svc.Spec.Ports) > 0 {
 			ownerReference := generator.GetOwnerReference(a.deployment)
 			originOwnerRefs := svc.OwnerReferences
-			err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+			err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
 				svc.OwnerReferences = append(originOwnerRefs, ownerRef)
-				_, err = a.Client.CreateService(*svc)
+				_, err = a.kubeClient.CreateService(*svc)
 				return err
 			})
 			if err != nil {
@@ -523,15 +523,15 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 }
 
 func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string) error {
-	oldSvc, err := a.Client.GetOneService(a.ComponentName, a.AppName)
+	oldSvc, err := a.kubeClient.GetOneService(a.ComponentName, a.AppName)
 	originOwnerReferences := svc.OwnerReferences
 	ownerReference := generator.GetOwnerReference(a.deployment)
 	if err != nil {
 		// no old service was found, create a new one
 		if len(svc.Spec.Ports) > 0 {
-			err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+			err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
 				svc.OwnerReferences = append(originOwnerReferences, ownerRef)
-				_, err = a.Client.CreateService(*svc)
+				_, err = a.kubeClient.CreateService(*svc)
 				return err
 			})
 			if err != nil {
@@ -544,9 +544,9 @@ func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, compone
 	if len(svc.Spec.Ports) > 0 {
 		svc.Spec.ClusterIP = oldSvc.Spec.ClusterIP
 		svc.ResourceVersion = oldSvc.GetResourceVersion()
-		err = a.Client.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+		err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
 			svc.OwnerReferences = append(originOwnerReferences, ownerRef)
-			_, err = a.Client.UpdateService(*svc)
+			_, err = a.kubeClient.UpdateService(*svc)
 			return err
 		})
 		if err != nil {
@@ -556,20 +556,20 @@ func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, compone
 		return nil
 	}
 	// delete the old existing service if the component currently doesn't expose any ports
-	return a.Client.DeleteService(oldSvc.Name)
+	return a.kubeClient.DeleteService(oldSvc.Name)
 }
 
 // generateDeploymentObjectMeta generates a ObjectMeta object for the given deployment's name, labels and annotations
 // if no deployment exists, it creates a new deployment name
 func (a Adapter) generateDeploymentObjectMeta(labels map[string]string, annotations map[string]string) (metav1.ObjectMeta, error) {
 	if a.deployment != nil {
-		return generator.GetObjectMeta(a.deployment.Name, a.Client.GetCurrentNamespace(), labels, annotations), nil
+		return generator.GetObjectMeta(a.deployment.Name, a.kubeClient.GetCurrentNamespace(), labels, annotations), nil
 	} else {
 		deploymentName, err := util.NamespaceKubernetesObject(a.ComponentName, a.AppName)
 		if err != nil {
 			return metav1.ObjectMeta{}, err
 		}
-		return generator.GetObjectMeta(deploymentName, a.Client.GetCurrentNamespace(), labels, annotations), nil
+		return generator.GetObjectMeta(deploymentName, a.kubeClient.GetCurrentNamespace(), labels, annotations), nil
 	}
 }
 
@@ -592,5 +592,5 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
 func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
-	return a.Client.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
+	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }

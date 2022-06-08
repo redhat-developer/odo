@@ -43,7 +43,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	}
 
 	doExecuteBuildCommand := func() error {
-		return libdevfile.Build(a.Devfile, component.NewExecHandler(a.Client, a.pod.Name, a.parameters.Show), true)
+		return libdevfile.Build(a.Devfile, component.NewExecHandler(a.kubeClient, a.pod.Name, a.parameters.Show), true)
 	}
 
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
@@ -62,12 +62,12 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			_, _, err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.Client, a.pod.Name, devfileCmd.Exec.Component)
+			_, _, err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
 			if err != nil {
 				return err
 			}
 
-			_, _, err = remoteProcessHandler.StartProcessForCommand(devfileCmd, a.Client, a.pod.Name, devfileCmd.Exec.Component)
+			_, _, err = remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
 			if err != nil {
 				return err
 			}
@@ -79,7 +79,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 			return err
 		}
 
-		_, _, err := remoteProcessHandler.StartProcessForCommand(devfileCmd, a.Client, a.pod.Name, devfileCmd.Exec.Component)
+		_, _, err := remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
 		if err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 // isRemoteProcessForCommandRunning returns true if the command is running
 func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Command) (bool, error) {
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
-	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(command, a.Client, a.pod.Name, command.Exec.Component)
+	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(command, a.kubeClient, a.pod.Name, command.Exec.Component)
 	if err != nil {
 		return false, err
 	}
@@ -114,7 +114,7 @@ func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command) err
 	if !running {
 		log.Warningf("Devfile command %q exited with an error status in %.0f sec", command.Id, _processStatusWaitTime.Seconds())
 
-		rd, err := component.Log(a.Client, a.ComponentName, a.AppName, false, command)
+		rd, err := component.Log(a.kubeClient, a.ComponentName, a.AppName, false, command)
 		if err != nil {
 			return err
 		}
