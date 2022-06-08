@@ -10,14 +10,17 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, client SyncClient) Adapter {
+func New(adapterContext common.AdapterContext, client SyncClient, kclient kclient.ClientInterface) Adapter {
 	return Adapter{
+		kClient:        kclient,
 		Client:         client,
 		AdapterContext: adapterContext,
 	}
@@ -25,7 +28,8 @@ func New(adapterContext common.AdapterContext, client SyncClient) Adapter {
 
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
-	Client SyncClient
+	kClient kclient.ClientInterface
+	Client  SyncClient
 	common.AdapterContext
 }
 
@@ -184,7 +188,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = common.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
+		_, _, err = remotecmd.Execute(a.kClient, compInfo.PodName, compInfo.ContainerName, false, cmdArr...)
 		if err != nil {
 			return err
 		}
@@ -193,7 +197,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = common.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
+		_, _, err = remotecmd.Execute(a.kClient, compInfo.PodName, compInfo.ContainerName, false, cmdArr...)
 		if err != nil {
 			return err
 		}

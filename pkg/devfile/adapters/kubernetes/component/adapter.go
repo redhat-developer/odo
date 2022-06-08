@@ -293,7 +293,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	s = log.Spinner("Syncing files into the container")
 	defer s.End(false)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(a.AdapterContext, &a)
+	syncAdapter := sync.New(a.AdapterContext, &a, a.Client)
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
