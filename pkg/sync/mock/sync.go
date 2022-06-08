@@ -35,20 +35,6 @@ func (m *MockSyncClient) EXPECT() *MockSyncClientMockRecorder {
 	return m.recorder
 }
 
-// ExecCMDInContainer mocks base method
-func (m *MockSyncClient) ExecCMDInContainer(arg0 common.ComponentInfo, arg1 []string, arg2, arg3 io.Writer, arg4 io.Reader, arg5 bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecCMDInContainer", arg0, arg1, arg2, arg3, arg4, arg5)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ExecCMDInContainer indicates an expected call of ExecCMDInContainer
-func (mr *MockSyncClientMockRecorder) ExecCMDInContainer(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecCMDInContainer", reflect.TypeOf((*MockSyncClient)(nil).ExecCMDInContainer), arg0, arg1, arg2, arg3, arg4, arg5)
-}
-
 // ExtractProjectToComponent mocks base method
 func (m *MockSyncClient) ExtractProjectToComponent(arg0 common.ComponentInfo, arg1 string, arg2 io.Reader) error {
 	m.ctrl.T.Helper()

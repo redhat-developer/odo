@@ -6,14 +6,15 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
-	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/labels"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/labels"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
 // kubernetesClient contains information required for devfile based Storage operations
@@ -116,7 +117,7 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 			// and the source volume mount
 			_, initOK := initContainerVolumeMounts[volumeMount.Name]
 			_, ok := containerVolumeMounts[volumeMount.Name]
-			if (!ok && initOK) || volumeMount.Name == OdoSourceVolume || volumeMount.Name == OdoSupervisordVolume {
+			if (!ok && initOK) || volumeMount.Name == OdoSourceVolume || volumeMount.Name == SharedDataVolumeName {
 				continue
 			}
 

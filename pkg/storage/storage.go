@@ -3,19 +3,23 @@ package storage
 import (
 	"fmt"
 
+	v1 "k8s.io/api/apps/v1"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
-	v1 "k8s.io/api/apps/v1"
 )
 
 const (
 	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
 	OdoSourceVolume = "odo-projects"
 
-	// OdoSupervisordVolume is the constant containing the name of the emptyDir volume containing Supervisord shared data
-	OdoSupervisordVolume = "odo-supervisord-shared-data"
+	// SharedDataVolumeName is the constant containing the name of the emptyDir volume containing shared data for odo
+	SharedDataVolumeName = "odo-shared-data"
+
+	// SharedDataMountPath The Mount Path for the container mounting the odo volume
+	SharedDataMountPath = "/opt/odo/"
 
 	// OdoSourceVolumeSize specifies size for odo source volume.
 	OdoSourceVolumeSize = "2Gi"

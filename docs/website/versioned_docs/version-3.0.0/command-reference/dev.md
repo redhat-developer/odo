@@ -208,6 +208,9 @@ components:
     mountSources: true
 ```
 
+Note that `odo` will set the container entrypoint to `tail -f /dev/null` if no `command` or `args` fields are explicitly defined for this component in the Devfile.
+This is a temporary workaround that allows `odo` to start non-terminating containers in which the Devfile commands will get executed.
+
 ### Full Example
 
 ```yaml

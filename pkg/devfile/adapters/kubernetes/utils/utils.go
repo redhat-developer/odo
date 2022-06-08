@@ -4,12 +4,13 @@ import (
 	"strconv"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/storage"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
+
+	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
+	"github.com/redhat-developer/odo/pkg/storage"
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
@@ -33,8 +34,8 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 		sourceVolume,
 		{
 			// Create a volume that will be shared between InitContainer and the applicationContainer
-			// in order to pass over the SupervisorD binary
-			Name: adaptersCommon.SupervisordVolumeName,
+			// in order to pass over some files for odo
+			Name: storage.SharedDataVolumeName,
 			VolumeSource: corev1.VolumeSource{
 				EmptyDir: &corev1.EmptyDirVolumeSource{},
 			},
@@ -57,6 +58,9 @@ func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
 
 // AddOdoProjectVolume adds the odo project volume to the containers
 func AddOdoProjectVolume(containers *[]corev1.Container) {
+	if containers == nil {
+		return
+	}
 	for i, container := range *containers {
 		for _, env := range container.Env {
 			if env.Name == adaptersCommon.EnvProjectsRoot {
@@ -70,114 +74,71 @@ func AddOdoProjectVolume(containers *[]corev1.Container) {
 	}
 }
 
-// UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
-// with supervisord if no entrypoint has been specified for the component in the devfile
-func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, containers []corev1.Container, devfileRunCmd string, devfileDebugCmd string, devfileDebugPort int) ([]corev1.Container, error) {
+// AddOdoMandatoryVolume adds the odo mandatory volumes to the containers
+func AddOdoMandatoryVolume(containers *[]corev1.Container) {
+	if containers == nil {
+		return
+	}
+	for i, container := range *containers {
+		klog.V(2).Infof("Updating container %v with mandatory volume mounts", container.Name)
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      storage.SharedDataVolumeName,
+			MountPath: storage.SharedDataMountPath,
+		})
+		(*containers)[i] = container
+	}
+}
 
-	runCommand, err := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
+// UpdateContainersEntrypointsIfNeeded updates the run components entrypoint
+// if no entrypoint has been specified for the component in the devfile
+func UpdateContainersEntrypointsIfNeeded(
+	devfileObj devfileParser.DevfileObj,
+	containers []corev1.Container,
+	devfileRunCmd string,
+	devfileDebugCmd string,
+) ([]corev1.Container, error) {
+	runCommand, err := libdevfile.GetRunCommand(devfileObj.Data, devfileRunCmd)
 	if err != nil {
 		return nil, err
 	}
 
-	debugCommand, err := adaptersCommon.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
+	debugCommand, err := libdevfile.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
 	if err != nil {
 		return nil, err
 	}
 
 	for i := range containers {
 		container := &containers[i]
-		// Check if the container belongs to a run command component
-		if container.Name == runCommand.Exec.Component {
-			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
-			overrideContainerArgs(container)
-
-			// Always mount the supervisord volume in the run component container
-			klog.V(2).Infof("Updating container %v with supervisord volume mounts", container.Name)
-			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-				Name:      adaptersCommon.SupervisordVolumeName,
-				MountPath: adaptersCommon.SupervisordMountPath,
-			})
-
-			// Update the run container's ENV for work dir and command
-			// only if the env var is not set in the devfile
-			// This is done, so supervisord can use it in it's program
-			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
-				klog.V(2).Infof("Updating container %v env with run command", container.Name)
-				var command string
-				setEnvVariable := util.GetCommandStringFromEnvs(runCommand.Exec.Env)
-
-				if setEnvVariable == "" {
-					command = runCommand.Exec.CommandLine
-				} else {
-					command = setEnvVariable + " && " + runCommand.Exec.CommandLine
-				}
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  adaptersCommon.EnvOdoCommandRun,
-						Value: command,
-					})
-			}
-
-			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
-				klog.V(2).Infof("Updating container %v env with run command's workdir", container.Name)
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,
-						Value: runCommand.Exec.WorkingDir,
-					})
-			}
+		n := container.Name
+		if libdevfile.ShouldExecCommandRunOnContainer(runCommand.Exec, n) {
+			overrideContainerCommandAndArgsIfNeeded(container)
 		}
+		if libdevfile.ShouldExecCommandRunOnContainer(debugCommand.Exec, n) {
+			overrideContainerCommandAndArgsIfNeeded(container)
+		}
+	}
+
+	return containers, nil
+
+}
+
+// UpdateContainerEnvVars updates the container environment variables
+func UpdateContainerEnvVars(
+	devfileObj devfileParser.DevfileObj,
+	containers []corev1.Container,
+	devfileDebugCmd string,
+	devfileDebugPort int) ([]corev1.Container, error) {
+
+	debugCommand, err := libdevfile.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range containers {
+		container := &containers[i]
 
 		// Check if the container belongs to a debug command component
-		if debugCommand.Exec != nil && container.Name == debugCommand.Exec.Component {
-			// If the debug component container has no entrypoint and arguments, override the entrypoint with supervisord
-			overrideContainerArgs(container)
-
-			foundMountPath := false
-			for _, mounts := range container.VolumeMounts {
-				if mounts.Name == adaptersCommon.SupervisordVolumeName && mounts.MountPath == adaptersCommon.SupervisordMountPath {
-					foundMountPath = true
-				}
-			}
-
-			if !foundMountPath {
-				// Always mount the supervisord volume in the debug component container
-				klog.V(2).Infof("Updating container %v with supervisord volume mounts", container.Name)
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      adaptersCommon.SupervisordVolumeName,
-					MountPath: adaptersCommon.SupervisordMountPath,
-				})
-			}
-
-			// Update the debug container's ENV for work dir and command
-			// only if the env var is not set in the devfile
-			// This is done, so supervisord can use it in it's program
-			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
-				klog.V(2).Infof("Updating container %v env with debug command", container.Name)
-				var command string
-				setEnvVariable := util.GetCommandStringFromEnvs(debugCommand.Exec.Env)
-
-				if setEnvVariable == "" {
-					command = debugCommand.Exec.CommandLine
-				} else {
-					command = setEnvVariable + " && " + debugCommand.Exec.CommandLine
-				}
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  adaptersCommon.EnvOdoCommandDebug,
-						Value: command,
-					})
-			}
-
-			if debugCommand.Exec.WorkingDir != "" && !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebugWorkingDir) {
-				klog.V(2).Infof("Updating container %v env with debug command's workdir", container.Name)
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  adaptersCommon.EnvOdoCommandDebugWorkingDir,
-						Value: debugCommand.Exec.WorkingDir,
-					})
-			}
-
+		if libdevfile.ShouldExecCommandRunOnContainer(debugCommand.Exec, container.Name) {
 			if !isEnvPresent(container.Env, adaptersCommon.EnvDebugPort) {
 				klog.V(2).Infof("Updating container %v env with debug command's debugPort", container.Name)
 				container.Env = append(container.Env,
@@ -186,8 +147,8 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 						Value: strconv.Itoa(devfileDebugPort),
 					})
 			} else {
-				// if the env has the debug port but if its value is different then we change it
-				// this way the value of env info is given more importance then whats there on the devfile
+				// if the env has the debug port but if its value is different, then we change it.
+				// this way, the value of env info is given more importance over what's there on the devfile
 				for i, envVar := range container.Env {
 					if envVar.Name == adaptersCommon.EnvDebugPort {
 						if envVar.ValueFrom == nil && (envVar.Value != strconv.Itoa(devfileDebugPort)) {
@@ -201,22 +162,21 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 	}
 
 	return containers, nil
-
 }
 
-// overrideContainerArgs overrides the container's entrypoint with supervisord
-func overrideContainerArgs(container *corev1.Container) {
-	klog.V(2).Infof("Updating container %v entrypoint with supervisord", container.Name)
-	//TODO(#5620): overriding command and args, irrespective of whether the container had Command or Args defined in it.
-	//   This is a hacky hotfix for https://github.com/redhat-developer/odo/issues/5620. Otherwise,
-	//   odo does not work at all if Devfile container component defines a Command or an Args.
-	//   As suggested in the issue, a proper fix will need to be implemented later on,
-	//   for example by keeping using supervisord as pid1, and executing the command with args "on the side"
-	//   as a separate process.
+// overrideContainerCommandAndArgsIfNeeded overrides the container's entrypoint
+// if the corresponding component does not have any command and/or args in the Devfile.
+// This is a workaround until the default Devfile registry exposes stacks with non-terminating containers.
+func overrideContainerCommandAndArgsIfNeeded(container *corev1.Container) {
 	if len(container.Command) != 0 || len(container.Args) != 0 {
-		klog.V(4).Infof("original command and args for container %v intentionally ignored due to issue #5620",
-			container.Name)
+		return
 	}
-	container.Command = []string{adaptersCommon.SupervisordBinaryPath}
-	container.Args = []string{"-c", adaptersCommon.SupervisordConfFile}
+
+	klog.V(2).Infof("Setting container %v entrypoint to 'tail -f /dev/null'", container.Name)
+	// #5768: overriding command and args if the container had no Command or Args defined in it.
+	// This is a workaround for us to quickly switch to running without Supervisord,
+	// while waiting for the Devfile registry to expose stacks with non-terminating containers.
+	// TODO(rm3l): Remove this once https://github.com/devfile/registry/pull/102 is merged on the Devfile side
+	container.Command = []string{"tail"}
+	container.Args = []string{"-f", "/dev/null"}
 }

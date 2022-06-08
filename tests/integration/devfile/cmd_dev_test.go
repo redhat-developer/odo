@@ -16,6 +16,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/onsi/gomega/gexec"
@@ -1536,20 +1537,22 @@ var _ = Describe("odo dev command tests", func() {
 			const errorMessage = "Failed to create the component:"
 			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
 			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
-			//Check the processes managed by supervisord
-			for process, state := range map[string]string{"devrun": "RUNNING", "debugrun": "STOPPED"} {
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
-					"runtime",
-					commonVar.Project,
-					[]string{common.SupervisordBinaryPath, common.SupervisordCtlSubCommand, "status", process},
-					func(stdout string, err error) bool {
-						Expect(err).ShouldNot(HaveOccurred())
-						helper.MatchAllInOutput(stdout, []string{state})
-						return err == nil
-					},
-				)
-			}
+
+			//the command has been started directly in the background. Check the PID stored in a specific file.
+			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+				commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
+				"runtime",
+				commonVar.Project,
+				[]string{
+					common.ShellExecutable, "-c",
+					fmt.Sprintf("kill -0 $(cat %s/.odo_devfile_cmd_run.pid) 2>/dev/null && echo -n ok || echo -n nok",
+						strings.TrimSuffix(storage.SharedDataMountPath, "/")),
+				},
+				func(stdout string, err error) bool {
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(stdout).To(Equal("ok"))
+					return err == nil
+				})
 		})
 	})
 

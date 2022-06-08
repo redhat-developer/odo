@@ -19,6 +19,7 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
@@ -37,11 +38,12 @@ import (
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
-
-	adapter := Adapter{Client: client, prefClient: prefClient}
-	adapter.GenericAdapter = common.NewGenericAdapter(&adapter, adapterContext)
-	adapter.GenericAdapter.InitWith(&adapter)
-	return adapter
+	return Adapter{
+		Client:         client,
+		prefClient:     prefClient,
+		AdapterContext: adapterContext,
+		logger:         machineoutput.NewMachineEventLoggingClient(),
+	}
 }
 
 // getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
@@ -71,28 +73,13 @@ func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo
 	}, nil
 }
 
-func (a *Adapter) SupervisorComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
-	pod, err := a.getPod(false)
-	if err != nil {
-		return common.ComponentInfo{}, err
-	}
-	for _, container := range pod.Spec.Containers {
-		if container.Name == command.Exec.Component && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
-			return common.ComponentInfo{
-				ContainerName: command.Exec.Component,
-				PodName:       pod.Name,
-			}, nil
-		}
-	}
-	return common.ComponentInfo{}, nil
-}
-
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
 	Client     kclient.ClientInterface
 	prefClient preference.Client
 
-	*common.GenericAdapter
+	common.AdapterContext
+	logger machineoutput.MachineEventLoggingClient
 
 	devfileBuildCmd  string
 	devfileRunCmd    string
@@ -388,8 +375,14 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 
 	// Add the project volume before generating init containers
 	utils.AddOdoProjectVolume(&containers)
+	utils.AddOdoMandatoryVolume(&containers)
 
-	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
+	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, a.devfileDebugCmd, a.devfileDebugPort)
+	if err != nil {
+		return err
+	}
+
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd)
 	if err != nil {
 		return err
 	}
@@ -398,8 +391,6 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	if err != nil {
 		return err
 	}
-
-	initContainers = append(initContainers, kclient.GetBootstrapSupervisordInitContainer())
 
 	// list all the pvcs for the component
 	pvcs, err := a.Client.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
@@ -597,10 +588,6 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	}
 
 	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
-}
-
-func (a Adapter) ExecCMDInContainer(componentInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	return a.Client.ExecCMDInContainer(componentInfo.ContainerName, componentInfo.PodName, cmd, stdout, stderr, stdin, tty)
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin

@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -18,6 +19,7 @@ import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
+
 	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -251,7 +253,6 @@ func TestDoesComponentExist(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		componentType    devfilev1.ComponentType
 		componentName    string
 		appName          string
 		getComponentName string
@@ -549,11 +550,9 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 
 			a := Adapter{
 				Client: fakeClient,
-				GenericAdapter: &adaptersCommon.GenericAdapter{
-					AdapterContext: adaptersCommon.AdapterContext{
-						ComponentName: tt.fields.componentName,
-						AppName:       tt.fields.appName,
-					},
+				AdapterContext: adaptersCommon.AdapterContext{
+					ComponentName: tt.fields.componentName,
+					AppName:       tt.fields.appName,
 				},
 				deployment: tt.fields.deployment,
 			}
