@@ -96,7 +96,7 @@ func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured
 }
 
 // NewServiceBindingObject returns the bindingApi.ServiceBinding object
-func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR v1.GroupVersionResource, mappings []bindingApi.Mapping, services []bindingApi.Service) *bindingApi.ServiceBinding {
+func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR schema.GroupVersionResource, mappings []bindingApi.Mapping, services []bindingApi.Service) *bindingApi.ServiceBinding {
 	return &bindingApi.ServiceBinding{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: bindingApi.GroupVersion.String(),

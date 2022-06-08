@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	v1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
@@ -54,6 +55,8 @@ func GetFakeVolumeComponent(name, size string) v1.Component {
 // GetTestDevfileObj returns a devfile object for testing
 func GetTestDevfileObj(fs devfilefs.Filesystem) parser.DevfileObj {
 	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+	devfileData.SetMetadata(devfilepkg.DevfileMetadata{Name: "my-nodejs-app"})
+
 	_ = devfileData.AddCommands([]v1.Command{
 		{
 			Id: "devbuild",
