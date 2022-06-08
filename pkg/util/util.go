@@ -519,20 +519,31 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 			lines = append(lines, line)
 		}
 
-		index := len(lines) - numberOfLastLines
-		if index < 0 {
-			index = 0
-		}
-
-		for i := index; i < len(lines)-1; i++ {
-			_, err := fmt.Fprintf(writer, lines[i])
-			if err != nil {
-				return err
-			}
-		}
+		return DisplayLogLines(lines, writer, numberOfLastLines)
 	}
 	return
 
+}
+
+// DisplayLogLines writes the last n lines of the given lines to the specified writer w.
+// It returns an error if it cannot write to w.
+func DisplayLogLines(l []string, w io.Writer, n int) error {
+	index := len(l) - n
+	if index < 0 {
+		index = 0
+	}
+
+	for i := index; i < len(l)-1; i++ {
+		line := l[i]
+		if !strings.HasSuffix(line, "\n") {
+			line += "\n"
+		}
+		_, err := fmt.Fprint(w, line)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // copyFileWithFs copies a single file from src to dst

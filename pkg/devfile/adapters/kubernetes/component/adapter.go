@@ -3,8 +3,6 @@ package component
 import (
 	"fmt"
 	"io"
-	"reflect"
-	"strings"
 	"time"
 
 	"k8s.io/utils/pointer"
@@ -36,9 +34,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
-
-const supervisorDStatusWaitTimeInterval = 1
-const numberOfLinesToOutputLog = 100
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
@@ -160,7 +155,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return err
 	}
 
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
@@ -176,7 +171,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	currentMode := envinfo.Run
 
 	if parameters.Debug {
-		pushDevfileDebugCommands, e := common.ValidateAndGetDebugDevfileCommands(a.Devfile.Data, a.devfileDebugCmd)
+		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetDebugCommands(a.Devfile.Data, a.devfileDebugCmd)
 		if e != nil {
 			return fmt.Errorf("debug command is not valid: %w", err)
 		}
@@ -322,81 +317,36 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
-	runCommand := pushDevfileCommands[devfilev1.RunCommandGroupKind]
+	cmdKind := devfilev1.RunCommandGroupKind
 	if parameters.Debug {
-		runCommand = pushDevfileCommands[devfilev1.DebugCommandGroupKind]
+		cmdKind = devfilev1.DebugCommandGroupKind
 	}
-	running, err := a.GetSupervisordCommandStatus(runCommand)
+
+	cmd, err := libdevfile.GetDefaultCommand(a.Devfile, cmdKind)
 	if err != nil {
 		return err
 	}
+
+	cmdHandler := adapterHandler{
+		Adapter:         a,
+		cmdKind:         cmdKind,
+		parameters:      parameters,
+		componentExists: componentExists,
+	}
+
+	running, err := cmdHandler.isRemoteProcessForCommandRunning(cmd)
+	if err != nil {
+		return err
+	}
+
+	klog.V(4).Infof("running=%v, execRequired=%v, parameters.RunModeChanged=%v",
+		running, execRequired, parameters.RunModeChanged)
 
 	if !running || execRequired || parameters.RunModeChanged {
-		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
-		if err != nil {
-			return err
-		}
-
-		// wait for a second
-		wait := time.After(supervisorDStatusWaitTimeInterval * time.Second)
-		<-wait
-
-		err := a.CheckSupervisordCommandStatus(runCommand)
-		if err != nil {
-			return err
-		}
+		err = libdevfile.ExecuteCommandByKind(a.Devfile, cmdKind, &cmdHandler, false)
 	}
 
-	return nil
-}
-
-// GetSupervisordCommandStatus returns true if the command is running
-// based on `supervisord ctl` output and returns an error if
-// the command is not known by supervisord
-func (a Adapter) GetSupervisordCommandStatus(command devfilev1.Command) (bool, error) {
-	statusInContainer := getSupervisordStatusInContainer(a.pod.Name, command.Exec.Component, a)
-
-	supervisordProgramName := "devrun"
-
-	// if the command is a debug one, we check against `debugrun`
-	if command.Exec.Group.Kind == devfilev1.DebugCommandGroupKind {
-		supervisordProgramName = "debugrun"
-	}
-
-	for _, status := range statusInContainer {
-		if strings.EqualFold(status.program, supervisordProgramName) {
-			return strings.EqualFold(status.status, "running"), nil
-		}
-	}
-	return false, fmt.Errorf("the supervisord program %s not found", supervisordProgramName)
-}
-
-// CheckSupervisordCommandStatus checks if the command is running based on supervisord status output.
-// if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
-func (a Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
-
-	running, err := a.GetSupervisordCommandStatus(command)
-	if err != nil {
-		return err
-	}
-
-	if !running {
-		log.Warningf("Devfile command %q exited with an error status in %d sec", command.Id, supervisorDStatusWaitTimeInterval)
-		log.Warningf("Last %d lines of log:", numberOfLinesToOutputLog)
-
-		rd, err := component.Log(a.Client, a.ComponentName, a.AppName, false, command)
-		if err != nil {
-			return err
-		}
-
-		// Use GetStderr in order to make sure that colour output is correct
-		// on non-TTY terminals
-		err = util.DisplayLog(false, rd, log.GetStderr(), a.ComponentName, numberOfLinesToOutputLog)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return err
 }
 
 func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
