@@ -18,18 +18,18 @@ import (
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, client SyncClient, kclient kclient.ClientInterface) Adapter {
+func New(adapterContext common.AdapterContext, syncClient SyncClient, kubeClient kclient.ClientInterface) Adapter {
 	return Adapter{
-		kClient:        kclient,
-		Client:         client,
+		kubeClient:     kubeClient,
+		SyncClient:     syncClient,
 		AdapterContext: adapterContext,
 	}
 }
 
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
-	kClient kclient.ClientInterface
-	Client  SyncClient
+	kubeClient kclient.ClientInterface
+	SyncClient SyncClient
 	common.AdapterContext
 }
 
@@ -188,7 +188,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		_, _, err = remotecmd.Execute(a.kClient, compInfo.PodName, compInfo.ContainerName, false, cmdArr...)
+		_, _, err = remotecmd.Execute(a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, cmdArr...)
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		_, _, err = remotecmd.Execute(a.kClient, compInfo.PodName, compInfo.ContainerName, false, cmdArr...)
+		_, _, err = remotecmd.Execute(a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, cmdArr...)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps, ret)
+		err = CopyFile(a.SyncClient, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			return fmt.Errorf("unable push files to pod: %w", err)
 		}
