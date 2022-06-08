@@ -43,7 +43,8 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	}
 
 	doExecuteBuildCommand := func() error {
-		return libdevfile.Build(a.Devfile, component.NewExecHandler(a.kubeClient, a.pod.Name, a.parameters.Show), true)
+		execHandler := component.NewExecHandler(a.kubeClient, a.pod.Name, "Building your application in container on cluster", a.parameters.Show)
+		return libdevfile.Build(a.Devfile, execHandler, true)
 	}
 
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()

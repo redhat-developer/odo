@@ -123,6 +123,7 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	}
 
 	go func() {
+		_ = log.SpinnerNoSpin("Executing the application")
 		if stdout, stderr, err := Execute(kclient, podName, containerName, false, cmd...); err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
 

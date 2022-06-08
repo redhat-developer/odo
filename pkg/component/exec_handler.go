@@ -16,15 +16,17 @@ import (
 type execHandler struct {
 	kubeClient kclient.ClientInterface
 	podName    string
+	msg        string
 	show       bool
 }
 
 const ShellExecutable string = "/bin/sh"
 
-func NewExecHandler(kubeClient kclient.ClientInterface, podName string, show bool) *execHandler {
+func NewExecHandler(kubeClient kclient.ClientInterface, podName string, msg string, show bool) *execHandler {
 	return &execHandler{
 		kubeClient: kubeClient,
 		podName:    podName,
+		msg:        msg,
 		show:       show,
 	}
 }
@@ -38,7 +40,10 @@ func (o *execHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
 }
 
 func (o *execHandler) Execute(command v1alpha2.Command) error {
-	msg := fmt.Sprintf("Executing %s command %q on container %q", command.Id, command.Exec.CommandLine, command.Exec.Component)
+	msg := o.msg
+	if msg == "" {
+		msg = fmt.Sprintf("Executing %s command %q on container %q", command.Id, command.Exec.CommandLine, command.Exec.Component)
+	}
 	spinner := log.Spinner(msg)
 	defer spinner.End(false)
 
