@@ -109,10 +109,10 @@ func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string
 		last, err := strconv.Atoi(string(name[len(name)-1]))
 		if err == nil {
 			last++
-			name = fmt.Sprintf("%s%d", name[:len(name)-1], last)
+			name = fmt.Sprintf("%s[%d]", name[:len(name)-1], last)
 		} else {
 			last = 1
-			name = fmt.Sprintf("%s%d", name, last)
+			name = fmt.Sprintf("%s[%d]", name, last)
 		}
 		return getUniqueContainerName(name, uniqueNames)
 	}
