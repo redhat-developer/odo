@@ -123,7 +123,7 @@ When you do `odo dev`, odo creates pods for:
    spec.template.spec.containers` for this particular component, it creates 
    two containers for it.
 
-When you do `odo logs`, you should logs from all these containers. Each line 
+When you run `odo logs`, you should see logs from all these containers. Each line 
 is prefixed with `<container-name>:` to easily distinguish which the 
 container the logs belong to. Since we named multiple containers in the 
 `devfile.yaml` as `container`, `odo logs` has distinguished these containers 
