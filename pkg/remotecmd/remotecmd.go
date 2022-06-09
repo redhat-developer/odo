@@ -12,12 +12,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/log"
 )
 
-// ExecuteCommand executes the given command in the pod's container, writing the command output to the specified stdout and stderr writers
+// ExecuteCommand executes the given command in the pod's container,
+// writing the output to the specified respective pipe writers
 func ExecuteCommand(
-	client kclient.ClientInterface,
-	containerName string,
-	podName string,
 	command []string,
+	client kclient.ClientInterface,
+	podName string,
+	containerName string,
 	show bool,
 	stdoutWriter *io.PipeWriter,
 	stderrWriter *io.PipeWriter,
@@ -25,20 +26,13 @@ func ExecuteCommand(
 	soutReader, soutWriter := io.Pipe()
 	serrReader, serrWriter := io.Pipe()
 
-	var cmdOutput string
-
 	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &cmdOutput, stdoutWriter)
-	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &cmdOutput, stderrWriter)
+	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, stdoutWriter)
+	stderrCompleteChannel := startReaderGoroutine(serrReader, show, stderrWriter)
 
 	err := client.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
-	if err != nil {
-		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
-		klog.V(2).Infof("ExecuteCommand returned an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
-		err = fmt.Errorf("unable to exec command %v: \n%v: %w", command, cmdOutput, err)
-	}
 
 	// Block until we have received all the container output from each stream
 	_ = soutWriter.Close()
@@ -49,27 +43,33 @@ func ExecuteCommand(
 	return err
 }
 
-// Execute executes the given command in the pod's container, and returns the command stdout and stderr content
-func Execute(
+// ExecuteCommandAndGetOutput executes the given command in the pod's container, and returns the command stdout and stderr content
+func ExecuteCommandAndGetOutput(
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
 	show bool,
 	cmd ...string,
 ) (stdout []string, stderr []string, err error) {
-	stdoutWriter, stdoutOutputChannel := createConsoleOutputWriterAndChannel()
-	stderrWriter, stderrOutputChannel := createConsoleOutputWriterAndChannel()
+	stdoutWriter, stdoutChan := createConsoleOutputWriterAndChannel()
+	stderrWriter, stderrChan := createConsoleOutputWriterAndChannel()
 
-	err = ExecuteCommand(kclient, containerName, podName, cmd, show, stdoutWriter, stderrWriter)
+	err = ExecuteCommand(cmd, kclient, podName, containerName, show, stdoutWriter, stderrWriter)
 
-	// Close the writer and wait for the console output
 	_ = stdoutWriter.Close()
-	stdout = <-stdoutOutputChannel
-
+	stdout = getDataFromChannel(stdoutChan)
 	_ = stderrWriter.Close()
-	stderr = <-stderrOutputChannel
+	stderr = getDataFromChannel(stderrChan)
 
 	return stdout, stderr, err
+}
+
+func getDataFromChannel(c <-chan string) []string {
+	var result []string
+	for l := range c {
+		result = append(result, l)
+	}
+	return result
 }
 
 // createConsoleOutputWriterAndChannel is a utility function that returns a pipeWriter and a channel;
@@ -79,12 +79,11 @@ func Execute(
 // The io.PipeWriter can be passed to ExecuteCommand(...) above, in order to receive the full
 // stderr/stdout output from the process.
 // See calling functions of CreateConsoleOutputWriterAndChannel for examples of usage.
-func createConsoleOutputWriterAndChannel() (*io.PipeWriter, chan []string) {
+func createConsoleOutputWriterAndChannel() (*io.PipeWriter, chan string) {
 	reader, writer := io.Pipe()
-	closeChannel := make(chan []string)
+	closeChannel := make(chan string, 1)
 
 	go func() {
-		var consoleContents []string
 		bufReader := bufio.NewReader(reader)
 		for {
 			line, _, err := bufReader.ReadLine()
@@ -92,13 +91,11 @@ func createConsoleOutputWriterAndChannel() (*io.PipeWriter, chan []string) {
 				if err != io.EOF {
 					klog.V(2).Infof("Unexpected error on reading container output reader: %v", err)
 				}
-
 				break
 			}
-			consoleContents = append(consoleContents, string(line))
+			closeChannel <- string(line)
 		}
-		// Output the final console contents to the channel
-		closeChannel <- consoleContents
+		close(closeChannel)
 	}()
 
 	return writer, closeChannel
@@ -107,16 +104,13 @@ func createConsoleOutputWriterAndChannel() (*io.PipeWriter, chan []string) {
 // This goroutine will automatically pipe the output from the writer (passed into ExecCMDInContainer) to
 // the loggers.
 // The returned channel will contain a single nil entry once the reader has closed.
-func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *string, consoleOutput *io.PipeWriter) chan []string {
-
-	result := make(chan []string)
+func startReaderGoroutine(reader io.Reader, show bool, consoleOutput *io.PipeWriter) chan interface{} {
+	result := make(chan interface{})
 
 	go func() {
-		var lines []string
 		scanner := bufio.NewScanner(reader)
 		for scanner.Scan() {
 			line := scanner.Text()
-			lines = append(lines, line)
 
 			if show || log.IsDebug() {
 				_, err := fmt.Fprintln(os.Stdout, line)
@@ -125,8 +119,6 @@ func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *string, consol
 				}
 			}
 
-			*cmdOutput += fmt.Sprintln(line)
-
 			if consoleOutput != nil {
 				_, err := consoleOutput.Write([]byte(line + "\n"))
 				if err != nil {
@@ -134,7 +126,7 @@ func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *string, consol
 				}
 			}
 		}
-		result <- lines
+		result <- nil
 	}()
 
 	return result

@@ -1,6 +1,7 @@
 package remotecmd
 
 import (
+	"io"
 	"reflect"
 	"testing"
 )
@@ -33,22 +34,27 @@ func Test_createConsoleOutputWriterAndChannel(t *testing.T) {
 			expected: []string{"one", "two", "three", "four", "five"},
 		},
 	}
+	writeInputData := func(in []string, w *io.PipeWriter) {
+		defer w.Close()
+		for _, s := range in {
+			_, err := w.Write([]byte(s + "\n"))
+			if err != nil {
+				return
+			}
+		}
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			inputWriter, outputChan := createConsoleOutputWriterAndChannel()
 
-			// Write input text
-			for _, toSend := range tt.input {
-				_, err := inputWriter.Write([]byte(toSend + "\n"))
-				if err != nil {
-					t.Fatalf("Unable to write to channel %v", err)
-				}
-			}
+			// Write input text, in a separate goroutine to be able to iterate over outputChan as long as data is being written to inputWriter
+			go writeInputData(tt.input, inputWriter)
 
-			// Close and wait for result
-			_ = inputWriter.Close()
-			out := <-outputChan
+			var out []string
+			for s := range outputChan {
+				out = append(out, s)
+			}
 
 			if len(out) != len(tt.expected) {
 				t.Fatalf("length of output response %v did not match length of expected output %v", out, tt.expected)

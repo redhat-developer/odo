@@ -61,7 +61,7 @@ func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
 	}
 
 	//Now check that the PID value is a valid process
-	stdout, _, err := Execute(kclient, podName, containerName, false,
+	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
 		common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid))
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 
 	go func() {
 		_ = log.SpinnerNoSpin("Executing the application")
-		if stdout, stderr, err := Execute(kclient, podName, containerName, false, cmd...); err != nil {
+		if stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false, cmd...); err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
 
 			var codeExitError exec.CodeExitError
@@ -152,13 +152,13 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	podName string,
 	containerName string,
 ) (stdout []string, stderr []string, err error) {
-	return Execute(kclient, podName, containerName, false,
+	return ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
 		common.ShellExecutable, "-c", fmt.Sprintf("kill $(cat %[1]s); rm -f %[1]s", getPidFileForCommand(devfileCmd)))
 }
 
 func getRemoteProcessPID(kclient kclient.ClientInterface, devfileCmd devfilev1.Command, podName string, containerName string) (int, error) {
 	pidFile := getPidFileForCommand(devfileCmd)
-	stdout, stderr, err := Execute(kclient, podName, containerName, false,
+	stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
 		common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile))
 
 	if err != nil {
