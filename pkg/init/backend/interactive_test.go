@@ -283,7 +283,6 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 		wantErr     bool
 		checkResult func(config asker.ContainerConfiguration, key string, value string) bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "Add new port",
 			fields: fields{
@@ -468,8 +467,7 @@ func TestInteractiveBackend_PersonalizeDevfileconfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fs := filesystem.NewFakeFs()
-			devfile := tt.args.devfileobj(fs)
+			devfile := tt.args.devfileobj(filesystem.NewFakeFs())
 			config, err := getPortsAndEnvVar(devfile)
 			if err != nil {
 				t.Errorf("getPortsAndEnvVar() error = %v", err)
@@ -512,4 +510,64 @@ func getDevfileObj(fs filesystem.Filesystem, containerName string, ports []strin
 	_ = obj.SetPorts(map[string][]string{containerName: ports})
 	_ = obj.AddEnvVars(map[string][]v1alpha2.EnvVar{containerName: envVars})
 	return obj
+}
+
+func Test_getPortsAndEnvVar(t *testing.T) {
+	ports := []string{"7000", "8000"}
+	envVars := []v1alpha2.EnvVar{{Name: "env1", Value: "val1"}, {Name: "env2", Value: "val2"}}
+	containerTypeName := "runtime"
+	volumeTypeName := "m2"
+	type args struct {
+		obj parser.DevfileObj
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    asker.DevfileConfiguration
+		wantErr bool
+	}{
+		{
+			name: "only detect Container type components",
+			args: args{obj: func() parser.DevfileObj {
+				obj := getDevfileObj(filesystem.NewFakeFs(), containerTypeName, ports, envVars)
+				_ = obj.Data.AddComponents([]v1alpha2.Component{testingutil.GetFakeVolumeComponent(volumeTypeName, "10Mi")})
+				return obj
+			}()},
+			want: asker.DevfileConfiguration{containerTypeName: asker.ContainerConfiguration{
+				Ports: ports,
+				Envs:  map[string]string{"env1": "val1", "env2": "val2"},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "no Container type component found",
+			args: args{
+				obj: func() parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = devfileData.AddComponents([]v1alpha2.Component{
+						testingutil.GetFakeVolumeComponent(volumeTypeName, "10Mi"),
+					})
+					obj := parser.DevfileObj{
+						Ctx:  parsercontext.FakeContext(filesystem.NewFakeFs(), "/tmp/devfile.yaml"),
+						Data: devfileData,
+					}
+					return obj
+				}(),
+			},
+			want:    asker.DevfileConfiguration{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getPortsAndEnvVar(tt.args.obj)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getPortsAndEnvVar() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getPortsAndEnvVar() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
