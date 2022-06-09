@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -33,6 +34,9 @@ type BindingListOptions struct {
 
 	// Clients
 	clientset *clientset.Clientset
+
+	// working directory
+	contextDir string
 }
 
 // NewBindingListOptions creates a new BindingListOptions instance
@@ -46,8 +50,19 @@ func (o *BindingListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete completes BindingListOptions after they've been created
 func (o *BindingListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	return err
+	o.contextDir, err = os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+	if err != nil {
+		return err
+	}
+
+	// this ensures that the namespace set in env.yaml is used
+	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
+	return nil
 }
 
 // Validate validates the BindingListOptions based on completed values
@@ -60,12 +75,21 @@ func (o *BindingListOptions) Run(ctx context.Context) error {
 
 	return HumanReadableOutput(os.Stdout)
 }
+
 func (lo *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	//list, err := lo.run(ctx)
-	//if err != nil {
-	//	return nil, err
-	//}
-	return nil, nil
+	return lo.run(ctx)
+}
+
+func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error) {
+	bindings, inDevfile, err := o.clientset.BindingClient.ListAllBindings(o.EnvSpecificInfo.GetDevfileObj(), o.contextDir)
+	if err != nil {
+		return api.ResourcesList{}, err
+	}
+	return api.ResourcesList{
+		BindingsInDevfile: inDevfile,
+		Bindings:          bindings,
+	}, nil
+
 }
 
 // NewCmdBindingList implements the odo list binding command.
@@ -81,7 +105,7 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	//	clientset.Add(bindingListCmd, clientset.PROJECT)
+	clientset.Add(bindingListCmd, clientset.KUBERNETES, clientset.BINDING)
 	machineoutput.UsedByCommand(bindingListCmd)
 	return bindingListCmd
 }

@@ -17,7 +17,7 @@ type Client interface {
 	// GetBindingFromCluster returns information about a binding in the cluster (either from group binding.operators.coreos.com or servicebinding.io)
 	GetBindingFromCluster(name string) (api.ServiceBinding, error)
 
-	// add_binding.go
+	// add.go
 
 	// ValidateAddBinding returns error if the backend failed to validate; mainly useful for flags backend
 	ValidateAddBinding(flags map[string]string) error
@@ -30,7 +30,11 @@ type Client interface {
 	// AddBinding adds the ServiceBinding manifest to the devfile
 	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
 
-	// remove_binding.go
+	// list.go
+
+	ListAllBindings(devfileObj parser.DevfileObj, context string) (bindings []api.ServiceBinding, inDevfile []string, err error)
+
+	// remove.go
 
 	// ValidateRemoveBinding validates if the command has adequate arguments/flags
 	ValidateRemoveBinding(flags map[string]string) error
