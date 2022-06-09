@@ -4,19 +4,16 @@ title: odo logs
 
 ## Description
 
-`odo logs` is used to display the logs for all the containers odo created for 
-the 
-component under current working directory.
+`odo logs` is used to display the logs for all the containers odo created for the component under current working 
+directory.
 
 ## Running the command 
 
-If you haven't already done so, you must [initialize](../command-reference/init)
-your source code with the `odo init` command. Next, run the `odo dev` 
-command so that odo can create the resources on the Kubernetes cluster.
+If you haven't already done so, you must [initialize](../command-reference/init) your source code with the `odo 
+init` command. Next, run the `odo dev` command so that odo can create the resources on the Kubernetes cluster.
 
-Consider a devfile.yaml like below which was used to create inner loop 
-resources using `odo dev`. Notice that multiple containers have been named 
-as `main` to show how `odo logs` would display logs when more than one 
+Consider a devfile.yaml like below which was used to create inner loop resources using `odo dev`. Notice that 
+multiple containers have been named as `main` to show how `odo logs` would display logs when more than one 
 containers have the same name:
 ```yaml
 metadata:
@@ -112,18 +109,15 @@ components:
               image: docker.io/dharmit/infiniteloop
  ```
 When you do `odo dev`, odo creates pods for:
-1. The component named `node` itself. Containers for this are created using 
-   `.components.container`.
+1. The component named `node` itself. Containers for this are created using `.components.container`.
 2. Kubernetes component named `infinitepodone`
-3. Kubernetes component named `infinitedeployment`. As can be seen under `.
-   spec.template.spec.containers` for this particular component, it creates 
-   two containers for it.
+3. Kubernetes component named `infinitedeployment`. As can be seen under `.spec.template.spec.containers` for this 
+   particular component, it creates two containers for it.
 
-When you run `odo logs`, you should see logs from all these containers. Each line 
-is prefixed with `<container-name>:` to easily distinguish which the 
-container the logs belong to. Since we named multiple containers in the 
-`devfile.yaml` as `container`, `odo logs` has distinguished these containers 
-as `container`, `container1` and `container2`:
+When you run `odo logs`, you should see logs from all these containers. Each line is prefixed with 
+`<container-name>:` to easily distinguish which the container the logs belong to. Since we named multiple 
+containers in the `devfile.yaml` as `container`, `odo logs` has distinguished these containers as `container`, 
+`container1` and `container2`:
 
 ```shell
 $ odo logs
