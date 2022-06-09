@@ -10,10 +10,9 @@ component under current working directory.
 
 ## Running the command 
 
-If you haven't already done so, you must [initialize](..
-/command-reference/init) your source code with the `odo init` command. Next, 
-run the `odo dev` command so that odo can create the resources on the 
-Kubernetes cluster.
+If you haven't already done so, you must [initialize](../command-reference/init)
+your source code with the `odo init` command. Next, run the `odo dev` 
+command so that odo can create the resources on the Kubernetes cluster.
 
 Consider a devfile.yaml like below which was used to create inner loop 
 resources using `odo dev`. Notice that multiple containers have been named 
