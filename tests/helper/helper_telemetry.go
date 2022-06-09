@@ -2,12 +2,13 @@ package helper
 
 import (
 	"encoding/json"
-	_ "github.com/onsi/ginkgo"
+	"io/ioutil"
+	"os"
+
+	_ "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
-	"io/ioutil"
-	"os"
 )
 
 func setDebugTelemetryFile(value string) error {

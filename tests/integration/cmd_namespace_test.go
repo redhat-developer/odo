@@ -8,7 +8,7 @@ import (
 
 	"github.com/redhat-developer/odo/tests/helper"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -178,7 +178,7 @@ ComponentSettings:
 			})
 		})
 
-		Describe("list "+commandName, func() {
+		Describe("list "+commandName, FlakeAttempts(3), func() {
 			It(fmt.Sprintf("should successfully list all the %ss", commandName), func() {
 				Eventually(func() string {
 					out := helper.Cmd("odo", "list", commandName).ShouldPass().Out()

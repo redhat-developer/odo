@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 // HttpWaitForWithStatus periodically (every interval) calls GET to given url
