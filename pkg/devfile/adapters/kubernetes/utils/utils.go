@@ -172,7 +172,7 @@ func overrideContainerCommandAndArgsIfNeeded(container *corev1.Container) {
 		return
 	}
 
-	klog.V(2).Infof("Setting container %v entrypoint to 'tail -f /dev/null'", container.Name)
+	klog.V(2).Infof("No entrypoint defined for the component, setting container %v entrypoint to 'tail -f /dev/null'. You can set a 'command' and/or 'args' for the component to override this default entrypoint.", container.Name)
 	// #5768: overriding command and args if the container had no Command or Args defined in it.
 	// This is a workaround for us to quickly switch to running without Supervisord,
 	// while waiting for the Devfile registry to expose stacks with non-terminating containers.
