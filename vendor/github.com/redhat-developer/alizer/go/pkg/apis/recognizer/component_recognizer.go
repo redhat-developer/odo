@@ -11,8 +11,10 @@
 package recognizer
 
 import (
+	"errors"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	enricher "github.com/redhat-developer/alizer/go/pkg/apis/enricher"
@@ -25,8 +27,21 @@ type Component struct {
 	Languages []language.Language
 }
 
+func DetectComponentsInRoot(path string) ([]Component, error) {
+	files, err := getFilePathsInRoot(path)
+	if err != nil {
+		return []Component{}, err
+	}
+	components, err := detectComponents(files)
+	if err != nil {
+		return []Component{}, err
+	}
+
+	return components, nil
+}
+
 func DetectComponents(path string) ([]Component, error) {
-	files, err := getFilePaths(path)
+	files, err := getFilePathsFromRoot(path)
 	if err != nil {
 		return []Component{}, err
 	}
@@ -53,7 +68,7 @@ func DetectComponents(path string) ([]Component, error) {
 func getComponentsWithoutConfigFile(directories []string) []Component {
 	var components []Component
 	for _, dir := range directories {
-		component, _ := detectComponent(dir, "")
+		component, _ := detectComponent(dir, []string{})
 		if component.Path != "" && isLangForNoConfigComponent(component.Languages) {
 			components = append(components, component)
 		}
@@ -106,15 +121,16 @@ func getDirectoriesWithoutConfigFile(root string, components []Component) []stri
 	return directories
 }
 
-/**
-* Return all paths which are not sub-folders of some other path within the list
-* Target will be added to the list if it is not a sub-folder of any other path within the list
-* If a path in the list is sub-folder of Target, that path will be removed.
-*
-* @param target new path to be added
-* @param directories list of all previously added paths
-* @return the list containing all paths which are not sub-folders of any other
- */
+/*
+	getParentFolders return all paths which are not sub-folders of some other path within the list
+	Target will be added to the list if it is not a sub-folder of any other path within the list
+	If a path in the list is sub-folder of Target, that path will be removed.
+	Parameters:
+		target: new path to be added
+		directories: list of all previously added paths
+	Returns:
+		the list containing all paths which are not sub-folders of any other
+*/
 func getParentFolders(target string, directories []string) []string {
 	updatedDirectories := []string{}
 	for _, dir := range directories {
@@ -173,38 +189,62 @@ func detectComponents(files []string) ([]Component, error) {
 	var components []Component
 	for _, file := range files {
 		dir, fileName := filepath.Split(file)
-		if language, isConfig := configurationPerLanguage[fileName]; isConfig && isConfigurationValid(language, file) {
-			component, err := detectComponent(dir, language)
-			if err != nil {
-				return []Component{}, err
-			}
-			if component.Path != "" {
-				components = append(components, component)
+		if dir == "" {
+			dir = "./"
+		}
+		languages, err := getLanguagesByConfigurationFile(configurationPerLanguage, fileName)
+		if err != nil {
+			continue
+		}
+		for _, language := range languages {
+			if isConfigurationValid(language, file) {
+				component, _ := detectComponent(dir, languages)
+				if component.Path != "" {
+					components = appendIfMissing(components, component)
+					break
+				}
 			}
 		}
 	}
 	return components, nil
 }
 
+func appendIfMissing(components []Component, component Component) []Component {
+	for _, comp := range components {
+		if strings.EqualFold(comp.Path, component.Path) {
+			return components
+		}
+	}
+	return append(components, component)
+}
+
+func getLanguagesByConfigurationFile(configurationPerLanguage map[string][]string, file string) ([]string, error) {
+	for regex, languages := range configurationPerLanguage {
+		if match, _ := regexp.MatchString(regex, file); match {
+			return languages, nil
+		}
+	}
+	return nil, errors.New("no languages found for configuration file " + file)
+}
+
 /*
 	detectComponent returns a Component if found:
 							- language must be enabled for component detection
-							- there should be at least one framework detected
 					, error otherwise
 	Parameters:
 		root: path to be used as root where to start the detection
-		language: language to be used as target for detection
+		configLanguages: languages associated to the config file found and to be used as target for detection
 	Returns:
 		component detected or error if any error occurs
 */
-func detectComponent(root string, language string) (Component, error) {
+func detectComponent(root string, configLanguages []string) (Component, error) {
 	languages, err := Analyze(root)
 	if err != nil {
 		return Component{}, err
 	}
-	languages = getLanguagesWeightedByConfigFile(languages, language)
+	languages = getLanguagesWeightedByConfigFile(languages, configLanguages)
 	if len(languages) > 0 {
-		if mainLang := languages[0]; mainLang.CanBeComponent && len(mainLang.Frameworks) > 0 {
+		if mainLang := languages[0]; mainLang.CanBeComponent {
 			return Component{
 				Path:      root,
 				Languages: languages,
@@ -218,22 +258,24 @@ func detectComponent(root string, language string) (Component, error) {
 
 /*
 	getLanguagesWeightedByConfigFile returns the list of languages reordered by importance per config file.
-									 Language found by analyzing the config file is used as target.
+									Language found by analyzing the config file is used as target.
 	Parameters:
 		languages: list of languages to be reordered
-		languageByConfig: target language
+		configLanguages: languages associated to the config file found and to be used as target languages
 	Returns:
 		list of languages reordered
 */
-func getLanguagesWeightedByConfigFile(languages []language.Language, languageByConfig string) []language.Language {
-	if languageByConfig == "" {
+func getLanguagesWeightedByConfigFile(languages []language.Language, configLanguages []string) []language.Language {
+	if len(configLanguages) == 0 {
 		return languages
 	}
 
 	for index, lang := range languages {
-		if strings.EqualFold(lang.Name, languageByConfig) {
-			sliceWithoutLang := append(languages[:index], languages[index+1:]...)
-			return append([]language.Language{lang}, sliceWithoutLang...)
+		for _, configLanguage := range configLanguages {
+			if strings.EqualFold(lang.Name, configLanguage) {
+				sliceWithoutLang := append(languages[:index], languages[index+1:]...)
+				return append([]language.Language{lang}, sliceWithoutLang...)
+			}
 		}
 	}
 	return languages

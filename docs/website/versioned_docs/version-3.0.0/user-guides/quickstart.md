@@ -227,9 +227,9 @@ $ odo init
 
 Interactive mode enabled, please answer the following questions:
 Based on the files in the current directory odo detected
-Language: javascript
-Project type: nodejs
-The devfile "nodejs" from the registry "DefaultDevfileRegistry" will be downloaded.
+Language: dotnet
+Project type: dotnet
+The devfile "dotnet50" from the registry "DefaultDevfileRegistry" will be downloaded.
 ? Is this correct? No
 ? Select language: dotnet
 ? Select project type: .NET 6.0

@@ -30,6 +30,7 @@ type LanguageCustomization struct {
 	ConfigurationFiles []string `yaml:"configuration_files"`
 	Component          bool     `yaml:"component"`
 	ExcludeFolders     []string `yaml:"exclude_folders,omitempty"`
+	Aliases            []string `yaml:"aliases"`
 }
 
 type LanguagesCustomizations map[string]LanguageCustomization

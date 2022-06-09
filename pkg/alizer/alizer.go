@@ -1,8 +1,6 @@
 package alizer
 
 import (
-	"reflect"
-
 	"github.com/redhat-developer/alizer/go/pkg/apis/recognizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/registry"
@@ -38,17 +36,7 @@ func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, api.Regis
 	if err != nil {
 		return recognizer.DevFileType{}, api.Registry{}, err
 	}
-
-	// TODO(feloy): This part won't be necessary when SelectDevFileFromTypes returns the index
-	var indexOfDetected int
-	for i, typeFromList := range types {
-		if reflect.DeepEqual(typeFromList, typ) {
-			indexOfDetected = i
-			break
-		}
-	}
-	registry := components.Items[indexOfDetected].Registry
-	return typ, registry, nil
+	return types[typ], components.Items[typ].Registry, nil
 }
 
 func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry api.Registry) *api.DevfileLocation {

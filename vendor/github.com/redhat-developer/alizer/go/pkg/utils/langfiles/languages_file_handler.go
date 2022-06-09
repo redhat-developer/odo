@@ -83,7 +83,24 @@ func customizeLanguage(languageItem *LanguageItem) {
 		(*languageItem).ConfigurationFiles = customization.ConfigurationFiles
 		(*languageItem).ExcludeFolders = customization.ExcludeFolders
 		(*languageItem).Component = customization.Component
+		(*languageItem).Aliases = appendSlice((*languageItem).Aliases, customization.Aliases)
 	}
+}
+
+func appendSlice(values []string, toBeAdded []string) []string {
+	for _, item := range toBeAdded {
+		values = appendIfMissing(values, item)
+	}
+	return values
+}
+
+func appendIfMissing(values []string, item string) []string {
+	for _, value := range values {
+		if strings.EqualFold(value, item) {
+			return values
+		}
+	}
+	return append(values, item)
 }
 
 func getLanguagesProperties() schema.LanguagesProperties {
@@ -140,12 +157,12 @@ func (l *LanguageFile) GetLanguageByNameOrAlias(name string) (LanguageItem, erro
 	return l.GetLanguageByAlias(name)
 }
 
-func (l *LanguageFile) GetConfigurationPerLanguageMapping() map[string]string {
-	configurationPerLanguage := make(map[string]string)
+func (l *LanguageFile) GetConfigurationPerLanguageMapping() map[string][]string {
+	configurationPerLanguage := make(map[string][]string)
 	for langName, langItem := range l.languages {
 		configurationFiles := langItem.ConfigurationFiles
 		for _, configFile := range configurationFiles {
-			configurationPerLanguage[configFile] = langName
+			configurationPerLanguage[configFile] = append(configurationPerLanguage[configFile], langName)
 		}
 	}
 	return configurationPerLanguage

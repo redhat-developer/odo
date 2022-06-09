@@ -11,9 +11,11 @@
 package recognizer
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	enricher "github.com/redhat-developer/alizer/go/pkg/apis/enricher"
 	"github.com/redhat-developer/alizer/go/pkg/apis/language"
@@ -29,7 +31,7 @@ func Analyze(path string) ([]language.Language, error) {
 	languagesFile := langfile.Get()
 	languagesDetected := make(map[string]languageItem)
 
-	paths, err := getFilePaths(path)
+	paths, err := getFilePathsFromRoot(path)
 	if err != nil {
 		return []language.Language{}, err
 	}
@@ -106,12 +108,33 @@ func extractExtensions(paths []string) map[string]int {
 	return extensions
 }
 
-func getFilePaths(root string) ([]string, error) {
+func getFilePathsFromRoot(root string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(root,
 		func(path string, info os.FileInfo, err error) error {
-			files = append(files, path)
+			if !info.IsDir() && isFileInRoot(root, path) {
+				files = append([]string{path}, files...)
+			} else {
+				files = append(files, path)
+			}
 			return nil
 		})
 	return files, err
+}
+
+func isFileInRoot(root string, file string) bool {
+	dir, _ := filepath.Split(file)
+	return strings.EqualFold(filepath.Clean(dir), filepath.Clean(root))
+}
+
+func getFilePathsInRoot(root string) ([]string, error) {
+	fileInfos, err := ioutil.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, fileInfo := range fileInfos {
+		files = append(files, filepath.Join(root, fileInfo.Name()))
+	}
+	return files, nil
 }
