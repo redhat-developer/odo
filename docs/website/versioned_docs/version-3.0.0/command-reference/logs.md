@@ -16,7 +16,7 @@ command so that odo can create the resources on the Kubernetes cluster.
 
 Consider a devfile.yaml like below which was used to create inner loop 
 resources using `odo dev`. Notice that multiple containers have been named 
-as `container` to show how `odo logs` would display logs when more than one 
+as `main` to show how `odo logs` would display logs when more than one 
 containers have the same name:
 ```yaml
 metadata:
@@ -88,7 +88,7 @@ components:
         name: infinitepodone
       spec:
         containers:
-          - name: container
+          - name: main
             image: docker.io/dharmit/infiniteloop
 - name: infinitedeployment
   kubernetes:
@@ -108,12 +108,9 @@ components:
               app: infinite
           spec:
             containers:
-            - name: container
+            - name: main
               image: docker.io/dharmit/infiniteloop
-            - name: container
-              image: docker.io/dharmit/infiniteloop
-
-```
+ ```
 When you do `odo dev`, odo creates pods for:
 1. The component named `node` itself. Containers for this are created using 
    `.components.container`.
@@ -130,23 +127,23 @@ as `container`, `container1` and `container2`:
 
 ```shell
 $ odo logs
-container: Fri May 27 06:17:30 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:31 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:32 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:33 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:34 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:35 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:36 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:37 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:38 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:39 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:40 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:41 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:42 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:44 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:45 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:46 UTC 2022 - this is infinite for loop
-container: Fri May 27 06:17:47 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:30 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:31 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:32 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:33 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:34 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:35 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:36 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:37 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:38 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:39 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:40 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:41 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:42 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:44 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:45 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:46 UTC 2022 - this is infinite for loop
+main: Fri May 27 06:17:47 UTC 2022 - this is infinite for loop
 runtime: time="2022-05-27T06:17:36Z" level=info msg="create process:devrun" 
 runtime: time="2022-05-27T06:17:36Z" level=info msg="create process:debugrun" 
 runtime: time="2022-05-27T06:17:36Z" level=info msg="try to start program" program=devrun 
@@ -169,20 +166,11 @@ runtime:
 runtime: App started on PORT 3000
 runtime: time="2022-05-27T06:17:42Z" level=debug msg="wait program exit" program=devrun 
 runtime: time="2022-05-27T06:17:43Z" level=debug msg="no auth required" 
-container1: Fri May 27 06:17:34 UTC 2022 - this is infinite for loop
-container1: Fri May 27 06:17:35 UTC 2022 - this is infinite for loop
-container1: Fri May 27 06:17:36 UTC 2022 - this is infinite for loop
-container1: Fri May 27 06:17:37 UTC 2022 - this is infinite for loop
-container1: Fri May 27 06:17:38 UTC 2022 - this is infinite for loop
-container1: Fri May 27 06:17:39 UTC 2022 - this is infinite for loop
-container1: Fri May 27 06:17:40 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:52 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:53 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:54 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:55 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:56 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:57 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:58 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:18:59 UTC 2022 - this is infinite for loop
-container2: Fri May 27 06:19:00 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:34 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:35 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:36 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:37 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:38 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:39 UTC 2022 - this is infinite for loop
+main1: Fri May 27 06:17:40 UTC 2022 - this is infinite for loop
 ```
