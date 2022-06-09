@@ -102,7 +102,8 @@ vet:
 
 .PHONY: sec
 sec:
-	go run $(COMMON_GOFLAGS) github.com/securego/gosec/v2/cmd/gosec -severity medium -confidence medium -exclude G304,G204 -quiet  ./...
+	go run $(COMMON_GOFLAGS) github.com/securego/gosec/v2/cmd/gosec -severity medium -confidence medium -exclude G304,G204,G107 -quiet  ./tests/...
+	go run $(COMMON_GOFLAGS) github.com/securego/gosec/v2/cmd/gosec -severity medium -confidence medium -exclude G304,G204 -quiet  ./cmd/... ./pkg/...
 
 .PHONY: clean
 clean:
