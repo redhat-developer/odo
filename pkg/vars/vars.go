@@ -10,7 +10,7 @@ import (
 )
 
 // GetVariables returns a map of key/value from pairs defined in the file and in the list of strings in the format KEY=VALUE or KEY
-// For a KEY entry, the value wbe obtained from the environment, and if the value is not defined in the environment, the entry KEY will be ignored
+// For a KEY entry, the value will be obtained from the environment, and if the value is not defined in the environment, the entry KEY will be ignored
 // An empty filename will skip the extraction of pairs from file
 func GetVariables(fs filesystem.Filesystem, filename string, override []string, lookupEnv func(string) (string, bool)) (map[string]string, error) {
 
@@ -35,7 +35,7 @@ func GetVariables(fs filesystem.Filesystem, filename string, override []string, 
 }
 
 // parseKeyValueFile parses a file for "KEY=VALUE" lines and returns a map of keys/values
-// If a key is defined without value "KEY", the value is searched into the environment with lookupEnv function
+// If a key is defined without a value as "KEY", the value is searched into the environment with lookupEnv function
 // Note that "KEY=" defines an empty value for KEY, but "KEY" indicates to search for value in environment
 // If the KEY environment variable is not defined, this entry will be skipped
 func parseKeyValueFile(fs filesystem.Filesystem, filename string, lookupEnv func(string) (string, bool)) (map[string]string, error) {
@@ -83,7 +83,7 @@ func parseKeyValueStrings(strs []string, lookupEnv func(string) (string, bool)) 
 // parseKeyValueString parses a string to extract a key and its associated value
 // if a line is empty or a comment, a nil error and an empty key are returned
 // if a key does not define a value, the value will be obtained from the environment
-// in this case, if the environment does not define the valriable, the entrey will be ignored
+// in this case, if the environment does not define the variable, the entry will be ignored
 func parseKeyValueString(s string, lookupEnv func(string) (string, bool)) (string, string, error) {
 	line := strings.TrimLeftFunc(s, unicode.IsSpace)
 	if len(line) == 0 || strings.HasPrefix(line, "#") {
