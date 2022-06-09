@@ -78,6 +78,20 @@ func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, quit)
 }
 
+// ConvertUnstructuredListToResource mocks base method.
+func (m *MockClientInterface) ConvertUnstructuredListToResource(u unstructured.UnstructuredList, obj interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConvertUnstructuredListToResource", u, obj)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ConvertUnstructuredListToResource indicates an expected call of ConvertUnstructuredListToResource.
+func (mr *MockClientInterfaceMockRecorder) ConvertUnstructuredListToResource(u, obj interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertUnstructuredListToResource", reflect.TypeOf((*MockClientInterface)(nil).ConvertUnstructuredListToResource), u, obj)
+}
+
 // ConvertUnstructuredToResource mocks base method.
 func (m *MockClientInterface) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
 	m.ctrl.T.Helper()
@@ -1064,6 +1078,22 @@ func (m *MockClientInterface) ListSecrets(labelSelector string) ([]v11.Secret, e
 func (mr *MockClientInterfaceMockRecorder) ListSecrets(labelSelector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecrets", reflect.TypeOf((*MockClientInterface)(nil).ListSecrets), labelSelector)
+}
+
+// ListServiceBindingsFromAllGroups mocks base method.
+func (m *MockClientInterface) ListServiceBindingsFromAllGroups() ([]v1alpha3.ServiceBinding, []v1alpha10.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListServiceBindingsFromAllGroups")
+	ret0, _ := ret[0].([]v1alpha3.ServiceBinding)
+	ret1, _ := ret[1].([]v1alpha10.ServiceBinding)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListServiceBindingsFromAllGroups indicates an expected call of ListServiceBindingsFromAllGroups.
+func (mr *MockClientInterfaceMockRecorder) ListServiceBindingsFromAllGroups() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServiceBindingsFromAllGroups", reflect.TypeOf((*MockClientInterface)(nil).ListServiceBindingsFromAllGroups))
 }
 
 // ListServices mocks base method.

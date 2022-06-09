@@ -204,6 +204,10 @@ func (c *Client) ConvertUnstructuredToResource(u unstructured.Unstructured, obj 
 	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), obj)
 }
 
+func (c *Client) ConvertUnstructuredListToResource(u unstructured.UnstructuredList, obj interface{}) error {
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), obj)
+}
+
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
 func (c *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
 	var operatorGVRList []meta.RESTMapping

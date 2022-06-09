@@ -160,6 +160,34 @@ func (c Client) GetSpecServiceBinding(name string) (specApi.ServiceBinding, erro
 	return result, nil
 }
 
+func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error) {
+	if c.DynamicClient == nil {
+		return nil, nil, nil
+	}
+
+	specsU, err := c.ListDynamicResources(specApi.GroupVersionResource)
+	if err != nil {
+		return nil, nil, err
+	}
+	var specs specApi.ServiceBindingList
+	err = c.ConvertUnstructuredListToResource(*specsU, &specs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bindingsU, err := c.ListDynamicResources(bindingApi.GroupVersionResource)
+	if err != nil {
+		return nil, nil, err
+	}
+	var bindings bindingApi.ServiceBindingList
+	err = c.ConvertUnstructuredListToResource(*bindingsU, &bindings)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return specs.Items, bindings.Items, nil
+}
+
 func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks bindingApi.BindableKindsStatus) bool {
 	var gkAlreadyAdded bool
 	// check every GroupKind only once

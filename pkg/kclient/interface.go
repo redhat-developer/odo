@@ -35,6 +35,7 @@ type ClientInterface interface {
 	GetBindableKindStatusRestMapping(bindableKindStatuses []bindingApi.BindableKindsStatus) ([]*meta.RESTMapping, error)
 	GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error)
 	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
+	ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error)
 	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
 
 	// deployment.go
@@ -94,6 +95,7 @@ type ClientInterface interface {
 	GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
 	ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error
+	ConvertUnstructuredListToResource(u unstructured.UnstructuredList, obj interface{}) error
 
 	// owner_reference.go
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
