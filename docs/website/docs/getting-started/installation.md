@@ -40,7 +40,7 @@ curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
-3. Install odo
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
@@ -71,7 +71,7 @@ curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
-3. Install odo
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
@@ -102,7 +102,7 @@ curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
-3. Install odo
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
@@ -133,7 +133,7 @@ curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
-3. Install odo
+3. Install odo:
 ```shell
 sudo install -o root -g root -m 0755 odo /usr/local/bin/odo
 ```
@@ -160,6 +160,7 @@ defaultValue="intel"
 values={[
 {label: 'Intel', value: 'intel'},
 {label: 'Apple Silicon', value: 'arm'},
+{label: 'Homebrew', value: 'homebrew'},
 ]}>
 
 <TabItem value="intel">
@@ -177,7 +178,7 @@ curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
-3. Install odo
+3. Install odo:
 ```shell
 chmod +x ./odo
 sudo mv ./odo /usr/local/bin/odo
@@ -209,7 +210,7 @@ curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
-3. Install odo
+3. Install odo:
 ```shell
 chmod +x ./odo
 sudo mv ./odo /usr/local/bin/odo
@@ -224,6 +225,23 @@ export PATH=$PATH:$HOME/bin
 # (Optional) Add the $HOME/bin to your shell initialization file
 echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 ```
+</TabItem>
+<TabItem value="homebrew">
+
+Installing `odo` using [Homebrew](https://brew.sh/):
+
+1. Install odo:
+
+```shell
+brew install odo-dev
+```
+
+2. Verify the version you installed is up-to-date:
+
+```shell
+odo version
+```
+
 </TabItem>
 
 </Tabs>
