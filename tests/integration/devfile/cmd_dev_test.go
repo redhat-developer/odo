@@ -1191,7 +1191,7 @@ var _ = Describe("odo dev command tests", func() {
 
 		It("should error out with some log", func() {
 			helper.MatchAllInOutput(string(initErr), []string{
-				"exited with an error status in 1 sec",
+				"exited with an error status in",
 				"Did you mean one of these?",
 			})
 		})

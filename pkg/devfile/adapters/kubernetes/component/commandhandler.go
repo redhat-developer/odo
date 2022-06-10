@@ -1,8 +1,7 @@
 package component
 
 import (
-	"errors"
-	"strings"
+	"fmt"
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -17,9 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-const _numberOfLinesToOutputLog = 100
-const _processStatusWaitTime = 1 * time.Second
-const _sigtermExitCode = 143
+const numberOfLinesToOutputLog = 100
 
 type adapterHandler struct {
 	Adapter
@@ -108,11 +105,31 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		}
 	}
 
-	//Need to wait a few seconds prior to checking the status,
-	//as some implementations might take time to report a correct status
-	time.Sleep(_processStatusWaitTime)
+	retrySchedule := []time.Duration{
+		5 * time.Second,
+		6 * time.Second,
+		9 * time.Second,
+	}
+	var isRunning bool
+	var err error
+	var totalWaitTime float64
+	for _, s := range retrySchedule {
+		time.Sleep(s)
+		klog.V(4).Infof("checking if process for command %q is running (will timeout in %0.f seconds if not)",
+			devfileCmd.Id, s.Seconds())
+		isRunning, err = a.isRemoteProcessForCommandRunning(devfileCmd)
+		if err == nil && isRunning {
+			break
+		}
+		totalWaitTime += s.Seconds()
+	}
+	//All retries failed, but giving one last chance
+	if err != nil {
+		return err
+	}
 
-	return a.checkRemoteCommandStatus(devfileCmd)
+	return a.checkRemoteCommandStatus(devfileCmd,
+		fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
 }
 
 // isRemoteProcessForCommandRunning returns true if the command is running
@@ -128,14 +145,15 @@ func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Comm
 
 // checkRemoteCommandStatus checks if the command is running .
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
-func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command) error {
+func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command, notRunningMessage string) error {
 	running, err := a.isRemoteProcessForCommandRunning(command)
 	if err != nil {
 		return err
 	}
 
 	if !running {
-		log.Warningf("Devfile command %q exited with an error status in %.0f sec", command.Id, _processStatusWaitTime.Seconds())
+		log.Warningf(notRunningMessage)
+		log.Warningf("Last %d lines of log:", numberOfLinesToOutputLog)
 
 		rd, err := component.Log(a.kubeClient, a.ComponentName, a.AppName, false, command)
 		if err != nil {
@@ -144,7 +162,7 @@ func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command) err
 
 		// Use GetStderr in order to make sure that colour output is correct
 		// on non-TTY terminals
-		err = util.DisplayLog(false, rd, log.GetStderr(), a.ComponentName, _numberOfLinesToOutputLog)
+		err = util.DisplayLog(false, rd, log.GetStderr(), a.ComponentName, numberOfLinesToOutputLog)
 		if err != nil {
 			return err
 		}
