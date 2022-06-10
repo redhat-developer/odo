@@ -52,6 +52,11 @@ var _ = Describe("odo generic", func() {
 		Expect(output).To(ContainSubstring("Invalid command - see available commands/subcommands above"))
 	})
 
+	It("returns error when using an invalid command with --help", func() {
+		output := helper.Cmd("odo", "hello", "--help").ShouldFail().Err()
+		Expect(output).To(ContainSubstring("unknown command 'hello', type --help for a list of all commands"))
+	})
+
 	Context("When deleting two project one after the other", func() {
 		It("should be able to delete sequentially", func() {
 			project1 := helper.CreateRandProject()
