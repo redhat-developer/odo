@@ -11,7 +11,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -40,6 +39,8 @@ func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
 	podName string,
 	containerName string,
 ) (RemoteProcessInfo, error) {
+	klog.V(4).Infof("GetProcessInfoForCommand for %q", devfileCmd.Id)
+
 	pid, err := getRemoteProcessPID(kclient, devfileCmd, podName, containerName)
 	if err != nil {
 		return RemoteProcessInfo{}, err
@@ -91,6 +92,8 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	containerName string,
 	outputHandler CommandOutputHandler,
 ) error {
+	klog.V(4).Infof("StartProcessForCommand for %q", devfileCmd.Id)
+
 	if devfileCmd.Exec == nil {
 		return errors.New(" only Exec commands are supported")
 	}
@@ -105,18 +108,23 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	// Change to the workdir and execute the command
 	pidFile := getPidFileForCommand(devfileCmd)
 	cmd := []string{common.ShellExecutable, "-c"}
+	// Storing the /bin/sh parent process PID. It will allow to determine its children later on and kill them when a stop is request
 	pidWriterCmd := fmt.Sprintf("echo $$ > %s", pidFile)
+	// Redirecting to /proc/1/fd/* allows to redirect the process output to the output streams of PID 1 process inside the container.
+	// This way, returning the container logs with 'odo logs' or 'kubectl logs' would work seamlessly.
+	// See https://stackoverflow.com/questions/58716574/where-exactly-do-the-logs-of-kubernetes-pods-come-from-at-the-container-level
+	outputRedirectCmd := "1>>/proc/1/fd/1 2>>/proc/1/fd/2"
 	if devfileCmd.Exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance,
 		// for example "cd /tmp && pwd"
-		// Full command is: /bin/sh -c "echo $$ > $pidFile && cd $workingDir && $cmdLine"
+		// Full command is: /bin/sh -c "echo $$ > $pidFile && cd $workingDir && ($cmdLine) 1>>/proc/1/fd/1 2>>/proc/1/fd/2"
 		// We are deleting the PID file if the main command does not succeed, so its status could be detected accordingly.
-		cmd = append(cmd, fmt.Sprintf("%s && cd %s && %s",
-			pidWriterCmd, devfileCmd.Exec.WorkingDir, cmdLine))
+		cmd = append(cmd, fmt.Sprintf("%s && cd %s && (%s) %s",
+			pidWriterCmd, devfileCmd.Exec.WorkingDir, cmdLine, outputRedirectCmd))
 	} else {
-		// Full command is: /bin/sh -c "echo $$ > $pidFile && $cmdLine"
+		// Full command is: /bin/sh -c "echo $$ > $pidFile && ($cmdLine) 1>>/proc/1/fd/1 2>>/proc/1/fd/2"
 		// We are deleting the PID file if the main command does not succeed, so its status could be detected accordingly.
-		cmd = append(cmd, fmt.Sprintf("%s && %s", pidWriterCmd, cmdLine))
+		cmd = append(cmd, fmt.Sprintf("%s && (%s) %s", pidWriterCmd, cmdLine, outputRedirectCmd))
 	}
 
 	go func() {
@@ -137,19 +145,55 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	return nil
 }
 
+// StopProcessForCommand stops the process representing the specified Devfile command.
+// Because of the way this process is launched and its PID stored (see StartProcessForCommand),
+// we need to determine the process children (there should be only one child). Then killing those children
+// will exit the parent 'sh' process.
 func (k *kubeExecProcessHandler) StopProcessForCommand(
 	devfileCmd devfilev1.Command,
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
-	outputHandler CommandOutputHandler,
 ) error {
-	stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		common.ShellExecutable, "-c", fmt.Sprintf("kill $(cat %[1]s); rm -f %[1]s", getPidFileForCommand(devfileCmd)))
-	if outputHandler != nil {
-		outputHandler(stdout, stderr, err)
+	klog.V(4).Infof("StopProcessForCommand for %q", devfileCmd.Id)
+	defer func() {
+		pidFile := getPidFileForCommand(devfileCmd)
+		err := ExecuteCommand([]string{common.ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
+			kclient, podName, containerName, false, nil, nil)
+		if err != nil {
+			klog.V(2).Infof("Could not remove file %q: %v", pidFile, err)
+		}
+	}()
+
+	ppid, err := getRemoteProcessPID(kclient, devfileCmd, podName, containerName)
+	if err != nil {
+		return err
 	}
-	return err
+	if ppid == 0 {
+		return nil
+	}
+
+	children, err := getProcessChildren(ppid, kclient, podName, containerName)
+	if err != nil {
+		return err
+	}
+
+	kill := func(p int) error {
+		return ExecuteCommand([]string{common.ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
+			kclient, podName, containerName, false, nil, nil)
+	}
+
+	if len(children) == 0 {
+		return kill(ppid)
+	}
+
+	for _, child := range children {
+		if err = kill(child); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func getRemoteProcessPID(kclient kclient.ClientInterface, devfileCmd devfilev1.Command, podName string, containerName string) (int, error) {
@@ -180,6 +224,34 @@ func getRemoteProcessPID(kclient kclient.ClientInterface, devfileCmd devfilev1.C
 			pidFile, line)
 	}
 	return pid, nil
+}
+
+// getProcessChildren returns the children of the specified process in the given container.
+// It works by reading the /proc/<pid>/task/<pid>/children file, which is a space-separated list of children
+func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string, containerName string) ([]int, error) {
+	if pid <= 0 {
+		return nil, fmt.Errorf("invalid pid: %d", pid)
+	}
+
+	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
+		"cat", fmt.Sprintf("/proc/%[1]d/task/%[1]d/children", pid))
+	if err != nil {
+		return nil, err
+	}
+
+	var children []int
+	for _, line := range stdout {
+		l := strings.Split(strings.TrimSpace(line), " ")
+		for _, p := range l {
+			c, err := strconv.Atoi(p)
+			if err != nil {
+				return nil, err
+			}
+			children = append(children, c)
+		}
+	}
+
+	return children, nil
 }
 
 // getPidFileForCommand returns the path to the PID file in the remote container.
