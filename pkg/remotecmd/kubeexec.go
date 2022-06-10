@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"k8s.io/client-go/util/exec"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -16,9 +15,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 )
-
-const _sigtermExitCode = 143
-const _numberOfLinesToOutputLog = 100
 
 // kubeExecProcessHandler implements RemoteProcessHandler by executing Devfile commands right away in the container
 // (like a 'kubectl exec'-like approach). Command execution is done in the background, in a separate goroutine.
@@ -93,9 +89,10 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
-) ([]string, []string, error) {
+	outputHandler CommandOutputHandler,
+) error {
 	if devfileCmd.Exec == nil {
-		return nil, nil, errors.New(" only Exec commands are supported")
+		return errors.New(" only Exec commands are supported")
 	}
 
 	// deal with environment variables
@@ -124,26 +121,16 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 
 	go func() {
 		_ = log.SpinnerNoSpin("Executing the application")
-		if stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false, cmd...); err != nil {
+		stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false, cmd...)
+		if err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
-
-			var codeExitError exec.CodeExitError
-			if errors.As(err, &codeExitError) && codeExitError.ExitStatus() == _sigtermExitCode {
-				//process killed by SIGTERM signal (potentially via the stop command, upon a restart command)
-				//=> displaying the logs might feel disturbing to the end-users
-				klog.V(2).Infof("stdout: %s", strings.Join(stdout, "\n"))
-				klog.V(2).Infof("stderr: %s", strings.Join(stderr, "\n"))
-			} else {
-				// Use GetStderr in order to make sure that colour output is correct
-				// on non-TTY terminals
-				log.Warningf("Last %d lines of log:", _numberOfLinesToOutputLog)
-				_ = util.DisplayLogLines(stdout, log.GetStderr(), _numberOfLinesToOutputLog)
-				_ = util.DisplayLogLines(stderr, log.GetStderr(), _numberOfLinesToOutputLog)
-			}
+		}
+		if outputHandler != nil {
+			outputHandler(stdout, stderr, err)
 		}
 	}()
 
-	return nil, nil, nil
+	return nil
 }
 
 func (k *kubeExecProcessHandler) StopProcessForCommand(
@@ -151,9 +138,14 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
-) (stdout []string, stderr []string, err error) {
-	return ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
+	outputHandler CommandOutputHandler,
+) error {
+	stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
 		common.ShellExecutable, "-c", fmt.Sprintf("kill $(cat %[1]s); rm -f %[1]s", getPidFileForCommand(devfileCmd)))
+	if outputHandler != nil {
+		outputHandler(stdout, stderr, err)
+	}
+	return err
 }
 
 func getRemoteProcessPID(kclient kclient.ClientInterface, devfileCmd devfilev1.Command, podName string, containerName string) (int, error) {

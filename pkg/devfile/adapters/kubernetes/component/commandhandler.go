@@ -1,9 +1,12 @@
 package component
 
 import (
+	"errors"
+	"strings"
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"k8s.io/client-go/util/exec"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -16,6 +19,7 @@ import (
 
 const _numberOfLinesToOutputLog = 100
 const _processStatusWaitTime = 1 * time.Second
+const _sigtermExitCode = 143
 
 type adapterHandler struct {
 	Adapter
@@ -49,6 +53,26 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
 
+	startHandler := func(stdout []string, stderr []string, err error) {
+		if err != nil {
+			klog.V(2).Infof("error while running background command: %v", err)
+
+			var codeExitError exec.CodeExitError
+			if errors.As(err, &codeExitError) && codeExitError.ExitStatus() == _sigtermExitCode {
+				//process killed by SIGTERM signal (potentially via the stop command, upon a restart command)
+				//=> displaying the logs might feel disturbing to the end-users
+				klog.V(2).Infof("stdout: %s", strings.Join(stdout, "\n"))
+				klog.V(2).Infof("stderr: %s", strings.Join(stderr, "\n"))
+			} else {
+				// Use GetStderr in order to make sure that colour output is correct
+				// on non-TTY terminals
+				log.Warningf("Last %d lines of log:", _numberOfLinesToOutputLog)
+				_ = util.DisplayLogLines(stdout, log.GetStderr(), _numberOfLinesToOutputLog)
+				_ = util.DisplayLogLines(stderr, log.GetStderr(), _numberOfLinesToOutputLog)
+			}
+		}
+	}
+
 	// if we need to restart, issue the remote process handler command to stop all running commands first.
 	// We do not need to restart Hot reload capable commands.
 	if a.componentExists {
@@ -63,13 +87,12 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			_, _, err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
+			err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, nil)
 			if err != nil {
 				return err
 			}
 
-			_, _, err = remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
-			if err != nil {
+			if err = remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
 				return err
 			}
 		} else {
@@ -80,8 +103,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 			return err
 		}
 
-		_, _, err := remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
-		if err != nil {
+		if err := remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
 			return err
 		}
 	}

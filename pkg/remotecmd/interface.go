@@ -29,6 +29,10 @@ type RemoteProcessInfo struct {
 	Status RemoteProcessStatus
 }
 
+// CommandOutputHandler is a function that is expected to handle the output and error returned by a command executed.
+// It is currently used in StartProcessForCommand and StopProcessForCommand.
+type CommandOutputHandler func(stdout []string, stderr []string, err error)
+
 // RemoteProcessHandler is an interface for managing processes that are intended to be executed remotely,
 // in Kubernetes/OpenShift containers
 type RemoteProcessHandler interface {
@@ -47,7 +51,8 @@ type RemoteProcessHandler interface {
 		kclient kclient.ClientInterface,
 		podName string,
 		containerName string,
-	) (stdout []string, stderr []string, err error)
+		outputHandler CommandOutputHandler,
+	) error
 
 	// StopProcessForCommand stops the process representing the given Devfile command.
 	StopProcessForCommand(
@@ -55,5 +60,6 @@ type RemoteProcessHandler interface {
 		kclient kclient.ClientInterface,
 		podName string,
 		containerName string,
-	) (stdout []string, stderr []string, err error)
+		outputHandler CommandOutputHandler,
+	) error
 }
