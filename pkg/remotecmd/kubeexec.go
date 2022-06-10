@@ -234,7 +234,7 @@ func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string
 	}
 
 	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		"cat", fmt.Sprintf("/proc/%[1]d/task/%[1]d/children", pid))
+		common.ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid))
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string
 		for _, p := range l {
 			c, err := strconv.Atoi(p)
 			if err != nil {
-				return nil, err
+				return children, err
 			}
 			children = append(children, c)
 		}
