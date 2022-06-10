@@ -112,13 +112,11 @@ When you do `odo dev`, odo creates pods for:
 1. The component named `node` itself. Containers for this are created using `.components.container`.
 2. Kubernetes component named `infinitepodone`
 3. Kubernetes component named `infinitedeployment`. As can be seen under `.spec.template.spec.containers` for this 
-   particular component, it creates two containers for it.
+   particular component, it creates one container for it.
 
 When you run `odo logs`, you should see logs from all these containers. Each line is prefixed with 
 `<container-name>:` to easily distinguish which the container the logs belong to. Since we named multiple 
-containers in the `devfile.yaml` as `container`, `odo logs` has distinguished these containers as `container`, 
-`container1` and `container2`:
-
+containers in the `devfile.yaml` as `main`, `odo logs` has distinguished these containers as `main` and `main[1]`:
 ```shell
 $ odo logs
 main: Fri May 27 06:17:30 UTC 2022 - this is infinite for loop
