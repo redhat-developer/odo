@@ -55,7 +55,7 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
-	spinner.End(true)
+	spinner.End(err == nil)
 	return err
 }
 
