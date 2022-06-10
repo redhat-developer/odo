@@ -40,14 +40,19 @@ func (s *Survey) AskServiceBindingName(defaultName string) (string, error) {
 }
 
 func (o *Survey) AskBindAsFiles() (bool, error) {
-	question := &survey.Confirm{
-		Message: "Bind as files?",
-		Default: true,
+	question := &survey.Select{
+		Message: "How do you want to bind the service?",
+		Options: []string{"Bind as Files", "Bind as Environment Variables"},
 	}
-	var answer bool
+	var answer string
 	err := survey.AskOne(question, &answer)
 	if err != nil {
-		return false, err
+		return true, err
 	}
-	return answer, nil
+
+	var bindAsFiles bool
+	if answer == "Bind as Files" {
+		bindAsFiles = true
+	}
+	return bindAsFiles, nil
 }

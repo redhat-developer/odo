@@ -19,7 +19,7 @@ import (
 const BindingRecommendedCommandName = "binding"
 
 var addBindingExample = ktemplates.Examples(`
-# Add binding between service named 'myservice' and the component present in the working directory in the interactive mode
+# Add binding between a service, and the component present in the working directory in the interactive mode
 %[1]s
 
 # Add binding between service named 'myservice' and the component present in the working directory
@@ -117,7 +117,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		kindGroup := strings.ReplaceAll(strings.ReplaceAll(splitService[1], "(", ""), ")", "")
 		exitMessage += fmt.Sprintf("\nYou can automate this command by executing:\n  odo add binding --service %s.%s --name %s", serviceName, kindGroup, bindingName)
 		if !bindAsFiles {
-			exitMessage += " --bind-as-files false"
+			exitMessage += " --bind-as-files=false"
 		}
 	}
 	log.Infof(exitMessage)
