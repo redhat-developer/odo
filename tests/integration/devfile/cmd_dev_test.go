@@ -1197,6 +1197,23 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
+	When("running odo dev and build command throws an error", func() {
+		var stderr string
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
+			stderr = helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
+		})
+
+		It("should error out with some log", func() {
+			helper.MatchAllInOutput(stderr, []string{
+				"unable to exec command",
+				"Usage: npm <command>",
+				"Did you mean one of these?",
+			})
+		})
+	})
+
 	When("Create and dev java-springboot component", func() {
 		devfileCmpName := "java-spring-boot"
 		var session helper.DevSession

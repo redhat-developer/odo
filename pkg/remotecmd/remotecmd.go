@@ -26,11 +26,13 @@ func ExecuteCommand(
 	soutReader, soutWriter := io.Pipe()
 	serrReader, serrWriter := io.Pipe()
 
+	var cmdOutput string
+
 	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, stdoutWriter)
-	stderrCompleteChannel := startReaderGoroutine(serrReader, show, stderrWriter)
+	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &cmdOutput, stdoutWriter)
+	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &cmdOutput, stderrWriter)
 
 	err := client.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
 
@@ -39,6 +41,13 @@ func ExecuteCommand(
 	<-stdoutCompleteChannel
 	_ = serrWriter.Close()
 	<-stderrCompleteChannel
+
+	if err != nil {
+		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
+		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
+
+		return fmt.Errorf("unable to exec command %v: \n%v: %w", command, cmdOutput, err)
+	}
 
 	return err
 }
@@ -104,7 +113,7 @@ func createConsoleOutputWriterAndChannel() (*io.PipeWriter, chan string) {
 // This goroutine will automatically pipe the output from the writer (passed into ExecCMDInContainer) to
 // the loggers.
 // The returned channel will contain a single nil entry once the reader has closed.
-func startReaderGoroutine(reader io.Reader, show bool, consoleOutput *io.PipeWriter) chan interface{} {
+func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *string, consoleOutput *io.PipeWriter) chan interface{} {
 	result := make(chan interface{})
 
 	go func() {
@@ -117,6 +126,10 @@ func startReaderGoroutine(reader io.Reader, show bool, consoleOutput *io.PipeWri
 				if err != nil {
 					log.Errorf("Unable to print to stdout: %s", err.Error())
 				}
+			}
+
+			if cmdOutput != nil {
+				*cmdOutput += fmt.Sprintln(line)
 			}
 
 			if consoleOutput != nil {
