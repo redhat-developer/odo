@@ -5,7 +5,6 @@ import (
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	"k8s.io/client-go/util/exec"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -50,22 +49,13 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
 
-	startHandler := func(stdout []string, stderr []string, err error) {
-		if err != nil {
-			klog.V(2).Infof("error while running background command: %v", err)
-
-			var codeExitError exec.CodeExitError
-			if errors.As(err, &codeExitError) && codeExitError.ExitStatus() == _sigtermExitCode {
-				//process killed by SIGTERM signal (potentially via the stop command, upon a restart command)
-				//=> displaying the logs might feel disturbing to the end-users
-				klog.V(2).Infof("stdout: %s", strings.Join(stdout, "\n"))
-				klog.V(2).Infof("stderr: %s", strings.Join(stderr, "\n"))
-			} else {
-				// Use GetStderr in order to make sure that colour output is correct
-				// on non-TTY terminals
-				log.Warningf("Last %d lines of log:", _numberOfLinesToOutputLog)
-				_ = util.DisplayLogLines(stdout, log.GetStderr(), _numberOfLinesToOutputLog)
-				_ = util.DisplayLogLines(stderr, log.GetStderr(), _numberOfLinesToOutputLog)
+	startHandler := func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
+		switch status {
+		case remotecmd.Starting:
+			_ = log.SpinnerNoSpin("Executing the application")
+		case remotecmd.Stopped:
+			if err != nil {
+				klog.V(2).Infof("error while running background command: %v", err)
 			}
 		}
 	}
@@ -84,7 +74,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, nil)
+			err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
 			if err != nil {
 				return err
 			}

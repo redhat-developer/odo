@@ -120,13 +120,17 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	}
 
 	go func() {
-		_ = log.SpinnerNoSpin("Executing the application")
+		if outputHandler != nil {
+			outputHandler(Starting, nil, nil, nil)
+		}
+
 		stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false, cmd...)
 		if err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
 		}
+
 		if outputHandler != nil {
-			outputHandler(stdout, stderr, err)
+			outputHandler(Stopped, stdout, stderr, err)
 		}
 	}()
 

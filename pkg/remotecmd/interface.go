@@ -13,6 +13,9 @@ const (
 	// Unknown represents a process for which the status cannot be determined reliably or is not handled yet by us.
 	Unknown RemoteProcessStatus = iota + 1
 
+	// Starting represents a process that is just about to start.
+	Starting
+
 	// Stopped represents a process stopped.
 	Stopped
 
@@ -30,8 +33,7 @@ type RemoteProcessInfo struct {
 }
 
 // CommandOutputHandler is a function that is expected to handle the output and error returned by a command executed.
-// It is currently used in StartProcessForCommand and StopProcessForCommand.
-type CommandOutputHandler func(stdout []string, stderr []string, err error)
+type CommandOutputHandler func(status RemoteProcessStatus, stdout []string, stderr []string, err error)
 
 // RemoteProcessHandler is an interface for managing processes that are intended to be executed remotely,
 // in Kubernetes/OpenShift containers
@@ -60,6 +62,5 @@ type RemoteProcessHandler interface {
 		kclient kclient.ClientInterface,
 		podName string,
 		containerName string,
-		outputHandler CommandOutputHandler,
 	) error
 }
