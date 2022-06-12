@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/klog"
@@ -12,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
+	"github.com/redhat-developer/odo/pkg/task"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -46,40 +48,7 @@ func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
 		return RemoteProcessInfo{}, err
 	}
 
-	process := RemoteProcessInfo{Pid: pid}
-
-	if pid < 0 {
-		process.Status = Unknown
-		return process, fmt.Errorf("invalid PID value for remote process: %d", pid)
-	}
-	if pid == 0 {
-		process.Status = Stopped
-		return process, nil
-	}
-
-	//Now check that the PID value is a valid process
-	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid))
-
-	if err != nil {
-		process.Status = Unknown
-		return process, err
-	}
-
-	var killStatus int
-	killStatus, err = strconv.Atoi(strings.TrimSpace(stdout[0]))
-	if err != nil {
-		process.Status = Unknown
-		return process, err
-	}
-
-	if killStatus == 0 {
-		process.Status = Running
-	} else {
-		process.Status = Stopped
-	}
-
-	return process, nil
+	return k.getProcessInfoFromPid(pid, kclient, podName, containerName)
 }
 
 // StartProcessForCommand runs the (potentially never finishing) Devfile command in the background.
@@ -179,8 +148,29 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	}
 
 	kill := func(p int) error {
-		return ExecuteCommand([]string{common.ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
+		err = ExecuteCommand([]string{common.ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
 			kclient, podName, containerName, false, nil, nil)
+
+		//Because the process we just stopped might take longer to exit (it might have caught the signal and is performing additional cleanup),
+		//retry detecting its actual state till it is stopped or timeout expires
+		var processInfo interface{}
+		processInfo, err = task.NewRetryable(fmt.Sprintf("status for remote process %d", p), func() (bool, interface{}, error) {
+			pInfo, e := k.getProcessInfoFromPid(p, kclient, podName, containerName)
+			return e == nil || pInfo.Status == Stopped, pInfo, e
+		}, true).RetryWithSchedule(2*time.Second, 4*time.Second, 8*time.Second)
+		if err != nil {
+			return err
+		}
+
+		pInfo, ok := processInfo.(RemoteProcessInfo)
+		if !ok {
+			klog.V(2).Infof("invalid type for remote process (%d) info, expected RemoteProcessInfo", p)
+			return fmt.Errorf("internal error while checking remote process status: %d", p)
+		}
+		if pInfo.Status != Stopped {
+			return fmt.Errorf("invalid status for remote process %d: %+v", p, processInfo)
+		}
+		return nil
 	}
 
 	if len(children) == 0 {
@@ -224,6 +214,48 @@ func getRemoteProcessPID(kclient kclient.ClientInterface, devfileCmd devfilev1.C
 			pidFile, line)
 	}
 	return pid, nil
+}
+
+func (k *kubeExecProcessHandler) getProcessInfoFromPid(
+	pid int,
+	kclient kclient.ClientInterface,
+	podName string,
+	containerName string,
+) (RemoteProcessInfo, error) {
+	process := RemoteProcessInfo{Pid: pid}
+
+	if pid < 0 {
+		process.Status = Unknown
+		return process, fmt.Errorf("invalid PID value for remote process: %d", pid)
+	}
+	if pid == 0 {
+		process.Status = Stopped
+		return process, nil
+	}
+
+	//Now check that the PID value is a valid process
+	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
+		common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid))
+
+	if err != nil {
+		process.Status = Unknown
+		return process, err
+	}
+
+	var killStatus int
+	killStatus, err = strconv.Atoi(strings.TrimSpace(stdout[0]))
+	if err != nil {
+		process.Status = Unknown
+		return process, err
+	}
+
+	if killStatus == 0 {
+		process.Status = Running
+	} else {
+		process.Status = Stopped
+	}
+
+	return process, nil
 }
 
 // getProcessChildren returns the children of the specified process in the given container.
