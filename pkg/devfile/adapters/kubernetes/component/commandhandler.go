@@ -12,6 +12,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
+	"github.com/redhat-developer/odo/pkg/task"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -100,20 +101,16 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		6 * time.Second,
 		9 * time.Second,
 	}
-	var isRunning bool
-	var err error
 	var totalWaitTime float64
 	for _, s := range retrySchedule {
-		time.Sleep(s)
-		klog.V(4).Infof("checking if process for command %q is running (will timeout in %0.f seconds if not)",
-			devfileCmd.Id, s.Seconds())
-		isRunning, err = a.isRemoteProcessForCommandRunning(devfileCmd)
-		if err == nil && isRunning {
-			break
-		}
 		totalWaitTime += s.Seconds()
 	}
-	//All retries failed, but giving one last chance
+
+	_, err := task.NewRetryable(fmt.Sprintf("process for command %q", devfileCmd.Id), func() (bool, interface{}, error) {
+		klog.V(4).Infof("checking if process for command %q is running", devfileCmd.Id)
+		isRunning, err := a.isRemoteProcessForCommandRunning(devfileCmd)
+		return err == nil && isRunning, isRunning, err
+	}, false).RetryWithSchedule(retrySchedule...)
 	if err != nil {
 		return err
 	}
