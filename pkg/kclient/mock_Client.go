@@ -107,20 +107,6 @@ func (mr *MockClientInterfaceMockRecorder) CreateDeployment(deploy interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeployment", reflect.TypeOf((*MockClientInterface)(nil).CreateDeployment), deploy)
 }
 
-// CreateDynamicResource mocks base method.
-func (m *MockClientInterface) CreateDynamicResource(exampleCustomResource unstructured.Unstructured) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDynamicResource", exampleCustomResource)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateDynamicResource indicates an expected call of CreateDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) CreateDynamicResource(exampleCustomResource interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).CreateDynamicResource), exampleCustomResource)
-}
-
 // CreateNamespace mocks base method.
 func (m *MockClientInterface) CreateNamespace(name string) (*v11.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -811,21 +797,6 @@ func (mr *MockClientInterfaceMockRecorder) GetProject(projectName interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockClientInterface)(nil).GetProject), projectName)
 }
 
-// GetReplicaSetByName mocks base method.
-func (m *MockClientInterface) GetReplicaSetByName(name string) (*v10.ReplicaSet, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReplicaSetByName", name)
-	ret0, _ := ret[0].(*v10.ReplicaSet)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetReplicaSetByName indicates an expected call of GetReplicaSetByName.
-func (mr *MockClientInterfaceMockRecorder) GetReplicaSetByName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReplicaSetByName", reflect.TypeOf((*MockClientInterface)(nil).GetReplicaSetByName), name)
-}
-
 // GetResourceSpecDefinition mocks base method.
 func (m *MockClientInterface) GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error) {
 	m.ctrl.T.Helper()
@@ -1123,6 +1094,21 @@ func (m *MockClientInterface) NewServiceBindingServiceObject(unstructuredService
 func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(unstructuredService, bindingName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), unstructuredService, bindingName)
+}
+
+// PatchDynamicResource mocks base method.
+func (m *MockClientInterface) PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PatchDynamicResource", exampleCustomResource)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PatchDynamicResource indicates an expected call of PatchDynamicResource.
+func (mr *MockClientInterfaceMockRecorder) PatchDynamicResource(exampleCustomResource interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).PatchDynamicResource), exampleCustomResource)
 }
 
 // RunLogout mocks base method.

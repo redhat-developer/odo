@@ -51,7 +51,7 @@ type ClientInterface interface {
 	IsDeploymentExtensionsV1Beta1() (bool, error)
 
 	// dynamic.go
-	CreateDynamicResource(exampleCustomResource unstructured.Unstructured) error
+	PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error)
 	ListDynamicResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error)
 	GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error)
 	UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error

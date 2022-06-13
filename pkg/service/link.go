@@ -90,7 +90,8 @@ func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.Dev
 		u.SetOwnerReferences([]metav1.OwnerReference{ownerReference})
 		u.SetLabels(labels)
 
-		err = createOperatorService(client, u)
+		var updated bool
+		updated, err = updateOperatorService(client, u)
 		delete(deployed, u.GetKind()+"/"+crdName)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
@@ -104,7 +105,7 @@ func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.Dev
 		// uncomment/modify when service linking is enabled in v3
 		// name := u.GetName()
 		// log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
-		restartNeeded = true
+		restartNeeded = restartNeeded || updated
 	}
 
 	for key, val := range deployed {
