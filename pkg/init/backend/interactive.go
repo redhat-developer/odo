@@ -107,7 +107,6 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
-	// TODO: Add tests
 	config, err := getPortsAndEnvVar(devfileobj)
 	var zeroDevfile parser.DevfileObj
 	if err != nil {
@@ -235,21 +234,19 @@ func PrintConfiguration(config asker.DevfileConfiguration) {
 
 func getPortsAndEnvVar(obj parser.DevfileObj) (asker.DevfileConfiguration, error) {
 	var config = asker.DevfileConfiguration{}
-	components, err := obj.Data.GetComponents(parsercommon.DevfileOptions{})
+	components, err := obj.Data.GetComponents(parsercommon.DevfileOptions{ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType}})
 	if err != nil {
 		return config, err
 	}
 	for _, component := range components {
 		var ports = []string{}
 		var envMap = map[string]string{}
-		if component.Container != nil {
-			// TODO: Fix this for component that are not a container
-			for _, ep := range component.Container.Endpoints {
-				ports = append(ports, strconv.Itoa(ep.TargetPort))
-			}
-			for _, env := range component.Container.Env {
-				envMap[env.Name] = env.Value
-			}
+
+		for _, ep := range component.Container.Endpoints {
+			ports = append(ports, strconv.Itoa(ep.TargetPort))
+		}
+		for _, env := range component.Container.Env {
+			envMap[env.Name] = env.Value
 		}
 		config[component.Name] = asker.ContainerConfiguration{
 			Ports: ports,
