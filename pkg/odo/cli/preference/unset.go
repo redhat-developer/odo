@@ -12,9 +12,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 const unsetCommandName = "unset"
@@ -33,7 +34,7 @@ type UnsetOptions struct {
 	// Clients
 	clientset *clientset.Clientset
 
-	//Parameters
+	// Parameters
 	paramName string
 
 	// Flags
@@ -94,7 +95,11 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Long:  fmt.Sprintf(unsetLongDesc, preference.FormatSupportedParameters()),
 		Example: func(exampleString, fullName string) string {
 			// Just show one example of how to unset a value.
-			exampleString += fmt.Sprintf("\n  %s %s", fullName, preference.GetSupportedParameters()[0])
+			parameters := preference.GetSupportedParameters()
+			for _, param := range parameters {
+				exampleString += fmt.Sprintf("\n  %s %s", fullName, param)
+			}
+
 			return "\n" + exampleString
 		}(unsetExample, fullName),
 		Args: func(cmd *cobra.Command, args []string) error {
