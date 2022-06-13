@@ -14,13 +14,13 @@ type Client interface {
 	GetPushTimeout() time.Duration
 	GetEphemeralSourceVolume() bool
 	GetConsentTelemetry() bool
-	GetRegistryCacheTime() int
+	GetRegistryCacheTime() time.Duration
 	RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) error
 
 	UpdateNotification() *bool
 	Timeout() *time.Duration
 	PushTimeout() *time.Duration
-	RegistryCacheTime() *int
+	RegistryCacheTime() *time.Duration
 	EphemeralSourceVolume() *bool
 	ConsentTelemetry() *bool
 	RegistryList() *[]Registry

@@ -1,7 +1,6 @@
 package preference
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -36,7 +35,7 @@ type odoSettings struct {
 	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
 
 	// RegistryCacheTime how long odo should cache information from registry
-	RegistryCacheTime *int `yaml:"RegistryCacheTime,omitempty"`
+	RegistryCacheTime *time.Duration `yaml:"RegistryCacheTime,omitempty"`
 
 	// Ephemeral if true creates odo emptyDir to store odo source code
 	Ephemeral *bool `yaml:"Ephemeral,omitempty"`
@@ -268,12 +267,9 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 			c.OdoSettings.PushTimeout = &typedval
 
 		case "registrycachetime":
-			typedval, err := strconv.Atoi(value)
+			typedval, err := time.ParseDuration(value)
 			if err != nil {
 				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.New("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.RegistryCacheTime = &typedval
 
@@ -347,8 +343,8 @@ func (c *preferenceInfo) GetPushTimeout() time.Duration {
 }
 
 // GetRegistryCacheTime gets the value set by RegistryCacheTime
-func (c *preferenceInfo) GetRegistryCacheTime() int {
-	return util.GetIntOrDefault(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
+func (c *preferenceInfo) GetRegistryCacheTime() time.Duration {
+	return util.GetTimeDefault(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from preferences
@@ -393,7 +389,7 @@ func (c *preferenceInfo) PushTimeout() *time.Duration {
 	return c.OdoSettings.PushTimeout
 }
 
-func (c *preferenceInfo) RegistryCacheTime() *int {
+func (c *preferenceInfo) RegistryCacheTime() *time.Duration {
 	return c.OdoSettings.RegistryCacheTime
 }
 

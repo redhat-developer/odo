@@ -45,7 +45,7 @@ const (
 	OldDefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
 
 	// DefaultRegistryCacheTime is time (in minutes) for how long odo will cache information from Devfile registry
-	DefaultRegistryCacheTime = 15
+	DefaultRegistryCacheTime = 15 * time.Minute
 
 	// EphemeralSetting specifies if ephemeral volumes needs to be used as source volume.
 	EphemeralSetting = "Ephemeral"
@@ -67,7 +67,7 @@ var TimeoutSettingDescription = fmt.Sprintf("Timeout (in Duration) for cluster s
 var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in Duration) for waiting for a Pod to come up (Default: %s)", DefaultPushTimeout)
 
 // RegistryCacheTimeSettingDescription adds a description for RegistryCacheTime
-var RegistryCacheTimeSettingDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from the Devfile registry (Default: %d)", DefaultRegistryCacheTime)
+var RegistryCacheTimeSettingDescription = fmt.Sprintf("For how long (in Duration) odo will cache information from the Devfile registry (Default: %s)", DefaultRegistryCacheTime)
 
 // EphemeralSettingDescription adds a description for EphemeralSourceVolume
 var EphemeralSettingDescription = fmt.Sprintf("If true, odo will create an emptyDir volume to store source code (Default: %t)", DefaultEphemeralSetting)
