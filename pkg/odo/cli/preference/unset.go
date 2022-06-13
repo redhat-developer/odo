@@ -72,7 +72,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 				return nil
 			}
 		} else {
-			return errors.New("preference already unset, cannot unset a preference which is not set")
+			return errors.New(fmt.Sprintf("Value of '%s' is already unset.", o.paramName))
 		}
 	}
 
@@ -102,16 +102,8 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 
 			return "\n" + exampleString
 		}(unsetExample, fullName),
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 1 {
-				return fmt.Errorf("please provide a parameter name")
-			} else if len(args) > 1 {
-				return fmt.Errorf("only one parameter is allowed")
-			} else {
-				return nil
-			}
-
-		}, Run: func(cmd *cobra.Command, args []string) {
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}

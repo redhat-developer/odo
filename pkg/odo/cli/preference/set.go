@@ -107,16 +107,8 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			}
 			return "\n" + exampleString
 		}(setExample, fullName),
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 2 {
-				return fmt.Errorf("please provide a parameter name and value")
-			} else if len(args) > 2 {
-				return fmt.Errorf("only one value per parameter is allowed")
-			} else {
-				return nil
-			}
-
-		}, Run: func(cmd *cobra.Command, args []string) {
+		Args: cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
