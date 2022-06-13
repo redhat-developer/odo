@@ -99,6 +99,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			properties := prefClient.NewPreferenceList()
 			for _, property := range properties.Items {
 				value := property.Default
+				// FIXME: this value keeps changing depending on the currently set value
 				if value == "" {
 					value = "foobar"
 				}

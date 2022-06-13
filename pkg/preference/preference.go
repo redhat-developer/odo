@@ -11,7 +11,7 @@ type Client interface {
 
 	GetUpdateNotification() bool
 	GetTimeout() time.Duration
-	GetPushTimeout() int
+	GetPushTimeout() time.Duration
 	GetEphemeralSourceVolume() bool
 	GetConsentTelemetry() bool
 	GetRegistryCacheTime() int
@@ -19,7 +19,7 @@ type Client interface {
 
 	UpdateNotification() *bool
 	Timeout() *time.Duration
-	PushTimeout() *int
+	PushTimeout() *time.Duration
 	RegistryCacheTime() *int
 	EphemeralSourceVolume() *bool
 	ConsentTelemetry() *bool

@@ -18,7 +18,7 @@ const (
 	DefaultTimeout = 1 * time.Second
 
 	// DefaultPushTimeout is the default timeout for pods (in seconds)
-	DefaultPushTimeout = 240
+	DefaultPushTimeout = 240 * time.Second
 
 	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
@@ -64,7 +64,7 @@ const (
 var TimeoutSettingDescription = fmt.Sprintf("Timeout (in Duration) for cluster server connection check (Default: %s)", DefaultTimeout)
 
 // PushTimeoutSettingDescription adds a description for PushTimeout
-var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
+var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in Duration) for waiting for a Pod to come up (Default: %s)", DefaultPushTimeout)
 
 // RegistryCacheTimeSettingDescription adds a description for RegistryCacheTime
 var RegistryCacheTimeSettingDescription = fmt.Sprintf("For how long (in minutes) odo will cache information from the Devfile registry (Default: %d)", DefaultRegistryCacheTime)

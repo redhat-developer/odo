@@ -30,7 +30,7 @@ type odoSettings struct {
 	Timeout *time.Duration `yaml:"Timeout,omitempty"`
 
 	// PushTimeout for OpenShift pod timeout check
-	PushTimeout *int `yaml:"PushTimeout,omitempty"`
+	PushTimeout *time.Duration `yaml:"PushTimeout,omitempty"`
 
 	// RegistryList for telling odo to connect to all the registries in the registry list
 	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
@@ -261,12 +261,9 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 			c.OdoSettings.Timeout = &typedval
 
 		case "pushtimeout":
-			typedval, err := strconv.Atoi(value)
+			typedval, err := time.ParseDuration(value)
 			if err != nil {
 				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.New("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
@@ -344,9 +341,9 @@ func (c *preferenceInfo) GetTimeout() time.Duration {
 }
 
 // GetPushTimeout gets the value set by PushTimeout
-func (c *preferenceInfo) GetPushTimeout() int {
+func (c *preferenceInfo) GetPushTimeout() time.Duration {
 	// default timeout value is 1
-	return util.GetIntOrDefault(c.OdoSettings.PushTimeout, DefaultPushTimeout)
+	return util.GetTimeDefault(c.OdoSettings.PushTimeout, DefaultPushTimeout)
 }
 
 // GetRegistryCacheTime gets the value set by RegistryCacheTime
@@ -392,7 +389,7 @@ func (c *preferenceInfo) Timeout() *time.Duration {
 	return c.OdoSettings.Timeout
 }
 
-func (c *preferenceInfo) PushTimeout() *int {
+func (c *preferenceInfo) PushTimeout() *time.Duration {
 	return c.OdoSettings.PushTimeout
 }
 
