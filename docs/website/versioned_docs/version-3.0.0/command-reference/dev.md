@@ -43,6 +43,55 @@ In the above example, three things have happened:
 You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
 will first delete all resources deployed into the cluster for this session before terminating.
 
+### Sustituting variables
+
+The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
+can override the values for variables from the command line when running `odo dev`, using the `--var` and `--var-file` options.
+
+The `--var` option is a repeatable option that takes a `variable=value` pair, where `=value` is optional. If the `=value` is omitted, the value is extracted from the environment variable named `variable`. In this case, if the environment variable with this name is not defined, the value defined into the Devfile will be used.
+
+The `--var-file` option takes a filename as argument. The file contains a line-separated list of `variable=value` pairs, with the same behaviour as before.  
+
+Note that the values passed with the `--var` option overrides the values obtained with the `--var-file` option.
+
+#### Examples
+
+Considering the Devfile contains this `variables` field:
+
+```
+variables:
+  USER: anonymous
+  DEBUG: false
+```
+
+
+This command will override the `USER` Devfile variable with the value of the `USER` environment variable, if it is defined.
+It will also override the value of the `DEBUG` Devfile variable with the `true` value.
+
+```shell
+$ odo dev --var USER --var DEBUG=true
+```
+
+If you create a file `config.vars` containing:
+
+```
+USER
+DEBUG=true
+```
+
+The following command will have the same behaviour as the previous one:
+
+```shell
+$ odo dev --var-file config.vars
+```
+
+The following command will override the `USER` Devfile variable with the `john` value:
+
+
+```shell
+$ odo dev --var USER=john --var-file config.vars
+```
+
 ## Devfile (Advanced Usage)
 
 ### Devfile Overview

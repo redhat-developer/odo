@@ -353,10 +353,14 @@ github.com/devfile/api/v2 v2.0.0-20210910153124-da620cd1a7a1/go.mod h1:kLX/nW93g
 github.com/devfile/api/v2 v2.0.0-20211021164004-dabee4e633ed/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
 github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c h1:sjghKUov/WT71dBreHYQcTgQctxHT/p4uAhUFdGQfSU=
 github.com/devfile/api/v2 v2.0.0-20220117162434-6e6e6a8bc14c/go.mod h1:d99eTN6QxgzihOOFyOZA+VpUyD4Q1pYRYHZ/ci9J96Q=
+github.com/devfile/api/v2 v2.0.0-20220309195345-48ebbf1e51cf h1:FkwAOQtepscB5B0j++9S/eoicXj707MaP5HPIScz0sA=
+github.com/devfile/api/v2 v2.0.0-20220309195345-48ebbf1e51cf/go.mod h1:kLX/nW93gigOHXK3NLeJL2fSS/sgEe+OHu8bo3aoOi4=
 github.com/devfile/library v1.1.1-0.20210910214722-7c5ff63711ec/go.mod h1:svPWwWb+BP15SXCHl0dyOeE4Sohrjl5a2BaOzc/riLc=
 github.com/devfile/library v1.2.1-0.20211104222135-49d635cb492f/go.mod h1:uFZZdTuRqA68FVe/JoJHP92CgINyQkyWnM2Qyiim+50=
 github.com/devfile/library v1.2.1-0.20220217161036-0f5995513e92 h1:RIrd0pBAET9vLHEZGyaG1PSjp/lJXa+CZfuWiih2p6g=
 github.com/devfile/library v1.2.1-0.20220217161036-0f5995513e92/go.mod h1:GSPfJaBg0+bBjBHbwBE5aerJLH6tWGQu2q2rHYd9czM=
+github.com/devfile/library v1.2.1-0.20220602130922-85a4805bd59c h1:Puqg/NJ6pP1LPFxPYBX9c0Oh0Ttu5PVdNJL5WR/CRTk=
+github.com/devfile/library v1.2.1-0.20220602130922-85a4805bd59c/go.mod h1:kpkIA9YI7gkfglRDsKJ3n5QgVyyBmnasr2U2djYwg6s=
 github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f h1:fKNUmoOPh7yAs69uMRZWHvev+m3e7T4jBL/hOXZB9ys=
 github.com/devfile/registry-support/index/generator v0.0.0-20211012185733-0a73f866043f/go.mod h1:bLGagbW2SFn7jo5+kUPlCMehIGqWkRtLKc5O0OyJMJM=
 github.com/devfile/registry-support/index/generator v0.0.0-20220222194908-7a90a4214f3e h1:3WAjUoyAmCBzUpx+sO0dSgkH74uSW1y886wGbojD2D8=

@@ -32,6 +32,7 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
@@ -65,6 +66,11 @@ type DevOptions struct {
 	noWatchFlag     bool
 	randomPortsFlag bool
 	debugFlag       bool
+	varFileFlag     string
+	varsFlag        []string
+
+	// Variables to override Devfile variables
+	variables map[string]string
 }
 
 type Handler struct{}
@@ -122,7 +128,12 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return err
 	}
 
-	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+	o.variables, err = vars.GetVariables(o.clientset.FS, o.varFileFlag, o.varsFlag, os.LookupEnv)
+	if err != nil {
+		return err
+	}
+
+	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile("").WithVariables(o.variables))
 	if err != nil {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
@@ -257,7 +268,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
-		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag)
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.variables)
 	}
 	return err
 }
@@ -280,7 +291,7 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, wat
 }
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
-	devObj, err := ododevfile.ParseAndValidateFromFile(location.DevfileLocation(""))
+	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +332,9 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().BoolVar(&o.noWatchFlag, "no-watch", false, "Do not watch for file changes")
 	devCmd.Flags().BoolVar(&o.randomPortsFlag, "random-ports", false, "Assign random ports to redirected ports")
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
-
-	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE)
+	devCmd.Flags().StringArrayVar(&o.varsFlag, "var", []string{}, "Variable to override Devfile variable and variables in var-file")
+	devCmd.Flags().StringVar(&o.varFileFlag, "var-file", "", "File containing variables to override Devfile variables")
+	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE, clientset.FILESYSTEM)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

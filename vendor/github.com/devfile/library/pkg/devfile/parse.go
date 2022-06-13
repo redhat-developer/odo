@@ -80,6 +80,16 @@ func ParseDevfileAndValidate(args parser.ParserArgs) (d parser.DevfileObj, varWa
 	}
 
 	if d.Data.GetSchemaVersion() != "2.0.0" {
+
+		// add external variables to spec variables
+		if d.Data.GetDevfileWorkspaceSpec().Variables == nil {
+			d.Data.GetDevfileWorkspaceSpec().Variables = map[string]string{}
+		}
+		allVariables := d.Data.GetDevfileWorkspaceSpec().Variables
+		for key, val := range args.ExternalVariables {
+			allVariables[key] = val
+		}
+
 		// replace the top level variable keys with their values in the devfile
 		varWarning = variables.ValidateAndReplaceGlobalVariable(d.Data.GetDevfileWorkspaceSpec())
 	}

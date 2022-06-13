@@ -47,6 +47,16 @@ func ParseAndValidateFromFile(devfilePath string) (parser.DevfileObj, error) {
 	return parseDevfile(parser.ParserArgs{Path: devfilePath})
 }
 
+// ParseAndValidateFromFileWithVariables reads, parses and validates  devfile from a file
+// variables are used to override devfile variables
+// if there are warning it logs them on stdout
+func ParseAndValidateFromFileWithVariables(devfilePath string, variables map[string]string) (parser.DevfileObj, error) {
+	return parseDevfile(parser.ParserArgs{
+		Path:              devfilePath,
+		ExternalVariables: variables,
+	})
+}
+
 func variableWarning(section string, variable string, messages []string) string {
 	quotedVars := []string{}
 	for _, v := range messages {

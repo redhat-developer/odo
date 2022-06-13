@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"path"
+	"strings"
+
 	"github.com/devfile/library/pkg/util"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
-	"net/url"
-	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 
 	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
 	"github.com/devfile/library/pkg/devfile/parser/data"
@@ -81,6 +82,8 @@ type ParserArgs struct {
 	Context context.Context
 	// K8sClient is the Kubernetes client instance used for interacting with a cluster
 	K8sClient client.Client
+	// ExternalVariables override variables defined in the Devfile
+	ExternalVariables map[string]string
 }
 
 // ParseDevfile func populates the devfile data, parses and validates the devfile integrity.
@@ -378,7 +381,7 @@ func parseFromRegistry(importReference v1.ImportReference, resolveCtx *resolutio
 	id := importReference.Id
 	registryURL := importReference.RegistryUrl
 	if registryURL != "" {
-		devfileContent, err := getDevfileFromRegistry(id, registryURL)
+		devfileContent, err := getDevfileFromRegistry(id, registryURL, importReference.Version)
 		if err != nil {
 			return DevfileObj{}, err
 		}
@@ -392,7 +395,7 @@ func parseFromRegistry(importReference v1.ImportReference, resolveCtx *resolutio
 
 	} else if tool.registryURLs != nil {
 		for _, registryURL := range tool.registryURLs {
-			devfileContent, err := getDevfileFromRegistry(id, registryURL)
+			devfileContent, err := getDevfileFromRegistry(id, registryURL, importReference.Version)
 			if devfileContent != nil && err == nil {
 				d.Ctx, err = devfileCtx.NewByteContentDevfileCtx(devfileContent)
 				if err != nil {
@@ -411,12 +414,12 @@ func parseFromRegistry(importReference v1.ImportReference, resolveCtx *resolutio
 	return DevfileObj{}, fmt.Errorf("failed to get id: %s from registry URLs provided", id)
 }
 
-func getDevfileFromRegistry(id, registryURL string) ([]byte, error) {
+func getDevfileFromRegistry(id, registryURL, version string) ([]byte, error) {
 	if !strings.HasPrefix(registryURL, "http://") && !strings.HasPrefix(registryURL, "https://") {
 		return nil, fmt.Errorf("the provided registryURL: %s is not a valid URL", registryURL)
 	}
 	param := util.HTTPRequestParams{
-		URL: fmt.Sprintf("%s/devfiles/%s", registryURL, id),
+		URL: fmt.Sprintf("%s/devfiles/%s/%s", registryURL, id, version),
 	}
 	return util.HTTPGetRequest(param, 0)
 }

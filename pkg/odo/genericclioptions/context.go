@@ -60,6 +60,8 @@ type CreateParameters struct {
 	devfile          bool
 	offline          bool
 	appIfNeeded      bool
+	// variables override devfile variables
+	variables map[string]string
 }
 
 func NewCreateParameters(cmdline cmdline.Cmdline) CreateParameters {
@@ -79,6 +81,11 @@ func (o CreateParameters) IsOffline() CreateParameters {
 
 func (o CreateParameters) CreateAppIfNeeded() CreateParameters {
 	o.appIfNeeded = true
+	return o
+}
+
+func (o CreateParameters) WithVariables(variables map[string]string) CreateParameters {
+	o.variables = variables
 	return o
 }
 
@@ -124,7 +131,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
 		if isDevfile {
 			// Parse devfile and validate
-			devObj, err := devfile.ParseAndValidateFromFile(ctx.devfilePath)
+			devObj, err := devfile.ParseAndValidateFromFileWithVariables(ctx.devfilePath, parameters.variables)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
 			}
