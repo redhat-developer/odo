@@ -43,6 +43,8 @@ const suffixSpacing = "  "
 const prefixSpacing = " "
 
 var mu sync.Mutex
+var colors = []color.Attribute{color.FgRed, color.FgGreen, color.FgYellow, color.FgBlue, color.FgMagenta, color.FgCyan, color.FgWhite}
+var colorCounter = 0
 
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
 // when attached to a terminal
@@ -516,4 +518,11 @@ func getSpacingString() string {
 		return "-"
 	}
 	return "•"
+}
+
+// ColorPicker picks a color from colors slice defined at the starting of this file
+// It increments the colorCounter variable so that next iteration returns a different color
+func ColorPicker() color.Attribute {
+	colorCounter++
+	return colors[(colorCounter)%len(colors)]
 }

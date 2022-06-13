@@ -54,7 +54,7 @@ func (c *Client) GetBindableKinds() (bindingApi.BindableKinds, error) {
 	return bindableKind, nil
 }
 
-// GetBindableKindStatusRestMapping retuns a list of *meta.RESTMapping of all the bindable kind operator CRD
+// GetBindableKindStatusRestMapping returns a list of *meta.RESTMapping of all the bindable kind operator CRD
 func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []bindingApi.BindableKindsStatus) ([]*meta.RESTMapping, error) {
 	var result []*meta.RESTMapping
 	for _, bks := range bindableKindStatuses {

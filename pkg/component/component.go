@@ -124,9 +124,6 @@ func Log(client kclient.ClientInterface, componentName string, appName string, f
 // We then return a list of "components" intended for listing / output purposes specifically for commands such as:
 // `odo list`
 // that are both odo and non-odo components.
-//
-// We then return a list of "components" intended for listing / output purposes specifically for commands such as:
-// `odo list`
 func ListAllClusterComponents(client kclient.ClientInterface, namespace string) ([]api.ComponentAbstract, error) {
 
 	// Get all the dynamic resources available
@@ -155,8 +152,8 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		}
 
 		// Figure out the correct name to use
-		// if there is no instance label, we SKIP the resource as
-		// it is not a component essential for Kubernetes.
+		// if there is no instance label (app.kubernetes.io/instance),
+		// we SKIP the resource as it is not a component essential for Kubernetes.
 		name := odolabels.GetComponentName(labels)
 		if name == "" {
 			continue

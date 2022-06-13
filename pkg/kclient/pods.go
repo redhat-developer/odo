@@ -242,3 +242,7 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 
 	return rd, err
 }
+
+func (c *Client) GetAllPodsInNamespace() (*corev1.PodList, error) {
+	return c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{})
+}
