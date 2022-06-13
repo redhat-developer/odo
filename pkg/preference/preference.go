@@ -1,12 +1,16 @@
 package preference
 
+import (
+	"time"
+)
+
 type Client interface {
 	IsSet(parameter string) bool
 	SetConfiguration(parameter string, value string) error
 	DeleteConfiguration(parameter string) error
 
 	GetUpdateNotification() bool
-	GetTimeout() int
+	GetTimeout() time.Duration
 	GetPushTimeout() int
 	GetEphemeralSourceVolume() bool
 	GetConsentTelemetry() bool
@@ -14,7 +18,7 @@ type Client interface {
 	RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) error
 
 	UpdateNotification() *bool
-	Timeout() *int
+	Timeout() *time.Duration
 	PushTimeout() *int
 	RegistryCacheTime() *int
 	EphemeralSourceVolume() *bool

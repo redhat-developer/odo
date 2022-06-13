@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -25,8 +26,8 @@ type odoSettings struct {
 	// Controls if an update notification is shown or not
 	UpdateNotification *bool `yaml:"UpdateNotification,omitempty"`
 
-	// Timeout for OpenShift server connection check
-	Timeout *int `yaml:"Timeout,omitempty"`
+	// Timeout for server connection check
+	Timeout *time.Duration `yaml:"Timeout,omitempty"`
 
 	// PushTimeout for OpenShift pod timeout check
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
@@ -253,12 +254,9 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 		switch p {
 
 		case "timeout":
-			typedval, err := strconv.Atoi(value)
+			typedval, err := time.ParseDuration(value)
 			if err != nil {
 				return fmt.Errorf("unable to set %q to %q", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.New("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.Timeout = &typedval
 
@@ -340,9 +338,9 @@ func (c *preferenceInfo) IsSet(parameter string) bool {
 
 // GetTimeout returns the value of Timeout from config
 // and if absent then returns default
-func (c *preferenceInfo) GetTimeout() int {
+func (c *preferenceInfo) GetTimeout() time.Duration {
 	// default timeout value is 1
-	return util.GetIntOrDefault(c.OdoSettings.Timeout, DefaultTimeout)
+	return util.GetTimeDefault(c.OdoSettings.Timeout, DefaultTimeout)
 }
 
 // GetPushTimeout gets the value set by PushTimeout
@@ -390,7 +388,7 @@ func (c *preferenceInfo) Ephemeral() *bool {
 	return c.OdoSettings.Ephemeral
 }
 
-func (c *preferenceInfo) Timeout() *int {
+func (c *preferenceInfo) Timeout() *time.Duration {
 	return c.OdoSettings.Timeout
 }
 

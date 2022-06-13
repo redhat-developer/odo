@@ -3,6 +3,7 @@ package preference
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -13,8 +14,8 @@ const (
 	preferenceKind       = "Preference"
 	preferenceAPIVersion = "odo.dev/v1alpha1"
 
-	//DefaultTimeout for openshift server connection check (in seconds)
-	DefaultTimeout = 1
+	// DefaultTimeout for openshift server connection check (in seconds)
+	DefaultTimeout = 1 * time.Second
 
 	// DefaultPushTimeout is the default timeout for pods (in seconds)
 	DefaultPushTimeout = 240
@@ -60,7 +61,7 @@ const (
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
-var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift server connection check (Default: %d)", DefaultTimeout)
+var TimeoutSettingDescription = fmt.Sprintf("Timeout (in Duration) for cluster server connection check (Default: %s)", DefaultTimeout)
 
 // PushTimeoutSettingDescription adds a description for PushTimeout
 var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
