@@ -209,7 +209,7 @@ func getCommand(data data.DevfileData, commandName string, groupType v1alpha2.Co
 	if commandName == "" {
 		command, err = getCommandAssociatedToGroup(data, groupType)
 	} else if commandName != "" {
-		command, err = getCommandFromFlag(data, groupType, commandName)
+		command, err = getCommandByName(data, groupType, commandName)
 	}
 
 	return command, err
@@ -252,8 +252,8 @@ func getCommandAssociatedToGroup(data data.DevfileData, groupType v1alpha2.Comma
 	return onlyCommand, nil
 }
 
-// getCommandFromFlag iterates through the devfile commands and returns the command specified associated with the group
-func getCommandFromFlag(data data.DevfileData, groupType v1alpha2.CommandGroupKind, commandName string) (v1alpha2.Command, error) {
+// getCommandByName iterates through the devfile commands and returns the command specified associated with the group
+func getCommandByName(data data.DevfileData, groupType v1alpha2.CommandGroupKind, commandName string) (v1alpha2.Command, error) {
 	commands, err := data.GetCommands(common.DevfileOptions{})
 	if err != nil {
 		return v1alpha2.Command{}, err

@@ -1266,7 +1266,7 @@ func Test_getCommandAssociatedToGroup(t *testing.T) {
 
 }
 
-func Test_getCommandFromFlag(t *testing.T) {
+func Test_getCommandByName(t *testing.T) {
 
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
@@ -1545,7 +1545,7 @@ func Test_getCommandFromFlag(t *testing.T) {
 				}(),
 			}
 
-			cmd, err := getCommandFromFlag(devObj.Data, tt.requestedType, tt.reqCommandName)
+			cmd, err := getCommandByName(devObj.Data, tt.requestedType, tt.reqCommandName)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", tt.requestedType, tt.wantErr, err)
 				return
