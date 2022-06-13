@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -77,12 +78,12 @@ func TestGetPushTimeout(t *testing.T) {
 	}
 	defer tempConfigFile.Close()
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
-	zeroValue := 0
-	nonzeroValue := 5
+	zeroValue := 0 * time.Second
+	nonzeroValue := 5 * time.Second
 	tests := []struct {
 		name           string
 		existingConfig Preference
-		want           int
+		want           time.Duration
 	}{
 		{
 			name:           "Case 1: Validating default value from test case",
@@ -119,7 +120,7 @@ func TestGetPushTimeout(t *testing.T) {
 			cfg.Preference = tt.existingConfig
 
 			output := cfg.GetPushTimeout()
-			if output != tt.want {
+			if output != (tt.want * time.Second) {
 				t.Errorf("GetPushTimeout returned unexpected value\ngot: %d \nexpected: %d\n", output, tt.want)
 			}
 		})
@@ -133,12 +134,12 @@ func TestGetTimeout(t *testing.T) {
 	}
 	defer tempConfigFile.Close()
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
-	zeroValue := 0
-	nonzeroValue := 5
+	zeroValue := 0 * time.Second
+	nonzeroValue := 5 * time.Second
 	tests := []struct {
 		name           string
 		existingConfig Preference
-		want           int
+		want           time.Duration
 	}{
 		{
 			name:           "Case 1: validating value 1 from config in default case",
@@ -175,7 +176,7 @@ func TestGetTimeout(t *testing.T) {
 			cfg.Preference = tt.existingConfig
 
 			output := cfg.GetTimeout()
-			if output != tt.want {
+			if output != (tt.want * time.Second) {
 				t.Errorf("GetTimeout returned unexpected value\ngot: %d \nexpected: %d\n", output, tt.want)
 			}
 		})
@@ -183,7 +184,6 @@ func TestGetTimeout(t *testing.T) {
 }
 
 func TestSetConfiguration(t *testing.T) {
-
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
 		t.Fatal(err)
@@ -192,7 +192,7 @@ func TestSetConfiguration(t *testing.T) {
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
-	zeroValue := 0
+	zeroValue := 0 * time.Second
 
 	tests := []struct {
 		name           string
@@ -247,37 +247,30 @@ func TestSetConfiguration(t *testing.T) {
 		{
 			name:      fmt.Sprintf("Case 5: %s set to 5 from 0", TimeoutSetting),
 			parameter: TimeoutSetting,
-			value:     "5",
+			value:     "5s",
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					Timeout: &zeroValue,
 				},
 			},
-			want:    5,
+			want:    5 * time.Second,
 			wantErr: false,
 		},
 		{
 			name:           fmt.Sprintf("Case 6: %s set to 300", TimeoutSetting),
 			parameter:      TimeoutSetting,
-			value:          "300",
+			value:          "5m",
 			existingConfig: Preference{},
-			want:           300,
+			want:           5 * time.Second,
 			wantErr:        false,
 		},
 		{
 			name:           fmt.Sprintf("Case 7: %s set to 0", TimeoutSetting),
 			parameter:      TimeoutSetting,
-			value:          "0",
+			value:          "0s",
 			existingConfig: Preference{},
-			want:           0,
+			want:           0 * time.Second,
 			wantErr:        false,
-		},
-		{
-			name:           fmt.Sprintf("Case 8: %s set to -1", TimeoutSetting),
-			parameter:      TimeoutSetting,
-			value:          "-1",
-			existingConfig: Preference{},
-			wantErr:        true,
 		},
 		{
 			name:           fmt.Sprintf("Case 9: %s invalid value", TimeoutSetting),
@@ -289,9 +282,9 @@ func TestSetConfiguration(t *testing.T) {
 		{
 			name:           fmt.Sprintf("Case 10: %s set to 300 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "TimeOut",
-			value:          "300",
+			value:          "5m",
 			existingConfig: Preference{},
-			want:           300,
+			want:           5 * time.Minute,
 			wantErr:        false,
 		},
 		// invalid parameter
@@ -304,9 +297,9 @@ func TestSetConfiguration(t *testing.T) {
 		{
 			name:           fmt.Sprintf("Case 12: %s set to 0", TimeoutSetting),
 			parameter:      TimeoutSetting,
-			value:          "0",
+			value:          "0s",
 			existingConfig: Preference{},
-			want:           0,
+			want:           0 * time.Second,
 			wantErr:        false,
 		},
 		{
@@ -319,16 +312,17 @@ func TestSetConfiguration(t *testing.T) {
 		{
 			name:           fmt.Sprintf("Case 14: %s set to 99 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "PushTimeout",
-			value:          "99",
+			value:          "99s",
 			existingConfig: Preference{},
-			want:           99,
+			want:           99 * time.Second,
 			wantErr:        false,
 		},
 		{
-			name:           "Case 15: set RegistryCacheTime to 1",
+			name:           "Case 15: set RegistryCacheTime to 1 minutes",
 			parameter:      "RegistryCacheTime",
-			value:          "1",
+			value:          "1m",
 			existingConfig: Preference{},
+			want:           1 * time.Minute,
 			wantErr:        false,
 		},
 		{

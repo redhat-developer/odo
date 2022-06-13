@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -27,7 +28,7 @@ func TestUnsetForce(t *testing.T) {
 			name:           "no force and parameter not exists",
 			forceFlag:      false,
 			exists:         false,
-			expectedRunErr: "preference already unset",
+			expectedRunErr: "is already unset",
 		},
 	}
 	for _, tt := range tests {

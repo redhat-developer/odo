@@ -3,6 +3,7 @@ package preference
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 
@@ -36,10 +37,11 @@ func TestView(t *testing.T) {
 		return
 	}
 
+	timePointer := 10 * time.Second
 	prefClient.EXPECT().UpdateNotification().Return(pointer.Bool(false))
-	prefClient.EXPECT().Timeout().Return(pointer.Int(10))
-	prefClient.EXPECT().RegistryCacheTime().Return(pointer.Int(240))
-	prefClient.EXPECT().PushTimeout().Return(pointer.Int(10))
+	prefClient.EXPECT().Timeout().Return(&timePointer)
+	prefClient.EXPECT().RegistryCacheTime().Return(&timePointer)
+	prefClient.EXPECT().PushTimeout().Return(&timePointer)
 	prefClient.EXPECT().EphemeralSourceVolume().Return(pointer.Bool(false))
 	prefClient.EXPECT().ConsentTelemetry().Return(pointer.Bool(false))
 

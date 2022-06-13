@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -71,11 +72,11 @@ var _ = Describe("odo preference and config command tests", func() {
 			name, value, updateValue, invalidValue string
 		}{
 			{"UpdateNotification", "false", "true", "foo"},
-			{"Timeout", "5", "6", "foo"},
+			{"Timeout", "5s", "6s", "foo"},
 			// !! Do not test ConsentTelemetry with true because it sends out the telemetry data and messes up the statistics !!
 			{"ConsentTelemetry", "false", "false", "foo"},
-			{"PushTimeout", "4", "6", "foo"},
-			{"RegistryCacheTime", "4", "6", "foo"},
+			{"PushTimeout", "4s", "6s", "foo"},
+			{"RegistryCacheTime", "4m", "6m", "foo"},
 			{"Ephemeral", "false", "true", "foo"},
 		}
 
@@ -113,7 +114,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 
-			output = helper.Cmd("odo", "preference", "set", "timeout", "5", "-f").ShouldPass().Out()
+			output = helper.Cmd("odo", "preference", "set", "timeout", "5s", "-f").ShouldPass().Out()
 			Expect(output).ToNot(ContainSubstring(promptMessageSubString))
 
 			output = helper.Cmd("odo", "preference", "unset", "timeout", "-f").ShouldPass().Out()

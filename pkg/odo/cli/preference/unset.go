@@ -2,7 +2,6 @@ package preference
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -72,7 +71,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 				return nil
 			}
 		} else {
-			return errors.New(fmt.Sprintf("Value of '%s' is already unset.", o.paramName))
+			return fmt.Errorf("Value of '%s' is already unset.", o.paramName)
 		}
 	}
 
