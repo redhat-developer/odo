@@ -81,7 +81,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Info("Global preference was successfully updated")
+	log.Successf("Value of '%s' preference was removed from preferences. Its default value will be used.", o.paramName)
 	return nil
 
 }

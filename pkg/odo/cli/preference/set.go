@@ -80,7 +80,7 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Info("Global preference was successfully updated")
+	log.Successf("Value of '%s' preference was set to '%s'", o.paramName, o.paramValue)
 	return nil
 }
 
