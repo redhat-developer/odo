@@ -92,6 +92,12 @@ func parseKeyValueString(s string, lookupEnv func(string) (string, bool)) (strin
 	parts := strings.SplitN(line, "=", 2)
 	key := parts[0]
 
+	// TODO validate key format
+
+	if len(key) == 0 {
+		return "", "", NewErrBadKey(fmt.Sprintf("no key defined in line %q", s))
+	}
+
 	var value string
 	if len(parts) > 1 {
 		value = parts[1]
@@ -103,10 +109,5 @@ func parseKeyValueString(s string, lookupEnv func(string) (string, bool)) (strin
 		}
 	}
 
-	// TODO validate key format
-
-	if len(key) == 0 {
-		return "", "", NewErrBadKey(fmt.Sprintf("no key defined in line %q", s))
-	}
 	return key, value, nil
 }
