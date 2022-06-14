@@ -12,7 +12,7 @@ To know about the Operators supported by the Service Binding Operator, read its 
 
 ### Pre-requisites
 * A directory containing a Devfile; if you don't have one, see [odo init](init.md) on obtaining a devfile.
-* A cluster with the Service Binding operator installed, along with the operator whose service you need to bind to
+* A cluster with the Service Binding Operator installed, along with the Operator whose service you want to bind to
 
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
