@@ -71,7 +71,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 				return nil
 			}
 		} else {
-			return fmt.Errorf("Value of '%s' is already unset.", o.paramName)
+			return fmt.Errorf("value of '%s' is already unset", o.paramName)
 		}
 	}
 

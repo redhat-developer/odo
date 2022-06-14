@@ -28,7 +28,7 @@ type odoSettings struct {
 	// Timeout for server connection check
 	Timeout *time.Duration `yaml:"Timeout,omitempty"`
 
-	// PushTimeout for OpenShift pod timeout check
+	// PushTimeout for pod timeout check
 	PushTimeout *time.Duration `yaml:"PushTimeout,omitempty"`
 
 	// RegistryList for telling odo to connect to all the registries in the registry list

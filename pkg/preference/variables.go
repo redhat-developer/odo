@@ -14,7 +14,7 @@ const (
 	preferenceKind       = "Preference"
 	preferenceAPIVersion = "odo.dev/v1alpha1"
 
-	// DefaultTimeout for openshift server connection check (in seconds)
+	// DefaultTimeout for cluster server connection check (in seconds)
 	DefaultTimeout = 1 * time.Second
 
 	// DefaultPushTimeout is the default timeout for pods (in seconds)
