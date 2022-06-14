@@ -39,11 +39,11 @@ odo add binding --name mybinding --service myRedisService.Redis
 ```
 
 #### Understanding Bind as Files
-To connect your component with a service, you need to store some data(e.g. username, password, host address) on your component's container.
-If the service is bound as files, this data will be written to a file and stored on the container, else it will be exported to Environment Variables inside the container.
+To connect your component with a service, you need to store some data (e.g. username, password, host address) on your component's container.
+If the service is bound as files, this data will be written to a file and stored on the container, else it will be injected as Environment Variables inside the container.
 
 Note that every piece of data is stored in its own individual file or environment variable.
-For example, if your data includes a username, and password, then 2 separate files, or 2 environment variables will be created to store them both.
+For example, if your data includes a username and password, then 2 separate files, or 2 environment variables will be created to store them both.
 
 #### Formats supported by the `--service` flag
 The `--service` flag supports the following formats to specify the service name:
