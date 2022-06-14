@@ -90,6 +90,7 @@ func (o CreateParameters) WithVariables(variables map[string]string) CreateParam
 }
 
 // New creates a context based on the given parameters
+// If NeedDevfile is passed and a Devfile is not found, a NoDevfileError is returned with a valid context without Devfile
 func New(parameters CreateParameters) (*Context, error) {
 	ctx := internalCxt{}
 	var err error
@@ -126,6 +127,10 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 	}
 
+	result := &Context{
+		internalCxt: ctx,
+	}
+
 	ctx.devfilePath = location.DevfileLocation(parameters.componentContext)
 	if parameters.devfile {
 		isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
@@ -141,13 +146,11 @@ func New(parameters CreateParameters) (*Context, error) {
 			}
 			ctx.EnvSpecificInfo.SetDevfileObj(devObj)
 		} else {
-			return nil, errors.New("no devfile found")
+			return result, NoDevfileError{}
 		}
 	}
 
-	return &Context{
-		internalCxt: ctx,
-	}, nil
+	return result, nil
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we

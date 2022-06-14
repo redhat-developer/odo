@@ -8,9 +8,14 @@ import (
 
 func (o *BindingClient) ListAllBindings(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
 
-	bindingsInDevfile, err := o.GetBindingsFromDevfile(devfileObj, context)
-	if err != nil {
-		return nil, nil, err
+	var bindingsInDevfile []api.ServiceBinding
+
+	if devfileObj.Data != nil {
+		var err error
+		bindingsInDevfile, err = o.GetBindingsFromDevfile(devfileObj, context)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	inDevfile := make([]string, 0, len(bindingsInDevfile))

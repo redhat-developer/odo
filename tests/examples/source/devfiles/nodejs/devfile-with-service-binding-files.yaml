@@ -56,7 +56,7 @@ components:
         application:
           group: apps
           name: my-nodejs-app-app
-          resource: deployments
+          kind: Deployment
           version: v1
         bindAsFiles: true
         detectBindingResources: true

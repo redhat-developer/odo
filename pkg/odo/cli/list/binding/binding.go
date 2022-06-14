@@ -56,7 +56,8 @@ func (o *BindingListOptions) Complete(cmdline cmdline.Cmdline, args []string) (e
 	}
 
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	if err != nil {
+	// The command must work without Devfile
+	if err != nil && !genericclioptions.IsNoDevfileError(err) {
 		return err
 	}
 
