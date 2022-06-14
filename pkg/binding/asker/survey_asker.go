@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	BindAsFiles  = "Bind As Files"
-	BindAsEnvVar = "Bind As Environment Variables"
+	bindAsFiles  = "Bind As Files"
+	bindAsEnvVar = "Bind As Environment Variables"
 )
 
 type Survey struct{}
@@ -47,7 +47,7 @@ func (s *Survey) AskServiceBindingName(defaultName string) (string, error) {
 func (o *Survey) AskBindAsFiles() (bool, error) {
 	question := &survey.Select{
 		Message: "How do you want to bind the service?",
-		Options: []string{BindAsFiles, BindAsEnvVar},
+		Options: []string{bindAsFiles, bindAsEnvVar},
 	}
 	var answer string
 	err := survey.AskOne(question, &answer)
@@ -55,9 +55,9 @@ func (o *Survey) AskBindAsFiles() (bool, error) {
 		return true, err
 	}
 
-	var bindAsFiles bool
-	if answer == BindAsFiles {
-		bindAsFiles = true
+	var bindAsFile bool
+	if answer == bindAsFiles {
+		bindAsFile = true
 	}
-	return bindAsFiles, nil
+	return bindAsFile, nil
 }
