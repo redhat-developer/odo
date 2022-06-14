@@ -616,6 +616,21 @@ func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(gvr, name interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), gvr, name)
 }
 
+// GetGVKFromGVR mocks base method.
+func (m *MockClientInterface) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGVKFromGVR", gvr)
+	ret0, _ := ret[0].(schema.GroupVersionKind)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGVKFromGVR indicates an expected call of GetGVKFromGVR.
+func (mr *MockClientInterfaceMockRecorder) GetGVKFromGVR(gvr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVKFromGVR", reflect.TypeOf((*MockClientInterface)(nil).GetGVKFromGVR), gvr)
+}
+
 // GetNamespace mocks base method.
 func (m *MockClientInterface) GetNamespace(name string) (*v11.Namespace, error) {
 	m.ctrl.T.Helper()

@@ -6,10 +6,15 @@ import (
 	"io"
 	"os"
 
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -73,12 +78,16 @@ func (o *BindingListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo list binding command
 func (o *BindingListOptions) Run(ctx context.Context) error {
-
-	return HumanReadableOutput(os.Stdout)
+	list, err := o.run(ctx)
+	if err != nil {
+		return err
+	}
+	HumanReadableOutput(os.Stdout, list)
+	return nil
 }
 
-func (lo *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	return lo.run(ctx)
+func (o *BindingListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
+	return o.run(ctx)
 }
 
 func (o *BindingListOptions) run(ctx context.Context) (api.ResourcesList, error) {
@@ -112,6 +121,80 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 }
 
 // HumanReadableOutput outputs the list of bindings in a human readable format
-func HumanReadableOutput(w io.Writer) error {
-	return nil
+func HumanReadableOutput(w io.Writer, list api.ResourcesList) {
+	bindings := list.Bindings
+	if len(bindings) == 0 {
+		log.Error("There are no service bindings.")
+		return
+
+	}
+
+	// Create the table and use our own style
+	t := table.NewWriter()
+
+	// Set the style of the table
+	t.SetStyle(table.Style{
+		Box: table.BoxStyle{
+			PaddingLeft:  " ",
+			PaddingRight: " ",
+		},
+		Color: table.ColorOptions{
+			Header: text.Colors{text.FgHiGreen, text.Underline},
+		},
+		Format: table.FormatOptions{
+			Footer: text.FormatUpper,
+			Header: text.FormatUpper,
+			Row:    text.FormatDefault,
+		},
+		Options: table.Options{
+			DrawBorder:      false,
+			SeparateColumns: false,
+			SeparateFooter:  false,
+			SeparateHeader:  false,
+			SeparateRows:    false,
+		},
+	})
+	t.SetOutputMirror(log.GetStdout())
+
+	// Create the header and then sort accordingly
+	t.AppendHeader(table.Row{"NAME", "APPLICATION", "SERVICES", "RUNNING IN"})
+	t.SortBy([]table.SortBy{
+		{Name: "NAME", Mode: table.Asc},
+	})
+
+	for _, binding := range bindings {
+
+		// Mark the name as yellow in the index to it's easier to see.
+		name := text.Colors{text.FgHiYellow}.Sprint(binding.Name)
+
+		for _, inDevfile := range list.BindingsInDevfile {
+			if binding.Name == inDevfile {
+				name = fmt.Sprintf("* %s", name)
+				break
+			}
+		}
+
+		appSpec := binding.Spec.Application
+		application := fmt.Sprintf("%s (%s)", appSpec.Name, appSpec.Kind)
+
+		servicesSpecs := binding.Spec.Services
+		services := ""
+		for i, serviceSpec := range servicesSpecs {
+			if i > 0 {
+				services += "\n"
+			}
+			services += fmt.Sprintf("%s (%s.%s)",
+				serviceSpec.Name,
+				serviceSpec.Kind,
+				schema.FromAPIVersionAndKind(serviceSpec.APIVersion, "").Group,
+			)
+		}
+
+		runningIn := "None"
+		if binding.Status != nil && len(binding.Status.RunningIn) > 0 {
+			runningIn = binding.Status.RunningIn.String()
+		}
+		t.AppendRow(table.Row{name, application, services, runningIn})
+	}
+	t.Render()
 }

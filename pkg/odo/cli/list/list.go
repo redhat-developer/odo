@@ -213,79 +213,77 @@ func humanReadableOutput(list api.ResourcesList) {
 		return
 	}
 
-	if len(components) != 0 {
+	// Create the table and use our own style
+	t := table.NewWriter()
 
-		// Create the table and use our own style
-		t := table.NewWriter()
+	// Set the style of the table
+	t.SetStyle(table.Style{
+		Box: table.BoxStyle{
+			PaddingLeft:  " ",
+			PaddingRight: " ",
+		},
+		Color: table.ColorOptions{
+			Header: text.Colors{text.FgHiGreen, text.Underline},
+		},
+		Format: table.FormatOptions{
+			Footer: text.FormatUpper,
+			Header: text.FormatUpper,
+			Row:    text.FormatDefault,
+		},
+		Options: table.Options{
+			DrawBorder:      false,
+			SeparateColumns: false,
+			SeparateFooter:  false,
+			SeparateHeader:  false,
+			SeparateRows:    false,
+		},
+	})
+	t.SetOutputMirror(log.GetStdout())
 
-		// Set the style of the table
-		t.SetStyle(table.Style{
-			Box: table.BoxStyle{
-				PaddingLeft:  " ",
-				PaddingRight: " ",
-			},
-			Color: table.ColorOptions{
-				Header: text.Colors{text.FgHiGreen, text.Underline},
-			},
-			Format: table.FormatOptions{
-				Footer: text.FormatUpper,
-				Header: text.FormatUpper,
-				Row:    text.FormatDefault,
-			},
-			Options: table.Options{
-				DrawBorder:      false,
-				SeparateColumns: false,
-				SeparateFooter:  false,
-				SeparateHeader:  false,
-				SeparateRows:    false,
-			},
-		})
-		t.SetOutputMirror(log.GetStdout())
+	// Create the header and then sort accordingly
+	t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
+	t.SortBy([]table.SortBy{
+		{Name: "MANAGED", Mode: table.Asc},
+		{Name: "NAME", Mode: table.Dsc},
+	})
 
-		// Create the header and then sort accordingly
-		t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
-		t.SortBy([]table.SortBy{
-			{Name: "MANAGED", Mode: table.Asc},
-			{Name: "NAME", Mode: table.Dsc},
-		})
+	// Go through each componment and add it to the table
+	for _, comp := range components {
 
-		// Go through each componment and add it to the table
-		for _, comp := range components {
+		// Mark the name as yellow in the index to it's easier to see.
+		name := text.Colors{text.FgHiYellow}.Sprint(comp.Name)
 
-			// Mark the name as yellow in the index to it's easier to see.
-			name := text.Colors{text.FgHiYellow}.Sprint(comp.Name)
-
-			// Get the managed by label
-			managedBy := comp.ManagedBy
-			if managedBy == "" {
-				managedBy = api.TypeUnknown
-			}
-
-			// Get the mode (dev or deploy)
-			mode := comp.RunningIn.String()
-
-			// Get the type of the component
-			componentType := comp.Type
-			if componentType == "" {
-				componentType = api.TypeUnknown
-			}
-
-			// If we find our local unpushed component, let's change the output appropriately.
-			if list.ComponentInDevfile == comp.Name {
-				name = fmt.Sprintf("* %s", name)
-
-				if comp.ManagedBy == "" {
-					managedBy = "odo"
-				}
-			}
-
-			// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
-			if managedBy == "odo" {
-				managedBy = text.Colors{text.FgBlue}.Sprint("odo")
-			}
-
-			t.AppendRow(table.Row{name, componentType, mode, managedBy})
+		// Get the managed by label
+		managedBy := comp.ManagedBy
+		if managedBy == "" {
+			managedBy = api.TypeUnknown
 		}
-		t.Render()
+
+		// Get the mode (dev or deploy)
+		mode := comp.RunningIn.String()
+
+		// Get the type of the component
+		componentType := comp.Type
+		if componentType == "" {
+			componentType = api.TypeUnknown
+		}
+
+		// If we find our local unpushed component, let's change the output appropriately.
+		if list.ComponentInDevfile == comp.Name {
+			name = fmt.Sprintf("* %s", name)
+
+			if comp.ManagedBy == "" {
+				managedBy = "odo"
+			}
+		}
+
+		// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
+		if managedBy == "odo" {
+			managedBy = text.Colors{text.FgBlue}.Sprint("odo")
+		}
+
+		t.AppendRow(table.Row{name, componentType, mode, managedBy})
 	}
+	t.Render()
+
 }

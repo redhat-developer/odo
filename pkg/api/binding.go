@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/redhat-developer/odo/pkg/kclient"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 
@@ -23,14 +24,14 @@ type ServiceBindingSpec struct {
 }
 
 type ServiceBindingStatus struct {
-	BindingFiles   []string      `json:"bindingFiles,omitempty"`
-	BindingEnvVars []string      `json:"bindingEnvVars,omitempty"`
-	RunningIn      []RunningMode `json:"runningIn,omitempty"`
+	BindingFiles   []string        `json:"bindingFiles,omitempty"`
+	BindingEnvVars []string        `json:"bindingEnvVars,omitempty"`
+	RunningIn      RunningModeList `json:"runningIn,omitempty"`
 }
 
 // ServiceBindingFromBinding returns a common api.ServiceBinding structure
 // from a ServiceBinding.binding.operators.coreos.com/v1alpha1
-func ServiceBindingFromBinding(binding bindingApi.ServiceBinding) ServiceBinding {
+func ServiceBindingFromBinding(client kclient.ClientInterface, binding bindingApi.ServiceBinding) (ServiceBinding, error) {
 
 	var dstSvcs []corev1.ObjectReference
 	for _, srcSvc := range binding.Spec.Services {
@@ -48,6 +49,18 @@ func ServiceBindingFromBinding(binding bindingApi.ServiceBinding) ServiceBinding
 	refToApplication := corev1.ObjectReference{
 		Name: application.Name,
 	}
+
+	if application.Kind == "" {
+		gvk, err := client.GetGVKFromGVR(schema.GroupVersionResource{
+			Group:    application.Group,
+			Version:  application.Version,
+			Resource: application.Resource,
+		})
+		if err != nil {
+			return ServiceBinding{}, err
+		}
+		application.Kind = gvk.Kind
+	}
 	refToApplication.APIVersion, refToApplication.Kind = schema.GroupVersion{
 		Group:   application.Group,
 		Version: application.Version,
@@ -61,7 +74,7 @@ func ServiceBindingFromBinding(binding bindingApi.ServiceBinding) ServiceBinding
 			DetectBindingResources: binding.Spec.DetectBindingResources,
 			BindAsFiles:            binding.Spec.BindAsFiles,
 		},
-	}
+	}, nil
 }
 
 // ServiceBindingFromSpec returns a common api.ServiceBinding structure

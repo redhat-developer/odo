@@ -94,6 +94,7 @@ type ClientInterface interface {
 	GetRestMappingFromUnstructured(unstructured.Unstructured) (*meta.RESTMapping, error)
 	GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
+	GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error)
 	ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error
 	ConvertUnstructuredListToResource(u unstructured.UnstructuredList, obj interface{}) error
 
