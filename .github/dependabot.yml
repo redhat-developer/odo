@@ -20,6 +20,7 @@ updates:
   labels:
   - "area/dependency"
   - "kind/task"
+  - "ok-to-test"
 
 # Maintain dependencies for Website builds
 - package-ecosystem: "npm"
