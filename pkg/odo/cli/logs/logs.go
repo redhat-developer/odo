@@ -35,7 +35,18 @@ type LogsOptions struct {
 	componentName string
 	contextDir    string
 	out           io.Writer
+
+	// flags
+	devMode    bool
+	deployMode bool
 }
+
+type logsMode string
+
+const (
+	DevMode    logsMode = "dev"
+	DeployMode logsMode = "deploy"
+)
 
 func NewLogsOptions() *LogsOptions {
 	return &LogsOptions{
@@ -79,13 +90,41 @@ func (o *LogsOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 }
 
 func (o *LogsOptions) Validate() error {
+	if o.devMode && o.deployMode {
+		return errors.New("pass only one of --dev or --deploy flags; pass no flag to see logs for both modes")
+	}
 	return nil
 }
 
 func (o *LogsOptions) Run(ctx context.Context) error {
-	containersLogs, err := o.clientset.LogsClient.DevModeLogs(o.componentName, o.Context.GetProject())
+	var logMode logsMode
+	var err error
+	var containersLogs []map[string]io.ReadCloser
+
+	if o.devMode {
+		logMode = DevMode
+	} else if o.deployMode {
+		logMode = DeployMode
+	}
+
+	switch logMode {
+	case DevMode:
+		containersLogs, err = o.clientset.LogsClient.DevModeLogs(o.componentName, o.Context.GetProject())
+	case DeployMode:
+		containersLogs, err = o.clientset.LogsClient.DeployModeLogs(o.componentName, o.Context.GetProject())
+	default:
+		containersLogs, err = o.clientset.LogsClient.AllModeLogs(o.componentName, o.Context.GetProject())
+	}
 	if err != nil {
 		return err
+	}
+	if len(containersLogs) == 0 {
+		// This will be the case when:
+		// 1. user specifies --dev flag, but the component's running in Deploy mode
+		// 2. user specified --deploy flag, but the component's running in Dev mode
+		// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
+		fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q", o.componentName)
+		return nil
 	}
 
 	uniqueContainerNames := map[string]struct{}{}
@@ -99,17 +138,18 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 			}
 		}
 	}
+
 	return nil
 }
 
 func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string {
 	if _, ok := uniqueNames[name]; ok {
 		// name already present in uniqueNames; find another name
-		// first check if last character in name is a number; if so increment it, else append name with 1
-		last, err := strconv.Atoi(string(name[len(name)-1]))
+		// first check if last character in name is a number; if so increment it, else append name with [1]
+		last, err := strconv.Atoi(string(name[len(name)-2]))
 		if err == nil {
 			last++
-			name = fmt.Sprintf("%s[%d]", name[:len(name)-1], last)
+			name = fmt.Sprintf("%s[%d]", name[:len(name)-3], last)
 		} else {
 			last = 1
 			name = fmt.Sprintf("%s[%d]", name, last)
@@ -142,14 +182,16 @@ func NewCmdLogs(name, fullname string) *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   name,
 		Short: "Show logs of all containers of the component",
-		Long: `odo logs shows logs of all containers of the component running in the Dev mode.
-It prefixes each log message with the container name.`,
+		Long: `odo logs shows logs of all containers of the component. 
+By default it shows logs of all containers running in both Dev and Deploy mode. It prefixes each log message with the container name.`,
 		Example: fmt.Sprintf(logsExample, fullname),
 		Args:    cobra.MaximumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+	logsCmd.Flags().BoolVar(&o.devMode, string(DevMode), false, "Show logs for containers running only in Dev mode")
+	logsCmd.Flags().BoolVar(&o.deployMode, string(DeployMode), false, "Show logs for containers running only in Deploy mode")
 
 	clientset.Add(logsCmd, clientset.LOGS, clientset.FILESYSTEM)
 	logsCmd.Annotations["command"] = "main"

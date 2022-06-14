@@ -25,9 +25,41 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 
 var _ Client = (*LogsClient)(nil)
 
+func (o *LogsClient) AllModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
+	logs := []map[string]io.ReadCloser{}
+
+	devModeLogs, err := o.DevModeLogs(componentName, namespace)
+	if err != nil {
+		return nil, err
+	}
+	logs = append(logs, devModeLogs...)
+
+	deployModeLogs, err := o.DeployModeLogs(componentName, namespace)
+	if err != nil {
+		return nil, err
+	}
+	logs = append(logs, deployModeLogs...)
+
+	return logs, nil
+}
+
 func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
 	// get all resources in the namespace which are running in Dev mode
 	selector := odolabels.Builder().WithComponentName(componentName).WithMode(odolabels.ComponentDevMode).Selector()
+	return o.getLogsWithSelector(selector, namespace, true)
+}
+
+func (o *LogsClient) DeployModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
+	// get all resources in the namespace which are running in Deploy mode
+	selector := odolabels.Builder().WithComponentName(componentName).WithMode(odolabels.ComponentDeployMode).Selector()
+	return o.getLogsWithSelector(selector, namespace, false)
+}
+
+// getLogsWithSelector returns logs for the containers created for resources matching selector in the namespace.
+// ignorePods boolean helps get logs for the containers of the independent Pods created in Deploy mode, since they
+// don't have an owner unlike the independent Pods created in Dev mode which are owned by the main Deployment created
+// by odo dev
+func (o *LogsClient) getLogsWithSelector(selector string, namespace string, ignorePods bool) ([]map[string]io.ReadCloser, error) {
 	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -39,7 +71,7 @@ func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[
 		return nil, err
 	}
 
-	// match pod ownerReference (if any) with resources running in Dev mode
+	// match pod ownerReference (if any) with resources running in Deploy mode
 	var pods []corev1.Pod
 	for _, pod := range podList.Items {
 		for _, owner := range pod.GetOwnerReferences() {
@@ -49,6 +81,18 @@ func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[
 			} else if match {
 				pods = append(pods, pod)
 				break // because we don't need to check other owner references of the pod anymore
+			}
+		}
+	}
+
+	if !ignorePods {
+		// pods in Deploy mode get ignored by matchOwnerReferenceWithResources function since they are not assigned
+		// a default owner reference like a pod from Dev mode
+		for _, resource := range resources {
+			for _, pod := range podList.Items {
+				if pod.GetUID() == resource.GetUID() {
+					pods = append(pods, pod)
+				}
 			}
 		}
 	}
