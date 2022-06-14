@@ -127,18 +127,15 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 	}
 
-	result := &Context{
-		internalCxt: ctx,
-	}
-
-	ctx.devfilePath = location.DevfileLocation(parameters.componentContext)
 	if parameters.devfile {
-		isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
+		devfilePath := location.DevfileLocation(parameters.componentContext)
+		isDevfile := odoutil.CheckPathExists(devfilePath)
 		if isDevfile {
+			ctx.devfilePath = devfilePath
 			// Parse devfile and validate
 			devObj, err := devfile.ParseAndValidateFromFileWithVariables(ctx.devfilePath, parameters.variables)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
+				return nil, fmt.Errorf("failed to parse the devfile %s: %w", ctx.devfilePath, err)
 			}
 			err = validate.ValidateDevfileData(devObj.Data)
 			if err != nil {
@@ -146,11 +143,15 @@ func New(parameters CreateParameters) (*Context, error) {
 			}
 			ctx.EnvSpecificInfo.SetDevfileObj(devObj)
 		} else {
-			return result, NoDevfileError{}
+			return &Context{
+				internalCxt: ctx,
+			}, NoDevfileError{}
 		}
 	}
 
-	return result, nil
+	return &Context{
+		internalCxt: ctx,
+	}, nil
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we

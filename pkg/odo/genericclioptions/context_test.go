@@ -117,7 +117,7 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       input
-		expected    Context
+		expected    *Context
 		expectedErr string
 	}{
 		{
@@ -145,7 +145,7 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: Context{
+			expected: &Context{
 				internalCxt: internalCxt{
 					project:     "myproject",
 					application: "myapp",
@@ -153,7 +153,7 @@ func TestNew(t *testing.T) {
 					// empty when no devfile
 					componentContext: "",
 					outputFlag:       "",
-					devfilePath:      "devfile.yaml",
+					devfilePath:      "",
 				},
 			},
 		},
@@ -179,7 +179,7 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: Context{
+			expected: &Context{
 				internalCxt: internalCxt{
 					project:     "a-project",
 					application: "an-app-name",
@@ -187,7 +187,7 @@ func TestNew(t *testing.T) {
 					// empty when no devfile
 					componentContext: "",
 					outputFlag:       "",
-					devfilePath:      "devfile.yaml",
+					devfilePath:      "",
 				},
 			},
 		},
@@ -214,19 +214,19 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: Context{
+			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "",
 					application:      "an-app-name",
 					component:        "a-name",
 					componentContext: "",
 					outputFlag:       "",
-					devfilePath:      "devfile.yaml",
+					devfilePath:      "",
 				},
 			},
 		},
 		{
-			name: "flags set, needDevfile",
+			name: "flags set, needDevfile, devfile not found",
 			input: input{
 				needDevfile:   true,
 				isOffline:     true,
@@ -242,14 +242,14 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "no devfile found",
-			expected: Context{
+			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
 					application:      "myapp",
 					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
-					devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
+					devfilePath:      "",
 				},
 			},
 		},
@@ -271,7 +271,7 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: Context{
+			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
 					application:      "myapp",
@@ -300,7 +300,7 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: Context{
+			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
 					application:      "myapp",
@@ -357,24 +357,26 @@ func TestNew(t *testing.T) {
 			// Fake odo Kube client
 			kclient := kclient.NewMockClientInterface(ctrl)
 
-			kclient.EXPECT().SetNamespace(tt.expected.project).AnyTimes()
+			kclient.EXPECT().SetNamespace(gomock.Any()).AnyTimes()
 
 			ns := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: tt.input.projectFlag,
 				},
 			}
-			kclient.EXPECT().GetNamespaceNormal(tt.expected.project).Return(ns, nil).AnyTimes()
+			kclient.EXPECT().GetNamespaceNormal(gomock.Any()).Return(ns, nil).AnyTimes()
 
-			depName := tt.expected.component + "-" + tt.expected.application
-			dep := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: depName,
-				},
+			if tt.expected != nil {
+				depName := tt.expected.component + "-" + tt.expected.application
+				dep := &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: depName,
+					},
+				}
+				kclient.EXPECT().GetDeploymentByName(gomock.Any()).Return(dep, nil).AnyTimes()
+				kclient.EXPECT().GetCurrentNamespace().Return(tt.input.currentNamespace).AnyTimes()
+				cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
 			}
-			kclient.EXPECT().GetDeploymentByName(depName).Return(dep, nil).AnyTimes()
-			kclient.EXPECT().GetCurrentNamespace().Return(tt.input.currentNamespace).AnyTimes()
-			cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
 
 			// Call the tested function
 			params := NewCreateParameters(cmdline)
@@ -399,27 +401,34 @@ func TestNew(t *testing.T) {
 				t.Errorf("Expected error %v, got %v", tt.expectedErr, err.Error())
 				return
 			}
-			if err != nil {
-				return
+
+			if tt.expected != nil && result == nil {
+				t.Errorf("Expected non nil value, got nil result")
 			}
 
-			if result.project != tt.expected.project {
-				t.Errorf("Expected project %s, got %s", tt.expected.project, result.project)
+			if tt.expected == nil && result != nil {
+				t.Errorf("Expected nil value, got non nil result")
 			}
-			if result.application != tt.expected.application {
-				t.Errorf("Expected application %s, got %s", tt.expected.application, result.application)
-			}
-			if result.component != tt.expected.component {
-				t.Errorf("Expected component %s, got %s", tt.expected.component, result.component)
-			}
-			if result.componentContext != tt.expected.componentContext {
-				t.Errorf("Expected component context %s, got %s", tt.expected.componentContext, result.componentContext)
-			}
-			if result.outputFlag != tt.expected.outputFlag {
-				t.Errorf("Expected output flag %s, got %s", tt.expected.outputFlag, result.outputFlag)
-			}
-			if result.devfilePath != tt.expected.devfilePath {
-				t.Errorf("Expected devfilePath %s, got %s", tt.expected.devfilePath, result.devfilePath)
+
+			if tt.expected != nil && result != nil {
+				if result.project != tt.expected.project {
+					t.Errorf("Expected project %s, got %s", tt.expected.project, result.project)
+				}
+				if result.application != tt.expected.application {
+					t.Errorf("Expected application %s, got %s", tt.expected.application, result.application)
+				}
+				if result.component != tt.expected.component {
+					t.Errorf("Expected component %s, got %s", tt.expected.component, result.component)
+				}
+				if result.componentContext != tt.expected.componentContext {
+					t.Errorf("Expected component context %s, got %s", tt.expected.componentContext, result.componentContext)
+				}
+				if result.outputFlag != tt.expected.outputFlag {
+					t.Errorf("Expected output flag %s, got %s", tt.expected.outputFlag, result.outputFlag)
+				}
+				if result.devfilePath != tt.expected.devfilePath {
+					t.Errorf("Expected devfilePath %s, got %s", tt.expected.devfilePath, result.devfilePath)
+				}
 			}
 		})
 	}
