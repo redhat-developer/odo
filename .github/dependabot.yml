@@ -1,5 +1,5 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
+# This is a configuration file for Dependabot, a GitHub tool that tries to keep dependencies updated on a regular basis
+# by raising pull requests to update those dependencies.
 # Please see the documentation for all configuration options:
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
@@ -35,3 +35,7 @@ updates:
   labels:
     - "area/dependency"
     - "kind/task"
+
+## Feel free to add other package managers here if needed.
+## See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem
+## for the full list of supported ecosystems.
