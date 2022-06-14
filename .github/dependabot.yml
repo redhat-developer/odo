@@ -20,3 +20,18 @@ updates:
   labels:
   - "area/dependency"
   - "kind/task"
+
+# Maintain dependencies for Website builds
+- package-ecosystem: "npm"
+  directory: "/docs/website"
+  # Set this to 0 to disable version updates
+  open-pull-requests-limit: 3
+  commit-message:
+    prefix: "Website"
+  schedule:
+    interval: "weekly"
+  reviewers:
+    - "odo-mantainers"
+  labels:
+    - "area/dependency"
+    - "kind/task"
