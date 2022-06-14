@@ -82,7 +82,7 @@ func (o *BindingListOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	HumanReadableOutput(os.Stdout, list)
+	HumanReadableOutput(os.Stdout, o.clientset.KubernetesClient.GetCurrentNamespace(), list)
 	return nil
 }
 
@@ -121,13 +121,15 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 }
 
 // HumanReadableOutput outputs the list of bindings in a human readable format
-func HumanReadableOutput(w io.Writer, list api.ResourcesList) {
+func HumanReadableOutput(w io.Writer, namespace string, list api.ResourcesList) {
 	bindings := list.Bindings
 	if len(bindings) == 0 {
-		log.Error("There are no service bindings.")
+		log.Errorf("There are no service bindings in the %q namespace.", namespace)
 		return
 
 	}
+
+	fmt.Printf("ServiceBindings in the %q namespace:\n", namespace)
 
 	// Create the table and use our own style
 	t := table.NewWriter()
