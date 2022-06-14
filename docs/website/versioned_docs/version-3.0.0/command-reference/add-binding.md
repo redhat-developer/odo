@@ -17,7 +17,7 @@ To know about the operators supported by the Service Binding Operator, read thei
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
 * a service from the list of bindable service instances as supported by the Service Binding Operator,
-* option to bind the service as a file; see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this.
+* option to bind the service as a file (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this),
 * a name for the binding.
 
 ```shell
