@@ -1,7 +1,9 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -81,15 +83,27 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
 				helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample")
 			})
+			By("human readable output", func() {
+				res := helper.Cmd("odo", "list", "binding").ShouldPass()
+				stdout, _ := res.Out(), res.Err()
+				lines := strings.Split(stdout, "\n")
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				Expect(lines[2]).To(ContainSubstring("* "))
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[2]).To(ContainSubstring("None"))
+			})
 		})
 	})
 
 	for _, ctx := range []struct {
-		title                            string
-		devfile                          string
-		assertDescribeJsonOutput         func(list bool, stdout, stderr string)
-		assertDecribeHumanReadableOutput func(list bool, stdout, stderr string)
-		assertListJsonOutput             func(list bool, stdout, stderr string)
+		title                             string
+		devfile                           string
+		assertDescribeJsonOutput          func(list bool, stdout, stderr string)
+		assertDescribeHumanReadableOutput func(list bool, stdout, stderr string)
+		assertListJsonOutput              func(devfile bool, stdout, stderr string)
+		assertListHumanReadableOutput     func(devfile bool, stdout, stderr string)
 	}{
 		{
 			title:   "creating a component with a binding as files",
@@ -113,7 +127,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentIs(stdout, prefix+"status.bindingEnvVars", "")
 			},
-			assertDecribeHumanReadableOutput: func(list bool, stdout, stderr string) {
+			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
 					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
 				}
@@ -144,6 +158,19 @@ var _ = Describe("odo describe/list binding command tests", func() {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
 			},
+			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				lines := strings.Split(stdout, "\n")
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				if devfile {
+					Expect(lines[2]).To(ContainSubstring("* "))
+				} else {
+					Expect(lines[2]).ToNot(ContainSubstring("* "))
+				}
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[2]).To(ContainSubstring("Dev"))
+			},
 		},
 		{
 			title:   "creating a component with a binding as environment variables",
@@ -167,7 +194,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, prefix+"status.bindingFiles", "")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingEnvVars", "PASSWORD")
 			},
-			assertDecribeHumanReadableOutput: func(list bool, stdout, stderr string) {
+			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
 					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
 				}
@@ -198,6 +225,19 @@ var _ = Describe("odo describe/list binding command tests", func() {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
 			},
+			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				lines := strings.Split(stdout, "\n")
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				if devfile {
+					Expect(lines[2]).To(ContainSubstring("* "))
+				} else {
+					Expect(lines[2]).ToNot(ContainSubstring("* "))
+				}
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[2]).To(ContainSubstring("Dev"))
+			},
 		},
 		{
 			title:   "creating a component with a spec binding",
@@ -221,7 +261,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentIs(stdout, prefix+"status.bindingEnvVars", "")
 			},
-			assertDecribeHumanReadableOutput: func(list bool, stdout, stderr string) {
+			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
 					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
 				}
@@ -252,6 +292,19 @@ var _ = Describe("odo describe/list binding command tests", func() {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
 			},
+			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				lines := strings.Split(stdout, "\n")
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				if devfile {
+					Expect(lines[2]).To(ContainSubstring("* "))
+				} else {
+					Expect(lines[2]).ToNot(ContainSubstring("* "))
+				}
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[2]).To(ContainSubstring("Dev"))
+			},
 		},
 		{
 			title:   "creating a component with a spec binding and envvars",
@@ -275,7 +328,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingEnvVars", "PASSWD")
 			},
-			assertDecribeHumanReadableOutput: func(list bool, stdout, stderr string) {
+			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
 					Expect(stdout).To(ContainSubstring("ServiceBinding used by the current component"))
 				}
@@ -306,6 +359,19 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+			},
+			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
+				lines := strings.Split(stdout, "\n")
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				if devfile {
+					Expect(lines[2]).To(ContainSubstring("* "))
+				} else {
+					Expect(lines[2]).ToNot(ContainSubstring("* "))
+				}
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[2]).To(ContainSubstring("Dev"))
 			},
 		},
 	} {
@@ -352,7 +418,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 						By("human readable output", func() {
 							res := helper.Cmd("odo", "describe", "binding").ShouldPass()
 							stdout, stderr := res.Out(), res.Err()
-							ctx.assertDecribeHumanReadableOutput(true, stdout, stderr)
+							ctx.assertDescribeHumanReadableOutput(true, stdout, stderr)
 						})
 
 						By("JSON output from another directory with name flag", func() {
@@ -367,7 +433,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							Expect(err).ToNot(HaveOccurred())
 							res := helper.Cmd("odo", "describe", "binding", "--name", "my-nodejs-app-cluster-sample").ShouldPass()
 							stdout, stderr := res.Out(), res.Err()
-							ctx.assertDecribeHumanReadableOutput(false, stdout, stderr)
+							ctx.assertDescribeHumanReadableOutput(false, stdout, stderr)
 						})
 
 					})
@@ -380,6 +446,13 @@ var _ = Describe("odo describe/list binding command tests", func() {
 								ctx.assertListJsonOutput(true, stdout, stderr)
 							}
 						})
+						By("human readable output", func() {
+							res := helper.Cmd("odo", "list", "binding").ShouldPass()
+							stdout, stderr := res.Out(), res.Err()
+							if ctx.assertListHumanReadableOutput != nil {
+								ctx.assertListHumanReadableOutput(true, stdout, stderr)
+							}
+						})
 
 						By("JSON output from another directory", func() {
 							err := os.Chdir("/")
@@ -388,6 +461,15 @@ var _ = Describe("odo describe/list binding command tests", func() {
 							stdout, stderr := res.Out(), res.Err()
 							if ctx.assertListJsonOutput != nil {
 								ctx.assertListJsonOutput(false, stdout, stderr)
+							}
+						})
+						By("human readable output from another directory with name flag", func() {
+							err := os.Chdir("/")
+							Expect(err).ToNot(HaveOccurred())
+							res := helper.Cmd("odo", "list", "binding").ShouldPass()
+							stdout, stderr := res.Out(), res.Err()
+							if ctx.assertListHumanReadableOutput != nil {
+								ctx.assertListHumanReadableOutput(false, stdout, stderr)
 							}
 						})
 					})
