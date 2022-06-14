@@ -102,6 +102,8 @@ var _ = Describe("odo devfile build-images command tests", func() {
 				},
 			},
 		} {
+			// this is a workaround to ensure that the for loop works with `It` blocks
+			scope := scope
 			It(fmt.Sprintf("should build image via %s if build context references PROJECT_SOURCE env var", scope.name), func() {
 				stdout := helper.Cmd("odo", "build-images").AddEnv(scope.envvars...).ShouldPass().Out()
 				lines, err := helper.ExtractLines(stdout)
@@ -144,6 +146,8 @@ var _ = Describe("odo devfile build-images command tests", func() {
 				},
 			},
 		} {
+			// this is a workaround to ensure that the for loop works with `It` blocks
+			scope := scope
 			It(fmt.Sprintf("should build image via %s by defaulting build context to devfile path", scope.name), func() {
 				stdout := helper.Cmd("odo", "build-images").AddEnv(scope.envvars...).ShouldPass().Out()
 				lines, err := helper.ExtractLines(stdout)

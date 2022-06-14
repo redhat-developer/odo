@@ -48,6 +48,8 @@ var _ = Describe("odo delete command tests", func() {
 			},
 		},
 	} {
+		// this is a workaround to ensure that the for loop works with `It` blocks
+		ctx := ctx
 		When(ctx.title, func() {
 			BeforeEach(func() {
 				// Hardcoded names from `ctx.devfileName`

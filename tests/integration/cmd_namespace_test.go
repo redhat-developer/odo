@@ -22,13 +22,13 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 	AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
-
 	for _, commandName := range []string{"namespace", "project"} {
-
+		// this is a workaround to ensure that the for loop works with `It` blocks
+		commandName := commandName
 		Describe("create "+commandName, func() {
+
 			namespace := fmt.Sprintf("%s-%s", helper.RandString(4), commandName)
 
-			// TODO: Remove for loop; find a way to use DescribeTable
 			It(fmt.Sprintf("should successfully create the %s", commandName), func() {
 				helper.Cmd("odo", "create", commandName, namespace, "--wait").ShouldPass()
 				defer func(ns string) {

@@ -188,6 +188,8 @@ var _ = Describe("odo describe binding command tests", func() {
 			},
 		},
 	} {
+		// this is a workaround to ensure that for loop works well with `It` blocks
+		ctx := ctx
 		When(ctx.title, func() {
 			cmpName := "my-nodejs-app"
 			BeforeEach(func() {
