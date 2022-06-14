@@ -19,7 +19,7 @@ import (
 const BindingRecommendedCommandName = "binding"
 
 var addBindingExample = ktemplates.Examples(`
-# Add binding between a service, and the component present in the working directory in the interactive mode
+# Add binding between a service and the component present in the working directory in the interactive mode
 %[1]s
 
 # Add binding between service named 'myservice' and the component present in the working directory
