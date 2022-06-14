@@ -15,6 +15,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/binding"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -213,32 +214,7 @@ func humanReadableOutput(list api.ResourcesList) {
 		return
 	}
 
-	// Create the table and use our own style
-	t := table.NewWriter()
-
-	// Set the style of the table
-	t.SetStyle(table.Style{
-		Box: table.BoxStyle{
-			PaddingLeft:  " ",
-			PaddingRight: " ",
-		},
-		Color: table.ColorOptions{
-			Header: text.Colors{text.FgHiGreen, text.Underline},
-		},
-		Format: table.FormatOptions{
-			Footer: text.FormatUpper,
-			Header: text.FormatUpper,
-			Row:    text.FormatDefault,
-		},
-		Options: table.Options{
-			DrawBorder:      false,
-			SeparateColumns: false,
-			SeparateFooter:  false,
-			SeparateHeader:  false,
-			SeparateRows:    false,
-		},
-	})
-	t.SetOutputMirror(log.GetStdout())
+	t := ui.NewTable()
 
 	// Create the header and then sort accordingly
 	t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
