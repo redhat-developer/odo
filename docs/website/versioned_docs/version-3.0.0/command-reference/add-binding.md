@@ -28,7 +28,7 @@ odo add binding
 ### Non-interactive mode
 In the non-interactive mode, you will have to specify the following required information through the command-line:
 * `--service` flag to specify the service you want to bind to,
-* `--name` flag to specify a name for the binding; see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this.
+* `--name` flag to specify a name for the binding (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this)
 * `--bind-as-files` flag to specify if the service should be bound as a file; this flag is set to true by default.
 
 
