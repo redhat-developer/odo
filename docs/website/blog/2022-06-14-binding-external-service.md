@@ -25,7 +25,7 @@ each service you want to be bindable, you can make the life easier for developer
 To expose an external service from inside a Kubernetes cluster, you can create a *Headless* Service,
 and manually create the Enpoints to access this external service.
 
-Here an example, to connect to an external Redis service on IP 192.168.1.10 and port 6379:
+Here is an example, to connect to an external Redis service on IP 192.168.1.10 and port 6379:
 
 ```
 kind: Service
@@ -63,7 +63,7 @@ You can find more information about creating Service resources to access externa
 The Redis instance is protected by a password, and you may want to store this password into a Secret resource,
 so it can be used by applications.
 
-The developers may want to *mount* this Secret into their application's Pod, but Secret are mountable only
+The developers may want to *mount* this Secret into their application's Pod, but Secrets are mountable only
 from Pods in the same namespace, and you would like to share these credentials with all the developers 
 of the team, without creating several instances of this Secret (one in each developer's namespace), but only one
 in the `external-services` namespace.
