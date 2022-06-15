@@ -145,7 +145,7 @@ in the `external-services` namespace,
 
 The application will be the Deployment resource (group "apps", version "v1", kind "Deployment") created by odo when you run `odo dev`.
 By convention, the Deployment name will be the name of the Devfile (in the `.metadata.name` field) followed by `-app` (`my-nodejs-app-app` in our example).
-You don't have to specify the namespace, as the Deployment will be in the same namespace as the Deployment.
+You don't have to specify the namespace, as the Deployment will be in the same namespace as the ServiceBinding.
 
 The option `bindAsFiles` indicates to the SBO to create files into the Pod's container, each file having the name 
 of a credential, and containing the value of the credential.
@@ -174,8 +174,11 @@ You can create a file `kubernetes/redis.yaml` in your directory containing this 
 and add a Kubernetes component into your Devfile referring to this YAML file:
 
 ```
+metadata:
+  name: my-nodejs-app
+[...]
 components:
-
+[...]
 - name: binding-to-redis
   kubernetes:
     uri: kubernetes/redis.yaml
@@ -184,4 +187,66 @@ components:
 By adding this Kubernetes component to your Devfile, when you run `odo dev`, the ServiceBinding resource defined
 in the `kubernetes/redis.yaml` file will be created into the cluster, and the Service Binding Operator will inject
 into the application's Pod the `host` and `password` necessary to connect to the Redis external service.
+
+## Using the variables into the application's code
+
+The Devfile is now ready, and the developer can start accessing the external service from the code. 
+
+The first step to know how the credentials are exposed into the application's container is to start the `odo dev` 
+command and to execute the `odo describe binding` command.
+
+Running `odo dev`, you can see that the ServiceBinding resource is deployed to the cluster.
+
+```
+$ odo dev
+[...]
+↪ Deploying to the cluster in developer mode
+ ✓  Creating kind ServiceBinding [60ms]
+ ✓  Waiting for Kubernetes resources [10s]
+ ✓  Syncing files into the container [740ms]
+ ✓  Building your application in container on cluster [4s]
+ ✓  Executing the application [1s]
+[...]
+```
+
+From another terminal, running `odo describe binding` shows you the status of the ServiceBinding:
+
+```
+$ odo describe binding
+ServiceBinding used by the current component:
+
+Service Binding Name: binding-to-redis
+Services:
+ •  redis (Service.)
+Bind as files: true
+Detect binding resources: false
+Available binding information:
+ •  ${SERVICE_BINDING_ROOT}/binding-to-redis/host
+ •  ${SERVICE_BINDING_ROOT}/binding-to-redis/password
+```
+
+This output shows that two files `host` and `password` are present in the application's container, at the mentioned paths.
+
+You can leverage a library to help you access
+these files, for example the [Python pyservicebinding library](https://github.com/baijum/pyservicebinding) or the [Go servicebinding library](https://github.com/baijum/servicebinding).
+
+
+## Troubleshooting
+
+If the output of `odo describe binding` shows an unknown status:
+
+```
+Available binding information: unknown
+```
+
+- first check if `odo dev` is still running. `odo` is not able to know
+the bound credentials if the ServiceBinding resource is not deployed by `odo dev`.
+- if `odo dev` is running, you can check that the ServiceBinding resource is deployed to the cluster, and if its status is `ApplicationsBound`, with the command:
+  ```
+  kubectl get servicebindings.binding.operators.coreos.com
+  ```
+- if the status of the ServiceBinding resource displayed in the list is not `ApplicationsBound`, you can get an error message with the command:
+  ```
+  kubectl describe servicebindings.binding.operators.coreos.com <service-binding-name>
+  ```
 
