@@ -17,6 +17,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+	kpointer "k8s.io/utils/pointer"
 )
 
 // odoSettings holds all odo specific configurations
@@ -333,44 +334,44 @@ func (c *preferenceInfo) IsSet(parameter string) bool {
 // and if absent then returns default
 func (c *preferenceInfo) GetTimeout() time.Duration {
 	// default timeout value is 1
-	return util.GetTimeDefault(c.OdoSettings.Timeout, DefaultTimeout)
+	return kpointer.DurationDeref(c.OdoSettings.Timeout, DefaultTimeout)
 }
 
 // GetPushTimeout gets the value set by PushTimeout
 func (c *preferenceInfo) GetPushTimeout() time.Duration {
 	// default timeout value is 1
-	return util.GetTimeDefault(c.OdoSettings.PushTimeout, DefaultPushTimeout)
+	return kpointer.DurationDeref(c.OdoSettings.PushTimeout, DefaultPushTimeout)
 }
 
 // GetRegistryCacheTime gets the value set by RegistryCacheTime
 func (c *preferenceInfo) GetRegistryCacheTime() time.Duration {
-	return util.GetTimeDefault(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
+	return kpointer.DurationDeref(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from preferences
 // and if absent then returns default
 func (c *preferenceInfo) GetUpdateNotification() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.UpdateNotification, true)
+	return kpointer.BoolDeref(c.OdoSettings.UpdateNotification, true)
 }
 
 // GetEphemeralSourceVolume returns the value of ephemeral from preferences
 // and if absent then returns default
 func (c *preferenceInfo) GetEphemeralSourceVolume() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
+	return kpointer.BoolDeref(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
 }
 
 // GetConsentTelemetry returns the value of ConsentTelemetry from preferences
 // and if absent then returns default
 // default value: false, consent telemetry is disabled by default
 func (c *preferenceInfo) GetConsentTelemetry() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
+	return kpointer.BoolDeref(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
 }
 
 // GetEphemeral returns the value of Ephemeral from preferences
 // and if absent then returns default
 // default value: true, ephemeral is enabled by default
 func (c *preferenceInfo) GetEphemeral() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
+	return kpointer.BoolDeref(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
 }
 
 func (c *preferenceInfo) UpdateNotification() *bool {

@@ -37,11 +37,11 @@ func TestView(t *testing.T) {
 		return
 	}
 
-	timePointer := 10 * time.Second
+	timeValue := 10 * time.Second
 	prefClient.EXPECT().UpdateNotification().Return(pointer.Bool(false))
-	prefClient.EXPECT().Timeout().Return(&timePointer)
-	prefClient.EXPECT().RegistryCacheTime().Return(&timePointer)
-	prefClient.EXPECT().PushTimeout().Return(&timePointer)
+	prefClient.EXPECT().Timeout().Return(&timeValue)
+	prefClient.EXPECT().RegistryCacheTime().Return(&timeValue)
+	prefClient.EXPECT().PushTimeout().Return(&timeValue)
 	prefClient.EXPECT().EphemeralSourceVolume().Return(pointer.Bool(false))
 	prefClient.EXPECT().ConsentTelemetry().Return(pointer.Bool(false))
 
