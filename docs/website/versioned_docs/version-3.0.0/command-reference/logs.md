@@ -146,133 +146,23 @@ components:
 Notice that multiple containers have been named as `main` to show how `odo logs` would display logs when more than one
 container have the same name.
 
-### Dev mode (Inner loop)
-
-Run the `odo dev` command so that odo can create the resources on the Kubernetes cluster. When you execute `odo dev`,
-odo creates following resources on the Kubernetes cluster:
+Running the `odo dev` command for aforementioned git repo and devfile creates following resources on the 
+Kubernetes cluster:
 1. Deployment for the component `devfile-nodejs-deploy` itself. Containers for this are created using `.components.
    container`.
 2. Pod named `innerloop-pod`.
 
-When you run `odo logs --dev`, you should see logs from all the containers started by `odo dev` command. Each line 
-is prefixed with `<container-name>:` to easily distinguish which the container the logs belong to:
-```shell
-$ odo logs --dev
-runtime: time="2022-06-14T09:03:32Z" level=info msg="create process:devrun" 
-runtime: time="2022-06-14T09:03:32Z" level=info msg="create process:debugrun" 
-runtime: time="2022-06-14T09:03:32Z" level=info msg="try to start program" program=devrun 
-runtime: time="2022-06-14T09:03:32Z" level=info msg="success to start program" program=devrun 
-runtime: time="2022-06-14T09:03:33Z" level=debug msg="no auth required" 
-runtime: time="2022-06-14T09:03:33Z" level=debug msg="wait program exit" program=devrun 
-runtime: time="2022-06-14T09:03:33Z" level=info msg="program stopped with status:exit status 0" program=devrun 
-runtime: time="2022-06-14T09:03:33Z" level=info msg="Don't start the stopped program because its autorestart flag is false" program=devrun 
-runtime: time="2022-06-14T09:03:35Z" level=debug msg="no auth required" 
-runtime: time="2022-06-14T09:03:35Z" level=debug msg="succeed to find process:devrun" 
-runtime: time="2022-06-14T09:03:35Z" level=info msg="try to start program" program=devrun 
-runtime: time="2022-06-14T09:03:35Z" level=info msg="success to start program" program=devrun 
-runtime: ODO_COMMAND_RUN is npm start
-runtime: Changing directory to $PROJECT_SOURCE
-runtime: Executing command cd $PROJECT_SOURCE && npm start
-runtime: 
-runtime: > nodejs-starter@1.0.0 start /projects
-runtime: > node server.js
-runtime: 
-runtime: App started on PORT 3000
-runtime: time="2022-06-14T09:03:36Z" level=debug msg="wait program exit" program=devrun 
-runtime: time="2022-06-14T09:03:37Z" level=debug msg="no auth required" 
-main: 
-main: > nodejs-starter@1.0.0 start /opt/app-root/src
-main: > node server.js
-main: 
-main: App started on PORT 3000
-```
 
-### Deploy mode
-
-If you are using the git repo mentioned at the beginning of this document, note that it doesn't have a Dockerfile to 
-build the image which odo does when you do `odo deploy`. To skip image creation and still be able to use Deploy mode 
-for the component, run `odo deploy` using below:
-
-```shell
-PODMAN_CMD=echo DOCKER_CMD=echo odo deploy
-```
-
-odo creates following resources on the Kubernetes cluster when you run `odo deploy`:
+Running `odo deploy` (use `PODMAN_CMD=echo DOCKER_CMD=echo odo deploy` to skip building the image) command for 
+aforementioned git repo and devfile creates following resources on the Kubernetes cluster:
 1. Deployment named `devfile-nodejs-deploy`.
 2. Another Deployment named `devfile-nodejs-deploy-2`.
 3. Pod named `myapp`.
 
-When you run `odo logs --deploy`, you should see logs from all the containers started by `odo deploy` command. Each 
-line is prefixed with `<container-name>:` to easily distinguish which the container the logs belong to:
-```shell
-$ odo logs --deploy
-main: 
-main: > nodejs-starter@1.0.0 start /opt/app-root/src
-main: > node server.js
-main: 
-main: App started on PORT 3000
-main[1]: 
-main[1]: > nodejs-starter@1.0.0 start /opt/app-root/src
-main[1]: > node server.js
-main[1]: 
-main[1]: App started on PORT 3000
-main[2]: 
-main[2]: > nodejs-starter@1.0.0 start /opt/app-root/src
-main[2]: > node server.js
-main[2]: 
-main[2]: App started on PORT 3000
-```
-odo helps distinguish between multiple containers named `main` by appending a numeric value to it.
+`odo logs` command can be used with below flags:
+* Use `odo logs --dev` to see the logs for the containers created by `odo dev` command.
+* Use `odo logs --deploy` to see the logs for the containers created by `odo deploy` command.
+* Use `odo logs` (without any flag) to see the logs of all the containers created by both `odo dev` and `odo deploy`.
 
-### `odo logs` without specifying the mode
-
-When you run `odo logs` without specifying the Dev mode (using `--dev` flag) or Deploy mode (using `--deploy` flag), 
-it shows logs for all the modes that a component is running in. Since we have started both Dev mode as well as Deploy 
-mode here, it will show logs for all containers running in both modes:
-
-```shell
-$ odo logs
-runtime: time="2022-06-14T09:30:35Z" level=info msg="create process:debugrun" 
-runtime: time="2022-06-14T09:30:35Z" level=info msg="create process:devrun" 
-runtime: time="2022-06-14T09:30:35Z" level=info msg="try to start program" program=devrun 
-runtime: time="2022-06-14T09:30:35Z" level=info msg="success to start program" program=devrun 
-runtime: time="2022-06-14T09:30:36Z" level=debug msg="no auth required" 
-runtime: time="2022-06-14T09:30:36Z" level=debug msg="wait program exit" program=devrun 
-runtime: time="2022-06-14T09:30:36Z" level=info msg="program stopped with status:exit status 0" program=devrun 
-runtime: time="2022-06-14T09:30:36Z" level=info msg="Don't start the stopped program because its autorestart flag is false" program=devrun 
-runtime: time="2022-06-14T09:30:39Z" level=debug msg="no auth required" 
-runtime: time="2022-06-14T09:30:39Z" level=debug msg="succeed to find process:devrun" 
-runtime: time="2022-06-14T09:30:39Z" level=info msg="try to start program" program=devrun 
-runtime: time="2022-06-14T09:30:39Z" level=info msg="success to start program" program=devrun 
-runtime: ODO_COMMAND_RUN is npm start
-runtime: Changing directory to $PROJECT_SOURCE
-runtime: Executing command cd $PROJECT_SOURCE && npm start
-runtime: 
-runtime: > nodejs-starter@1.0.0 start /projects
-runtime: > node server.js
-runtime: 
-runtime: App started on PORT 3000
-runtime: time="2022-06-14T09:30:40Z" level=debug msg="wait program exit" program=devrun 
-runtime: time="2022-06-14T09:30:41Z" level=debug msg="no auth required" 
-main: 
-main: > nodejs-starter@1.0.0 start /opt/app-root/src
-main: > node server.js
-main: 
-main: App started on PORT 3000
-main[1]: 
-main[1]: > nodejs-starter@1.0.0 start /opt/app-root/src
-main[1]: > node server.js
-main[1]: 
-main[1]: App started on PORT 3000
-main[2]: 
-main[2]: > nodejs-starter@1.0.0 start /opt/app-root/src
-main[2]: > node server.js
-main[2]: 
-main[2]: App started on PORT 3000
-main[3]: 
-main[3]: > nodejs-starter@1.0.0 start /opt/app-root/src
-main[3]: > node server.js
-main[3]: 
-main[3]: App started on PORT 3000
-
-```
+Note that since multiple containers are named the same (`main`), the `odo logs` output appends a number to container 
+name to help differentiate between the containers.
