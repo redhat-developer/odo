@@ -9,6 +9,8 @@ import (
 	"os"
 	"strconv"
 
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
+
 	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/log"
@@ -109,11 +111,11 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 
 	switch logMode {
 	case DevMode:
-		containersLogs, err = o.clientset.LogsClient.DevModeLogs(o.componentName, o.Context.GetProject())
+		containersLogs, err = o.clientset.LogsClient.GetLogsForMode(odolabels.ComponentDevMode, o.componentName, o.Context.GetProject())
 	case DeployMode:
-		containersLogs, err = o.clientset.LogsClient.DeployModeLogs(o.componentName, o.Context.GetProject())
+		containersLogs, err = o.clientset.LogsClient.GetLogsForMode(odolabels.ComponentDeployMode, o.componentName, o.Context.GetProject())
 	default:
-		containersLogs, err = o.clientset.LogsClient.AllModeLogs(o.componentName, o.Context.GetProject())
+		containersLogs, err = o.clientset.LogsClient.GetLogsForMode(odolabels.ComponentAnyMode, o.componentName, o.Context.GetProject())
 	}
 	if err != nil {
 		return err

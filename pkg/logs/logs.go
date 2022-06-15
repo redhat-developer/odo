@@ -25,34 +25,43 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 
 var _ Client = (*LogsClient)(nil)
 
-func (o *LogsClient) AllModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
+func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
+	var selector string
 	logs := []map[string]io.ReadCloser{}
+	var err error
 
-	devModeLogs, err := o.DevModeLogs(componentName, namespace)
-	if err != nil {
-		return nil, err
+	switch mode {
+	case odolabels.ComponentDevMode:
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+		logs, err = o.getLogsWithSelector(selector, namespace, true)
+		if err != nil {
+			return nil, err
+		}
+	case odolabels.ComponentDeployMode:
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
+		logs, err = o.getLogsWithSelector(selector, namespace, false)
+		if err != nil {
+			return nil, err
+		}
+	case odolabels.ComponentAnyMode:
+		var l []map[string]io.ReadCloser
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+		l, err = o.getLogsWithSelector(selector, namespace, true)
+		if err != nil {
+			return nil, err
+		}
+		logs = append(logs, l...)
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
+		l, err = o.getLogsWithSelector(selector, namespace, false)
+		if err != nil {
+			return nil, err
+		}
+		logs = append(logs, l...)
+	default:
+		return nil, InvalidModeError{mode: mode}
 	}
-	logs = append(logs, devModeLogs...)
-
-	deployModeLogs, err := o.DeployModeLogs(componentName, namespace)
-	if err != nil {
-		return nil, err
-	}
-	logs = append(logs, deployModeLogs...)
 
 	return logs, nil
-}
-
-func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
-	// get all resources in the namespace which are running in Dev mode
-	selector := odolabels.Builder().WithComponentName(componentName).WithMode(odolabels.ComponentDevMode).Selector()
-	return o.getLogsWithSelector(selector, namespace, true)
-}
-
-func (o *LogsClient) DeployModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
-	// get all resources in the namespace which are running in Deploy mode
-	selector := odolabels.Builder().WithComponentName(componentName).WithMode(odolabels.ComponentDeployMode).Selector()
-	return o.getLogsWithSelector(selector, namespace, false)
 }
 
 // getLogsWithSelector returns logs for the containers created for resources matching selector in the namespace.
