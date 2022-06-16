@@ -227,8 +227,8 @@ Available binding information:
 
 This output shows that two files `host` and `password` are present in the application's container, at the mentioned paths.
 
-You can leverage a library to help you access
-these files, for example the [Python pyservicebinding library](https://github.com/baijum/pyservicebinding) or the [Go servicebinding library](https://github.com/baijum/servicebinding).
+You can leverage a servicebinding library to help you access
+these files. A complete list of libraries is available on the page [Service Bindings for Application Developers](https://servicebinding.io/application-developer/).
 
 
 ## Troubleshooting
