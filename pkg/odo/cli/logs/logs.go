@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
@@ -109,14 +110,16 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		logMode = DeployMode
 	}
 
+	var mode string
 	switch logMode {
 	case DevMode:
-		containersLogs, err = o.clientset.LogsClient.GetLogsForMode(odolabels.ComponentDevMode, o.componentName, o.Context.GetProject())
+		mode = odolabels.ComponentDevMode
 	case DeployMode:
-		containersLogs, err = o.clientset.LogsClient.GetLogsForMode(odolabels.ComponentDeployMode, o.componentName, o.Context.GetProject())
+		mode = odolabels.ComponentDeployMode
 	default:
-		containersLogs, err = o.clientset.LogsClient.GetLogsForMode(odolabels.ComponentAnyMode, o.componentName, o.Context.GetProject())
+		mode = odolabels.ComponentAnyMode
 	}
+	containersLogs, err = o.clientset.LogsClient.GetLogsForMode(mode, o.componentName, o.Context.GetProject())
 	if err != nil {
 		return err
 	}
@@ -148,14 +151,22 @@ func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string
 	if _, ok := uniqueNames[name]; ok {
 		// name already present in uniqueNames; find another name
 		// first check if last character in name is a number; if so increment it, else append name with [1]
-		last, err := strconv.Atoi(string(name[len(name)-2]))
-		if err == nil {
+		var numStr string
+		var last int
+		var err error
+
+		split := strings.Split(name, "[")
+		if len(split) == 2 {
+			numStr = strings.Trim(split[1], "]")
+			last, err = strconv.Atoi(numStr)
+			if err != nil {
+				return ""
+			}
 			last++
-			name = fmt.Sprintf("%s[%d]", name[:len(name)-3], last)
 		} else {
 			last = 1
-			name = fmt.Sprintf("%s[%d]", name, last)
 		}
+		name = fmt.Sprintf("%s[%d]", split[0], last)
 		return getUniqueContainerName(name, uniqueNames)
 	}
 	return name
