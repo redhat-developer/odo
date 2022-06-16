@@ -27,10 +27,7 @@ loop:
 		}
 		if c1 != 0x1b {
 			bw[0] = c1
-			_, err = w.out.Write(bw[:])
-			if err != nil {
-				break loop
-			}
+			w.out.Write(bw[:])
 			continue
 		}
 		c2, err := er.ReadByte()

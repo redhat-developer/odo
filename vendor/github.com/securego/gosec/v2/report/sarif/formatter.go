@@ -7,14 +7,12 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-
 	"github.com/securego/gosec/v2"
 	"github.com/securego/gosec/v2/cwe"
 )
 
-//GenerateReport Convert a gosec report to a Sarif Report
+// GenerateReport Convert a gosec report to a Sarif Report
 func GenerateReport(rootPaths []string, data *gosec.ReportInfo) (*Report, error) {
-
 	type rule struct {
 		index int
 		rule  *ReportingDescriptor
@@ -50,7 +48,7 @@ func GenerateReport(rootPaths []string, data *gosec.ReportInfo) (*Report, error)
 			return nil, err
 		}
 
-		result := NewResult(r.rule.ID, r.index, getSarifLevel(issue.Severity.String()), issue.What).
+		result := NewResult(r.rule.ID, r.index, getSarifLevel(issue.Severity.String()), issue.What, buildSarifSuppressions(issue.Suppressions)).
 			WithLocations(location)
 
 		results = append(results, result)
@@ -73,9 +71,14 @@ func GenerateReport(rootPaths []string, data *gosec.ReportInfo) (*Report, error)
 
 // parseSarifRule return SARIF rule field struct
 func parseSarifRule(issue *gosec.Issue) *ReportingDescriptor {
+	cwe := gosec.GetCweByRule(issue.RuleID)
+	name := issue.RuleID
+	if cwe != nil {
+		name = cwe.Name
+	}
 	return &ReportingDescriptor{
 		ID:               issue.RuleID,
-		Name:             issue.What,
+		Name:             name,
 		ShortDescription: NewMultiformatMessageString(issue.What),
 		FullDescription:  NewMultiformatMessageString(issue.What),
 		Help: NewMultiformatMessageString(fmt.Sprintf("%s\nSeverity: %s\nConfidence: %s\n",
@@ -105,9 +108,9 @@ func buildSarifReportingDescriptorRelationship(weakness *cwe.Weakness) *Reportin
 }
 
 func buildCWETaxonomy(taxa []*ReportingDescriptor) *ToolComponent {
-	return NewToolComponent(cwe.Acronym, cwe.Version, cwe.InformationURI()).
+	return NewToolComponent(cwe.Acronym, cwe.Version, cwe.InformationURI).
 		WithReleaseDateUtc(cwe.ReleaseDateUtc).
-		WithDownloadURI(cwe.DownloadURI()).
+		WithDownloadURI(cwe.DownloadURI).
 		WithOrganization(cwe.Organization).
 		WithShortDescription(NewMultiformatMessageString(cwe.Description)).
 		WithIsComprehensive(true).
@@ -185,7 +188,24 @@ func parseSarifRegion(issue *gosec.Issue) (*Region, error) {
 	if err != nil {
 		return nil, err
 	}
-	snippet := NewArtifactContent(issue.Code)
+	var code string
+	line := startLine
+	codeLines := strings.Split(issue.Code, "\n")
+	for _, codeLine := range codeLines {
+		lineStart := fmt.Sprintf("%d:", line)
+		if strings.HasPrefix(codeLine, lineStart) {
+			code += strings.TrimSpace(
+				strings.TrimPrefix(codeLine, lineStart))
+			if endLine > startLine {
+				code += "\n"
+			}
+			line++
+			if line > endLine {
+				break
+			}
+		}
+	}
+	snippet := NewArtifactContent(code)
 	return NewRegion(startLine, endLine, col, col, "go").WithSnippet(snippet), nil
 }
 
@@ -200,4 +220,12 @@ func getSarifLevel(s string) Level {
 	default:
 		return Note
 	}
+}
+
+func buildSarifSuppressions(suppressions []gosec.SuppressionInfo) []*Suppression {
+	var sarifSuppressionList []*Suppression
+	for _, s := range suppressions {
+		sarifSuppressionList = append(sarifSuppressionList, NewSuppression(s.Kind, s.Justification))
+	}
+	return sarifSuppressionList
 }

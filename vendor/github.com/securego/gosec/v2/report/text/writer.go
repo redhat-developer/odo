@@ -3,6 +3,7 @@ package text
 import (
 	"bufio"
 	"bytes"
+	_ "embed" // use go embed to import template
 	"fmt"
 	"io"
 	"strconv"
@@ -17,9 +18,12 @@ var (
 	errorTheme   = color.New(color.FgLightWhite, color.BgRed)
 	warningTheme = color.New(color.FgBlack, color.BgYellow)
 	defaultTheme = color.New(color.FgWhite, color.BgBlack)
+
+	//go:embed template.txt
+	templateContent string
 )
 
-//WriteReport write a (colorized) report in text format
+// WriteReport write a (colorized) report in text format
 func WriteReport(w io.Writer, data *gosec.ReportInfo, enableColor bool) error {
 	t, e := template.
 		New("gosec").
@@ -45,7 +49,7 @@ func plainTextFuncMap(enableColor bool) template.FuncMap {
 
 	// by default those functions return the given content untouched
 	return template.FuncMap{
-		"highlight": func(t string, s gosec.Score) string {
+		"highlight": func(t string, s gosec.Score, ignored bool) string {
 			return t
 		},
 		"danger":    fmt.Sprint,
@@ -56,7 +60,10 @@ func plainTextFuncMap(enableColor bool) template.FuncMap {
 }
 
 // highlight returns content t colored based on Score
-func highlight(t string, s gosec.Score) string {
+func highlight(t string, s gosec.Score, ignored bool) string {
+	if ignored {
+		return defaultTheme.Sprint(t)
+	}
 	switch s {
 	case gosec.High:
 		return errorTheme.Sprint(t)

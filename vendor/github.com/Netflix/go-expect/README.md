@@ -1,7 +1,6 @@
 # go-expect
 
 ![Go](https://github.com/Netflix/go-expect/workflows/Go/badge.svg)
-[![codecov](https://codecov.io/gh/Netflix/go-expect/branch/master/graph/badge.svg?token=rZtccXvdCw)](https://codecov.io/gh/Netflix/go-expect)
 [![Build Status](https://travis-ci.com/Netflix/go-expect.svg?branch=master)](https://travis-ci.com/Netflix/go-expect)
 [![GoDoc](https://godoc.org/github.com/Netflix/go-expect?status.svg)](https://godoc.org/github.com/Netflix/go-expect)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/go-expect.svg)]()
@@ -61,7 +60,7 @@ func main() {
 
 ### `golang.org/x/crypto/ssh/terminal` example
 
-```
+```go
 package main
 
 import (

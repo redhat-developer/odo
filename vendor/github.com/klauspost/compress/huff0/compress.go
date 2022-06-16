@@ -536,6 +536,7 @@ func (s *Scratch) huffSort() {
 		}
 		nodes[pos&huffNodesMask] = nodeElt{count: c, symbol: byte(n)}
 	}
+	return
 }
 
 func (s *Scratch) setMaxHeight(lastNonNull int) uint8 {
