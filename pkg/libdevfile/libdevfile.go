@@ -88,7 +88,7 @@ func GetDefaultCommand(devfileObj parser.DevfileObj, kind v1alpha2.CommandGroupK
 }
 
 // ValidateAndGetPushCommands validates the build and the run command,
-// if provided through odo push or else checks the devfile for devBuild and devRun.
+// if provided through odo dev or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.
 func ValidateAndGetPushCommands(
 	data data.DevfileData,
@@ -104,7 +104,7 @@ func ValidateAndGetPushCommands(
 
 	isBuildCmdEmpty := reflect.DeepEqual(emptyCommand, buildCommand)
 	if isBuildCmdEmpty && buildCmdErr == nil {
-		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
+		// If there was no build command specified through odo dev and no default build command in the devfile, default validate to true since the build command is optional
 		isBuildCommandValid = true
 		klog.V(2).Infof("No build command was provided")
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
