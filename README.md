@@ -64,7 +64,7 @@ If you find an issue with `odo`, please [file it here](https://github.com/redhat
 #### Contributing
 
 * Code: We are currently working on updating our code contribution guide.
-* Documentation: To contribute to the documentation, please have a look at our [Documentation Guide](https://odo.dev/docs/contributing/docs/).
+* Documentation: To contribute to the documentation, please have a look at our [Documentation Guide](https://github.com/redhat-developer/odo/wiki).
 
 #### Meetings
 
