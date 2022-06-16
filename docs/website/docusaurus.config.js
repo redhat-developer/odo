@@ -131,7 +131,7 @@ module.exports = {
               badge: true,
             },
             '3.0.0': {
-              label: '3.0.0 (Alpha 1) 🚧',
+              label: '3.0.0 (Alpha 2) 🚧',
               path: '3.0.0',
               badge: true,
               banner: 'unreleased',

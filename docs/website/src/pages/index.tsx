@@ -49,7 +49,7 @@ export default function Home(): JSX.Element {
         </div>
         <div className={clsx(styles.title, styles.titleDark)}>
           <div className={styles.titleInner}>
-            Visit <Link to="/blog">our blog</Link> for the newest developments on odo 🚀
+            Version 3 of odo is arriving 🚀<br></br> <Link to="/docs/3.0.0/overview/installation">Install</Link> and <Link to="/docs/3.0.0/user-guides/quickstart">try out</Link> our new features ⭐️
           </div>
         </div>
         <div className={styles.overview}>
