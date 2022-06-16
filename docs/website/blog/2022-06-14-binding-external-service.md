@@ -15,15 +15,15 @@ When developers are working on a micro-service that needs to access a database o
 they may want to provide to their application the address and the necessary credentials to access
 this service as simply as possible.
 
-In this article, we are saying that we are *binding* the service to the application.
+In this article, we are going to talk about *binding* the service to the application.
 
 Using the Service Binding Operator and creating some Kubernetes resources for
-each service you want to be bindable, you can make the life easier for developers.
+each service you want to bind to, you can make the life easier for developers.
 
 ## Creating a Service resource to redirect to the external service
 
 To expose an external service from inside a Kubernetes cluster, you can create a *Headless* Service,
-and manually create the Enpoints to access this external service.
+and manually create the Endpoints to access this external service.
 
 Here is an example, to connect to an external Redis service on IP 192.168.1.10 and port 6379:
 
@@ -88,7 +88,7 @@ between the service and its application, and get the values of the secret (and o
 You can find information about the Service Binding Operator [here](/docs/getting-started/cluster-setup/kubernetes#optional-installing-the-service-binding-operator).
 
 A ServiceBinding defines a binding between an *Application* and a *Service*. The credentials injected into the application
-can be defined in diffent ways:
+can be defined in different ways:
 - if the service is an Operator-backed service running on the cluster, the details of the injected credentials can be set
 as annotations of the CRD associated with the Operator-backed service,
 - in any case, the details of the injected credentials can be set in the resource itself (not the CRD). 
@@ -98,7 +98,7 @@ In this article, we are not using an Operator-backed service, but an external se
 As the Service resource is a native Kubernetes resource, we cannot add annotations to its CRD, so we will add annotations to
 the Service resource itself.
 
-You can modifiy the definition of the Service, by adding the following annotations:
+You can modify the definition of the Service, by adding the following annotations:
 
 ```
 kind: Service
@@ -134,14 +134,14 @@ service.binding: path={.metadata.name}-credentials,objectType=Secret
 
 indicates to the SBO to inject the values defined in the Secret, whose name is the name of the Service resource
 followed by `-credentials` (`redis-credentials` in our example), into the application. In this example, the variable `password` 
-with a value `MyEasyPassword` will be injected into the applications's Pod.
+with a value `MyEasyPassword` will be injected into the application's Pod.
 
 ## Adding a ServiceBinding to the Devfile
 
-To define a ServiceBinding, we need information (group, version, kind, name and namespace) about the Application and the Service.
+To define a ServiceBinding, we need information (group, version, kind, name, and namespace) about the Application and the Service.
 
 In our example, the service is a Kubernetes Service (group "", version "v1" and kind "Service") named `redis`
-in the `external-services` namespace, 
+in the `external-services` namespace.
 
 The application will be the Deployment resource (group "apps", version "v1", kind "Deployment") created by odo when you run `odo dev`.
 By convention, the Deployment name will be the name of the Devfile (in the `.metadata.name` field) followed by `-app` (`my-nodejs-app-app` in our example).
@@ -209,7 +209,7 @@ $ odo dev
 [...]
 ```
 
-From another terminal, running `odo describe binding` shows you the status of the ServiceBinding:
+From another terminal, running `odo describe binding` will show you the status of the ServiceBinding:
 
 ```
 $ odo describe binding
