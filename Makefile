@@ -53,7 +53,7 @@ GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 
-RUN_GINKGO = GOFLAGS='-mod=vendor' go run $(COMMON_GOFLAGS) github.com/onsi/ginkgo/ginkgo
+RUN_GINKGO = ACK_GINKGO_RC=true GOFLAGS='-mod=vendor' go run $(COMMON_GOFLAGS) github.com/onsi/ginkgo/ginkgo
 
 default: bin
 
