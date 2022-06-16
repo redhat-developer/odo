@@ -1,25 +1,21 @@
 package remotecmd
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/task"
-	"github.com/redhat-developer/odo/pkg/util"
 )
 
 // kubeExecProcessHandler implements RemoteProcessHandler by executing Devfile commands right away in the container
 // (like a 'kubectl exec'-like approach). Command execution is done in the background, in a separate goroutine.
-// It works by storing the parent process PID in a file (_startCmdProcessPidFile) in the container,
+// It works by storing the parent process PID in a file in the container,
 // then fires the exec command in the background.
 // The goroutine started can then be stopped by killing the process stored in the state file (_startCmdProcessPidFile)
 // in the container.
@@ -36,14 +32,14 @@ func NewKubeExecProcessHandler() *kubeExecProcessHandler {
 // GetProcessInfoForCommand returns information about the process representing the given Devfile command.
 // A PID of 0 denotes a Stopped process.
 func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
-	devfileCmd devfilev1.Command,
+	def CommandDefinition,
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
 ) (RemoteProcessInfo, error) {
-	klog.V(4).Infof("GetProcessInfoForCommand for %q", devfileCmd.Id)
+	klog.V(4).Infof("GetProcessInfoForCommand for %q", def.Id)
 
-	pid, err := getRemoteProcessPID(kclient, devfileCmd, podName, containerName)
+	pid, err := getRemoteProcessPID(kclient, def, podName, containerName)
 	if err != nil {
 		return RemoteProcessInfo{}, err
 	}
@@ -52,48 +48,49 @@ func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
 }
 
 // StartProcessForCommand runs the (potentially never finishing) Devfile command in the background.
-// The goroutine spawned here can get stopped either by stopping the parent process (e.g., 'odo dev'),
+// The goroutine spawned here can be stopped either by stopping the parent process (e.g., 'odo dev'),
 // or by stopping the underlying remote process by calling the StopProcessForCommand method.
 func (k *kubeExecProcessHandler) StartProcessForCommand(
-	devfileCmd devfilev1.Command,
+	def CommandDefinition,
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
 	outputHandler CommandOutputHandler,
 ) error {
-	klog.V(4).Infof("StartProcessForCommand for %q", devfileCmd.Id)
-
-	if devfileCmd.Exec == nil {
-		return errors.New(" only Exec commands are supported")
-	}
+	klog.V(4).Infof("StartProcessForCommand for %q", def.Id)
 
 	// deal with environment variables
-	cmdLine := devfileCmd.Exec.CommandLine
-	setEnvVariable := util.GetCommandStringFromEnvs(devfileCmd.Exec.Env)
-	if setEnvVariable != "" {
-		cmdLine = setEnvVariable + " && " + devfileCmd.Exec.CommandLine
+	cmdLine := def.CmdLine
+	envCommands := make([]string, 0, len(def.EnvVars))
+	for key, val := range def.EnvVars {
+		envCommands = append(envCommands, fmt.Sprintf("%s='%s'", key, val))
+	}
+	var setEnvCmd string
+	if len(envCommands) != 0 {
+		setEnvCmd = fmt.Sprintf("export %s &&", strings.Join(envCommands, " "))
 	}
 
-	// Change to the workdir and execute the command
-	pidFile := getPidFileForCommand(devfileCmd)
-	cmd := []string{common.ShellExecutable, "-c"}
-	// Storing the /bin/sh parent process PID. It will allow to determine its children later on and kill them when a stop is request
-	pidWriterCmd := fmt.Sprintf("echo $$ > %s", pidFile)
+	var cdCmd string
+	if def.WorkingDir != "" {
+		// Change to the workdir and execute the command
+		cdCmd = fmt.Sprintf("cd %s &&", def.WorkingDir)
+	}
+
+	// since we are using /bin/sh -c, the command needs to be within a single double quote instance,
+	// for example "cd /tmp && pwd"
+	// Full command is: /bin/sh -c "[cd $workingDir && ] echo $$ > $pidFile && (envVar1='value1' envVar2='value2' $cmdLine) 1>>/proc/1/fd/1 2>>/proc/1/fd/2"
+	//
+	// "echo $$ > $pidFile" allows to store the /bin/sh parent process PID. It will allow to determine its children later on and kill them when a stop is requested.
+	// ($cmdLine) runs the command passed in a subshell (to handle cases where the command does more complex things like running processes in the background),
+	// which will be the child process of the /bin/sh one.
+	//
 	// Redirecting to /proc/1/fd/* allows to redirect the process output to the output streams of PID 1 process inside the container.
 	// This way, returning the container logs with 'odo logs' or 'kubectl logs' would work seamlessly.
 	// See https://stackoverflow.com/questions/58716574/where-exactly-do-the-logs-of-kubernetes-pods-come-from-at-the-container-level
-	outputRedirectCmd := "1>>/proc/1/fd/1 2>>/proc/1/fd/2"
-	if devfileCmd.Exec.WorkingDir != "" {
-		// since we are using /bin/sh -c, the command needs to be within a single double quote instance,
-		// for example "cd /tmp && pwd"
-		// Full command is: /bin/sh -c "echo $$ > $pidFile && cd $workingDir && ($cmdLine) 1>>/proc/1/fd/1 2>>/proc/1/fd/2"
-		// We are deleting the PID file if the main command does not succeed, so its status could be detected accordingly.
-		cmd = append(cmd, fmt.Sprintf("%s && cd %s && (%s) %s",
-			pidWriterCmd, devfileCmd.Exec.WorkingDir, cmdLine, outputRedirectCmd))
-	} else {
-		// Full command is: /bin/sh -c "echo $$ > $pidFile && ($cmdLine) 1>>/proc/1/fd/1 2>>/proc/1/fd/2"
-		// We are deleting the PID file if the main command does not succeed, so its status could be detected accordingly.
-		cmd = append(cmd, fmt.Sprintf("%s && (%s) %s", pidWriterCmd, cmdLine, outputRedirectCmd))
+	pidFile := getPidFileForCommand(def)
+	cmd := []string{
+		ShellExecutable, "-c",
+		fmt.Sprintf("echo $$ > %s && %s %s (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2", pidFile, cdCmd, setEnvCmd, cmdLine),
 	}
 
 	go func() {
@@ -116,47 +113,37 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 
 // StopProcessForCommand stops the process representing the specified Devfile command.
 // Because of the way this process is launched and its PID stored (see StartProcessForCommand),
-// we need to determine the process children (there should be only one child). Then killing those children
-// will exit the parent 'sh' process.
+// we need to determine the process children (there should be only one child which is the sub-shell running the command passed to StartProcessForCommand).
+// Then killing those children will exit the parent 'sh' process.
 func (k *kubeExecProcessHandler) StopProcessForCommand(
-	devfileCmd devfilev1.Command,
+	def CommandDefinition,
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
 ) error {
-	klog.V(4).Infof("StopProcessForCommand for %q", devfileCmd.Id)
+	klog.V(4).Infof("StopProcessForCommand for %q", def.Id)
 	defer func() {
-		pidFile := getPidFileForCommand(devfileCmd)
-		err := ExecuteCommand([]string{common.ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
+		pidFile := getPidFileForCommand(def)
+		err := ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
 			kclient, podName, containerName, false, nil, nil)
 		if err != nil {
 			klog.V(2).Infof("Could not remove file %q: %v", pidFile, err)
 		}
 	}()
 
-	ppid, err := getRemoteProcessPID(kclient, devfileCmd, podName, containerName)
-	if err != nil {
-		return err
-	}
-	if ppid == 0 {
-		return nil
-	}
-
-	children, err := getProcessChildren(ppid, kclient, podName, containerName)
-	if err != nil {
-		return err
-	}
-
 	kill := func(p int) error {
-		err = ExecuteCommand([]string{common.ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
+		err := ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
 			kclient, podName, containerName, false, nil, nil)
+		if err != nil {
+			return err
+		}
 
 		//Because the process we just stopped might take longer to exit (it might have caught the signal and is performing additional cleanup),
 		//retry detecting its actual state till it is stopped or timeout expires
 		var processInfo interface{}
 		processInfo, err = task.NewRetryable(fmt.Sprintf("status for remote process %d", p), func() (bool, interface{}, error) {
 			pInfo, e := k.getProcessInfoFromPid(p, kclient, podName, containerName)
-			return e == nil || pInfo.Status == Stopped, pInfo, e
+			return e == nil && pInfo.Status == Stopped, pInfo, e
 		}, true).RetryWithSchedule(2*time.Second, 4*time.Second, 8*time.Second)
 		if err != nil {
 			return err
@@ -173,7 +160,24 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		return nil
 	}
 
+	ppid, err := getRemoteProcessPID(kclient, def, podName, containerName)
+	if err != nil {
+		return err
+	}
+	if ppid == 0 {
+		return nil
+	}
+
+	children, err := getProcessChildren(ppid, kclient, podName, containerName)
+	if err != nil {
+		return err
+	}
+
 	if len(children) == 0 {
+		//TODO(rm3l): A length of 0 might indicate that there is no children file, which might happen if the host kernel
+		//was not built with the CONFIG_PROC_CHILDREN config.
+		//This happened for example with the Minikube VM when using its (non-default) VirtualBox driver.
+		//In this case, we should find a fallback mechanism to identify those children processes and kill them.
 		return kill(ppid)
 	}
 
@@ -186,10 +190,10 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	return nil
 }
 
-func getRemoteProcessPID(kclient kclient.ClientInterface, devfileCmd devfilev1.Command, podName string, containerName string) (int, error) {
-	pidFile := getPidFileForCommand(devfileCmd)
+func getRemoteProcessPID(kclient kclient.ClientInterface, def CommandDefinition, podName string, containerName string) (int, error) {
+	pidFile := getPidFileForCommand(def)
 	stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile))
+		ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile))
 
 	if err != nil {
 		return 0, err
@@ -235,7 +239,7 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 
 	//Now check that the PID value is a valid process
 	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid))
+		ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid))
 
 	if err != nil {
 		process.Status = Unknown
@@ -266,7 +270,7 @@ func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string
 	}
 
 	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		common.ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid))
+		ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid))
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +293,6 @@ func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string
 // getPidFileForCommand returns the path to the PID file in the remote container.
 // The parent folder is supposed to be existing, because it should be mounted in the container using the mandatory
 // shared volume (more info in the AddOdoMandatoryVolume function from the utils package).
-func getPidFileForCommand(devfileCmd devfilev1.Command) string {
-	return fmt.Sprintf("%s/.odo_devfile_cmd_%s.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/"), devfileCmd.Id)
+func getPidFileForCommand(def CommandDefinition) string {
+	return fmt.Sprintf("%s/.odo_devfile_cmd_%s.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/"), def.Id)
 }

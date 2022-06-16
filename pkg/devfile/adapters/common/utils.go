@@ -13,9 +13,6 @@ const (
 
 	// EnvDebugPort is the env defined in the runtime component container which holds the debug port for remote debugging
 	EnvDebugPort = "DEBUG_PORT"
-
-	// ShellExecutable is the shell executable
-	ShellExecutable = "/bin/sh"
 )
 
 // GetCommandsMap returns a map of the command Id to the command

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -71,27 +72,38 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 
 		if a.parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
 			klog.V(2).Info("restart required for command")
-			if err = doExecuteBuildCommand(); err != nil {
-				return err
-			}
 
-			err = remoteProcessHandler.StopProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
+			cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
 			if err != nil {
 				return err
 			}
 
-			if err = remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
+			if err = doExecuteBuildCommand(); err != nil {
+				return err
+			}
+
+			err = remoteProcessHandler.StopProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
+			if err != nil {
+				return err
+			}
+
+			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
 				return err
 			}
 		} else {
 			klog.V(2).Infof("command is hot-reload capable, not restarting %s", processName)
 		}
 	} else {
+		cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
+		if err != nil {
+			return err
+		}
+
 		if err := doExecuteBuildCommand(); err != nil {
 			return err
 		}
 
-		if err := remoteProcessHandler.StartProcessForCommand(devfileCmd, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
+		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
 			return err
 		}
 	}
@@ -119,10 +131,30 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
 }
 
+// devfileCommandToRemoteCmdDefinition builds and returns a new remotecmd.CommandDefinition object from the specified devfileCmd.
+// An error is returned for non-exec Devfile commands.
+func devfileCommandToRemoteCmdDefinition(devfileCmd devfilev1.Command) (remotecmd.CommandDefinition, error) {
+	if devfileCmd.Exec == nil {
+		return remotecmd.CommandDefinition{}, errors.New(" only Exec commands are supported")
+	}
+
+	envVars := make(map[string]string, len(devfileCmd.Exec.Env))
+	for _, e := range devfileCmd.Exec.Env {
+		envVars[e.Name] = e.Value
+	}
+
+	return remotecmd.CommandDefinition{
+		Id:         devfileCmd.Id,
+		WorkingDir: devfileCmd.Exec.WorkingDir,
+		EnvVars:    envVars,
+		CmdLine:    devfileCmd.Exec.CommandLine,
+	}, nil
+}
+
 // isRemoteProcessForCommandRunning returns true if the command is running
 func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Command) (bool, error) {
-	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
-	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(command, a.kubeClient, a.pod.Name, command.Exec.Component)
+	remoteProcess, err := remotecmd.NewKubeExecProcessHandler().GetProcessInfoForCommand(
+		remotecmd.CommandDefinition{Id: command.Id}, a.kubeClient, a.pod.Name, command.Exec.Component)
 	if err != nil {
 		return false, err
 	}

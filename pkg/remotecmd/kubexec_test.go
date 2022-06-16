@@ -9,10 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/golang/mock/gomock"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
@@ -22,9 +20,9 @@ const (
 )
 
 func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
-	devfileCmd := v1alpha2.Command{Id: "my-run"}
+	cmdDef := CommandDefinition{Id: "my-run"}
 	kill0CmdProvider := func(p int) []string {
-		return []string{common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
+		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
 	for _, tt := range []struct {
 		name                 string
@@ -37,7 +35,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			name: "error returned when checking pid file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("an error"))
 			},
@@ -47,7 +45,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			name: "stopped status if PID file missing",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stderr.Write([]byte("no such file or directory"))
@@ -63,7 +61,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			name: "unknown status if negative value stored in PID file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("-1"))
@@ -80,7 +78,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			name: "stopped status if kill -0 command exit status is non-zero",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("123"))
@@ -102,7 +100,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			name: "running status if kill -0 command exit status is non-zero",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("123"))
@@ -129,7 +127,7 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			}
 
 			k := NewKubeExecProcessHandler()
-			got, err := k.GetProcessInfoForCommand(devfileCmd, kubeClient, _podName, _containerName)
+			got, err := k.GetProcessInfoForCommand(cmdDef, kubeClient, _podName, _containerName)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -142,54 +140,35 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 }
 
 func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
-	execCmdWithoutWorkingDir := v1alpha2.Command{
-		Id: "my-exec-cmd",
-		CommandUnion: v1alpha2.CommandUnion{
-			Exec: &v1alpha2.ExecCommand{
-				CommandLine: "echo Hello; sleep 300",
-			},
-		},
+	execCmdWithoutWorkingDir := CommandDefinition{
+		Id:      "my-exec-cmd",
+		CmdLine: "echo Hello; sleep 300",
 	}
-	fullExecCmd := v1alpha2.Command{
-		Id: "my-exec-cmd",
-		CommandUnion: v1alpha2.CommandUnion{
-			Exec: &v1alpha2.ExecCommand{
-				CommandLine: "tail -f /path/to/a/file",
-				WorkingDir:  "/path/to/working/dir",
-				Env: []v1alpha2.EnvVar{
-					{
-						Name:  "ENV_VAR1",
-						Value: "value1",
-					},
-					{
-						Name:  "ENV_VAR2",
-						Value: "value2",
-					},
-				},
-			},
+	fullExecCmd := CommandDefinition{
+		Id:         "my-exec-cmd",
+		CmdLine:    "tail -f /path/to/a/file",
+		WorkingDir: "/path/to/working/dir",
+		EnvVars: map[string]string{
+			"ENV_VAR1": "value1",
+			"ENV_VAR2": "value2",
 		},
 	}
 	for _, tt := range []struct {
 		name                 string
-		devfileCmd           v1alpha2.Command
+		cmdDef               CommandDefinition
 		kubeClientCustomizer func(*kclient.MockClientInterface)
 		isCmdExpectedToRun   bool
 		wantErr              bool
 		expectedStatuses     []RemoteProcessStatus
 	}{
 		{
-			name:       "non-exec command",
-			devfileCmd: v1alpha2.Command{Id: "my-non-exec-command"},
-			wantErr:    true,
-		},
-		{
-			name:       "command execution returned no error",
-			devfileCmd: execCmdWithoutWorkingDir,
+			name:   "command execution returned no error",
+			cmdDef: execCmdWithoutWorkingDir,
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c",
-						fmt.Sprintf("echo $$ > %s && (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2",
-							getPidFileForCommand(execCmdWithoutWorkingDir), execCmdWithoutWorkingDir.Exec.CommandLine)}),
+					gomock.Eq([]string{ShellExecutable, "-c",
+						fmt.Sprintf("echo $$ > %s &&   (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2",
+							getPidFileForCommand(execCmdWithoutWorkingDir), execCmdWithoutWorkingDir.CmdLine)}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("Hello"))
@@ -200,13 +179,13 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 			expectedStatuses:   []RemoteProcessStatus{Starting, Stopped},
 		},
 		{
-			name:       "command with all fields returned no error",
-			devfileCmd: fullExecCmd,
+			name:   "command with all fields returned no error",
+			cmdDef: fullExecCmd,
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c",
-						fmt.Sprintf("echo $$ > %s && cd %s && (export ENV_VAR1=\"value1\" ENV_VAR2=\"value2\" && %s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2",
-							getPidFileForCommand(fullExecCmd), fullExecCmd.Exec.WorkingDir, fullExecCmd.Exec.CommandLine)}),
+					gomock.Eq([]string{ShellExecutable, "-c",
+						fmt.Sprintf("echo $$ > %s && cd %s && export ENV_VAR1='value1' ENV_VAR2='value2' && (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2",
+							getPidFileForCommand(fullExecCmd), fullExecCmd.WorkingDir, fullExecCmd.CmdLine)}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("error while running command"))
 			},
@@ -226,7 +205,7 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 			var wg sync.WaitGroup
 			wg.Add(2) //number of invocations of outputHandler
 			var statusesReported []RemoteProcessStatus
-			err := k.StartProcessForCommand(tt.devfileCmd, kubeClient, _podName, _containerName,
+			err := k.StartProcessForCommand(tt.cmdDef, kubeClient, _podName, _containerName,
 				func(status RemoteProcessStatus, stdout []string, stderr []string, err error) {
 					defer wg.Done()
 					statusesReported = append(statusesReported, status)
@@ -249,15 +228,15 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 }
 
 func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
-	devfileCmd := v1alpha2.Command{Id: "my-run"}
+	cmdDef := CommandDefinition{Id: "my-run"}
 	retrieveChildrenCmdProvider := func(p int) []string {
-		return []string{common.ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", p)}
+		return []string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", p)}
 	}
 	killCmdProvider := func(p int) []string {
-		return []string{common.ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)}
+		return []string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)}
 	}
 	kill0CmdProvider := func(p int) []string {
-		return []string{common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
+		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
 
 	for _, tt := range []struct {
@@ -270,7 +249,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			name: "error returned when checking pid file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("an error"))
 			},
@@ -280,7 +259,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			name: "nothing to do if PID file missing",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stderr.Write([]byte("no such file or directory"))
@@ -292,7 +271,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			name: "error while determining process children",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("123"))
@@ -308,7 +287,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			name: "no process children killed if missing children file",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("123"))
@@ -336,7 +315,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			name: "process children should get killed",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-					gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("123"))
@@ -367,7 +346,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			kubeClient := kclient.NewMockClientInterface(ctrl)
 			kubeClient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
-				gomock.Eq([]string{common.ShellExecutable, "-c", fmt.Sprintf("rm -f %s", getPidFileForCommand(devfileCmd))}),
+				gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", getPidFileForCommand(cmdDef))}),
 				gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(errors.New("an error which should be ignored"))
 			if tt.kubeClientCustomizer != nil {
@@ -375,7 +354,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 			}
 
 			k := NewKubeExecProcessHandler()
-			err := k.StopProcessForCommand(devfileCmd, kubeClient, _podName, _containerName)
+			err := k.StopProcessForCommand(cmdDef, kubeClient, _podName, _containerName)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -386,7 +365,7 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 
 func Test_getProcessInfoFromPid(t *testing.T) {
 	cmdProvider := func(p int) []string {
-		return []string{common.ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
+		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
 	}
 	for _, tt := range []struct {
 		name                 string
@@ -495,8 +474,8 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 }
 
 func Test_getRemoteProcessPID(t *testing.T) {
-	devfileCmd := v1alpha2.Command{Id: "my-run"}
-	cmd := []string{common.ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(devfileCmd))}
+	cmdDef := CommandDefinition{Id: "my-run"}
+	cmd := []string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}
 	for _, tt := range []struct {
 		name                 string
 		kubeClientCustomizer func(*kclient.MockClientInterface)
@@ -592,7 +571,7 @@ func Test_getRemoteProcessPID(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			got, err := getRemoteProcessPID(kubeClient, devfileCmd, _podName, _containerName)
+			got, err := getRemoteProcessPID(kubeClient, cmdDef, _podName, _containerName)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
@@ -606,7 +585,7 @@ func Test_getRemoteProcessPID(t *testing.T) {
 func Test_getProcessChildren(t *testing.T) {
 	const ppid = 123
 
-	cmd := []string{common.ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", ppid)}
+	cmd := []string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", ppid)}
 	for _, tt := range []struct {
 		name                 string
 		ppid                 int

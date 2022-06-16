@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/remotecmd"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -1561,13 +1561,13 @@ var _ = Describe("odo dev command tests", func() {
 				"runtime",
 				commonVar.Project,
 				[]string{
-					common.ShellExecutable, "-c",
-					fmt.Sprintf("kill -0 $(cat %s/.odo_devfile_cmd_run.pid) 2>/dev/null && echo -n ok || echo -n nok",
+					remotecmd.ShellExecutable, "-c",
+					fmt.Sprintf("kill -0 $(cat %s/.odo_devfile_cmd_run.pid) 2>/dev/null ; echo -n $?",
 						strings.TrimSuffix(storage.SharedDataMountPath, "/")),
 				},
 				func(stdout string, err error) bool {
 					Expect(err).ShouldNot(HaveOccurred())
-					Expect(stdout).To(Equal("ok"))
+					Expect(stdout).To(Equal("0"))
 					return err == nil
 				})
 		})
