@@ -47,7 +47,7 @@ func (c *Client) GetBindableKinds() (bindingApi.BindableKinds, error) {
 		return bindableKind, err
 	}
 
-	err = c.ConvertUnstructuredToResource(*unstructuredBK, &bindableKind)
+	err = ConvertUnstructuredToResource(*unstructuredBK, &bindableKind)
 	if err != nil {
 		return bindableKind, err
 	}
@@ -134,7 +134,7 @@ func (c Client) GetBindingServiceBinding(name string) (bindingApi.ServiceBinding
 	}
 
 	var result bindingApi.ServiceBinding
-	err = c.ConvertUnstructuredToResource(*u, &result)
+	err = ConvertUnstructuredToResource(*u, &result)
 	if err != nil {
 		return bindingApi.ServiceBinding{}, err
 	}
@@ -153,7 +153,7 @@ func (c Client) GetSpecServiceBinding(name string) (specApi.ServiceBinding, erro
 	}
 
 	var result specApi.ServiceBinding
-	err = c.ConvertUnstructuredToResource(*u, &result)
+	err = ConvertUnstructuredToResource(*u, &result)
 	if err != nil {
 		return specApi.ServiceBinding{}, err
 	}
@@ -170,7 +170,7 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 		return nil, nil, err
 	}
 	var specs specApi.ServiceBindingList
-	err = c.ConvertUnstructuredListToResource(*specsU, &specs)
+	err = ConvertUnstructuredListToResource(*specsU, &specs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -180,7 +180,7 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 		return nil, nil, err
 	}
 	var bindings bindingApi.ServiceBindingList
-	err = c.ConvertUnstructuredListToResource(*bindingsU, &bindings)
+	err = ConvertUnstructuredListToResource(*bindingsU, &bindings)
 	if err != nil {
 		return nil, nil, err
 	}

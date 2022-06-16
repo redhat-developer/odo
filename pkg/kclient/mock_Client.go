@@ -78,34 +78,6 @@ func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, quit)
 }
 
-// ConvertUnstructuredListToResource mocks base method.
-func (m *MockClientInterface) ConvertUnstructuredListToResource(u unstructured.UnstructuredList, obj interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConvertUnstructuredListToResource", u, obj)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ConvertUnstructuredListToResource indicates an expected call of ConvertUnstructuredListToResource.
-func (mr *MockClientInterfaceMockRecorder) ConvertUnstructuredListToResource(u, obj interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertUnstructuredListToResource", reflect.TypeOf((*MockClientInterface)(nil).ConvertUnstructuredListToResource), u, obj)
-}
-
-// ConvertUnstructuredToResource mocks base method.
-func (m *MockClientInterface) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConvertUnstructuredToResource", u, obj)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ConvertUnstructuredToResource indicates an expected call of ConvertUnstructuredToResource.
-func (mr *MockClientInterfaceMockRecorder) ConvertUnstructuredToResource(u, obj interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertUnstructuredToResource", reflect.TypeOf((*MockClientInterface)(nil).ConvertUnstructuredToResource), u, obj)
-}
-
 // CreateDeployment mocks base method.
 func (m *MockClientInterface) CreateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
 	m.ctrl.T.Helper()

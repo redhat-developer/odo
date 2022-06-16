@@ -117,7 +117,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		case bindingApi.GroupVersionKind:
 
 			var sbo bindingApi.ServiceBinding
-			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbo)
+			err := kclient.ConvertUnstructuredToResource(u, &sbo)
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +136,7 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		case specApi.GroupVersion.WithKind("ServiceBinding"):
 
 			var sbc specApi.ServiceBinding
-			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbc)
+			err := kclient.ConvertUnstructuredToResource(u, &sbc)
 			if err != nil {
 				return nil, err
 			}

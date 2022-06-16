@@ -32,6 +32,8 @@ type Client interface {
 
 	// list.go
 
+	// ListAllBindings returns all bindings either defined in the Devfile and/or deployed to the cluster
+	// inDevfile contains the names of the bindings at least defined in the devfile
 	ListAllBindings(devfileObj parser.DevfileObj, context string) (bindings []api.ServiceBinding, inDevfile []string, err error)
 
 	// remove.go
