@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -186,6 +188,83 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 	}
 
 	return specs.Items, bindings.Items, nil
+}
+
+// APIServiceBindingFromBinding returns a common api.ServiceBinding structure
+// from a ServiceBinding.binding.operators.coreos.com/v1alpha1
+func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) (api.ServiceBinding, error) {
+
+	var dstSvcs []corev1.ObjectReference
+	for _, srcSvc := range binding.Spec.Services {
+		dstSvc := corev1.ObjectReference{
+			Name: srcSvc.Name,
+		}
+		dstSvc.APIVersion, dstSvc.Kind = schema.GroupVersion{
+			Group:   srcSvc.Group,
+			Version: srcSvc.Version,
+		}.WithKind(srcSvc.Kind).ToAPIVersionAndKind()
+		dstSvcs = append(dstSvcs, dstSvc)
+	}
+
+	application := binding.Spec.Application
+	refToApplication := corev1.ObjectReference{
+		Name: application.Name,
+	}
+
+	if application.Kind == "" {
+		gvk, err := c.GetGVKFromGVR(schema.GroupVersionResource{
+			Group:    application.Group,
+			Version:  application.Version,
+			Resource: application.Resource,
+		})
+		if err != nil {
+			return api.ServiceBinding{}, err
+		}
+		application.Kind = gvk.Kind
+	}
+	refToApplication.APIVersion, refToApplication.Kind = schema.GroupVersion{
+		Group:   application.Group,
+		Version: application.Version,
+	}.WithKind(application.Kind).ToAPIVersionAndKind()
+
+	return api.ServiceBinding{
+		Name: binding.Name,
+		Spec: api.ServiceBindingSpec{
+			Application:            refToApplication,
+			Services:               dstSvcs,
+			DetectBindingResources: binding.Spec.DetectBindingResources,
+			BindAsFiles:            binding.Spec.BindAsFiles,
+		},
+	}, nil
+}
+
+// ServiceBindingFromSpec returns a common api.ServiceBinding structure
+// from a ServiceBinding.servicebinding.io/v1alpha3
+func (c Client) APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding {
+
+	service := spec.Spec.Service
+	refToService := corev1.ObjectReference{
+		APIVersion: service.APIVersion,
+		Kind:       service.Kind,
+		Name:       service.Name,
+	}
+
+	application := spec.Spec.Workload
+	refToApplication := corev1.ObjectReference{
+		APIVersion: application.APIVersion,
+		Kind:       application.Kind,
+		Name:       application.Name,
+	}
+
+	return api.ServiceBinding{
+		Name: spec.Name,
+		Spec: api.ServiceBindingSpec{
+			Application:            refToApplication,
+			Services:               []corev1.ObjectReference{refToService},
+			DetectBindingResources: false,
+			BindAsFiles:            true,
+		},
+	}
 }
 
 func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks bindingApi.BindableKindsStatus) bool {

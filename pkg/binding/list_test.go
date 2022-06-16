@@ -107,11 +107,17 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListServiceBindingsFromAllGroups().Return(nil, nil, nil)
-					client.EXPECT().GetGVKFromGVR(deploymentGVR).Return(deploymentGVK, nil)
 					client.EXPECT().GetBindingServiceBinding(gomock.Any()).Return(
 						v1alpha1.ServiceBinding{},
-						errors.NewNotFound(schema.GroupResource{"dont", "care"}, "my-nodejs-app-cluster-sample"),
+						errors.NewNotFound(
+							schema.GroupResource{
+								Group:    "dont",
+								Resource: "care",
+							},
+							"my-nodejs-app-cluster-sample",
+						),
 					)
+					client.EXPECT().APIServiceBindingFromBinding(gomock.Any()).Return(apiServiceBinding, nil)
 					return client
 				},
 			}, args: args{
@@ -129,13 +135,13 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					client.EXPECT().ListServiceBindingsFromAllGroups().Return(nil, []v1alpha1.ServiceBinding{
 						bindingServiceBinding,
 					}, nil)
-					client.EXPECT().GetGVKFromGVR(deploymentGVR).Return(deploymentGVK, nil)
 					client.EXPECT().GetBindingServiceBinding(gomock.Any()).Return(
 						bindingServiceBinding,
 						nil,
 					).AnyTimes()
 					client.EXPECT().GetCurrentNamespace().Return("anamespace").AnyTimes()
 					client.EXPECT().GetSecret("asecret", "anamespace").Return(&sbSecret, nil).AnyTimes()
+					client.EXPECT().APIServiceBindingFromBinding(gomock.Any()).Return(apiServiceBinding, nil).AnyTimes()
 					return client
 				},
 			}, args: args{
@@ -183,6 +189,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					).AnyTimes()
 					client.EXPECT().GetCurrentNamespace().Return("anamespace").AnyTimes()
 					client.EXPECT().GetSecret("asecret", "anamespace").Return(&sbSecret, nil).AnyTimes()
+					client.EXPECT().APIServiceBindingFromBinding(gomock.Any()).Return(apiServiceBinding, nil).AnyTimes()
 					return client
 				},
 			}, args: args{},

@@ -58,15 +58,15 @@ func (o *BindingClient) ListAllBindings(devfileObj parser.DevfileObj, context st
 		return nil, nil, err
 	}
 
-	for _, spec := range specs {
-		bindingList, err = o.process(bindingList, &spec)
+	for i := range specs {
+		bindingList, err = o.process(bindingList, &specs[i])
 		if err != nil {
 			return nil, nil, err
 		}
 	}
 
-	for _, binding := range bindings {
-		bindingList, err = o.process(bindingList, &binding)
+	for i := range bindings {
+		bindingList, err = o.process(bindingList, &bindings[i])
 		if err != nil {
 			return nil, nil, err
 		}
