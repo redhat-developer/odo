@@ -124,7 +124,7 @@ func TestRetryable_RetryWithSchedule(t *testing.T) {
 			_, err := NewRetryable(tt.name, func() (exitCondition bool, result interface{}, err error) {
 				nbRunnerInvocations++
 				return tt.runner(nbRunnerInvocations)
-			}, tt.errorIfTimeout).RetryWithSchedule(tt.schedule...)
+			}).RetryWithSchedule(tt.schedule, tt.errorIfTimeout)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

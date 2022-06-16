@@ -122,7 +122,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		klog.V(4).Infof("checking if process for command %q is running", devfileCmd.Id)
 		isRunning, err := a.isRemoteProcessForCommandRunning(devfileCmd)
 		return err == nil && isRunning, isRunning, err
-	}, false).RetryWithSchedule(retrySchedule...)
+	}).RetryWithSchedule(retrySchedule, false)
 	if err != nil {
 		return err
 	}

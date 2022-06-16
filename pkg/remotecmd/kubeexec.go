@@ -144,7 +144,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		processInfo, err = task.NewRetryable(fmt.Sprintf("status for remote process %d", p), func() (bool, interface{}, error) {
 			pInfo, e := k.getProcessInfoFromPid(p, kclient, podName, containerName)
 			return e == nil && pInfo.Status == Stopped, pInfo, e
-		}, true).RetryWithSchedule(2*time.Second, 4*time.Second, 8*time.Second)
+		}).RetryWithSchedule([]time.Duration{2 * time.Second, 4 * time.Second, 8 * time.Second}, true)
 		if err != nil {
 			return err
 		}
