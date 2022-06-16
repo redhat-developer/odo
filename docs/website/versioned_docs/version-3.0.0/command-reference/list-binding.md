@@ -26,7 +26,7 @@ odo list binding
 Example:
 
 ```sh
-$ odo list bindings
+$ odo list binding
  NAME                              APPLICATION                     SERVICES                                                   RUNNING IN 
  * my-nodejs-app-cluster-sample    my-nodejs-app-app (Deployment)  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)    Dev       
  * my-nodejs-app-cluster-sample-2  my-nodejs-app-app (Deployment)  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io)  Dev       
