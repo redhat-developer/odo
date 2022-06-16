@@ -188,7 +188,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
+		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
+		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}

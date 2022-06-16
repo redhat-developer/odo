@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"k8s.io/klog"
 
@@ -22,54 +23,17 @@ func ExecuteCommand(
 	show bool,
 	stdoutWriter *io.PipeWriter,
 	stderrWriter *io.PipeWriter,
-) error {
-	soutReader, soutWriter := io.Pipe()
-	serrReader, serrWriter := io.Pipe()
-
-	var cmdOutput []string
-
-	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
-
-	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &cmdOutput, stdoutWriter)
-	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &cmdOutput, stderrWriter)
-
-	err := client.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
-
-	// Block until we have received all the container output from each stream
-	_ = soutWriter.Close()
-	<-stdoutCompleteChannel
-	_ = serrWriter.Close()
-	<-stderrCompleteChannel
-
-	if err != nil {
-		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
-		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'. output: %v", err, command, cmdOutput)
-
-		return fmt.Errorf("unable to exec command %v: \n%v: %w", command, cmdOutput, err)
-	}
-
-	return err
-}
-
-// ExecuteCommandAndGetOutput executes the given command in the pod's container, and returns the command stdout and stderr content
-func ExecuteCommandAndGetOutput(
-	kclient kclient.ClientInterface,
-	podName string,
-	containerName string,
-	show bool,
-	cmd ...string,
 ) (stdout []string, stderr []string, err error) {
 	soutReader, soutWriter := io.Pipe()
 	serrReader, serrWriter := io.Pipe()
 
-	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", cmd, podName, containerName)
+	klog.V(2).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, nil)
-	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, nil)
+	stdoutCompleteChannel := startReaderGoroutine(soutReader, show, &stdout, stdoutWriter)
+	stderrCompleteChannel := startReaderGoroutine(serrReader, show, &stderr, stderrWriter)
 
-	err = kclient.ExecCMDInContainer(containerName, podName, cmd, soutWriter, serrWriter, nil, false)
+	err = client.ExecCMDInContainer(containerName, podName, command, soutWriter, serrWriter, nil, false)
 
 	// Block until we have received all the container output from each stream
 	_ = soutWriter.Close()
@@ -78,12 +42,12 @@ func ExecuteCommandAndGetOutput(
 	<-stderrCompleteChannel
 
 	if err != nil {
-		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
+		// It is safe to read from stdout and stderr here, as the goroutines are guaranteed to have terminated at this point.
 		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'\nstdout: %v\nstderr: %v",
-			err, cmd, stdout, stderr)
+			err, command, stdout, stderr)
 
-		return stdout, stderr, fmt.Errorf("unable to exec command %v: \n=== stdout===\n%v\n=== stderr===\n%v: %w",
-			cmd, stdout, stderr, err)
+		return stdout, stderr, fmt.Errorf("unable to exec command %v: \n=== stdout===\n%s\n=== stderr===\n%s: %w",
+			command, strings.Join(stdout, "\n"), strings.Join(stderr, "\n"), err)
 	}
 
 	return stdout, stderr, err

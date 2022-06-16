@@ -51,7 +51,7 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
 	cmdline := getCmdline(command)
-	err := remotecmd.ExecuteCommand(cmdline, o.kubeClient, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
+	_, _, err := remotecmd.ExecuteCommand(cmdline, o.kubeClient, o.podName, command.Exec.Component, o.show, stdoutWriter, stderrWriter)
 
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 

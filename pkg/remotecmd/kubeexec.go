@@ -98,7 +98,7 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 			outputHandler(Starting, nil, nil, nil)
 		}
 
-		stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false, cmd...)
+		stdout, stderr, err := ExecuteCommand(cmd, kclient, podName, containerName, false, nil, nil)
 		if err != nil {
 			klog.V(2).Infof("error while running background command: %v", err)
 		}
@@ -124,7 +124,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	klog.V(4).Infof("StopProcessForCommand for %q", def.Id)
 	defer func() {
 		pidFile := getPidFileForCommand(def)
-		err := ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
+		_, _, err := ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("rm -f %s", pidFile)},
 			kclient, podName, containerName, false, nil, nil)
 		if err != nil {
 			klog.V(2).Infof("Could not remove file %q: %v", pidFile, err)
@@ -132,7 +132,7 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	}()
 
 	kill := func(p int) error {
-		err := ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
+		_, _, err := ExecuteCommand([]string{ShellExecutable, "-c", fmt.Sprintf("kill %d || true", p)},
 			kclient, podName, containerName, false, nil, nil)
 		if err != nil {
 			return err
@@ -192,8 +192,9 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 
 func getRemoteProcessPID(kclient kclient.ClientInterface, def CommandDefinition, podName string, containerName string) (int, error) {
 	pidFile := getPidFileForCommand(def)
-	stdout, stderr, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile))
+	stdout, stderr, err := ExecuteCommand(
+		[]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile)},
+		kclient, podName, containerName, false, nil, nil)
 
 	if err != nil {
 		return 0, err
@@ -238,8 +239,9 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	}
 
 	//Now check that the PID value is a valid process
-	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid))
+	stdout, _, err := ExecuteCommand(
+		[]string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", pid)},
+		kclient, podName, containerName, false, nil, nil)
 
 	if err != nil {
 		process.Status = Unknown
@@ -269,8 +271,9 @@ func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string
 		return nil, fmt.Errorf("invalid pid: %d", pid)
 	}
 
-	stdout, _, err := ExecuteCommandAndGetOutput(kclient, podName, containerName, false,
-		ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid))
+	stdout, _, err := ExecuteCommand(
+		[]string{ShellExecutable, "-c", fmt.Sprintf("cat /proc/%[1]d/task/%[1]d/children || true", pid)},
+		kclient, podName, containerName, false, nil, nil)
 	if err != nil {
 		return nil, err
 	}

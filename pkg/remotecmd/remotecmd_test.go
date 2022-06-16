@@ -12,54 +12,6 @@ import (
 )
 
 func TestExecuteCommand(t *testing.T) {
-	cmd := []string{"echo", "Hello"}
-
-	for _, tt := range []struct {
-		name                 string
-		kubeClientCustomizer func(*kclient.MockClientInterface)
-		wantErr              bool
-	}{
-		{
-			name: "command returning an error",
-			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, _ = stderr.Write([]byte("error running command"))
-						return errors.New("some error")
-					})
-			},
-			wantErr: true,
-		},
-		{
-			name: "command not returning an error",
-			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
-				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
-					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, err := stdout.Write([]byte("Hello"))
-						return err
-					})
-			},
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			kubeClient := kclient.NewMockClientInterface(ctrl)
-			if tt.kubeClientCustomizer != nil {
-				tt.kubeClientCustomizer(kubeClient)
-			}
-
-			err := ExecuteCommand(cmd, kubeClient, _podName, _containerName, false, nil, nil)
-
-			if tt.wantErr != (err != nil) {
-				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestExecuteCommandAndGetOutput(t *testing.T) {
 	for _, tt := range []struct {
 		name                 string
 		cmd                  []string
@@ -106,7 +58,7 @@ func TestExecuteCommandAndGetOutput(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			stdout, stderr, err := ExecuteCommandAndGetOutput(kubeClient, _podName, _containerName, false, tt.cmd...)
+			stdout, stderr, err := ExecuteCommand(tt.cmd, kubeClient, _podName, _containerName, false, nil, nil)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
