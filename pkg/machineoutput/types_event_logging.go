@@ -16,7 +16,6 @@ type MachineEventLoggingClient interface {
 	DevFileCommandExecutionComplete(commandID string, componentName string, commandLine string, groupKind string, timestamp string, errorVal error)
 	ReportError(errorVal error, timestamp string)
 
-	SupervisordStatus(statuses []SupervisordStatusEntry, timestamp string)
 	ContainerStatus(statuses []ContainerStatusEntry, timestamp string)
 
 	URLReachable(name string, url string, port int, secure bool, kind string, reachable bool, timestamp string)
@@ -34,7 +33,6 @@ type MachineEventWrapper struct {
 	DevFileCommandExecutionComplete *DevFileCommandExecutionComplete `json:"devFileCommandExecutionComplete,omitempty"`
 	LogText                         *LogText                         `json:"logText,omitempty"`
 	ReportError                     *ReportError                     `json:"reportError,omitempty"`
-	SupervisordStatus               *SupervisordStatus               `json:"supervisordStatus,omitempty"`
 	ContainerStatus                 *ContainerStatus                 `json:"containerStatus,omitempty"`
 	URLReachable                    *URLReachable                    `json:"urlReachable,omitempty"`
 	KubernetesPodStatus             *KubernetesPodStatus             `json:"kubernetesPodStatus,omitempty"`
@@ -80,18 +78,6 @@ type ContainerStatusEntry struct {
 	Status string `json:"status"`
 }
 
-// SupervisordStatus is the JSON event that is emitted to indicate odo-managed component's supervisord program status
-type SupervisordStatus struct {
-	ProgramStatus []SupervisordStatusEntry `json:"programStatus"`
-	AbstractLogEvent
-}
-
-// SupervisordStatusEntry is an individual program's status
-type SupervisordStatusEntry struct {
-	Program string `json:"program"`
-	Status  string `json:"status"`
-}
-
 // URLReachable is the JSON event that is emitted to indicate whether one of the component's URL's could be reached.
 type URLReachable struct {
 	Name      string `json:"name"`
@@ -134,7 +120,6 @@ var _ MachineEventLogEntry = &DevFileCommandExecutionBegin{}
 var _ MachineEventLogEntry = &DevFileCommandExecutionComplete{}
 var _ MachineEventLogEntry = &LogText{}
 var _ MachineEventLogEntry = &ReportError{}
-var _ MachineEventLogEntry = &SupervisordStatus{}
 var _ MachineEventLogEntry = &ContainerStatus{}
 var _ MachineEventLogEntry = &URLReachable{}
 var _ MachineEventLogEntry = &KubernetesPodStatus{}
@@ -143,7 +128,6 @@ var _ MachineEventLogEntry = &KubernetesPodStatus{}
 // (This is mainly used for test purposes.)
 type MachineEventLogEntry interface {
 	GetTimestamp() string
-	GetType() MachineEventLogEntryType
 }
 
 // NoOpMachineEventLoggingClient will ignore (eg not output) all events passed to it

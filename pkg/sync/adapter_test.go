@@ -14,7 +14,9 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
+
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/sync/mock"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/tests/helper"
@@ -97,16 +99,17 @@ func TestSyncFiles(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
+	kc := kclient.NewMockClientInterface(ctrl)
+	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
 
 	// Assert that Bar() is invoked.
 	defer ctrl.Finish()
 
 	syncClient := mock.NewMockSyncClient(ctrl)
-	syncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	errorSyncClient := mock.NewMockSyncClient(ctrl)
-	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tests := []struct {
@@ -214,7 +217,7 @@ func TestSyncFiles(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			syncAdapter := New(adapterCtx, tt.client)
+			syncAdapter := New(adapterCtx, tt.client, kc)
 			isPushRequired, err := syncAdapter.SyncFiles(tt.syncParameters)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestSyncFiles error: unexpected error when syncing files %v", err)
@@ -251,16 +254,17 @@ func TestPushLocal(t *testing.T) {
 	}
 
 	ctrl := gomock.NewController(t)
+	kc := kclient.NewMockClientInterface(ctrl)
+	kc.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).AnyTimes()
 
 	// Assert that Bar() is invoked.
 	defer ctrl.Finish()
 
 	syncClient := mock.NewMockSyncClient(ctrl)
-	syncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	syncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	errorSyncClient := mock.NewMockSyncClient(ctrl)
-	errorSyncClient.EXPECT().ExecCMDInContainer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 	errorSyncClient.EXPECT().ExtractProjectToComponent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	tests := []struct {
@@ -368,7 +372,7 @@ func TestPushLocal(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			syncAdapter := New(adapterCtx, syncClient)
+			syncAdapter := New(adapterCtx, syncClient, kc)
 			err := syncAdapter.pushLocal(tt.path, tt.files, tt.delFiles, tt.isForcePush, []string{}, tt.compInfo, util.IndexerRet{})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestPushLocal error: error pushing files: %v", err)

@@ -1,6 +1,7 @@
 package libdevfile
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -9,12 +10,21 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
+	"github.com/kylelemons/godebug/pretty"
 	"k8s.io/utils/pointer"
+
+	"github.com/redhat-developer/odo/pkg/libdevfile/generator"
+	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
-func Test_getDefaultCommand(t *testing.T) {
+var buildGroup = v1alpha2.BuildCommandGroupKind
+var runGroup = v1alpha2.RunCommandGroupKind
+var debugGroup = v1alpha2.DebugCommandGroupKind
+
+func TestGetDefaultCommand(t *testing.T) {
 
 	runDefault1 := generator.GetExecCommand(generator.ExecCommandParams{
 		Kind:      v1alpha2.RunCommandGroupKind,
@@ -157,13 +167,13 @@ func Test_getDefaultCommand(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDefaultCommand(tt.args.devfileObj(), tt.args.kind)
+			got, err := GetDefaultCommand(tt.args.devfileObj(), tt.args.kind)
 			if err != tt.wantErr {
-				t.Errorf("getDefaultCommand() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetDefaultCommand() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getDefaultCommand() = %v, want %v", got, tt.want)
+				t.Errorf("GetDefaultCommand() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -769,4 +779,1786 @@ func TestGetK8sManifestWithVariablesSubstituted(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetCommand(t *testing.T) {
+
+	commands := [...]string{"ls -la", "pwd"}
+	components := [...]string{"alias1", "alias2"}
+
+	tests := []struct {
+		name           string
+		requestedType  []v1alpha2.CommandGroupKind
+		execCommands   []v1alpha2.Command
+		compCommands   []v1alpha2.Command
+		reqCommandName string
+		retCommandName string
+		wantErr        bool
+	}{
+		{
+			name: "Case 1: Valid devfile",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("build", buildGroup),
+				getExecCommand("run", runGroup),
+			},
+			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 2: Valid devfile with devrun and devbuild",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("build", buildGroup),
+				getExecCommand("run", runGroup),
+			},
+			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 3: Valid devfile with empty workdir",
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			requestedType: []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 4: Mismatched command type",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			reqCommandName: "build command",
+			requestedType:  []v1alpha2.CommandGroupKind{buildGroup},
+			wantErr:        true,
+		},
+		{
+			name: "Case 5: Default command is returned",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "defaultRunCommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "runCommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			retCommandName: "defaultRunCommand",
+			requestedType:  []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:        false,
+		},
+		{
+			name: "Case 6: Composite command is returned",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "run",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			compCommands: []v1alpha2.Command{
+				{
+					Id: "myComposite",
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
+					},
+				},
+			},
+			retCommandName: "myComposite",
+			requestedType:  []v1alpha2.CommandGroupKind{buildGroup},
+			wantErr:        false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			components := []v1alpha2.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(components)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			for _, gtype := range tt.requestedType {
+				cmd, err := getCommand(devObj.Data, tt.reqCommandName, gtype)
+				if !tt.wantErr == (err != nil) {
+					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", gtype, tt.wantErr, err)
+					return
+				} else if tt.wantErr {
+					return
+				}
+
+				if len(tt.retCommandName) > 0 && cmd.Id != tt.retCommandName {
+					t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.Id)
+				}
+			}
+		})
+	}
+
+}
+
+func Test_getCommandAssociatedToGroup(t *testing.T) {
+
+	commands := [...]string{"ls -la", "pwd"}
+	components := [...]string{"alias1", "alias2"}
+
+	tests := []struct {
+		name           string
+		requestedType  []v1alpha2.CommandGroupKind
+		execCommands   []v1alpha2.Command
+		compCommands   []v1alpha2.Command
+		retCommandName string
+		wantErr        bool
+	}{
+		{
+			name: "Case 1: Valid devfile",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("", buildGroup),
+				getExecCommand("", runGroup),
+			},
+			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 2: Valid devfile with devrun and devbuild",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("", buildGroup),
+				getExecCommand("", runGroup),
+			},
+			requestedType: []v1alpha2.CommandGroupKind{buildGroup, runGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 3: Valid devfile with empty workdir",
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			requestedType: []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 4: Default command is returned",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "defaultruncommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "runcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			retCommandName: "defaultruncommand",
+			requestedType:  []v1alpha2.CommandGroupKind{runGroup},
+			wantErr:        false,
+		},
+		{
+			name: "Case 5: Valid devfile, has composite command",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build1",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "build2",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "run",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			compCommands: []v1alpha2.Command{
+				{
+					Id: "mycomp",
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							Commands: []string{"build1", "run"},
+						},
+					},
+				},
+			},
+			retCommandName: "mycomp",
+			requestedType:  []v1alpha2.CommandGroupKind{buildGroup},
+			wantErr:        false,
+		},
+		{
+			name: "Case 6: Default composite command",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "run",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			compCommands: []v1alpha2.Command{
+				{
+					Id: "mycomp",
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
+					},
+				},
+				{
+					Id: "mycomp2",
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
+					},
+				},
+			},
+			retCommandName: "mycomp",
+			requestedType:  []v1alpha2.CommandGroupKind{buildGroup},
+			wantErr:        false,
+		},
+		{
+			name: "Case 7: no build and debug commands",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("", runGroup),
+			},
+			requestedType: []v1alpha2.CommandGroupKind{buildGroup, debugGroup},
+			wantErr:       false,
+		},
+		{
+			name: "Case 8: no default build and debug commands",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("build-0", buildGroup),
+				getExecCommand("build-1", buildGroup),
+				getExecCommand("debug-0", debugGroup),
+				getExecCommand("debug-1", debugGroup),
+				getExecCommand("", runGroup),
+			},
+			requestedType: []v1alpha2.CommandGroupKind{buildGroup, debugGroup},
+			wantErr:       false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			components := []v1alpha2.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(components)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			for _, gtype := range tt.requestedType {
+				cmd, err := getCommandAssociatedToGroup(devObj.Data, gtype)
+				if !tt.wantErr == (err != nil) {
+					t.Errorf("TestGetCommandFromDevfile unexpected error for command: %v wantErr: %v err: %v", gtype, tt.wantErr, err)
+					return
+				} else if tt.wantErr {
+					return
+				}
+
+				if len(tt.retCommandName) > 0 && cmd.Id != tt.retCommandName {
+					t.Errorf("TestGetCommandFromDevfile error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.Id)
+				}
+			}
+		})
+	}
+
+}
+
+func Test_getCommandByName(t *testing.T) {
+
+	commands := [...]string{"ls -la", "pwd"}
+	components := [...]string{"alias1", "alias2"}
+	invalidComponent := "garbagealias"
+
+	tests := []struct {
+		name           string
+		requestedType  v1alpha2.CommandGroupKind
+		execCommands   []v1alpha2.Command
+		compCommands   []v1alpha2.Command
+		reqCommandName string
+		retCommandName string
+		wantErr        bool
+	}{
+		{
+			name: "Case 1: Valid devfile",
+			execCommands: []v1alpha2.Command{
+				getExecCommand("a", buildGroup),
+				getExecCommand("b", runGroup),
+			},
+			reqCommandName: "b",
+			retCommandName: "b",
+			requestedType:  runGroup,
+			wantErr:        false,
+		},
+		{
+			name: "Case 2: Valid devfile with empty workdir",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			reqCommandName: "build command",
+			retCommandName: "build command",
+			requestedType:  runGroup,
+			wantErr:        false,
+		},
+		{
+			name: "Case 3: Invalid command",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   invalidComponent,
+						},
+					},
+				},
+			},
+			reqCommandName: "build command wrong",
+			requestedType:  runGroup,
+			wantErr:        true,
+		},
+		{
+			name: "Case 4: Mismatched command type",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			reqCommandName: "build command",
+			requestedType:  buildGroup,
+			wantErr:        true,
+		},
+		{
+			name: "Case 5: Multiple default commands but should be with the flag",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "defaultruncommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "runcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			reqCommandName: "defaultruncommand",
+			retCommandName: "defaultruncommand",
+			requestedType:  runGroup,
+			wantErr:        false,
+		},
+		{
+			name: "Case 6: No default command but should be with the flag",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "defaultruncommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "runcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			reqCommandName: "defaultruncommand",
+			retCommandName: "defaultruncommand",
+			requestedType:  runGroup,
+			wantErr:        false,
+		},
+		{
+			name: "Case 7: No Command Group",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "defaultruncommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			reqCommandName: "defaultruncommand",
+			retCommandName: "defaultruncommand",
+			requestedType:  runGroup,
+			wantErr:        false,
+		},
+		{
+			name: "Case 8: Valid devfile with composite commands",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+				{
+					Id: "run",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: commands[0],
+							Component:   components[0],
+						},
+					},
+				},
+			},
+			compCommands: []v1alpha2.Command{
+				{
+					Id: "mycomp",
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
+					},
+				},
+				{
+					Id: "mycomp2",
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(false)},
+								},
+							},
+							Commands: []string{"build", "run"},
+						},
+					},
+				},
+			},
+			reqCommandName: "mycomp",
+			retCommandName: "mycomp",
+			requestedType:  buildGroup,
+			wantErr:        false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			components := []v1alpha2.Component{testingutil.GetFakeContainerComponent(tt.execCommands[0].Exec.Component)}
+			if tt.execCommands[0].Exec.Component == invalidComponent {
+				components = []v1alpha2.Component{testingutil.GetFakeContainerComponent("randomComponent")}
+			}
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.compCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(components)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			cmd, err := getCommandByName(devObj.Data, tt.requestedType, tt.reqCommandName)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", tt.requestedType, tt.wantErr, err)
+				return
+			} else if tt.wantErr {
+				return
+			}
+
+			if cmd.Exec != nil {
+				if cmd.Id != tt.retCommandName {
+					t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.Id)
+				}
+			}
+		})
+	}
+
+}
+
+func TestGetBuildCommand(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	tests := []struct {
+		name         string
+		commandName  string
+		execCommands []v1alpha2.Command
+		wantCommand  v1alpha2.Command
+		wantErr      bool
+	}{
+		{
+			name:        "Case 1: Default Build Command",
+			commandName: emptyString,
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantCommand: v1alpha2.Command{
+				CommandUnion: v1alpha2.CommandUnion{
+					Exec: &v1alpha2.ExecCommand{
+						LabeledCommand: v1alpha2.LabeledCommand{
+							BaseCommand: v1alpha2.BaseCommand{
+								Group: &v1alpha2.CommandGroup{Kind: buildGroup, IsDefault: util.GetBoolPtr(true)},
+							},
+						},
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 2: Build Command passed through the odo flag",
+			commandName: "flagcommand",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "flagcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+				{
+					Id: "build command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantCommand: v1alpha2.Command{
+				Id: "flagcommand",
+				CommandUnion: v1alpha2.CommandUnion{
+					Exec: &v1alpha2.ExecCommand{
+						LabeledCommand: v1alpha2.LabeledCommand{
+							BaseCommand: v1alpha2.BaseCommand{
+								Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+							},
+						},
+						CommandLine: command,
+						Component:   component,
+						WorkingDir:  workDir,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 3: Build Command not found",
+			commandName: "customcommand123",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "build command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			command, err := GetBuildCommand(devObj.Data, tt.commandName)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestGetBuildCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+			} else if !tt.wantErr && !reflect.DeepEqual(tt.wantCommand, command) {
+				t.Errorf("TestGetBuildCommand: unexpected command returned: %v", pretty.Compare(tt.wantCommand, command))
+			}
+
+		})
+	}
+
+}
+
+func TestGetDebugCommand(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	var emptyCommand v1alpha2.Command
+
+	tests := []struct {
+		name         string
+		commandName  string
+		execCommands []v1alpha2.Command
+		wantErr      bool
+	}{
+		{
+			name:        "Case: Default Debug Command",
+			commandName: emptyString,
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{
+										IsDefault: util.GetBoolPtr(true),
+										Kind:      v1alpha2.DebugCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Custom Debug Command",
+			commandName: "customdebugcommand",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "customdebugcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{
+										IsDefault: util.GetBoolPtr(false),
+										Kind:      v1alpha2.DebugCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Missing Debug Command",
+			commandName: "customcommand123",
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{
+										IsDefault: util.GetBoolPtr(true),
+										Kind:      v1alpha2.BuildCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			command, err := GetDebugCommand(devObj.Data, tt.commandName)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("Error was expected but got no error")
+			} else if !tt.wantErr {
+				if err != nil {
+					t.Errorf("TestGetDebugCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+				} else if reflect.DeepEqual(emptyCommand, command) {
+					t.Errorf("TestGetDebugCommand: unexpected empty command returned for command: %v", tt.commandName)
+				}
+			}
+		})
+	}
+}
+
+func TestGetTestCommand(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	var emptyCommand v1alpha2.Command
+
+	tests := []struct {
+		name         string
+		commandName  string
+		execCommands []v1alpha2.Command
+		wantErr      bool
+	}{
+		{
+			name:        "Case: Default Test Command",
+			commandName: emptyString,
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{
+										IsDefault: util.GetBoolPtr(true),
+										Kind:      v1alpha2.TestCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Custom Test Command",
+			commandName: "customtestcommand",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "customtestcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{
+										IsDefault: util.GetBoolPtr(false),
+										Kind:      v1alpha2.TestCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Missing Test Command",
+			commandName: "customcommand123",
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{
+										IsDefault: util.GetBoolPtr(true),
+										Kind:      v1alpha2.BuildCommandGroupKind,
+									},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			command, err := GetTestCommand(devObj.Data, tt.commandName)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("Error was expected but got no error")
+			} else if !tt.wantErr {
+				if err != nil {
+					t.Errorf("TestGetTestCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+				} else if reflect.DeepEqual(emptyCommand, command) {
+					t.Errorf("TestGetTestCommand: unexpected empty command returned for command: %v", tt.commandName)
+				}
+			}
+		})
+	}
+}
+
+func TestGetRunCommand(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	var emptyCommand v1alpha2.Command
+
+	tests := []struct {
+		name         string
+		commandName  string
+		execCommands []v1alpha2.Command
+		wantErr      bool
+	}{
+		{
+			name:        "Case 1: Default Run Command",
+			commandName: emptyString,
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 2: Run Command passed through odo flag",
+			commandName: "flagcommand",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "flagcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+				{
+					Id: "run command",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case 3: Missing Run Command",
+			commandName: "",
+			execCommands: []v1alpha2.Command{
+				{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+								},
+							},
+							CommandLine: command,
+							Component:   component,
+							WorkingDir:  workDir,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			command, err := GetRunCommand(devObj.Data, tt.commandName)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestGetRunCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+			} else if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
+				t.Errorf("TestGetRunCommand: unexpected empty command returned for command: %v", tt.commandName)
+			}
+		})
+	}
+
+}
+
+func TestValidateAndGetDebugCommands(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	execCommands := []v1alpha2.Command{
+		{
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{
+								IsDefault: util.GetBoolPtr(true),
+								Kind:      v1alpha2.DebugCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+		{
+			Id: "customdebugcommand",
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{
+								IsDefault: util.GetBoolPtr(false),
+								Kind:      v1alpha2.DebugCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		debugCommand  string
+		componentType v1alpha2.ComponentType
+		wantErr       bool
+	}{
+		{
+			name:          "Case: Default Devfile Commands",
+			debugCommand:  emptyString,
+			componentType: v1alpha2.ContainerComponentType,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: provided debug Command",
+			debugCommand:  "customdebugcommand",
+			componentType: v1alpha2.ContainerComponentType,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: invalid debug Command",
+			debugCommand:  "invaliddebugcommand",
+			componentType: v1alpha2.ContainerComponentType,
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			debugCommand, err := ValidateAndGetDebugCommands(devObj.Data, tt.debugCommand)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Error was expected but got no error")
+				} else {
+					return
+				}
+			} else {
+				if err != nil {
+					t.Errorf("TestValidateAndGetDebugDevfileCommands: unexpected error %v", err)
+				}
+			}
+
+			if !reflect.DeepEqual(nil, debugCommand) && debugCommand.Id != tt.debugCommand {
+				t.Errorf("TestValidateAndGetDebugDevfileCommands name of debug command is wrong want: %v got: %v", tt.debugCommand, debugCommand.Id)
+			}
+		})
+	}
+}
+
+func TestValidateAndGetPushCommands(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	execCommands := []v1alpha2.Command{
+		{
+			Id: "run command",
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{
+								Kind:      runGroup,
+								IsDefault: util.GetBoolPtr(true),
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+
+		{
+			Id: "build command",
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{Kind: buildGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+
+		{
+			Id: "customcommand",
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{Kind: runGroup},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+	}
+
+	wrongCompTypeCmd := v1alpha2.Command{
+
+		Id: "wrong",
+		CommandUnion: v1alpha2.CommandUnion{
+			Exec: &v1alpha2.ExecCommand{
+				LabeledCommand: v1alpha2.LabeledCommand{
+					BaseCommand: v1alpha2.BaseCommand{
+						Group: &v1alpha2.CommandGroup{Kind: runGroup},
+					},
+				},
+				CommandLine: command,
+				Component:   "",
+				WorkingDir:  workDir,
+			},
+		},
+	}
+
+	tests := []struct {
+		name                string
+		buildCommand        string
+		runCommand          string
+		execCommands        []v1alpha2.Command
+		numberOfCommands    int
+		missingBuildCommand bool
+		wantErr             bool
+	}{
+		{
+			name:             "Case 1: Default Devfile Commands",
+			buildCommand:     emptyString,
+			runCommand:       emptyString,
+			execCommands:     execCommands,
+			numberOfCommands: 2,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 2: Default Build Command, and Provided Run Command",
+			buildCommand:     emptyString,
+			runCommand:       "customcommand",
+			execCommands:     execCommands,
+			numberOfCommands: 2,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 3: Empty Component",
+			buildCommand:     "customcommand",
+			runCommand:       "customcommand",
+			execCommands:     append(execCommands, wrongCompTypeCmd),
+			numberOfCommands: 0,
+			wantErr:          true,
+		},
+		{
+			name:             "Case 4: Provided Wrong Build Command and Provided Run Command",
+			buildCommand:     "customcommand123",
+			runCommand:       "customcommand",
+			execCommands:     execCommands,
+			numberOfCommands: 1,
+			wantErr:          true,
+		},
+		{
+			name:         "Case 5: Missing Build Command, and Provided Run Command",
+			buildCommand: emptyString,
+			runCommand:   "customcommand",
+			execCommands: []v1alpha2.Command{
+				{
+					Id: "customcommand",
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{
+							LabeledCommand: v1alpha2.LabeledCommand{
+								BaseCommand: v1alpha2.BaseCommand{
+									Group: &v1alpha2.CommandGroup{Kind: runGroup},
+								},
+							},
+							Component:   component,
+							CommandLine: command,
+						},
+					},
+				},
+			},
+			numberOfCommands: 1,
+			wantErr:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(tt.execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents(([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)}))
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			pushCommands, err := ValidateAndGetPushCommands(devObj.Data, tt.buildCommand, tt.runCommand)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestValidateAndGetPushDevfileCommands unexpected error when validating commands wantErr: %v err: %v", tt.wantErr, err)
+			} else if tt.wantErr && err != nil {
+				return
+			}
+
+			if len(pushCommands) != tt.numberOfCommands {
+				t.Errorf("TestValidateAndGetPushDevfileCommands error: wrong number of validated commands expected: %v actual :%v", tt.numberOfCommands, len(pushCommands))
+			}
+		})
+	}
+
+}
+
+func TestValidateAndGetTestCommands(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	execCommands := []v1alpha2.Command{
+		{
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{
+								IsDefault: util.GetBoolPtr(true),
+								Kind:      v1alpha2.TestCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+		{
+			Id: "customtestcommand",
+			CommandUnion: v1alpha2.CommandUnion{
+				Exec: &v1alpha2.ExecCommand{
+					LabeledCommand: v1alpha2.LabeledCommand{
+						BaseCommand: v1alpha2.BaseCommand{
+							Group: &v1alpha2.CommandGroup{
+								IsDefault: util.GetBoolPtr(false),
+								Kind:      v1alpha2.TestCommandGroupKind,
+							},
+						},
+					},
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		testCommand   string
+		componentType v1alpha2.ComponentType
+		wantErr       bool
+	}{
+		{
+			name:          "Case: Default Devfile Commands",
+			testCommand:   emptyString,
+			componentType: v1alpha2.ContainerComponentType,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: provided test Command",
+			testCommand:   "customtestcommand",
+			componentType: v1alpha2.ContainerComponentType,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: invalid test Command",
+			testCommand:   "invalidtestcommand",
+			componentType: v1alpha2.ContainerComponentType,
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := parser.DevfileObj{
+				Data: func() data.DevfileData {
+					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddComponents([]v1alpha2.Component{testingutil.GetFakeContainerComponent(component)})
+					if err != nil {
+						t.Error(err)
+					}
+					err = devfileData.AddCommands(execCommands)
+					if err != nil {
+						t.Error(err)
+					}
+					return devfileData
+				}(),
+			}
+
+			testCommand, err := ValidateAndGetTestCommands(devObj.Data, tt.testCommand)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Error was expected but got no error")
+				} else {
+					return
+				}
+			} else {
+				if err != nil {
+					t.Errorf("TestValidateAndGetTestDevfileCommands: unexpected error %v", err)
+				}
+			}
+
+			if !reflect.DeepEqual(nil, testCommand) && testCommand.Id != tt.testCommand {
+				t.Errorf("TestValidateAndGetTestDevfileCommands name of test command is wrong want: %v got: %v", tt.testCommand, testCommand.Id)
+			}
+		})
+	}
+}
+
+func TestShouldExecCommandRunOnContainer(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		execCommand *v1alpha2.ExecCommand
+		container   string
+		want        bool
+	}{
+		{
+			name: "nil exec command",
+		},
+		{
+			name: "exec component not matching container name",
+			execCommand: &v1alpha2.ExecCommand{
+				Component: "runtime",
+			},
+			container: "my-cont",
+			want:      false,
+		},
+		{
+			name: "exec component matching container name",
+			execCommand: &v1alpha2.ExecCommand{
+				Component: "runtime",
+			},
+			container: "runtime",
+			want:      true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ShouldExecCommandRunOnContainer(tt.execCommand, tt.container)
+			if tt.want != got {
+				t.Errorf("expected=%v, got %v", tt.want, got)
+			}
+		})
+	}
+}
+
+func getExecCommand(id string, group v1alpha2.CommandGroupKind) v1alpha2.Command {
+	if len(id) == 0 {
+		id = fmt.Sprintf("%s-%s", "cmd", dfutil.GenerateRandomString(10))
+	}
+	commands := [...]string{"ls -la", "pwd"}
+	components := [...]string{"alias1", "alias2"}
+	workDir := [...]string{"/", "/root"}
+
+	return v1alpha2.Command{
+		Id: id,
+		CommandUnion: v1alpha2.CommandUnion{
+			Exec: &v1alpha2.ExecCommand{
+				LabeledCommand: v1alpha2.LabeledCommand{
+					BaseCommand: v1alpha2.BaseCommand{
+						Group: &v1alpha2.CommandGroup{Kind: group},
+					},
+				},
+				CommandLine: commands[0],
+				Component:   components[0],
+				WorkingDir:  workDir[0],
+			},
+		},
+	}
+
 }

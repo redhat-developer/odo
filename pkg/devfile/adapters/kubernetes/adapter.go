@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"fmt"
 
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/preference"
 
@@ -36,16 +35,6 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 	err := k.componentAdapter.Push(parameters)
 	if err != nil {
 		return fmt.Errorf("failed to create the component: %w", err)
-	}
-
-	return nil
-}
-
-// CheckSupervisordCommandStatus calls the component adapter's CheckSupervisordCommandStatus
-func (k Adapter) CheckSupervisordCommandStatus(command devfilev1.Command) error {
-	err := k.componentAdapter.CheckSupervisordCommandStatus(command)
-	if err != nil {
-		return fmt.Errorf("failed to check the status: %w", err)
 	}
 
 	return nil

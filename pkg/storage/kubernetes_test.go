@@ -6,17 +6,18 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/redhat-developer/odo/pkg/kclient"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/testingutil"
-	"github.com/redhat-developer/odo/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ktesting "k8s.io/client-go/testing"
+
+	"github.com/redhat-developer/odo/pkg/kclient"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/localConfigProvider"
+	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 )
 
 func Test_kubernetesClient_ListFromCluster(t *testing.T) {
@@ -269,7 +270,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "case 10: avoid the volume mounts used by the init containers",
+			name: "case 10: avoid the mandatory volume mounts used by odo",
 			fields: fields{
 				generic: generic{
 					appName:       "app",
@@ -290,7 +291,7 @@ func Test_kubernetesClient_ListFromCluster(t *testing.T) {
 								Spec: corev1.PodSpec{
 									InitContainers: []corev1.Container{
 										{
-											Name: "supervisord",
+											Name: "my-container-with-shared-project",
 											VolumeMounts: []corev1.VolumeMount{
 												{
 													Name:      "odo-shared-project",

@@ -14,8 +14,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/remotecmd"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/onsi/gomega/gexec"
@@ -1190,7 +1191,24 @@ var _ = Describe("odo dev command tests", func() {
 
 		It("should error out with some log", func() {
 			helper.MatchAllInOutput(string(initErr), []string{
-				"exited with an error status in 1 sec",
+				"exited with an error status in",
+				"Did you mean one of these?",
+			})
+		})
+	})
+
+	When("running odo dev and build command throws an error", func() {
+		var stderr string
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
+			stderr = helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
+		})
+
+		It("should error out with some log", func() {
+			helper.MatchAllInOutput(stderr, []string{
+				"unable to exec command",
+				"Usage: npm <command>",
 				"Did you mean one of these?",
 			})
 		})
@@ -1536,20 +1554,22 @@ var _ = Describe("odo dev command tests", func() {
 			const errorMessage = "Failed to create the component:"
 			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
 			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
-			//Check the processes managed by supervisord
-			for process, state := range map[string]string{"devrun": "RUNNING", "debugrun": "STOPPED"} {
-				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
-					"runtime",
-					commonVar.Project,
-					[]string{common.SupervisordBinaryPath, common.SupervisordCtlSubCommand, "status", process},
-					func(stdout string, err error) bool {
-						Expect(err).ShouldNot(HaveOccurred())
-						helper.MatchAllInOutput(stdout, []string{state})
-						return err == nil
-					},
-				)
-			}
+
+			//the command has been started directly in the background. Check the PID stored in a specific file.
+			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+				commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
+				"runtime",
+				commonVar.Project,
+				[]string{
+					remotecmd.ShellExecutable, "-c",
+					fmt.Sprintf("kill -0 $(cat %s/.odo_devfile_cmd_run.pid) 2>/dev/null ; echo -n $?",
+						strings.TrimSuffix(storage.SharedDataMountPath, "/")),
+				},
+				func(stdout string, err error) bool {
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(stdout).To(Equal("0"))
+					return err == nil
+				})
 		})
 	})
 

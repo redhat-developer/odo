@@ -2,6 +2,7 @@ package libdevfile
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -23,17 +25,33 @@ type Handler interface {
 
 // Deploy executes the default Deploy command of the devfile
 func Deploy(devfileObj parser.DevfileObj, handler Handler) error {
-	deployCommand, err := getDefaultCommand(devfileObj, v1alpha2.DeployCommandGroupKind)
+	return ExecuteCommandByKind(devfileObj, v1alpha2.DeployCommandGroupKind, handler, false)
+}
+
+// Build executes the default Build command of the devfile, optionally not failing if the command was not found,
+// in case it is optional
+func Build(devfileObj parser.DevfileObj, handler Handler, ignoreCommandNotFound bool) error {
+	return ExecuteCommandByKind(devfileObj, v1alpha2.BuildCommandGroupKind, handler, ignoreCommandNotFound)
+}
+
+// ExecuteCommandByKind executes the default command of the given kind in the Devfile
+func ExecuteCommandByKind(devfileObj parser.DevfileObj, kind v1alpha2.CommandGroupKind, handler Handler, ignoreCommandNotFound bool) error {
+	cmd, err := GetDefaultCommand(devfileObj, kind)
 	if err != nil {
+		if ignoreCommandNotFound {
+			if _, ok := err.(NoCommandFoundError); ok {
+				return nil
+			}
+		}
 		return err
 	}
 
-	return executeCommand(devfileObj, deployCommand, handler)
+	return executeCommand(devfileObj, cmd, handler)
 }
 
-// getDefaultCommand returns the default command of the given kind in the devfile.
+// GetDefaultCommand returns the default command of the given kind in the devfile.
 // If only one command of the kind exists, it is returned, even if it is not marked as default
-func getDefaultCommand(devfileObj parser.DevfileObj, kind v1alpha2.CommandGroupKind) (v1alpha2.Command, error) {
+func GetDefaultCommand(devfileObj parser.DevfileObj, kind v1alpha2.CommandGroupKind) (v1alpha2.Command, error) {
 	groupCmds, err := devfileObj.Data.GetCommands(common.DevfileOptions{
 		CommandOptions: common.CommandOptions{
 			CommandGroupKind: kind,
@@ -67,6 +85,214 @@ func getDefaultCommand(devfileObj parser.DevfileObj, kind v1alpha2.CommandGroupK
 		return foundGroupCmd, nil
 	}
 	return groupCmds[0], nil
+}
+
+// ValidateAndGetPushCommands validates the build and the run command,
+// if provided through odo dev or else checks the devfile for devBuild and devRun.
+// It returns the build and run commands if its validated successfully, error otherwise.
+func ValidateAndGetPushCommands(
+	data data.DevfileData,
+	devfileBuildCmd,
+	devfileRunCmd string,
+) (commandMap map[v1alpha2.CommandGroupKind]v1alpha2.Command, err error) {
+	var emptyCommand v1alpha2.Command
+	commandMap = make(map[v1alpha2.CommandGroupKind]v1alpha2.Command)
+
+	isBuildCommandValid, isRunCommandValid := false, false
+
+	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
+
+	isBuildCmdEmpty := reflect.DeepEqual(emptyCommand, buildCommand)
+	if isBuildCmdEmpty && buildCmdErr == nil {
+		// If there was no build command specified through odo dev and no default build command in the devfile, default validate to true since the build command is optional
+		isBuildCommandValid = true
+		klog.V(2).Infof("No build command was provided")
+	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
+		isBuildCommandValid = true
+		commandMap[v1alpha2.BuildCommandGroupKind] = buildCommand
+		klog.V(2).Infof("Build command: %v", buildCommand.Id)
+	}
+
+	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
+	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
+		isRunCommandValid = true
+		commandMap[v1alpha2.RunCommandGroupKind] = runCommand
+		klog.V(2).Infof("Run command: %v", runCommand.Id)
+	}
+
+	// If either command had a problem, return an empty list of commands and an error
+	if !isBuildCommandValid || !isRunCommandValid {
+		commandErrors := ""
+
+		if buildCmdErr != nil {
+			commandErrors += fmt.Sprintf("\n%s", buildCmdErr.Error())
+		}
+		if runCmdErr != nil {
+			commandErrors += fmt.Sprintf("\n%s", runCmdErr.Error())
+		}
+		return commandMap, fmt.Errorf(commandErrors)
+	}
+
+	return commandMap, nil
+}
+
+// ValidateAndGetDebugCommands validates the debug command
+func ValidateAndGetDebugCommands(data data.DevfileData, devfileDebugCmd string) (pushDebugCommand v1alpha2.Command, err error) {
+	var emptyCommand v1alpha2.Command
+
+	isDebugCommandValid := false
+	debugCommand, debugCmdErr := GetDebugCommand(data, devfileDebugCmd)
+	if debugCmdErr == nil && !reflect.DeepEqual(emptyCommand, debugCommand) {
+		isDebugCommandValid = true
+		klog.V(2).Infof("Debug command: %v", debugCommand.Id)
+	}
+
+	if !isDebugCommandValid {
+		commandErrors := ""
+		if debugCmdErr != nil {
+			commandErrors += debugCmdErr.Error()
+		}
+		return v1alpha2.Command{}, fmt.Errorf(commandErrors)
+	}
+
+	return debugCommand, nil
+}
+
+// ValidateAndGetTestCommands validates the test command
+func ValidateAndGetTestCommands(data data.DevfileData, devfileTestCmd string) (testCommand v1alpha2.Command, err error) {
+	var emptyCommand v1alpha2.Command
+	isTestCommandValid := false
+	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
+	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
+		isTestCommandValid = true
+		klog.V(2).Infof("Test command: %v", testCommand.Id)
+	}
+
+	if !isTestCommandValid && testCmdErr != nil {
+		return v1alpha2.Command{}, testCmdErr
+	}
+
+	return testCommand, nil
+}
+
+// GetBuildCommand iterates through the components in the devfile and returns the build command
+func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand v1alpha2.Command, err error) {
+	return getCommand(data, devfileBuildCmd, v1alpha2.BuildCommandGroupKind)
+}
+
+// GetDebugCommand iterates through the components in the devfile and returns the debug command
+func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugCommand v1alpha2.Command, err error) {
+	return getCommand(data, devfileDebugCmd, v1alpha2.DebugCommandGroupKind)
+}
+
+// GetRunCommand iterates through the components in the devfile and returns the run command
+func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand v1alpha2.Command, err error) {
+	return getCommand(data, devfileRunCmd, v1alpha2.RunCommandGroupKind)
+}
+
+// GetTestCommand iterates through the components in the devfile and returns the test command
+func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand v1alpha2.Command, err error) {
+	return getCommand(data, devfileTestCmd, v1alpha2.TestCommandGroupKind)
+}
+
+// ShouldExecCommandRunOnContainer returns whether the given exec command should run on the specified containerName.
+func ShouldExecCommandRunOnContainer(exec *v1alpha2.ExecCommand, containerName string) bool {
+	return exec != nil && exec.Component == containerName
+}
+
+// getCommand iterates through the devfile commands and returns the devfile command associated with the group
+// commands mentioned via the flags are passed via commandName, empty otherwise
+func getCommand(data data.DevfileData, commandName string, groupType v1alpha2.CommandGroupKind) (supportedCommand v1alpha2.Command, err error) {
+
+	var command v1alpha2.Command
+
+	if commandName == "" {
+		command, err = getCommandAssociatedToGroup(data, groupType)
+	} else if commandName != "" {
+		command, err = getCommandByName(data, groupType, commandName)
+	}
+
+	return command, err
+}
+
+// getCommandAssociatedToGroup iterates through the devfile commands and returns the command associated with the group
+func getCommandAssociatedToGroup(data data.DevfileData, groupType v1alpha2.CommandGroupKind) (v1alpha2.Command, error) {
+	commands, err := data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return v1alpha2.Command{}, err
+	}
+	var onlyCommand v1alpha2.Command
+
+	for _, cmd := range commands {
+		cmdGroup := common.GetGroup(cmd)
+		if cmdGroup != nil && cmdGroup.Kind == groupType {
+			if util.SafeGetBool(cmdGroup.IsDefault) {
+				return cmd, nil
+			}
+			if reflect.DeepEqual(onlyCommand, v1alpha2.Command{}) {
+				// return the only remaining command for the group if there is no default command
+				// NOTE: we return outside the for loop since the next iteration can have a default command
+				onlyCommand = cmd
+			}
+		}
+	}
+
+	// if default command is not found return the first command found for the matching type.
+	if !reflect.DeepEqual(onlyCommand, v1alpha2.Command{}) {
+		return onlyCommand, nil
+	}
+
+	notFoundError := NoCommandForGroup{Group: groupType}
+	// if run command or test command is not found in devfile then it is an error
+	if groupType == v1alpha2.RunCommandGroupKind || groupType == v1alpha2.TestCommandGroupKind {
+		return onlyCommand, notFoundError
+	}
+
+	klog.V(2).Info(notFoundError)
+	return onlyCommand, nil
+}
+
+// getCommandByName iterates through the devfile commands and returns the command specified associated with the group
+func getCommandByName(data data.DevfileData, groupType v1alpha2.CommandGroupKind, commandName string) (v1alpha2.Command, error) {
+	commands, err := data.GetCommands(common.DevfileOptions{})
+	if err != nil {
+		return v1alpha2.Command{}, err
+	}
+
+	for _, cmd := range commands {
+		if cmd.Id == commandName {
+
+			// Update Group only custom commands (specified by odo flags)
+			cmd = updateCommandGroupIfNeeded(groupType, cmd)
+
+			// we have found the command with name, its groupType Should match to the flag
+			// e.g --build-command "mybuild"
+			// exec:
+			//   id: mybuild
+			//   group:
+			//     kind: build
+			cmdGroup := common.GetGroup(cmd)
+			if cmdGroup != nil && cmdGroup.Kind != groupType {
+				return cmd, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, cmd.Exec.Group.Kind)
+			}
+
+			return cmd, nil
+		}
+	}
+
+	// if any command specified via flag is not found in devfile then it is an error.
+	return v1alpha2.Command{}, fmt.Errorf("the command \"%v\" is not found in the devfile", commandName)
+}
+
+// updateCommandGroupIfNeeded updates the Group of the command specified if it is an Exec command with no Group.
+func updateCommandGroupIfNeeded(groupType v1alpha2.CommandGroupKind, command v1alpha2.Command) v1alpha2.Command {
+	// Update Group only for exec commands
+	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
+	if command.Exec != nil && command.Exec.Group == nil {
+		command.Exec.Group = &v1alpha2.CommandGroup{Kind: groupType}
+		return command
+	}
+	return command
 }
 
 // executeCommand executes a specific command of a devfile using handler as backend

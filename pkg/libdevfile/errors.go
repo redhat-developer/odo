@@ -92,3 +92,12 @@ func NewComponentTypeNotFoundError(componentType v1alpha2.ComponentType) Compone
 func (e ComponentTypeNotFoundError) Error() string {
 	return fmt.Sprintf("no component with type %q found in Devfile", e.componentType)
 }
+
+// NoCommandForGroup indicates an error when no command was found for the given Group
+type NoCommandForGroup struct {
+	Group v1alpha2.CommandGroupKind
+}
+
+func (n NoCommandForGroup) Error() string {
+	return fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", n.Group)
+}

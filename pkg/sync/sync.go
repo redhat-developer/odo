@@ -19,7 +19,6 @@ import (
 )
 
 type SyncClient interface {
-	ExecCMDInContainer(common.ComponentInfo, []string, io.Writer, io.Writer, io.Reader, bool) error
 	ExtractProjectToComponent(common.ComponentInfo, string, io.Reader) error
 }
 

@@ -71,10 +71,6 @@ func (c *NoOpMachineEventLoggingClient) CreateContainerOutputWriter() (*io.PipeW
 // ReportError ignores the provided event.
 func (c *NoOpMachineEventLoggingClient) ReportError(errorVal error, timestamp string) {}
 
-// SupervisordStatus ignores the provided event.
-func (c *NoOpMachineEventLoggingClient) SupervisordStatus(statuses []SupervisordStatusEntry, timestamp string) {
-}
-
 // ContainerStatus ignores the provided event.
 func (c *NoOpMachineEventLoggingClient) ContainerStatus(statuses []ContainerStatusEntry, timestamp string) {
 }
@@ -165,18 +161,6 @@ func (c *ConsoleMachineEventLoggingClient) ReportError(errorVal error, timestamp
 	c.outputJSON(json)
 }
 
-// SupervisordStatus outputs the provided event as JSON to the console.
-func (c *ConsoleMachineEventLoggingClient) SupervisordStatus(statuses []SupervisordStatusEntry, timestamp string) {
-	json := MachineEventWrapper{
-		SupervisordStatus: &SupervisordStatus{
-			ProgramStatus:    statuses,
-			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
-		},
-	}
-
-	c.outputJSON(json)
-}
-
 // ContainerStatus outputs the provided event as JSON to the console.
 func (c *ConsoleMachineEventLoggingClient) ContainerStatus(statuses []ContainerStatusEntry, timestamp string) {
 	json := MachineEventWrapper{
@@ -232,35 +216,35 @@ func (c *ConsoleMachineEventLoggingClient) outputJSON(machineOutput MachineEvent
 // GetEntry will return the JSON event parsed from a single line of '-o json' machine readable console output.
 // Currently used for test purposes only.
 func (w MachineEventWrapper) GetEntry() (MachineEventLogEntry, error) {
-
 	if w.DevFileCommandExecutionBegin != nil {
 		return w.DevFileCommandExecutionBegin, nil
-
-	} else if w.DevFileCommandExecutionComplete != nil {
-		return w.DevFileCommandExecutionComplete, nil
-
-	} else if w.LogText != nil {
-		return w.LogText, nil
-
-	} else if w.ReportError != nil {
-		return w.ReportError, nil
-
-	} else if w.KubernetesPodStatus != nil {
-		return w.KubernetesPodStatus, nil
-
-	} else if w.ContainerStatus != nil {
-		return w.ContainerStatus, nil
-
-	} else if w.SupervisordStatus != nil {
-		return w.SupervisordStatus, nil
-
-	} else if w.URLReachable != nil {
-		return w.URLReachable, nil
-
-	} else {
-		return nil, errors.New("unexpected machine event log entry")
 	}
 
+	if w.DevFileCommandExecutionComplete != nil {
+		return w.DevFileCommandExecutionComplete, nil
+	}
+
+	if w.LogText != nil {
+		return w.LogText, nil
+	}
+
+	if w.ReportError != nil {
+		return w.ReportError, nil
+	}
+
+	if w.KubernetesPodStatus != nil {
+		return w.KubernetesPodStatus, nil
+	}
+
+	if w.ContainerStatus != nil {
+		return w.ContainerStatus, nil
+	}
+
+	if w.URLReachable != nil {
+		return w.URLReachable, nil
+	}
+
+	return nil, errors.New("unexpected machine event log entry")
 }
 
 // GetTimestamp returns the timestamp element for this event.
@@ -283,9 +267,6 @@ func (c LogText) GetType() MachineEventLogEntryType { return TypeLogText }
 func (c ReportError) GetType() MachineEventLogEntryType { return TypeReportError }
 
 // GetType returns the event type for this event.
-func (c SupervisordStatus) GetType() MachineEventLogEntryType { return TypeSupervisordStatus }
-
-// GetType returns the event type for this event.
 func (c ContainerStatus) GetType() MachineEventLogEntryType { return TypeContainerStatus }
 
 // GetType returns the event type for this event.
@@ -306,8 +287,6 @@ const (
 	TypeLogText MachineEventLogEntryType = 2
 	// TypeReportError is the entry type for that event.
 	TypeReportError MachineEventLogEntryType = 3
-	// TypeSupervisordStatus is the entry type for that event.
-	TypeSupervisordStatus MachineEventLogEntryType = 4
 	// TypeContainerStatus is the entry type for that event.
 	TypeContainerStatus MachineEventLogEntryType = 5
 	// TypeURLReachable is the entry type for that event.

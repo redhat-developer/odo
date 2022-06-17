@@ -23,8 +23,8 @@ import (
 	"time"
 
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-
 	"github.com/fatih/color"
+
 	"github.com/go-git/go-git/v5"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"

@@ -10,22 +10,26 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	"k8s.io/klog"
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, client SyncClient) Adapter {
+func New(adapterContext common.AdapterContext, syncClient SyncClient, kubeClient kclient.ClientInterface) Adapter {
 	return Adapter{
-		Client:         client,
+		kubeClient:     kubeClient,
+		SyncClient:     syncClient,
 		AdapterContext: adapterContext,
 	}
 }
 
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
-	Client SyncClient
+	kubeClient kclient.ClientInterface
+	SyncClient SyncClient
 	common.AdapterContext
 }
 
@@ -184,7 +188,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = common.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
+		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -193,7 +197,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = common.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
+		_, _, err = remotecmd.ExecuteCommand(cmdArr, a.kubeClient, compInfo.PodName, compInfo.ContainerName, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -207,7 +211,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps, ret)
+		err = CopyFile(a.SyncClient, path, compInfo, syncFolder, files, globExps, ret)
 		if err != nil {
 			return fmt.Errorf("unable push files to pod: %w", err)
 		}
