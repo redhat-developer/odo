@@ -256,21 +256,21 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "timeout":
 			typedval, err := time.ParseDuration(value)
 			if err != nil {
-				return fmt.Errorf("unable to set %q to %q", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be Duration (e.g. 4s, 5m, 1h)", parameter, value)
 			}
 			c.OdoSettings.Timeout = &typedval
 
 		case "pushtimeout":
 			typedval, err := time.ParseDuration(value)
 			if err != nil {
-				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be Duration (e.g. 4s, 5m, 1h)", parameter, value)
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
 		case "registrycachetime":
 			typedval, err := time.ParseDuration(value)
 			if err != nil {
-				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
+				return fmt.Errorf("unable to set %q to %q, value must be Duration (e.g. 4s, 5m, 1h)", parameter, value)
 			}
 			c.OdoSettings.RegistryCacheTime = &typedval
 
