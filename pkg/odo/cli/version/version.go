@@ -14,10 +14,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	odoversion "github.com/redhat-developer/odo/pkg/version"
 
-	"github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/odo/util"
 )
 
 // RecommendedCommandName is the recommended version command name
@@ -63,11 +64,11 @@ func (o *VersionOptions) Complete(cmdline cmdline.Cmdline, args []string) (err e
 			// checking the value of timeout in preference
 			var timeout time.Duration
 			if o.clientset.PreferenceClient != nil {
-				timeout = time.Duration(o.clientset.PreferenceClient.GetTimeout()) * time.Second
+				timeout = o.clientset.PreferenceClient.GetTimeout()
 			} else {
 				// the default timeout will be used
 				// when the value is not readable from preference
-				timeout = preference.DefaultTimeout * time.Second
+				timeout = preference.DefaultTimeout
 			}
 			o.serverInfo, _ = client.GetServerVersion(timeout)
 		}

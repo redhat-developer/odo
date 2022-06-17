@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"io"
-	"time"
 
 	"k8s.io/utils/pointer"
 
@@ -53,7 +52,7 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		pod, err := a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, time.Duration(a.prefClient.GetPushTimeout())*time.Second)
+		pod, err := a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, a.prefClient.GetPushTimeout())
 		if err != nil {
 			return nil, fmt.Errorf("error while waiting for pod %s: %w", podSelector, err)
 		}
