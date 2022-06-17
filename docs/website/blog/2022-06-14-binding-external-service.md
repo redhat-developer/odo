@@ -27,7 +27,7 @@ and manually create the Endpoints to access this external service.
 
 Here is an example, to connect to an external Redis service on IP 192.168.1.10 and port 6379:
 
-```
+```yaml
 kind: Service
 apiVersion: v1
 metadata:
@@ -70,7 +70,7 @@ in the `external-services` namespace.
 
 Here is, as an example, the secret to store the Redis password.
 
-```
+```yaml
 kind: Secret
 apiVersion: v1
 metadata:
@@ -100,7 +100,7 @@ the Service resource itself.
 
 You can modify the definition of the Service, by adding the following annotations:
 
-```
+```yaml
 kind: Service
 apiVersion: v1
 metadata:
@@ -150,7 +150,7 @@ You don't have to specify the namespace, as the Deployment will be in the same n
 The option `bindAsFiles` indicates to the SBO to create files into the Pod's container, each file having the name 
 of a credential, and containing the value of the credential.
 
-```
+```yaml
 apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -173,7 +173,7 @@ spec:
 You can create a file `kubernetes/redis.yaml` in your directory containing this snippet,
 and add a Kubernetes component into your Devfile referring to this YAML file:
 
-```
+```yaml
 metadata:
   name: my-nodejs-app
 [...]
@@ -197,7 +197,7 @@ command and to execute the `odo describe binding` command.
 
 Running `odo dev`, you can see that the ServiceBinding resource is deployed to the cluster.
 
-```
+```shell
 $ odo dev
 [...]
 ↪ Deploying to the cluster in developer mode
@@ -211,7 +211,7 @@ $ odo dev
 
 From another terminal, running `odo describe binding` will show you the status of the ServiceBinding:
 
-```
+```shell
 $ odo describe binding
 ServiceBinding used by the current component:
 
