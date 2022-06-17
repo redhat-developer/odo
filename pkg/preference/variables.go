@@ -14,6 +14,9 @@ const (
 	preferenceKind       = "Preference"
 	preferenceAPIVersion = "odo.dev/v1alpha1"
 
+	// minimumDurationValue is the minimum acceptable value for preferences that accept time.Duration
+	minimumDurationValue = 1 * time.Second
+
 	// DefaultTimeout for cluster server connection check (in seconds)
 	DefaultTimeout = 1 * time.Second
 
