@@ -94,12 +94,12 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 		context    string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []api.ServiceBinding
-		want1   []string
-		wantErr bool
+		name          string
+		fields        fields
+		args          args
+		want          []api.ServiceBinding
+		wantInDevfile []string
+		wantErr       bool
 	}{
 		{
 			name: "a servicebinding defined in Devfile, nothing in cluster",
@@ -124,8 +124,8 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				devfileObj: getDevfileObjWithServiceBinding("aname", true),
 				context:    "/apath",
 			},
-			want:  []api.ServiceBinding{apiServiceBinding},
-			want1: []string{"my-nodejs-app-cluster-sample"},
+			want:          []api.ServiceBinding{apiServiceBinding},
+			wantInDevfile: []string{"my-nodejs-app-cluster-sample"},
 		},
 		{
 			name: "a servicebinding defined in Devfile, also in cluster",
@@ -173,7 +173,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					},
 				},
 			},
-			want1: []string{"my-nodejs-app-cluster-sample"},
+			wantInDevfile: []string{"my-nodejs-app-cluster-sample"},
 		},
 		{
 			name: "a servicebinding defined in cluster",
@@ -218,7 +218,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					},
 				},
 			},
-			want1: nil,
+			wantInDevfile: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -228,7 +228,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, got1, err := o.ListAllBindings(tt.args.devfileObj, tt.args.context)
+			got, gotInDevfile, err := o.ListAllBindings(tt.args.devfileObj, tt.args.context)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BindingClient.ListAllBindings() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -236,8 +236,8 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BindingClient.ListAllBindings() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("BindingClient.ListAllBindings() got1 = %v, want %v", got1, tt.want1)
+			if !reflect.DeepEqual(gotInDevfile, tt.wantInDevfile) {
+				t.Errorf("BindingClient.ListAllBindings() gotInDevfile = %v, want %v", gotInDevfile, tt.wantInDevfile)
 			}
 		})
 	}
