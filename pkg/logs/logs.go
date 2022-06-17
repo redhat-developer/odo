@@ -3,6 +3,8 @@ package logs
 import (
 	"io"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,12 +27,58 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 
 var _ Client = (*LogsClient)(nil)
 
-func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
-	// get all resources in the namespace which are running in Dev mode
-	selector := odolabels.Builder().WithComponentName(componentName).WithMode(odolabels.ComponentDevMode).Selector()
+func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
+	var selector string
+	logs := []map[string]io.ReadCloser{}
+	unknownMode := true
+
+	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
+		unknownMode = false
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+		l, err := o.getLogsWithSelector(selector, namespace)
+		if err != nil {
+			return nil, err
+		}
+		logs = append(logs, l...)
+	}
+	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
+		unknownMode = false
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
+		l, err := o.getLogsWithSelector(selector, namespace)
+		if err != nil {
+			return nil, err
+		}
+		logs = append(logs, l...)
+	}
+	if unknownMode {
+		return nil, InvalidModeError{mode: mode}
+	}
+
+	return logs, nil
+}
+
+// getLogsWithSelector returns logs for the containers created for resources matching selector in the namespace.
+// ignorePods boolean helps get logs for the containers of the independent Pods created in Deploy mode, since they
+// don't have an owner unlike the independent Pods created in Dev mode which are owned by the main Deployment created
+// by odo dev
+func (o *LogsClient) getLogsWithSelector(selector string, namespace string) ([]map[string]io.ReadCloser, error) {
 	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
+	}
+	// a set of unique Pods with Pod name as key and the Pod as value; these are the Pods whose logs we get from cluster
+	pods := map[string]corev1.Pod{}
+
+	// if there's a Pod in the resources, we add it to the set of Pods whose logs we are interested in
+	for _, r := range resources {
+		if r.GetKind() == "Pod" {
+			var pod corev1.Pod
+			err = runtime.DefaultUnstructuredConverter.FromUnstructured(r.Object, &pod)
+			if err != nil {
+				return nil, err
+			}
+			pods[pod.GetName()] = pod
+		}
 	}
 
 	// get all pods in the namespace
@@ -39,15 +87,14 @@ func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[
 		return nil, err
 	}
 
-	// match pod ownerReference (if any) with resources running in Dev mode
-	var pods []corev1.Pod
+	// match pod ownerReference (if any) with resources matching the selector
 	for _, pod := range podList.Items {
 		for _, owner := range pod.GetOwnerReferences() {
 			match, err := o.matchOwnerReferenceWithResources(owner, resources)
 			if err != nil {
 				return nil, err
 			} else if match {
-				pods = append(pods, pod)
+				pods[pod.GetName()] = pod
 				break // because we don't need to check other owner references of the pod anymore
 			}
 		}
@@ -67,7 +114,6 @@ func (o *LogsClient) DevModeLogs(componentName string, namespace string) ([]map[
 
 	// get logs of all containers
 	logs := []map[string]io.ReadCloser{}
-
 	for pod, containers := range podContainersMap {
 		for _, container := range containers {
 			containerLogs, err := o.kubernetesClient.GetPodLogs(pod, container.Name, false)

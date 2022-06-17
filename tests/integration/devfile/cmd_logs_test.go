@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -38,16 +37,91 @@ var _ = Describe("odo logs command tests", func() {
 
 	When("component is created and odo logs is executed", func() {
 		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-deploy-functional-pods.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
-		It("should successfully show logs of the running component", func() {
-			err := helper.RunDevMode(func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-				out := helper.Cmd("odo", "logs").ShouldPass().Out()
-				Expect(out).To(ContainSubstring("runtime: App started on PORT 3000"))
+		When("running in Dev mode", func() {
+			var devSession helper.DevSession
+			var err error
+
+			BeforeEach(func() {
+				devSession, _, _, _, err = helper.StartDevMode()
+				Expect(err).ToNot(HaveOccurred())
 			})
-			Expect(err).ToNot(HaveOccurred())
+			AfterEach(func() {
+				devSession.Kill()
+				devSession.WaitEnd()
+			})
+			It("should successfully show logs of the running component", func() {
+				// `odo logs`
+				out := helper.Cmd("odo", "logs").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"runtime:", "main:"})
+
+				// `odo logs --dev`
+				out = helper.Cmd("odo", "logs", "--dev").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"runtime:", "main:"})
+
+				// `odo logs --deploy`
+				out = helper.Cmd("odo", "logs", "--deploy").ShouldPass().Out()
+				Expect(out).To(ContainSubstring("no containers running in the specified mode for the component"))
+			})
+		})
+
+		When("running in Deploy mode", func() {
+			BeforeEach(func() {
+				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+				Eventually(func() string {
+					return string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Out.Contents())
+				}).Should(Not(ContainSubstring("ContainerCreating")))
+			})
+			It("should successfully show logs of the running component", func() {
+				// `odo logs`
+				out := helper.Cmd("odo", "logs").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"main:", "main[1]:", "main[2]:"})
+
+				// `odo logs --dev`
+				out = helper.Cmd("odo", "logs", "--dev").ShouldPass().Out()
+				Expect(out).To(ContainSubstring("no containers running in the specified mode for the component"))
+
+				// `odo logs --deploy`
+				out = helper.Cmd("odo", "logs", "--deploy").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"main:", "main[1]:", "main[2]:"})
+			})
+		})
+
+		When("running in both Dev and Deploy mode", func() {
+			var devSession helper.DevSession
+			var err error
+			BeforeEach(func() {
+				devSession, _, _, _, err = helper.StartDevMode()
+				Expect(err).ToNot(HaveOccurred())
+				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+				Eventually(func() string {
+					return string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Out.Contents())
+				}).Should(Not(ContainSubstring("ContainerCreating")))
+			})
+			AfterEach(func() {
+				devSession.Kill()
+				devSession.WaitEnd()
+			})
+			It("should successfully show logs of the running component", func() {
+				// `odo logs`
+				out := helper.Cmd("odo", "logs").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"runtime", "main:", "main[1]:", "main[2]:", "main[3]:"})
+
+				// `odo logs --dev`
+				out = helper.Cmd("odo", "logs", "--dev").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"runtime:", "main:"})
+
+				// `odo logs --deploy`
+				out = helper.Cmd("odo", "logs", "--deploy").ShouldPass().Out()
+				helper.MatchAllInOutput(out, []string{"main:", "main[1]:", "main[2]:"})
+
+				// `odo logs --dev --deploy`
+				out = helper.Cmd("odo", "logs", "--deploy", "--dev").ShouldFail().Err()
+				Expect(out).To(ContainSubstring("pass only one of --dev or --deploy flags; pass no flag to see logs for both modes"))
+			})
 		})
 	})
 })
