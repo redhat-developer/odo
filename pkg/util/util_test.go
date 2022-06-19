@@ -1,7 +1,10 @@
 package util
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -2614,6 +2617,74 @@ func TestSafeGetBool(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := SafeGetBool(tt.arg); got != tt.want {
 				t.Errorf("SafeGetBool() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDisplayLog(t *testing.T) {
+	const compName = "my-comp"
+	type args struct {
+		input    []string
+		numLines int
+	}
+	for _, tt := range []struct {
+		name    string
+		wantErr bool
+		want    []string
+
+		args
+	}{
+		{
+			name: "numberOfLastLines==-1",
+			args: args{
+				input:    []string{"a", "b", "c"},
+				numLines: -1,
+			},
+			want: []string{"a\n", "b\n", "c\n"},
+		},
+		{
+			name: "numberOfLastLines greater than total number of lines read",
+			args: args{
+				input:    []string{"one-line"},
+				numLines: 10,
+			},
+			want: []string{"one-line\n"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var b bytes.Buffer
+			for _, s := range tt.input {
+				if _, err := b.WriteString(s + "\n"); err != nil {
+					t.Errorf(" failed to write input data %q", s)
+					return
+				}
+			}
+			var w bytes.Buffer
+			err := DisplayLog(false, io.NopCloser(&b), &w, compName, tt.numLines)
+
+			if tt.wantErr != (err != nil) {
+				t.Errorf("expected %v, got %v", tt.wantErr, err)
+				return
+			}
+
+			//Read w
+			reader := bufio.NewReader(&w)
+			var lines []string
+			var line string
+			for {
+				line, err = reader.ReadString('\n')
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					t.Errorf("unexpected err while reading data: %v", err)
+					return
+				}
+				lines = append(lines, line)
+			}
+			if !reflect.DeepEqual(lines, tt.want) {
+				t.Errorf("expected %v, got %v", tt.want, lines)
 			}
 		})
 	}
