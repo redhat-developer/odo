@@ -10,7 +10,7 @@ import (
 // RecommendedCommandName is the recommended remove command name
 const RecommendedCommandName = "remove"
 
-// NewCmdDelete implements the odo remove command
+// NewCmdRemove implements the odo remove command
 func NewCmdRemove(name, fullName string) *cobra.Command {
 	var removeCmd = &cobra.Command{
 		Use:   name,
