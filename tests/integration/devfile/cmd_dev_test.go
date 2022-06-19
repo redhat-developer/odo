@@ -1151,13 +1151,47 @@ var _ = Describe("odo dev command tests", func() {
 	})
 
 	When("running odo dev and composite command is used as a run command", func() {
+		var session helper.DevSession
+		var stdout []byte
+		var stderr []byte
+		const devfileCmpName = "nodejs"
 		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRun.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			var err error
+			session, stdout, stderr, _, err = helper.StartDevMode()
+			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should throw a validation error for composite run commands", func() {
-			output := helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("not supported currently"))
+		AfterEach(func() {
+			session.Stop()
+			session.WaitEnd()
+		})
+
+		It("should run successfully", func() {
+			helper.MatchAllInOutput(string(stdout), []string{
+				"Executing the application (command: mkdir)",
+				"Executing the application (command: echo)",
+				"Executing the application (command: install)",
+				"Executing the application (command: start)",
+			})
+			helper.MatchAllInOutput(string(stderr), []string{
+				"Devfile command \"echo\" exited with an error status",
+				"intentional-error-message",
+			})
+
+			// Verify the command executed successfully
+			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+			res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				commonVar.Project,
+				[]string{"stat", "/projects/testfolder"},
+				func(cmdOp string, err error) bool {
+					return err == nil
+				},
+			)
+			Expect(res).To(BeTrue())
 		})
 	})
 

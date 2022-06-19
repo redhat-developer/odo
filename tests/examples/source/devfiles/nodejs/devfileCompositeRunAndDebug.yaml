@@ -1,0 +1,82 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+        - name: tcp-5858
+          targetPort: 5858
+commands:
+  - id: install
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+
+  - id: mkdir
+    exec:
+      component: runtime
+      commandLine: mkdir -p /projects/testfolder
+      workingDir: ${PROJECTS_ROOT}
+
+  - id: echo
+    exec:
+      component: runtime
+      commandLine: 'echo intentional-error-message >> /proc/self/fd/2; exit 1'
+      workingDir: ${PROJECTS_ROOT}
+
+  - id: mkdir-echo-parallel
+    composite:
+      label: mkdir and echo in parallel
+      commands:
+        - mkdir
+        - echo
+      parallel: true
+
+  - id: start
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+
+  - id: start-debug
+    exec:
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECTS_ROOT}
+
+  - id: run-composite
+    composite:
+         label: run as composite
+         commands:
+           - mkdir-echo-parallel
+           - install
+           - start
+         parallel: false
+         group: 
+            kind: run
+            isDefault: true
+
+  - id: debug-composite
+    composite:
+      label: debug as composite
+      commands:
+        - mkdir-echo-parallel
+        - install
+        - start-debug
+      parallel: false
+      group:
+        kind: debug
+        isDefault: true
