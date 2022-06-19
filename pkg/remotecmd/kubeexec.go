@@ -39,12 +39,12 @@ func (k *kubeExecProcessHandler) GetProcessInfoForCommand(
 ) (RemoteProcessInfo, error) {
 	klog.V(4).Infof("GetProcessInfoForCommand for %q", def.Id)
 
-	pid, err := getRemoteProcessPID(kclient, def, podName, containerName)
+	pid, exitStatus, err := getRemoteProcessPID(kclient, def, podName, containerName)
 	if err != nil {
 		return RemoteProcessInfo{}, err
 	}
 
-	return k.getProcessInfoFromPid(pid, kclient, podName, containerName)
+	return k.getProcessInfoFromPid(pid, exitStatus, kclient, podName, containerName)
 }
 
 // StartProcessForCommand runs the (potentially never finishing) Devfile command in the background.
@@ -90,7 +90,7 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	pidFile := getPidFileForCommand(def)
 	cmd := []string{
 		ShellExecutable, "-c",
-		fmt.Sprintf("echo $$ > %s && %s %s (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2", pidFile, cdCmd, setEnvCmd, cmdLine),
+		fmt.Sprintf("echo $$ > %[1]s && %s %s (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2; echo $? >> %[1]s", pidFile, cdCmd, setEnvCmd, cmdLine),
 	}
 
 	go func() {
@@ -142,8 +142,8 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 		//retry detecting its actual state till it is stopped or timeout expires
 		var processInfo interface{}
 		processInfo, err = task.NewRetryable(fmt.Sprintf("status for remote process %d", p), func() (bool, interface{}, error) {
-			pInfo, e := k.getProcessInfoFromPid(p, kclient, podName, containerName)
-			return e == nil && pInfo.Status == Stopped, pInfo, e
+			pInfo, e := k.getProcessInfoFromPid(p, 0, kclient, podName, containerName)
+			return e == nil && (pInfo.Status == Stopped || pInfo.Status == Errored), pInfo, e
 		}).RetryWithSchedule([]time.Duration{2 * time.Second, 4 * time.Second, 8 * time.Second}, true)
 		if err != nil {
 			return err
@@ -154,13 +154,13 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 			klog.V(2).Infof("invalid type for remote process (%d) info, expected RemoteProcessInfo", p)
 			return fmt.Errorf("internal error while checking remote process status: %d", p)
 		}
-		if pInfo.Status != Stopped {
+		if pInfo.Status != Stopped && pInfo.Status != Errored {
 			return fmt.Errorf("invalid status for remote process %d: %+v", p, processInfo)
 		}
 		return nil
 	}
 
-	ppid, err := getRemoteProcessPID(kclient, def, podName, containerName)
+	ppid, _, err := getRemoteProcessPID(kclient, def, podName, containerName)
 	if err != nil {
 		return err
 	}
@@ -190,22 +190,22 @@ func (k *kubeExecProcessHandler) StopProcessForCommand(
 	return nil
 }
 
-func getRemoteProcessPID(kclient kclient.ClientInterface, def CommandDefinition, podName string, containerName string) (int, error) {
+func getRemoteProcessPID(kclient kclient.ClientInterface, def CommandDefinition, podName string, containerName string) (int, int, error) {
 	pidFile := getPidFileForCommand(def)
 	stdout, stderr, err := ExecuteCommand(
 		[]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", pidFile)},
 		kclient, podName, containerName, false, nil, nil)
 
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	if len(stdout) == 0 {
 		//The file does not exist. We assume the process has not run yet.
-		return 0, nil
+		return 0, 0, nil
 	}
-	if len(stdout) != 1 {
-		return 0, fmt.Errorf(
+	if len(stdout) > 2 {
+		return 0, 0, fmt.Errorf(
 			"unable to determine command status, due to unexpected number of lines for %s, output: %v %v",
 			pidFile, stdout, stderr)
 	}
@@ -215,14 +215,28 @@ func getRemoteProcessPID(kclient kclient.ClientInterface, def CommandDefinition,
 	pid, err = strconv.Atoi(strings.TrimSpace(line))
 	if err != nil {
 		klog.V(2).Infof("error while trying to retrieve status of command: %+v", err)
-		return 0, fmt.Errorf("unable to determine command status, due to unexpected content for %s: %s",
+		return 0, 0, fmt.Errorf("unable to determine command status, due to unexpected PID content for %s: %s",
 			pidFile, line)
 	}
-	return pid, nil
+	if len(stdout) == 1 {
+		return pid, 0, nil
+	}
+
+	line2 := stdout[1]
+	var exitStatus int
+	exitStatus, err = strconv.Atoi(strings.TrimSpace(line2))
+	if err != nil {
+		klog.V(2).Infof("error while trying to retrieve status of command: %+v", err)
+		return pid, 0, fmt.Errorf("unable to determine command status, due to unexpected exit status content for %s: %s",
+			pidFile, line2)
+	}
+
+	return pid, exitStatus, nil
 }
 
 func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	pid int,
+	lastKnownExitStatus int,
 	kclient kclient.ClientInterface,
 	podName string,
 	containerName string,
@@ -258,7 +272,11 @@ func (k *kubeExecProcessHandler) getProcessInfoFromPid(
 	if killStatus == 0 {
 		process.Status = Running
 	} else {
-		process.Status = Stopped
+		if lastKnownExitStatus == 0 {
+			process.Status = Stopped
+		} else {
+			process.Status = Errored
+		}
 	}
 
 	return process, nil
