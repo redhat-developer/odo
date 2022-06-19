@@ -12,7 +12,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 	// Use staging OCI-based registry for tests to avoid overload
 	const addRegistryURL string = "https://registry.stage.devfile.io"
 
-	const updateRegistryURL string = "http://www.example.com/update"
 	var commonVar helper.CommonVar
 
 	// This is run before every Spec (It)
@@ -89,10 +88,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one"})
 	})
 
-	It("Should fail to update the registry, when registry is not present", func() {
-		helper.Cmd("odo", "preference", "registry", "update", registryName, updateRegistryURL, "-f").ShouldFail()
-	})
-
 	It("Should fail to delete the registry, when registry is not present", func() {
 		helper.Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldFail()
 	})
@@ -117,12 +112,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 		It("should successfully delete registry", func() {
 			helper.Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldPass()
-		})
-
-		It("should successfully update the registry", func() {
-			helper.Cmd("odo", "preference", "registry", "update", registryName, updateRegistryURL, "-f").ShouldPass()
-			output := helper.Cmd("odo", "preference", "registry", "list").ShouldPass().Out()
-			helper.MatchAllInOutput(output, []string{registryName, updateRegistryURL})
 		})
 
 		It("deleting registry and creating component with registry flag ", func() {

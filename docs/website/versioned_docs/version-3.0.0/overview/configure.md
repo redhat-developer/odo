@@ -144,21 +144,4 @@ Successfully deleted registry
 
 You can use the `--force` (or `-f`) flag to force the deletion of the registry without confirmation.
 
-### Updating a registry
-
-You can update the URL and/or the personal access token of a registry already registered with the command:
-
-```
-odo preference registry update
-```
-
-For example:
-
-```
-$ odo preference registry update MyRegistry https://otherregistry.example.com
-? Are you sure you want to update registry "MyRegistry" Yes
-Successfully updated registry
-```
-
-You can use the `--force` (or `-f`) flag to force the update of the registry without confirmation.
 
