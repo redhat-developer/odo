@@ -297,5 +297,5 @@ func getProcessChildren(pid int, kclient kclient.ClientInterface, podName string
 // The parent folder is supposed to be existing, because it should be mounted in the container using the mandatory
 // shared volume (more info in the AddOdoMandatoryVolume function from the utils package).
 func getPidFileForCommand(def CommandDefinition) string {
-	return fmt.Sprintf("%s/.odo_devfile_cmd_%s.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/"), def.Id)
+	return fmt.Sprintf("%s/.odo_cmd_%s.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/"), def.Id)
 }

@@ -1596,7 +1596,7 @@ var _ = Describe("odo dev command tests", func() {
 				commonVar.Project,
 				[]string{
 					remotecmd.ShellExecutable, "-c",
-					fmt.Sprintf("kill -0 $(cat %s/.odo_devfile_cmd_run.pid) 2>/dev/null ; echo -n $?",
+					fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
 						strings.TrimSuffix(storage.SharedDataMountPath, "/")),
 				},
 				func(stdout string, err error) bool {
