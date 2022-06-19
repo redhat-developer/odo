@@ -29,19 +29,5 @@ func validateCommand(command devfilev1.Command) (err error) {
 		return &UnsupportedOdoCommandError{commandId: command.Id}
 	}
 
-	// If the command is a composite command, need to validate that it is valid
-	if command.Composite != nil {
-		return validateCompositeCommand(command)
-	}
-
 	return
-}
-
-// validateCompositeCommand checks that the specified composite command is valid in odo ie; it should not be of kind run
-func validateCompositeCommand(command devfilev1.Command) error {
-	if command.Composite.Group != nil && command.Composite.Group.Kind == devfilev1.RunCommandGroupKind {
-		return &CompositeRunKindError{}
-	}
-
-	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+	devfileCommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -321,15 +322,30 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		componentExists: componentExists,
 	}
 
-	running, err := cmdHandler.isRemoteProcessForCommandRunning(cmd)
+	commandType, err := devfileCommon.GetCommandType(cmd)
 	if err != nil {
 		return err
+	}
+	var running bool
+	var isComposite bool
+	if commandType == devfilev1.ExecCommandType {
+		running, err = cmdHandler.isRemoteProcessForCommandRunning(cmd)
+		if err != nil {
+			return err
+		}
+	} else if commandType == devfilev1.CompositeCommandType {
+		//this handler will run each command in this composite command individually,
+		//and will determine whether each command is running or not.
+		isComposite = true
+	} else {
+		return fmt.Errorf("unsupported type %q for Devfile command %s, only exec and composite are handled",
+			commandType, cmd.Id)
 	}
 
 	klog.V(4).Infof("running=%v, execRequired=%v, parameters.RunModeChanged=%v",
 		running, execRequired, parameters.RunModeChanged)
 
-	if !running || execRequired || parameters.RunModeChanged {
+	if isComposite || !running || execRequired || parameters.RunModeChanged {
 		err = libdevfile.ExecuteCommandByKind(a.Devfile, cmdKind, &cmdHandler, false)
 	}
 

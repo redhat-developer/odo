@@ -39,11 +39,6 @@ func (a *adapterHandler) ApplyKubernetes(_ devfilev1.Component) error {
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
-	processName := "devrun"
-	if a.parameters.Debug {
-		processName = "debugrun"
-	}
-
 	doExecuteBuildCommand := func() error {
 		execHandler := component.NewExecHandler(a.kubeClient, a.pod.Name, "Building your application in container on cluster", a.parameters.Show)
 		return libdevfile.Build(a.Devfile, execHandler, true)
@@ -54,7 +49,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	startHandler := func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
 		switch status {
 		case remotecmd.Starting:
-			_ = log.SpinnerNoSpin("Executing the application")
+			_ = log.SpinnerNoSpin(fmt.Sprintf("Executing the application (command: %s)", devfileCmd.Id))
 		case remotecmd.Stopped:
 			if err != nil {
 				klog.V(2).Infof("error while running background command: %v", err)
@@ -91,7 +86,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 		} else {
-			klog.V(2).Infof("command is hot-reload capable, not restarting %s", processName)
+			klog.V(2).Infof("command is hot-reload capable, not restarting %s", devfileCmd.Id)
 		}
 	} else {
 		cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
