@@ -195,11 +195,6 @@ func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand v1
 	return getCommand(data, devfileTestCmd, v1alpha2.TestCommandGroupKind)
 }
 
-// ShouldExecCommandRunOnContainer returns whether the given exec command should run on the specified containerName.
-func ShouldExecCommandRunOnContainer(exec *v1alpha2.ExecCommand, containerName string) bool {
-	return exec != nil && exec.Component == containerName
-}
-
 // getCommand iterates through the devfile commands and returns the devfile command associated with the group
 // commands mentioned via the flags are passed via commandName, empty otherwise
 func getCommand(data data.DevfileData, commandName string, groupType v1alpha2.CommandGroupKind) (supportedCommand v1alpha2.Command, err error) {
@@ -426,6 +421,68 @@ func GetEndpointsFromDevfile(devfileObj parser.DevfileObj, ignoreExposures []v1a
 	return endpoints, nil
 }
 
+// GetContainerComponentsForCommand returns the list of container components that would get used if the specified command runs.
+func GetContainerComponentsForCommand(devfileObj parser.DevfileObj, cmd v1alpha2.Command) ([]string, error) {
+	//No error if cmd is empty
+	if reflect.DeepEqual(cmd, v1alpha2.Command{}) {
+		return nil, nil
+	}
+
+	commandType, err := common.GetCommandType(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	hasComponent := func(n string) bool {
+		_, ok, _ := findComponentByNameAndType(devfileObj, n, v1alpha2.ContainerComponentType)
+		return ok
+	}
+
+	switch commandType {
+	case v1alpha2.ExecCommandType:
+		if hasComponent(cmd.Exec.Component) {
+			return []string{cmd.Exec.Component}, nil
+		}
+		return nil, nil
+	case v1alpha2.ApplyCommandType:
+		if hasComponent(cmd.Apply.Component) {
+			return []string{cmd.Apply.Component}, nil
+		}
+		return nil, nil
+	case v1alpha2.CompositeCommandType:
+		var commandsMap map[string]v1alpha2.Command
+		commandsMap, err = allCommandsMap(devfileObj)
+		if err != nil {
+			return nil, err
+		}
+
+		var res []string
+		set := make(map[string]bool)
+		var componentsForCommand []string
+		for _, c := range cmd.Composite.Commands {
+			fromCommandMap, present := commandsMap[strings.ToLower(c)]
+			if !present {
+				return nil, fmt.Errorf("command %q not found in all commands map", c)
+			}
+			componentsForCommand, err = GetContainerComponentsForCommand(devfileObj, fromCommandMap)
+			if err != nil {
+				return nil, err
+			}
+			for _, s := range componentsForCommand {
+				if _, ok := set[s]; !ok && hasComponent(s) {
+					set[s] = true
+					res = append(res, s)
+				}
+			}
+		}
+
+		return res, nil
+
+	default:
+		return nil, fmt.Errorf("type not handled for command %q: %v", cmd.Id, commandType)
+	}
+}
+
 // GetK8sManifestWithVariablesSubstituted returns the full content of either a Kubernetes or an Openshift
 // Devfile component, either Inlined or referenced via a URI.
 // No matter how the component is defined, it returns the content with all variables substituted
@@ -508,4 +565,18 @@ func substituteVariables(devfileVars map[string]string, val string) (string, err
 	}
 
 	return val, nil
+}
+
+// findComponentByNameAndType returns the Devfile component that matches the specified name and type.
+func findComponentByNameAndType(d parser.DevfileObj, n string, t v1alpha2.ComponentType) (v1alpha2.Component, bool, error) {
+	comps, err := d.Data.GetComponents(common.DevfileOptions{ComponentOptions: common.ComponentOptions{ComponentType: t}})
+	if err != nil {
+		return v1alpha2.Component{}, false, err
+	}
+	for _, c := range comps {
+		if c.Name == n {
+			return c, true, nil
+		}
+	}
+	return v1alpha2.Component{}, false, nil
 }

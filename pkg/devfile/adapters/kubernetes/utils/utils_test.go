@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -307,6 +308,37 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 		Kind:      devfilev1.DebugCommandGroupKind,
 	}
 	defaultArgs := []string{"-f", "/dev/null"}
+
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+	devfileData.SetMetadata(devfilepkg.DevfileMetadata{Name: "my-app"})
+	_ = devfileData.AddCommands([]devfilev1.Command{
+		{
+			Id: "debug-cmd",
+			CommandUnion: devfilev1.CommandUnion{
+				Exec: &devfilev1.ExecCommand{
+					Component: cmp,
+					LabeledCommand: devfilev1.LabeledCommand{
+						BaseCommand: devfilev1.BaseCommand{Group: &execDebugGroup},
+					},
+				},
+			},
+		},
+	})
+	_ = devfileData.AddComponents([]devfilev1.Component{
+		{
+			Name: cmp,
+			ComponentUnion: devfilev1.ComponentUnion{
+				Container: &devfilev1.ContainerComponent{
+					Container: devfilev1.Container{
+						Image: "my-image",
+					},
+				},
+			},
+		},
+	})
+	devfileObj := devfileParser.DevfileObj{
+		Data: devfileData,
+	}
 
 	tests := []struct {
 		name         string
@@ -631,7 +663,7 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "Case: custom run command with single environment variable",
@@ -817,56 +849,8 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddComponents([]devfilev1.Component{
-						{
-							Name: cmp,
-							ComponentUnion: devfilev1.ComponentUnion{
-								Container: &devfilev1.ContainerComponent{
-									Container: devfilev1.Container{
-										SourceMapping: "",
-									},
-								},
-							},
-						},
-						{
-							Name: debugComponent,
-							ComponentUnion: devfilev1.ComponentUnion{
-								Container: &devfilev1.ContainerComponent{
-									Container: devfilev1.Container{
-										SourceMapping: "",
-									},
-								},
-							},
-						},
-					})
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddCommands(tt.execCommands)
-					if err != nil {
-						t.Error(err)
-					}
-					return devfileData
-				}(),
-			}
 
-			containers, err := UpdateContainerEnvVars(devObj, tt.containers, tt.debugCommand, tt.debugPort)
-
-			if tt.wantErr {
-				if err != nil {
-					// return since we don't want to test anything further
-					return
-				}
-				t.Errorf("UpdateContainerEnvVars error = %v, wantErr %v", err, tt.wantErr)
-			} else if err != nil {
-				t.Errorf("UpdateContainerEnvVars: unexpected error %v", err)
-			}
+			containers, err := UpdateContainerEnvVars(devfileObj, tt.containers, "debug-cmd", tt.debugPort)
 
 			envDebugPortMatched := false
 
@@ -884,6 +868,10 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 						}
 					}
 				}
+			}
+
+			if tt.wantErr != (err != nil) {
+				t.Errorf("unexpected error, wantErr: %v, err: %v", tt.wantErr, err)
 			}
 
 			if len(tt.execCommands) >= 2 && !envDebugPortMatched {
