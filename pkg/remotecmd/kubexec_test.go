@@ -148,9 +148,15 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 		Id:         "my-exec-cmd",
 		CmdLine:    "tail -f /path/to/a/file",
 		WorkingDir: "/path/to/working/dir",
-		EnvVars: map[string]string{
-			"ENV_VAR1": "value1",
-			"ENV_VAR2": "value2",
+		EnvVars: []CommandEnvVar{
+			{
+				Key:   "ENV_VAR1",
+				Value: "value1",
+			},
+			{
+				Key:   "ENV_VAR2",
+				Value: "value2",
+			},
 		},
 	}
 	for _, tt := range []struct {
