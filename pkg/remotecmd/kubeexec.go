@@ -62,8 +62,8 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 	// deal with environment variables
 	cmdLine := def.CmdLine
 	envCommands := make([]string, 0, len(def.EnvVars))
-	for key, val := range def.EnvVars {
-		envCommands = append(envCommands, fmt.Sprintf("%s='%s'", key, val))
+	for _, envVar := range def.EnvVars {
+		envCommands = append(envCommands, fmt.Sprintf("%s='%s'", envVar.Key, envVar.Value))
 	}
 	var setEnvCmd string
 	if len(envCommands) != 0 {

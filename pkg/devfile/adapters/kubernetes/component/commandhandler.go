@@ -138,9 +138,9 @@ func devfileCommandToRemoteCmdDefinition(devfileCmd devfilev1.Command) (remotecm
 		return remotecmd.CommandDefinition{}, errors.New(" only Exec commands are supported")
 	}
 
-	envVars := make(map[string]string, len(devfileCmd.Exec.Env))
+	envVars := make([]remotecmd.CommandEnvVar, 0, len(devfileCmd.Exec.Env))
 	for _, e := range devfileCmd.Exec.Env {
-		envVars[e.Name] = e.Value
+		envVars = append(envVars, remotecmd.CommandEnvVar{Key: e.Name, Value: e.Value})
 	}
 
 	return remotecmd.CommandDefinition{

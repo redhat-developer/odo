@@ -40,14 +40,20 @@ type CommandDefinition struct {
 	WorkingDir string
 
 	// EnvVars are environment variables to set.
-	EnvVars map[string]string
+	EnvVars []CommandEnvVar
 
 	// CmdLine is the command-line that will get executed.
 	CmdLine string
+}
 
-	//// RedirectOutputToMain indicates whether to redirect this command output streams to the main (PID 1) one.
-	//// This can be useful to have the output of this command show up in `odo logs` or `kubectl logs`.
-	//RedirectOutputToMain bool
+// CommandEnvVar represents an environment variable used as part of running any CommandDefinition.
+type CommandEnvVar struct {
+
+	// Key of the environment variable.
+	Key string
+
+	// Value of the environment variable.
+	Value string
 }
 
 // CommandOutputHandler is a function that is expected to handle the output and error returned by a command executed.
