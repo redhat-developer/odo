@@ -78,31 +78,21 @@ func TestGetPushTimeout(t *testing.T) {
 	}
 	defer tempConfigFile.Close()
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
-	zeroValue := 0 * time.Second
+
 	nonzeroValue := 5 * time.Second
+
 	tests := []struct {
 		name           string
 		existingConfig Preference
 		want           time.Duration
 	}{
 		{
-			name:           "Case 1: Validating default value from test case",
+			name:           "Validating default value from test case",
 			existingConfig: Preference{},
 			want:           240,
 		},
-
 		{
-			name: "Case 2: Validating value 0 from configuration",
-			existingConfig: Preference{
-				OdoSettings: odoSettings{
-					PushTimeout: &zeroValue,
-				},
-			},
-			want: 0,
-		},
-
-		{
-			name: "Case 3: Validating value 5 from configuration",
+			name: "Validating value 5 from configuration",
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					PushTimeout: &nonzeroValue,
@@ -142,13 +132,13 @@ func TestGetTimeout(t *testing.T) {
 		want           time.Duration
 	}{
 		{
-			name:           "Case 1: validating value 1 from config in default case",
+			name:           "validating value 1 from config in default case",
 			existingConfig: Preference{},
 			want:           1,
 		},
 
 		{
-			name: "Case 2: validating value 0 from config",
+			name: "validating value 0 from config",
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					Timeout: &zeroValue,
@@ -158,7 +148,7 @@ func TestGetTimeout(t *testing.T) {
 		},
 
 		{
-			name: "Case 3: validating value 5 from config",
+			name: "validating value 5 from config",
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					Timeout: &nonzeroValue,
@@ -192,7 +182,7 @@ func TestSetConfiguration(t *testing.T) {
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
-	zeroValue := 0 * time.Second
+	minValue := minimumDurationValue
 
 	tests := []struct {
 		name           string
@@ -204,7 +194,7 @@ func TestSetConfiguration(t *testing.T) {
 	}{
 		// update notification
 		{
-			name:           fmt.Sprintf("Case 1: %s set nil to true", UpdateNotificationSetting),
+			name:           fmt.Sprintf("%s set nil to true", UpdateNotificationSetting),
 			parameter:      UpdateNotificationSetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -212,7 +202,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:      fmt.Sprintf("Case 2: %s set true to false", UpdateNotificationSetting),
+			name:      fmt.Sprintf("%s set true to false", UpdateNotificationSetting),
 			parameter: UpdateNotificationSetting,
 			value:     "false",
 			existingConfig: Preference{
@@ -224,7 +214,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      fmt.Sprintf("Case 3: %s set false to true", UpdateNotificationSetting),
+			name:      fmt.Sprintf("%s set false to true", UpdateNotificationSetting),
 			parameter: UpdateNotificationSetting,
 			value:     "true",
 			existingConfig: Preference{
@@ -237,7 +227,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 
 		{
-			name:           fmt.Sprintf("Case 4: %s invalid value", UpdateNotificationSetting),
+			name:           fmt.Sprintf("%s invalid value", UpdateNotificationSetting),
 			parameter:      UpdateNotificationSetting,
 			value:          "invalid_value",
 			existingConfig: Preference{},
@@ -245,19 +235,19 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// time out
 		{
-			name:      fmt.Sprintf("Case 5: %s set to 5 from 0", TimeoutSetting),
+			name:      fmt.Sprintf("%s set to 5 from 0", TimeoutSetting),
 			parameter: TimeoutSetting,
 			value:     "5s",
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
-					Timeout: &zeroValue,
+					Timeout: &minValue,
 				},
 			},
 			want:    5 * time.Second,
 			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 6: %s set to 300", TimeoutSetting),
+			name:           fmt.Sprintf("%s set to 300", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "5m",
 			existingConfig: Preference{},
@@ -265,22 +255,21 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           fmt.Sprintf("Case 7: %s set to 0", TimeoutSetting),
+			name:           fmt.Sprintf("%s set to 0", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "0s",
 			existingConfig: Preference{},
-			want:           0 * time.Second,
-			wantErr:        false,
+			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 9: %s invalid value", TimeoutSetting),
+			name:           fmt.Sprintf("%s invalid value", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "this",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 10: %s set to 300 with mixed case in parameter name", TimeoutSetting),
+			name:           fmt.Sprintf("%s set to 300 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "TimeOut",
 			value:          "5m",
 			existingConfig: Preference{},
@@ -289,28 +278,34 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// invalid parameter
 		{
-			name:           "Case 11: invalid parameter",
+			name:           "invalid parameter",
 			parameter:      "invalid_parameter",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 12: %s set to 0", TimeoutSetting),
+			name:           fmt.Sprintf("%s set to 0", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "0s",
 			existingConfig: Preference{},
-			want:           0 * time.Second,
-			wantErr:        false,
+			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 13: %s invalid value", TimeoutSetting),
+			name:           fmt.Sprintf("%s invalid value", TimeoutSetting),
 			parameter:      TimeoutSetting,
 			value:          "invalid",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 14: %s set to 99 with mixed case in parameter name", TimeoutSetting),
+			name:           fmt.Sprintf("%s negative value", TimeoutSetting),
+			parameter:      TimeoutSetting,
+			value:          "-5s",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
+		{
+			name:           fmt.Sprintf("%s set to 99 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "PushTimeout",
 			value:          "99s",
 			existingConfig: Preference{},
@@ -318,7 +313,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           "Case 15: set RegistryCacheTime to 1 minutes",
+			name:           "set RegistryCacheTime to 1 minutes",
 			parameter:      "RegistryCacheTime",
 			value:          "1m",
 			existingConfig: Preference{},
@@ -326,21 +321,21 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:           "Case 16: set RegistryCacheTime to non int value",
+			name:           "set RegistryCacheTime to non int value",
 			parameter:      "RegistryCacheTime",
 			value:          "a",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 17: set %s to non bool value", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("set %s to non bool value", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "123",
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 18: set %s from nil to true", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("set %s from nil to true", ConsentTelemetrySetting),
 			parameter:      ConsentTelemetrySetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -348,7 +343,7 @@ func TestSetConfiguration(t *testing.T) {
 			want:           true,
 		},
 		{
-			name:      fmt.Sprintf("Case 19: set %s from true to false", ConsentTelemetrySetting),
+			name:      fmt.Sprintf("set %s from true to false", ConsentTelemetrySetting),
 			parameter: ConsentTelemetrySetting,
 			value:     "false",
 			existingConfig: Preference{
@@ -422,12 +417,12 @@ func TestConsentTelemetry(t *testing.T) {
 		want           bool
 	}{
 		{
-			name:           fmt.Sprintf("Case 1: %s nil", ConsentTelemetrySetting),
+			name:           fmt.Sprintf("%s nil", ConsentTelemetrySetting),
 			existingConfig: Preference{},
 			want:           false,
 		},
 		{
-			name: fmt.Sprintf("Case 2: %s true", ConsentTelemetrySetting),
+			name: fmt.Sprintf("%s true", ConsentTelemetrySetting),
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					ConsentTelemetry: &trueValue,
@@ -436,7 +431,7 @@ func TestConsentTelemetry(t *testing.T) {
 			want: true,
 		},
 		{
-			name: fmt.Sprintf("Case 3: %s false", ConsentTelemetrySetting),
+			name: fmt.Sprintf("%s false", ConsentTelemetrySetting),
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					ConsentTelemetry: &falseValue,
@@ -478,12 +473,12 @@ func TestGetupdateNotification(t *testing.T) {
 		want           bool
 	}{
 		{
-			name:           fmt.Sprintf("Case 1: %s nil", UpdateNotificationSetting),
+			name:           fmt.Sprintf("%s nil", UpdateNotificationSetting),
 			existingConfig: Preference{},
 			want:           true,
 		},
 		{
-			name: fmt.Sprintf("Case 2: %s true", UpdateNotificationSetting),
+			name: fmt.Sprintf("%s true", UpdateNotificationSetting),
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					UpdateNotification: &trueValue,
@@ -492,7 +487,7 @@ func TestGetupdateNotification(t *testing.T) {
 			want: true,
 		},
 		{
-			name: fmt.Sprintf("Case 3: %s false", UpdateNotificationSetting),
+			name: fmt.Sprintf("%s false", UpdateNotificationSetting),
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					UpdateNotification: &falseValue,
@@ -603,7 +598,7 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 		want         []Registry
 	}{
 		{
-			name:         "Case 1: Add registry",
+			name:         "Add registry",
 			registryList: []Registry{},
 			operation:    "add",
 			registryName: "testName",
@@ -616,7 +611,7 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 			},
 		},
 		{
-			name:         "Case 2: Update registry",
+			name:         "Update registry",
 			registryList: []Registry{},
 			operation:    "update",
 			registryName: "testName",
@@ -624,7 +619,7 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 			want:         nil,
 		},
 		{
-			name:         "Case 3: Delete registry",
+			name:         "Delete registry",
 			registryList: []Registry{},
 			operation:    "delete",
 			registryName: "testName",
@@ -659,7 +654,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 		want         []Registry
 	}{
 		{
-			name:  "Case 1: Add registry",
+			name:  "Add registry",
 			index: 0,
 			registryList: []Registry{
 				{
@@ -674,7 +669,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 			want:         nil,
 		},
 		{
-			name:  "Case 2: update registry",
+			name:  "update registry",
 			index: 0,
 			registryList: []Registry{
 				{
@@ -694,7 +689,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 			},
 		},
 		{
-			name:  "Case 3: Delete registry",
+			name:  "Delete registry",
 			index: 0,
 			registryList: []Registry{
 				{
@@ -737,12 +732,12 @@ func TestGetConsentTelemetry(t *testing.T) {
 		existingConfig Preference
 		want           bool
 	}{{
-		name:           fmt.Sprintf("Case 1: %s nil", ConsentTelemetrySetting),
+		name:           fmt.Sprintf("%s nil", ConsentTelemetrySetting),
 		existingConfig: Preference{},
 		want:           false,
 	},
 		{
-			name: fmt.Sprintf("Case 2: %s true", ConsentTelemetrySetting),
+			name: fmt.Sprintf("%s true", ConsentTelemetrySetting),
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					ConsentTelemetry: &trueValue,
@@ -751,7 +746,7 @@ func TestGetConsentTelemetry(t *testing.T) {
 			want: true,
 		},
 		{
-			name: fmt.Sprintf("Case 3: %s false", ConsentTelemetrySetting),
+			name: fmt.Sprintf("%s false", ConsentTelemetrySetting),
 			existingConfig: Preference{
 				OdoSettings: odoSettings{
 					ConsentTelemetry: &falseValue,
