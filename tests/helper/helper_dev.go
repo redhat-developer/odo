@@ -184,8 +184,8 @@ func (o DevSession) CheckNotSynced(timeout time.Duration) {
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
 // The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
 // and a slice of strings - ports - giving the redirections in the form localhost:<port_number> to access ports opened by component
-func RunDevMode(inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
-	session, outContents, errContents, urls, err := StartDevMode()
+func RunDevMode(additionalOpts []string, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
+	session, outContents, errContents, urls, err := StartDevMode(additionalOpts...)
 	if err != nil {
 		return err
 	}
