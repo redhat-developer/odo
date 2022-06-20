@@ -2,7 +2,6 @@ package preference
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -53,11 +52,6 @@ func (o *ViewOptions) Validate() (err error) {
 func (o *ViewOptions) Run(ctx context.Context) (err error) {
 	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
 	registryList := o.clientset.PreferenceClient.RegistryList()
-	if registryList == nil || len(*registryList) == 0 {
-		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
-		return errors.New("No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one")
-		//revive:enable:error-strings
-	}
 	HumanReadableOutput(preferenceList, registryList)
 	return
 }
@@ -85,7 +79,11 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	registryT.SetStyle(tStyle)
 	registryT.SetOutputMirror(log.GetStdout())
 	registryT.AppendHeader(table.Row{"NAME", "URL", "SECURE"})
-	regList := *registryList
+
+	var regList []preference.Registry
+	if registryList != nil {
+		regList = *registryList
+	}
 	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
 	for i := len(regList) - 1; i >= 0; i-- {
 		registry := regList[i]
@@ -99,6 +97,10 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	log.Info("Preference parameters:")
 	preferenceT.Render()
 	log.Info("\nDevfile registries:")
+	if registryList == nil || len(*registryList) == 0 {
+		log.Warning("No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one")
+		return
+	}
 	registryT.Render()
 }
 func showBlankIfNil(intf interface{}) interface{} {
