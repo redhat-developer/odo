@@ -6,6 +6,7 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
+	"github.com/kylelemons/godebug/pretty"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
@@ -37,38 +38,25 @@ var apiServiceBinding = api.ServiceBinding{
 	},
 }
 
-var bindingServiceBinding = v1alpha1.ServiceBinding{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: "my-nodejs-app-cluster-sample",
-		Labels: map[string]string{
-			"odo.dev/mode": "Dev",
-		},
-	},
-	Spec: v1alpha1.ServiceBindingSpec{
-		Application: v1alpha1.Application{
-			Ref: v1alpha1.Ref{
-				Group:   deploymentGVK.Group,
-				Version: deploymentGVK.Version,
-				Kind:    deploymentKind,
-				Name:    "my-nodejs-app-app",
-			},
-		},
-		Services: []v1alpha1.Service{
-			{
-				NamespacedRef: v1alpha1.NamespacedRef{
-					Ref: v1alpha1.Ref{
-						Group:   clusterGVK.Group,
-						Version: clusterGVK.Version,
-						Kind:    clusterKind,
-						Name:    "cluster-sample",
-					},
+var bindingServiceBinding = kclient.NewServiceBindingObject(
+	"my-nodejs-app-cluster-sample",
+	true,
+	"my-nodejs-app-app",
+	deploymentGVR,
+	nil,
+	[]v1alpha1.Service{
+		{
+			NamespacedRef: v1alpha1.NamespacedRef{
+				Ref: v1alpha1.Ref{
+					Group:   clusterGVK.Group,
+					Version: clusterGVK.Version,
+					Kind:    clusterKind,
+					Name:    "cluster-sample",
 				},
 			},
 		},
-		BindAsFiles:            true,
-		DetectBindingResources: true,
 	},
-	Status: v1alpha1.ServiceBindingStatus{
+	v1alpha1.ServiceBindingStatus{
 		Conditions: []metav1.Condition{
 			{
 				Type:   bindingApis.InjectionReady,
@@ -77,7 +65,7 @@ var bindingServiceBinding = v1alpha1.ServiceBinding{
 		},
 		Secret: "asecret",
 	},
-}
+)
 
 var sbSecret = corev1.Secret{
 	Data: map[string][]byte{
@@ -86,6 +74,9 @@ var sbSecret = corev1.Secret{
 }
 
 func TestBindingClient_ListAllBindings(t *testing.T) {
+	bindingServiceBinding.SetLabels(map[string]string{
+		"odo.dev/mode": "Dev",
+	})
 	type fields struct {
 		kubernetesClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
@@ -133,10 +124,10 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListServiceBindingsFromAllGroups().Return(nil, []v1alpha1.ServiceBinding{
-						bindingServiceBinding,
+						*bindingServiceBinding,
 					}, nil)
 					client.EXPECT().GetBindingServiceBinding(gomock.Any()).Return(
-						bindingServiceBinding,
+						*bindingServiceBinding,
 						nil,
 					).AnyTimes()
 					client.EXPECT().GetCurrentNamespace().Return("anamespace").AnyTimes()
@@ -181,10 +172,10 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().ListServiceBindingsFromAllGroups().Return(nil, []v1alpha1.ServiceBinding{
-						bindingServiceBinding,
+						*bindingServiceBinding,
 					}, nil)
 					client.EXPECT().GetBindingServiceBinding(gomock.Any()).Return(
-						bindingServiceBinding,
+						*bindingServiceBinding,
 						nil,
 					).AnyTimes()
 					client.EXPECT().GetCurrentNamespace().Return("anamespace").AnyTimes()
@@ -234,10 +225,10 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BindingClient.ListAllBindings() got = %v, want %v", got, tt.want)
+				t.Errorf("BindingClient.ListAllBindings(): %v ", pretty.Compare(got, tt.want))
 			}
 			if !reflect.DeepEqual(gotInDevfile, tt.wantInDevfile) {
-				t.Errorf("BindingClient.ListAllBindings() gotInDevfile = %v, want %v", gotInDevfile, tt.wantInDevfile)
+				t.Errorf("BindingClient.ListAllBindings(): %v", pretty.Compare(gotInDevfile, tt.wantInDevfile))
 			}
 		})
 	}

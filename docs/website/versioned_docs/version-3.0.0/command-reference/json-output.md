@@ -304,7 +304,7 @@ $ odo list binding -o json
 }
 
 With the same Devfile, when `odo dev` is running, you get an output similar to
-(note the `status` field):
+(note the `.bindings[*].status` field):
 
 
 ```shell
@@ -357,7 +357,7 @@ $ odo list binding -o json
 ```
 
 When `odo dev` is running, if you execute the command from a directory without Devfile,
-you get an output similar to (note that the `bindingsInDevfile` field is not present anymore):
+you get an output similar to (note that the `.bindingsInDevfile` field is not present anymore):
 
 
 ```shell

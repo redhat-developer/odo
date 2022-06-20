@@ -10,21 +10,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type BindingList struct {
+// BindingSet represents a Set of Bindings, indexed by their names
+type BindingSet struct {
 	m map[string]api.ServiceBinding
 }
 
-func newBindingList() BindingList {
-	return BindingList{
+// newBindingSet creates a new empty Set of Bindings
+func newBindingSet() BindingSet {
+	return BindingSet{
 		m: map[string]api.ServiceBinding{},
 	}
 }
 
-func (o *BindingList) add(binding api.ServiceBinding) {
+// add a new Binding to the set, overriding the value of a previous
+// binding with the same name
+func (o *BindingSet) add(binding api.ServiceBinding) {
 	o.m[binding.Name] = binding
 }
 
-func (o *BindingList) toArray() []api.ServiceBinding {
+// toArray returns the list of bindings in the Set as an array, ordered by their names
+func (o *BindingSet) toArray() []api.ServiceBinding {
 	var result []api.ServiceBinding
 	for _, v := range o.m {
 		result = append(result, v)
@@ -35,9 +40,11 @@ func (o *BindingList) toArray() []api.ServiceBinding {
 	return result
 }
 
+// ListAllBindings returns the list of Service Binding resources either defined in local Devfile
+// or deployed in the current namespace
 func (o *BindingClient) ListAllBindings(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
 
-	bindingList := newBindingList()
+	bindingList := newBindingSet()
 	var namesInDevfile []string
 
 	if devfileObj.Data != nil {
@@ -76,9 +83,9 @@ func (o *BindingClient) ListAllBindings(devfileObj parser.DevfileObj, context st
 }
 
 // process gets information about the sb from the cluster
-// and adds the running Mode accoring to its labels
+// and adds the running Mode according to its labels
 // then adds it to the bindingList if not already in the list
-func (o *BindingClient) process(bindingList BindingList, sb metav1.Object) (BindingList, error) {
+func (o *BindingClient) process(bindingList BindingSet, sb metav1.Object) (BindingSet, error) {
 	name := sb.GetName()
 	var info api.ServiceBinding
 	info, err := o.GetBindingFromCluster(name)

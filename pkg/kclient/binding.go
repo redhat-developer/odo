@@ -98,7 +98,15 @@ func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured
 }
 
 // NewServiceBindingObject returns the bindingApi.ServiceBinding object
-func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentName string, deploymentGVR schema.GroupVersionResource, mappings []bindingApi.Mapping, services []bindingApi.Service) *bindingApi.ServiceBinding {
+func NewServiceBindingObject(
+	bindingName string,
+	bindAsFiles bool,
+	deploymentName string,
+	deploymentGVR schema.GroupVersionResource,
+	mappings []bindingApi.Mapping,
+	services []bindingApi.Service,
+	status bindingApi.ServiceBindingStatus,
+) *bindingApi.ServiceBinding {
 	return &bindingApi.ServiceBinding{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: bindingApi.GroupVersion.String(),
@@ -121,6 +129,7 @@ func NewServiceBindingObject(bindingName string, bindAsFiles bool, deploymentNam
 			Mappings: mappings,
 			Services: services,
 		},
+		Status: status,
 	}
 }
 
@@ -162,6 +171,10 @@ func (c Client) GetSpecServiceBinding(name string) (specApi.ServiceBinding, erro
 	return result, nil
 }
 
+// ListServiceBindingsFromAllGroups returns the list of ServiceBindings in the cluster
+// in the current namespace.
+// The first list on the result contains ServiceBinding resources from group servicebinding.io/v1alpha3
+// the second list contains ServiceBinding resources from group binding.operators.coreos.com/v1alpha1
 func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error) {
 	if c.DynamicClient == nil {
 		return nil, nil, nil
@@ -238,7 +251,7 @@ func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) 
 	}, nil
 }
 
-// ServiceBindingFromSpec returns a common api.ServiceBinding structure
+// APIServiceBindingFromSpec returns a common api.ServiceBinding structure
 // from a ServiceBinding.servicebinding.io/v1alpha3
 func (c Client) APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding {
 

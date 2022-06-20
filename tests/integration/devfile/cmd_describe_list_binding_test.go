@@ -87,12 +87,12 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				res := helper.Cmd("odo", "list", "binding").ShouldPass()
 				stdout, _ := res.Out(), res.Err()
 				lines := strings.Split(stdout, "\n")
-				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
-				Expect(lines[2]).To(ContainSubstring("* "))
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
-				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-				Expect(lines[2]).To(ContainSubstring("None"))
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+				Expect(lines[3]).To(ContainSubstring("* "))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[3]).To(ContainSubstring("None"))
 			})
 		})
 	})
@@ -160,16 +160,16 @@ var _ = Describe("odo describe/list binding command tests", func() {
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
-				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
 				if devfile {
-					Expect(lines[2]).To(ContainSubstring("* "))
+					Expect(lines[3]).To(ContainSubstring("* "))
 				} else {
-					Expect(lines[2]).ToNot(ContainSubstring("* "))
+					Expect(lines[3]).ToNot(ContainSubstring("* "))
 				}
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
-				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-				Expect(lines[2]).To(ContainSubstring("Dev"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[3]).To(ContainSubstring("Dev"))
 			},
 		},
 		{
@@ -227,16 +227,16 @@ var _ = Describe("odo describe/list binding command tests", func() {
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
-				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
 				if devfile {
-					Expect(lines[2]).To(ContainSubstring("* "))
+					Expect(lines[3]).To(ContainSubstring("* "))
 				} else {
-					Expect(lines[2]).ToNot(ContainSubstring("* "))
+					Expect(lines[3]).ToNot(ContainSubstring("* "))
 				}
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
-				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-				Expect(lines[2]).To(ContainSubstring("Dev"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[3]).To(ContainSubstring("Dev"))
 			},
 		},
 		{
@@ -294,16 +294,16 @@ var _ = Describe("odo describe/list binding command tests", func() {
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
-				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
 				if devfile {
-					Expect(lines[2]).To(ContainSubstring("* "))
+					Expect(lines[3]).To(ContainSubstring("* "))
 				} else {
-					Expect(lines[2]).ToNot(ContainSubstring("* "))
+					Expect(lines[3]).ToNot(ContainSubstring("* "))
 				}
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
-				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-				Expect(lines[2]).To(ContainSubstring("Dev"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[3]).To(ContainSubstring("Dev"))
 			},
 		},
 		{
@@ -362,16 +362,16 @@ var _ = Describe("odo describe/list binding command tests", func() {
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
-				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("ServiceBindings in the %q namespace", commonVar.Project)))
+				Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
 				if devfile {
-					Expect(lines[2]).To(ContainSubstring("* "))
+					Expect(lines[3]).To(ContainSubstring("* "))
 				} else {
-					Expect(lines[2]).ToNot(ContainSubstring("* "))
+					Expect(lines[3]).ToNot(ContainSubstring("* "))
 				}
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
-				Expect(lines[2]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
-				Expect(lines[2]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-				Expect(lines[2]).To(ContainSubstring("Dev"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+				Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+				Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+				Expect(lines[3]).To(ContainSubstring("Dev"))
 			},
 		},
 	} {

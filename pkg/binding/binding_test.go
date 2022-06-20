@@ -20,12 +20,14 @@ import (
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 )
 
-var deploymentKind = "Deployment"
+const deploymentKind = "Deployment"
+
 var deploymentGVR = appsv1.SchemeGroupVersion.WithResource("deployments")
 var deploymentGVK = appsv1.SchemeGroupVersion.WithKind(deploymentKind)
 var deploymentApiVersion, _ = deploymentGVK.ToAPIVersionAndKind()
 
-var clusterKind = "Cluster"
+const clusterKind = "Cluster"
+
 var clusterGV = schema.GroupVersion{
 	Group:   "postgresql.k8s.enterprisedb.io",
 	Version: "v1",

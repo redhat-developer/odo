@@ -223,7 +223,7 @@ func humanReadableOutput(list api.ResourcesList) {
 		{Name: "NAME", Mode: table.Dsc},
 	})
 
-	// Go through each componment and add it to the table
+	// Go through each component and add it to the table
 	for _, comp := range components {
 
 		// Mark the name as yellow in the index to it's easier to see.

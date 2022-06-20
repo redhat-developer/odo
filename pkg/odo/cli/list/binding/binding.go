@@ -3,7 +3,6 @@ package binding
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -79,11 +78,17 @@ func (o *BindingListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo list binding command
 func (o *BindingListOptions) Run(ctx context.Context) error {
+	listSpinner := log.Spinnerf("Listing ServiceBindings from the namespace %q", o.clientset.KubernetesClient.GetCurrentNamespace())
+	defer listSpinner.End(false)
+
 	list, err := o.run(ctx)
 	if err != nil {
 		return err
 	}
-	HumanReadableOutput(os.Stdout, o.clientset.KubernetesClient.GetCurrentNamespace(), list)
+
+	listSpinner.End(true)
+
+	HumanReadableOutput(o.clientset.KubernetesClient.GetCurrentNamespace(), list)
 	return nil
 }
 
@@ -122,15 +127,13 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 }
 
 // HumanReadableOutput outputs the list of bindings in a human readable format
-func HumanReadableOutput(w io.Writer, namespace string, list api.ResourcesList) {
+func HumanReadableOutput(namespace string, list api.ResourcesList) {
 	bindings := list.Bindings
 	if len(bindings) == 0 {
 		log.Errorf("There are no service bindings in the %q namespace.", namespace)
 		return
 
 	}
-
-	fmt.Printf("ServiceBindings in the %q namespace:\n", namespace)
 
 	t := ui.NewTable()
 
@@ -161,10 +164,14 @@ func HumanReadableOutput(w io.Writer, namespace string, list api.ResourcesList) 
 			if i > 0 {
 				services += "\n"
 			}
-			services += fmt.Sprintf("%s (%s.%s)",
+			group := schema.FromAPIVersionAndKind(serviceSpec.APIVersion, "").Group
+			if group != "" {
+				group = "." + group
+			}
+			services += fmt.Sprintf("%s (%s%s)",
 				serviceSpec.Name,
 				serviceSpec.Kind,
-				schema.FromAPIVersionAndKind(serviceSpec.APIVersion, "").Group,
+				group,
 			)
 		}
 
