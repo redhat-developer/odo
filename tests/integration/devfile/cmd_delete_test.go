@@ -36,7 +36,7 @@ var _ = Describe("odo delete command tests", func() {
 	}{
 		{
 			title:       "a component is bootstrapped",
-			devfileName: "devfile-deploy-with-multiple-resources",
+			devfileName: "devfile-deploy-with-multiple-resources.yaml",
 		},
 		{
 			title:       "a component is bootstrapped using a devfile.yaml with URI-referenced Kubernetes components",
@@ -48,6 +48,8 @@ var _ = Describe("odo delete command tests", func() {
 			},
 		},
 	} {
+		// this is a workaround to ensure that the for loop works with `It` blocks
+		ctx := ctx
 		When(ctx.title, func() {
 			BeforeEach(func() {
 				// Hardcoded names from `ctx.devfileName`

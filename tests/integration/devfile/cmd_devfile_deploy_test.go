@@ -61,6 +61,8 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			},
 		},
 	} {
+		// this is a workaround to ensure that the for loop works with `It` blocks
+		ctx := ctx
 
 		When(ctx.title, func() {
 			// from devfile
@@ -214,6 +216,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				},
 			},
 		} {
+			// this is a workaround to ensure that the for loop works with `It` blocks
+			scope := scope
+
 			It(fmt.Sprintf("should build image via %s if build context references PROJECT_SOURCE env var", scope.name), func() {
 				stdout := helper.Cmd("odo", "deploy").AddEnv(scope.envvars...).ShouldPass().Out()
 				lines, err := helper.ExtractLines(stdout)
@@ -258,6 +263,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				},
 			},
 		} {
+			// this is a workaround to ensure that the for loop works with `It` blocks
+			scope := scope
+
 			It(fmt.Sprintf("should build image via %s by defaulting build context to devfile path", scope.name), func() {
 				stdout := helper.Cmd("odo", "deploy").AddEnv(scope.envvars...).ShouldPass().Out()
 				lines, err := helper.ExtractLines(stdout)
