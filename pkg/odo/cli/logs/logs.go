@@ -135,15 +135,16 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	}
 
 	uniqueContainerNames := map[string]struct{}{}
-	errChan := make(chan error, len(containersLogs))
+	errChan := make(chan error)
 	wg := sync.WaitGroup{}
 	var mu sync.Mutex
 	for _, entry := range containersLogs {
 		for container, logs := range entry {
 			uniqueName := getUniqueContainerName(container, uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
+			l := logs
 			wg.Add(1)
-			go func(follow bool) {
+			go func(out io.Writer, follow bool) {
 				defer wg.Done()
 				colour := log.ColorPicker()
 				if !follow {
@@ -152,14 +153,14 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 					// of the next container
 					mu.Lock()
 				}
-				err = printLogs(uniqueName, logs, o.out, colour)
+				err = printLogs(uniqueName, l, out, colour)
 				if err != nil {
 					errChan <- err
 				}
 				if !follow {
 					mu.Unlock()
 				}
-			}(o.follow)
+			}(o.out, o.follow)
 		}
 	}
 	select {
