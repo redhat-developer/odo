@@ -2,16 +2,20 @@ package preference
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 	"reflect"
-	"text/tabwriter"
 
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 const viewCommandName = "view"
@@ -47,19 +51,56 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run(ctx context.Context) (err error) {
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
-	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(o.clientset.PreferenceClient.UpdateNotification()))
-	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.Timeout()))
-	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.PushTimeout()))
-	fmt.Fprintln(w, "RegistryCacheTime", "\t", showBlankIfNil(o.clientset.PreferenceClient.RegistryCacheTime()))
-	fmt.Fprintln(w, "Ephemeral", "\t", showBlankIfNil(o.clientset.PreferenceClient.EphemeralSourceVolume()))
-	fmt.Fprintln(w, "ConsentTelemetry", "\t", showBlankIfNil(o.clientset.PreferenceClient.ConsentTelemetry()))
-
-	w.Flush()
+	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
+	registryList := o.clientset.PreferenceClient.RegistryList()
+	if registryList == nil || len(*registryList) == 0 {
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return errors.New("No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one")
+		//revive:enable:error-strings
+	}
+	HumanReadableOutput(preferenceList, registryList)
 	return
 }
 
+func HumanReadableOutput(preferenceList preference.PreferenceList, registryList *[]preference.Registry) {
+	tStyle := table.Style{
+		Box: table.BoxStyle{PaddingLeft: " ", PaddingRight: " "},
+		Color: table.ColorOptions{
+			Header: text.Colors{text.FgHiGreen},
+		},
+	}
+	preferenceT := table.NewWriter()
+	preferenceT.SetStyle(tStyle)
+	preferenceT.SetOutputMirror(log.GetStdout())
+	preferenceT.AppendHeader(table.Row{"PARAMETER", "VALUE"})
+	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
+	for _, pref := range preferenceList.Items {
+		value := showBlankIfNil(pref.Value)
+		if reflect.DeepEqual(value, pref.Default) {
+			value = fmt.Sprintf("%v (default)", value)
+		}
+		preferenceT.AppendRow(table.Row{pref.Name, value})
+	}
+	registryT := table.NewWriter()
+	registryT.SetStyle(tStyle)
+	registryT.SetOutputMirror(log.GetStdout())
+	registryT.AppendHeader(table.Row{"NAME", "URL", "SECURE"})
+	regList := *registryList
+	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
+	for i := len(regList) - 1; i >= 0; i-- {
+		registry := regList[i]
+		secure := "No"
+		if registry.Secure {
+			secure = "Yes"
+		}
+		registryT.AppendRow(table.Row{registry.Name, registry.URL, secure})
+	}
+
+	log.Info("Preference parameters:")
+	preferenceT.Render()
+	log.Info("\nDevfile registries:")
+	registryT.Render()
+}
 func showBlankIfNil(intf interface{}) interface{} {
 	imm := reflect.ValueOf(intf)
 
