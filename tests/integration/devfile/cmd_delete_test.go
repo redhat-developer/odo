@@ -36,7 +36,7 @@ var _ = Describe("odo delete command tests", func() {
 	}{
 		{
 			title:       "a component is bootstrapped",
-			devfileName: "devfile-deploy-with-multiple-resources",
+			devfileName: "devfile-deploy-with-multiple-resources.yaml",
 		},
 		{
 			title:       "a component is bootstrapped using a devfile.yaml with URI-referenced Kubernetes components",
