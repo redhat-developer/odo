@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
@@ -42,6 +43,7 @@ type LogsOptions struct {
 	// flags
 	devMode    bool
 	deployMode bool
+	follow     bool
 }
 
 type logsMode string
@@ -119,7 +121,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	default:
 		mode = odolabels.ComponentAnyMode
 	}
-	containersLogs, err = o.clientset.LogsClient.GetLogsForMode(mode, o.componentName, o.Context.GetProject())
+	containersLogs, err = o.clientset.LogsClient.GetLogsForMode(mode, o.componentName, o.Context.GetProject(), o.follow)
 	if err != nil {
 		return err
 	}
@@ -133,17 +135,40 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	}
 
 	uniqueContainerNames := map[string]struct{}{}
+	errChan := make(chan error, len(containersLogs))
+	wg := sync.WaitGroup{}
+	var mu sync.Mutex
 	for _, entry := range containersLogs {
 		for container, logs := range entry {
 			uniqueName := getUniqueContainerName(container, uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
-			err = printLogs(uniqueName, logs, o.out)
-			if err != nil {
-				return err
-			}
+			wg.Add(1)
+			go func(follow bool) {
+				defer wg.Done()
+				colour := log.ColorPicker()
+				if !follow {
+					// ensure that only one go routine does printLogs at a time; this is helpful when logs are longer
+					// than just a few lines in that logs for each container are printed before starting printing those
+					// of the next container
+					mu.Lock()
+				}
+				err = printLogs(uniqueName, logs, o.out, colour)
+				if err != nil {
+					errChan <- err
+				}
+				if !follow {
+					mu.Unlock()
+				}
+			}(o.follow)
 		}
 	}
-
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		// do nothing
+	}
+	wg.Wait()
 	return nil
 }
 
@@ -173,18 +198,18 @@ func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string
 }
 
 // printLogs prints the logs of the containers with container name prefixed to the log message
-func printLogs(containerName string, rd io.ReadCloser, out io.Writer) error {
-	color.Set(log.ColorPicker())
-	defer color.Unset()
+func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour color.Attribute) error {
 	scanner := bufio.NewScanner(rd)
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		color.Set(colour)
 		_, err := fmt.Fprintln(out, containerName+": "+line)
 		if err != nil {
 			return err
 		}
+		color.Unset()
 	}
 
 	return nil
@@ -205,6 +230,7 @@ By default it shows logs of all containers running in both Dev and Deploy mode. 
 	}
 	logsCmd.Flags().BoolVar(&o.devMode, string(DevMode), false, "Show logs for containers running only in Dev mode")
 	logsCmd.Flags().BoolVar(&o.deployMode, string(DeployMode), false, "Show logs for containers running only in Deploy mode")
+	logsCmd.Flags().BoolVar(&o.follow, "follow", false, "Follow/tail the logs of the pods")
 
 	clientset.Add(logsCmd, clientset.LOGS, clientset.FILESYSTEM)
 	logsCmd.Annotations["command"] = "main"

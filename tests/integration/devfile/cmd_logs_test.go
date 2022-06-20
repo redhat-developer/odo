@@ -3,6 +3,7 @@ package devfile
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -80,6 +81,29 @@ var _ = Describe("odo logs command tests", func() {
 				out = helper.Cmd("odo", "logs", "--deploy").ShouldPass().Out()
 				Expect(out).To(ContainSubstring("no containers running in the specified mode for the component"))
 			})
+			When("--follow flag is specified", func() {
+				var logsSession helper.LogsSession
+				var err error
+
+				BeforeEach(func() {
+					logsSession, _, _, err = helper.StartLogsFollow("--dev")
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					logsSession.Kill()
+				})
+				It("should successfully follow logs of running component", func() {
+					var linesOfLogs int
+					Consistently(func() bool {
+						logs := logsSession.OutContents()
+						if len(string(logs)) < linesOfLogs {
+							return false
+						}
+						linesOfLogs = len(logs)
+						return true
+					}, 20*time.Second, 5).Should(BeTrue())
+				})
+			})
 		})
 
 		When("running in Deploy mode", func() {
@@ -101,6 +125,29 @@ var _ = Describe("odo logs command tests", func() {
 				// `odo logs --deploy`
 				out = helper.Cmd("odo", "logs", "--deploy").ShouldPass().Out()
 				helper.MatchAllInOutput(out, []string{"main:", "main[1]:", "main[2]:"})
+			})
+			When("--follow flag is specified", func() {
+				var logsSession helper.LogsSession
+				var err error
+
+				BeforeEach(func() {
+					logsSession, _, _, err = helper.StartLogsFollow("--deploy")
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					logsSession.Kill()
+				})
+				It("should successfully follow logs of running component", func() {
+					var linesOfLogs int
+					Consistently(func() bool {
+						logs := logsSession.OutContents()
+						if len(string(logs)) < linesOfLogs {
+							return false
+						}
+						linesOfLogs = len(logs)
+						return true
+					}, 20*time.Second, 5).Should(BeTrue())
+				})
 			})
 		})
 
@@ -135,6 +182,29 @@ var _ = Describe("odo logs command tests", func() {
 				// `odo logs --dev --deploy`
 				out = helper.Cmd("odo", "logs", "--deploy", "--dev").ShouldFail().Err()
 				Expect(out).To(ContainSubstring("pass only one of --dev or --deploy flags; pass no flag to see logs for both modes"))
+			})
+			When("--follow flag is specified", func() {
+				var logsSession helper.LogsSession
+				var err error
+
+				BeforeEach(func() {
+					logsSession, _, _, err = helper.StartLogsFollow()
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					logsSession.Kill()
+				})
+				It("should successfully follow logs of running component", func() {
+					var linesOfLogs int
+					Consistently(func() bool {
+						logs := logsSession.OutContents()
+						if len(string(logs)) < linesOfLogs {
+							return false
+						}
+						linesOfLogs = len(logs)
+						return true
+					}, 20*time.Second, 5).Should(BeTrue())
+				})
 			})
 		})
 	})
