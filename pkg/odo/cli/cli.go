@@ -10,6 +10,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/logs"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/add"
 	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
@@ -170,7 +171,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		// Simple way of checking to see if the command has a parent (if it doesn't, it does not exist)
 		if !command.HasParent() && len(args) > 0 {
-			fmt.Printf("unknown command '%s', type --help for a list of all commands\n", args[0])
+			fmt.Fprintf(log.GetStderr(), "unknown command '%s', type --help for a list of all commands\n", args[0])
 			os.Exit(1)
 		}
 		helpCmd(command, args)
