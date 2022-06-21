@@ -104,11 +104,6 @@ Restore succeeded.
 
   <TabItem value="java" label="Java (Spring Boot)">
 
-You can generate your code with either the:
-* Spring web interface
-* `spring` CLI
-
-**Generating a project through the Spring web interface:**
 For Java, we will use the [Spring Initializr](https://start.spring.io/) to generate the example source code:
 
 1. Navigate to [start.spring.io](https://start.spring.io/) 
@@ -116,21 +111,6 @@ For Java, we will use the [Spring Initializr](https://start.spring.io/) to gener
 3. Click on "Add" under "Dependencies"
 4. Select "Spring Web"
 5. Click "Generate" to generate and download the source code
-
-Finally, open a terminal and navigate to the directory.
-
-**Generating a project through the `spring` CLI:**
-
-```console
-$ spring init --dependencies=web --build=maven --language=java --java-version=11 my-springboot-project
-Using service at https://start.spring.io
-Project extracted to '/Users/user/my-springboot-project'
-```
-
-=======
-2. Click on "Add" under "Dependencies"
-3. Select "Spring Web"
-4. Click "Generate" to generate and download the source code
 
 Finally, open a terminal and navigate to the directory.
 
