@@ -99,22 +99,33 @@ func UpdateContainersEntrypointsIfNeeded(
 	devfileRunCmd string,
 	devfileDebugCmd string,
 ) ([]corev1.Container, error) {
-	buildCmd, err := libdevfile.GetBuildCommand(devfileObj.Data, devfileBuildCmd)
+	buildCommand, hasBuildCmd, err := libdevfile.GetCommand(devfileObj, devfileBuildCmd, v1alpha2.BuildCommandGroupKind)
 	if err != nil {
 		return nil, err
 	}
-	runCommand, err := libdevfile.GetRunCommand(devfileObj.Data, devfileRunCmd)
+	runCommand, hasRunCmd, err := libdevfile.GetCommand(devfileObj, devfileRunCmd, v1alpha2.RunCommandGroupKind)
 	if err != nil {
 		return nil, err
 	}
-	debugCommand, err := libdevfile.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
+	debugCommand, hasDebugCmd, err := libdevfile.GetCommand(devfileObj, devfileDebugCmd, v1alpha2.DebugCommandGroupKind)
 	if err != nil {
 		return nil, err
 	}
 
+	var cmdsToHandle []v1alpha2.Command
+	if hasBuildCmd {
+		cmdsToHandle = append(cmdsToHandle, buildCommand)
+	}
+	if hasRunCmd {
+		cmdsToHandle = append(cmdsToHandle, runCommand)
+	}
+	if hasDebugCmd {
+		cmdsToHandle = append(cmdsToHandle, debugCommand)
+	}
+
 	var components []string
 	var containerComps []string
-	for _, cmd := range []v1alpha2.Command{buildCmd, runCommand, debugCommand} {
+	for _, cmd := range cmdsToHandle {
 		containerComps, err = libdevfile.GetContainerComponentsForCommand(devfileObj, cmd)
 		if err != nil {
 			return nil, err
@@ -122,12 +133,11 @@ func UpdateContainersEntrypointsIfNeeded(
 		components = append(components, containerComps...)
 	}
 
-	for i := range containers {
-		container := &containers[i]
-		for _, c := range components {
+	for _, c := range components {
+		for i := range containers {
+			container := &containers[i]
 			if container.Name == c {
 				overrideContainerCommandAndArgsIfNeeded(container)
-				break
 			}
 		}
 	}
@@ -144,10 +154,14 @@ func UpdateContainerEnvVars(
 	devfileDebugPort int,
 ) ([]corev1.Container, error) {
 
-	debugCommand, err := libdevfile.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
+	debugCommand, hasDebugCmd, err := libdevfile.GetCommand(devfileObj, devfileDebugCmd, v1alpha2.DebugCommandGroupKind)
 	if err != nil {
 		return nil, err
 	}
+	if !hasDebugCmd {
+		return containers, nil
+	}
+
 	debugContainers, err := libdevfile.GetContainerComponentsForCommand(devfileObj, debugCommand)
 	if err != nil {
 		return nil, err

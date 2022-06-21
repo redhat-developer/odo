@@ -142,7 +142,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return err
 	}
 
-	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
@@ -158,9 +158,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	currentMode := envinfo.Run
 
 	if parameters.Debug {
-		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetDebugCommands(a.Devfile.Data, a.devfileDebugCmd)
+		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.Devfile, a.devfileDebugCmd, devfilev1.DebugCommandGroupKind)
 		if e != nil {
-			return fmt.Errorf("debug command is not valid: %w", err)
+			return fmt.Errorf("debug command is not valid: %w", e)
 		}
 		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
 		currentMode = envinfo.Debug
@@ -350,7 +350,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
 				"Building your application in container on cluster", parameters.Show)
-			return libdevfile.Build(a.Devfile, execHandler, true)
+			return libdevfile.Build(a.Devfile, execHandler)
 		}
 		if componentExists {
 			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
