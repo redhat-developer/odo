@@ -292,25 +292,25 @@ func (c *Client) removeDuplicateEnv(deploymentName string) error {
 
 // GetDeploymentAPIVersion returns a map with Group, Version, Resource information of Deployment objects
 // depending on the GVR supported by the cluster
-func (c *Client) GetDeploymentAPIVersion() (schema.GroupVersionResource, error) {
+func (c *Client) GetDeploymentAPIVersion() (schema.GroupVersionKind, error) {
 	extV1Beta1, err := c.IsDeploymentExtensionsV1Beta1()
 	if err != nil {
-		return schema.GroupVersionResource{}, err
+		return schema.GroupVersionKind{}, err
 	}
 
 	if extV1Beta1 {
 		// this indicates we're running on OCP 3.11 cluster
-		return schema.GroupVersionResource{
-			Group:    "extensions",
-			Version:  "v1beta1",
-			Resource: "deployments",
+		return schema.GroupVersionKind{
+			Group:   "extensions",
+			Version: "v1beta1",
+			Kind:    "Deployment",
 		}, nil
 	}
 
-	return schema.GroupVersionResource{
-		Group:    "apps",
-		Version:  "v1",
-		Resource: "deployments",
+	return schema.GroupVersionKind{
+		Group:   "apps",
+		Version: "v1",
+		Kind:    "Deployment",
 	}, nil
 }
 

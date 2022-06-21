@@ -174,7 +174,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 
 	var processingPipeline sboPipeline.Pipeline
 
-	deploymentGVR, err := client.GetDeploymentAPIVersion()
+	deploymentGVK, err := client.GetDeploymentAPIVersion()
 	if err != nil {
 		return false, err
 	}
@@ -191,10 +191,10 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 			newServiceBinding.Namespace = client.GetCurrentNamespace()
 			newServiceBinding.Spec.Application = sboApi.Application{
 				Ref: sboApi.Ref{
-					Name:     deployment.Name,
-					Group:    deploymentGVR.Group,
-					Version:  deploymentGVR.Version,
-					Resource: deploymentGVR.Resource,
+					Name:    deployment.Name,
+					Group:   deploymentGVK.Group,
+					Version: deploymentGVK.Version,
+					Kind:    deploymentGVK.Kind,
 				},
 			}
 			newServiceBinding.Status.Secret = secretName

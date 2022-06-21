@@ -545,10 +545,10 @@ func (mr *MockClientInterfaceMockRecorder) GetCustomResourcesFromCSV(csv interfa
 }
 
 // GetDeploymentAPIVersion mocks base method.
-func (m *MockClientInterface) GetDeploymentAPIVersion() (schema.GroupVersionResource, error) {
+func (m *MockClientInterface) GetDeploymentAPIVersion() (schema.GroupVersionKind, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeploymentAPIVersion")
-	ret0, _ := ret[0].(schema.GroupVersionResource)
+	ret0, _ := ret[0].(schema.GroupVersionKind)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

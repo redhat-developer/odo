@@ -51,7 +51,7 @@ type ClientInterface interface {
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
-	GetDeploymentAPIVersion() (schema.GroupVersionResource, error)
+	GetDeploymentAPIVersion() (schema.GroupVersionKind, error)
 	IsDeploymentExtensionsV1Beta1() (bool, error)
 
 	// dynamic.go

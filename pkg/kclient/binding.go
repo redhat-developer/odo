@@ -7,6 +7,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/api"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -19,6 +20,11 @@ const (
 	ServiceBindingKind    = "ServiceBinding"
 	BindableKindsResource = "bindablekinds"
 )
+
+var WorkloadKinds = []schema.GroupVersionKind{
+	appsv1.SchemeGroupVersion.WithKind("Deployment"),
+	appsv1.SchemeGroupVersion.WithKind("StatefulSet"),
+}
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
 func (c *Client) IsServiceBindingSupported() (bool, error) {
@@ -102,7 +108,7 @@ func NewServiceBindingObject(
 	bindingName string,
 	bindAsFiles bool,
 	deploymentName string,
-	deploymentGVR schema.GroupVersionResource,
+	deploymentGVK schema.GroupVersionKind,
 	mappings []bindingApi.Mapping,
 	services []bindingApi.Service,
 	status bindingApi.ServiceBindingStatus,
@@ -120,10 +126,10 @@ func NewServiceBindingObject(
 			BindAsFiles:            bindAsFiles,
 			Application: bindingApi.Application{
 				Ref: bindingApi.Ref{
-					Name:     deploymentName,
-					Group:    deploymentGVR.Group,
-					Version:  deploymentGVR.Version,
-					Resource: deploymentGVR.Resource,
+					Name:    deploymentName,
+					Group:   deploymentGVK.Group,
+					Version: deploymentGVK.Version,
+					Kind:    deploymentGVK.Kind,
 				},
 			},
 			Mappings: mappings,
