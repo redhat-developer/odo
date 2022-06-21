@@ -10,6 +10,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/odo/cli/logs"
 
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/add"
 	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
@@ -159,9 +160,22 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	verbosity := pflag.Lookup("v")
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
-	rootCmd.SetUsageTemplate(rootUsageTemplate)
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", capitalizeFlagDescriptions)
 	cobra.AddTemplateFunc("ModifyAdditionalFlags", modifyAdditionalFlags)
+	rootCmd.SetUsageTemplate(rootUsageTemplate)
+
+	// Create a custom help function that will exit when we enter an invalid command, for example:
+	// odo foobar --help
+	// which will exit with an error message: "unknown command 'foobar', type --help for a list of all commands"
+	helpCmd := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
+		// Simple way of checking to see if the command has a parent (if it doesn't, it does not exist)
+		if !command.HasParent() && len(args) > 0 {
+			fmt.Fprintf(log.GetStderr(), "unknown command '%s', type --help for a list of all commands\n", args[0])
+			os.Exit(1)
+		}
+		helpCmd(command, args)
+	})
 
 	rootCmdList := append([]*cobra.Command{},
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
