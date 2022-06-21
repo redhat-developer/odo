@@ -12,7 +12,8 @@ To know about the Operators supported by the Service Binding Operator, read its 
 
 ### Pre-requisites
 * A directory containing a Devfile; if you don't have one, see [odo init](init.md) on obtaining a devfile.
-* A cluster with the Service Binding Operator installed, along with the Operator whose service you want to bind to
+* A cluster with the Service Binding Operator installed (see installation instructions for [Kubernetes](../overview/cluster-setup/kubernetes.md#installing-the-service-binding-operator) and [OpenShift](../overview/cluster-setup/openshift.md#installing-the-service-binding-operator) cluster)
+* Operator-backed services or resources you want to bind your application to
 
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
