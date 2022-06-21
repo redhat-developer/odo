@@ -39,7 +39,7 @@ func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 	askerClient := asker.NewSurveyAsker()
 	return &BindingClient{
 		flagsBackend:       backendpkg.NewFlagsBackend(),
-		interactiveBackend: backendpkg.NewInteractiveBackend(askerClient),
+		interactiveBackend: backendpkg.NewInteractiveBackend(askerClient, kubernetesClient),
 		kubernetesClient:   kubernetesClient,
 	}
 }
@@ -49,7 +49,10 @@ func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 	bindingFlags := map[string]string{}
 	for flag, value := range flags {
-		if flag == backendpkg.FLAG_NAME || flag == backendpkg.FLAG_SERVICE || flag == backendpkg.FLAG_BIND_AS_FILES {
+		if flag == backendpkg.FLAG_NAME ||
+			flag == backendpkg.FLAG_WORKLOAD ||
+			flag == backendpkg.FLAG_SERVICE ||
+			flag == backendpkg.FLAG_BIND_AS_FILES {
 			bindingFlags[flag] = value
 		}
 	}

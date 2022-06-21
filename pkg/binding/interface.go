@@ -3,6 +3,7 @@ package binding
 import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -23,12 +24,16 @@ type Client interface {
 	ValidateAddBinding(flags map[string]string) error
 	// SelectServiceInstance returns the service to bind to the component
 	SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error)
+	// SelectWorkloadInstance returns the workload to bind, when a devfile is not in use
+	SelectWorkloadInstance(flags map[string]string) (string, schema.GroupVersionKind, error)
 	// AskBindingName returns the name to be set for the binding
 	AskBindingName(serviceName, componentName string, flags map[string]string) (string, error)
 	// AskBindAsFiles asks if the service should be bound as files
 	AskBindAsFiles(flags map[string]string) (bool, error)
-	// AddBinding adds the ServiceBinding manifest to the devfile
-	AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
+	// AddBindingToDevfile adds the ServiceBinding manifest to the devfile
+	AddBindingToDevfile(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
+	// AddBinding creates a binding in stdout, file, cluster
+	AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) error
 
 	// list.go
 

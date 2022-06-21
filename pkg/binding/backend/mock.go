@@ -8,7 +8,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	asker "github.com/redhat-developer/odo/pkg/binding/asker"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // MockAddBindingBackend is a mock of AddBindingBackend interface.
@@ -64,6 +66,21 @@ func (mr *MockAddBindingBackendMockRecorder) AskBindingName(defaultName, flags i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockAddBindingBackend)(nil).AskBindingName), defaultName, flags)
 }
 
+// SelectCreationOption mocks base method.
+func (m *MockAddBindingBackend) SelectCreationOption(flags map[string]string) (asker.CreationOption, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectCreationOption", flags)
+	ret0, _ := ret[0].(asker.CreationOption)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectCreationOption indicates an expected call of SelectCreationOption.
+func (mr *MockAddBindingBackendMockRecorder) SelectCreationOption(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectCreationOption", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectCreationOption), flags)
+}
+
 // SelectServiceInstance mocks base method.
 func (m *MockAddBindingBackend) SelectServiceInstance(serviceName string, serviceMap map[string]unstructured.Unstructured) (string, error) {
 	m.ctrl.T.Helper()
@@ -77,6 +94,22 @@ func (m *MockAddBindingBackend) SelectServiceInstance(serviceName string, servic
 func (mr *MockAddBindingBackendMockRecorder) SelectServiceInstance(serviceName, serviceMap interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectServiceInstance), serviceName, serviceMap)
+}
+
+// SelectWorkloadInstance mocks base method.
+func (m *MockAddBindingBackend) SelectWorkloadInstance(workloadName string) (string, schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectWorkloadInstance", workloadName)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(schema.GroupVersionKind)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// SelectWorkloadInstance indicates an expected call of SelectWorkloadInstance.
+func (mr *MockAddBindingBackendMockRecorder) SelectWorkloadInstance(workloadName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectWorkloadInstance", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectWorkloadInstance), workloadName)
 }
 
 // Validate mocks base method.

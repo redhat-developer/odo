@@ -633,6 +633,21 @@ func (mr *MockClientInterfaceMockRecorder) GetGVKFromGVR(gvr interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVKFromGVR", reflect.TypeOf((*MockClientInterface)(nil).GetGVKFromGVR), gvr)
 }
 
+// GetGVRFromGVK mocks base method.
+func (m *MockClientInterface) GetGVRFromGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGVRFromGVK", gvk)
+	ret0, _ := ret[0].(schema.GroupVersionResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGVRFromGVK indicates an expected call of GetGVRFromGVK.
+func (mr *MockClientInterfaceMockRecorder) GetGVRFromGVK(gvk interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVRFromGVK", reflect.TypeOf((*MockClientInterface)(nil).GetGVRFromGVK), gvk)
+}
+
 // GetNamespace mocks base method.
 func (m *MockClientInterface) GetNamespace(name string) (*v11.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -916,6 +931,22 @@ func (m *MockClientInterface) GetSpecServiceBinding(name string) (v1alpha3.Servi
 func (mr *MockClientInterfaceMockRecorder) GetSpecServiceBinding(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpecServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetSpecServiceBinding), name)
+}
+
+// GetWorkloadKinds mocks base method.
+func (m *MockClientInterface) GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorkloadKinds")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].([]schema.GroupVersionKind)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetWorkloadKinds indicates an expected call of GetWorkloadKinds.
+func (mr *MockClientInterfaceMockRecorder) GetWorkloadKinds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkloadKinds", reflect.TypeOf((*MockClientInterface)(nil).GetWorkloadKinds))
 }
 
 // IsCSVSupported mocks base method.

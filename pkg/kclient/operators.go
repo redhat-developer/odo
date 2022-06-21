@@ -211,6 +211,21 @@ func (c *Client) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVer
 	return mapper.KindFor(gvr)
 }
 
+func (c *Client) GetGVRFromGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	cfg := c.GetClientConfig()
+
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return schema.GroupVersionResource{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	mapping, err := mapper.RESTMapping(gvk.GroupKind())
+	if err != nil {
+		return schema.GroupVersionResource{}, err
+	}
+	return mapping.Resource, nil
+}
+
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
 func (c *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
 	var operatorGVRList []meta.RESTMapping

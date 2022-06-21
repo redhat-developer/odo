@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/redhat-developer/odo/pkg/api"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // MockClient is a mock of Client interface.
@@ -37,18 +38,32 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddBinding mocks base method.
-func (m *MockClient) AddBinding(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error) {
+func (m *MockClient) AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddBinding", bindingName, bindAsFiles, unstructuredService, obj)
+	ret := m.ctrl.Call(m, "AddBinding", flags, bindingName, bindAsFiles, unstructuredService, workloadName, workloadGVK)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddBinding indicates an expected call of AddBinding.
+func (mr *MockClientMockRecorder) AddBinding(flags, bindingName, bindAsFiles, unstructuredService, workloadName, workloadGVK interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), flags, bindingName, bindAsFiles, unstructuredService, workloadName, workloadGVK)
+}
+
+// AddBindingToDevfile mocks base method.
+func (m *MockClient) AddBindingToDevfile(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddBindingToDevfile", bindingName, bindAsFiles, unstructuredService, obj)
 	ret0, _ := ret[0].(parser.DevfileObj)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AddBinding indicates an expected call of AddBinding.
-func (mr *MockClientMockRecorder) AddBinding(bindingName, bindAsFiles, unstructuredService, obj interface{}) *gomock.Call {
+// AddBindingToDevfile indicates an expected call of AddBindingToDevfile.
+func (mr *MockClientMockRecorder) AddBindingToDevfile(bindingName, bindAsFiles, unstructuredService, obj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), bindingName, bindAsFiles, unstructuredService, obj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBindingToDevfile", reflect.TypeOf((*MockClient)(nil).AddBindingToDevfile), bindingName, bindAsFiles, unstructuredService, obj)
 }
 
 // AskBindAsFiles mocks base method.
@@ -184,6 +199,22 @@ func (m *MockClient) SelectServiceInstance(flags map[string]string, serviceMap m
 func (mr *MockClientMockRecorder) SelectServiceInstance(flags, serviceMap interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectServiceInstance", reflect.TypeOf((*MockClient)(nil).SelectServiceInstance), flags, serviceMap)
+}
+
+// SelectWorkloadInstance mocks base method.
+func (m *MockClient) SelectWorkloadInstance(flags map[string]string) (string, schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectWorkloadInstance", flags)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(schema.GroupVersionKind)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// SelectWorkloadInstance indicates an expected call of SelectWorkloadInstance.
+func (mr *MockClientMockRecorder) SelectWorkloadInstance(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectWorkloadInstance", reflect.TypeOf((*MockClient)(nil).SelectWorkloadInstance), flags)
 }
 
 // ValidateAddBinding mocks base method.

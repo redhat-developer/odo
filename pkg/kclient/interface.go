@@ -40,6 +40,7 @@ type ClientInterface interface {
 	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
 	APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) (api.ServiceBinding, error)
 	APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding
+	GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error)
 
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
@@ -98,6 +99,7 @@ type ClientInterface interface {
 	GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error)
 	GetOperatorGVRList() ([]meta.RESTMapping, error)
 	GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error)
+	GetGVRFromGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error)
 
 	// owner_reference.go
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
