@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/add"
 	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
+	"github.com/redhat-developer/odo/pkg/odo/cli/completion"
 	"github.com/redhat-developer/odo/pkg/odo/cli/create"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
@@ -30,7 +31,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/remove"
 	"github.com/redhat-developer/odo/pkg/odo/cli/set"
 	"github.com/redhat-developer/odo/pkg/odo/cli/telemetry"
-	"github.com/redhat-developer/odo/pkg/odo/cli/utils"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -181,7 +181,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
 		project.NewCmdProject(project.RecommendedCommandName, util.GetFullName(fullName, project.RecommendedCommandName)),
-		utils.NewCmdUtils(utils.RecommendedCommandName, util.GetFullName(fullName, utils.RecommendedCommandName)),
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
@@ -199,6 +198,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		create.NewCmdCreate(create.RecommendedCommandName, util.GetFullName(fullName, create.RecommendedCommandName)),
 		set.NewCmdSet(set.RecommendedCommandName, util.GetFullName(fullName, set.RecommendedCommandName)),
 		logs.NewCmdLogs(logs.RecommendedCommandName, util.GetFullName(fullName, logs.RecommendedCommandName)),
+		completion.NewCmdCompletion(completion.RecommendedCommandName, util.GetFullName(fullName, completion.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands
