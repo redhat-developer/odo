@@ -149,7 +149,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 				colour := log.ColorPicker()
 				if !follow {
 					// ensure that only one go routine does printLogs at a time; this is helpful when logs are longer
-					// than just a few lines in that logs for each container are printed before starting printing those
+					// than just a few lines in that logs for each container are printed before starting to print those
 					// of the next container
 					mu.Lock()
 				}
@@ -167,7 +167,10 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	case err := <-errChan:
 		return err
 	default:
-		// do nothing
+		// do nothing; this makes sure that we are not blocking on errChan channel
+		// without this default block, odo logs (without follow) will be stuck/blocked on getting something from
+		// errChan channel and the command won't exit.
+
 	}
 	wg.Wait()
 	return nil
