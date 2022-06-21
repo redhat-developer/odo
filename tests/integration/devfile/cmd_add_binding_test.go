@@ -16,9 +16,6 @@ var _ = Describe("odo add binding command tests", func() {
 	var err error
 
 	var _ = BeforeEach(func() {
-		if helper.IsKubernetesCluster() {
-			Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
-		}
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 		// Ensure that the operators are installed
