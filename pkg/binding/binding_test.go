@@ -20,13 +20,21 @@ import (
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 )
 
+const deploymentKind = "Deployment"
+
 var deploymentGVR = appsv1.SchemeGroupVersion.WithResource("deployments")
+var deploymentGVK = appsv1.SchemeGroupVersion.WithKind(deploymentKind)
+var deploymentApiVersion, _ = deploymentGVK.ToAPIVersionAndKind()
+
+const clusterKind = "Cluster"
+
 var clusterGV = schema.GroupVersion{
 	Group:   "postgresql.k8s.enterprisedb.io",
 	Version: "v1",
 }
-var clusterGVK = clusterGV.WithKind("Cluster")
+var clusterGVK = clusterGV.WithKind(clusterKind)
 var clusterGVR = clusterGV.WithResource("clusters")
+var ClusterAPIVersion, _ = clusterGVK.ToAPIVersionAndKind()
 
 func TestBindingClient_GetFlags(t *testing.T) {
 	type args struct {

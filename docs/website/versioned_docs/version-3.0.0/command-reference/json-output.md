@@ -259,6 +259,154 @@ $ odo registry --details -o json
 ]
 ```
 
+## odo list binding -o json
+
+The `odo list binding` command lists all service binding resources deployed in the current namespace,
+and all service binding resources declared in the Devfile, if executed from a component directory.
+
+The names of the Service Binding resources declared in the current Devfile are listed in the `bindingsInDevfile`
+field of the output.
+
+If a Service Binding resource is found in the current namespace, it also displays the variables that can be used from
+the component in the `status.bindingFiles` and/or `status.bindingEnvVars` fields.
+
+### Examples
+
+When a service binding resource is defined in the Devfile, and the component is not deployed, you get an output similar to:
+
+```shell
+$ odo list binding -o json
+{
+	"bindingsInDevfile": [
+		"my-nodejs-app-cluster-sample"
+	],
+	"bindings": [
+		{
+			"name": "my-nodejs-app-cluster-sample",
+			"spec": {
+				"application": {
+					"kind": "Deployment",
+					"name": "my-nodejs-app-app",
+					"apiVersion": "apps/v1"
+				},
+				"services": [
+					{
+						"kind": "Cluster",
+						"name": "cluster-sample",
+						"apiVersion": "postgresql.k8s.enterprisedb.io/v1"
+					}
+				],
+				"detectBindingResources": true,
+				"bindAsFiles": true
+			}
+		}
+	]
+}
+
+With the same Devfile, when `odo dev` is running, you get an output similar to
+(note the `.bindings[*].status` field):
+
+
+```shell
+$ odo list binding -o json
+{
+	"bindingsInDevfile": [
+		"my-nodejs-app-cluster-sample"
+	],
+	"bindings": [
+		{
+			"name": "my-nodejs-app-cluster-sample",
+			"spec": {
+				"application": {
+					"kind": "Deployment",
+					"name": "my-nodejs-app-app",
+					"apiVersion": "apps/v1"
+				},
+				"services": [
+					{
+						"kind": "Cluster",
+						"name": "cluster-sample",
+						"apiVersion": "postgresql.k8s.enterprisedb.io/v1"
+					}
+				],
+				"detectBindingResources": true,
+				"bindAsFiles": true
+			},
+			"status": {
+				"bindingFiles": [
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/database",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/host",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/pgpass",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/provider",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/type",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/username",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/ca.crt",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/ca.key",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/clusterIP",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.crt",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.key"
+				],
+				"runningIn": [
+					"Dev"
+				]
+			}
+		}
+	]
+}
+```
+
+When `odo dev` is running, if you execute the command from a directory without Devfile,
+you get an output similar to (note that the `.bindingsInDevfile` field is not present anymore):
+
+
+```shell
+$ odo list binding -o json
+{
+	"bindings": [
+		{
+			"name": "my-nodejs-app-cluster-sample",
+			"spec": {
+				"application": {
+					"kind": "Deployment",
+					"name": "my-nodejs-app-app",
+					"apiVersion": "apps/v1"
+				},
+				"services": [
+					{
+						"kind": "Cluster",
+						"name": "cluster-sample",
+						"apiVersion": "postgresql.k8s.enterprisedb.io/v1"
+					}
+				],
+				"detectBindingResources": true,
+				"bindAsFiles": true
+			},
+			"status": {
+				"bindingFiles": [
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/database",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/host",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/pgpass",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/provider",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/type",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/username",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/ca.crt",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/ca.key",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/clusterIP",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.crt",
+					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.key"
+				],
+				"runningIn": [
+					"Dev"
+				]
+			}
+		}
+	]
+}
+```
+
+
 ## odo describe binding -o json
 
 The `odo describe binding` command lists all the service binding resources declared in the devfile
@@ -276,6 +424,11 @@ $ odo describe binding -o json
 	{
 		"name": "my-first-binding",
 		"spec": {
+			"application": {
+				"kind": "Deployment",
+				"name": "my-nodejs-app-app",
+				"apiVersion": "apps/v1"
+			},
 			"services": [
 				{
 					"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
@@ -287,7 +440,7 @@ $ odo describe binding -o json
 			"bindAsFiles": true
 		},
 		"status": {
-			"bindingsFiles": [
+			"bindingFiles": [
 				"${SERVICE_BINDING_ROOT}/my-first-binding/host",
 				"${SERVICE_BINDING_ROOT}/my-first-binding/password",
 				"${SERVICE_BINDING_ROOT}/my-first-binding/pgpass",
@@ -304,6 +457,11 @@ $ odo describe binding -o json
 	{
 		"name": "my-second-binding",
 		"spec": {
+			"application": {
+				"kind": "Deployment",
+				"name": "my-nodejs-app-app",
+				"apiVersion": "apps/v1"
+			},
 			"services": [
 				{
 					"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
@@ -315,7 +473,7 @@ $ odo describe binding -o json
 			"bindAsFiles": true
 		},
 		"status": {
-			"bindingsFiles": [
+			"bindingFiles": [
 				"${SERVICE_BINDING_ROOT}/my-second-binding/ca.crt",
 				"${SERVICE_BINDING_ROOT}/my-second-binding/clusterIP",
 				"${SERVICE_BINDING_ROOT}/my-second-binding/database",
@@ -341,6 +499,11 @@ $ odo describe binding --name my-first-binding -o json
 {
 	"name": "my-first-binding",
 	"spec": {
+			"application": {
+				"kind": "Deployment",
+				"name": "my-nodejs-app-app",
+				"apiVersion": "apps/v1"
+			},
 		"services": [
 			{
 				"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
@@ -352,7 +515,7 @@ $ odo describe binding --name my-first-binding -o json
 		"bindAsFiles": true
 	},
 	"status": {
-		"bindingsFiles": [
+		"bindingFiles": [
 			"${SERVICE_BINDING_ROOT}/my-first-binding/host",
 			"${SERVICE_BINDING_ROOT}/my-first-binding/password",
 			"${SERVICE_BINDING_ROOT}/my-first-binding/pgpass",

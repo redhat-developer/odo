@@ -117,12 +117,15 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		case bindingApi.GroupVersionKind:
 
 			var sbo bindingApi.ServiceBinding
-			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbo)
+			err := kclient.ConvertUnstructuredToResource(u, &sbo)
 			if err != nil {
 				return nil, err
 			}
 
-			sb := api.ServiceBindingFromBinding(sbo)
+			sb, err := o.kubernetesClient.APIServiceBindingFromBinding(sbo)
+			if err != nil {
+				return nil, err
+			}
 			sb.Status, err = o.getStatusFromBinding(sb.Name)
 			if err != nil {
 				return nil, err
@@ -133,12 +136,12 @@ func (o *BindingClient) GetBindingsFromDevfile(devfileObj parser.DevfileObj, con
 		case specApi.GroupVersion.WithKind("ServiceBinding"):
 
 			var sbc specApi.ServiceBinding
-			err := o.kubernetesClient.ConvertUnstructuredToResource(u, &sbc)
+			err := kclient.ConvertUnstructuredToResource(u, &sbc)
 			if err != nil {
 				return nil, err
 			}
 
-			sb := api.ServiceBindingFromSpec(sbc)
+			sb := o.kubernetesClient.APIServiceBindingFromSpec(sbc)
 			sb.Status, err = o.getStatusFromSpec(sb.Name)
 			if err != nil {
 				return nil, err
@@ -157,7 +160,11 @@ func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, 
 
 	bindingSB, err := o.kubernetesClient.GetBindingServiceBinding(name)
 	if err == nil {
-		sb := api.ServiceBindingFromBinding(bindingSB)
+		var sb api.ServiceBinding
+		sb, err = o.kubernetesClient.APIServiceBindingFromBinding(bindingSB)
+		if err != nil {
+			return api.ServiceBinding{}, err
+		}
 		sb.Status, err = o.getStatusFromBinding(bindingSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err
@@ -170,7 +177,7 @@ func (o *BindingClient) GetBindingFromCluster(name string) (api.ServiceBinding, 
 
 	specSB, err := o.kubernetesClient.GetSpecServiceBinding(name)
 	if err == nil {
-		sb := api.ServiceBindingFromSpec(specSB)
+		sb := o.kubernetesClient.APIServiceBindingFromSpec(specSB)
 		sb.Status, err = o.getStatusFromSpec(specSB.Name)
 		if err != nil {
 			return api.ServiceBinding{}, err

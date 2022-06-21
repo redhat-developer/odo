@@ -13,6 +13,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/openshift/api/project/v1"
 	v1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	api "github.com/redhat-developer/odo/pkg/api"
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	v10 "k8s.io/api/apps/v1"
@@ -51,6 +52,35 @@ func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 	return m.recorder
 }
 
+// APIServiceBindingFromBinding mocks base method.
+func (m *MockClientInterface) APIServiceBindingFromBinding(binding v1alpha10.ServiceBinding) (api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServiceBindingFromBinding", binding)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// APIServiceBindingFromBinding indicates an expected call of APIServiceBindingFromBinding.
+func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromBinding(binding interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromBinding", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromBinding), binding)
+}
+
+// APIServiceBindingFromSpec mocks base method.
+func (m *MockClientInterface) APIServiceBindingFromSpec(spec v1alpha3.ServiceBinding) api.ServiceBinding {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServiceBindingFromSpec", spec)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	return ret0
+}
+
+// APIServiceBindingFromSpec indicates an expected call of APIServiceBindingFromSpec.
+func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromSpec(spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromSpec", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromSpec), spec)
+}
+
 // ApplyDeployment mocks base method.
 func (m *MockClientInterface) ApplyDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
 	m.ctrl.T.Helper()
@@ -76,20 +106,6 @@ func (m *MockClientInterface) CollectEvents(selector string, events map[string]v
 func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, quit)
-}
-
-// ConvertUnstructuredToResource mocks base method.
-func (m *MockClientInterface) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConvertUnstructuredToResource", u, obj)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ConvertUnstructuredToResource indicates an expected call of ConvertUnstructuredToResource.
-func (mr *MockClientInterfaceMockRecorder) ConvertUnstructuredToResource(u, obj interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertUnstructuredToResource", reflect.TypeOf((*MockClientInterface)(nil).ConvertUnstructuredToResource), u, obj)
 }
 
 // CreateDeployment mocks base method.
@@ -602,6 +618,21 @@ func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(gvr, name interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), gvr, name)
 }
 
+// GetGVKFromGVR mocks base method.
+func (m *MockClientInterface) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGVKFromGVR", gvr)
+	ret0, _ := ret[0].(schema.GroupVersionKind)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGVKFromGVR indicates an expected call of GetGVKFromGVR.
+func (mr *MockClientInterfaceMockRecorder) GetGVKFromGVR(gvr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVKFromGVR", reflect.TypeOf((*MockClientInterface)(nil).GetGVKFromGVR), gvr)
+}
+
 // GetNamespace mocks base method.
 func (m *MockClientInterface) GetNamespace(name string) (*v11.Namespace, error) {
 	m.ctrl.T.Helper()
@@ -1064,6 +1095,22 @@ func (m *MockClientInterface) ListSecrets(labelSelector string) ([]v11.Secret, e
 func (mr *MockClientInterfaceMockRecorder) ListSecrets(labelSelector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecrets", reflect.TypeOf((*MockClientInterface)(nil).ListSecrets), labelSelector)
+}
+
+// ListServiceBindingsFromAllGroups mocks base method.
+func (m *MockClientInterface) ListServiceBindingsFromAllGroups() ([]v1alpha3.ServiceBinding, []v1alpha10.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListServiceBindingsFromAllGroups")
+	ret0, _ := ret[0].([]v1alpha3.ServiceBinding)
+	ret1, _ := ret[1].([]v1alpha10.ServiceBinding)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListServiceBindingsFromAllGroups indicates an expected call of ListServiceBindingsFromAllGroups.
+func (mr *MockClientInterfaceMockRecorder) ListServiceBindingsFromAllGroups() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServiceBindingsFromAllGroups", reflect.TypeOf((*MockClientInterface)(nil).ListServiceBindingsFromAllGroups))
 }
 
 // ListServices mocks base method.

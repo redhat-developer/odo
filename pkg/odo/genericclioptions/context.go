@@ -90,6 +90,7 @@ func (o CreateParameters) WithVariables(variables map[string]string) CreateParam
 }
 
 // New creates a context based on the given parameters
+// If NeedDevfile is passed and a Devfile is not found, a NoDevfileError is returned with a valid context without Devfile
 func New(parameters CreateParameters) (*Context, error) {
 	ctx := internalCxt{}
 	var err error
@@ -126,14 +127,15 @@ func New(parameters CreateParameters) (*Context, error) {
 		}
 	}
 
-	ctx.devfilePath = location.DevfileLocation(parameters.componentContext)
 	if parameters.devfile {
-		isDevfile := odoutil.CheckPathExists(ctx.devfilePath)
+		devfilePath := location.DevfileLocation(parameters.componentContext)
+		isDevfile := odoutil.CheckPathExists(devfilePath)
 		if isDevfile {
+			ctx.devfilePath = devfilePath
 			// Parse devfile and validate
 			devObj, err := devfile.ParseAndValidateFromFileWithVariables(ctx.devfilePath, parameters.variables)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse the devfile %s, with error: %s", ctx.devfilePath, err)
+				return nil, fmt.Errorf("failed to parse the devfile %s: %w", ctx.devfilePath, err)
 			}
 			err = validate.ValidateDevfileData(devObj.Data)
 			if err != nil {
@@ -141,7 +143,9 @@ func New(parameters CreateParameters) (*Context, error) {
 			}
 			ctx.EnvSpecificInfo.SetDevfileObj(devObj)
 		} else {
-			return nil, errors.New("no devfile found")
+			return &Context{
+				internalCxt: ctx,
+			}, NoDevfileError{}
 		}
 	}
 

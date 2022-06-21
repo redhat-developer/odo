@@ -200,8 +200,15 @@ func (c *Client) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTM
 	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
 
-func (c *Client) ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
-	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), obj)
+func (c *Client) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+	cfg := c.GetClientConfig()
+
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return schema.GroupVersionKind{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	return mapper.KindFor(gvr)
 }
 
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)
@@ -222,4 +229,12 @@ func (c *Client) GetOperatorGVRList() ([]meta.RESTMapping, error) {
 		}
 	}
 	return operatorGVRList, nil
+}
+
+func ConvertUnstructuredToResource(u unstructured.Unstructured, obj interface{}) error {
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), obj)
+}
+
+func ConvertUnstructuredListToResource(u unstructured.UnstructuredList, obj interface{}) error {
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), obj)
 }

@@ -67,7 +67,7 @@ func (o *BindingClient) AddBinding(bindingName string, bindAsFiles bool, unstruc
 		return obj, err
 	}
 
-	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []sboApi.Mapping{}, []sboApi.Service{service})
+	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVR, []sboApi.Mapping{}, []sboApi.Service{service}, sboApi.ServiceBindingStatus{})
 
 	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
 	serviceBindingUnstructured, err := kclient.ConvertK8sResourceToUnstructured(serviceBinding)

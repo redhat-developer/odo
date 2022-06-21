@@ -13,7 +13,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/odo/cli/list/binding"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -193,7 +195,8 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	clientset.Add(listCmd, clientset.KUBERNETES)
 
 	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
-	listCmd.AddCommand(namespaceCmd)
+	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
+	listCmd.AddCommand(namespaceCmd, bindingCmd)
 
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
@@ -211,79 +214,52 @@ func humanReadableOutput(list api.ResourcesList) {
 		return
 	}
 
-	if len(components) != 0 {
+	t := ui.NewTable()
 
-		// Create the table and use our own style
-		t := table.NewWriter()
+	// Create the header and then sort accordingly
+	t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
+	t.SortBy([]table.SortBy{
+		{Name: "MANAGED", Mode: table.Asc},
+		{Name: "NAME", Mode: table.Dsc},
+	})
 
-		// Set the style of the table
-		t.SetStyle(table.Style{
-			Box: table.BoxStyle{
-				PaddingLeft:  " ",
-				PaddingRight: " ",
-			},
-			Color: table.ColorOptions{
-				Header: text.Colors{text.FgHiGreen, text.Underline},
-			},
-			Format: table.FormatOptions{
-				Footer: text.FormatUpper,
-				Header: text.FormatUpper,
-				Row:    text.FormatDefault,
-			},
-			Options: table.Options{
-				DrawBorder:      false,
-				SeparateColumns: false,
-				SeparateFooter:  false,
-				SeparateHeader:  false,
-				SeparateRows:    false,
-			},
-		})
-		t.SetOutputMirror(log.GetStdout())
+	// Go through each component and add it to the table
+	for _, comp := range components {
 
-		// Create the header and then sort accordingly
-		t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
-		t.SortBy([]table.SortBy{
-			{Name: "MANAGED", Mode: table.Asc},
-			{Name: "NAME", Mode: table.Dsc},
-		})
+		// Mark the name as yellow in the index to it's easier to see.
+		name := text.Colors{text.FgHiYellow}.Sprint(comp.Name)
 
-		// Go through each componment and add it to the table
-		for _, comp := range components {
-
-			// Mark the name as yellow in the index to it's easier to see.
-			name := text.Colors{text.FgHiYellow}.Sprint(comp.Name)
-
-			// Get the managed by label
-			managedBy := comp.ManagedBy
-			if managedBy == "" {
-				managedBy = api.TypeUnknown
-			}
-
-			// Get the mode (dev or deploy)
-			mode := comp.RunningIn.String()
-
-			// Get the type of the component
-			componentType := comp.Type
-			if componentType == "" {
-				componentType = api.TypeUnknown
-			}
-
-			// If we find our local unpushed component, let's change the output appropriately.
-			if list.ComponentInDevfile == comp.Name {
-				name = fmt.Sprintf("* %s", name)
-
-				if comp.ManagedBy == "" {
-					managedBy = "odo"
-				}
-			}
-
-			// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
-			if managedBy == "odo" {
-				managedBy = text.Colors{text.FgBlue}.Sprint("odo")
-			}
-
-			t.AppendRow(table.Row{name, componentType, mode, managedBy})
+		// Get the managed by label
+		managedBy := comp.ManagedBy
+		if managedBy == "" {
+			managedBy = api.TypeUnknown
 		}
-		t.Render()
+
+		// Get the mode (dev or deploy)
+		mode := comp.RunningIn.String()
+
+		// Get the type of the component
+		componentType := comp.Type
+		if componentType == "" {
+			componentType = api.TypeUnknown
+		}
+
+		// If we find our local unpushed component, let's change the output appropriately.
+		if list.ComponentInDevfile == comp.Name {
+			name = fmt.Sprintf("* %s", name)
+
+			if comp.ManagedBy == "" {
+				managedBy = "odo"
+			}
+		}
+
+		// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
+		if managedBy == "odo" {
+			managedBy = text.Colors{text.FgBlue}.Sprint("odo")
+		}
+
+		t.AppendRow(table.Row{name, componentType, mode, managedBy})
 	}
+	t.Render()
+
 }

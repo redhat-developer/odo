@@ -140,6 +140,22 @@ func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
 }
 
+// ListAllBindings mocks base method.
+func (m *MockClient) ListAllBindings(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, []string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListAllBindings", devfileObj, context)
+	ret0, _ := ret[0].([]api.ServiceBinding)
+	ret1, _ := ret[1].([]string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListAllBindings indicates an expected call of ListAllBindings.
+func (mr *MockClientMockRecorder) ListAllBindings(devfileObj, context interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAllBindings", reflect.TypeOf((*MockClient)(nil).ListAllBindings), devfileObj, context)
+}
+
 // RemoveBinding mocks base method.
 func (m *MockClient) RemoveBinding(bindingName string, obj parser.DevfileObj) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
