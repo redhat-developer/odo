@@ -16,9 +16,7 @@ var _ = Describe("odo logs command tests", func() {
 	areAllPodsRunning := func() bool {
 		allPodsRunning := true
 		status := string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project, "-o", "jsonpath=\"{.items[*].status.phase}\"").Out.Contents())
-		// value of status would be a string decorated by double quotes; so we ignore the first and last character
-		// this could have been done using strings.TrimPrefix and strings.TrimSuffix, but that's two lines/calls.
-		status = status[1 : len(status)-1]
+		status = strings.Trim(status, "\"")
 		split := strings.Split(status, " ")
 		for i := 0; i < len(split); i++ {
 			if split[i] != "Running" {
