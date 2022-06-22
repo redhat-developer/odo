@@ -130,7 +130,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		// 1. user specifies --dev flag, but the component's running in Deploy mode
 		// 2. user specified --deploy flag, but the component's running in Dev mode
 		// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
-		fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q", o.componentName)
+		fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", o.componentName)
 		return nil
 	}
 
