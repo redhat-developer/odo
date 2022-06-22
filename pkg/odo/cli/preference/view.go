@@ -6,11 +6,11 @@ import (
 	"reflect"
 
 	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -57,15 +57,7 @@ func (o *ViewOptions) Run(ctx context.Context) (err error) {
 }
 
 func HumanReadableOutput(preferenceList preference.PreferenceList, registryList *[]preference.Registry) {
-	tStyle := table.Style{
-		Box: table.BoxStyle{PaddingLeft: " ", PaddingRight: " "},
-		Color: table.ColorOptions{
-			Header: text.Colors{text.FgHiGreen},
-		},
-	}
-	preferenceT := table.NewWriter()
-	preferenceT.SetStyle(tStyle)
-	preferenceT.SetOutputMirror(log.GetStdout())
+	preferenceT := ui.NewTable()
 	preferenceT.AppendHeader(table.Row{"PARAMETER", "VALUE"})
 	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
 	for _, pref := range preferenceList.Items {
@@ -75,9 +67,7 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 		}
 		preferenceT.AppendRow(table.Row{pref.Name, value})
 	}
-	registryT := table.NewWriter()
-	registryT.SetStyle(tStyle)
-	registryT.SetOutputMirror(log.GetStdout())
+	registryT := ui.NewTable()
 	registryT.AppendHeader(table.Row{"NAME", "URL", "SECURE"})
 
 	var regList []preference.Registry
