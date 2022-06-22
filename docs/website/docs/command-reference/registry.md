@@ -1,87 +1,106 @@
 ---
 title: odo registry
-sidebar_position: 8
 ---
 
-odo uses the portable *devfile* format to describe the components. odo can connect to various devfile registries to download devfiles for different languages and frameworks.
+The `odo registry` command lists all the Devfile stacks from Devfile registries.
 
-You can connect to publicly available devfile registries, or you can install your own [Secure Registry](/docs/architecture/secure-registry).
+The Devfile registries that are taken into account are the registries added with the command
+`odo preference registry`.
 
-You can use the `odo registry` command to manage the registries used by odo to retrieve devfile information.
+## Available Flags
 
-## Listing the registries
+By default, `odo registry` lists all the Devfile stacks from all the Devfile registries.
 
-You can use the following command to list the registries currently contacted by odo:
+These flags let you filter the listed Devfile stacks:
 
-```
-odo registry list
-```
+* `--devfile <name>` to list the Devfile stacks with this exact name
+* `--devfile-registry <name>` to list the Devfile stack of this registry (this is the `name` used
+when adding the registry to the preferences with `odo preference registry add <name> <url>`)
+* `--filter <term>` to list the Devfile for which the term is found in the devfile name or description
 
-For example:
+By default, the name, registry and description 
+of the Devfile stacks are displayed on a table.
 
-```
-$ odo registry list
-NAME                       URL                             SECURE
-DefaultDevfileRegistry     https://registry.devfile.io     No
-```
+This flag lets you change the content of the output:
 
-`DefaultDevfileRegistry` is the default registry used by odo; it is provided by the [devfile.io](https://devfile.io) project.
+* `--details` to display details about the Devfile stacks
+* `-o json` to output the information in a JSON format
 
-## Adding a registry
+## Examples
 
-You can use the following command to add a registry:
-
-```
-odo registry add
-```
-
-For example:
+For these examples, we consider we have two registries in our preferences:
 
 ```
-$ odo registry add StageRegistry https://registry.stage.devfile.io
-New registry successfully added
+shell
+$ odo preference registry list
+NAME                       URL                                   SECURE
+Staging                    https://registry.stage.devfile.io     No
+DefaultDevfileRegistry     https://registry.devfile.io           No
 ```
 
-If you are deploying your own Secure Registry, you can specify the personal access token to authenticate to the secure registry with the `--token` flag:
+To get the complete list of accessible Devfile stacks:
 
-```
-$ odo registry add MyRegistry https://myregistry.example.com --token <access_token>
-New registry successfully added
-```
-
-## Deleting a registry
-
-You can delete a registry with the command:
-
-```
-odo registry delete
-```
-
-For example:
-
-```
-$ odo registry delete StageRegistry
-? Are you sure you want to delete registry "StageRegistry" Yes
-Successfully deleted registry
+```shell
+$ odo registry
+ NAME                          REGISTRY                DESCRIPTION                                 
+ dotnet50                      Staging                 Stack with .NET 5.0                         
+ dotnet50                      DefaultDevfileRegistry  Stack with .NET 5.0                         
+ dotnet60                      Staging                 Stack with .NET 6.0                         
+ dotnet60                      DefaultDevfileRegistry  Stack with .NET 6.0                         
+ dotnetcore31                  Staging                 Stack with .NET Core 3.1                    
+ dotnetcore31                  DefaultDevfileRegistry  Stack with .NET Core 3.1                    
+ go                            Staging                 Stack with the latest Go version            
+ go                            DefaultDevfileRegistry  Stack with the latest Go version            
+ java-maven                    Staging                 Upstream Maven and OpenJDK 11               
+ java-maven                    DefaultDevfileRegistry  Upstream Maven and OpenJDK 11               
+[...]
 ```
 
-You can use the `--force` (or `-f`) flag to force the deletion of the registry without confirmation.
+To list the Devfile stacks from the Staging registry only:
 
-## Updating a registry
-
-You can update the URL and/or the personal access token of a registry already registered with the command:
-
-```
-odo registry update
-```
-
-For example:
-
-```
-$ odo registry update MyRegistry https://otherregistry.example.com --token <other_access_token>
-? Are you sure you want to update registry "MyRegistry" Yes
-Successfully updated registry
+```shell
+$ odo registry --devfile-registry Staging
+ NAME                          REGISTRY                DESCRIPTION                                 
+ dotnet50                      Staging                 Stack with .NET 5.0                         
+ dotnet60                      Staging                 Stack with .NET 6.0                         
+ dotnetcore31                  Staging                 Stack with .NET Core 3.1                    
+ go                            Staging                 Stack with the latest Go version            
+ java-maven                    Staging                 Upstream Maven and OpenJDK 11               
+[...]
 ```
 
-You can use the `--force` (or `-f`) flag to force the update of the registry without confirmation.
+To list the Devfile stacks related to Maven:
 
+```shell
+$ odo registry --filter Maven
+ NAME                       REGISTRY                DESCRIPTION                                 
+ java-maven                 Staging                 Upstream Maven and OpenJDK 11               
+ java-maven                 DefaultDevfileRegistry  Upstream Maven and OpenJDK 11               
+ java-openliberty           Staging                 Java application Maven-built stack using... 
+ java-openliberty           DefaultDevfileRegistry  Java application Maven-built stack using... 
+ java-websphereliberty      Staging                 Java application Maven-built stack using... 
+ java-websphereliberty      DefaultDevfileRegistry  Java application Maven-built stack using... 
+ java-wildfly-bootable-jar  Staging                 Java stack with WildFly in bootable Jar ... 
+ java-wildfly-bootable-jar  DefaultDevfileRegistry  Java stack with WildFly in bootable Jar ... 
+```
+
+To get the details of the `java-maven` Devfile in the Staging registry:
+
+```shell
+$ odo registry --devfile java-maven --devfile-registry Staging --details
+Name: java-maven
+Display Name: Maven Java
+Registry: Staging
+Registry URL: https://registry.stage.devfile.io
+Version: 1.1.0
+Description: Upstream Maven and OpenJDK 11 
+Tags: Java, Maven
+Project Type: maven
+Language: java
+Starter Projects:
+  - springbootproject
+Supported odo Features:
+  - Dev: Y
+  - Deploy: N
+  - Debug: Y
+```

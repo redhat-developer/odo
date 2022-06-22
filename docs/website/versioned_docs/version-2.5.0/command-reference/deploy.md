@@ -1,5 +1,6 @@
 ---
 title: odo deploy
+sidebar_position: 5
 ---
 
 odo can be used to deploy components in a similar manner they would be deployed by a CI/CD system, 
@@ -11,7 +12,7 @@ The kind `deploy` is supported by the devfile format starting from version 2.2.0
 
 The `deploy` command is typically a *composite* command, composed of several *apply* commands:
 - a command referencing an `image` component that, when applied, will build the image of the container to deploy, and push it to its registry,
-- a command referencing a [`kubernetes` component](https://devfile.io/docs/devfile/2.2.0/user-guide/adding-a-kubernetes-or-openshift-component-to-a-devfile) that, when applied, will create a Kubernetes resource in the cluster.
+- a command referencing a [`kubernetes` component](https://devfile.io/docs/devfile/2.2.0/user-guide/adding-kubernetes-component-to-a-devfile.html) that, when applied, will create a Kubernetes resource in the cluster.
 
 With the following example `devfile.yaml` file, a container image will be built by using the `Dockerfile` present in the directory,
 the image will be pushed to its registry and a Kubernetes Deployment will be created in the cluster, using this freshly built image.
@@ -64,10 +65,3 @@ components:
                 - name: main
                   image: {{CONTAINER_IMAGE}}
 ```
-
-## Sustituting variables
-
-The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
-can override the values for variables from the command line when running `odo deploy`, using the `--var` and `--var-file` options.
-
-See [Sustituting variables in odo dev](dev.md#sustituting-variables) for more information.

@@ -40,7 +40,7 @@ module.exports = {
       items: [
         {
           type: 'doc',
-          docId: 'intro',
+          docId: 'introduction',
           position: 'left',
           label: 'Docs',
         },
@@ -127,14 +127,13 @@ module.exports = {
           lastVersion: 'current',
           versions: {
             current: {
-              label: '2.5.0',
-              badge: true,
-            },
-            '3.0.0': {
               label: '3.0.0 (Alpha 2) 🚧',
-              path: '3.0.0',
               badge: true,
               banner: 'unreleased',
+            },
+            '2.5.0': {
+              label: '2.5.0 (Stable) 🚀',
+              path: '2.5.0',
             },
           },
           sidebarPath: require.resolve('./sidebars.js'),
