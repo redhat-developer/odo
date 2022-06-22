@@ -152,10 +152,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	_ = pflag.CommandLine.MarkHidden("skip_headers")
 	_ = pflag.CommandLine.MarkHidden("skip_log_headers")
 
-	// We will mark the command as hidden and then re-enable if the command
-	// supports json output
-	_ = pflag.CommandLine.MarkHidden("o")
-
 	// Override the verbosity flag description
 	verbosity := pflag.Lookup("v")
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
