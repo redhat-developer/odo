@@ -9,7 +9,6 @@ metadata:
   projectType: nodejs
 variables:
   CONTAINER_IMAGE: quay.io/tkral/devfile-nodejs-deploy:latest
-  LOGS_IMAGE: docker.io/dharmit/infiniteloop
 commands:
   - id: install
     exec:
@@ -114,7 +113,9 @@ components:
         spec:
           containers:
           - name: main
-            image: "{{LOGS_IMAGE}}"
+            image: alpine
+            command: ["/bin/sh"]
+            args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]
   - name: outerloop-pod
     kubernetes:
       inlined: |
@@ -125,4 +126,6 @@ components:
         spec:
           containers:
           - name: main
-            image: "{{LOGS_IMAGE}}"
+            image: alpine
+            command: ["/bin/sh"]
+            args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]
