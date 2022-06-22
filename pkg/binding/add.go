@@ -128,9 +128,12 @@ func (o *BindingClient) AddBinding(
 		backend = o.flagsBackend
 	}
 
-	options, err := backend.SelectCreationOptions(flags)
-	if err != nil {
-		return err
+	var options []asker.CreationOption
+	for len(options) == 0 {
+		options, err = backend.SelectCreationOptions(flags)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
