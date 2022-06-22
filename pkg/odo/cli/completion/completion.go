@@ -53,7 +53,6 @@ var (
 	%[1]s powershell >> $PROFILE
 `)
 	completionLongDesc = ktemplates.LongDesc(`Add odo completion support to your development environment.
-
 This will append your PS1 environment variable with odo component and application information.`)
 )
 
