@@ -346,6 +346,23 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		running, execRequired, parameters.RunModeChanged)
 
 	if isComposite || !running || execRequired || parameters.RunModeChanged {
+		// Invoke the build command once (before calling libdevfile.ExecuteCommandByKind), as, if cmd is a composite command,
+		// the handler we pass will be called for each command in that composite command.
+		doExecuteBuildCommand := func() error {
+			execHandler := component.NewExecHandler(a.kubeClient, a.pod.Name, "Building your application in container on cluster", parameters.Show)
+			return libdevfile.Build(a.Devfile, execHandler, true)
+		}
+		if componentExists {
+			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
+				if err = doExecuteBuildCommand(); err != nil {
+					return err
+				}
+			}
+		} else {
+			if err = doExecuteBuildCommand(); err != nil {
+				return err
+			}
+		}
 		err = libdevfile.ExecuteCommandByKind(a.Devfile, cmdKind, &cmdHandler, false)
 	}
 

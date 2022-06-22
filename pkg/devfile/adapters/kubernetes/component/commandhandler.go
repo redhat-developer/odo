@@ -39,11 +39,6 @@ func (a *adapterHandler) ApplyKubernetes(_ devfilev1.Component) error {
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
-	doExecuteBuildCommand := func() error {
-		execHandler := component.NewExecHandler(a.kubeClient, a.pod.Name, "Building your application in container on cluster", a.parameters.Show)
-		return libdevfile.Build(a.Devfile, execHandler, true)
-	}
-
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
 
 	startHandler := func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
@@ -73,10 +68,6 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			if err = doExecuteBuildCommand(); err != nil {
-				return err
-			}
-
 			err = remoteProcessHandler.StopProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
 			if err != nil {
 				return err
@@ -91,10 +82,6 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	} else {
 		cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
 		if err != nil {
-			return err
-		}
-
-		if err := doExecuteBuildCommand(); err != nil {
 			return err
 		}
 
