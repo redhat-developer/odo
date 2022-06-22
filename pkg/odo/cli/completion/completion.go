@@ -23,10 +23,10 @@ var (
 	## Load persistently
 
 	### Save the completion to a file
-	%[1]s bash > ~/.%[1]s/completion.bash.inc
+	%[1]s bash > ~/.odo/completion.bash.inc
 
 	### Load the completion from within your $HOME/.bash_profile
-	source ~/.%[1]s/completion.bash.inc
+	source ~/.odo/completion.bash.inc
 
   # ZSH
 
