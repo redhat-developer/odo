@@ -145,3 +145,6 @@ Successfully deleted registry
 You can use the `--force` (or `-f`) flag to force the deletion of the registry without confirmation.
 
 
+:::note
+To update a registry, you can delete it and add it again.
+:::
