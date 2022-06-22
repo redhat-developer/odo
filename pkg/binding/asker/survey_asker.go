@@ -30,10 +30,11 @@ func (s *Survey) SelectWorkloadResource(options []string) (int, error) {
 	return answer, nil
 }
 
-func (s *Survey) SelectWorkloadResourceName(names []string) (string, error) {
+func (s *Survey) SelectWorkloadResourceName(names []string) (bool, string, error) {
 	sort.Strings(names)
 	notFoundOption := "DOES NOT EXIST YET"
-	names = append(names, notFoundOption)
+	goBackOption := "** GO BACK **"
+	names = append(names, notFoundOption, goBackOption)
 	question := &survey.Select{
 		Message: "Select workload resource name you want to bind:",
 		Options: names,
@@ -41,12 +42,15 @@ func (s *Survey) SelectWorkloadResourceName(names []string) (string, error) {
 	var answer string
 	err := survey.AskOne(question, &answer)
 	if err != nil {
-		return "", err
+		return false, "", err
 	}
 	if answer == notFoundOption {
-		return "", nil
+		return false, "", nil
 	}
-	return answer, nil
+	if answer == goBackOption {
+		return true, "", nil
+	}
+	return false, answer, nil
 }
 
 func (s *Survey) AskWorkloadResourceName() (string, error) {

@@ -12,7 +12,8 @@ type Asker interface {
 	// SelectWorkloadResource takes a list of workloads resources and asks user to select one
 	SelectWorkloadResource(options []string) (int, error)
 	// SelectWorkloadResourceName takes a list of workloads resources names and asks user to select one
-	SelectWorkloadResourceName(names []string) (string, error)
+	// returns back true if the user selected to go back
+	SelectWorkloadResourceName(names []string) (back bool, selected string, err error)
 	// AskWorkloadResourceName asks user to type resource name
 	AskWorkloadResourceName() (string, error)
 	// AskServiceInstance takes a list of services and asks user to select one
