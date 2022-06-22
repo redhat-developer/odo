@@ -142,25 +142,33 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		for container, logs := range entry {
 			uniqueName := getUniqueContainerName(container, uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
-			l := logs
-			wg.Add(1)
-			go func(out io.Writer, follow bool) {
-				defer wg.Done()
-				colour := log.ColorPicker()
-				if !follow {
-					// ensure that only one go routine does printLogs at a time; this is helpful when logs are longer
-					// than just a few lines in that logs for each container are printed before starting to print those
-					// of the next container
-					mu.Lock()
-				}
-				err = printLogs(uniqueName, l, out, colour)
+			colour := log.ColorPicker()
+			if o.follow {
+				l := logs
+				wg.Add(1)
+				go func(out io.Writer, follow bool) {
+					defer wg.Done()
+					if !follow {
+						// ensure that only one go routine does printLogs at a time; this is helpful when logs are longer
+						// than just a few lines in that logs for each container are printed before starting to print those
+						// of the next container
+						mu.Lock()
+					}
+					err = printLogs(uniqueName, l, out, colour)
+					if err != nil {
+						errChan <- err
+					}
+					if !follow {
+						mu.Unlock()
+					}
+				}(o.out, o.follow)
+			} else {
+				err = printLogs(uniqueName, logs, o.out, colour)
 				if err != nil {
-					errChan <- err
+					return err
 				}
-				if !follow {
-					mu.Unlock()
-				}
-			}(o.out, o.follow)
+			}
+
 		}
 	}
 	select {
