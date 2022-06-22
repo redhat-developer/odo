@@ -77,7 +77,7 @@ func NewCmdCompletion(name, fullName string) *cobra.Command {
 				zsh := "#compdef odo\ncompdef _odo odo\n"
 				out := os.Stdout
 				out.Write([]byte(zsh))
-				cmd.Root().GenZshCompletion(os.Stdout)
+				cmd.Root().GenZshCompletion(out)
 			case "fish":
 				cmd.Root().GenFishCompletion(os.Stdout, true)
 			case "powershell":
