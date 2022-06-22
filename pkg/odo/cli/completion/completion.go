@@ -42,7 +42,7 @@ var (
 	source <(%[1]s fish)
 
 	## Load persistently
-	%[1]s completion fish > ~/.config/fish/completions/%[1]s.fish
+	%[1]s fish > ~/.config/fish/completions/%[1]s.fish
 
 	# POWERSHELL
 
