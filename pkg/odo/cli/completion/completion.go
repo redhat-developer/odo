@@ -34,7 +34,7 @@ var (
   source <(%[1]s zsh)
 
 	## Load persistently
-	%[1]s completion zsh > "${fpath[1]}/_%[1]s"
+	%[1]s zsh > "${fpath[1]}/_%[1]s"
 
 	# FISH
 
