@@ -47,10 +47,10 @@ var (
 	# POWERSHELL
 
 	## Load into your current shell environment
-	%[1]s completion powershell | Out-String | Invoke-Expression
+	%[1]s powershell | Out-String | Invoke-Expression
 
 	## Load persistently
-	%[1]s completion powershell >> $PROFILE
+	%[1]s powershell >> $PROFILE
 `)
 	completionLongDesc = ktemplates.LongDesc(`Add odo completion support to your development environment.
 
