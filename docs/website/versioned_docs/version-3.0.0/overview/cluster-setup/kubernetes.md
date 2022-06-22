@@ -18,7 +18,7 @@ This guide is helpful in setting up a development environment intended to be use
 
 **Important notes:** `odo` will use the __default__  storage provisioning on your cluster. If it has not been set correctly, see our [troubleshooting guide](/docs/getting-started/cluster-setup/kubernetes#troubleshooting) for more details.
 
-## Installing the Service Binding Operator
+## (OPTIONAL) Installing the Service Binding Operator
 
 Service Binding Operator is required to bind an application with microservices.
 
