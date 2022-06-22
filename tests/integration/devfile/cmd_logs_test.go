@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,6 +12,19 @@ import (
 var _ = Describe("odo logs command tests", func() {
 	var componentName string
 	var commonVar helper.CommonVar
+
+	areAllPodsRunning := func() bool {
+		allPodsRunning := true
+		status := string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project, "-o", "jsonpath=\"{.items[*].status.phase}\"").Out.Contents())
+		status = strings.Trim(status, "\"")
+		split := strings.Split(status, " ")
+		for i := 0; i < len(split); i++ {
+			if split[i] != "Running" {
+				allPodsRunning = false
+			}
+		}
+		return allPodsRunning
+	}
 
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach()
@@ -71,9 +85,9 @@ var _ = Describe("odo logs command tests", func() {
 		When("running in Deploy mode", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-				Eventually(func() string {
-					return string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Out.Contents())
-				}).Should(Not(ContainSubstring("ContainerCreating")))
+				Eventually(func() bool {
+					return areAllPodsRunning()
+				}).Should(Equal(true))
 			})
 			It("should successfully show logs of the running component", func() {
 				// `odo logs`
@@ -97,9 +111,9 @@ var _ = Describe("odo logs command tests", func() {
 				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
 				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-				Eventually(func() string {
-					return string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Out.Contents())
-				}).Should(Not(ContainSubstring("ContainerCreating")))
+				Eventually(func() bool {
+					return areAllPodsRunning()
+				}).Should(Equal(true))
 			})
 			AfterEach(func() {
 				devSession.Kill()
