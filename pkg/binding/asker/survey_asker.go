@@ -110,8 +110,8 @@ func (o *Survey) AskBindAsFiles() (bool, error) {
 func (o *Survey) SelectCreationOption() ([]CreationOption, error) {
 	options := []int{}
 	prompt := &survey.MultiSelect{
-		Message: "What do you want to do with the ServiceBinding:",
-		Options: []string{"create it on cluster", "display it", "save to file"}, // respect order of CreateOption constants
+		Message: "Check with spacebar the operations to perform with the ServiceBinding:",
+		Options: []string{"create it on cluster", "display it", "save it to file"}, // respect order of CreateOption constants
 	}
 	err := survey.AskOne(prompt, &options)
 	if err != nil {
