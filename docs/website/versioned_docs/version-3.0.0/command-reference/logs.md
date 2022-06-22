@@ -23,6 +23,7 @@ container name to help differentiate between the containers. In the output, you 
 
 It also supports `--follow` flag which allows you to follow/tail/stream the logs of the containers. It works by using 
 the same commands as above albeit, with a `--follow` flag:
-* Use `odo logs --dev` to follow the logs for the containers created by `odo dev` command.
-* Use `odo logs --deploy` to follow the logs for the containers created by `odo deploy` command.
-* Use `odo logs` (without any flag) to follow the logs of all the containers created by both `odo dev` and `odo deploy`.
+* Use `odo logs --dev --follow` to follow the logs for the containers created by `odo dev` command.
+* Use `odo logs --deploy --follow` to follow the logs for the containers created by `odo deploy` command.
+* Use `odo logs --follow` (without `--dev` or `--deploy`) to follow the logs of all the containers created by both `odo 
+  dev` and `odo deploy`.
