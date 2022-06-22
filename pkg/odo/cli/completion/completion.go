@@ -31,10 +31,10 @@ var (
   # ZSH
 
 	## Load into your current shell environment
-  source <(%[1]s zsh)
+  source <(odo zsh)
 
 	## Load persistently
-	%[1]s zsh > "${fpath[1]}/_%[1]s"
+	%[1]s zsh > "${fpath[1]}/_odo"
 
 	# FISH
 
@@ -42,7 +42,7 @@ var (
 	source <(%[1]s fish)
 
 	## Load persistently
-	%[1]s fish > ~/.config/fish/completions/%[1]s.fish
+	%[1]s fish > ~/.config/fish/completions/odo.fish
 
 	# POWERSHELL
 
