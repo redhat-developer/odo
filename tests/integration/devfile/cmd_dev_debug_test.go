@@ -2,6 +2,7 @@ package devfile
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/redhat-developer/odo/tests/helper"
 
@@ -73,34 +74,51 @@ var _ = Describe("odo dev debug command tests", func() {
 			session.WaitEnd()
 		})
 
-		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.MatchAllInOutput(string(stdout), []string{
-				"Executing the application (command: mkdir)",
-				"Executing the application (command: echo)",
-				"Executing the application (command: install)",
-				"Executing the application (command: start-debug)",
-			})
-			helper.MatchAllInOutput(string(stderr), []string{
-				"Devfile command \"echo\" exited with an error status",
-				"intentional-error-message",
+		It("should run successfully", func() {
+			By("verifying from the output that all commands have been executed", func() {
+				helper.MatchAllInOutput(string(stdout), []string{
+					"Building your application in container on cluster",
+					"Executing the application (command: mkdir)",
+					"Executing the application (command: echo)",
+					"Executing the application (command: install)",
+					"Executing the application (command: start-debug)",
+				})
 			})
 
-			// Verify the command executed successfully
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", "/projects/testfolder"},
-				func(cmdOp string, err error) bool {
-					return err == nil
-				},
-			)
-			Expect(res).To(BeTrue())
+			By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+				helper.MatchAllInOutput(string(stderr), []string{
+					"Devfile command \"echo\" exited with an error status",
+					"intentional-error-message",
+				})
+			})
 
-			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
-			// We are just using this to validate if nodejs agent is listening on the other side
-			helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
+			By("building the application only once", func() {
+				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+				// The bracket allows to match the last occurrence with the command execution timing information.
+				Expect(strings.Count(string(stdout), "Building your application in container on cluster [")).
+					To(BeNumerically("==", 1))
+			})
+
+			By("verifying that the command did run successfully", func() {
+				// Verify the command executed successfully
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", "/projects/testfolder"},
+					func(cmdOp string, err error) bool {
+						return err == nil
+					},
+				)
+				Expect(res).To(BeTrue())
+			})
+
+			By("expecting a ws connection when tried to connect on default debug port locally", func() {
+				// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+				// We are just using this to validate if nodejs agent is listening on the other side
+				helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
+			})
 		})
 	})
 

@@ -1169,29 +1169,43 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should run successfully", func() {
-			helper.MatchAllInOutput(string(stdout), []string{
-				"Executing the application (command: mkdir)",
-				"Executing the application (command: echo)",
-				"Executing the application (command: install)",
-				"Executing the application (command: start)",
-			})
-			helper.MatchAllInOutput(string(stderr), []string{
-				"Devfile command \"echo\" exited with an error status",
-				"intentional-error-message",
+			By("verifying from the output that all commands have been executed", func() {
+				helper.MatchAllInOutput(string(stdout), []string{
+					"Building your application in container on cluster",
+					"Executing the application (command: mkdir)",
+					"Executing the application (command: echo)",
+					"Executing the application (command: install)",
+					"Executing the application (command: start)",
+				})
 			})
 
-			// Verify the command executed successfully
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", "/projects/testfolder"},
-				func(cmdOp string, err error) bool {
-					return err == nil
-				},
-			)
-			Expect(res).To(BeTrue())
+			By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+				helper.MatchAllInOutput(string(stderr), []string{
+					"Devfile command \"echo\" exited with an error status",
+					"intentional-error-message",
+				})
+			})
+
+			By("building the application only once", func() {
+				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+				// The bracket allows to match the last occurrence with the command execution timing information.
+				Expect(strings.Count(string(stdout), "Building your application in container on cluster [")).
+					To(BeNumerically("==", 1))
+			})
+
+			By("verifying that the command did run successfully", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", "/projects/testfolder"},
+					func(cmdOp string, err error) bool {
+						return err == nil
+					},
+				)
+				Expect(res).To(BeTrue())
+			})
 		})
 	})
 

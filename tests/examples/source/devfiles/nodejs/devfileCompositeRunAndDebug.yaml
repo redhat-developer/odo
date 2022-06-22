@@ -24,6 +24,9 @@ commands:
       component: runtime
       commandLine: npm install
       workingDir: ${PROJECTS_ROOT}
+      group:
+        isDefault: true
+        kind: build
 
   - id: mkdir
     exec:
