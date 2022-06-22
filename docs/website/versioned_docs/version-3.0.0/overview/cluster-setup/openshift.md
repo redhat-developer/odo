@@ -12,7 +12,7 @@ This guide is helpful in setting up a development environment intended to be use
 * You have a OpenShift cluster set up (such as [crc](https://crc.dev/crc/#installing-codeready-containers_gsg))
 * You have admin privileges to the cluster
 
-## Installing the Service Binding Operator
+## (OPTIONAL) Installing the Service Binding Operator
 
 Service Binding Operator is required to bind an application with microservices.
 
