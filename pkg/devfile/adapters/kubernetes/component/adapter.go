@@ -317,7 +317,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	cmdHandler := adapterHandler{
 		Adapter:         a,
-		cmdKind:         cmdKind,
 		parameters:      parameters,
 		componentExists: componentExists,
 	}

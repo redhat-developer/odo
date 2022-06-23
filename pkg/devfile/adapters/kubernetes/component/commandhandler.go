@@ -21,7 +21,6 @@ const numberOfLinesToOutputLog = 100
 
 type adapterHandler struct {
 	Adapter
-	cmdKind         devfilev1.CommandGroupKind
 	parameters      common.PushParameters
 	componentExists bool
 }
@@ -55,12 +54,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	// if we need to restart, issue the remote process handler command to stop all running commands first.
 	// We do not need to restart Hot reload capable commands.
 	if a.componentExists {
-		cmd, err := libdevfile.GetDefaultCommand(a.Devfile, a.cmdKind)
-		if err != nil {
-			return err
-		}
-
-		if a.parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
+		if a.parameters.RunModeChanged || devfileCmd.Exec == nil || !util.SafeGetBool(devfileCmd.Exec.HotReloadCapable) {
 			klog.V(2).Info("restart required for command")
 
 			cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
