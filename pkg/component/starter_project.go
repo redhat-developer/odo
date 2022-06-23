@@ -15,7 +15,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
+	registryUtil "github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 

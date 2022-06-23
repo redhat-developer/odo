@@ -14,11 +14,9 @@ import (
 	"github.com/devfile/registry-support/registry-library/library"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
-
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -189,12 +187,12 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
 func getRegistryStacks(preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
-	isGithubregistry, err := registryUtil.IsGithubBasedRegistry(registry.URL)
+	isGithubregistry, err := IsGithubBasedRegistry(registry.URL)
 	if err != nil {
 		return nil, err
 	}
 	if isGithubregistry {
-		return nil, registryUtil.ErrGithubRegistryNotSupported
+		return nil, &ErrGithubRegistryNotSupported{}
 	}
 	// OCI-based registry
 	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)

@@ -3,7 +3,8 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
+
+	"github.com/redhat-developer/odo/pkg/registry"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -52,12 +53,12 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 		}
 		registries := o.preferenceClient.RegistryList()
 		for _, r := range *registries {
-			isGithubRegistry, err := util.IsGithubBasedRegistry(r.URL)
+			isGithubRegistry, err := registry.IsGithubBasedRegistry(r.URL)
 			if err != nil {
 				return err
 			}
 			if r.Name == flags[FLAG_DEVFILE_REGISTRY] && isGithubRegistry {
-				return util.ErrGithubRegistryNotSupported
+				return &registry.ErrGithubRegistryNotSupported{}
 			}
 		}
 	}

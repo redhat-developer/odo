@@ -1,4 +1,4 @@
-package util
+package registry
 
 import (
 	"io/ioutil"

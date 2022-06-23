@@ -13,10 +13,10 @@ import (
 
 	// odo packages
 	"github.com/redhat-developer/odo/pkg/log"
-	util2 "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -73,12 +73,12 @@ func (o *RegistryOptions) Validate() (err error) {
 	if err != nil {
 		return err
 	}
-	isGithubRegistry, err := util2.IsGithubBasedRegistry(o.registryURL)
+	isGithubRegistry, err := registry.IsGithubBasedRegistry(o.registryURL)
 	if err != nil {
 		return err
 	}
 	if isGithubRegistry {
-		return util2.ErrGithubRegistryNotSupported
+		return &registry.ErrGithubRegistryNotSupported{}
 	}
 	return nil
 }
