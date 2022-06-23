@@ -131,6 +131,22 @@ func newPreferenceInfo() (*preferenceInfo, error) {
 		return nil, err
 	}
 
+	// TODO: This code block about logging warnings should be removed once users completely shift to odo v3.
+	// The warning will be printed more than once, and it can be annoying, but it should ensure that the user will change these values.
+	var requiresChange []string
+	if c.OdoSettings.Timeout != nil && *c.OdoSettings.Timeout < minimumDurationValue {
+		requiresChange = append(requiresChange, TimeoutSetting)
+	}
+	if c.OdoSettings.PushTimeout != nil && *c.OdoSettings.PushTimeout < minimumDurationValue {
+		requiresChange = append(requiresChange, PushTimeoutSetting)
+	}
+	if c.OdoSettings.RegistryCacheTime != nil && *c.OdoSettings.RegistryCacheTime < minimumDurationValue {
+		requiresChange = append(requiresChange, RegistryCacheTimeSetting)
+	}
+	if len(requiresChange) != 0 {
+		log.Warningf("Please change the preference value for %s, the value does not comply with the minimum value of %s; e.g. of acceptable formats: 4s, 5m, 1h", strings.Join(requiresChange, ", "), minimumDurationValue)
+	}
+
 	// Handle user has preference file but doesn't use dynamic registry before
 	if c.OdoSettings.RegistryList == nil {
 		c.OdoSettings.RegistryList = &defaultRegistryList
@@ -254,23 +270,23 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 		switch p {
 
 		case "timeout":
-			typedval, err := time.ParseDuration(value)
-			if err != nil || typedval < minimumDurationValue {
-				return fmt.Errorf("unable to set %q to %q, value must be a positive Duration (e.g. 4s, 5m, 1h); minimum value: 1s", parameter, value)
+			typedval, err := parseDuration(value, parameter)
+			if err != nil {
+				return err
 			}
 			c.OdoSettings.Timeout = &typedval
 
 		case "pushtimeout":
-			typedval, err := time.ParseDuration(value)
-			if err != nil || typedval < minimumDurationValue {
-				return fmt.Errorf("unable to set %q to %q, value must be a positive Duration (e.g. 4s, 5m, 1h); minimum value: 1s", parameter, value)
+			typedval, err := parseDuration(value, parameter)
+			if err != nil {
+				return err
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
 		case "registrycachetime":
-			typedval, err := time.ParseDuration(value)
-			if err != nil || typedval < minimumDurationValue {
-				return fmt.Errorf("unable to set %q to %q, value must be a positive Duration (e.g. 4s, 5m, 1h); minimum value: 1s", parameter, value)
+			typedval, err := parseDuration(value, parameter)
+			if err != nil {
+				return err
 			}
 			c.OdoSettings.RegistryCacheTime = &typedval
 
@@ -306,6 +322,20 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 	return nil
 }
 
+// parseDuration parses the value set for a parameter;
+// if the value is for e.g. "4m", it is parsed by the time pkg and converted to an appropriate time.Duration
+// it returns an error if one occurred, or if the parsed value is less than minimumDurationValue
+func parseDuration(value, parameter string) (time.Duration, error) {
+	typedval, err := time.ParseDuration(value)
+	if err != nil {
+		return typedval, fmt.Errorf("unable to set %q to %q; cause: %w\n%s", parameter, value, err, NewMinimumDurationValueError().Error())
+	}
+	if typedval < minimumDurationValue {
+		return typedval, fmt.Errorf("unable to set %q to %q; cause: %w", parameter, value, NewMinimumDurationValueError())
+	}
+	return typedval, nil
+}
+
 // DeleteConfiguration deletes odo preference from the odo preference file
 func (c *preferenceInfo) DeleteConfiguration(parameter string) error {
 	if p, ok := asSupportedParameter(parameter); ok {
@@ -333,13 +363,13 @@ func (c *preferenceInfo) IsSet(parameter string) bool {
 // GetTimeout returns the value of Timeout from config
 // and if absent then returns default
 func (c *preferenceInfo) GetTimeout() time.Duration {
-	// default timeout value is 1
+	// default timeout value is 1s
 	return kpointer.DurationDeref(c.OdoSettings.Timeout, DefaultTimeout)
 }
 
 // GetPushTimeout gets the value set by PushTimeout
 func (c *preferenceInfo) GetPushTimeout() time.Duration {
-	// default timeout value is 1
+	// default timeout value is 240s
 	return kpointer.DurationDeref(c.OdoSettings.PushTimeout, DefaultPushTimeout)
 }
 

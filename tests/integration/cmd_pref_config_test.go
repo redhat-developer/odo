@@ -98,6 +98,36 @@ var _ = Describe("odo preference and config command tests", func() {
 			os.RemoveAll(filepath.Join(globalConfPath, ".odo"))
 		})
 	})
+	When("when preference.yaml contains an int value for Timeout", func() {
+		BeforeEach(func() {
+			preference := `
+kind: Preference
+apiversion: odo.dev/v1alpha1
+OdoSettings:
+  UpdateNotification: true
+  RegistryList:
+  - Name: DefaultDevfileRegistry
+    URL: https://registry.devfile.io
+    secure: false
+  ConsentTelemetry: true
+  Timeout: 10
+`
+			preferencePath := filepath.Join(commonVar.Context, "preference.yaml")
+			err := helper.CreateFileWithContent(preferencePath, preference)
+			Expect(err).To(BeNil())
+			os.Setenv("GLOBALODOCONFIG", preferencePath)
+		})
+		It("should show warning about incompatible Timeout value when viewing preferences", func() {
+			errOut := helper.Cmd("odo", "preference", "view").ShouldPass().Err()
+			Expect(helper.GetPreferenceValue("Timeout")).To(ContainSubstring("10ns"))
+			Expect(errOut).To(ContainSubstring("Please change the preference value for Timeout"))
+		})
+	})
+
+	It("should fail to set an incompatible format for a preference that accepts duration", func() {
+		errOut := helper.Cmd("odo", "preference", "set", "RegistryCacheTime", "1d").ShouldFail().Err()
+		Expect(errOut).To(ContainSubstring("unable to set \"registrycachetime\" to \"1d\""))
+	})
 
 	Context("When no ConsentTelemetry preference value is set", func() {
 		var _ = JustBeforeEach(func() {
