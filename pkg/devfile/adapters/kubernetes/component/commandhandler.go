@@ -44,7 +44,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		switch status {
 		case remotecmd.Starting:
 			_ = log.SpinnerNoSpin(fmt.Sprintf("Executing the application (command: %s)", devfileCmd.Id))
-		case remotecmd.Stopped:
+		case remotecmd.Stopped, remotecmd.Errored:
 			if err != nil {
 				klog.V(2).Infof("error while running background command: %v", err)
 			}
