@@ -15,7 +15,7 @@ These flags let you filter the listed Devfile stacks:
 
 * `--devfile <name>` to list the Devfile stacks with this exact name
 * `--devfile-registry <name>` to list the Devfile stack of this registry (this is the `name` used
-when adding the registry to the preferences with `odo preference registry add <name> <url>`)
+when adding the registry to the preferences with `odo preference add registry <name> <url>`)
 * `--filter <term>` to list the Devfile for which the term is found in the devfile name or description
 
 By default, the name, registry and description 

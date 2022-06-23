@@ -33,7 +33,7 @@ var (
 	`)
 )
 
-// RegistryOptions encapsulates the options for the "odo preference registry add" command
+// RegistryOptions encapsulates the options for the "odo preference add registry" command
 type RegistryOptions struct {
 	// Clients
 	clientset *clientset.Clientset

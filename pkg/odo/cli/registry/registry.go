@@ -7,6 +7,8 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
@@ -16,7 +18,6 @@ import (
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/util"
-	"github.com/spf13/cobra"
 )
 
 const RecommendedCommandName = "registry"
@@ -76,7 +77,7 @@ func (o *ListOptions) Validate() error {
 		if len(o.registryFlag) > 0 {
 			return fmt.Errorf("the registry %q is not in preferences", o.registryFlag)
 		}
-		return fmt.Errorf("no registry in preferences, please add a registry using 'odo preference registry add' command")
+		return fmt.Errorf("no registry in preferences, please add a registry using 'odo preference add registry' command")
 	}
 
 	if len(o.devfileList.Items) == 0 {
