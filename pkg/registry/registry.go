@@ -120,7 +120,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryStacks(o.preferenceClient, registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo preference registry update --help`)\n", registry.Name, err)
+				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL, and credential and add the registry again (refer to `odo preference registry --help`)\n", registry.Name, err)
 				return
 			}
 
