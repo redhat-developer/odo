@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
@@ -441,7 +442,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().GetPushTimeout().Return(10)
+			prefClient.EXPECT().GetPushTimeout().Return(100 * time.Second)
 			componentAdapter := New(adapterCtx, fkclient, prefClient)
 			_, err := componentAdapter.getPod(false)
 

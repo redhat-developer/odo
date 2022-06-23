@@ -2,7 +2,6 @@ package preference
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -12,9 +11,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 
-	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 const unsetCommandName = "unset"
@@ -33,7 +33,7 @@ type UnsetOptions struct {
 	// Clients
 	clientset *clientset.Clientset
 
-	//Parameters
+	// Parameters
 	paramName string
 
 	// Flags
@@ -71,7 +71,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 				return nil
 			}
 		} else {
-			return errors.New("preference already unset, cannot unset a preference which is not set")
+			return fmt.Errorf("value of '%s' is already unset", o.paramName)
 		}
 	}
 
@@ -80,7 +80,7 @@ func (o *UnsetOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Info("Global preference was successfully updated")
+	log.Successf("Value of '%s' preference was removed from preferences. Its default value will be used.", o.paramName)
 	return nil
 
 }
@@ -94,19 +94,15 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 		Long:  fmt.Sprintf(unsetLongDesc, preference.FormatSupportedParameters()),
 		Example: func(exampleString, fullName string) string {
 			// Just show one example of how to unset a value.
-			exampleString += fmt.Sprintf("\n  %s %s", fullName, preference.GetSupportedParameters()[0])
-			return "\n" + exampleString
-		}(unsetExample, fullName),
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 1 {
-				return fmt.Errorf("please provide a parameter name")
-			} else if len(args) > 1 {
-				return fmt.Errorf("only one parameter is allowed")
-			} else {
-				return nil
+			parameters := preference.GetSupportedParameters()
+			for _, param := range parameters {
+				exampleString += fmt.Sprintf("\n  %s %s", fullName, param)
 			}
 
-		}, Run: func(cmd *cobra.Command, args []string) {
+			return "\n" + exampleString
+		}(unsetExample, fullName),
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}

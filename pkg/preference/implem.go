@@ -1,13 +1,13 @@
 package preference
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
@@ -17,6 +17,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+	kpointer "k8s.io/utils/pointer"
 )
 
 // odoSettings holds all odo specific configurations
@@ -25,17 +26,17 @@ type odoSettings struct {
 	// Controls if an update notification is shown or not
 	UpdateNotification *bool `yaml:"UpdateNotification,omitempty"`
 
-	// Timeout for OpenShift server connection check
-	Timeout *int `yaml:"Timeout,omitempty"`
+	// Timeout for server connection check
+	Timeout *time.Duration `yaml:"Timeout,omitempty"`
 
-	// PushTimeout for OpenShift pod timeout check
-	PushTimeout *int `yaml:"PushTimeout,omitempty"`
+	// PushTimeout for pod timeout check
+	PushTimeout *time.Duration `yaml:"PushTimeout,omitempty"`
 
 	// RegistryList for telling odo to connect to all the registries in the registry list
 	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
 
 	// RegistryCacheTime how long odo should cache information from registry
-	RegistryCacheTime *int `yaml:"RegistryCacheTime,omitempty"`
+	RegistryCacheTime *time.Duration `yaml:"RegistryCacheTime,omitempty"`
 
 	// Ephemeral if true creates odo emptyDir to store odo source code
 	Ephemeral *bool `yaml:"Ephemeral,omitempty"`
@@ -128,6 +129,22 @@ func newPreferenceInfo() (*preferenceInfo, error) {
 	err = util.GetFromFile(&c.Preference, c.Filename)
 	if err != nil {
 		return nil, err
+	}
+
+	// TODO: This code block about logging warnings should be removed once users completely shift to odo v3.
+	// The warning will be printed more than once, and it can be annoying, but it should ensure that the user will change these values.
+	var requiresChange []string
+	if c.OdoSettings.Timeout != nil && *c.OdoSettings.Timeout < minimumDurationValue {
+		requiresChange = append(requiresChange, TimeoutSetting)
+	}
+	if c.OdoSettings.PushTimeout != nil && *c.OdoSettings.PushTimeout < minimumDurationValue {
+		requiresChange = append(requiresChange, PushTimeoutSetting)
+	}
+	if c.OdoSettings.RegistryCacheTime != nil && *c.OdoSettings.RegistryCacheTime < minimumDurationValue {
+		requiresChange = append(requiresChange, RegistryCacheTimeSetting)
+	}
+	if len(requiresChange) != 0 {
+		log.Warningf("Please change the preference value for %s, the value does not comply with the minimum value of %s; e.g. of acceptable formats: 4s, 5m, 1h", strings.Join(requiresChange, ", "), minimumDurationValue)
 	}
 
 	// Handle user has preference file but doesn't use dynamic registry before
@@ -253,32 +270,23 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 		switch p {
 
 		case "timeout":
-			typedval, err := strconv.Atoi(value)
+			typedval, err := parseDuration(value, parameter)
 			if err != nil {
-				return fmt.Errorf("unable to set %q to %q", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.New("cannot set timeout to less than 0")
+				return err
 			}
 			c.OdoSettings.Timeout = &typedval
 
 		case "pushtimeout":
-			typedval, err := strconv.Atoi(value)
+			typedval, err := parseDuration(value, parameter)
 			if err != nil {
-				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.New("cannot set timeout to less than 0")
+				return err
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
 		case "registrycachetime":
-			typedval, err := strconv.Atoi(value)
+			typedval, err := parseDuration(value, parameter)
 			if err != nil {
-				return fmt.Errorf("unable to set %q to %q, value must be an integer", parameter, value)
-			}
-			if typedval < 0 {
-				return errors.New("cannot set timeout to less than 0")
+				return err
 			}
 			c.OdoSettings.RegistryCacheTime = &typedval
 
@@ -314,6 +322,20 @@ func (c *preferenceInfo) SetConfiguration(parameter string, value string) error 
 	return nil
 }
 
+// parseDuration parses the value set for a parameter;
+// if the value is for e.g. "4m", it is parsed by the time pkg and converted to an appropriate time.Duration
+// it returns an error if one occurred, or if the parsed value is less than minimumDurationValue
+func parseDuration(value, parameter string) (time.Duration, error) {
+	typedval, err := time.ParseDuration(value)
+	if err != nil {
+		return typedval, fmt.Errorf("unable to set %q to %q; cause: %w\n%s", parameter, value, err, NewMinimumDurationValueError().Error())
+	}
+	if typedval < minimumDurationValue {
+		return typedval, fmt.Errorf("unable to set %q to %q; cause: %w", parameter, value, NewMinimumDurationValueError())
+	}
+	return typedval, nil
+}
+
 // DeleteConfiguration deletes odo preference from the odo preference file
 func (c *preferenceInfo) DeleteConfiguration(parameter string) error {
 	if p, ok := asSupportedParameter(parameter); ok {
@@ -340,46 +362,46 @@ func (c *preferenceInfo) IsSet(parameter string) bool {
 
 // GetTimeout returns the value of Timeout from config
 // and if absent then returns default
-func (c *preferenceInfo) GetTimeout() int {
-	// default timeout value is 1
-	return util.GetIntOrDefault(c.OdoSettings.Timeout, DefaultTimeout)
+func (c *preferenceInfo) GetTimeout() time.Duration {
+	// default timeout value is 1s
+	return kpointer.DurationDeref(c.OdoSettings.Timeout, DefaultTimeout)
 }
 
 // GetPushTimeout gets the value set by PushTimeout
-func (c *preferenceInfo) GetPushTimeout() int {
-	// default timeout value is 1
-	return util.GetIntOrDefault(c.OdoSettings.PushTimeout, DefaultPushTimeout)
+func (c *preferenceInfo) GetPushTimeout() time.Duration {
+	// default timeout value is 240s
+	return kpointer.DurationDeref(c.OdoSettings.PushTimeout, DefaultPushTimeout)
 }
 
 // GetRegistryCacheTime gets the value set by RegistryCacheTime
-func (c *preferenceInfo) GetRegistryCacheTime() int {
-	return util.GetIntOrDefault(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
+func (c *preferenceInfo) GetRegistryCacheTime() time.Duration {
+	return kpointer.DurationDeref(c.OdoSettings.RegistryCacheTime, DefaultRegistryCacheTime)
 }
 
 // GetUpdateNotification returns the value of UpdateNotification from preferences
 // and if absent then returns default
 func (c *preferenceInfo) GetUpdateNotification() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.UpdateNotification, true)
+	return kpointer.BoolDeref(c.OdoSettings.UpdateNotification, true)
 }
 
 // GetEphemeralSourceVolume returns the value of ephemeral from preferences
 // and if absent then returns default
 func (c *preferenceInfo) GetEphemeralSourceVolume() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
+	return kpointer.BoolDeref(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
 }
 
 // GetConsentTelemetry returns the value of ConsentTelemetry from preferences
 // and if absent then returns default
 // default value: false, consent telemetry is disabled by default
 func (c *preferenceInfo) GetConsentTelemetry() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
+	return kpointer.BoolDeref(c.OdoSettings.ConsentTelemetry, DefaultConsentTelemetrySetting)
 }
 
 // GetEphemeral returns the value of Ephemeral from preferences
 // and if absent then returns default
 // default value: true, ephemeral is enabled by default
 func (c *preferenceInfo) GetEphemeral() bool {
-	return util.GetBoolOrDefault(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
+	return kpointer.BoolDeref(c.OdoSettings.Ephemeral, DefaultEphemeralSetting)
 }
 
 func (c *preferenceInfo) UpdateNotification() *bool {
@@ -390,15 +412,15 @@ func (c *preferenceInfo) Ephemeral() *bool {
 	return c.OdoSettings.Ephemeral
 }
 
-func (c *preferenceInfo) Timeout() *int {
+func (c *preferenceInfo) Timeout() *time.Duration {
 	return c.OdoSettings.Timeout
 }
 
-func (c *preferenceInfo) PushTimeout() *int {
+func (c *preferenceInfo) PushTimeout() *time.Duration {
 	return c.OdoSettings.PushTimeout
 }
 
-func (c *preferenceInfo) RegistryCacheTime() *int {
+func (c *preferenceInfo) RegistryCacheTime() *time.Duration {
 	return c.OdoSettings.RegistryCacheTime
 }
 

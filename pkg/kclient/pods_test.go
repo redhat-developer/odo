@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redhat-developer/odo/pkg/preference"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/redhat-developer/odo/pkg/preference"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,7 +82,7 @@ func TestWaitAndGetPodWithEvents(t *testing.T) {
 
 			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
 
-			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, preference.DefaultPushTimeout*time.Second)
+			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, preference.DefaultPushTimeout)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)

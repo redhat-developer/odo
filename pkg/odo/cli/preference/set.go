@@ -13,9 +13,10 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/preference"
 
-	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 )
 
 const setCommandName = "set"
@@ -79,7 +80,7 @@ func (o *SetOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Info("Global preference was successfully updated")
+	log.Successf("Value of '%s' preference was set to '%s'", o.paramName, o.paramValue)
 	return nil
 }
 
@@ -98,23 +99,12 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 			properties := prefClient.NewPreferenceList()
 			for _, property := range properties.Items {
 				value := property.Default
-				if value == "" {
-					value = "foobar"
-				}
 				exampleString += fmt.Sprintf("\n  %s %s %v", fullName, property.Name, value)
 			}
 			return "\n" + exampleString
 		}(setExample, fullName),
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 2 {
-				return fmt.Errorf("please provide a parameter name and value")
-			} else if len(args) > 2 {
-				return fmt.Errorf("only one value per parameter is allowed")
-			} else {
-				return nil
-			}
-
-		}, Run: func(cmd *cobra.Command, args []string) {
+		Args: cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}

@@ -5,161 +5,35 @@
 package preference
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
+	time "time"
 )
 
-// MockClient is a mock of Client interface.
+// MockClient is a mock of Client interface
 type MockClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientMockRecorder
 }
 
-// MockClientMockRecorder is the mock recorder for MockClient.
+// MockClientMockRecorder is the mock recorder for MockClient
 type MockClientMockRecorder struct {
 	mock *MockClient
 }
 
-// NewMockClient creates a new mock instance.
+// NewMockClient creates a new mock instance
 func NewMockClient(ctrl *gomock.Controller) *MockClient {
 	mock := &MockClient{ctrl: ctrl}
 	mock.recorder = &MockClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// ConsentTelemetry mocks base method.
-func (m *MockClient) ConsentTelemetry() *bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConsentTelemetry")
-	ret0, _ := ret[0].(*bool)
-	return ret0
-}
-
-// ConsentTelemetry indicates an expected call of ConsentTelemetry.
-func (mr *MockClientMockRecorder) ConsentTelemetry() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsentTelemetry", reflect.TypeOf((*MockClient)(nil).ConsentTelemetry))
-}
-
-// DeleteConfiguration mocks base method.
-func (m *MockClient) DeleteConfiguration(parameter string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteConfiguration", parameter)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteConfiguration indicates an expected call of DeleteConfiguration.
-func (mr *MockClientMockRecorder) DeleteConfiguration(parameter interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConfiguration", reflect.TypeOf((*MockClient)(nil).DeleteConfiguration), parameter)
-}
-
-// EphemeralSourceVolume mocks base method.
-func (m *MockClient) EphemeralSourceVolume() *bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EphemeralSourceVolume")
-	ret0, _ := ret[0].(*bool)
-	return ret0
-}
-
-// EphemeralSourceVolume indicates an expected call of EphemeralSourceVolume.
-func (mr *MockClientMockRecorder) EphemeralSourceVolume() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EphemeralSourceVolume", reflect.TypeOf((*MockClient)(nil).EphemeralSourceVolume))
-}
-
-// GetConsentTelemetry mocks base method.
-func (m *MockClient) GetConsentTelemetry() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConsentTelemetry")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// GetConsentTelemetry indicates an expected call of GetConsentTelemetry.
-func (mr *MockClientMockRecorder) GetConsentTelemetry() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentTelemetry", reflect.TypeOf((*MockClient)(nil).GetConsentTelemetry))
-}
-
-// GetEphemeralSourceVolume mocks base method.
-func (m *MockClient) GetEphemeralSourceVolume() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetEphemeralSourceVolume")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// GetEphemeralSourceVolume indicates an expected call of GetEphemeralSourceVolume.
-func (mr *MockClientMockRecorder) GetEphemeralSourceVolume() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEphemeralSourceVolume", reflect.TypeOf((*MockClient)(nil).GetEphemeralSourceVolume))
-}
-
-// GetPushTimeout mocks base method.
-func (m *MockClient) GetPushTimeout() int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPushTimeout")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// GetPushTimeout indicates an expected call of GetPushTimeout.
-func (mr *MockClientMockRecorder) GetPushTimeout() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPushTimeout", reflect.TypeOf((*MockClient)(nil).GetPushTimeout))
-}
-
-// GetRegistryCacheTime mocks base method.
-func (m *MockClient) GetRegistryCacheTime() int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRegistryCacheTime")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// GetRegistryCacheTime indicates an expected call of GetRegistryCacheTime.
-func (mr *MockClientMockRecorder) GetRegistryCacheTime() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryCacheTime", reflect.TypeOf((*MockClient)(nil).GetRegistryCacheTime))
-}
-
-// GetTimeout mocks base method.
-func (m *MockClient) GetTimeout() int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTimeout")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// GetTimeout indicates an expected call of GetTimeout.
-func (mr *MockClientMockRecorder) GetTimeout() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTimeout", reflect.TypeOf((*MockClient)(nil).GetTimeout))
-}
-
-// GetUpdateNotification mocks base method.
-func (m *MockClient) GetUpdateNotification() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUpdateNotification")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// GetUpdateNotification indicates an expected call of GetUpdateNotification.
-func (mr *MockClientMockRecorder) GetUpdateNotification() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateNotification", reflect.TypeOf((*MockClient)(nil).GetUpdateNotification))
-}
-
-// IsSet mocks base method.
+// IsSet mocks base method
 func (m *MockClient) IsSet(parameter string) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsSet", parameter)
@@ -167,97 +41,13 @@ func (m *MockClient) IsSet(parameter string) bool {
 	return ret0
 }
 
-// IsSet indicates an expected call of IsSet.
+// IsSet indicates an expected call of IsSet
 func (mr *MockClientMockRecorder) IsSet(parameter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSet", reflect.TypeOf((*MockClient)(nil).IsSet), parameter)
 }
 
-// NewPreferenceList mocks base method.
-func (m *MockClient) NewPreferenceList() PreferenceList {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewPreferenceList")
-	ret0, _ := ret[0].(PreferenceList)
-	return ret0
-}
-
-// NewPreferenceList indicates an expected call of NewPreferenceList.
-func (mr *MockClientMockRecorder) NewPreferenceList() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewPreferenceList", reflect.TypeOf((*MockClient)(nil).NewPreferenceList))
-}
-
-// PushTimeout mocks base method.
-func (m *MockClient) PushTimeout() *int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PushTimeout")
-	ret0, _ := ret[0].(*int)
-	return ret0
-}
-
-// PushTimeout indicates an expected call of PushTimeout.
-func (mr *MockClientMockRecorder) PushTimeout() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushTimeout", reflect.TypeOf((*MockClient)(nil).PushTimeout))
-}
-
-// RegistryCacheTime mocks base method.
-func (m *MockClient) RegistryCacheTime() *int {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryCacheTime")
-	ret0, _ := ret[0].(*int)
-	return ret0
-}
-
-// RegistryCacheTime indicates an expected call of RegistryCacheTime.
-func (mr *MockClientMockRecorder) RegistryCacheTime() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryCacheTime", reflect.TypeOf((*MockClient)(nil).RegistryCacheTime))
-}
-
-// RegistryHandler mocks base method.
-func (m *MockClient) RegistryHandler(operation, registryName, registryURL string, forceFlag, isSecure bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryHandler", operation, registryName, registryURL, forceFlag, isSecure)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// RegistryHandler indicates an expected call of RegistryHandler.
-func (mr *MockClientMockRecorder) RegistryHandler(operation, registryName, registryURL, forceFlag, isSecure interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryHandler", reflect.TypeOf((*MockClient)(nil).RegistryHandler), operation, registryName, registryURL, forceFlag, isSecure)
-}
-
-// RegistryList mocks base method.
-func (m *MockClient) RegistryList() *[]Registry {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryList")
-	ret0, _ := ret[0].(*[]Registry)
-	return ret0
-}
-
-// RegistryList indicates an expected call of RegistryList.
-func (mr *MockClientMockRecorder) RegistryList() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryList", reflect.TypeOf((*MockClient)(nil).RegistryList))
-}
-
-// RegistryNameExists mocks base method.
-func (m *MockClient) RegistryNameExists(name string) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryNameExists", name)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// RegistryNameExists indicates an expected call of RegistryNameExists.
-func (mr *MockClientMockRecorder) RegistryNameExists(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryNameExists", reflect.TypeOf((*MockClient)(nil).RegistryNameExists), name)
-}
-
-// SetConfiguration mocks base method.
+// SetConfiguration mocks base method
 func (m *MockClient) SetConfiguration(parameter, value string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetConfiguration", parameter, value)
@@ -265,27 +55,125 @@ func (m *MockClient) SetConfiguration(parameter, value string) error {
 	return ret0
 }
 
-// SetConfiguration indicates an expected call of SetConfiguration.
+// SetConfiguration indicates an expected call of SetConfiguration
 func (mr *MockClientMockRecorder) SetConfiguration(parameter, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConfiguration", reflect.TypeOf((*MockClient)(nil).SetConfiguration), parameter, value)
 }
 
-// Timeout mocks base method.
-func (m *MockClient) Timeout() *int {
+// DeleteConfiguration mocks base method
+func (m *MockClient) DeleteConfiguration(parameter string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Timeout")
-	ret0, _ := ret[0].(*int)
+	ret := m.ctrl.Call(m, "DeleteConfiguration", parameter)
+	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Timeout indicates an expected call of Timeout.
-func (mr *MockClientMockRecorder) Timeout() *gomock.Call {
+// DeleteConfiguration indicates an expected call of DeleteConfiguration
+func (mr *MockClientMockRecorder) DeleteConfiguration(parameter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timeout", reflect.TypeOf((*MockClient)(nil).Timeout))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConfiguration", reflect.TypeOf((*MockClient)(nil).DeleteConfiguration), parameter)
 }
 
-// UpdateNotification mocks base method.
+// GetUpdateNotification mocks base method
+func (m *MockClient) GetUpdateNotification() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUpdateNotification")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GetUpdateNotification indicates an expected call of GetUpdateNotification
+func (mr *MockClientMockRecorder) GetUpdateNotification() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateNotification", reflect.TypeOf((*MockClient)(nil).GetUpdateNotification))
+}
+
+// GetTimeout mocks base method
+func (m *MockClient) GetTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// GetTimeout indicates an expected call of GetTimeout
+func (mr *MockClientMockRecorder) GetTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTimeout", reflect.TypeOf((*MockClient)(nil).GetTimeout))
+}
+
+// GetPushTimeout mocks base method
+func (m *MockClient) GetPushTimeout() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPushTimeout")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// GetPushTimeout indicates an expected call of GetPushTimeout
+func (mr *MockClientMockRecorder) GetPushTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPushTimeout", reflect.TypeOf((*MockClient)(nil).GetPushTimeout))
+}
+
+// GetEphemeralSourceVolume mocks base method
+func (m *MockClient) GetEphemeralSourceVolume() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEphemeralSourceVolume")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GetEphemeralSourceVolume indicates an expected call of GetEphemeralSourceVolume
+func (mr *MockClientMockRecorder) GetEphemeralSourceVolume() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEphemeralSourceVolume", reflect.TypeOf((*MockClient)(nil).GetEphemeralSourceVolume))
+}
+
+// GetConsentTelemetry mocks base method
+func (m *MockClient) GetConsentTelemetry() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConsentTelemetry")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GetConsentTelemetry indicates an expected call of GetConsentTelemetry
+func (mr *MockClientMockRecorder) GetConsentTelemetry() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentTelemetry", reflect.TypeOf((*MockClient)(nil).GetConsentTelemetry))
+}
+
+// GetRegistryCacheTime mocks base method
+func (m *MockClient) GetRegistryCacheTime() time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRegistryCacheTime")
+	ret0, _ := ret[0].(time.Duration)
+	return ret0
+}
+
+// GetRegistryCacheTime indicates an expected call of GetRegistryCacheTime
+func (mr *MockClientMockRecorder) GetRegistryCacheTime() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRegistryCacheTime", reflect.TypeOf((*MockClient)(nil).GetRegistryCacheTime))
+}
+
+// RegistryHandler mocks base method
+func (m *MockClient) RegistryHandler(operation, registryName, registryURL string, forceFlag, isSecure bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryHandler", operation, registryName, registryURL, forceFlag, isSecure)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegistryHandler indicates an expected call of RegistryHandler
+func (mr *MockClientMockRecorder) RegistryHandler(operation, registryName, registryURL, forceFlag, isSecure interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryHandler", reflect.TypeOf((*MockClient)(nil).RegistryHandler), operation, registryName, registryURL, forceFlag, isSecure)
+}
+
+// UpdateNotification mocks base method
 func (m *MockClient) UpdateNotification() *bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateNotification")
@@ -293,8 +181,120 @@ func (m *MockClient) UpdateNotification() *bool {
 	return ret0
 }
 
-// UpdateNotification indicates an expected call of UpdateNotification.
+// UpdateNotification indicates an expected call of UpdateNotification
 func (mr *MockClientMockRecorder) UpdateNotification() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNotification", reflect.TypeOf((*MockClient)(nil).UpdateNotification))
+}
+
+// Timeout mocks base method
+func (m *MockClient) Timeout() *time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Timeout")
+	ret0, _ := ret[0].(*time.Duration)
+	return ret0
+}
+
+// Timeout indicates an expected call of Timeout
+func (mr *MockClientMockRecorder) Timeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Timeout", reflect.TypeOf((*MockClient)(nil).Timeout))
+}
+
+// PushTimeout mocks base method
+func (m *MockClient) PushTimeout() *time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PushTimeout")
+	ret0, _ := ret[0].(*time.Duration)
+	return ret0
+}
+
+// PushTimeout indicates an expected call of PushTimeout
+func (mr *MockClientMockRecorder) PushTimeout() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PushTimeout", reflect.TypeOf((*MockClient)(nil).PushTimeout))
+}
+
+// RegistryCacheTime mocks base method
+func (m *MockClient) RegistryCacheTime() *time.Duration {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryCacheTime")
+	ret0, _ := ret[0].(*time.Duration)
+	return ret0
+}
+
+// RegistryCacheTime indicates an expected call of RegistryCacheTime
+func (mr *MockClientMockRecorder) RegistryCacheTime() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryCacheTime", reflect.TypeOf((*MockClient)(nil).RegistryCacheTime))
+}
+
+// EphemeralSourceVolume mocks base method
+func (m *MockClient) EphemeralSourceVolume() *bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EphemeralSourceVolume")
+	ret0, _ := ret[0].(*bool)
+	return ret0
+}
+
+// EphemeralSourceVolume indicates an expected call of EphemeralSourceVolume
+func (mr *MockClientMockRecorder) EphemeralSourceVolume() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EphemeralSourceVolume", reflect.TypeOf((*MockClient)(nil).EphemeralSourceVolume))
+}
+
+// ConsentTelemetry mocks base method
+func (m *MockClient) ConsentTelemetry() *bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConsentTelemetry")
+	ret0, _ := ret[0].(*bool)
+	return ret0
+}
+
+// ConsentTelemetry indicates an expected call of ConsentTelemetry
+func (mr *MockClientMockRecorder) ConsentTelemetry() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsentTelemetry", reflect.TypeOf((*MockClient)(nil).ConsentTelemetry))
+}
+
+// RegistryList mocks base method
+func (m *MockClient) RegistryList() *[]Registry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryList")
+	ret0, _ := ret[0].(*[]Registry)
+	return ret0
+}
+
+// RegistryList indicates an expected call of RegistryList
+func (mr *MockClientMockRecorder) RegistryList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryList", reflect.TypeOf((*MockClient)(nil).RegistryList))
+}
+
+// RegistryNameExists mocks base method
+func (m *MockClient) RegistryNameExists(name string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryNameExists", name)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// RegistryNameExists indicates an expected call of RegistryNameExists
+func (mr *MockClientMockRecorder) RegistryNameExists(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryNameExists", reflect.TypeOf((*MockClient)(nil).RegistryNameExists), name)
+}
+
+// NewPreferenceList mocks base method
+func (m *MockClient) NewPreferenceList() PreferenceList {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewPreferenceList")
+	ret0, _ := ret[0].(PreferenceList)
+	return ret0
+}
+
+// NewPreferenceList indicates an expected call of NewPreferenceList
+func (mr *MockClientMockRecorder) NewPreferenceList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewPreferenceList", reflect.TypeOf((*MockClient)(nil).NewPreferenceList))
 }
