@@ -55,7 +55,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	// We do not need to restart Hot reload capable commands.
 	if a.componentExists {
 		if a.parameters.RunModeChanged || devfileCmd.Exec == nil || !util.SafeGetBool(devfileCmd.Exec.HotReloadCapable) {
-			klog.V(2).Info("restart required for command")
+			klog.V(2).Infof("restart required for command %s", devfileCmd.Id)
 
 			cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
 			if err != nil {
