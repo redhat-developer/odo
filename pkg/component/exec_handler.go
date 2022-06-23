@@ -71,12 +71,15 @@ func getCmdline(command v1alpha2.Command) []string {
 	}
 
 	// Change to the workdir and execute the command
+	// Redirecting to /proc/1/fd/* allows to redirect the process output to the output streams of PID 1 process inside the container.
+	// This way, returning the container logs with 'odo logs' or 'kubectl logs' would work seamlessly.
+	// See https://stackoverflow.com/questions/58716574/where-exactly-do-the-logs-of-kubernetes-pods-come-from-at-the-container-level
 	var cmd []string
 	if command.Exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmd = []string{ShellExecutable, "-c", "cd " + command.Exec.WorkingDir + " && " + cmdLine}
+		cmd = []string{ShellExecutable, "-c", "cd " + command.Exec.WorkingDir + " && (" + cmdLine + ") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
 	} else {
-		cmd = []string{ShellExecutable, "-c", cmdLine}
+		cmd = []string{ShellExecutable, "-c", "(" + cmdLine + ") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
 	}
 	return cmd
 }
