@@ -641,7 +641,6 @@ func TestHandleWithRegistryExist(t *testing.T) {
 		registryList []Registry
 		operation    string
 		registryName string
-		registryURL  string
 		forceFlag    bool
 		want         []Registry
 	}{
@@ -656,29 +655,8 @@ func TestHandleWithRegistryExist(t *testing.T) {
 			},
 			operation:    "add",
 			registryName: "testName",
-			registryURL:  "addURL",
 			forceFlag:    false,
 			want:         nil,
-		},
-		{
-			name:  "update registry",
-			index: 0,
-			registryList: []Registry{
-				{
-					Name: "testName",
-					URL:  "testURL",
-				},
-			},
-			operation:    "update",
-			registryName: "testName",
-			registryURL:  "updateURL",
-			forceFlag:    true,
-			want: []Registry{
-				{
-					Name: "testName",
-					URL:  "updateURL",
-				},
-			},
 		},
 		{
 			name:  "Delete registry",
@@ -689,16 +667,15 @@ func TestHandleWithRegistryExist(t *testing.T) {
 					URL:  "testURL",
 				},
 			},
-			operation:    "delete",
+			operation:    "remove",
 			registryName: "testName",
-			registryURL:  "",
 			forceFlag:    true,
 			want:         []Registry{},
 		},
 	}
 
 	for _, tt := range tests {
-		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL, tt.forceFlag, false)
+		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.forceFlag)
 		if err != nil {
 			t.Logf("Error message is %v", err)
 		}

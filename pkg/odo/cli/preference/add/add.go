@@ -14,7 +14,7 @@ const (
 	RecommendedCommandName = "add"
 )
 
-var registryDesc = ktemplates.LongDesc(`Configure devfile registry`)
+var registryDesc = ktemplates.LongDesc(`Add value to an array of items`)
 
 // NewCmdAdd implements the registry configuration command
 func NewCmdAdd(name, fullName string) *cobra.Command {
@@ -24,7 +24,7 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: registryDesc,
 		Long:  registryDesc,
-		Example: fmt.Sprintf("%s",
+		Example: fmt.Sprintf("%s\n",
 			registryCmd.Example,
 		),
 	}

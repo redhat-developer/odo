@@ -14,7 +14,7 @@ const (
 	RecommendedCommandName = "remove"
 )
 
-var registryDesc = ktemplates.LongDesc(`Configure devfile registry`)
+var registryDesc = ktemplates.LongDesc(`Remove value from an array of items`)
 
 // NewCmdRemove implements the registry configuration command
 func NewCmdRemove(name, fullName string) *cobra.Command {
@@ -24,7 +24,7 @@ func NewCmdRemove(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: registryDesc,
 		Long:  registryDesc,
-		Example: fmt.Sprintf("%s",
+		Example: fmt.Sprintf("%s\n",
 			registryCmd.Example,
 		),
 	}

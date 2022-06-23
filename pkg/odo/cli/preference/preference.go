@@ -38,7 +38,7 @@ func NewCmdPreference(name, fullName string) *cobra.Command {
 		Use:   name,
 		Short: "Modifies preference settings",
 		Long:  fmt.Sprintf(preferenceLongDesc, preference.FormatSupportedParameters()),
-		Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
+		Example: fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s\n",
 			preferenceViewCmd.Example,
 			preferenceSetCmd.Example,
 			preferenceUnsetCmd.Example,
