@@ -53,7 +53,7 @@ GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 
-RUN_GINKGO = `ginkgo`
+RUN_GINKGO = ginkgo
 
 default: bin
 
