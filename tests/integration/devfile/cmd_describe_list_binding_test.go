@@ -16,9 +16,6 @@ var _ = Describe("odo describe/list binding command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		if helper.IsKubernetesCluster() {
-			Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
-		}
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 	})
