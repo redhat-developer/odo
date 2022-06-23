@@ -3,6 +3,7 @@ package utils
 import (
 	"strconv"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 
 	corev1 "k8s.io/api/core/v1"
@@ -94,9 +95,14 @@ func AddOdoMandatoryVolume(containers *[]corev1.Container) {
 func UpdateContainersEntrypointsIfNeeded(
 	devfileObj devfileParser.DevfileObj,
 	containers []corev1.Container,
+	devfileBuildCmd string,
 	devfileRunCmd string,
 	devfileDebugCmd string,
 ) ([]corev1.Container, error) {
+	buildCmd, err := libdevfile.GetBuildCommand(devfileObj.Data, devfileBuildCmd)
+	if err != nil {
+		return nil, err
+	}
 	runCommand, err := libdevfile.GetRunCommand(devfileObj.Data, devfileRunCmd)
 	if err != nil {
 		return nil, err
@@ -106,16 +112,15 @@ func UpdateContainersEntrypointsIfNeeded(
 		return nil, err
 	}
 
-	runContainers, err := libdevfile.GetContainerComponentsForCommand(devfileObj, runCommand)
-	if err != nil {
-		return nil, err
+	var components []string
+	var containerComps []string
+	for _, cmd := range []v1alpha2.Command{buildCmd, runCommand, debugCommand} {
+		containerComps, err = libdevfile.GetContainerComponentsForCommand(devfileObj, cmd)
+		if err != nil {
+			return nil, err
+		}
+		components = append(components, containerComps...)
 	}
-	debugContainers, err := libdevfile.GetContainerComponentsForCommand(devfileObj, debugCommand)
-	if err != nil {
-		return nil, err
-	}
-
-	components := append(runContainers, debugContainers...)
 
 	for i := range containers {
 		container := &containers[i]

@@ -884,6 +884,11 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 
 func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 	const (
+		buildCommand            = "my-build"
+		buildCmdLine            = "echo my-build-command-line"
+		buildContainerComponent = "build-container-component"
+	)
+	const (
 		runCommand            = "my-run"
 		runCmdLine            = "echo my-run-command-line"
 		runContainerComponent = "run-container-component"
@@ -894,6 +899,10 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 		debugContainerComponent = "debug-container-component"
 	)
 
+	execBuildGroup := devfilev1.CommandGroup{
+		IsDefault: util.GetBoolPtr(true),
+		Kind:      devfilev1.BuildCommandGroupKind,
+	}
 	execRunGroup := devfilev1.CommandGroup{
 		IsDefault: util.GetBoolPtr(true),
 		Kind:      devfilev1.RunCommandGroupKind,
@@ -907,10 +916,13 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 		name                  string
 		commands              []devfilev1.Command
 		components            []devfilev1.Component
+		buildCommand          string
 		runCommand            string
 		debugCommand          string
+		buildContainerCommand []string
 		runContainerCommand   []string
 		debugContainerCommand []string
+		buildContainerArgs    []string
 		runContainerArgs      []string
 		debugContainerArgs    []string
 		wantErr               bool
@@ -931,49 +943,87 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 			wantErr:      true,
 		},
 		{
+			name:         "missing build command specified by name",
+			buildCommand: buildCommand + "-not-found",
+			runCommand:   runCommand,
+			debugCommand: debugCommand,
+			wantErr:      true,
+		},
+		{
 			name:         "containers without any command or args => must be overridden with 'tail -f /dev/null'",
+			buildCommand: buildCommand,
 			runCommand:   runCommand,
 			debugCommand: debugCommand,
 			wantErr:      false,
 			expectedContainerCommand: map[string][]string{
+				buildContainerComponent: {"tail"},
 				runContainerComponent:   {"tail"},
 				debugContainerComponent: {"tail"},
 			},
 			expectedContainerArgs: map[string][]string{
+				buildContainerComponent: {"-f", "/dev/null"},
 				runContainerComponent:   {"-f", "/dev/null"},
 				debugContainerComponent: {"-f", "/dev/null"},
 			},
 		},
 		{
-			name:                "containers with one without any command or args => must be overridden with 'tail -f /dev/null'",
+			name:                  "containers with one without any command or args => must be overridden with 'tail -f /dev/null'",
+			buildCommand:          buildCommand,
+			runCommand:            runCommand,
+			debugCommand:          debugCommand,
+			wantErr:               false,
+			buildContainerCommand: []string{"npm"},
+			buildContainerArgs:    []string{"install"},
+			runContainerCommand:   []string{"printenv"},
+			runContainerArgs:      []string{"HOSTNAME"},
+			expectedContainerCommand: map[string][]string{
+				buildContainerComponent: {"npm"},
+				runContainerComponent:   {"printenv"},
+				debugContainerComponent: {"tail"},
+			},
+			expectedContainerArgs: map[string][]string{
+				buildContainerComponent: {"install"},
+				runContainerComponent:   {"HOSTNAME"},
+				debugContainerComponent: {"-f", "/dev/null"},
+			},
+		},
+		{
+			name:                "default build command, containers with one without any command or args => must be overridden with 'tail -f /dev/null'",
 			runCommand:          runCommand,
 			debugCommand:        debugCommand,
 			wantErr:             false,
 			runContainerCommand: []string{"printenv"},
 			runContainerArgs:    []string{"HOSTNAME"},
 			expectedContainerCommand: map[string][]string{
+				buildContainerComponent: {"tail"},
 				runContainerComponent:   {"printenv"},
 				debugContainerComponent: {"tail"},
 			},
 			expectedContainerArgs: map[string][]string{
+				buildContainerComponent: {"-f", "/dev/null"},
 				runContainerComponent:   {"HOSTNAME"},
 				debugContainerComponent: {"-f", "/dev/null"},
 			},
 		},
 		{
 			name:                  "containers with explicit command or args",
+			buildCommand:          buildCommand,
 			runCommand:            runCommand,
 			debugCommand:          debugCommand,
 			wantErr:               false,
+			buildContainerCommand: []string{"npm"},
+			buildContainerArgs:    []string{"install"},
 			runContainerCommand:   []string{"printenv"},
 			runContainerArgs:      []string{"HOSTNAME"},
 			debugContainerCommand: []string{"tail"},
 			debugContainerArgs:    []string{"-f", "/path/to/my/custom/log/file"},
 			expectedContainerCommand: map[string][]string{
+				buildContainerComponent: {"npm"},
 				runContainerComponent:   {"printenv"},
 				debugContainerComponent: {"tail"},
 			},
 			expectedContainerArgs: map[string][]string{
+				buildContainerComponent: {"install"},
 				runContainerComponent:   {"HOSTNAME"},
 				debugContainerComponent: {"-f", "/path/to/my/custom/log/file"},
 			},
@@ -985,6 +1035,14 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 				t.Error(err)
 			}
 			err = devfileData.AddComponents([]devfilev1.Component{
+				{
+					Name: buildContainerComponent,
+					ComponentUnion: devfilev1.ComponentUnion{
+						Container: &devfilev1.ContainerComponent{
+							Container: devfilev1.Container{},
+						},
+					},
+				},
 				{
 					Name: runContainerComponent,
 					ComponentUnion: devfilev1.ComponentUnion{
@@ -1006,6 +1064,20 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 				t.Error(err)
 			}
 			err = devfileData.AddCommands([]devfilev1.Command{
+				{
+					Id: buildCommand,
+					CommandUnion: devfilev1.CommandUnion{
+						Exec: &devfilev1.ExecCommand{
+							CommandLine: buildCmdLine,
+							Component:   buildContainerComponent,
+							LabeledCommand: devfilev1.LabeledCommand{
+								BaseCommand: devfilev1.BaseCommand{
+									Group: &execBuildGroup,
+								},
+							},
+						},
+					},
+				},
 				{
 					Id: runCommand,
 					CommandUnion: devfilev1.CommandUnion{
@@ -1044,6 +1116,11 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 
 			containerForComponents := []corev1.Container{
 				{
+					Name:    buildContainerComponent,
+					Command: tt.buildContainerCommand,
+					Args:    tt.buildContainerArgs,
+				},
+				{
 					Name:    runContainerComponent,
 					Command: tt.runContainerCommand,
 					Args:    tt.runContainerArgs,
@@ -1055,9 +1132,10 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 				},
 			}
 
-			containers, err := UpdateContainersEntrypointsIfNeeded(devfileObj, containerForComponents, tt.runCommand, tt.debugCommand)
+			containers, err := UpdateContainersEntrypointsIfNeeded(devfileObj, containerForComponents, tt.buildCommand, tt.runCommand, tt.debugCommand)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 
 			if len(containers) != len(tt.expectedContainerCommand) {

@@ -414,7 +414,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd)
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, a.devfileBuildCmd, a.devfileRunCmd, a.devfileDebugCmd)
 	if err != nil {
 		return err
 	}
