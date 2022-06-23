@@ -611,17 +611,9 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 			},
 		},
 		{
-			name:         "Update registry",
-			registryList: []Registry{},
-			operation:    "update",
-			registryName: "testName",
-			registryURL:  "testURL",
-			want:         nil,
-		},
-		{
 			name:         "Delete registry",
 			registryList: []Registry{},
-			operation:    "delete",
+			operation:    "remove",
 			registryName: "testName",
 			registryURL:  "testURL",
 			want:         nil,

@@ -220,7 +220,7 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		}
 		registryList = append(registryList, registry)
 
-	case "update", "delete":
+	case "remove":
 		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
 	}
 

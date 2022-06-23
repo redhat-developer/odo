@@ -57,7 +57,7 @@ func (o *RegistryOptions) SetClientset(clientset *clientset.Clientset) {
 // Complete completes RegistryOptions after they've been created
 func (o *RegistryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	// TODO: Rename "delete" to "remove"
-	o.operation = "delete"
+	o.operation = "remove"
 	o.registryName = args[0]
 	o.registryURL = ""
 	o.user = "default"

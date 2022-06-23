@@ -8,10 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 )
 
-const (
-	RegistryUser = "default"
-)
-
 // IsSecure checks if the registry is secure
 func IsSecure(prefClient preference.Client, registryName string) bool {
 	isSecure := false
