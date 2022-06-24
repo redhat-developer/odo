@@ -306,19 +306,15 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	cmdKind := devfilev1.RunCommandGroupKind
+	cmdName := a.devfileRunCmd
 	if parameters.Debug {
 		cmdKind = devfilev1.DebugCommandGroupKind
+		cmdName = a.devfileDebugCmd
 	}
 
-	cmd, err := libdevfile.GetDefaultCommand(a.Devfile, cmdKind)
+	cmd, err := libdevfile.ValidateAndGetCommand(a.Devfile, cmdName, cmdKind)
 	if err != nil {
 		return err
-	}
-
-	cmdHandler := adapterHandler{
-		Adapter:         a,
-		parameters:      parameters,
-		componentExists: componentExists,
 	}
 
 	commandType, err := devfileCommon.GetCommandType(cmd)
@@ -327,6 +323,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 	var running bool
 	var isComposite bool
+	cmdHandler := adapterHandler{
+		Adapter:         a,
+		parameters:      parameters,
+		componentExists: componentExists,
+	}
+
 	if commandType == devfilev1.ExecCommandType {
 		running, err = cmdHandler.isRemoteProcessForCommandRunning(cmd)
 		if err != nil {
@@ -345,7 +347,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		running, execRequired, parameters.RunModeChanged)
 
 	if isComposite || !running || execRequired || parameters.RunModeChanged {
-		// Invoke the build command once (before calling libdevfile.ExecuteCommandByKind), as, if cmd is a composite command,
+		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
@@ -363,7 +365,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 				return err
 			}
 		}
-		err = libdevfile.ExecuteCommandByKind(a.Devfile, cmdKind, &cmdHandler, false)
+		err = libdevfile.ExecuteCommandByNameAndKind(a.Devfile, cmdName, cmdKind, &cmdHandler, false)
 	}
 
 	return err
