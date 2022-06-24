@@ -88,7 +88,7 @@ func HumanReadableOutput(preferenceList preference.PreferenceList, registryList 
 	preferenceT.Render()
 	log.Info("\nDevfile registries:")
 	if registryList == nil || len(*registryList) == 0 {
-		log.Warning("No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one")
+		log.Warning("No devfile registries added to the configuration. Refer to `odo preference registry add -h` to add one")
 		return
 	}
 	registryT.Render()
