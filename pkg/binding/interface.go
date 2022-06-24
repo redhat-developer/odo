@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/binding/asker"
 )
 
 type Client interface {
@@ -21,6 +22,7 @@ type Client interface {
 	// add.go
 
 	// ValidateAddBinding returns error if the backend failed to validate; mainly useful for flags backend
+	// withDevfile indicates if a Devfile is present in the current directory
 	ValidateAddBinding(flags map[string]string, withDevfile bool) error
 	// SelectServiceInstance returns the service to bind to the component
 	SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error)
@@ -32,8 +34,17 @@ type Client interface {
 	AskBindAsFiles(flags map[string]string) (bool, error)
 	// AddBindingToDevfile adds the ServiceBinding manifest to the devfile
 	AddBindingToDevfile(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
-	// AddBinding creates a binding in stdout, file, cluster
-	AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) error
+	// AddBinding creates a binding in file and cluster (if options selected)
+	// and returns the selected options, the binding definition as string (if option selected)
+	// and the filename where definition is written (if options selected)
+	AddBinding(
+		flags map[string]string,
+		bindingName string,
+		bindAsFiles bool,
+		unstructuredService unstructured.Unstructured,
+		workloadName string,
+		workloadGVK schema.GroupVersionKind,
+	) (selectedOptions []asker.CreationOption, bindingDef string, filename string, err error)
 
 	// list.go
 

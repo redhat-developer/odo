@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/binding/asker"
 	"github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -124,7 +126,8 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	}
 
 	if withDevfile {
-		devfileobj, err := o.clientset.BindingClient.AddBindingToDevfile(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+		var devfileobj parser.DevfileObj
+		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -146,7 +149,27 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		return nil
 	}
 
-	return o.clientset.BindingClient.AddBinding(o.flags, bindingName, bindAsFiles, serviceMap[service], workloadName, workloadGVK)
+	options, output, filename, err := o.clientset.BindingClient.AddBinding(o.flags, bindingName, bindAsFiles, serviceMap[service], workloadName, workloadGVK)
+	if err != nil {
+		return err
+	}
+
+	if output != "" {
+		fmt.Println(output)
+	}
+
+	// Display the info after outputting to stdout
+	for _, option := range options {
+		switch option {
+		case asker.OutputToFile:
+			log.Infof("The ServiceBinding has been written to the file %q", filename)
+
+		case asker.CreateOnCluster:
+			log.Infof("The ServiceBinding has been created in the cluster")
+		}
+	}
+
+	return nil
 }
 
 // NewCmdBinding implements the component odo sub-command

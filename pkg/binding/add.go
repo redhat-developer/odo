@@ -15,7 +15,6 @@ import (
 	backendpkg "github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/log"
 )
 
 // ValidateAddBinding calls Validate method of the adequate backend
@@ -113,10 +112,10 @@ func (o *BindingClient) AddBinding(
 	unstructuredService unstructured.Unstructured,
 	workloadName string,
 	workloadGVK schema.GroupVersionKind,
-) error {
+) ([]asker.CreationOption, string, string, error) {
 	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
 	if err != nil {
-		return err
+		return nil, "", "", err
 	}
 
 	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, workloadName, workloadGVK, []sboApi.Mapping{}, []sboApi.Service{service}, sboApi.ServiceBindingStatus{})
@@ -132,18 +131,18 @@ func (o *BindingClient) AddBinding(
 	for len(options) == 0 {
 		options, err = backend.SelectCreationOptions(flags)
 		if err != nil {
-			return err
+			return nil, "", "", err
 		}
 	}
 
 	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
 	serviceBindingUnstructured, err := kclient.ConvertK8sResourceToUnstructured(serviceBinding)
 	if err != nil {
-		return err
+		return nil, "", "", err
 	}
 	yamlDesc, err := yaml.Marshal(serviceBindingUnstructured.UnstructuredContent())
 	if err != nil {
-		return err
+		return nil, "", "", err
 	}
 
 	var filename string
@@ -151,44 +150,35 @@ func (o *BindingClient) AddBinding(
 		if option == asker.OutputToFile {
 			filename, err = backend.AskOutputFilePath(flags, filepath.Join("kubernetes", serviceBinding.GetName()+".yaml"))
 			if err != nil {
-				return err
+				return nil, "", "", err
 			}
 			break
 		}
 	}
 
+	var output string
 	for _, option := range options {
 		switch option {
 		case asker.OutputToFile:
 			err = os.MkdirAll(filepath.Dir(filename), 0750)
 			if err != nil {
-				return err
+				return nil, "", "", err
 			}
 			err = os.WriteFile(filename, yamlDesc, 0600)
 			if err != nil {
-				return err
+				return nil, "", "", err
 			}
 
 		case asker.OutputToStdout:
-			fmt.Println(string(yamlDesc))
+			output = string(yamlDesc)
 
 		case asker.CreateOnCluster:
 			_, err = o.kubernetesClient.PatchDynamicResource(serviceBindingUnstructured)
 			if err != nil {
-				return err
+				return nil, "", "", err
 			}
 		}
 	}
 
-	// Display the info after outputting to stdout
-	for _, option := range options {
-		switch option {
-		case asker.OutputToFile:
-			log.Infof("The ServiceBinding has been written to the file %q", filename)
-
-		case asker.CreateOnCluster:
-			log.Infof("The ServiceBinding has been created in the cluster")
-		}
-	}
-	return nil
+	return options, output, filename, nil
 }

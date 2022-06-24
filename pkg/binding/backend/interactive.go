@@ -113,7 +113,7 @@ func (o *InteractiveBackend) AskBindAsFiles(_ map[string]string) (bool, error) {
 }
 
 func (o *InteractiveBackend) SelectCreationOptions(flags map[string]string) ([]asker.CreationOption, error) {
-	return o.askerClient.SelectCreationOption()
+	return o.askerClient.SelectCreationOptions()
 }
 
 func (o *InteractiveBackend) AskOutputFilePath(flags map[string]string, defaultValue string) (string, error) {

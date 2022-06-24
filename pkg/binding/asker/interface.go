@@ -22,8 +22,8 @@ type Asker interface {
 	AskServiceBindingName(defaultName string) (string, error)
 	// AskBindAsFiles asks if service should be binded as files
 	AskBindAsFiles() (bool, error)
-	// SelectCreationOption asks to select a creation option for the servicebinding
-	SelectCreationOption() ([]CreationOption, error)
+	// SelectCreationOptions asks to select creation options for the servicebinding
+	SelectCreationOptions() ([]CreationOption, error)
 	// AskOutputFilePath asks for the path of the file to output service binding
 	AskOutputFilePath(defaultValue string) (string, error)
 }

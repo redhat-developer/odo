@@ -301,6 +301,7 @@ func (c Client) APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.Servi
 
 // GetWorkloadKinds returns all the workload kinds present in the cluster
 // It considers that all native resources are present and tests only for custom resources
+// Returns an array of Kinds and an array of GVKs
 func (c Client) GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error) {
 	var allWorkloadsKinds = []schema.GroupVersionKind{}
 	var options []string
