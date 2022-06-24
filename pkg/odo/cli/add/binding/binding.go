@@ -37,6 +37,7 @@ var addBindingExample = ktemplates.Examples(`
 
 # Add binding between service named 'myservice' of kind 'Redis' and the deployment app (without Devfile)
 %[1]s --service myservice/Redis --name myRedisService --workload app/Deployment.apps
+%[1]s --service myservice/Redis --name myRedisService --workload app.Deployment.apps
 `)
 
 type AddBindingOptions struct {

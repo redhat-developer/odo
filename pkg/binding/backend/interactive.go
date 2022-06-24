@@ -33,7 +33,7 @@ func (o *InteractiveBackend) Validate(_ map[string]string, _ bool) error {
 	return nil
 }
 
-func (o *InteractiveBackend) SelectWorkloadInstance(workloadName string) (string, schema.GroupVersionKind, error) {
+func (o *InteractiveBackend) SelectWorkloadInstance(_ string) (string, schema.GroupVersionKind, error) {
 
 	step := step_select_kind
 	var selectedGVK schema.GroupVersionKind

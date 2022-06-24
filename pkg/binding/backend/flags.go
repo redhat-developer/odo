@@ -52,7 +52,7 @@ func (o *FlagsBackend) SelectWorkloadInstance(workloadName string) (string, sche
 			return selectedName, gvk, nil
 		}
 	}
-	return "", schema.GroupVersionKind{}, fmt.Errorf("group/kind %q not found on the cluster", selectedKind+"/"+selectedGroup)
+	return "", schema.GroupVersionKind{}, fmt.Errorf("group/kind %q not found on the cluster", selectedGroup+"/"+selectedKind)
 }
 
 // SelectServiceInstance parses the service's name, kind, and group from arg:serviceName,
