@@ -202,6 +202,9 @@ func CommonBeforeEach() CommonVar {
 	cfg, _ := preference.NewClient()
 	err := cfg.SetConfiguration(preference.ConsentTelemetrySetting, "false")
 	Expect(err).To(BeNil())
+	// Use ephemeral volumes (emptyDir) in tests to make test faster
+	err = cfg.SetConfiguration(preference.EphemeralSetting, "true")
+	Expect(err).To(BeNil())
 	SetDefaultDevfileRegistryAsStaging()
 	return commonVar
 }

@@ -267,7 +267,7 @@ var _ = Describe("odo dev command tests", func() {
 
 			var devSession helper.DevSession
 			BeforeEach(func() {
-				helper.Cmd("odo", "preference", "set", "Ephemeral", "false").ShouldPass()
+				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
