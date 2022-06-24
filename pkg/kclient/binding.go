@@ -5,8 +5,13 @@ import (
 	"errors"
 
 	"github.com/redhat-developer/odo/pkg/api"
+
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+
+	ocappsv1 "github.com/openshift/api/apps/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -18,6 +23,20 @@ import (
 const (
 	ServiceBindingKind    = "ServiceBinding"
 	BindableKindsResource = "bindablekinds"
+)
+
+var (
+	NativeWorkloadKinds = []schema.GroupVersionKind{
+		appsv1.SchemeGroupVersion.WithKind("DaemonSet"),
+		appsv1.SchemeGroupVersion.WithKind("Deployment"),
+		appsv1.SchemeGroupVersion.WithKind("ReplicaSet"),
+		corev1.SchemeGroupVersion.WithKind("ReplicationController"),
+		appsv1.SchemeGroupVersion.WithKind("StatefulSet"),
+	}
+
+	CustomWorkloadKinds = []schema.GroupVersionKind{
+		ocappsv1.SchemeGroupVersion.WithKind("DeploymentConfig"),
+	}
 )
 
 // IsServiceBindingSupported checks if resource of type service binding request present on the cluster
@@ -101,8 +120,8 @@ func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured
 func NewServiceBindingObject(
 	bindingName string,
 	bindAsFiles bool,
-	deploymentName string,
-	deploymentGVR schema.GroupVersionResource,
+	workloadName string,
+	workloadGVK schema.GroupVersionKind,
 	mappings []bindingApi.Mapping,
 	services []bindingApi.Service,
 	status bindingApi.ServiceBindingStatus,
@@ -120,10 +139,10 @@ func NewServiceBindingObject(
 			BindAsFiles:            bindAsFiles,
 			Application: bindingApi.Application{
 				Ref: bindingApi.Ref{
-					Name:     deploymentName,
-					Group:    deploymentGVR.Group,
-					Version:  deploymentGVR.Version,
-					Resource: deploymentGVR.Resource,
+					Name:    workloadName,
+					Group:   workloadGVK.Group,
+					Version: workloadGVK.Version,
+					Kind:    workloadGVK.Kind,
 				},
 			},
 			Mappings: mappings,
@@ -278,6 +297,33 @@ func (c Client) APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.Servi
 			BindAsFiles:            true,
 		},
 	}
+}
+
+// GetWorkloadKinds returns all the workload kinds present in the cluster
+// It considers that all native resources are present and tests only for custom resources
+// Returns an array of Kinds and an array of GVKs
+func (c Client) GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error) {
+	var allWorkloadsKinds = []schema.GroupVersionKind{}
+	var options []string
+	for _, gvk := range NativeWorkloadKinds {
+		options = append(options, gvk.Kind)
+		allWorkloadsKinds = append(allWorkloadsKinds, gvk)
+	}
+
+	// Test for each custom workload kind if it exists in the cluster
+	for _, gvk := range CustomWorkloadKinds {
+		_, err := c.GetGVRFromGVK(gvk)
+		if err != nil {
+			// This is sufficient to test if resource exists in cluster
+			if meta.IsNoMatchError(err) {
+				continue
+			}
+			return nil, nil, err
+		}
+		options = append(options, gvk.Kind)
+		allWorkloadsKinds = append(allWorkloadsKinds, gvk)
+	}
+	return options, allWorkloadsKinds, nil
 }
 
 func mappingContainsBKS(bindableObjects []*meta.RESTMapping, bks bindingApi.BindableKindsStatus) bool {

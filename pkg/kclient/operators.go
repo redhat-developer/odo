@@ -11,9 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/discovery/cached/memory"
-	"k8s.io/client-go/restmapper"
 
 	"github.com/go-openapi/spec"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -175,40 +172,23 @@ func addParam(schema *spec.Schema, param olm.SpecDescriptor) {
 // GetRestMappingFromUnstructured returns rest mappings from unstructured data
 func (c *Client) GetRestMappingFromUnstructured(u unstructured.Unstructured) (*meta.RESTMapping, error) {
 	gvk := u.GroupVersionKind()
-
-	cfg := c.GetClientConfig()
-
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return &meta.RESTMapping{}, err
-	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	return c.restmapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
 
 func (c *Client) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error) {
-	// TODO: Remove GetRestMappingFromUnstructured, use GetRestMappingFromGVK instead
-	cfg := c.GetClientConfig()
-
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return &meta.RESTMapping{}, err
-	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	return mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	return c.restmapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 }
 
 func (c *Client) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error) {
-	cfg := c.GetClientConfig()
+	return c.restmapper.KindFor(gvr)
+}
 
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+func (c *Client) GetGVRFromGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	mapping, err := c.restmapper.RESTMapping(gvk.GroupKind())
 	if err != nil {
-		return schema.GroupVersionKind{}, err
+		return schema.GroupVersionResource{}, err
 	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-	return mapper.KindFor(gvr)
+	return mapping.Resource, nil
 }
 
 // GetOperatorGVRList creates a slice of rest mappings that are provided by Operators (CSV)

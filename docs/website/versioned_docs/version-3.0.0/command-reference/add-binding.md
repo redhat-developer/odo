@@ -3,7 +3,17 @@ title: odo add binding
 ---
 
 ## Description
-The `odo add binding` command adds a link between an Operator-backed service and a component. odo uses the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/) to create this link. Running this command will modify the Devfile, and once pushed (using `odo dev`) to the cluster, it creates an instance of the `ServiceBinding` resource.
+The `odo add binding` command adds a link between an Operator-backed service and a component. odo uses the [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator/) to create this link. 
+
+Running this command from a directory containing a Devfile will modify the Devfile, and once pushed (using `odo dev`) to the cluster, it creates an instance of the `ServiceBinding` resource.
+
+Running this command from a directory without a Devfile in the interactive mode will perform one or several operations,
+depending on your choice:
+- display the YAML definition of the Service binding in the output,
+- save the YAML definition of the ServiceBinding on a file,
+- create an instance of the ServiceBinding resource on the cluster.
+
+In non-interactive mode from a directory without a Devfile, the only possible operation is to display the YAML definition of the Service binding in the output.
 
 Currently, it only allows connecting to the Operator-backed services which support binding via the Service Binding Operator.
 To know about the Operators supported by the Service Binding Operator, read its [README](https://github.com/redhat-developer/service-binding-operator#known-bindable-operators).
@@ -11,13 +21,14 @@ To know about the Operators supported by the Service Binding Operator, read its 
 ## Running the Command
 
 ### Pre-requisites
-* A directory containing a Devfile; if you don't have one, see [odo init](init.md) on obtaining a devfile.
 * A cluster with the Service Binding Operator installed (see installation instructions for [Kubernetes](../overview/cluster-setup/kubernetes.md#installing-the-service-binding-operator) and [OpenShift](../overview/cluster-setup/openshift.md#installing-the-service-binding-operator) cluster)
 * Operator-backed services or resources you want to bind your application to
+* Optional, a directory containing a Devfile; if you don't have one, see [odo init](init.md) on obtaining a devfile.
 
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
 * a service from the list of bindable service instances as supported by the Service Binding Operator,
+* if a Devfile is not present in the directory, a workload resource,
 * option to bind the service as a file (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this),
 * a name for the binding.
 
@@ -29,6 +40,7 @@ odo add binding
 ### Non-interactive mode
 In the non-interactive mode, you will have to specify the following required information through the command-line:
 * `--service` flag to specify the service you want to bind to,
+* `--workload` flag to specify the workload resource, if a Devfile is not present in the directory,
 * `--name` flag to specify a name for the binding (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this)
 * `--bind-as-files` flag to specify if the service should be bound as a file; this flag is set to true by default.
 
@@ -52,6 +64,11 @@ The `--service` flag supports the following formats to specify the service name:
 * `<name>.<kind>`
 * `<name>.<kind>.<apigroup>`
 * `<name>/<kind>`
+* `<name>/<kind>.<apigroup>`
+
+#### Formats supported by the `--workload` flag
+The `--workload` flag supports the following formats to specify the workload name:
+* `<name>.<kind>.<apigroup>`
 * `<name>/<kind>.<apigroup>`
 
 The above formats are helpful when multiple services with the same name exist on the cluster.

@@ -42,7 +42,7 @@ var bindingServiceBinding = kclient.NewServiceBindingObject(
 	"my-nodejs-app-cluster-sample",
 	true,
 	"my-nodejs-app-app",
-	deploymentGVR,
+	deploymentGVK,
 	nil,
 	[]v1alpha1.Service{
 		{

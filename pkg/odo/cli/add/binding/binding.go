@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/binding/asker"
 	"github.com/redhat-developer/odo/pkg/binding/backend"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -34,6 +37,9 @@ var addBindingExample = ktemplates.Examples(`
 
 %[1]s --service myservice.Redis --name myRedisService
 
+# Add binding between service named 'myservice' of kind 'Redis' and the deployment app (without Devfile)
+%[1]s --service myservice/Redis --name myRedisService --workload app/Deployment.apps
+%[1]s --service myservice/Redis --name myRedisService --workload app.Deployment.apps
 `)
 
 type AddBindingOptions struct {
@@ -58,7 +64,8 @@ func (o *AddBindingOptions) SetClientset(clientset *clientset.Clientset) {
 
 func (o *AddBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
-	if err != nil {
+	// The command must work without Devfile
+	if err != nil && !genericclioptions.IsNoDevfileError(err) {
 		return err
 	}
 
@@ -71,10 +78,13 @@ func (o *AddBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (er
 }
 
 func (o *AddBindingOptions) Validate() (err error) {
-	return o.clientset.BindingClient.ValidateAddBinding(o.flags)
+	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
+	return o.clientset.BindingClient.ValidateAddBinding(o.flags, withDevfile)
 }
 
 func (o *AddBindingOptions) Run(_ context.Context) error {
+	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
+
 	serviceMap, err := o.clientset.BindingClient.GetServiceInstances()
 	if err != nil {
 		return err
@@ -91,7 +101,21 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	splitService := strings.Split(service, " ")
 	serviceName := splitService[0]
 
-	bindingName, err := o.clientset.BindingClient.AskBindingName(serviceName, o.EnvSpecificInfo.GetDevfileObj().GetMetadataName(), o.flags)
+	var componentName string
+	var workloadName string
+	var workloadGVK schema.GroupVersionKind
+
+	if !withDevfile {
+		workloadName, workloadGVK, err = o.clientset.BindingClient.SelectWorkloadInstance(o.flags)
+		if err != nil {
+			return err
+		}
+		componentName = workloadName
+	} else {
+		componentName = o.EnvSpecificInfo.GetDevfileObj().GetMetadataName()
+	}
+
+	bindingName, err := o.clientset.BindingClient.AskBindingName(serviceName, componentName, o.flags)
 	if err != nil {
 		return err
 	}
@@ -101,26 +125,50 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		return err
 	}
 
-	devfileobj, err := o.clientset.BindingClient.AddBinding(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+	if withDevfile {
+		var devfileobj parser.DevfileObj
+		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+		if err != nil {
+			return err
+		}
+		err = devfileobj.WriteYamlDevfile()
+		if err != nil {
+			return err
+		}
+		log.Success("Successfully added the binding to the devfile.")
+
+		exitMessage := "Run `odo dev` to create it on the cluster."
+		if len(o.flags) == 0 {
+			kindGroup := strings.ReplaceAll(strings.ReplaceAll(splitService[1], "(", ""), ")", "")
+			exitMessage += fmt.Sprintf("\nYou can automate this command by executing:\n  odo add binding --service %s.%s --name %s", serviceName, kindGroup, bindingName)
+			if !bindAsFiles {
+				exitMessage += " --bind-as-files=false"
+			}
+		}
+		log.Infof(exitMessage)
+		return nil
+	}
+
+	options, output, filename, err := o.clientset.BindingClient.AddBinding(o.flags, bindingName, bindAsFiles, serviceMap[service], workloadName, workloadGVK)
 	if err != nil {
 		return err
 	}
 
-	err = devfileobj.WriteYamlDevfile()
-	if err != nil {
-		return err
+	if output != "" {
+		fmt.Println(output)
 	}
-	log.Success("Successfully added the binding to the devfile.")
 
-	exitMessage := "Run `odo dev` to create it on the cluster."
-	if len(o.flags) == 0 {
-		kindGroup := strings.ReplaceAll(strings.ReplaceAll(splitService[1], "(", ""), ")", "")
-		exitMessage += fmt.Sprintf("\nYou can automate this command by executing:\n  odo add binding --service %s.%s --name %s", serviceName, kindGroup, bindingName)
-		if !bindAsFiles {
-			exitMessage += " --bind-as-files=false"
+	// Display the info after outputting to stdout
+	for _, option := range options {
+		switch option {
+		case asker.OutputToFile:
+			log.Infof("The ServiceBinding has been written to the file %q", filename)
+
+		case asker.CreateOnCluster:
+			log.Infof("The ServiceBinding has been created in the cluster")
 		}
 	}
-	log.Infof(exitMessage)
+
 	return nil
 }
 
@@ -139,6 +187,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		},
 	}
 	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")
+	bindingCmd.Flags().String(backend.FLAG_WORKLOAD, "", "Name of the workload to bind, only when no devfile is present in current directory")
 	bindingCmd.Flags().String(backend.FLAG_SERVICE, "", "Name of the service to bind")
 	bindingCmd.Flags().Bool(backend.FLAG_BIND_AS_FILES, true, "Bind the service as a file")
 	clientset.Add(bindingCmd, clientset.BINDING)

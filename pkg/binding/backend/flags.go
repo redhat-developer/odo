@@ -7,10 +7,14 @@ import (
 	"strings"
 
 	dfutil "github.com/devfile/library/pkg/util"
+	"github.com/redhat-developer/odo/pkg/binding/asker"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
+	FLAG_WORKLOAD      = "workload"
 	FLAG_SERVICE       = "service"
 	FLAG_NAME          = "name"
 	FLAG_BIND_AS_FILES = "bind-as-files"
@@ -23,7 +27,7 @@ func NewFlagsBackend() *FlagsBackend {
 	return &FlagsBackend{}
 }
 
-func (o *FlagsBackend) Validate(flags map[string]string) error {
+func (o *FlagsBackend) Validate(flags map[string]string, withDevfile bool) error {
 	if flags[FLAG_SERVICE] == "" {
 		return errors.New("missing --service parameter: please add --service <name>[/<kind>.<apigroup>] to specify the service instance for binding")
 	}
@@ -31,7 +35,24 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 		return errors.New("missing --name parameter: please add --name <name> to specify a name for the service binding instance")
 	}
 
+	if withDevfile && flags[FLAG_WORKLOAD] != "" {
+		return errors.New("--workload cannot be used from a directory containing a Devfile")
+	}
+
+	if !withDevfile && flags[FLAG_WORKLOAD] == "" {
+		return errors.New("missing --workload parameter: please add --workload <workload> so specify a workload to bind information to")
+	}
 	return dfutil.ValidateK8sResourceName(FLAG_NAME, flags[FLAG_NAME])
+}
+
+func (o *FlagsBackend) SelectWorkloadInstance(workloadName string) (string, schema.GroupVersionKind, error) {
+	selectedName, selectedKind, selectedGroup := parseServiceName(workloadName)
+	for _, gvk := range append(kclient.NativeWorkloadKinds, kclient.CustomWorkloadKinds...) {
+		if gvk.Group == selectedGroup && gvk.Kind == selectedKind {
+			return selectedName, gvk, nil
+		}
+	}
+	return "", schema.GroupVersionKind{}, fmt.Errorf("group/kind %q not found on the cluster", selectedGroup+"/"+selectedKind)
 }
 
 // SelectServiceInstance parses the service's name, kind, and group from arg:serviceName,
@@ -82,6 +103,14 @@ func (o *FlagsBackend) AskBindAsFiles(flags map[string]string) (bool, error) {
 		return false, fmt.Errorf("unable to set %q to --%v, value must be a boolean", flags[FLAG_BIND_AS_FILES], FLAG_BIND_AS_FILES)
 	}
 	return bindAsFiles, nil
+}
+
+func (o *FlagsBackend) SelectCreationOptions(flags map[string]string) ([]asker.CreationOption, error) {
+	return []asker.CreationOption{asker.OutputToStdout}, nil
+}
+
+func (o *FlagsBackend) AskOutputFilePath(flags map[string]string, defaultValue string) (string, error) {
+	return "", errors.New("this is not implemented")
 }
 
 // parseServiceName parses various service name formats. It supports the following formats:

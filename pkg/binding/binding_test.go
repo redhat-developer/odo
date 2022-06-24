@@ -9,6 +9,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
+	"github.com/kylelemons/godebug/pretty"
 	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -22,7 +23,6 @@ import (
 
 const deploymentKind = "Deployment"
 
-var deploymentGVR = appsv1.SchemeGroupVersion.WithResource("deployments")
 var deploymentGVK = appsv1.SchemeGroupVersion.WithKind(deploymentKind)
 var deploymentApiVersion, _ = deploymentGVK.ToAPIVersionAndKind()
 
@@ -173,7 +173,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 	}
 }
 
-func TestBindingClient_AddBinding(t *testing.T) {
+func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 	bindingName := "my-nodejs-app-cluster-sample"
 
 	var clusterUnstructured unstructured.Unstructured
@@ -215,7 +215,7 @@ func TestBindingClient_AddBinding(t *testing.T) {
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().NewServiceBindingServiceObject(clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
-					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVR, nil)
+					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
 					return client
 				},
 			},
@@ -234,7 +234,7 @@ func TestBindingClient_AddBinding(t *testing.T) {
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 					client.EXPECT().NewServiceBindingServiceObject(clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
-					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVR, nil)
+					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
 					return client
 				},
 			},
@@ -254,13 +254,13 @@ func TestBindingClient_AddBinding(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, err := o.AddBinding(tt.args.bindingName, tt.args.bindAsFiles, tt.args.unstructuredService, tt.args.obj)
+			got, err := o.AddBindingToDevfile(tt.args.bindingName, tt.args.bindAsFiles, tt.args.unstructuredService, tt.args.obj)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("AddBinding() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("AddBindingToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("AddBinding() got = %v, want %v", got, tt.want)
+				t.Errorf("AddBindingToDevfile(): %v", pretty.Compare(got, tt.want))
 			}
 		})
 	}
@@ -283,8 +283,8 @@ metadata:
 spec:
   application:
     group: apps
+    kind: Deployment
     name: my-nodejs-app-app
-    resource: deployments
     version: v1
   bindAsFiles: %v
   detectBindingResources: true

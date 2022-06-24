@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/redhat-developer/odo/tests/helper"
 
@@ -21,9 +22,6 @@ var _ = Describe("odo init interactive command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		if helper.IsKubernetesCluster() {
-			Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
-		}
 		commonVar = helper.CommonBeforeEach()
 		helper.Chdir(commonVar.Context)
 
@@ -99,6 +97,74 @@ var _ = Describe("odo init interactive command tests", func() {
 			Expect(err).To(BeNil())
 			components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), bindingName)
 			Expect(components).ToNot(BeNil())
+		})
+	})
+
+	When("running a deployment", func() {
+		BeforeEach(func() {
+			commonVar.CliRunner.Run("create", "deployment", "nginx", "--image=nginx")
+		})
+
+		AfterEach(func() {
+			commonVar.CliRunner.Run("delete", "deployment", "nginx")
+		})
+
+		It("should successsfully add binding without devfile", func() {
+			command := []string{"odo", "add", "binding"}
+
+			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+				outputFile := "binding.yaml"
+				expected := `spec:
+  application:
+    group: apps
+    kind: Deployment
+    name: nginx
+    version: v1
+  bindAsFiles: true
+  detectBindingResources: true
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: nginx-cluster-sample
+    kind: Cluster
+    name: cluster-sample
+    resource: clusters
+    version: v1`
+				helper.ExpectString(ctx, "Select service instance you want to bind to:")
+				helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
+
+				helper.ExpectString(ctx, "Select workload resource you want to bind:")
+				helper.SendLine(ctx, "Deployment")
+
+				helper.ExpectString(ctx, "Select workload resource name you want to bind:")
+				helper.SendLine(ctx, "nginx")
+
+				helper.ExpectString(ctx, "Enter the Binding's name")
+				helper.SendLine(ctx, "\n")
+
+				helper.ExpectString(ctx, "How do you want to bind the service?")
+				helper.SendLine(ctx, "Bind as Files")
+
+				helper.ExpectString(ctx, "Check(with Space Bar) one or more operations to perform with the ServiceBinding")
+				helper.SendLine(ctx, " \x1B[B \x1B[B ")
+
+				helper.ExpectString(ctx, "Save the ServiceBinding to file:")
+				helper.SendLine(ctx, outputFile)
+
+				for _, line := range strings.Split(expected, "\n") {
+					helper.ExpectString(ctx, line)
+				}
+				helper.ExpectString(ctx, "The ServiceBinding has been created in the cluster")
+				inCluster := commonVar.CliRunner.Run("get", "servicebinding", "nginx-cluster-sample", "-o", "yaml").Out.Contents()
+				Expect(string(inCluster)).To(ContainSubstring(expected))
+
+				helper.ExpectString(ctx, fmt.Sprintf("The ServiceBinding has been written to the file %q", outputFile))
+				helper.VerifyFileExists("binding.yaml")
+				fileContent, err := os.ReadFile(filepath.Join(commonVar.Context, outputFile))
+				Expect(err).Should(Succeed())
+				Expect(string(fileContent)).To(ContainSubstring(expected))
+			})
+
+			Expect(err).To(BeNil())
 		})
 	})
 })

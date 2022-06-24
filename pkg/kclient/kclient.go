@@ -9,9 +9,11 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 
@@ -49,8 +51,10 @@ type Client struct {
 	// DynamicClient interacts with client-go's `dynamic` package. It is used
 	// to dynamically create service from an operator. It can take an arbitrary
 	// yaml and create k8s/OpenShift resource from it.
-	DynamicClient      dynamic.Interface
-	discoveryClient    discovery.DiscoveryInterface
+	DynamicClient   dynamic.Interface
+	discoveryClient discovery.DiscoveryInterface
+	restmapper      *restmapper.DeferredDiscoveryRESTMapper
+
 	supportedResources map[string]bool
 	// Is server side apply supported by cluster
 	// Use IsSSASupported()
@@ -151,6 +155,8 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 	if err != nil {
 		return nil, err
 	}
+
+	client.restmapper = restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(client.discoveryClient))
 
 	client.checkIngressSupports = true
 
