@@ -206,12 +206,15 @@ func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour col
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		mu.Lock()
-		defer mu.Unlock()
-		color.Set(colour)
-		defer color.Unset()
+		err := func() error {
+			mu.Lock()
+			defer mu.Unlock()
+			color.Set(colour)
+			defer color.Unset()
 
-		_, err := fmt.Fprintln(out, containerName+": "+line)
+			_, err := fmt.Fprintln(out, containerName+": "+line)
+			return err
+		}()
 		if err != nil {
 			return err
 		}
