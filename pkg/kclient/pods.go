@@ -222,11 +222,9 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 
 	// If the log is being followed, set it to follow / don't wait
 	if followLog {
-		tailLines := int64(1)
 		podLogOptions = corev1.PodLogOptions{
 			Follow:    true,
 			Previous:  false,
-			TailLines: &tailLines,
 			Container: containerName,
 		}
 	}

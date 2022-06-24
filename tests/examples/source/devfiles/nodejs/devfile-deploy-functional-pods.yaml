@@ -113,7 +113,9 @@ components:
         spec:
           containers:
           - name: main
-            image: "{{CONTAINER_IMAGE}}"
+            image: alpine
+            command: ["/bin/sh"]
+            args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]
   - name: outerloop-pod
     kubernetes:
       inlined: |
@@ -124,4 +126,6 @@ components:
         spec:
           containers:
           - name: main
-            image: "{{CONTAINER_IMAGE}}"
+            image: alpine
+            command: ["/bin/sh"]
+            args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]

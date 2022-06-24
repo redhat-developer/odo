@@ -27,7 +27,7 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 
 var _ Client = (*LogsClient)(nil)
 
-func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace string) ([]map[string]io.ReadCloser, error) {
+func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace string, follow bool) ([]map[string]io.ReadCloser, error) {
 	var selector string
 	logs := []map[string]io.ReadCloser{}
 	unknownMode := true
@@ -35,7 +35,7 @@ func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		unknownMode = false
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-		l, err := o.getLogsWithSelector(selector, namespace)
+		l, err := o.getLogsWithSelector(selector, namespace, follow)
 		if err != nil {
 			return nil, err
 		}
@@ -44,7 +44,7 @@ func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace
 	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
 		unknownMode = false
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
-		l, err := o.getLogsWithSelector(selector, namespace)
+		l, err := o.getLogsWithSelector(selector, namespace, follow)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +61,7 @@ func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace
 // ignorePods boolean helps get logs for the containers of the independent Pods created in Deploy mode, since they
 // don't have an owner unlike the independent Pods created in Dev mode which are owned by the main Deployment created
 // by odo dev
-func (o *LogsClient) getLogsWithSelector(selector string, namespace string) ([]map[string]io.ReadCloser, error) {
+func (o *LogsClient) getLogsWithSelector(selector string, namespace string, follow bool) ([]map[string]io.ReadCloser, error) {
 	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -112,11 +112,10 @@ func (o *LogsClient) getLogsWithSelector(selector string, namespace string) ([]m
 		}
 	}
 
-	// get logs of all containers
 	logs := []map[string]io.ReadCloser{}
 	for pod, containers := range podContainersMap {
 		for _, container := range containers {
-			containerLogs, err := o.kubernetesClient.GetPodLogs(pod, container.Name, false)
+			containerLogs, err := o.kubernetesClient.GetPodLogs(pod, container.Name, follow)
 			if err != nil {
 				return nil, err
 			}
