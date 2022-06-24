@@ -1189,8 +1189,74 @@ var _ = Describe("odo dev command tests", func() {
 			By("building the application only once", func() {
 				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
 				// The bracket allows to match the last occurrence with the command execution timing information.
-				Expect(strings.Count(string(stdout), "Building your application in container on cluster [")).
+				Expect(strings.Count(string(stdout), "Building your application in container on cluster (command: install) [")).
 					To(BeNumerically("==", 1))
+			})
+
+			By("verifying that the command did run successfully", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", "/projects/testfolder"},
+					func(cmdOp string, err error) bool {
+						return err == nil
+					},
+				)
+				Expect(res).To(BeTrue())
+			})
+		})
+	})
+
+	When("running build and run commands as composite in different containers and a shared volume", func() {
+		var session helper.DevSession
+		var stdout []byte
+		var stderr []byte
+		const devfileCmpName = "nodejs"
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(
+				filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			var err error
+			session, stdout, stderr, _, err = helper.StartDevMode()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			session.Stop()
+			session.WaitEnd()
+		})
+
+		It("should run successfully", func() {
+			By("verifying from the output that all commands have been executed", func() {
+				helper.MatchAllInOutput(string(stdout), []string{
+					"Building your application in container on cluster (command: mkdir)",
+					"Building your application in container on cluster (command: sleep-cmd-build)",
+					"Building your application in container on cluster (command: build-cmd)",
+					"Executing the application (command: sleep-cmd-run)",
+					"Executing the application (command: echo-with-error)",
+					"Executing the application (command: check-build-result)",
+					"Executing the application (command: start)",
+				})
+			})
+
+			By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+				helper.MatchAllInOutput(string(stderr), []string{
+					"Devfile command \"echo-with-error\" exited with an error status",
+					"intentional-error-message",
+				})
+			})
+
+			By("building the application only once per exec command in the build command", func() {
+				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+				// The bracket allows to match the last occurrence with the command execution timing information.
+				out := string(stdout)
+				for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
+					Expect(strings.Count(out, fmt.Sprintf("Building your application in container on cluster (command: %s) [", cmd))).
+						To(BeNumerically("==", 1))
+				}
 			})
 
 			By("verifying that the command did run successfully", func() {
