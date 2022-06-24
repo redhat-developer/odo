@@ -299,7 +299,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
-		err = libdevfile.ExecPostStartEvents(a.Devfile, component.NewExecHandler(a.kubeClient, a.pod.Name, "", parameters.Show))
+		err = libdevfile.ExecPostStartEvents(a.Devfile,
+			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name, "", parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -348,7 +349,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(a.kubeClient, a.pod.Name, "Building your application in container on cluster", parameters.Show)
+			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
+				"Building your application in container on cluster", parameters.Show)
 			return libdevfile.Build(a.Devfile, execHandler, true)
 		}
 		if componentExists {

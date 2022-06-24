@@ -1344,16 +1344,17 @@ var _ = Describe("odo dev command tests", func() {
 
 		When("Update the devfile.yaml", func() {
 
-			var outC []byte
 			BeforeEach(func() {
 				helper.ReplaceString("devfile.yaml", "memoryLimit: 1024Mi", "memoryLimit: 1023Mi")
 				var err error
-				outC, _, err = session.WaitSync()
+				_, _, err = session.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("Should build the application successfully", func() {
-				Expect(string(outC)).To(ContainSubstring("BUILD SUCCESS"))
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				podLogs := commonVar.CliRunner.Run("-n", commonVar.Project, "logs", podName).Out.Contents()
+				Expect(string(podLogs)).To(ContainSubstring("BUILD SUCCESS"))
 			})
 
 			When("compare the local and remote files", func() {
