@@ -66,19 +66,34 @@ func (mr *MockAddBindingBackendMockRecorder) AskBindingName(defaultName, flags i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockAddBindingBackend)(nil).AskBindingName), defaultName, flags)
 }
 
-// SelectCreationOption mocks base method.
-func (m *MockAddBindingBackend) SelectCreationOption(flags map[string]string) (asker.CreationOption, error) {
+// AskOutputFilePath mocks base method.
+func (m *MockAddBindingBackend) AskOutputFilePath(flags map[string]string, defaultValue string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectCreationOption", flags)
-	ret0, _ := ret[0].(asker.CreationOption)
+	ret := m.ctrl.Call(m, "AskOutputFilePath", flags, defaultValue)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SelectCreationOption indicates an expected call of SelectCreationOption.
-func (mr *MockAddBindingBackendMockRecorder) SelectCreationOption(flags interface{}) *gomock.Call {
+// AskOutputFilePath indicates an expected call of AskOutputFilePath.
+func (mr *MockAddBindingBackendMockRecorder) AskOutputFilePath(flags, defaultValue interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectCreationOption", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectCreationOption), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskOutputFilePath", reflect.TypeOf((*MockAddBindingBackend)(nil).AskOutputFilePath), flags, defaultValue)
+}
+
+// SelectCreationOptions mocks base method.
+func (m *MockAddBindingBackend) SelectCreationOptions(flags map[string]string) ([]asker.CreationOption, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectCreationOptions", flags)
+	ret0, _ := ret[0].([]asker.CreationOption)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectCreationOptions indicates an expected call of SelectCreationOptions.
+func (mr *MockAddBindingBackendMockRecorder) SelectCreationOptions(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectCreationOptions", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectCreationOptions), flags)
 }
 
 // SelectServiceInstance mocks base method.
@@ -113,15 +128,15 @@ func (mr *MockAddBindingBackendMockRecorder) SelectWorkloadInstance(workloadName
 }
 
 // Validate mocks base method.
-func (m *MockAddBindingBackend) Validate(flags map[string]string) error {
+func (m *MockAddBindingBackend) Validate(flags map[string]string, withDevfile bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Validate", flags)
+	ret := m.ctrl.Call(m, "Validate", flags, withDevfile)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Validate indicates an expected call of Validate.
-func (mr *MockAddBindingBackendMockRecorder) Validate(flags interface{}) *gomock.Call {
+func (mr *MockAddBindingBackendMockRecorder) Validate(flags, withDevfile interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockAddBindingBackend)(nil).Validate), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockAddBindingBackend)(nil).Validate), flags, withDevfile)
 }

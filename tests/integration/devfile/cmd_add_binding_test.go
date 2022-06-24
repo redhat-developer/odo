@@ -33,9 +33,24 @@ var _ = Describe("odo add binding command tests", func() {
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
 	})
+
+	It("should fail creating a binding without workload parameter", func() {
+		stderr := helper.Cmd("odo", "add", "binding", "--name", "aname", "--service", "cluster-sample").ShouldFail().Err()
+		Expect(stderr).To(ContainSubstring("missing --workload parameter"))
+	})
+
+	It("should create a binding using the workload parameter", func() {
+		helper.Cmd("odo", "add", "binding", "--name", "aname", "--service", "cluster-sample", "--workload", "app/Deployment.apps").ShouldPass()
+	})
+
 	When("the component is bootstrapped", func() {
 		BeforeEach(func() {
 			helper.Cmd("odo", "init", "--name", "mynode", "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml"), "--starter", "nodejs-starter").ShouldPass()
+		})
+
+		It("should fail using the --workload parameter", func() {
+			stderr := helper.Cmd("odo", "add", "binding", "--name", "aname", "--service", "cluster-sample", "--workload", "app/Deployment.apps").ShouldFail().Err()
+			Expect(stderr).To(ContainSubstring("--workload cannot be used from a directory containing a Devfile"))
 		})
 
 		When("adding a binding", func() {

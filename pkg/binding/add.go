@@ -19,14 +19,14 @@ import (
 )
 
 // ValidateAddBinding calls Validate method of the adequate backend
-func (o *BindingClient) ValidateAddBinding(flags map[string]string) error {
+func (o *BindingClient) ValidateAddBinding(flags map[string]string, withDevfile bool) error {
 	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
 		backend = o.interactiveBackend
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.Validate(flags)
+	return backend.Validate(flags, withDevfile)
 }
 
 func (o *BindingClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {

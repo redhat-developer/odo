@@ -27,7 +27,7 @@ func NewFlagsBackend() *FlagsBackend {
 	return &FlagsBackend{}
 }
 
-func (o *FlagsBackend) Validate(flags map[string]string) error {
+func (o *FlagsBackend) Validate(flags map[string]string, withDevfile bool) error {
 	if flags[FLAG_SERVICE] == "" {
 		return errors.New("missing --service parameter: please add --service <name>[/<kind>.<apigroup>] to specify the service instance for binding")
 	}
@@ -35,6 +35,13 @@ func (o *FlagsBackend) Validate(flags map[string]string) error {
 		return errors.New("missing --name parameter: please add --name <name> to specify a name for the service binding instance")
 	}
 
+	if withDevfile && flags[FLAG_WORKLOAD] != "" {
+		return errors.New("--workload cannot be used from a directory containing a Devfile")
+	}
+
+	if !withDevfile && flags[FLAG_WORKLOAD] == "" {
+		return errors.New("missing --workload parameter: please add --workload <workload> so specify a workload to bind information to")
+	}
 	return dfutil.ValidateK8sResourceName(FLAG_NAME, flags[FLAG_NAME])
 }
 

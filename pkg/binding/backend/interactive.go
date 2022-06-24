@@ -29,7 +29,7 @@ func NewInteractiveBackend(askerClient asker.Asker, kubernetesClient kclient.Cli
 	}
 }
 
-func (o *InteractiveBackend) Validate(_ map[string]string) error {
+func (o *InteractiveBackend) Validate(_ map[string]string, _ bool) error {
 	return nil
 }
 

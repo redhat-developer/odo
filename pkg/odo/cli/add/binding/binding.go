@@ -35,6 +35,8 @@ var addBindingExample = ktemplates.Examples(`
 
 %[1]s --service myservice.Redis --name myRedisService
 
+# Add binding between service named 'myservice' of kind 'Redis' and the deployment app (without Devfile)
+%[1]s --service myservice/Redis --name myRedisService --workload app/Deployment.apps
 `)
 
 type AddBindingOptions struct {
@@ -73,7 +75,8 @@ func (o *AddBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) (er
 }
 
 func (o *AddBindingOptions) Validate() (err error) {
-	return o.clientset.BindingClient.ValidateAddBinding(o.flags)
+	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
+	return o.clientset.BindingClient.ValidateAddBinding(o.flags, withDevfile)
 }
 
 func (o *AddBindingOptions) Run(_ context.Context) error {

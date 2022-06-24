@@ -8,7 +8,7 @@ import (
 
 type AddBindingBackend interface {
 	// Validate returns error if the backend failed to validate; mainly useful for flags backend
-	Validate(flags map[string]string) error
+	Validate(flags map[string]string, withDevfile bool) error
 	// SelectWorkloadInstance asks user to select the workload to be bind;
 	// it returns the workload name in the form of '<name> (<kind>.<apigroup>)'
 	SelectWorkloadInstance(workloadName string) (string, schema.GroupVersionKind, error)

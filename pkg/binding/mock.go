@@ -218,17 +218,17 @@ func (mr *MockClientMockRecorder) SelectWorkloadInstance(flags interface{}) *gom
 }
 
 // ValidateAddBinding mocks base method.
-func (m *MockClient) ValidateAddBinding(flags map[string]string) error {
+func (m *MockClient) ValidateAddBinding(flags map[string]string, withDevfile bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateAddBinding", flags)
+	ret := m.ctrl.Call(m, "ValidateAddBinding", flags, withDevfile)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ValidateAddBinding indicates an expected call of ValidateAddBinding.
-func (mr *MockClientMockRecorder) ValidateAddBinding(flags interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ValidateAddBinding(flags, withDevfile interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAddBinding", reflect.TypeOf((*MockClient)(nil).ValidateAddBinding), flags)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAddBinding", reflect.TypeOf((*MockClient)(nil).ValidateAddBinding), flags, withDevfile)
 }
 
 // ValidateRemoveBinding mocks base method.

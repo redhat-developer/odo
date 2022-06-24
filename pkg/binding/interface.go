@@ -21,7 +21,7 @@ type Client interface {
 	// add.go
 
 	// ValidateAddBinding returns error if the backend failed to validate; mainly useful for flags backend
-	ValidateAddBinding(flags map[string]string) error
+	ValidateAddBinding(flags map[string]string, withDevfile bool) error
 	// SelectServiceInstance returns the service to bind to the component
 	SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error)
 	// SelectWorkloadInstance returns the workload to bind, when a devfile is not in use
