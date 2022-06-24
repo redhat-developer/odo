@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
 var buildGroup = devfilev1.BuildCommandGroupKind
-var runGroup = devfilev1.RunCommandGroupKind
 
 func TestValidateCommand(t *testing.T) {
 
@@ -18,7 +18,7 @@ func TestValidateCommand(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Case 1: Valid Exec Command",
+			name: "valid Exec Command",
 			command: devfilev1.Command{
 				Id: "somecommand",
 				CommandUnion: devfilev1.CommandUnion{
@@ -28,7 +28,29 @@ func TestValidateCommand(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Case 2: Valid Composite Command",
+			name: "invalid odo Command",
+			command: devfilev1.Command{
+				Id: "invalid-odo-command",
+				CommandUnion: devfilev1.CommandUnion{
+					Custom: &devfilev1.CustomCommand{
+						CommandClass: "cmd-class",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid Apply Command",
+			command: devfilev1.Command{
+				Id: "my-apply-command",
+				CommandUnion: devfilev1.CommandUnion{
+					Apply: &devfilev1.ApplyCommand{},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid Composite Command",
 			command: devfilev1.Command{
 				Id: "composite1",
 				CommandUnion: devfilev1.CommandUnion{
@@ -43,22 +65,6 @@ func TestValidateCommand(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Case 3: Invalid Composite Command with Run Kind",
-			command: devfilev1.Command{
-				Id: "composite1",
-				CommandUnion: devfilev1.CommandUnion{
-					Composite: &devfilev1.CompositeCommand{
-						LabeledCommand: devfilev1.LabeledCommand{
-							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: runGroup, IsDefault: util.GetBoolPtr(true)},
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,55 +76,4 @@ func TestValidateCommand(t *testing.T) {
 		})
 	}
 
-}
-
-func TestValidateCompositeCommand(t *testing.T) {
-
-	tests := []struct {
-		name    string
-		command devfilev1.Command
-		wantErr bool
-	}{
-		{
-			name: "Case 1: Valid Composite Command",
-			command: devfilev1.Command{
-
-				Id: "command1",
-				CommandUnion: devfilev1.CommandUnion{
-					Composite: &devfilev1.CompositeCommand{
-						LabeledCommand: devfilev1.LabeledCommand{
-							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: buildGroup},
-							},
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Case 2: Invalid Composite Run Kind Command",
-			command: devfilev1.Command{
-				Id: "command1",
-				CommandUnion: devfilev1.CommandUnion{
-					Composite: &devfilev1.CompositeCommand{
-						LabeledCommand: devfilev1.LabeledCommand{
-							BaseCommand: devfilev1.BaseCommand{
-								Group: &devfilev1.CommandGroup{Kind: runGroup},
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateCompositeCommand(tt.command)
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("TestValidateCompositeCommand unexpected error: %v", err)
-			}
-		})
-	}
 }

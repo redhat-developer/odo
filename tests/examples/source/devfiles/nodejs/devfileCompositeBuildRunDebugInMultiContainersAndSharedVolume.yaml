@@ -1,0 +1,133 @@
+schemaVersion: 2.1.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - name: echo-er
+    container:
+      image: quay.io/quay/busybox:latest
+      memoryLimit: 64Mi
+      mountSources: false
+  - name: sleeper-build
+    container:
+      image: quay.io/quay/busybox:latest
+      memoryLimit: 64Mi
+      mountSources: false
+  - name: build-checker
+    container:
+      image: quay.io/quay/busybox:latest
+      memoryLimit: 64Mi
+      mountSources: false
+      volumeMounts:
+        - name: artifacts
+          path: /artifacts
+  - name: sleeper-run
+    container:
+      image: quay.io/quay/busybox:latest
+      memoryLimit: 64Mi
+      mountSources: true
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      mountSources: true
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+        - name: tcp-5858
+          targetPort: 5858
+      volumeMounts:
+        - name: artifacts
+          path: /artifacts
+  - name: artifacts
+    volume:
+      ephemeral: true
+      size: 1Gi
+
+commands:
+
+  - id: mkdir
+    exec:
+      component: runtime
+      commandLine: mkdir -p /${PROJECTS_ROOT}/testfolder
+
+  - id: sleep-cmd-build
+    exec:
+      commandLine: 'echo sleeping for 1 second before build & sleep 1 && echo some error message from sleep-cmd-build > /proc/self/fd/2; echo done'
+      component: sleeper-build
+      workingDir: /
+  - id: mkdir-sleep-parallel
+    composite:
+      commands:
+        - mkdir
+        - sleep-cmd-build
+      parallel: true
+
+  - id: build-cmd
+    exec:
+      commandLine: 'npm install && (echo build-success > /artifacts/build-result) || (echo build-failure > /artifacts/build-result); echo npm install done'
+      component: runtime
+      workingDir: ${PROJECT_SOURCE}
+  - id: build
+    composite:
+      parallel: true
+      commands:
+        - mkdir-sleep-parallel
+        - build-cmd
+      group:
+        isDefault: true
+        kind: build
+
+  - id: echo-with-error
+    exec:
+      component: echo-er
+      commandLine: 'echo intentional-error-message >> /proc/self/fd/2; exit 1'
+  - id: sleep-cmd-run
+    exec:
+      commandLine: 'echo sleeping for 1 second before run & sleep 1 && echo some error message from sleep-cmd-run > /proc/self/fd/2; echo done'
+      component: sleeper-run
+      workingDir: /
+  - id: check-build-result
+    exec:
+      commandLine: 'cat /artifacts/build-result'
+      component: build-checker
+      workingDir: /artifacts
+  - id: build-checker
+    composite:
+      parallel: true
+      commands:
+        - sleep-cmd-run
+        - echo-with-error
+        - check-build-result
+  - id: start
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+  - id: run
+    composite:
+      commands:
+        - build-checker
+        - start
+      group:
+        isDefault: true
+        kind: run
+
+  - id: start-debug
+    exec:
+      component: runtime
+      commandLine: npm run debug
+      workingDir: ${PROJECTS_ROOT}
+  - id: debug
+    composite:
+      commands:
+        - build-checker
+        - start-debug
+      group:
+        kind: debug
+        isDefault: true

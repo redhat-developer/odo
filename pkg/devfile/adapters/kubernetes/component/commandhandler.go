@@ -21,7 +21,6 @@ const numberOfLinesToOutputLog = 100
 
 type adapterHandler struct {
 	Adapter
-	cmdKind         devfilev1.CommandGroupKind
 	parameters      common.PushParameters
 	componentExists bool
 }
@@ -39,46 +38,35 @@ func (a *adapterHandler) ApplyKubernetes(_ devfilev1.Component) error {
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
-	processName := "devrun"
-	if a.parameters.Debug {
-		processName = "debugrun"
-	}
-
-	doExecuteBuildCommand := func() error {
-		execHandler := component.NewExecHandler(a.kubeClient, a.pod.Name, "Building your application in container on cluster", a.parameters.Show)
-		return libdevfile.Build(a.Devfile, execHandler, true)
-	}
-
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
 
-	startHandler := func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
-		switch status {
-		case remotecmd.Starting:
-			_ = log.SpinnerNoSpin("Executing the application")
-		case remotecmd.Stopped:
-			if err != nil {
-				klog.V(2).Infof("error while running background command: %v", err)
+	statusHandlerFunc := func(s *log.Status) remotecmd.CommandOutputHandler {
+		return func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
+			switch status {
+			case remotecmd.Starting:
+				// Creating with no spin because the command could be long-running, and we cannot determine when it will end.
+				s.Start(fmt.Sprintf("Executing the application (command: %s)", devfileCmd.Id), true)
+			case remotecmd.Stopped, remotecmd.Errored:
+				s.End(status == remotecmd.Stopped)
+				if err != nil {
+					klog.V(2).Infof("error while running background command: %v", err)
+				}
 			}
 		}
 	}
+
+	// Spinner created but not started yet.
+	// It will be displayed when the statusHandlerFunc function is called with the "Starting" state.
+	spinner := log.NewStatus(log.GetStdout())
 
 	// if we need to restart, issue the remote process handler command to stop all running commands first.
 	// We do not need to restart Hot reload capable commands.
 	if a.componentExists {
-		cmd, err := libdevfile.GetDefaultCommand(a.Devfile, a.cmdKind)
-		if err != nil {
-			return err
-		}
-
-		if a.parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
-			klog.V(2).Info("restart required for command")
+		if a.parameters.RunModeChanged || devfileCmd.Exec == nil || !util.SafeGetBool(devfileCmd.Exec.HotReloadCapable) {
+			klog.V(2).Infof("restart required for command %s", devfileCmd.Id)
 
 			cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
 			if err != nil {
-				return err
-			}
-
-			if err = doExecuteBuildCommand(); err != nil {
 				return err
 			}
 
@@ -87,11 +75,11 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
+			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 				return err
 			}
 		} else {
-			klog.V(2).Infof("command is hot-reload capable, not restarting %s", processName)
+			klog.V(2).Infof("command is hot-reload capable, not restarting %s", devfileCmd.Id)
 		}
 	} else {
 		cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)
@@ -99,11 +87,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 			return err
 		}
 
-		if err := doExecuteBuildCommand(); err != nil {
-			return err
-		}
-
-		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
+		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 			return err
 		}
 	}
@@ -120,8 +104,15 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 
 	_, err := task.NewRetryable(fmt.Sprintf("process for command %q", devfileCmd.Id), func() (bool, interface{}, error) {
 		klog.V(4).Infof("checking if process for command %q is running", devfileCmd.Id)
-		isRunning, err := a.isRemoteProcessForCommandRunning(devfileCmd)
-		return err == nil && isRunning, isRunning, err
+		remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(
+			remotecmd.CommandDefinition{Id: devfileCmd.Id}, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component)
+		if err != nil {
+			return false, nil, err
+		}
+		isRunningOrDone := remoteProcess.Status == remotecmd.Running ||
+			remoteProcess.Status == remotecmd.Stopped ||
+			remoteProcess.Status == remotecmd.Errored
+		return isRunningOrDone, nil, err
 	}).RetryWithSchedule(retrySchedule, false)
 	if err != nil {
 		return err
@@ -165,12 +156,13 @@ func (a *adapterHandler) isRemoteProcessForCommandRunning(command devfilev1.Comm
 // checkRemoteCommandStatus checks if the command is running .
 // if the command is not in a running state, we fetch the last 20 lines of the component's log and display it
 func (a *adapterHandler) checkRemoteCommandStatus(command devfilev1.Command, notRunningMessage string) error {
-	running, err := a.isRemoteProcessForCommandRunning(command)
+	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
+	remoteProcess, err := remoteProcessHandler.GetProcessInfoForCommand(remotecmd.CommandDefinition{Id: command.Id}, a.kubeClient, a.pod.Name, command.Exec.Component)
 	if err != nil {
 		return err
 	}
 
-	if !running {
+	if remoteProcess.Status != remotecmd.Running && remoteProcess.Status != remotecmd.Stopped {
 		log.Warningf(notRunningMessage)
 		log.Warningf("Last %d lines of log:", numberOfLinesToOutputLog)
 

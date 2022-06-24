@@ -7,6 +7,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+	devfileCommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -297,7 +298,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
-		err = libdevfile.ExecPostStartEvents(a.Devfile, component.NewExecHandler(a.kubeClient, a.pod.Name, "", parameters.Show))
+		err = libdevfile.ExecPostStartEvents(a.Devfile,
+			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name, "", parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -315,20 +317,52 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	cmdHandler := adapterHandler{
 		Adapter:         a,
-		cmdKind:         cmdKind,
 		parameters:      parameters,
 		componentExists: componentExists,
 	}
 
-	running, err := cmdHandler.isRemoteProcessForCommandRunning(cmd)
+	commandType, err := devfileCommon.GetCommandType(cmd)
 	if err != nil {
 		return err
+	}
+	var running bool
+	var isComposite bool
+	if commandType == devfilev1.ExecCommandType {
+		running, err = cmdHandler.isRemoteProcessForCommandRunning(cmd)
+		if err != nil {
+			return err
+		}
+	} else if commandType == devfilev1.CompositeCommandType {
+		//this handler will run each command in this composite command individually,
+		//and will determine whether each command is running or not.
+		isComposite = true
+	} else {
+		return fmt.Errorf("unsupported type %q for Devfile command %s, only exec and composite are handled",
+			commandType, cmd.Id)
 	}
 
 	klog.V(4).Infof("running=%v, execRequired=%v, parameters.RunModeChanged=%v",
 		running, execRequired, parameters.RunModeChanged)
 
-	if !running || execRequired || parameters.RunModeChanged {
+	if isComposite || !running || execRequired || parameters.RunModeChanged {
+		// Invoke the build command once (before calling libdevfile.ExecuteCommandByKind), as, if cmd is a composite command,
+		// the handler we pass will be called for each command in that composite command.
+		doExecuteBuildCommand := func() error {
+			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
+				"Building your application in container on cluster", parameters.Show)
+			return libdevfile.Build(a.Devfile, execHandler, true)
+		}
+		if componentExists {
+			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
+				if err = doExecuteBuildCommand(); err != nil {
+					return err
+				}
+			}
+		} else {
+			if err = doExecuteBuildCommand(); err != nil {
+				return err
+			}
+		}
 		err = libdevfile.ExecuteCommandByKind(a.Devfile, cmdKind, &cmdHandler, false)
 	}
 
@@ -381,7 +415,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 		return err
 	}
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd)
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, a.devfileBuildCmd, a.devfileRunCmd, a.devfileDebugCmd)
 	if err != nil {
 		return err
 	}

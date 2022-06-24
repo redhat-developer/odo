@@ -30,11 +30,3 @@ type UnsupportedOdoCommandError struct {
 func (e *UnsupportedOdoCommandError) Error() string {
 	return fmt.Sprintf("command %q must be of type \"exec\" or \"composite\"", e.commandId)
 }
-
-// CompositeRunKindError returns an error if the composite command is of kind run
-type CompositeRunKindError struct {
-}
-
-func (e *CompositeRunKindError) Error() string {
-	return "composite commands of run kind are not supported currently"
-}

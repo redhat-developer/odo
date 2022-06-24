@@ -524,7 +524,7 @@ func DisplayLog(followLog bool, rd io.ReadCloser, writer io.Writer, compName str
 			index = 0
 		}
 
-		for i := index; i < len(lines)-1; i++ {
+		for i := index; i < len(lines); i++ {
 			_, err := fmt.Fprintf(writer, lines[i])
 			if err != nil {
 				return err

@@ -97,7 +97,29 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "running status if kill -0 command exit status is non-zero",
+			name: "error status if kill -0 command exit status is non-zero and process exit code recorded as failing",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123\n1"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
+			},
+			want: RemoteProcessInfo{
+				Pid:    123,
+				Status: Errored,
+			},
+		},
+		{
+			name: "running status if kill -0 command exit status is zero",
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
@@ -140,6 +162,10 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 }
 
 func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
+	kill0CmdProvider := func(p int) []string {
+		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
+	}
+
 	execCmdWithoutWorkingDir := CommandDefinition{
 		Id:      "my-exec-cmd",
 		CmdLine: "echo Hello; sleep 300",
@@ -173,11 +199,24 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c",
-						fmt.Sprintf("echo $$ > %s &&   (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2",
+						fmt.Sprintf("echo $$ > %[1]s &&   (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2; echo $? >> %[1]s",
 							getPidFileForCommand(execCmdWithoutWorkingDir), execCmdWithoutWorkingDir.CmdLine)}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 						_, err := stdout.Write([]byte("Hello"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(execCmdWithoutWorkingDir))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("1"))
 						return err
 					})
 			},
@@ -185,18 +224,31 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 			expectedStatuses:   []RemoteProcessStatus{Starting, Stopped},
 		},
 		{
-			name:   "command with all fields returned no error",
+			name:   "command with all fields returned an error",
 			cmdDef: fullExecCmd,
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
 					gomock.Eq([]string{ShellExecutable, "-c",
-						fmt.Sprintf("echo $$ > %s && cd %s && export ENV_VAR1='value1' ENV_VAR2='value2' && (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2",
+						fmt.Sprintf("echo $$ > %[1]s && cd %s && export ENV_VAR1='value1' ENV_VAR2='value2' && (%s) 1>>/proc/1/fd/1 2>>/proc/1/fd/2; echo $? >> %[1]s",
 							getPidFileForCommand(fullExecCmd), fullExecCmd.WorkingDir, fullExecCmd.CmdLine)}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("error while running command"))
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(fullExecCmd))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123\n1"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
 			},
 			isCmdExpectedToRun: true,
-			expectedStatuses:   []RemoteProcessStatus{Starting, Stopped},
+			expectedStatuses:   []RemoteProcessStatus{Starting, Errored},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -347,6 +399,28 @@ func TestKubeExecProcessHandler_StopProcessForCommand(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "error if any child process could not be killed",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(retrieveChildrenCmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("987"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(killCmdProvider(987)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("error killing process 987"))
+			},
+			wantErr: true,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
@@ -377,6 +451,7 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 		name                 string
 		kubeClientCustomizer func(*kclient.MockClientInterface)
 		pid                  int
+		lastKnownExitStatus  int
 		want                 RemoteProcessInfo
 		wantErr              bool
 	}{
@@ -467,7 +542,7 @@ func Test_getProcessInfoFromPid(t *testing.T) {
 			}
 
 			k := NewKubeExecProcessHandler()
-			got, err := k.getProcessInfoFromPid(tt.pid, kubeClient, _podName, _containerName)
+			got, err := k.getProcessInfoFromPid(tt.pid, tt.lastKnownExitStatus, kubeClient, _podName, _containerName)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -483,10 +558,11 @@ func Test_getRemoteProcessPID(t *testing.T) {
 	cmdDef := CommandDefinition{Id: "my-run"}
 	cmd := []string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(cmdDef))}
 	for _, tt := range []struct {
-		name                 string
-		kubeClientCustomizer func(*kclient.MockClientInterface)
-		want                 int
-		wantErr              bool
+		name                  string
+		kubeClientCustomizer  func(*kclient.MockClientInterface)
+		wantPid               int
+		wantLastKnownExitCode int
+		wantErr               bool
 	}{
 		{
 			name: "error returned at command execution",
@@ -514,8 +590,7 @@ func Test_getRemoteProcessPID(t *testing.T) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-						_, _ = stdout.Write([]byte("123\n"))
-						_, err := stdout.Write([]byte("234"))
+						_, err := stdout.Write([]byte("123\n234\n345"))
 						return err
 					})
 			},
@@ -543,7 +618,7 @@ func Test_getRemoteProcessPID(t *testing.T) {
 						return err
 					})
 			},
-			want: 123,
+			wantPid: 123,
 		},
 		{
 			name: "valid content in pid file",
@@ -555,7 +630,7 @@ func Test_getRemoteProcessPID(t *testing.T) {
 						return err
 					})
 			},
-			want: 123,
+			wantPid: 123,
 		},
 		{
 			name: "negative value in pid file",
@@ -567,7 +642,46 @@ func Test_getRemoteProcessPID(t *testing.T) {
 						return err
 					})
 			},
-			want: -1,
+			wantPid: -1,
+		},
+		{
+			name: "valid content with zero exit status code in pid file",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123\n0"))
+						return err
+					})
+			},
+			wantPid:               123,
+			wantLastKnownExitCode: 0,
+		},
+		{
+			name: "valid content with non-zero exit status code in pid file",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123\n1"))
+						return err
+					})
+			},
+			wantPid:               123,
+			wantLastKnownExitCode: 1,
+		},
+		{
+			name: "error returned content if non-number recorded in pid file as process last-known exit code",
+			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(cmd),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123\nNAN"))
+						return err
+					})
+			},
+			wantErr: true,
+			wantPid: 123,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -577,12 +691,15 @@ func Test_getRemoteProcessPID(t *testing.T) {
 				tt.kubeClientCustomizer(kubeClient)
 			}
 
-			got, err := getRemoteProcessPID(kubeClient, cmdDef, _podName, _containerName)
+			got, lastKnownExitStatus, err := getRemoteProcessPID(kubeClient, cmdDef, _podName, _containerName)
 			if tt.wantErr != (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("expected %v, got %v", tt.want, got)
+			if !reflect.DeepEqual(tt.wantPid, got) {
+				t.Errorf("expected PID %v, got %v", tt.wantPid, got)
+			}
+			if !reflect.DeepEqual(tt.wantLastKnownExitCode, lastKnownExitStatus) {
+				t.Errorf("expected recorded exit code %v, got %v", tt.wantLastKnownExitCode, lastKnownExitStatus)
 			}
 		})
 	}

@@ -3,6 +3,7 @@ package utils
 import (
 	"strconv"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 
 	corev1 "k8s.io/api/core/v1"
@@ -94,27 +95,40 @@ func AddOdoMandatoryVolume(containers *[]corev1.Container) {
 func UpdateContainersEntrypointsIfNeeded(
 	devfileObj devfileParser.DevfileObj,
 	containers []corev1.Container,
+	devfileBuildCmd string,
 	devfileRunCmd string,
 	devfileDebugCmd string,
 ) ([]corev1.Container, error) {
+	buildCmd, err := libdevfile.GetBuildCommand(devfileObj.Data, devfileBuildCmd)
+	if err != nil {
+		return nil, err
+	}
 	runCommand, err := libdevfile.GetRunCommand(devfileObj.Data, devfileRunCmd)
 	if err != nil {
 		return nil, err
 	}
-
 	debugCommand, err := libdevfile.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
 	if err != nil {
 		return nil, err
 	}
 
+	var components []string
+	var containerComps []string
+	for _, cmd := range []v1alpha2.Command{buildCmd, runCommand, debugCommand} {
+		containerComps, err = libdevfile.GetContainerComponentsForCommand(devfileObj, cmd)
+		if err != nil {
+			return nil, err
+		}
+		components = append(components, containerComps...)
+	}
+
 	for i := range containers {
 		container := &containers[i]
-		n := container.Name
-		if libdevfile.ShouldExecCommandRunOnContainer(runCommand.Exec, n) {
-			overrideContainerCommandAndArgsIfNeeded(container)
-		}
-		if libdevfile.ShouldExecCommandRunOnContainer(debugCommand.Exec, n) {
-			overrideContainerCommandAndArgsIfNeeded(container)
+		for _, c := range components {
+			if container.Name == c {
+				overrideContainerCommandAndArgsIfNeeded(container)
+				break
+			}
 		}
 	}
 
@@ -127,9 +141,14 @@ func UpdateContainerEnvVars(
 	devfileObj devfileParser.DevfileObj,
 	containers []corev1.Container,
 	devfileDebugCmd string,
-	devfileDebugPort int) ([]corev1.Container, error) {
+	devfileDebugPort int,
+) ([]corev1.Container, error) {
 
 	debugCommand, err := libdevfile.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
+	if err != nil {
+		return nil, err
+	}
+	debugContainers, err := libdevfile.GetContainerComponentsForCommand(devfileObj, debugCommand)
 	if err != nil {
 		return nil, err
 	}
@@ -138,14 +157,15 @@ func UpdateContainerEnvVars(
 		container := &containers[i]
 
 		// Check if the container belongs to a debug command component
-		if libdevfile.ShouldExecCommandRunOnContainer(debugCommand.Exec, container.Name) {
-			if !isEnvPresent(container.Env, adaptersCommon.EnvDebugPort) {
+		for _, c := range debugContainers {
+			if container.Name == c && !isEnvPresent(container.Env, adaptersCommon.EnvDebugPort) {
 				klog.V(2).Infof("Updating container %v env with debug command's debugPort", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvDebugPort,
 						Value: strconv.Itoa(devfileDebugPort),
 					})
+				break
 			}
 		}
 	}

@@ -14,20 +14,24 @@ import (
 )
 
 type execHandler struct {
-	kubeClient kclient.ClientInterface
-	podName    string
-	msg        string
-	show       bool
+	kubeClient    kclient.ClientInterface
+	appName       string
+	componentName string
+	podName       string
+	msg           string
+	show          bool
 }
 
 const ShellExecutable string = "/bin/sh"
 
-func NewExecHandler(kubeClient kclient.ClientInterface, podName string, msg string, show bool) *execHandler {
+func NewExecHandler(kubeClient kclient.ClientInterface, appName, cmpName, podName, msg string, show bool) *execHandler {
 	return &execHandler{
-		kubeClient: kubeClient,
-		podName:    podName,
-		msg:        msg,
-		show:       show,
+		kubeClient:    kubeClient,
+		appName:       appName,
+		componentName: cmpName,
+		podName:       podName,
+		msg:           msg,
+		show:          show,
 	}
 }
 
@@ -43,6 +47,8 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 	msg := o.msg
 	if msg == "" {
 		msg = fmt.Sprintf("Executing %s command %q on container %q", command.Id, command.Exec.CommandLine, command.Exec.Component)
+	} else {
+		msg += " (command: " + command.Id + ")"
 	}
 	spinner := log.Spinner(msg)
 	defer spinner.End(false)
@@ -56,6 +62,19 @@ func (o *execHandler) Execute(command v1alpha2.Command) error {
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
 	spinner.End(err == nil)
+	if err != nil {
+		rd, errLog := Log(o.kubeClient, o.componentName, o.appName, false, command)
+		if errLog != nil {
+			return fmt.Errorf("unable to log error %v: %w", err, errLog)
+		}
+
+		// Use GetStderr in order to make sure that colour output is correct
+		// on non-TTY terminals
+		errLog = util.DisplayLog(false, rd, log.GetStderr(), o.componentName, -1)
+		if errLog != nil {
+			return fmt.Errorf("unable to log error %v: %w", err, errLog)
+		}
+	}
 	return err
 }
 
@@ -71,12 +90,16 @@ func getCmdline(command v1alpha2.Command) []string {
 	}
 
 	// Change to the workdir and execute the command
+	// Redirecting to /proc/1/fd/* allows to redirect the process output to the output streams of PID 1 process inside the container.
+	// This way, returning the container logs with 'odo logs' or 'kubectl logs' would work seamlessly.
+	// See https://stackoverflow.com/questions/58716574/where-exactly-do-the-logs-of-kubernetes-pods-come-from-at-the-container-level
+	redirectString := "1>>/proc/1/fd/1 2>>/proc/1/fd/2"
 	var cmd []string
 	if command.Exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmd = []string{ShellExecutable, "-c", "cd " + command.Exec.WorkingDir + " && " + cmdLine}
+		cmd = []string{ShellExecutable, "-c", "cd " + command.Exec.WorkingDir + " && (" + cmdLine + ") " + redirectString}
 	} else {
-		cmd = []string{ShellExecutable, "-c", cmdLine}
+		cmd = []string{ShellExecutable, "-c", "(" + cmdLine + ") " + redirectString}
 	}
 	return cmd
 }

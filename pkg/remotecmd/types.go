@@ -13,6 +13,9 @@ const (
 	// Stopped represents a process stopped.
 	Stopped
 
+	// Errored represents a process that errored out, i.e. exited with a non-zero status code.
+	Errored
+
 	// Running represents a running process.
 	Running
 )

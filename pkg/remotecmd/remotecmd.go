@@ -46,8 +46,14 @@ func ExecuteCommand(
 		klog.V(2).Infof("ExecuteCommand returned an an err: %v. for command '%v'\nstdout: %v\nstderr: %v",
 			err, command, stdout, stderr)
 
-		return stdout, stderr, fmt.Errorf("unable to exec command %v: \n=== stdout===\n%s\n=== stderr===\n%s: %w",
-			command, strings.Join(stdout, "\n"), strings.Join(stderr, "\n"), err)
+		msg := fmt.Sprintf("unable to exec command %v", command)
+		if len(stdout) != 0 {
+			msg += fmt.Sprintf("\n=== stdout===\n%s", strings.Join(stdout, "\n"))
+		}
+		if len(stderr) != 0 {
+			msg += fmt.Sprintf("\n=== stderr===\n%s", strings.Join(stderr, "\n"))
+		}
+		return stdout, stderr, fmt.Errorf("%s: %w", msg, err)
 	}
 
 	return stdout, stderr, err

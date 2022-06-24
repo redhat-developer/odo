@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	devfileFileSystem "github.com/devfile/library/pkg/testingutil/filesystem"
@@ -2501,37 +2502,209 @@ func TestValidateAndGetTestCommands(t *testing.T) {
 	}
 }
 
-func TestShouldExecCommandRunOnContainer(t *testing.T) {
+func TestGetContainerComponentsForCommand(t *testing.T) {
+	devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion220))
+	devfileData.SetMetadata(devfilepkg.DevfileMetadata{Name: "my-app"})
+	_ = devfileData.AddComponents([]v1alpha2.Component{
+		{
+			Name: "my-container1",
+			ComponentUnion: v1alpha2.ComponentUnion{
+				Container: &v1alpha2.ContainerComponent{
+					Container: v1alpha2.Container{Image: "my-image"},
+				},
+			},
+		},
+		{
+			Name: "my-container2",
+			ComponentUnion: v1alpha2.ComponentUnion{
+				Container: &v1alpha2.ContainerComponent{
+					Container: v1alpha2.Container{Image: "my-image"},
+				},
+			},
+		},
+		{
+			Name: "my-container3",
+			ComponentUnion: v1alpha2.ComponentUnion{
+				Container: &v1alpha2.ContainerComponent{
+					Container: v1alpha2.Container{Image: "my-image"},
+				},
+			},
+		},
+		{
+			Name: "my-image1",
+			ComponentUnion: v1alpha2.ComponentUnion{
+				Image: &v1alpha2.ImageComponent{
+					Image: v1alpha2.Image{
+						ImageName: "my-image",
+					},
+				},
+			},
+		},
+		{
+			Name: "my-k8s",
+			ComponentUnion: v1alpha2.ComponentUnion{
+				Kubernetes: &v1alpha2.KubernetesComponent{
+					K8sLikeComponent: v1alpha2.K8sLikeComponent{
+						K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
+							Inlined: "---",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	customCmd := v1alpha2.Command{
+		Id: "custom",
+		CommandUnion: v1alpha2.CommandUnion{
+			Custom: &v1alpha2.CustomCommand{},
+		},
+	}
+	execCmdCont1 := v1alpha2.Command{
+		Id: "execCmdCont1",
+		CommandUnion: v1alpha2.CommandUnion{
+			Exec: &v1alpha2.ExecCommand{Component: "my-container1"},
+		},
+	}
+	execCmdCont2 := v1alpha2.Command{
+		Id: "execCmdCont2",
+		CommandUnion: v1alpha2.CommandUnion{
+			Exec: &v1alpha2.ExecCommand{Component: "my-container2"},
+		},
+	}
+	execCmdCont3 := v1alpha2.Command{
+		Id: "execCmdCont3",
+		CommandUnion: v1alpha2.CommandUnion{
+			Exec: &v1alpha2.ExecCommand{Component: "my-container3"},
+		},
+	}
+	applyCmdCont1 := v1alpha2.Command{
+		Id: "applyCmdCont1",
+		CommandUnion: v1alpha2.CommandUnion{
+			Apply: &v1alpha2.ApplyCommand{Component: "my-container1"},
+		},
+	}
+	applyCmdImg1 := v1alpha2.Command{
+		Id: "applyCmdImg1",
+		CommandUnion: v1alpha2.CommandUnion{
+			Apply: &v1alpha2.ApplyCommand{Component: "my-image1"},
+		},
+	}
+	applyK8s1 := v1alpha2.Command{
+		Id: "applyK8s1",
+		CommandUnion: v1alpha2.CommandUnion{
+			Apply: &v1alpha2.ApplyCommand{Component: "my-k8s"},
+		},
+	}
+	childCompositeCmd := v1alpha2.Command{
+		Id: "child-composite",
+		CommandUnion: v1alpha2.CommandUnion{
+			Composite: &v1alpha2.CompositeCommand{
+				Commands: []string{execCmdCont3.Id, applyK8s1.Id},
+			},
+		},
+	}
+
+	_ = devfileData.AddCommands([]v1alpha2.Command{
+		customCmd, execCmdCont1, execCmdCont2, execCmdCont3, applyCmdCont1, applyCmdImg1, applyK8s1, childCompositeCmd})
+
+	devfileObj := parser.DevfileObj{Data: devfileData}
+
+	type args struct {
+		cmd v1alpha2.Command
+	}
 	for _, tt := range []struct {
-		name        string
-		execCommand *v1alpha2.ExecCommand
-		container   string
-		want        bool
+		name    string
+		args    args
+		wantErr bool
+		want    []string
 	}{
 		{
-			name: "nil exec command",
+			name: "zero -value command",
+			args: args{cmd: v1alpha2.Command{}},
 		},
 		{
-			name: "exec component not matching container name",
-			execCommand: &v1alpha2.ExecCommand{
-				Component: "runtime",
-			},
-			container: "my-cont",
-			want:      false,
+			name:    "GetCommandType returning an error",
+			args:    args{cmd: v1alpha2.Command{Id: "unknown"}},
+			wantErr: true,
 		},
 		{
-			name: "exec component matching container name",
-			execCommand: &v1alpha2.ExecCommand{
-				Component: "runtime",
+			name:    "non-supported command type",
+			args:    args{cmd: customCmd},
+			wantErr: true,
+		},
+		{
+			name: "exec command matching existing container component",
+			args: args{cmd: execCmdCont1},
+			want: []string{"my-container1"},
+		},
+		{
+			name: "exec command not matching existing container component",
+			args: args{
+				cmd: v1alpha2.Command{
+					CommandUnion: v1alpha2.CommandUnion{
+						Exec: &v1alpha2.ExecCommand{Component: "my-k8s"},
+					},
+				},
 			},
-			container: "runtime",
-			want:      true,
+		},
+		{
+			name: "apply command matching existing container component",
+			args: args{cmd: applyCmdCont1},
+			want: []string{"my-container1"},
+		},
+		{
+			name: "apply command not matching existing container component",
+			args: args{cmd: applyCmdImg1},
+		},
+		{
+			name: "composite command with one command missing not declared in Devfile commands",
+			args: args{
+				cmd: v1alpha2.Command{
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							Commands: []string{execCmdCont1.Id, "a-command-not-found-in-devfile"},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "composite command with at least one unsupported component",
+			args: args{
+				cmd: v1alpha2.Command{
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							Commands: []string{childCompositeCmd.Id, customCmd.Id, applyCmdImg1.Id},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "composite command with no non-unsupported component",
+			args: args{
+				cmd: v1alpha2.Command{
+					CommandUnion: v1alpha2.CommandUnion{
+						Composite: &v1alpha2.CompositeCommand{
+							Commands: []string{childCompositeCmd.Id, applyCmdImg1.Id, execCmdCont1.Id},
+						},
+					},
+				},
+			},
+			want: []string{"my-container3", "my-container1"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ShouldExecCommandRunOnContainer(tt.execCommand, tt.container)
-			if tt.want != got {
-				t.Errorf("expected=%v, got %v", tt.want, got)
+			got, err := GetContainerComponentsForCommand(devfileObj, tt.args.cmd)
+
+			if tt.wantErr != (err != nil) {
+				t.Errorf("unexpected error, wantErr: %v, err: %v", tt.wantErr, err)
+			}
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("want: %v, got %v", tt.want, got)
 			}
 		})
 	}

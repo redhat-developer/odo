@@ -560,7 +560,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					client.EXPECT().GetOnePodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
 
-					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && echo \"Hello World!\""}
+					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
 					client.EXPECT().ExecCMDInContainer("runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(nil)
 
 					return client
@@ -598,9 +598,13 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-					client.EXPECT().GetOnePodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
+					fakePod := odoTestingUtil.CreateFakePod(componentName, "runtime")
+					//Expecting this method to be called twice because if the command execution fails, we try to get the pod logs by calling GetOnePodFromSelector again.
+					client.EXPECT().GetOnePodFromSelector(selector).Return(fakePod, nil).Times(2)
 
-					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && echo \"Hello World!\""}
+					client.EXPECT().GetPodLogs(fakePod.Name, gomock.Any(), gomock.Any()).Return(nil, errors.New("an error"))
+
+					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
 					client.EXPECT().ExecCMDInContainer("runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(errors.New("some error"))
 
 					return client
