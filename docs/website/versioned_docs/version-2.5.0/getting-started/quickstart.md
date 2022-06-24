@@ -15,8 +15,8 @@ At the end of the guide, you will be able to list, add and delete to-do items fr
 ## Prerequisites
 
 * Have the odo binary [installed](./installation.md).
-* A [Kubernetes cluster](/docs/getting-started/cluster-setup/kubernetes) set up with a [ingress controller](/docs/getting-started/cluster-setup/kubernetes#installing-an-ingress-controller), [operator lifecycle manager](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) and (optional) [service binding operator](/docs/getting-started/cluster-setup/kubernetes#installing-the-service-binding-operator).
-* Or a [OpenShift cluster](/docs/getting-started/cluster-setup/openshift) set up with the (optional) [service binding operator](/docs/getting-started/cluster-setup/openshift#installing-the-service-binding-operator)
+* A [Kubernetes cluster](../getting-started/cluster-setup/kubernetes) set up with a [ingress controller](../getting-started/cluster-setup/kubernetes#installing-an-ingress-controller), [operator lifecycle manager](../getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) and (optional) [service binding operator](../getting-started/cluster-setup/kubernetes#installing-the-service-binding-operator).
+* Or a [OpenShift cluster](../getting-started/cluster-setup/openshift) set up with the (optional) [service binding operator](../getting-started/cluster-setup/openshift#installing-the-service-binding-operator)
 
 ## Clone the quickstart guide
 
@@ -109,7 +109,7 @@ Note, you will not be able to access `http://<YOUR-URL>/api/v1/todos` yet until 
 
 Use `odo catalog list services` to list all available operators.
 
-By default, [Operator Lifecycle Manager (OLM)](/docs/getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) includes no Operators and they must be installed via [Operator Hub](https://operatorhub.io/)
+By default, [Operator Lifecycle Manager (OLM)](../getting-started/cluster-setup/kubernetes#installing-the-operator-lifecycle-manager-olm) includes no Operators and they must be installed via [Operator Hub](https://operatorhub.io/)
 
 Install the [Postgres Operator](https://operatorhub.io/operator/postgresql) on the cluster:
 ```shell
@@ -128,7 +128,7 @@ NAME                        CRDs
 postgresoperator.v5.0.3     PostgresCluster
 ```
 
-If you don't see the PostgreSQL Operator listed yet, it may still be installing. Check out our [Operator troubleshooting guide](/docs/getting-started/cluster-setup/kubernetes#checking-to-see-if-an-operator-has-been-installed) for more information.
+If you don't see the PostgreSQL Operator listed yet, it may still be installing. Check out our [Operator troubleshooting guide](../getting-started/cluster-setup/kubernetes#checking-to-see-if-an-operator-has-been-installed) for more information.
 
 [//]: # (This needs to fixed in the future and a parameter-based command added rather than a .yaml file)
 [//]: # (Right now this is blocked on: https://github.com/redhat-developer/odo/issues/5215)
@@ -223,4 +223,4 @@ curl http://<URL-OUTPUT>/api/v1/todos
 
 ## Further reading
 
-Want to learn what else `odo` can do? Check out the [Tutorials](/docs/intro) on the sidebar.
+Want to learn what else `odo` can do? Check out the [Tutorials](../introduction) on the sidebar.

@@ -5,9 +5,9 @@ sidebar_position: 9
 
 odo can deploy *services* with the help of *operators*.
 
-The list of available operators and services available for installation can be found with the [`odo catalog` command](/docs/command-reference/catalog).
+The list of available operators and services available for installation can be found with the [`odo catalog` command](../command-reference/catalog).
 
-Services are created in the context of a *component*, so you should have run [`odo create`](/docs/command-reference/create) before you deploy services.
+Services are created in the context of a *component*, so you should have run [`odo create`](../command-reference/create) before you deploy services.
 
 The deployment of a service is done in two steps:
 1. Define the service and store its definition in the devfile,
@@ -156,7 +156,7 @@ spec:
     image: quay.io/opstree/redis-exporter:1.0
 ```
 
-You can obtain the possible parameters for a specific service from the [`odo catalog describe service` command](/docs/command-reference/catalog/#getting-information-about-a-service).
+You can obtain the possible parameters for a specific service from the [`odo catalog describe service` command](../command-reference/catalog/#getting-information-about-a-service).
 
 #### Using a file
 

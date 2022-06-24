@@ -31,9 +31,9 @@ http-3000     Pushed     http://http-3000-app-myproject.hostname.com     3000   
 
 ## Kubernetes
 
-If you are using a Kubernetes cluster, you will have to create a URL using `odo url` command. This is because odo can not assume the host information to be used to create a URL. To be able to create URLs on a Kubernetes cluster, please make sure that you have [Ingress Controller](/docs/getting-started/cluster-setup/kubernetes/#enabling-ingress) installed.
+If you are using a Kubernetes cluster, you will have to create a URL using `odo url` command. This is because odo can not assume the host information to be used to create a URL. To be able to create URLs on a Kubernetes cluster, please make sure that you have [Ingress Controller](../getting-started/cluster-setup/kubernetes/#enabling-ingress) installed.
 
-If you are working on a [minikube](/docs/getting-started/cluster-setup/kubernetes), Ingress can be enabled using:
+If you are working on a [minikube](../getting-started/cluster-setup/kubernetes), Ingress can be enabled using:
 ```shell
 minikube addons enable ingress
 ```

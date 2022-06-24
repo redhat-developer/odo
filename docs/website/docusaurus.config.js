@@ -65,11 +65,11 @@ module.exports = {
           items: [
             {
               label: 'Installation',
-              to: 'docs/getting-started/installation'
+              to: 'docs/overview/installation'
             },
             {
               label: 'Quickstart',
-              to: 'docs/getting-started/quickstart'
+              to: 'docs/user-guides/quickstart'
             },
           ]
         },
@@ -129,7 +129,6 @@ module.exports = {
             current: {
               label: '3.0.0 (Alpha 2) 🚧',
               badge: true,
-              banner: 'unreleased',
             },
             '2.5.0': {
               label: '2.5.0 (Stable) 🚀',

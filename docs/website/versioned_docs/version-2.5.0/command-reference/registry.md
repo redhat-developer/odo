@@ -5,7 +5,7 @@ sidebar_position: 8
 
 odo uses the portable *devfile* format to describe the components. odo can connect to various devfile registries to download devfiles for different languages and frameworks.
 
-You can connect to publicly available devfile registries, or you can install your own [Secure Registry](/docs/architecture/secure-registry).
+You can connect to publicly available devfile registries, or you can install your own [Secure Registry](../architecture/secure-registry).
 
 You can use the `odo registry` command to manage the registries used by odo to retrieve devfile information.
 

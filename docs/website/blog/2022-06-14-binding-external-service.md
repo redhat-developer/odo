@@ -85,7 +85,7 @@ stringData:
 To be able to *mount* the values of this secret from any namespace, you can use the *Service Binding Operator* (SBO for short), so each developer can define a ServiceBinding resource
 between the service and its application, and get the values of the secret (and other values) mounted into its application's Pod.
 
-You can find information about the Service Binding Operator [here](/docs/getting-started/cluster-setup/kubernetes#optional-installing-the-service-binding-operator).
+You can find information about the Service Binding Operator [here](/docs/overview/cluster-setup/kubernetes).
 
 A ServiceBinding defines a binding between an *Application* and a *Service*. The credentials injected into the application
 can be defined in different ways:

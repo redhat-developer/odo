@@ -14,7 +14,7 @@ This guide is helpful in setting up a development environment intended to be use
 * You have a Kubernetes cluster set up (such as [minikube](https://minikube.sigs.k8s.io/docs/start/))
 * You have admin privileges to the cluster
 
-**Important notes:** `odo` will use the __default__ ingress and storage provisioning on your cluster. If they have not been set correctly, see our [troubleshooting guide](/docs/getting-started/cluster-setup/kubernetes#troubleshooting) for more details.
+**Important notes:** `odo` will use the __default__ ingress and storage provisioning on your cluster. If they have not been set correctly, see our [troubleshooting guide](../cluster-setup/kubernetes#troubleshooting) for more details.
 
 ## Summary
 * An Ingress controller in order to use `odo url create`
