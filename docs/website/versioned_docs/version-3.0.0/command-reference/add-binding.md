@@ -58,12 +58,17 @@ If the service is bound as files, this data will be written to a file and stored
 Note that every piece of data is stored in its own individual file or environment variable.
 For example, if your data includes a username and password, then 2 separate files, or 2 environment variables will be created to store them both.
 
-#### Formats supported by the `--service` and `--workload` flags
-The `--service` and `--workload` flags support the following formats to specify the service or workload name:
+#### Formats supported by the `--service` flag
+The `--service` flag supports the following formats to specify the service name:
 * `<name>`
 * `<name>.<kind>`
 * `<name>.<kind>.<apigroup>`
 * `<name>/<kind>`
+* `<name>/<kind>.<apigroup>`
+
+#### Formats supported by the `--workload` flag
+The `--workload` flag supports the following formats to specify the workload name:
+* `<name>.<kind>.<apigroup>`
 * `<name>/<kind>.<apigroup>`
 
 The above formats are helpful when multiple services with the same name exist on the cluster.
