@@ -162,6 +162,10 @@ func TestKubeExecProcessHandler_GetProcessInfoForCommand(t *testing.T) {
 }
 
 func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
+	kill0CmdProvider := func(p int) []string {
+		return []string{ShellExecutable, "-c", fmt.Sprintf("kill -0 %d; echo $?", p)}
+	}
+
 	execCmdWithoutWorkingDir := CommandDefinition{
 		Id:      "my-exec-cmd",
 		CmdLine: "echo Hello; sleep 300",
@@ -202,12 +206,25 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 						_, err := stdout.Write([]byte("Hello"))
 						return err
 					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(execCmdWithoutWorkingDir))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
 			},
 			isCmdExpectedToRun: true,
 			expectedStatuses:   []RemoteProcessStatus{Starting, Stopped},
 		},
 		{
-			name:   "command with all fields returned no error",
+			name:   "command with all fields returned an error",
 			cmdDef: fullExecCmd,
 			kubeClientCustomizer: func(kclient *kclient.MockClientInterface) {
 				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
@@ -216,9 +233,22 @@ func TestKubeExecProcessHandler_StartProcessForCommand(t *testing.T) {
 							getPidFileForCommand(fullExecCmd), fullExecCmd.WorkingDir, fullExecCmd.CmdLine)}),
 					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("error while running command"))
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName),
+					gomock.Eq([]string{ShellExecutable, "-c", fmt.Sprintf("cat %s || true", getPidFileForCommand(fullExecCmd))}),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("123\n1"))
+						return err
+					})
+				kclient.EXPECT().ExecCMDInContainer(gomock.Eq(_containerName), gomock.Eq(_podName), gomock.Eq(kill0CmdProvider(123)),
+					gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+						_, err := stdout.Write([]byte("1"))
+						return err
+					})
 			},
 			isCmdExpectedToRun: true,
-			expectedStatuses:   []RemoteProcessStatus{Starting, Stopped},
+			expectedStatuses:   []RemoteProcessStatus{Starting, Errored},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

@@ -40,16 +40,24 @@ func (a *adapterHandler) ApplyKubernetes(_ devfilev1.Component) error {
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	remoteProcessHandler := remotecmd.NewKubeExecProcessHandler()
 
-	startHandler := func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
-		switch status {
-		case remotecmd.Starting:
-			_ = log.SpinnerNoSpin(fmt.Sprintf("Executing the application (command: %s)", devfileCmd.Id))
-		case remotecmd.Stopped, remotecmd.Errored:
-			if err != nil {
-				klog.V(2).Infof("error while running background command: %v", err)
+	statusHandlerFunc := func(s *log.Status) remotecmd.CommandOutputHandler {
+		return func(status remotecmd.RemoteProcessStatus, stdout []string, stderr []string, err error) {
+			switch status {
+			case remotecmd.Starting:
+				// Creating with no spin because the command could be long-running, and we cannot determine when it will end.
+				s.Start(fmt.Sprintf("Executing the application (command: %s)", devfileCmd.Id), true)
+			case remotecmd.Stopped, remotecmd.Errored:
+				s.End(status == remotecmd.Stopped)
+				if err != nil {
+					klog.V(2).Infof("error while running background command: %v", err)
+				}
 			}
 		}
 	}
+
+	// Spinner created but not started yet.
+	// It will be displayed when the statusHandlerFunc function is called with the "Starting" state.
+	spinner := log.NewStatus(log.GetStdout())
 
 	// if we need to restart, issue the remote process handler command to stop all running commands first.
 	// We do not need to restart Hot reload capable commands.
@@ -67,7 +75,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				return err
 			}
 
-			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
+			if err = remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 				return err
 			}
 		} else {
@@ -79,7 +87,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 			return err
 		}
 
-		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, startHandler); err != nil {
+		if err := remoteProcessHandler.StartProcessForCommand(cmdDef, a.kubeClient, a.pod.Name, devfileCmd.Exec.Component, statusHandlerFunc(spinner)); err != nil {
 			return err
 		}
 	}

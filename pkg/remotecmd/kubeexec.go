@@ -104,7 +104,12 @@ func (k *kubeExecProcessHandler) StartProcessForCommand(
 		}
 
 		if outputHandler != nil {
-			outputHandler(Stopped, stdout, stderr, err)
+			processInfo, infoErr := k.GetProcessInfoForCommand(def, kclient, podName, containerName)
+			if infoErr != nil {
+				outputHandler(Errored, stdout, stderr, err)
+				return
+			}
+			outputHandler(processInfo.Status, stdout, stderr, err)
 		}
 	}()
 
