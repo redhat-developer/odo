@@ -137,6 +137,7 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	uniqueContainerNames := map[string]struct{}{}
 	errChan := make(chan error)
 	wg := sync.WaitGroup{}
+	var mu sync.Mutex
 	for _, entry := range containersLogs {
 		for container, logs := range entry {
 			uniqueName := getUniqueContainerName(container, uniqueContainerNames)
@@ -147,13 +148,13 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 				wg.Add(1)
 				go func(out io.Writer) {
 					defer wg.Done()
-					err = printLogs(uniqueName, l, out, colour)
+					err = printLogs(uniqueName, l, out, colour, &mu)
 					if err != nil {
 						errChan <- err
 					}
 				}(o.out)
 			} else {
-				err = printLogs(uniqueName, logs, o.out, colour)
+				err = printLogs(uniqueName, logs, o.out, colour, &mu)
 				if err != nil {
 					return err
 				}
@@ -168,7 +169,6 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 		// do nothing; this makes sure that we are not blocking on errChan channel
 		// without this default block, odo logs (without follow) will be stuck/blocked on getting something from
 		// errChan channel and the command won't exit.
-
 	}
 	wg.Wait()
 	return nil
@@ -200,18 +200,20 @@ func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string
 }
 
 // printLogs prints the logs of the containers with container name prefixed to the log message
-func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour color.Attribute) error {
+func printLogs(containerName string, rd io.ReadCloser, out io.Writer, colour color.Attribute, mu *sync.Mutex) error {
 	scanner := bufio.NewScanner(rd)
 	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
 		line := scanner.Text()
+		mu.Lock()
 		color.Set(colour)
 		_, err := fmt.Fprintln(out, containerName+": "+line)
 		if err != nil {
 			return err
 		}
 		color.Unset()
+		mu.Unlock()
 	}
 
 	return nil
