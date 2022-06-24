@@ -144,7 +144,7 @@ var _ = Describe("odo init interactive command tests", func() {
 				helper.ExpectString(ctx, "How do you want to bind the service?")
 				helper.SendLine(ctx, "Bind as Files")
 
-				helper.ExpectString(ctx, "Check with spacebar the operations to perform with the ServiceBinding")
+				helper.ExpectString(ctx, "Check(with Space Bar) one or more operations to perform with the ServiceBinding")
 				helper.SendLine(ctx, " \x1B[B \x1B[B ")
 
 				helper.ExpectString(ctx, "Save the ServiceBinding to file:")
