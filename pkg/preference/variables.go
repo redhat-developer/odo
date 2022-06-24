@@ -54,7 +54,7 @@ const (
 	EphemeralSetting = "Ephemeral"
 
 	// DefaultEphemeralSetting is a default value for Ephemeral preference
-	DefaultEphemeralSetting = true
+	DefaultEphemeralSetting = false
 
 	// ConsentTelemetrySettings specifies if the user consents to telemetry
 	ConsentTelemetrySetting = "ConsentTelemetry"

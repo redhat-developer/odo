@@ -69,20 +69,31 @@ var _ = Describe("odo preference and config command tests", func() {
 
 	Context("When configuring global config values", func() {
 		preferences := []struct {
-			name, value, updateValue, invalidValue string
+			name              string
+			value             string
+			updateValue       string
+			invalidValue      string
+			firstSetWithForce bool
 		}{
-			{"UpdateNotification", "false", "true", "foo"},
-			{"Timeout", "5s", "6s", "foo"},
+			{"UpdateNotification", "false", "true", "foo", false},
+			{"Timeout", "5s", "6s", "foo", false},
 			// !! Do not test ConsentTelemetry with true because it sends out the telemetry data and messes up the statistics !!
-			{"ConsentTelemetry", "false", "false", "foo"},
-			{"PushTimeout", "4s", "6s", "foo"},
-			{"RegistryCacheTime", "4m", "6m", "foo"},
-			{"Ephemeral", "false", "true", "foo"},
+			{"ConsentTelemetry", "false", "false", "foo", false},
+			{"PushTimeout", "4s", "6s", "foo", false},
+			{"RegistryCacheTime", "4m", "6m", "foo", false},
+			{"Ephemeral", "false", "true", "foo", true},
 		}
 
 		It("should successfully updated", func() {
 			for _, pref := range preferences {
-				helper.Cmd("odo", "preference", "set", pref.name, pref.value).ShouldPass()
+				// construct arguments for the first command
+				firstCmdArgs := []string{"preference", "set"}
+				if pref.firstSetWithForce {
+					firstCmdArgs = append(firstCmdArgs, "-f")
+				}
+				firstCmdArgs = append(firstCmdArgs, pref.name, pref.value)
+
+				helper.Cmd("odo", firstCmdArgs...).ShouldPass()
 				value := helper.GetPreferenceValue(pref.name)
 				Expect(value).To(ContainSubstring(pref.value))
 
