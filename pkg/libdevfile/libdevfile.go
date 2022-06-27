@@ -36,6 +36,7 @@ func Build(devfileObj parser.DevfileObj, handler Handler) error {
 
 // ExecuteCommandByNameAndKind executes the specified command cmdName of the given kind in the Devfile.
 // If cmdName is empty, it executes the default command for the given kind or returns an error if there is no default command.
+// If ignoreCommandNotFound is true, nothing is executed if the command is not found and no error is returned.
 func ExecuteCommandByNameAndKind(
 	devfileObj parser.DevfileObj,
 	cmdName string,
@@ -118,7 +119,7 @@ func getDefaultCommand(devfileObj parser.DevfileObj, groupType v1alpha2.CommandG
 }
 
 // getCommandByName iterates through the devfile commands and returns the command with the specified name and group.
-// If there is no command, the second return value is false.
+// It returns an error if no command was found.
 func getCommandByName(devfileObj parser.DevfileObj, groupType v1alpha2.CommandGroupKind, commandName string) (v1alpha2.Command, error) {
 	commands, err := devfileObj.Data.GetCommands(common.DevfileOptions{CommandOptions: common.CommandOptions{CommandGroupKind: groupType}})
 	if err != nil {
@@ -134,8 +135,13 @@ func getCommandByName(devfileObj parser.DevfileObj, groupType v1alpha2.CommandGr
 	return v1alpha2.Command{}, NewNoCommandFoundError(groupType, commandName)
 }
 
-// ValidateAndGetCommand validates the command and returns the command if it is valid. It works just like GetCommand,
-// except that it returns an error if the command is not found.
+// ValidateAndGetCommand validates and returns the command specified if it is valid.
+// It works just like GetCommand, except that it returns an error if it could not find the command.
+//
+// If commandName is empty, it looks up the default command for the given kind.
+//
+// A command is "valid" here if it was found given its name (if commandName is not empty),
+// or (for a default command), if there is no other default command for the same kind.
 func ValidateAndGetCommand(devfileObj parser.DevfileObj, commandName string, groupType v1alpha2.CommandGroupKind) (v1alpha2.Command, error) {
 	cmd, ok, err := GetCommand(devfileObj, commandName, groupType)
 	if err != nil {
