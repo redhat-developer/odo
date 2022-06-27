@@ -3,7 +3,7 @@ title: Installation
 sidebar_position: 4
 ---
 
-`odo` can be used as either a [CLI tool](/docs/getting-started/installation#cli-binary-installation) or an [IDE plugin](/docs/getting-started/installation#ide-installation) on Mac, Windows or Linux.
+`odo` can be used as either a [CLI tool](./installation#cli-binary-installation) or an [IDE plugin](./installation#ide-installation) on Mac, Windows or Linux.
 
 ## CLI installation
 

@@ -5,9 +5,9 @@ sidebar_position: 7
 
 `odo link` command helps link an odo component to an Operator backed service or another odo component. It does this by using [Service Binding Operator](https://github.com/redhat-developer/service-binding-operator). At the time of writing this, odo makes use of the Service Binding library and not the Operator itself to achieve the desired functionality.
 
-In this document we will cover various options to create link between a component & a service, and a component & another component. The steps in this document are going to be based on the [odo quickstart project](https://github.com/dharmit/odo-quickstart/) that we covered in [Quickstart guide](/docs/getting-started/quickstart). The outputs mentioned in this document are based on commands executed on [minikube cluster](/docs/getting-started/cluster-setup/kubernetes).
+In this document we will cover various options to create link between a component & a service, and a component & another component. The steps in this document are going to be based on the [odo quickstart project](https://github.com/dharmit/odo-quickstart/) that we covered in [Quickstart guide](../getting-started/quickstart). The outputs mentioned in this document are based on commands executed on [minikube cluster](../getting-started/cluster-setup/kubernetes).
 
-This document assumes that you know how to [create components](/docs/command-reference/create) and [services](/docs/command-reference/service). It also assumes that you have cloned the [odo quickstart project](https://github.com/dharmit/odo-quickstart/). Terminology used in this document:
+This document assumes that you know how to [create components](../command-reference/create) and [services](../command-reference/service). It also assumes that you have cloned the [odo quickstart project](https://github.com/dharmit/odo-quickstart/). Terminology used in this document:
 
 - *quickstart project*: git clone of the odo quickstart project having below directory structure:
     ```shell

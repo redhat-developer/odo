@@ -23,11 +23,11 @@ Existing tools such as `kubectl` and `oc` are more operations-focused and requir
 * Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real time.
 * Lists all the available components and services from the cluster.
 
-Learn more about the features provided by odo on [odo.dev](https://odo.dev/docs/getting-started/features).
+Learn more about the features provided by odo on [odo.dev](https://odo.dev/docs/overview/features).
 
 ### Core concepts
 
-Learn more about core concepts of odo on [odo.dev](https://odo.dev/docs/getting-started/basics).
+Learn more about core concepts of odo on [odo.dev](https://odo.dev/docs/overview/basics).
 
 
 ### Usage data
@@ -42,7 +42,7 @@ Visit [odo.dev](https://odo.dev/) to learn more about odo.
 
 ### Installing `odo`
 
-Please check the [installation guide on odo.dev](https://odo.dev/docs/getting-started/installation/).
+Please check the [installation guide on odo.dev](https://odo.dev/docs/overview/installation/).
 
 
 ### Community, discussion, contribution, and support
