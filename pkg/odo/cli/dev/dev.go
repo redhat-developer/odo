@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 
 	"github.com/spf13/cobra"
 
@@ -272,10 +271,6 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 		return nil, err
 	}
 
-	if !reflect.DeepEqual(parameters.InitialDevfileObj, devObj) {
-		log.Warningf("devfile.yaml has been changed; please restart the `odo dev` command\n\n")
-	}
-
 	platformContext := kubernetes.KubernetesContext{
 		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
 	}
@@ -331,7 +326,9 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 		clientset.INIT,
 		clientset.KUBERNETES,
 		clientset.PORT_FORWARD,
+		clientset.PREFERENCE,
 		clientset.STATE,
+		clientset.WATCH,
 	)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
