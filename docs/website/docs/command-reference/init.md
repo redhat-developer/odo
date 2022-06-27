@@ -12,7 +12,7 @@ The command can be exectued in two flavors, either interactive or non-interactiv
 ## Interactive mode
 
 In interactive mode, you will be guided to choose:
-- a devfile from the list of devfiles present in the registry or registries referenced (using the `odo preference registry` command),
+- a devfile from the list of devfiles present in the registry or registries referenced (using the `odo registry` command),
 - a starter project referenced by the selected devfile,
 - a name for the component present in the devfile.
 
@@ -20,7 +20,7 @@ In interactive mode, you will be guided to choose:
 
 In non-interactive mode, you will have to specify from the command-line the information needed to get a devfile.
 
-If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference registry`), and the first one matching will be downloaded. If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
+If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference view`), and the first one matching will be downloaded. If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
 
 
 If you prefer to download a devfile from an URL or from the local filesystem, you can use the `--devfile-path` instead.

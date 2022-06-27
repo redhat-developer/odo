@@ -49,7 +49,7 @@ func (o *FlagsBackend) Validate(flags map[string]string, fs filesystem.Filesyste
 
 	if flags[FLAG_DEVFILE_REGISTRY] != "" {
 		if !o.preferenceClient.RegistryNameExists(flags[FLAG_DEVFILE_REGISTRY]) {
-			return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo preference registry` command to configure devfile registries", flags[FLAG_DEVFILE_REGISTRY])
+			return fmt.Errorf("registry %q not found in the list of devfile registries. Please use `odo preference <add/remove> registry` command to configure devfile registries", flags[FLAG_DEVFILE_REGISTRY])
 		}
 		registries := o.preferenceClient.RegistryList()
 		for _, r := range *registries {

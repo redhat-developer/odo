@@ -5,7 +5,7 @@ title: odo registry
 The `odo registry` command lists all the Devfile stacks from Devfile registries.
 
 The Devfile registries that are taken into account are the registries added with the command
-`odo preference registry`.
+`odo preference add registry`.
 
 ## Available Flags
 

@@ -109,7 +109,7 @@ odo uses the portable *devfile* format to describe the components. odo can conne
 
 You can connect to publicly available devfile registries, or you can install your own [Devfile Registry](https://github.com/devfile/registry-support).
 
-You can use the `odo preference registry` command to manage the registries used by odo to retrieve devfile information.
+You can use the `odo preference <add/remove> registry` command to manage the registries used by odo to retrieve devfile information.
 
 ### Adding a registry
 
