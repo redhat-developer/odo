@@ -69,7 +69,7 @@ func NewCmdCompletion(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			switch args[0] {
 			case "bash":
-				cmd.Root().GenBashCompletionV2(os.Stdout, false)
+				cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
 				// Due to https://github.com/spf13/cobra/issues/1529 we cannot load zsh
 				// via using source, so we need to add compdef to the beginning of the output so we can easily do:

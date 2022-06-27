@@ -39,7 +39,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/securego/gosec/v2 v2.8.0
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/gjson v1.9.3
 	github.com/zalando/go-keyring v0.1.1

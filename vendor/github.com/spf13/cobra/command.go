@@ -18,7 +18,6 @@ package cobra
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -64,9 +63,9 @@ type Command struct {
 	// Example is examples of how to use the command.
 	Example string
 
-	// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions
+	// ValidArgs is list of all valid non-flag arguments that are accepted in bash completions
 	ValidArgs []string
-	// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.
+	// ValidArgsFunction is an optional function that provides valid non-flag arguments for bash completion.
 	// It is a dynamic version of using ValidArgs.
 	// Only one of ValidArgs and ValidArgsFunction can be used for a command.
 	ValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
@@ -75,12 +74,11 @@ type Command struct {
 	Args PositionalArgs
 
 	// ArgAliases is List of aliases for ValidArgs.
-	// These are not suggested to the user in the shell completion,
+	// These are not suggested to the user in the bash completion,
 	// but accepted if entered manually.
 	ArgAliases []string
 
-	// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator.
-	// For portability with other shells, it is recommended to instead use ValidArgsFunction
+	// BashCompletionFunction is custom functions used by the bash autocompletion generator.
 	BashCompletionFunction string
 
 	// Deprecated defines, if this command is deprecated and should print this string when used.
@@ -167,11 +165,8 @@ type Command struct {
 	// errWriter is a writer defined by the user that replaces stderr
 	errWriter io.Writer
 
-	// FParseErrWhitelist flag parse errors to be ignored
+	//FParseErrWhitelist flag parse errors to be ignored
 	FParseErrWhitelist FParseErrWhitelist
-
-	// CompletionOptions is a set of options to control the handling of shell completion
-	CompletionOptions CompletionOptions
 
 	// commandsAreSorted defines, if command slice are sorted or not.
 	commandsAreSorted bool
@@ -225,21 +220,10 @@ type Command struct {
 	SuggestionsMinimumDistance int
 }
 
-// Context returns underlying command context. If command was executed
-// with ExecuteContext or the context was set with SetContext, the
-// previously set context will be returned. Otherwise, nil is returned.
-//
-// Notice that a call to Execute and ExecuteC will replace a nil context of
-// a command with a context.Background, so a background context will be
-// returned by Context after one of these functions has been called.
+// Context returns underlying command context. If command wasn't
+// executed with ExecuteContext Context returns Background context.
 func (c *Command) Context() context.Context {
 	return c.ctx
-}
-
-// SetContext sets context for the command. It is set to context.Background by default and will be overwritten by
-// Command.ExecuteContext or Command.ExecuteContextC
-func (c *Command) SetContext(ctx context.Context) {
-	c.ctx = ctx
 }
 
 // SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden
@@ -864,10 +848,6 @@ func (c *Command) execute(a []string) (err error) {
 	if err := c.validateRequiredFlags(); err != nil {
 		return err
 	}
-	if err := c.validateFlagGroups(); err != nil {
-		return err
-	}
-
 	if c.RunE != nil {
 		if err := c.RunE(c, argWoFlags); err != nil {
 			return err
@@ -904,8 +884,7 @@ func (c *Command) preRun() {
 }
 
 // ExecuteContext is the same as Execute(), but sets the ctx on the command.
-// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs
-// functions.
+// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle functions.
 func (c *Command) ExecuteContext(ctx context.Context) error {
 	c.ctx = ctx
 	return c.Execute()
@@ -917,14 +896,6 @@ func (c *Command) ExecuteContext(ctx context.Context) error {
 func (c *Command) Execute() error {
 	_, err := c.ExecuteC()
 	return err
-}
-
-// ExecuteContextC is the same as ExecuteC(), but sets the ctx on the command.
-// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs
-// functions.
-func (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {
-	c.ctx = ctx
-	return c.ExecuteC()
 }
 
 // ExecuteC executes the command.
@@ -943,10 +914,9 @@ func (c *Command) ExecuteC() (cmd *Command, err error) {
 		preExecHookFn(c)
 	}
 
-	// initialize help at the last point to allow for user overriding
+	// initialize help as the last point possible to allow for user
+	// overriding
 	c.InitDefaultHelpCmd()
-	// initialize completion at the last point to allow for user overriding
-	c.initDefaultCompletionCmd()
 
 	args := c.args
 
@@ -955,7 +925,7 @@ func (c *Command) ExecuteC() (cmd *Command, err error) {
 		args = os.Args[1:]
 	}
 
-	// initialize the hidden command to be used for shell completion
+	// initialize the hidden command to be used for bash completion
 	c.initCompleteCmd(args)
 
 	var flags []string
@@ -991,7 +961,7 @@ func (c *Command) ExecuteC() (cmd *Command, err error) {
 	if err != nil {
 		// Always show help if requested, even if SilenceErrors is in
 		// effect
-		if errors.Is(err, flag.ErrHelp) {
+		if err == flag.ErrHelp {
 			cmd.HelpFunc()(cmd, args)
 			return cmd, nil
 		}
@@ -1013,7 +983,7 @@ func (c *Command) ExecuteC() (cmd *Command, err error) {
 
 func (c *Command) ValidateArgs(args []string) error {
 	if c.Args == nil {
-		return ArbitraryArgs(c, args)
+		return nil
 	}
 	return c.Args(c, args)
 }
