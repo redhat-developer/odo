@@ -386,8 +386,21 @@ var _ = Describe("odo dev command tests", func() {
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			})
 
-			It("should expose the endpoint on localhost", func() {
-				err := helper.RunDevMode(nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			When("running odo dev", func() {
+				var devSession helper.DevSession
+				var ports map[string]string
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, ports, err = helper.StartDevMode()
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should expose the endpoint on localhost", func() {
 					url := fmt.Sprintf("http://%s", ports["3000"])
 					resp, err := http.Get(url)
 					Expect(err).ToNot(HaveOccurred())
@@ -395,10 +408,42 @@ var _ = Describe("odo dev command tests", func() {
 
 					body, _ := io.ReadAll(resp.Body)
 					helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+					Expect(err).ToNot(HaveOccurred())
 				})
-				Expect(err).ToNot(HaveOccurred())
+
+				When("modifying memoryLimit for container in Devfile", func() {
+					BeforeEach(func() {
+						src := "memoryLimit: 1024Mi"
+						dst := "memoryLimit: 1023Mi"
+						helper.ReplaceString("devfile.yaml", src, dst)
+						var err error
+						_, _, ports, err = devSession.WaitSync()
+						Expect(err).Should(Succeed())
+					})
+
+					It("should expose the endpoint on localhost", func() {
+						By("updating the pod", func() {
+							podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+							bufferOutput := commonVar.CliRunner.Run("get", "pods", podName, "-o", "jsonpath='{.spec.containers[0].resources.requests.memory}'").Out.Contents()
+							output := string(bufferOutput)
+							Expect(output).To(ContainSubstring("1023Mi"))
+						})
+
+						By("exposing the endpoint", func() {
+							url := fmt.Sprintf("http://%s", ports["3000"])
+							resp, err := http.Get(url)
+							Expect(err).ToNot(HaveOccurred())
+							defer resp.Body.Close()
+
+							body, _ := io.ReadAll(resp.Body)
+							helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+							Expect(err).ToNot(HaveOccurred())
+						})
+					})
+				})
 			})
 		})
+
 		When("devfile has multiple endpoints", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
@@ -649,7 +694,7 @@ var _ = Describe("odo dev command tests", func() {
 				// Now we delete the file and dir and push
 				helper.DeleteDir(newFilePath)
 				helper.DeleteDir(newDirPath)
-				_, _, err := session.WaitSync()
+				_, _, _, err := session.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should not list deleted dir and file in container", func() {
@@ -716,7 +761,7 @@ var _ = Describe("odo dev command tests", func() {
 					// Now we delete the file and dir and push
 					helper.DeleteDir(newFilePath)
 					helper.DeleteDir(newDirPath)
-					_, _, err := session.WaitSync()
+					_, _, _, err := session.WaitSync()
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("should not list deleted dir and file in container", func() {
@@ -785,7 +830,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should synchronize it only", func() {
-				_, _, _ = session.WaitSync()
+				_, _, _, _ = session.WaitSync()
 				podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 				checkSyncedFiles(podName)
 			})
@@ -1598,7 +1643,7 @@ var _ = Describe("odo dev command tests", func() {
 			BeforeEach(func() {
 				helper.ReplaceString("devfile.yaml", "memoryLimit: 1024Mi", "memoryLimit: 1023Mi")
 				var err error
-				_, _, err = session.WaitSync()
+				_, _, _, err = session.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -1709,7 +1754,7 @@ var _ = Describe("odo dev command tests", func() {
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR-modified.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 				var err error
-				_, _, err = session.WaitSync()
+				_, _, _, err = session.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
 			})
 
