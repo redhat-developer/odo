@@ -116,7 +116,7 @@ goget-tools:
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
-	 go install github.com/onsi/ginkgo/v2/ginkgo@latest
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.4
 
 .PHONY: test-coverage
 test-coverage: ## Run unit tests and collect coverage
