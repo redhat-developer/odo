@@ -64,7 +64,7 @@ var _ = Describe("odo devfile supported tests", func() {
 		//		stopChannel <- true
 	}
 
-	Context("odo debug support for devfile components", FlakeAttempts(3), func() {
+	Context("odo debug support for devfile components", func() {
 		It("Verify output debug information for nodeJS debug works", func() {
 			createStarterProjAndSetDebug("nodejs", "nodejs-starter")
 		})
