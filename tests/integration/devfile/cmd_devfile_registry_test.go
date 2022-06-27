@@ -85,7 +85,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	It("Should fail with an error with no registries", func() {
 		helper.Cmd("odo", "preference", "remove", "registry", "DefaultDevfileRegistry", "-f").ShouldPass()
 		output := helper.Cmd("odo", "preference", "view").ShouldRun().Err()
-		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer to `odo preference registry add -h` to add one"})
+		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer to `odo preference add registry -h` to add one"})
 	})
 
 	It("Should fail to delete the registry, when registry is not present", func() {
