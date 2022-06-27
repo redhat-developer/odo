@@ -117,7 +117,7 @@ type ClientInterface interface {
 	// SetupPortForwarding creates port-forwarding for the pod on the port pairs provided in the
 	// ["<localhost-port>":"<remote-pod-port>"] format. errOut is used by the client-go library to output any errors
 	// encountered while the port-forwarding is running
-	SetupPortForwarding(pod *corev1.Pod, portPairs []string, out io.Writer, errOut io.Writer) error
+	SetupPortForwarding(pod *corev1.Pod, portPairs []string, out io.Writer, errOut io.Writer, stopChan chan struct{}) error
 
 	// projects.go
 	CreateNewProject(projectName string, wait bool) error

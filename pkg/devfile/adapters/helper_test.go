@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -49,7 +50,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 				Devfile:       devObj,
 			}
 			fkclient, _ := kclient.FakeNew()
-			adapter, err := newKubernetesAdapter(adapterContext, fkclient, nil)
+			adapter, err := newKubernetesAdapter(adapterContext, fkclient, nil, nil, false, os.Stdout)
 			if err != nil {
 				t.Errorf("unexpected error: '%v'", err)
 			}

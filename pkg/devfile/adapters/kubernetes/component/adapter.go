@@ -20,6 +20,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
+	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
@@ -37,12 +38,22 @@ import (
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, kubeClient kclient.ClientInterface, prefClient preference.Client) Adapter {
+func New(
+	adapterContext common.AdapterContext,
+	kubeClient kclient.ClientInterface,
+	prefClient preference.Client,
+	portForwardClient portForward.Client,
+	randomPorts bool,
+	errOut io.Writer,
+) Adapter {
 	return Adapter{
-		kubeClient:     kubeClient,
-		prefClient:     prefClient,
-		AdapterContext: adapterContext,
-		logger:         machineoutput.NewMachineEventLoggingClient(),
+		kubeClient:        kubeClient,
+		prefClient:        prefClient,
+		portForwardClient: portForwardClient,
+		AdapterContext:    adapterContext,
+		logger:            machineoutput.NewMachineEventLoggingClient(),
+		randomPorts:       randomPorts,
+		errOut:            errOut,
 	}
 }
 
@@ -75,8 +86,9 @@ func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
-	kubeClient kclient.ClientInterface
-	prefClient preference.Client
+	kubeClient        kclient.ClientInterface
+	prefClient        preference.Client
+	portForwardClient portForward.Client
 
 	common.AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -87,6 +99,9 @@ type Adapter struct {
 	devfileDebugPort int
 	pod              *corev1.Pod
 	deployment       *appsv1.Deployment
+
+	randomPorts bool
+	errOut      io.Writer
 }
 
 var _ sync.SyncClient = (*Adapter)(nil)
@@ -297,6 +312,15 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
 	}
 	s.End(true)
+
+	if podChanged {
+		a.portForwardClient.StopPortForwarding()
+	}
+
+	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.randomPorts, a.errOut)
+	if err != nil {
+		return err
+	}
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist

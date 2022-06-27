@@ -5,6 +5,10 @@ import (
 	"io"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/portForward"
+	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog/v2"
@@ -16,14 +20,28 @@ import (
 )
 
 type DevClient struct {
-	watchClient watch.Client
+	kubernetesClient  kclient.ClientInterface
+	prefClient        preference.Client
+	portForwardClient portForward.Client
+	watchClient       watch.Client
+	stateClient       state.Client
 }
 
 var _ Client = (*DevClient)(nil)
 
-func NewDevClient(watchClient watch.Client) *DevClient {
+func NewDevClient(
+	kubernetesClient kclient.ClientInterface,
+	prefClient preference.Client,
+	portForwardClient portForward.Client,
+	watchClient watch.Client,
+	stateClient state.Client,
+) *DevClient {
 	return &DevClient{
-		watchClient: watchClient,
+		kubernetesClient:  kubernetesClient,
+		prefClient:        prefClient,
+		portForwardClient: portForwardClient,
+		watchClient:       watchClient,
+		stateClient:       stateClient,
 	}
 }
 
@@ -35,9 +53,13 @@ func (o *DevClient) Start(
 	debug bool,
 	buildCommand string,
 	runCommand string,
+	randomPorts bool,
+	errOut io.Writer,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
-	adapter, err := adapters.NewComponentAdapter(devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext)
+	adapter, err := adapters.NewComponentAdapter(
+		o.kubernetesClient, o.prefClient, o.portForwardClient,
+		devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext, randomPorts, errOut)
 	if err != nil {
 		return err
 	}

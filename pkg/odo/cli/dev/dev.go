@@ -11,9 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -32,7 +30,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
-	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -79,7 +76,11 @@ type DevOptions struct {
 var _ genericclioptions.Runnable = (*DevOptions)(nil)
 var _ genericclioptions.SignalHandler = (*DevOptions)(nil)
 
-type Handler struct{}
+type Handler struct {
+	clientset   clientset.Clientset
+	randomPorts bool
+	errOut      io.Writer
+}
 
 var _ dev.Handler = (*Handler)(nil)
 
@@ -223,49 +224,9 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag)
+	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
 	if err != nil {
 		return err
-	}
-
-	// get the endpoint/port information for containers in devfile and setup port-forwarding
-	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
-	if err != nil {
-		return err
-	}
-	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
-	var portPairs map[string][]string
-	if o.randomPortsFlag {
-		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
-	} else {
-		portPairs = portPairsFromContainerEndpoints(ceMapping)
-	}
-	var portPairsSlice []string
-	for _, v1 := range portPairs {
-		portPairsSlice = append(portPairsSlice, v1...)
-	}
-	pod, err := o.clientset.KubernetesClient.GetPodUsingComponentName(devFileObj.GetMetadataName())
-	if err != nil {
-		return err
-	}
-
-	// Output that the application is running, and then show the port-forwarding information
-	log.Info("\nYour application is now running on the cluster")
-
-	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
-	go func() {
-		err = o.clientset.KubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, o.errOut)
-		if err != nil {
-			fmt.Printf("failed to setup port-forwarding: %v\n", err)
-		}
-	}()
-
-	portsBuf.Wait()
-	err = o.clientset.StateClient.SetForwardedPorts(portsBuf.GetForwardedPorts())
-	if err != nil {
-		return fmt.Errorf("unable to save forwarded ports to state file: %v", err)
 	}
 
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
@@ -278,7 +239,11 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		<-o.ctx.Done()
 		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	} else {
-		d := Handler{}
+		d := Handler{
+			clientset:   *o.clientset,
+			randomPorts: o.randomPortsFlag,
+			errOut:      o.errOut,
+		}
 		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.variables)
 	}
 	return err
@@ -288,7 +253,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter common.ComponentAdapter
 
-	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
+	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
 	if err != nil {
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
@@ -301,7 +266,7 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, wat
 	return nil
 }
 
-func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
 	if err != nil {
 		return nil, err
@@ -315,7 +280,18 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
 	}
 
-	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
+	return adapters.NewComponentAdapter(
+		o.clientset.KubernetesClient,
+		o.clientset.PreferenceClient,
+		o.clientset.PortForwardClient,
+		parameters.ComponentName,
+		parameters.Path,
+		parameters.ApplicationName,
+		devObj,
+		platformContext,
+		o.randomPorts,
+		o.errOut,
+	)
 }
 
 func (o *DevOptions) HandleSignal() error {
@@ -349,49 +325,17 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 		"Alternative build command. The default one will be used if this flag is not set.")
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
-	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE, clientset.FILESYSTEM)
+	clientset.Add(devCmd,
+		clientset.DEV,
+		clientset.FILESYSTEM,
+		clientset.INIT,
+		clientset.KUBERNETES,
+		clientset.PORT_FORWARD,
+		clientset.STATE,
+	)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"
 	devCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	return devCmd
-}
-
-// portPairsFromContainerEndpoints assigns a port on localhost to each port in the provided containerEndpoints map
-// it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
-// "container1": {"400001:3000", "400002:3001"}
-func portPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
-	portPairs := make(map[string][]string)
-	port := 40000
-
-	for name, ports := range ceMap {
-		for _, p := range ports {
-			port++
-			for {
-				isPortFree := util.IsPortFree(port)
-				if isPortFree {
-					pair := fmt.Sprintf("%d:%d", port, p)
-					portPairs[name] = append(portPairs[name], pair)
-					break
-				}
-				port++
-			}
-		}
-	}
-	return portPairs
-}
-
-// randomPortPairsFromContainerEndpoints assigns a random (empty) port on localhost to each port in the provided containerEndpoints map
-// it returns a map of the format "<container-name>":{"<local-port-1>:<remote-port-1>", "<local-port-2>:<remote-port-2>"}
-// "container1": {":3000", ":3001"}
-func randomPortPairsFromContainerEndpoints(ceMap map[string][]int) map[string][]string {
-	portPairs := make(map[string][]string)
-
-	for name, ports := range ceMap {
-		for _, p := range ports {
-			pair := fmt.Sprintf(":%d", p)
-			portPairs[name] = append(portPairs[name], pair)
-		}
-	}
-	return portPairs
 }

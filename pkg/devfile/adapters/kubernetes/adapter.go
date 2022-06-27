@@ -2,8 +2,10 @@ package kubernetes
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -22,9 +24,16 @@ type KubernetesContext struct {
 }
 
 // New instantiates a kubernetes adapter
-func New(adapterContext common.AdapterContext, client kclient.ClientInterface, prefClient preference.Client) Adapter {
+func New(
+	adapterContext common.AdapterContext,
+	client kclient.ClientInterface,
+	prefClient preference.Client,
+	portForwardClient portForward.Client,
+	randomPorts bool,
+	errOut io.Writer,
+) Adapter {
 
-	compAdapter := component.New(adapterContext, client, prefClient)
+	compAdapter := component.New(adapterContext, client, prefClient, portForwardClient, randomPorts, errOut)
 
 	return Adapter{
 		componentAdapter: &compAdapter,
