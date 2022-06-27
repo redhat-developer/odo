@@ -19,7 +19,7 @@ import (
 // returns an empty string if value is not set
 func GetPreferenceValue(key string) string {
 	stdOut := Cmd("odo", "preference", "view").ShouldPass().Out()
-	re := regexp.MustCompile(key + `.+`)
+	re := regexp.MustCompile(" " + key + `.+`)
 	odoConfigKeyValue := re.FindString(stdOut)
 	if odoConfigKeyValue == "" {
 		return fmt.Sprintf("%s not found", key)

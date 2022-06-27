@@ -22,21 +22,19 @@ var registryDesc = ktemplates.LongDesc(`Configure devfile registry`)
 // NewCmdRegistry implements the registry configuration command
 func NewCmdRegistry(name, fullName string) *cobra.Command {
 	registryAddCmd := NewCmdAdd(addCommandName, util.GetFullName(fullName, addCommandName))
-	registryListCmd := NewCmdList(listCommandName, util.GetFullName(fullName, listCommandName))
 	registryDeleteCmd := NewCmdDelete(deleteCommandName, util.GetFullName(fullName, deleteCommandName))
 
 	registryCmd := &cobra.Command{
 		Use:   name,
 		Short: registryDesc,
 		Long:  registryDesc,
-		Example: fmt.Sprintf("%s\n\n%s\n\n%s",
+		Example: fmt.Sprintf("%s\n\n%s",
 			registryAddCmd.Example,
-			registryListCmd.Example,
 			registryDeleteCmd.Example,
 		),
 	}
 
-	registryCmd.AddCommand(registryAddCmd, registryListCmd, registryDeleteCmd)
+	registryCmd.AddCommand(registryAddCmd, registryDeleteCmd)
 	registryCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	registryCmd.Annotations = map[string]string{"command": "main"}
 

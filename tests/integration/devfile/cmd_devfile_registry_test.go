@@ -26,7 +26,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	})
 
 	It("Should list all default registries", func() {
-		output := helper.Cmd("odo", "preference", "registry", "list").ShouldPass().Out()
+		output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
 		helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 	})
 
@@ -84,8 +84,8 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 	It("Should fail with an error with no registries", func() {
 		helper.Cmd("odo", "preference", "registry", "delete", "DefaultDevfileRegistry", "-f").ShouldPass()
-		output := helper.Cmd("odo", "preference", "registry", "list").ShouldFail().Err()
-		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo preference registry add -h` to add one"})
+		output := helper.Cmd("odo", "preference", "view").ShouldRun().Err()
+		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer to `odo preference registry add -h` to add one"})
 	})
 
 	It("Should fail to delete the registry, when registry is not present", func() {
@@ -98,7 +98,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 
 		It("should list newly added registry", func() {
-			output := helper.Cmd("odo", "preference", "registry", "list").ShouldPass().Out()
+			output := helper.Cmd("odo", "preference", "view").ShouldPass().Out()
 			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
 		})
 

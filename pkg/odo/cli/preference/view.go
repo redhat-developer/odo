@@ -3,15 +3,18 @@ package preference
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
-	"text/tabwriter"
 
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 const viewCommandName = "view"
@@ -47,19 +50,49 @@ func (o *ViewOptions) Validate() (err error) {
 
 // Run contains the logic for the command
 func (o *ViewOptions) Run(ctx context.Context) (err error) {
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
-	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(o.clientset.PreferenceClient.UpdateNotification()))
-	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.Timeout()))
-	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(o.clientset.PreferenceClient.PushTimeout()))
-	fmt.Fprintln(w, "RegistryCacheTime", "\t", showBlankIfNil(o.clientset.PreferenceClient.RegistryCacheTime()))
-	fmt.Fprintln(w, "Ephemeral", "\t", showBlankIfNil(o.clientset.PreferenceClient.EphemeralSourceVolume()))
-	fmt.Fprintln(w, "ConsentTelemetry", "\t", showBlankIfNil(o.clientset.PreferenceClient.ConsentTelemetry()))
-
-	w.Flush()
+	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
+	registryList := o.clientset.PreferenceClient.RegistryList()
+	HumanReadableOutput(preferenceList, registryList)
 	return
 }
 
+func HumanReadableOutput(preferenceList preference.PreferenceList, registryList *[]preference.Registry) {
+	preferenceT := ui.NewTable()
+	preferenceT.AppendHeader(table.Row{"PARAMETER", "VALUE"})
+	preferenceT.SortBy([]table.SortBy{{Name: "PARAMETER", Mode: table.Asc}})
+	for _, pref := range preferenceList.Items {
+		value := showBlankIfNil(pref.Value)
+		if reflect.DeepEqual(value, pref.Default) {
+			value = fmt.Sprintf("%v (default)", value)
+		}
+		preferenceT.AppendRow(table.Row{pref.Name, value})
+	}
+	registryT := ui.NewTable()
+	registryT.AppendHeader(table.Row{"NAME", "URL", "SECURE"})
+
+	var regList []preference.Registry
+	if registryList != nil {
+		regList = *registryList
+	}
+	// Loop backwards here to ensure the registry display order is correct (display latest newly added registry firstly)
+	for i := len(regList) - 1; i >= 0; i-- {
+		registry := regList[i]
+		secure := "No"
+		if registry.Secure {
+			secure = "Yes"
+		}
+		registryT.AppendRow(table.Row{registry.Name, registry.URL, secure})
+	}
+
+	log.Info("Preference parameters:")
+	preferenceT.Render()
+	log.Info("\nDevfile registries:")
+	if registryList == nil || len(*registryList) == 0 {
+		log.Warning("No devfile registries added to the configuration. Refer to `odo preference registry add -h` to add one")
+		return
+	}
+	registryT.Render()
+}
 func showBlankIfNil(intf interface{}) interface{} {
 	imm := reflect.ValueOf(intf)
 

@@ -247,7 +247,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 
 	initCmd.Flags().String(backend.FLAG_NAME, "", "name of the component to create")
 	initCmd.Flags().String(backend.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
-	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo preference registry list\"). It can be used in combination with --devfile, but not with --devfile-path")
+	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo preference view\"). It can be used in combination with --devfile, but not with --devfile-path")
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_PATH, "", "path to a devfile. This is an alternative to using devfile from Devfile registry. It can be local filesystem path or http(s) URL")
 

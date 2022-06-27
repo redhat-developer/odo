@@ -32,11 +32,21 @@ For these examples, we consider we have two registries in our preferences:
 
 ```
 shell
-$ odo preference registry list
-NAME                       URL                                   SECURE
-Staging                    https://registry.stage.devfile.io     No
-DefaultDevfileRegistry     https://registry.devfile.io           No
-```
+$ odo preference view
+Preference parameters:
+ PARAMETER           VALUE
+ ConsentTelemetry    true
+ Ephemeral
+ PushTimeout
+ RegistryCacheTime
+ Timeout             5
+ UpdateNotification  true (default)
+
+Devfile registries:
+ NAME                       URL                                   SECURE
+ Staging                    https://registry.stage.devfile.io     No
+ DefaultDevfileRegistry     https://registry.devfile.io           No
+ ```
 
 To get the complete list of accessible Devfile stacks:
 
