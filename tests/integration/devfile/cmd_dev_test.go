@@ -1393,90 +1393,188 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("running an alternative non-default run command", func() {
+	When("running odo dev with alternative commands", func() {
+
+		type testCase struct {
+			buildCmd          string
+			runCmd            string
+			devAdditionalOpts []string
+			checkFunc         func(stdout, stderr string)
+		}
+		testForCmd := func(tt testCase) {
+			err := helper.RunDevMode(tt.devAdditionalOpts, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+				stdout := string(outContents)
+				stderr := string(errContents)
+
+				By("checking the output of the command", func() {
+					helper.MatchAllInOutput(stdout, []string{
+						fmt.Sprintf("Building your application in container on cluster (command: %s)", tt.buildCmd),
+						fmt.Sprintf("Executing the application (command: %s)", tt.runCmd),
+					})
+				})
+
+				if tt.checkFunc != nil {
+					tt.checkFunc(stdout, stderr)
+				}
+
+				By("verifying the exposed application endpoint", func() {
+					url := fmt.Sprintf("http://%s", ports["3000"])
+					resp, err := http.Get(url)
+					Expect(err).ToNot(HaveOccurred())
+					defer resp.Body.Close()
+
+					body, _ := io.ReadAll(resp.Body)
+					helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+				})
+
+			})
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		remoteFileChecker := func(path string) bool {
+			return commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+				commonVar.CliRunner.GetRunningPodNameByComponent("nodejs", commonVar.Project),
+				"runtime",
+				commonVar.Project,
+				[]string{"stat", path},
+				func(cmdOp string, err error) bool {
+					return err == nil
+				},
+			)
+		}
+
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs", "devfile-with-two-run-commands.yaml"),
+				filepath.Join("source", "devfiles", "nodejs", "devfile-with-alternative-commands.yaml"),
 				filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 		})
 
-		It("should error out if called with an invalid command", func() {
-			output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "run-command-does-not-exist").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
-		})
+		When("running odo dev with a build command", func() {
+			buildCmdTestFunc := func(buildCmd string, checkFunc func(stdout, stderr string)) {
+				testForCmd(
+					testCase{
+						buildCmd:          buildCmd,
+						runCmd:            "devrun",
+						devAdditionalOpts: []string{"--build-command", buildCmd},
+						checkFunc:         checkFunc,
+					},
+				)
+			}
 
-		It("should error out if called with a command of another kind", func() {
-			//devbuild is a valid build command, not a run command
-			output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
-		})
+			It("should error out if called with an invalid command", func() {
+				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "build-command-does-not-exist").ShouldFail().Err()
+				Expect(output).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
+			})
 
-		testForCmd := func(devfileCmd string, checkFunc func(stdout, stderr string)) {
-			err := helper.RunDevMode(
-				[]string{"--run-command", devfileCmd},
-				func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-					stdout := string(outContents)
-					stderr := string(errContents)
+			It("should error out if called with a command of another kind", func() {
+				//devrun is a valid run command, not a build command
+				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "devrun").ShouldFail().Err()
+				Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
+			})
 
-					By("checking the output of the command", func() {
-						helper.MatchAllInOutput(stdout, []string{
+			It("should execute the custom non-default build command successfully", func() {
+				buildCmdTestFunc("my-custom-build", func(stdout, stderr string) {
+					By("checking that it did not execute the default build command", func() {
+						helper.DontMatchAllInOutput(stdout, []string{
 							"Building your application in container on cluster (command: devbuild)",
-							fmt.Sprintf("Executing the application (command: %s)", devfileCmd),
 						})
 					})
 
-					if checkFunc != nil {
-						checkFunc(stdout, stderr)
-					}
-
-					By("verifying the exposed application endpoint", func() {
-						url := fmt.Sprintf("http://%s", ports["3000"])
-						resp, err := http.Get(url)
-						Expect(err).ToNot(HaveOccurred())
-						defer resp.Body.Close()
-
-						body, _ := io.ReadAll(resp.Body)
-						helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-					})
-
-				})
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		It("should execute the custom non-default run command successfully", func() {
-			testForCmd("my-custom-run", func(stdout, stderr string) {
-				By("checking that it did not execute the default run command", func() {
-					helper.DontMatchAllInOutput(stdout, []string{
-						"Executing the application (command: devrun)",
+					By("verifying that the custom command ran successfully", func() {
+						Expect(remoteFileChecker("/projects/file-from-my-custom-build")).To(BeTrue())
 					})
 				})
+			})
 
-				By("verifying that the custom command ran successfully", func() {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent("nodejs", commonVar.Project)
-					res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-						podName,
-						"runtime",
-						commonVar.Project,
-						[]string{"stat", "/projects/file-from-my-custom-run"},
-						func(cmdOp string, err error) bool {
-							return err == nil
-						},
-					)
-					Expect(res).To(BeTrue())
+			It("should execute the default build command successfully if specified explicitly", func() {
+				//devbuild is the default build command
+				buildCmdTestFunc("devbuild", func(stdout, stderr string) {
+					By("checking that it did not execute the custom build command", func() {
+						helper.DontMatchAllInOutput(stdout, []string{
+							"Building your application in container on cluster (command: my-custom-build)",
+						})
+					})
 				})
 			})
 		})
 
-		It("should execute the default run command successfully if specified explicitly", func() {
-			//devrun is the default run command
-			testForCmd("devrun", func(stdout, stderr string) {
-				By("checking that it did not execute the custom run command", func() {
-					helper.DontMatchAllInOutput(stdout, []string{
-						"Executing the application (command: my-custom-run)",
+		When("running odo dev with a run command", func() {
+			runCmdTestFunc := func(runCmd string, checkFunc func(stdout, stderr string)) {
+				testForCmd(
+					testCase{
+						buildCmd:          "devbuild",
+						runCmd:            runCmd,
+						devAdditionalOpts: []string{"--run-command", runCmd},
+						checkFunc:         checkFunc,
+					},
+				)
+			}
+
+			It("should error out if called with an invalid command", func() {
+				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "run-command-does-not-exist").ShouldFail().Err()
+				Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
+			})
+
+			It("should error out if called with a command of another kind", func() {
+				//devbuild is a valid build command, not a run command
+				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
+				Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
+			})
+
+			It("should execute the custom non-default run command successfully", func() {
+				runCmdTestFunc("my-custom-run", func(stdout, stderr string) {
+					By("checking that it did not execute the default run command", func() {
+						helper.DontMatchAllInOutput(stdout, []string{
+							"Executing the application (command: devrun)",
+						})
+					})
+
+					By("verifying that the custom command ran successfully", func() {
+						Expect(remoteFileChecker("/projects/file-from-my-custom-run")).To(BeTrue())
 					})
 				})
 			})
+
+			It("should execute the default run command successfully if specified explicitly", func() {
+				//devrun is the default run command
+				runCmdTestFunc("devrun", func(stdout, stderr string) {
+					By("checking that it did not execute the custom run command", func() {
+						helper.DontMatchAllInOutput(stdout, []string{
+							"Executing the application (command: my-custom-run)",
+						})
+					})
+				})
+			})
+		})
+
+		It("should execute the custom non-default build and run commands successfully", func() {
+			buildCmd := "my-custom-build"
+			runCmd := "my-custom-run"
+
+			testForCmd(
+				testCase{
+					buildCmd:          buildCmd,
+					runCmd:            runCmd,
+					devAdditionalOpts: []string{"--build-command", buildCmd, "--run-command", runCmd},
+					checkFunc: func(stdout, stderr string) {
+						By("checking that it did not execute the default build and run commands", func() {
+							helper.DontMatchAllInOutput(stdout, []string{
+								"Building your application in container on cluster (command: devbuild)",
+								"Executing the application (command: devrun)",
+							})
+						})
+
+						By("verifying that the custom build command ran successfully", func() {
+							Expect(remoteFileChecker("/projects/file-from-my-custom-build")).To(BeTrue())
+						})
+
+						By("verifying that the custom run command ran successfully", func() {
+							Expect(remoteFileChecker("/projects/file-from-my-custom-run")).To(BeTrue())
+						})
+					},
+				},
+			)
 		})
 	})
 
