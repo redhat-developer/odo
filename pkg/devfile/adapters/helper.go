@@ -51,10 +51,7 @@ func createKubernetesAdapter(
 	errOut io.Writer,
 ) (common.ComponentAdapter, error) {
 	if namespace != "" {
-		err := kubernetesClient.SetCurrentNamespace(namespace)
-		if err != nil {
-			return nil, err
-		}
+		kubernetesClient.SetNamespace(namespace)
 	}
 	return newKubernetesAdapter(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
 }
