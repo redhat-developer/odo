@@ -39,6 +39,7 @@ func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Cli
 
 func (o *PFClient) StartPortForwarding(
 	devFileObj parser.DevfileObj,
+	componentName string,
 	randomPorts bool,
 	errOut io.Writer,
 ) error {
@@ -72,7 +73,7 @@ func (o *PFClient) StartPortForwarding(
 	for _, v1 := range portPairs {
 		portPairsSlice = append(portPairsSlice, v1...)
 	}
-	pod, err := o.kubernetesClient.GetPodUsingComponentName(devFileObj.GetMetadataName())
+	pod, err := o.kubernetesClient.GetPodUsingComponentName(componentName)
 	if err != nil {
 		return err
 	}

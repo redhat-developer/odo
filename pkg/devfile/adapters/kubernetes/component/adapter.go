@@ -317,9 +317,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		a.portForwardClient.StopPortForwarding()
 	}
 
-	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.randomPorts, a.errOut)
+	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, a.randomPorts, a.errOut)
 	if err != nil {
-		return err
+		return fmt.Errorf("fail starting the port forwarding: %w", err)
 	}
 
 	// PostStart events from the devfile will only be executed when the component

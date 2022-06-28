@@ -9,6 +9,7 @@ import (
 type Client interface {
 	StartPortForwarding(
 		devFileObj parser.DevfileObj,
+		componenentName string,
 		randomPorts bool,
 		errOut io.Writer,
 	) error
