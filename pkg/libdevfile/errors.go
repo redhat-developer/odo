@@ -9,15 +9,20 @@ import (
 // NoCommandFoundError is returned when no command of the specified kind is found in devfile
 type NoCommandFoundError struct {
 	kind v1alpha2.CommandGroupKind
+	name string
 }
 
-func NewNoCommandFoundError(kind v1alpha2.CommandGroupKind) NoCommandFoundError {
+func NewNoCommandFoundError(kind v1alpha2.CommandGroupKind, name string) NoCommandFoundError {
 	return NoCommandFoundError{
 		kind: kind,
+		name: name,
 	}
 }
 func (e NoCommandFoundError) Error() string {
-	return fmt.Sprintf("no %s command found in devfile", e.kind)
+	if e.name == "" {
+		return fmt.Sprintf("no %s command found in devfile", e.kind)
+	}
+	return fmt.Sprintf("no %s command with name %q found in Devfile", e.kind, e.name)
 }
 
 // NoDefaultCommandFoundError is returned when several commands of the specified kind exist

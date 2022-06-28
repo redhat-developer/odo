@@ -1,0 +1,41 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+starterProjects:
+  - name: nodejs-starter
+    git:
+      remotes:
+        origin: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - name: runtime
+    container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000-tcp"
+          targetPort: 3000
+      mountSources: true
+commands:
+  - id: devbuild
+    exec:
+      component: runtime
+      commandLine: npm install
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
+        isDefault: true
+  - id: devrun
+    exec:
+      component: runtime
+      commandLine: npm start
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run
+        isDefault: true
+  - id: my-custom-run
+    exec:
+      component: runtime
+      commandLine: 'echo waiting for one second before starting & sleep 1; mkdir /projects/file-from-my-custom-run && npm start'
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: run

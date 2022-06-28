@@ -68,6 +68,7 @@ type DevOptions struct {
 	debugFlag       bool
 	varFileFlag     string
 	varsFlag        []string
+	runCommandFlag  string
 
 	// Variables to override Devfile variables
 	variables map[string]string
@@ -83,8 +84,11 @@ func NewDevOptions() *DevOptions {
 }
 
 var devExample = ktemplates.Examples(`
-	# Deploy component to the development cluster
+	# Deploy component to the development cluster, using the default run command
 	%[1]s
+
+	# Deploy component to the development cluster, using the specified run command
+	%[1]s --run-command <my-command>
 
 	# Deploy component to the development cluster without automatically syncing the code upon any file changes
 	%[1]s --no-watch
@@ -212,7 +216,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag)
+	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.runCommandFlag)
 	if err != nil {
 		return err
 	}
@@ -268,7 +272,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
-		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.variables)
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.runCommandFlag, o.variables)
 	}
 	return err
 }
@@ -334,6 +338,8 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
 	devCmd.Flags().StringArrayVar(&o.varsFlag, "var", []string{}, "Variable to override Devfile variable and variables in var-file")
 	devCmd.Flags().StringVar(&o.varFileFlag, "var-file", "", "File containing variables to override Devfile variables")
+	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
+		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE, clientset.FILESYSTEM)
 	// Add a defined annotation in order to appear in the help menu
 	devCmd.Annotations["command"] = "main"

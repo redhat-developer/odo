@@ -43,7 +43,62 @@ In the above example, three things have happened:
 You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
 will first delete all resources deployed into the cluster for this session before terminating.
 
-### Sustituting variables
+### Running an alternative command
+
+By default, `odo dev` executes the default Run command defined in the Devfile, 
+i.e, the command with a group `kind` set to `run` and its `isDefault` field set to `true`.
+
+Passing the `run-command` flag allows to override this behavior by running any other non-default command, provided it is in the `run` group in the Devfile.
+
+For example, given the following excerpt from a Devfile:
+```yaml
+- id: my-run
+  exec:
+    commandLine: mvn spring-boot:run
+    component: tools
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      isDefault: true
+      kind: run
+
+- id: my-run-with-postgres
+  exec:
+    commandLine: mvn spring-boot:run -Dspring-boot.run.profiles=postgres
+    component: tools
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      isDefault: false
+      kind: run
+```
+
+- running `odo dev` will run the default `my-run` command
+- running `odo dev --run-command my-run-with-postgres` will run the `my-run-with-postgres` command:
+```shell
+$ odo dev --run-command my-run-with-postgres
+
+  __
+ /  \__     Developing using the my-java-springboot-app Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.0.0-alpha3
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Added storage m2 to my-java-springboot-app
+ ✓  Creating kind ServiceBinding [8ms]
+ ✓  Waiting for Kubernetes resources [39s]
+ ✓  Syncing files into the container [84ms]
+ ✓  Building your application in container on cluster (command: build) [51s]
+ •  Executing the application (command: my-run-with-postgres)  ...
+
+Your application is now running on the cluster
+ - Forwarding from 127.0.0.1:40002 -> 8080
+
+Watching for changes in the current directory /path/to/my/sources/java-springboot-app
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+```
+
+### Substituting variables
 
 The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
 can override the values for variables from the command line when running `odo dev`, using the `--var` and `--var-file` options.
