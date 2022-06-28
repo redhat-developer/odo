@@ -166,7 +166,7 @@ func newPreferenceInfo() (*preferenceInfo, error) {
 	return &c, nil
 }
 
-// RegistryHandler handles registry add, update and delete operations
+// RegistryHandler handles registry add, and remove operations
 func (c *preferenceInfo) RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) error {
 	var registryList []Registry
 	var err error
@@ -184,7 +184,7 @@ func (c *preferenceInfo) RegistryHandler(operation string, registryName string, 
 		for index, registry := range registryList {
 			if registry.Name == registryName {
 				registryExist = true
-				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, registryURL, forceFlag, isSecure)
+				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, forceFlag)
 				if err != nil {
 					return err
 				}
@@ -209,6 +209,7 @@ func (c *preferenceInfo) RegistryHandler(operation string, registryName string, 
 	return nil
 }
 
+// handleWithoutRegistryExist is useful for performing 'add' operation on registry and ensure that it is only performed if the registry does not already exist
 func handleWithoutRegistryExist(registryList []Registry, operation string, registryName string, registryURL string, isSecure bool) ([]Registry, error) {
 	switch operation {
 
@@ -220,34 +221,23 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		}
 		registryList = append(registryList, registry)
 
-	case "update", "delete":
+	case "remove":
 		return nil, fmt.Errorf("failed to %v registry: registry %q doesn't exist", operation, registryName)
 	}
 
 	return registryList, nil
 }
 
-func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) ([]Registry, error) {
+// handleWithRegistryExist is useful for performing 'remove' operation on registry and ensure that it is only performed if the registry exists
+func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, forceFlag bool) ([]Registry, error) {
 	switch operation {
 
 	case "add":
-		return nil, fmt.Errorf("failed to add registry: registry %q already exists", registryName)
+		return nil, fmt.Errorf("failed to %s registry: registry %q already exists", operation, registryName)
 
-	case "update":
+	case "remove":
 		if !forceFlag {
-			if !ui.Proceed(fmt.Sprintf("Are you sure you want to update registry %q", registryName)) {
-				log.Info("Aborted by the user")
-				return registryList, nil
-			}
-		}
-
-		registryList[index].URL = registryURL
-		registryList[index].Secure = isSecure
-		log.Info("Successfully updated registry")
-
-	case "delete":
-		if !forceFlag {
-			if !ui.Proceed(fmt.Sprintf("Are you sure you want to delete registry %q", registryName)) {
+			if !ui.Proceed(fmt.Sprintf("Are you sure you want to %s registry %q", operation, registryName)) {
 				log.Info("Aborted by the user")
 				return registryList, nil
 			}
@@ -256,7 +246,7 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 		copy(registryList[index:], registryList[index+1:])
 		registryList[len(registryList)-1] = Registry{}
 		registryList = registryList[:len(registryList)-1]
-		log.Info("Successfully deleted registry")
+		log.Info("Successfully removed registry")
 	}
 
 	return registryList, nil

@@ -314,6 +314,6 @@ type ResourceInfo struct {
 func SetDefaultDevfileRegistryAsStaging() {
 	const registryName string = "DefaultDevfileRegistry"
 	const addRegistryURL string = "https://registry.stage.devfile.io"
-	Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldPass()
-	Cmd("odo", "preference", "registry", "add", registryName, addRegistryURL).ShouldPass()
+	Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
+	Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldPass()
 }

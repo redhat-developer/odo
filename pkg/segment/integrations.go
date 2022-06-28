@@ -3,9 +3,9 @@ package segment
 import (
 	"github.com/Xuanwo/go-locale"
 	registryLibrary "github.com/devfile/registry-support/registry-library/library"
-	registryConsts "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/consts"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 // getTelemetryForDevfileRegistry returns a populated TelemetryData object that contains some odo telemetry (with client consent), such as the anonymous ID and
@@ -14,7 +14,7 @@ import (
 func getTelemetryForDevfileRegistry() (registryLibrary.TelemetryData, error) {
 
 	td := registryLibrary.TelemetryData{
-		Client: registryConsts.TelemetryClient,
+		Client: TelemetryClient,
 	}
 
 	// TODO(feloy) Get from DI
@@ -27,7 +27,7 @@ func getTelemetryForDevfileRegistry() (registryLibrary.TelemetryData, error) {
 		return td, nil
 	}
 
-	//if there is an error, tag will be undetermined
+	// if there is an error, tag will be undetermined
 	tag, _ := locale.Detect()
 	td.Locale = tag.String()
 
@@ -47,7 +47,7 @@ func getTelemetryForDevfileRegistry() (registryLibrary.TelemetryData, error) {
 func GetRegistryOptions() registryLibrary.RegistryOptions {
 	td, err := getTelemetryForDevfileRegistry()
 	if err != nil {
-		//this error should not prevent basic telemetry from being sent
+		// this error should not prevent basic telemetry from being sent
 		klog.Errorf("An error prevented additional telemetry to be set %v", err)
 	}
 

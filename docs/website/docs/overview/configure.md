@@ -109,20 +109,20 @@ odo uses the portable *devfile* format to describe the components. odo can conne
 
 You can connect to publicly available devfile registries, or you can install your own [Devfile Registry](https://github.com/devfile/registry-support).
 
-You can use the `odo preference registry` command to manage the registries used by odo to retrieve devfile information.
+You can use the `odo preference <add/remove> registry` command to manage the registries used by odo to retrieve devfile information.
 
 ### Adding a registry
 
 You can use the following command to add a registry:
 
 ```
-odo preference registry add
+odo preference add registry
 ```
 
 For example:
 
 ```
-$ odo preference registry add StageRegistry https://registry.stage.devfile.io
+$ odo preference add registry StageRegistry https://registry.stage.devfile.io
 New registry successfully added
 ```
 
@@ -131,13 +131,13 @@ New registry successfully added
 You can delete a registry with the command:
 
 ```
-odo preference registry delete
+odo preference remove registry
 ```
 
 For example:
 
 ```
-$ odo preference registry delete StageRegistry
+$ odo preference remove registry StageRegistry
 ? Are you sure you want to delete registry "StageRegistry" Yes
 Successfully deleted registry
 ```

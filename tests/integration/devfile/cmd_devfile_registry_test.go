@@ -83,18 +83,18 @@ var _ = Describe("odo devfile registry command tests", func() {
 	})
 
 	It("Should fail with an error with no registries", func() {
-		helper.Cmd("odo", "preference", "registry", "delete", "DefaultDevfileRegistry", "-f").ShouldPass()
+		helper.Cmd("odo", "preference", "remove", "registry", "DefaultDevfileRegistry", "-f").ShouldPass()
 		output := helper.Cmd("odo", "preference", "view").ShouldRun().Err()
-		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer to `odo preference registry add -h` to add one"})
+		helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer to `odo preference add registry -h` to add one"})
 	})
 
 	It("Should fail to delete the registry, when registry is not present", func() {
-		helper.Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldFail()
+		helper.Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldFail()
 	})
 
 	When("adding a registry", func() {
 		BeforeEach(func() {
-			helper.Cmd("odo", "preference", "registry", "add", registryName, addRegistryURL).ShouldPass()
+			helper.Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldPass()
 		})
 
 		It("should list newly added registry", func() {
@@ -107,21 +107,21 @@ var _ = Describe("odo devfile registry command tests", func() {
 		})
 
 		It("should fail, when adding same registry", func() {
-			helper.Cmd("odo", "preference", "registry", "add", registryName, addRegistryURL).ShouldFail()
+			helper.Cmd("odo", "preference", "add", "registry", registryName, addRegistryURL).ShouldFail()
 		})
 
 		It("should successfully delete registry", func() {
-			helper.Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldPass()
+			helper.Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
 		})
 
 		It("deleting registry and creating component with registry flag ", func() {
-			helper.Cmd("odo", "preference", "registry", "delete", registryName, "-f").ShouldPass()
+			helper.Cmd("odo", "preference", "remove", "registry", registryName, "-f").ShouldPass()
 			helper.Cmd("odo", "init", "--name", "aname", "--devfile", "java-maven", "--devfile-registry", registryName).ShouldFail()
 		})
 	})
 
 	It("should fail when adding a git based registry", func() {
-		err := helper.Cmd("odo", "preference", "registry", "add", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
+		err := helper.Cmd("odo", "preference", "add", "registry", "RegistryFromGitHub", "https://github.com/devfile/registry").ShouldFail().Err()
 		helper.MatchAllInOutput(err, []string{"github", "no", "supported", "https://github.com/devfile/registry-support"})
 	})
 })

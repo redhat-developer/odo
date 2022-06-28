@@ -7,12 +7,12 @@ the command `odo dev` should be considered instead.
 
 This command must be executed from an empty directory, and as a result, the command will download a `devfile.yaml` file and, optionally, a starter project.
 
-The command can be exectued in two flavors, either interactive or non-interactive.
+The command can be executed in two flavors, either interactive or non-interactive.
 
 ## Interactive mode
 
 In interactive mode, you will be guided to choose:
-- a devfile from the list of devfiles present in the registry or registries referenced (using the `odo preference registry` command),
+- a devfile from the list of devfiles present in the registry or registries referenced (using the `odo registry` command),
 - a starter project referenced by the selected devfile,
 - a name for the component present in the devfile.
 
@@ -20,7 +20,7 @@ In interactive mode, you will be guided to choose:
 
 In non-interactive mode, you will have to specify from the command-line the information needed to get a devfile.
 
-If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference registry`), and the first one matching will be downloaded. If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
+If you want to download a devfile from a registry, you must specify the devfile name with the `--devfile` flag. The devfile with the specified name will be searched in the registries referenced (using `odo preference view`), and the first one matching will be downloaded. If you want to download the devfile from a specific registry in the list or referenced registries, you can use the `--devfile-registry` flag to specify the name of this registry. By default odo uses official devfile registry [registry.devfile.io](https://registry.devfile.io). You can use registry's [web interface](https://registry.devfile.io/viewer) to view its content.
 
 
 If you prefer to download a devfile from an URL or from the local filesystem, you can use the `--devfile-path` instead.
@@ -53,10 +53,20 @@ To deploy your component to a cluster use "odo deploy".
 In this example, the devfile will be downloaded from the **Staging** registry, which is the first one in the list containing the `nodejs-react` devfile.
 
 ```
-$ odo registry list
-NAME                       URL                                   SECURE
-Staging                    https://registry.stage.devfile.io     No
-DefaultDevfileRegistry     https://registry.devfile.io           No
+$ odo preference view
+Preference parameters:
+ PARAMETER           VALUE
+ ConsentTelemetry    true
+ Ephemeral
+ PushTimeout
+ RegistryCacheTime
+ Timeout             5
+ UpdateNotification  true (default)
+
+Devfile registries:
+ NAME                       URL                                   SECURE
+ Staging                    https://registry.stage.devfile.io     No
+ DefaultDevfileRegistry     https://registry.devfile.io           No
 
 $ odo init --name my-react-app --devfile nodejs-react --starter nodejs-react-starter
  ✓  Downloading devfile "nodejs-react" [997ms]
@@ -70,13 +80,23 @@ To deploy your component to a cluster use "odo deploy".
 
 ### Non-interactive mode from a specific registry of the list
 
-In this example, the devfile will be downloaded from the **DefaultDevfileRegistry** registry, as explicitely indicated by the `--devfile-registry` flag.
+In this example, the devfile will be downloaded from the **DefaultDevfileRegistry** registry, as explicitly indicated by the `--devfile-registry` flag.
 
 ```
-$ odo registry list
-NAME                       URL                                   SECURE
-Staging                    https://registry.stage.devfile.io     No
-DefaultDevfileRegistry     https://registry.devfile.io           No
+$ odo preference view
+Preference parameters:
+ PARAMETER           VALUE
+ ConsentTelemetry    true
+ Ephemeral
+ PushTimeout
+ RegistryCacheTime
+ Timeout             5
+ UpdateNotification  true (default)
+
+Devfile registries:
+ NAME                       URL                                   SECURE
+ Staging                    https://registry.stage.devfile.io     No
+ DefaultDevfileRegistry     https://registry.devfile.io           No
 
 $ odo init --name my-spring-app --devfile java-springboot --devfile-registry DefaultDevfileRegistry --starter springbootproject
  ✓  Downloading devfile "java-springboot" from registry "DefaultDevfileRegistry" [980ms]

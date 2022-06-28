@@ -19,10 +19,11 @@ import (
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
 	"github.com/pborman/uuid"
-	"github.com/redhat-developer/odo/pkg/preference"
 	"golang.org/x/term"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"k8s.io/klog"
+
+	"github.com/redhat-developer/odo/pkg/preference"
 )
 
 // writekey will be the API key used to send data to the correct source on Segment. Default is the dev key
@@ -30,6 +31,8 @@ var writeKey = "4xGV1HV7K2FtUWaoAozSBD7SNCBCJ65U"
 
 // Sanitizer replaces a PII data
 const Sanitizer = "XXXX"
+
+const TelemetryClient = "odo"
 
 // DisableTelemetryEnv is name of environment variable, if set to true it disables odo telemetry completely
 // hiding even the question
@@ -177,7 +180,7 @@ func addConfigTraits() analytics.Traits {
 	return traits
 }
 
-//GetTelemetryFilePath returns the default file path where the generated anonymous ID is stored
+// GetTelemetryFilePath returns the default file path where the generated anonymous ID is stored
 func GetTelemetryFilePath() string {
 	homeDir, _ := os.UserHomeDir()
 	return filepath.Join(homeDir, ".redhat", "anonymousId")

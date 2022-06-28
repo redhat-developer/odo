@@ -99,7 +99,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 				exampleString += fmt.Sprintf("\n  %s %s", fullName, param)
 			}
 
-			return "\n" + exampleString
+			return "\n" + exampleString + "\n"
 		}(unsetExample, fullName),
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {

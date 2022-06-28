@@ -5,7 +5,7 @@ title: odo registry
 The `odo registry` command lists all the Devfile stacks from Devfile registries.
 
 The Devfile registries that are taken into account are the registries added with the command
-`odo preference registry`.
+`odo preference add registry`.
 
 ## Available Flags
 
@@ -15,7 +15,7 @@ These flags let you filter the listed Devfile stacks:
 
 * `--devfile <name>` to list the Devfile stacks with this exact name
 * `--devfile-registry <name>` to list the Devfile stack of this registry (this is the `name` used
-when adding the registry to the preferences with `odo preference registry add <name> <url>`)
+when adding the registry to the preferences with `odo preference add registry <name> <url>`)
 * `--filter <term>` to list the Devfile for which the term is found in the devfile name or description
 
 By default, the name, registry and description 
@@ -32,11 +32,21 @@ For these examples, we consider we have two registries in our preferences:
 
 ```
 shell
-$ odo preference registry list
-NAME                       URL                                   SECURE
-Staging                    https://registry.stage.devfile.io     No
-DefaultDevfileRegistry     https://registry.devfile.io           No
-```
+$ odo preference view
+Preference parameters:
+ PARAMETER           VALUE
+ ConsentTelemetry    true
+ Ephemeral
+ PushTimeout
+ RegistryCacheTime
+ Timeout             5
+ UpdateNotification  true (default)
+
+Devfile registries:
+ NAME                       URL                                   SECURE
+ Staging                    https://registry.stage.devfile.io     No
+ DefaultDevfileRegistry     https://registry.devfile.io           No
+ ```
 
 To get the complete list of accessible Devfile stacks:
 

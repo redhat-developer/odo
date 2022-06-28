@@ -14,11 +14,9 @@ import (
 	"github.com/devfile/registry-support/registry-library/library"
 
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
-
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
@@ -120,7 +118,7 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryStacks(o.preferenceClient, registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL, and credential and add the registry again (refer to `odo preference registry --help`)\n", registry.Name, err)
+				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL, and credential and remove add the registry again (refer to `odo preference add registry --help`)\n", registry.Name, err)
 				return
 			}
 
@@ -189,12 +187,12 @@ func (o RegistryClient) ListDevfileStacks(registryName, devfileFlag, filterFlag 
 
 // getRegistryStacks retrieves the registry's index devfile stack entries
 func getRegistryStacks(preferenceClient preference.Client, registry api.Registry) ([]api.DevfileStack, error) {
-	isGithubregistry, err := registryUtil.IsGithubBasedRegistry(registry.URL)
+	isGithubregistry, err := IsGithubBasedRegistry(registry.URL)
 	if err != nil {
 		return nil, err
 	}
 	if isGithubregistry {
-		return nil, registryUtil.ErrGithubRegistryNotSupported
+		return nil, &ErrGithubRegistryNotSupported{}
 	}
 	// OCI-based registry
 	devfileIndex, err := library.GetRegistryIndex(registry.URL, segment.GetRegistryOptions(), indexSchema.StackDevfileType)

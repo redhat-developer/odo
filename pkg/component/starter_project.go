@@ -15,8 +15,11 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
-	registryUtil "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/util"
+)
+
+const (
+	RegistryUser = "default"
 )
 
 func checkoutProject(subDir, zipURL, path, starterToken string) error {
@@ -128,7 +131,7 @@ func downloadGitProject(starterProject *devfilev1.StarterProject, starterToken, 
 
 	if starterToken != "" {
 		cloneOptions.Auth = &http.BasicAuth{
-			Username: registryUtil.RegistryUser,
+			Username: RegistryUser,
 			Password: starterToken,
 		}
 	}

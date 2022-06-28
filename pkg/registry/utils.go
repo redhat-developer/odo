@@ -1,21 +1,12 @@
-package util
+package registry
 
 import (
-	// odo packages
-
-	"errors"
 	"fmt"
+	url2 "net/url"
 	"strings"
 
 	"github.com/redhat-developer/odo/pkg/preference"
-	url2 "net/url"
 )
-
-const (
-	RegistryUser = "default"
-)
-
-var ErrGithubRegistryNotSupported = errors.New("github based registries are no longer supported, use OCI based registries instead, see https://github.com/devfile/registry-support")
 
 // IsSecure checks if the registry is secure
 func IsSecure(prefClient preference.Client, registryName string) bool {

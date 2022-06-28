@@ -1,4 +1,4 @@
-package registry
+package add
 
 import (
 	"context"
@@ -13,28 +13,26 @@ import (
 
 	// odo packages
 	"github.com/redhat-developer/odo/pkg/log"
-	util2 "github.com/redhat-developer/odo/pkg/odo/cli/preference/registry/util"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
+	"github.com/redhat-developer/odo/pkg/registry"
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-const addCommandName = "add"
+const registryCommandName = "registry"
 
-// "odo preference registry add" command description and examples
+// "odo preference add registry" command description and examples
 var (
 	addLongDesc = ktemplates.LongDesc(`Add devfile registry`)
 
 	addExample = ktemplates.Examples(`# Add devfile registry
 	%[1]s CheRegistry https://che-devfile-registry.openshift.io
-
-	%[1]s RegistryFromGitHub https://github.com/elsony/devfile-registry
 	`)
 )
 
-// AddOptions encapsulates the options for the "odo preference registry add" command
-type AddOptions struct {
+// RegistryOptions encapsulates the options for the "odo preference add registry" command
+type RegistryOptions struct {
 	// Clients
 	clientset *clientset.Clientset
 
@@ -49,17 +47,17 @@ type AddOptions struct {
 	user      string
 }
 
-// NewAddOptions creates a new AddOptions instance
-func NewAddOptions() *AddOptions {
-	return &AddOptions{}
+// NewRegistryOptions creates a new RegistryOptions instance
+func NewRegistryOptions() *RegistryOptions {
+	return &RegistryOptions{}
 }
 
-func (o *AddOptions) SetClientset(clientset *clientset.Clientset) {
+func (o *RegistryOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-// Complete completes AddOptions after they've been created
-func (o *AddOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+// Complete completes RegistryOptions after they've been created
+func (o *RegistryOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
 	o.operation = "add"
 	o.registryName = args[0]
 	o.registryURL = args[1]
@@ -67,24 +65,24 @@ func (o *AddOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error
 	return nil
 }
 
-// Validate validates the AddOptions based on completed values
-func (o *AddOptions) Validate() (err error) {
+// Validate validates the RegistryOptions based on completed values
+func (o *RegistryOptions) Validate() (err error) {
 	err = util.ValidateURL(o.registryURL)
 	if err != nil {
 		return err
 	}
-	isGithubRegistry, err := util2.IsGithubBasedRegistry(o.registryURL)
+	isGithubRegistry, err := registry.IsGithubBasedRegistry(o.registryURL)
 	if err != nil {
 		return err
 	}
 	if isGithubRegistry {
-		return util2.ErrGithubRegistryNotSupported
+		return &registry.ErrGithubRegistryNotSupported{}
 	}
 	return nil
 }
 
-// Run contains the logic for "odo preference registry add" command
-func (o *AddOptions) Run(ctx context.Context) (err error) {
+// Run contains the logic for "odo preference add registry" command
+func (o *RegistryOptions) Run(ctx context.Context) (err error) {
 	isSecure := false
 	if o.tokenFlag != "" {
 		isSecure = true
@@ -106,10 +104,10 @@ func (o *AddOptions) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-// NewCmdAdd implements the "odo preference registry add" command
-func NewCmdAdd(name, fullName string) *cobra.Command {
-	o := NewAddOptions()
-	registryAddCmd := &cobra.Command{
+// NewCmdRegistry implements the "odo preference add registry" command
+func NewCmdRegistry(name, fullName string) *cobra.Command {
+	o := NewRegistryOptions()
+	registryCmd := &cobra.Command{
 		Use:     fmt.Sprintf("%s <registry name> <registry URL>", name),
 		Short:   addLongDesc,
 		Long:    addLongDesc,
@@ -119,9 +117,9 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(registryAddCmd, clientset.PREFERENCE)
+	clientset.Add(registryCmd, clientset.PREFERENCE)
 
-	registryAddCmd.Flags().StringVar(&o.tokenFlag, "token", "", "Token to be used to access secure registry")
+	registryCmd.Flags().StringVar(&o.tokenFlag, "token", "", "Token to be used to access secure registry")
 
-	return registryAddCmd
+	return registryCmd
 }
