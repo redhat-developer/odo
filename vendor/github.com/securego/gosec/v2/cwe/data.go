@@ -1,19 +1,26 @@
 package cwe
 
+import "fmt"
+
 const (
-	//Acronym is the acronym of CWE
+	// Acronym is the acronym of CWE
 	Acronym = "CWE"
-	//Version the CWE version
+	// Version the CWE version
 	Version = "4.4"
-	//ReleaseDateUtc the release Date of CWE Version
+	// ReleaseDateUtc the release Date of CWE Version
 	ReleaseDateUtc = "2021-03-15"
-	//Organization MITRE
+	// Organization MITRE
 	Organization = "MITRE"
-	//Description the description of CWE
+	// Description the description of CWE
 	Description = "The MITRE Common Weakness Enumeration"
 )
 
 var (
+	// InformationURI link to the published CWE PDF
+	InformationURI = fmt.Sprintf("https://cwe.mitre.org/data/published/cwe_v%s.pdf/", Version)
+	// DownloadURI link to the zipped XML of the CWE list
+	DownloadURI = fmt.Sprintf("https://cwe.mitre.org/data/xml/cwec_v%s.xml.zip", Version)
+
 	data = map[string]*Weakness{}
 
 	weaknesses = []*Weakness{
@@ -83,6 +90,11 @@ var (
 			Name:        "Insecure Temporary File",
 		},
 		{
+			ID:          "400",
+			Description: "The software does not properly control the allocation and maintenance of a limited resource, thereby enabling an actor to influence the amount of resources consumed, eventually leading to the exhaustion of available resources.",
+			Name:        "Uncontrolled Resource Consumption",
+		},
+		{
 			ID:          "409",
 			Description: "The software does not handle or incorrectly handles a compressed input with a very high compression ratio that produces a large output.",
 			Name:        "Improper Handling of Highly Compressed Data (Data Amplification)",
@@ -126,7 +138,7 @@ func init() {
 	}
 }
 
-//Get Retrieves a CWE weakness by it's id
+// Get Retrieves a CWE weakness by it's id
 func Get(id string) *Weakness {
 	weakness, ok := data[id]
 	if ok && weakness != nil {

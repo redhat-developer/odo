@@ -53,7 +53,7 @@ GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 
-RUN_GINKGO = ginkgo
+RUN_GINKGO = go run -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 
 default: bin
 
@@ -116,7 +116,8 @@ goget-tools:
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
-	go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.4
+	@echo "This is no longer used."
+	@echo "Ginkgo can be executed directly from this repository using command '$(RUN_GINKGO)'"
 
 .PHONY: test-coverage
 test-coverage: ## Run unit tests and collect coverage

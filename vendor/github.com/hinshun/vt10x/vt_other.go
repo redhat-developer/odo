@@ -23,8 +23,8 @@ func newTerminal(info TerminalInfo) *terminal {
 func (t *terminal) init(cols, rows int) {
 	t.numlock = true
 	t.state = t.parse
-	t.cur.attr.fg = DefaultFG
-	t.cur.attr.bg = DefaultBG
+	t.cur.Attr.FG = DefaultFG
+	t.cur.Attr.BG = DefaultBG
 	t.Resize(cols, rows)
 	t.reset()
 }

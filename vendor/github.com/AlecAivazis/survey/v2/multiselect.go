@@ -45,21 +45,36 @@ type MultiSelectTemplateData struct {
 	ShowHelp      bool
 	PageEntries   []core.OptionAnswer
 	Config        *PromptConfig
+
+	// These fields are used when rendering an individual option
+	CurrentOpt   core.OptionAnswer
+	CurrentIndex int
+}
+
+// IterateOption sets CurrentOpt and CurrentIndex appropriately so a multiselect option can be rendered individually
+func (m MultiSelectTemplateData) IterateOption(ix int, opt core.OptionAnswer) interface{} {
+	copy := m
+	copy.CurrentIndex = ix
+	copy.CurrentOpt = opt
+	return copy
 }
 
 var MultiSelectQuestionTemplate = `
+{{- define "option"}}
+    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }}{{color "reset"}}{{else}} {{end}}
+    {{- if index .Checked .CurrentOpt.Index }}{{color .Config.Icons.MarkedOption.Format }} {{ .Config.Icons.MarkedOption.Text }} {{else}}{{color .Config.Icons.UnmarkedOption.Format }} {{ .Config.Icons.UnmarkedOption.Text }} {{end}}
+    {{- color "reset"}}
+    {{- " "}}{{- .CurrentOpt.Value}}
+{{end}}
 {{- if .ShowHelp }}{{- color .Config.Icons.Help.Format }}{{ .Config.Icons.Help.Text }} {{ .Help }}{{color "reset"}}{{"\n"}}{{end}}
 {{- color .Config.Icons.Question.Format }}{{ .Config.Icons.Question.Text }} {{color "reset"}}
 {{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
 {{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else }}
-	{{- "  "}}{{- color "cyan"}}[Use arrows to move, enter to select, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
+	{{- "  "}}{{- color "cyan"}}[Use arrows to move, space to select, <right> to all, <left> to none, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
   {{- "\n"}}
   {{- range $ix, $option := .PageEntries}}
-    {{- if eq $ix $.SelectedIndex }}{{color $.Config.Icons.SelectFocus.Format }}{{ $.Config.Icons.SelectFocus.Text }}{{color "reset"}}{{else}} {{end}}
-    {{- if index $.Checked $option.Index }}{{color $.Config.Icons.MarkedOption.Format }} {{ $.Config.Icons.MarkedOption.Text }} {{else}}{{color $.Config.Icons.UnmarkedOption.Format }} {{ $.Config.Icons.UnmarkedOption.Text }} {{end}}
-    {{- color "reset"}}
-    {{- " "}}{{$option.Value}}{{"\n"}}
+    {{- template "option" $.IterateOption $ix $option}}
   {{- end}}
 {{- end}}`
 
@@ -77,7 +92,7 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 			// decrement the selected index
 			m.selectedIndex--
 		}
-	} else if key == terminal.KeyArrowDown || (m.VimMode && key == 'j') {
+	} else if key == terminal.KeyTab || key == terminal.KeyArrowDown || (m.VimMode && key == 'j') {
 		// if we are at the bottom of the list
 		if m.selectedIndex == len(options)-1 {
 			// start at the top
@@ -100,7 +115,9 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 				// otherwise just invert the current value
 				m.checked[selectedOpt.Index] = !old
 			}
-			m.filter = ""
+			if !config.KeepFilter {
+				m.filter = ""
+			}
 		}
 		// only show the help message if we have one to show
 	} else if string(key) == config.HelpInput && m.Help != "" {
@@ -111,11 +128,26 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 		m.filter = ""
 	} else if key == terminal.KeyDelete || key == terminal.KeyBackspace {
 		if m.filter != "" {
-			m.filter = m.filter[0 : len(m.filter)-1]
+			runeFilter := []rune(m.filter)
+			m.filter = string(runeFilter[0 : len(runeFilter)-1])
 		}
 	} else if key >= terminal.KeySpace {
 		m.filter += string(key)
 		m.VimMode = false
+	} else if key == terminal.KeyArrowRight {
+		for _, v := range options {
+			m.checked[v.Index] = true
+		}
+		if !config.KeepFilter {
+			m.filter = ""
+		}
+	} else if key == terminal.KeyArrowLeft {
+		for _, v := range options {
+			m.checked[v.Index] = false
+		}
+		if !config.KeepFilter {
+			m.filter = ""
+		}
 	}
 
 	m.FilterMessage = ""
@@ -142,18 +174,17 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 	// and we have modified the filter then we should move the page back!
 	opts, idx := paginate(pageSize, options, m.selectedIndex)
 
+	tmplData := MultiSelectTemplateData{
+		MultiSelect:   *m,
+		SelectedIndex: idx,
+		Checked:       m.checked,
+		ShowHelp:      m.showingHelp,
+		PageEntries:   opts,
+		Config:        config,
+	}
+
 	// render the options
-	m.Render(
-		MultiSelectQuestionTemplate,
-		MultiSelectTemplateData{
-			MultiSelect:   *m,
-			SelectedIndex: idx,
-			Checked:       m.checked,
-			ShowHelp:      m.showingHelp,
-			PageEntries:   opts,
-			Config:        config,
-		},
-	)
+	_ = m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx)
 }
 
 func (m *MultiSelect) filterOptions(config *PromptConfig) []core.OptionAnswer {
@@ -233,31 +264,37 @@ func (m *MultiSelect) Prompt(config *PromptConfig) (interface{}, error) {
 	opts, idx := paginate(pageSize, core.OptionAnswerList(m.Options), m.selectedIndex)
 
 	cursor := m.NewCursor()
-	cursor.Hide()       // hide the cursor
-	defer cursor.Show() // show the cursor when we're done
+	cursor.Save()          // for proper cursor placement during selection
+	cursor.Hide()          // hide the cursor
+	defer cursor.Show()    // show the cursor when we're done
+	defer cursor.Restore() // clear any accessibility offsetting on exit
+
+	tmplData := MultiSelectTemplateData{
+		MultiSelect:   *m,
+		SelectedIndex: idx,
+		Checked:       m.checked,
+		PageEntries:   opts,
+		Config:        config,
+	}
 
 	// ask the question
-	err := m.Render(
-		MultiSelectQuestionTemplate,
-		MultiSelectTemplateData{
-			MultiSelect:   *m,
-			SelectedIndex: idx,
-			Checked:       m.checked,
-			PageEntries:   opts,
-			Config:        config,
-		},
-	)
+	err := m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx)
 	if err != nil {
 		return "", err
 	}
 
 	rr := m.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	// start waiting for input
 	for {
-		r, _, _ := rr.ReadRune()
+		r, _, err := rr.ReadRune()
+		if err != nil {
+			return "", err
+		}
 		if r == '\r' || r == '\n' {
 			break
 		}

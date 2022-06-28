@@ -102,7 +102,7 @@ func (c *FakeDeploymentConfigs) UpdateStatus(ctx context.Context, deploymentConf
 // Delete takes name of the deploymentConfig and deletes it. Returns an error if one occurs.
 func (c *FakeDeploymentConfigs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(deploymentconfigsResource, c.ns, name), &appsv1.DeploymentConfig{})
+		Invokes(testing.NewDeleteActionWithOptions(deploymentconfigsResource, c.ns, name, opts), &appsv1.DeploymentConfig{})
 
 	return err
 }

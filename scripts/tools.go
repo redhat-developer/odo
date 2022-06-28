@@ -5,7 +5,7 @@ package tools
 
 import (
 	_ "github.com/frapposelli/wwhrd"
-	_ "github.com/onsi/ginkgo/ginkgo"
+	_ "github.com/onsi/ginkgo/v2/ginkgo"
 	_ "github.com/securego/gosec/v2/cmd/gosec"
 )
 

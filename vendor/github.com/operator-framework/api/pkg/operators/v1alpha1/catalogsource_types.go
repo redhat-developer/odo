@@ -1,17 +1,19 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"time"
 )
 
 const (
-	CatalogSourceCRDAPIVersion = GroupName + "/" + GroupVersion
-	CatalogSourceKind          = "CatalogSource"
+	CatalogSourceCRDAPIVersion  = GroupName + "/" + GroupVersion
+	CatalogSourceKind           = "CatalogSource"
+	DefaultRegistryPollDuration = 15 * time.Minute
 )
 
 // SourceType indicates the type of backing store for a CatalogSource
@@ -36,6 +38,8 @@ const (
 	CatalogSourceConfigMapError ConditionReason = "ConfigMapError"
 	// CatalogSourceRegistryServerError denotes when there is an issue querying the specified registry server.
 	CatalogSourceRegistryServerError ConditionReason = "RegistryServerError"
+	// CatalogSourceIntervalInvalidError denotes if the registry polling interval is invalid.
+	CatalogSourceIntervalInvalidError ConditionReason = "InvalidIntervalError"
 )
 
 type CatalogSourceSpec struct {
@@ -48,35 +52,40 @@ type CatalogSourceSpec struct {
 	// The range of the priority value can go from positive to negative in the range of int32.
 	// The default value to a catalog source with unassigned priority would be 0.
 	// The catalog source with the same priority values will be ranked lexicographically based on its name.
-	// +Optional
+	// +optional
 	Priority int `json:"priority,omitempty"`
 
 	// ConfigMap is the name of the ConfigMap to be used to back a configmap-server registry.
 	// Only used when SourceType = SourceTypeConfigmap or SourceTypeInternal.
-	// +Optional
+	// +optional
 	ConfigMap string `json:"configMap,omitempty"`
 
 	// Address is a host that OLM can use to connect to a pre-existing registry.
 	// Format: <registry-host or ip>:<port>
 	// Only used when SourceType = SourceTypeGrpc.
 	// Ignored when the Image field is set.
-	// +Optional
+	// +optional
 	Address string `json:"address,omitempty"`
 
 	// Image is an operator-registry container image to instantiate a registry-server with.
 	// Only used when SourceType = SourceTypeGrpc.
 	// If present, the address field is ignored.
-	// +Optional
+	// +optional
 	Image string `json:"image,omitempty"`
+
+	// GrpcPodConfig exposes different overrides for the pod spec of the CatalogSource Pod.
+	// Only used when SourceType = SourceTypeGrpc and Image is set.
+	// +optional
+	GrpcPodConfig *GrpcPodConfig `json:"grpcPodConfig,omitempty"`
 
 	// UpdateStrategy defines how updated catalog source images can be discovered
 	// Consists of an interval that defines polling duration and an embedded strategy type
-	// +Optional
+	// +optional
 	UpdateStrategy *UpdateStrategy `json:"updateStrategy,omitempty"`
 
 	// Secrets represent set of secrets that can be used to access the contents of the catalog.
 	// It is best to keep this list small, since each will need to be tried for every catalog entry.
-	// +Optional
+	// +optional
 	Secrets []string `json:"secrets,omitempty"`
 
 	// Metadata
@@ -84,6 +93,24 @@ type CatalogSourceSpec struct {
 	Description string `json:"description,omitempty"`
 	Publisher   string `json:"publisher,omitempty"`
 	Icon        Icon   `json:"icon,omitempty"`
+}
+
+// GrpcPodConfig contains configuration specified for a catalog source
+type GrpcPodConfig struct {
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// Selector which must match a node's labels for the pod to be scheduled on that node.
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Tolerations are the catalog source's pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// If specified, indicates the pod's priority.
+	// If not specified, the pod priority will be default or zero if there is no
+	// default.
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 // UpdateStrategy holds all the different types of catalog source update strategies
@@ -96,7 +123,32 @@ type RegistryPoll struct {
 	// Interval is used to determine the time interval between checks of the latest catalog source version.
 	// The catalog operator polls to see if a new version of the catalog source is available.
 	// If available, the latest image is pulled and gRPC traffic is directed to the latest catalog source.
-	Interval *metav1.Duration `json:"interval,omitempty"`
+	RawInterval  string           `json:"interval,omitempty"`
+	Interval     *metav1.Duration `json:"-"`
+	ParsingError string           `json:"-"`
+}
+
+// UnmarshalJSON implements the encoding/json.Unmarshaler interface.
+func (u *UpdateStrategy) UnmarshalJSON(data []byte) (err error) {
+	type alias struct {
+		*RegistryPoll `json:"registryPoll,omitempty"`
+	}
+	us := alias{}
+	if err = json.Unmarshal(data, &us); err != nil {
+		return err
+	}
+	registryPoll := &RegistryPoll{
+		RawInterval: us.RegistryPoll.RawInterval,
+	}
+	duration, err := time.ParseDuration(registryPoll.RawInterval)
+	if err != nil {
+		registryPoll.ParsingError = fmt.Sprintf("error parsing spec.updateStrategy.registryPoll.interval. Using the default value of %s instead. Error: %s", DefaultRegistryPollDuration, err)
+		registryPoll.Interval = &metav1.Duration{Duration: DefaultRegistryPollDuration}
+	} else {
+		registryPoll.Interval = &metav1.Duration{Duration: duration}
+	}
+	u.RegistryPoll = registryPoll
+	return nil
 }
 
 type RegistryServiceStatus struct {
@@ -131,6 +183,16 @@ type CatalogSourceStatus struct {
 	ConfigMapResource     *ConfigMapResourceReference `json:"configMapReference,omitempty"`
 	RegistryServiceStatus *RegistryServiceStatus      `json:"registryService,omitempty"`
 	GRPCConnectionState   *GRPCConnectionState        `json:"connectionState,omitempty"`
+
+	// Represents the state of a CatalogSource. Note that Message and Reason represent the original
+	// status information, which may be migrated to be conditions based in the future. Any new features
+	// introduced will use conditions.
+	// +optional
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 type ConfigMapResourceReference struct {

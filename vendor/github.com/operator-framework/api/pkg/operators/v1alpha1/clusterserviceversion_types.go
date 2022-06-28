@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
-
 	appsv1 "k8s.io/api/apps/v1"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +21,7 @@ const (
 	ClusterServiceVersionKind           = "ClusterServiceVersion"
 	OperatorGroupNamespaceAnnotationKey = "olm.operatorNamespace"
 	InstallStrategyNameDeployment       = "deployment"
+	SkipRangeAnnotationKey              = "olm.skipRange"
 )
 
 // InstallModeType is a supported type of install mode for CSV installation
@@ -50,18 +50,21 @@ type InstallModeSet map[InstallModeType]bool
 
 // NamedInstallStrategy represents the block of an ClusterServiceVersion resource
 // where the install strategy is specified.
+// +k8s:openapi-gen=true
 type NamedInstallStrategy struct {
 	StrategyName string                    `json:"strategy"`
 	StrategySpec StrategyDetailsDeployment `json:"spec,omitempty"`
 }
 
 // StrategyDeploymentPermissions describe the rbac rules and service account needed by the install strategy
+// +k8s:openapi-gen=true
 type StrategyDeploymentPermissions struct {
 	ServiceAccountName string            `json:"serviceAccountName"`
 	Rules              []rbac.PolicyRule `json:"rules"`
 }
 
 // StrategyDeploymentSpec contains the name, spec and labels for the deployment ALM should create
+// +k8s:openapi-gen=true
 type StrategyDeploymentSpec struct {
 	Name  string                `json:"name"`
 	Spec  appsv1.DeploymentSpec `json:"spec"`
@@ -70,6 +73,7 @@ type StrategyDeploymentSpec struct {
 
 // StrategyDetailsDeployment represents the parsed details of a Deployment
 // InstallStrategy.
+// +k8s:openapi-gen=true
 type StrategyDetailsDeployment struct {
 	DeploymentSpecs    []StrategyDeploymentSpec        `json:"deployments"`
 	Permissions        []StrategyDeploymentPermissions `json:"permissions,omitempty"`
@@ -265,6 +269,7 @@ type APIServiceDefinitions struct {
 
 // ClusterServiceVersionSpec declarations tell OLM how to install an operator
 // that can manage apps for a given version.
+// +k8s:openapi-gen=true
 type ClusterServiceVersionSpec struct {
 	InstallStrategy           NamedInstallStrategy      `json:"install"`
 	Version                   version.OperatorVersion   `json:"version,omitempty"`
@@ -303,21 +308,51 @@ type ClusterServiceVersionSpec struct {
 	// Label selector for related resources.
 	// +optional
 	Selector *metav1.LabelSelector `json:"selector,omitempty" protobuf:"bytes,2,opt,name=selector"`
+
+	// Cleanup specifies the cleanup behaviour when the CSV gets deleted
+	// +optional
+	Cleanup CleanupSpec `json:"cleanup,omitempty"`
+
+	// The name(s) of one or more CSV(s) that should be skipped in the upgrade graph.
+	// Should match the `metadata.Name` field of the CSV that should be skipped.
+	// This field is only used during catalog creation and plays no part in cluster runtime.
+	// +optional
+	Skips []string `json:"skips,omitempty"`
+
+	// List any related images, or other container images that your Operator might require to perform their functions.
+	// This list should also include operand images as well. All image references should be specified by
+	// digest (SHA) and not by tag. This field is only used during catalog creation and plays no part in cluster runtime.
+	// +optional
+	RelatedImages []RelatedImage `json:"relatedImages,omitempty"`
 }
 
+// +k8s:openapi-gen=true
+type CleanupSpec struct {
+	Enabled bool `json:"enabled"`
+}
+
+// +k8s:openapi-gen=true
 type Maintainer struct {
 	Name  string `json:"name,omitempty"`
 	Email string `json:"email,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type AppLink struct {
 	Name string `json:"name,omitempty"`
 	URL  string `json:"url,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type Icon struct {
 	Data      string `json:"base64data"`
 	MediaType string `json:"mediatype"`
+}
+
+// +k8s:openapi-gen=true
+type RelatedImage struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
 }
 
 // ClusterServiceVersionPhase is a label for the condition of a ClusterServiceVersion at the current time.
@@ -379,6 +414,8 @@ const (
 	CSVReasonCannotModifyStaticOperatorGroupProvidedAPIs ConditionReason = "CannotModifyStaticOperatorGroupProvidedAPIs"
 	CSVReasonDetectedClusterChange                       ConditionReason = "DetectedClusterChange"
 	CSVReasonInvalidWebhookDescription                   ConditionReason = "InvalidWebhookDescription"
+	CSVReasonOperatorConditionNotUpgradeable             ConditionReason = "OperatorConditionNotUpgradeable"
+	CSVReasonWaitingForCleanupToComplete                 ConditionReason = "WaitingOnCleanup"
 )
 
 // HasCaResources returns true if the CSV has owned APIServices or Webhooks.
@@ -391,6 +428,7 @@ func (c *ClusterServiceVersion) HasCAResources() bool {
 }
 
 // Conditions appear in the status as a record of state transitions on the ClusterServiceVersion
+// +k8s:openapi-gen=true
 type ClusterServiceVersionCondition struct {
 	// Condition of the ClusterServiceVersion
 	Phase ClusterServiceVersionPhase `json:"phase,omitempty"`
@@ -446,6 +484,7 @@ const (
 )
 
 // DependentStatus is the status for a dependent requirement (to prevent infinite nesting)
+// +k8s:openapi-gen=true
 type DependentStatus struct {
 	Group   string       `json:"group"`
 	Version string       `json:"version"`
@@ -455,6 +494,7 @@ type DependentStatus struct {
 	Message string       `json:"message,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type RequirementStatus struct {
 	Group      string            `json:"group"`
 	Version    string            `json:"version"`
@@ -466,8 +506,9 @@ type RequirementStatus struct {
 	Dependents []DependentStatus `json:"dependents,omitempty"`
 }
 
-// ClusterServiceVersionStatus represents information about the status of a pod. Status may trail the actual
+// ClusterServiceVersionStatus represents information about the status of a CSV. Status may trail the actual
 // state of a system.
+// +k8s:openapi-gen=true
 type ClusterServiceVersionStatus struct {
 	// Current condition of the ClusterServiceVersion
 	Phase ClusterServiceVersionPhase `json:"phase,omitempty"`
@@ -494,6 +535,33 @@ type ClusterServiceVersionStatus struct {
 	// Time the owned APIService certs will rotate next
 	// +optional
 	CertsRotateAt *metav1.Time `json:"certsRotateAt,omitempty"`
+	// CleanupStatus represents information about the status of cleanup while a CSV is pending deletion
+	// +optional
+	Cleanup CleanupStatus `json:"cleanup,omitempty"`
+}
+
+// CleanupStatus represents information about the status of cleanup while a CSV is pending deletion
+// +k8s:openapi-gen=true
+type CleanupStatus struct {
+	// PendingDeletion is the list of custom resource objects that are pending deletion and blocked on finalizers.
+	// This indicates the progress of cleanup that is blocking CSV deletion or operator uninstall.
+	// +optional
+	PendingDeletion []ResourceList `json:"pendingDeletion,omitempty"`
+}
+
+// ResourceList represents a list of resources which are of the same Group/Kind
+// +k8s:openapi-gen=true
+type ResourceList struct {
+	Group     string             `json:"group"`
+	Kind      string             `json:"kind"`
+	Instances []ResourceInstance `json:"instances"`
+}
+
+// +k8s:openapi-gen=true
+type ResourceInstance struct {
+	Name string `json:"name"`
+	// Namespace can be empty for cluster-scoped resources
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

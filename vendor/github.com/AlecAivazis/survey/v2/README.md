@@ -1,9 +1,8 @@
 # Survey
 
-[![Build Status](https://travis-ci.org/AlecAivazis/survey.svg?branch=feature%2Fpretty)](https://travis-ci.org/AlecAivazis/survey)
-[![GoDoc](http://img.shields.io/badge/godoc-reference-5272B4.svg)](https://godoc.org/github.com/AlecAivazis/survey)
+[![GoDoc](http://img.shields.io/badge/godoc-reference-5272B4.svg)](https://pkg.go.dev/github.com/AlecAivazis/survey/v2)
 
-A library for building interactive prompts.
+A library for building interactive and accessible prompts on terminals supporting ANSI escape sequences.
 
 <img width="550" src="https://thumbs.gfycat.com/VillainousGraciousKouprey-size_restricted.gif"/>
 
@@ -56,37 +55,12 @@ func main() {
 }
 ```
 
-## Table of Contents
-
-1. [Examples](#examples)
-1. [Running the Prompts](#running-the-prompts)
-1. [Prompts](#prompts)
-   1. [Input](#input)
-   1. [Multiline](#multiline)
-   1. [Password](#password)
-   1. [Confirm](#confirm)
-   1. [Select](#select)
-   1. [MultiSelect](#multiselect)
-   1. [Editor](#editor)
-1. [Filtering Options](#filtering-options)
-1. [Validation](#validation)
-   1. [Built-in Validators](#built-in-validators)
-1. [Help Text](#help-text)
-   1. [Changing the input rune](#changing-the-input-rune)
-1. [Changing the Icons ](#changing-the-icons)
-1. [Custom Types](#custom-types)
-1. [Testing](#testing)
-
 ## Examples
 
 Examples can be found in the `examples/` directory. Run them
 to see basic behavior:
 
 ```bash
-go get github.com/AlecAivazis/survey
-
-cd $GOPATH/src/github.com/AlecAivazis/survey
-
 go run examples/simple.go
 go run examples/validation.go
 ```
@@ -134,6 +108,23 @@ prompt := &survey.Input{
     Message: "ping",
 }
 survey.AskOne(prompt, &name)
+```
+
+#### Suggestion Options
+
+<img src="https://i.imgur.com/Q7POpA1.gif" width="800px"/>
+
+```golang
+file := ""
+prompt := &survey.Input{
+    Message: "inform a file to save:",
+    Suggest: func (toComplete string) []string {
+        files, _ := filepath.Glob(toComplete + "*")
+        return files
+    },
+}
+}
+survey.AskOne(prompt, &file)
 ```
 
 ### Multiline
@@ -202,9 +193,31 @@ prompt := &survey.MultiSelect{..., PageSize: 10}
 survey.AskOne(prompt, &days, survey.WithPageSize(10))
 ```
 
+#### Select options description
+
+The optional description text can be used to add extra information to each option listed in the select prompt:
+
+```golang
+color := ""
+prompt := &survey.Select{
+    Message: "Choose a color:",
+    Options: []string{"red", "blue", "green"},
+    Description: func(value string, index int) string {
+        if value == "red" {
+            return "My favorite color"
+        }
+        return ""
+    },
+}
+survey.AskOne(prompt, &color)
+
+// Assuming that the user chose "red - My favorite color":
+fmt.Println(color) //=> "red"
+```
+
 ### MultiSelect
 
-<img src="https://thumbs.gfycat.com/SharpTameAntelope-size_restricted.gif" width="450px"/>
+![Example](img/multi-select-all-none.gif)
 
 ```golang
 days := []string{}
@@ -274,6 +287,24 @@ func myFilter(filterValue string, optValue string, optIndex int) bool {
 survey.AskOne(prompt, &color, survey.WithFilter(myFilter))
 ```
 
+## Keeping the filter active
+
+By default the filter will disappear if the user selects one of the filtered elements. Once the user selects one element the filter setting is gone.
+
+However the user can prevent this from happening and keep the filter active for multiple selections in a e.g. MultiSelect:
+
+```golang
+// configure it for a specific prompt
+&Select{
+    Message:    "Choose a color:",
+    Options:    []string{"light-green", "green", "dark-green", "red"},
+    KeepFilter: true,
+}
+
+// or define a default for all of the questions
+survey.AskOne(prompt, &color, survey.WithKeepFilter(true))
+```
+
 ## Validation
 
 Validating individual responses for a particular question can be done by defining a
@@ -305,11 +336,13 @@ survey.AskOne(prompt, &color, survey.WithValidator(survey.Required))
 `survey` comes prepackaged with a few validators to fit common situations. Currently these
 validators include:
 
-| name         | valid types | description                                                 | notes                                                                                 |
-| ------------ | ----------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Required     | any         | Rejects zero values of the response type                    | Boolean values pass straight through since the zero value (false) is a valid response |
-| MinLength(n) | string      | Enforces that a response is at least the given length       |                                                                                       |
-| MaxLength(n) | string      | Enforces that a response is no longer than the given length |                                                                                       |
+| name         | valid types    | description                                                      | notes                                                                                 |
+| ------------ | -------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Required     | any            | Rejects zero values of the response type                         | Boolean values pass straight through since the zero value (false) is a valid response |
+| MinLength(n) | string         | Enforces that a response is at least the given length            |                                                                                       |
+| MaxLength(n) | string         | Enforces that a response is no longer than the given length      |                                                                                       |
+| MaxItems(n)  | []OptionAnswer | Enforces that a response has no more selections of the indicated |                                                                                       |
+| MinItems(n)  | []OptionAnswer | Enforces that a response has no less selections of the indicated |                                                                                       |
 
 ## Help Text
 
@@ -416,3 +449,29 @@ for things like `CursorLocation`. `vt10x.NewVT10XConsole` will create a `go-expe
 stdio to an in-memory [virtual terminal](https://github.com/hinshun/vt10x).
 
 For some examples, you can see any of the tests in this repo.
+
+## FAQ
+
+### What kinds of IO are supported by `survey`?
+
+survey aims to support most terminal emulators; it expects support for ANSI escape sequences.
+This means that reading from piped stdin or writing to piped stdout is **not supported**,
+and likely to break your application in these situations. See [#337](https://github.com/AlecAivazis/survey/pull/337#issue-581351617)
+
+### Why isn't Ctrl-C working?
+
+Ordinarily, when you type Ctrl-C, the terminal recognizes this as the QUIT button and delivers a SIGINT signal to the process, which terminates it.
+However, Survey temporarily configures the terminal to deliver control codes as ordinary input bytes.
+When Survey reads a ^C byte (ASCII \x03, "end of text"), it interrupts the current survey and returns a
+`github.com/AlecAivazis/survey/v2/terminal.InterruptErr` from `Ask` or `AskOne`.
+If you want to stop the process, handle the returned error in your code:
+
+```go
+err := survey.AskOne(prompt, &myVar)
+if err != nil {
+	if err == terminal.InterruptErr {
+		log.Fatal("interrupted")
+	}
+	...
+}
+```

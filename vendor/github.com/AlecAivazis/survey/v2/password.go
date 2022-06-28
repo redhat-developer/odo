@@ -2,6 +2,7 @@ package survey
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -34,23 +35,28 @@ var PasswordQuestionTemplate = `
 {{- color "default+hb"}}{{ .Message }} {{color "reset"}}
 {{- if and .Help (not .ShowHelp)}}{{color "cyan"}}[{{ .Config.HelpInput }} for help]{{color "reset"}} {{end}}`
 
-func (p *Password) Prompt(config *PromptConfig) (line interface{}, err error) {
+func (p *Password) Prompt(config *PromptConfig) (interface{}, error) {
 	// render the question template
-	out, err := core.RunTemplate(
+	userOut, _, err := core.RunTemplate(
 		PasswordQuestionTemplate,
 		PasswordTemplateData{
 			Password: *p,
 			Config:   config,
 		},
 	)
-	fmt.Fprint(terminal.NewAnsiStdout(p.Stdio().Out), out)
 	if err != nil {
 		return "", err
 	}
 
+	if _, err := fmt.Fprint(terminal.NewAnsiStdout(p.Stdio().Out), userOut); err != nil {
+		return "", err
+	}
+
 	rr := p.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	// no help msg?  Just return any response
 	if p.Help == "" {
@@ -60,9 +66,10 @@ func (p *Password) Prompt(config *PromptConfig) (line interface{}, err error) {
 
 	cursor := p.NewCursor()
 
+	var line []rune
 	// process answers looking for help prompt answer
 	for {
-		line, err := rr.ReadLine('*')
+		line, err = rr.ReadLine('*')
 		if err != nil {
 			return string(line), err
 		}
@@ -84,8 +91,13 @@ func (p *Password) Prompt(config *PromptConfig) (line interface{}, err error) {
 			}
 			continue
 		}
-		return string(line), err
+
+		break
 	}
+
+	lineStr := string(line)
+	p.AppendRenderedText(strings.Repeat("*", len(lineStr)))
+	return lineStr, err
 }
 
 // Cleanup hides the string with a fixed number of characters.
