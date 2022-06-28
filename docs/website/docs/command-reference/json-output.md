@@ -20,7 +20,7 @@ The structures used to return information using JSON output are defined in [the 
 ## odo analyze -o json
 
 The `analyze` command analyzes the files in the current directory to select the best devfiles to use,
-from the devfiles in the registries defined in the list of preferred registries with the command `odo preference registry`.
+from the devfiles in the registries defined in the list of preferred registries with the command `odo preference view`.
 
 The output of this command contains a list of devfile name and registry name:
 
