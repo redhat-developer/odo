@@ -352,7 +352,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
 				"Building your application in container on cluster", parameters.Show)
-			return libdevfile.Build(a.Devfile, execHandler)
+			return libdevfile.Build(a.Devfile, a.devfileBuildCmd, execHandler)
 		}
 		if componentExists {
 			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {

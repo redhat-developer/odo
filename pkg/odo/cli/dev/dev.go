@@ -63,12 +63,13 @@ type DevOptions struct {
 	contextDir string
 
 	// Flags
-	noWatchFlag     bool
-	randomPortsFlag bool
-	debugFlag       bool
-	varFileFlag     string
-	varsFlag        []string
-	runCommandFlag  string
+	noWatchFlag      bool
+	randomPortsFlag  bool
+	debugFlag        bool
+	varFileFlag      string
+	varsFlag         []string
+	buildCommandFlag string
+	runCommandFlag   string
 
 	// Variables to override Devfile variables
 	variables map[string]string
@@ -216,7 +217,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.runCommandFlag)
+	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag)
 	if err != nil {
 		return err
 	}
@@ -272,7 +273,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	} else {
 		d := Handler{}
-		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.runCommandFlag, o.variables)
+		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.variables)
 	}
 	return err
 }
@@ -338,6 +339,8 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().BoolVar(&o.debugFlag, "debug", false, "Execute the debug command within the component")
 	devCmd.Flags().StringArrayVar(&o.varsFlag, "var", []string{}, "Variable to override Devfile variable and variables in var-file")
 	devCmd.Flags().StringVar(&o.varFileFlag, "var-file", "", "File containing variables to override Devfile variables")
+	devCmd.Flags().StringVar(&o.buildCommandFlag, "build-command", "",
+		"Alternative build command. The default one will be used if this flag is not set.")
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	clientset.Add(devCmd, clientset.DEV, clientset.INIT, clientset.KUBERNETES, clientset.STATE, clientset.FILESYSTEM)

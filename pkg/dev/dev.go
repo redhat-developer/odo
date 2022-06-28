@@ -34,6 +34,7 @@ func (o *DevClient) Start(
 	ignorePaths []string,
 	path string,
 	debug bool,
+	buildCommand string,
 	runCommand string,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
@@ -53,6 +54,7 @@ func (o *DevClient) Start(
 		Path:            path,
 		IgnoredFiles:    ignorePaths,
 		Debug:           debug,
+		DevfileBuildCmd: buildCommand,
 		DevfileRunCmd:   runCommand,
 	}
 
@@ -73,6 +75,7 @@ func (o *DevClient) Watch(
 	h Handler,
 	ctx context.Context,
 	debug bool,
+	buildCommand string,
 	runCommand string,
 	variables map[string]string,
 ) error {
@@ -90,6 +93,7 @@ func (o *DevClient) Watch(
 		FileIgnores:         ignorePaths,
 		InitialDevfileObj:   devfileObj,
 		Debug:               debug,
+		DevfileBuildCmd:     buildCommand,
 		DevfileRunCmd:       runCommand,
 		DebugPort:           envSpecificInfo.GetDebugPort(),
 		Variables:           variables,
