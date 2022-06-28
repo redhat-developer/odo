@@ -33,7 +33,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"golang.org/x/term"
 
 	"github.com/redhat-developer/odo/pkg/log/fidget"
@@ -435,9 +434,12 @@ func ExplicitSpinner(status string, preventSpinning bool) *Status {
 // IsJSON returns true if we are in machine output mode..
 // under NO circumstances should we output any logging.. as we are only outputting json
 func IsJSON() bool {
-	if viper.GetString("output") == "json" {
-		return true
+
+	flag := pflag.Lookup("o")
+	if flag != nil && flag.Changed {
+		return strings.Contains(pflag.Lookup("o").Value.String(), "json")
 	}
+
 	return false
 }
 
