@@ -45,6 +45,59 @@ will first delete all resources deployed into the cluster for this session befor
 
 ### Running an alternative command
 
+#### Running an alternative build command
+By default, `odo dev` builds the application using the default Build command defined in the Devfile,
+i.e, the command with a group `kind` set to `build` and with `isDefault` set to `true`., if any.
+
+Passing the `build-command` flag allows to override this behavior by running any other command, provided it is in the `build` group in the Devfile.
+
+For example, given the following excerpt from a Devfile:
+```yaml
+- id: my-build
+  exec:
+    commandLine: go build main.go
+    component: tools
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      isDefault: true
+      kind: build
+
+- id: my-build-with-version
+  exec:
+    commandLine: go build -ldflags="-X main.version=v1.0.0" main.go
+    component: tools
+    workingDir: ${PROJECT_SOURCE}
+    group:
+      kind: build
+```
+
+- running `odo dev` will build the application using the default `my-build` command.
+- running `odo dev --build-command my-build-with-version` will build the application using the `my-build-with-version` command:
+```shell
+$ odo dev --build-command my-build-with-version
+
+  __
+ /  \__     Developing using the my-sample-go Devfile
+ \__/  \    Namespace: default
+ /  \__/    odo version: v3.0.0-alpha3
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [39s]
+ ✓  Syncing files into the container [84ms]
+ ✓  Building your application in container on cluster (command: my-build-with-version) [456ms]
+ •  Executing the application (command: run)  ...
+
+Your application is now running on the cluster
+ - Forwarding from 127.0.0.1:40001 -> 8080
+
+Watching for changes in the current directory /path/to/my/sources/go-app
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+```
+
+#### Running an alternative run command
+
 By default, `odo dev` executes the default Run command defined in the Devfile, 
 i.e, the command with a group `kind` set to `run` and its `isDefault` field set to `true`.
 
