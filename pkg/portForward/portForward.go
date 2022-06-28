@@ -78,9 +78,6 @@ func (o *PFClient) StartPortForwarding(
 		return err
 	}
 
-	// Output that the application is running, and then show the port-forwarding information
-	log.Info("\nYour application is now running on the cluster")
-
 	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
 	go func() {
 		err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan)
