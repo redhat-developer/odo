@@ -3,6 +3,7 @@ package portForward
 import (
 	"fmt"
 	"io"
+	"reflect"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -20,6 +21,8 @@ var _ Client = (*PFClient)(nil)
 type PFClient struct {
 	kubernetesClient kclient.ClientInterface
 	stateClient      state.Client
+
+	appliedEndpoints map[string][]int
 
 	// stopChan on which to write to stop the port forwarding
 	stopChan chan struct{}
@@ -40,13 +43,6 @@ func (o *PFClient) StartPortForwarding(
 	errOut io.Writer,
 ) error {
 
-	if o.stopChan != nil {
-		return nil
-	}
-
-	o.stopChan = make(chan struct{}, 1)
-	o.finishedChan = make(chan struct{}, 1)
-
 	// get the endpoint/port information for containers in devfile and setup port-forwarding
 	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
 		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
@@ -55,6 +51,17 @@ func (o *PFClient) StartPortForwarding(
 		return err
 	}
 	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
+	if o.stopChan != nil && reflect.DeepEqual(ceMapping, o.appliedEndpoints) {
+		return nil
+	}
+
+	o.appliedEndpoints = ceMapping
+
+	o.StopPortForwarding()
+
+	o.stopChan = make(chan struct{}, 1)
+	o.finishedChan = make(chan struct{}, 1)
+
 	var portPairs map[string][]string
 	if randomPorts {
 		portPairs = randomPortPairsFromContainerEndpoints(ceMapping)
