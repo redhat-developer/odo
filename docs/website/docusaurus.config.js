@@ -129,10 +129,13 @@ module.exports = {
             current: {
               label: '3.0.0 (Alpha 2) 🚧',
               badge: true,
+              banner: 'none',
             },
             '2.5.0': {
               label: '2.5.0 (Stable) 🚀',
               path: '2.5.0',
+              badge: true,
+              banner: 'none',
             },
           },
           sidebarPath: require.resolve('./sidebars.js'),
