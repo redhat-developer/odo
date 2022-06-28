@@ -135,7 +135,8 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
 	// above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 	// package
-	flag.CommandLine.String("o", "", "Specify output format, supported format: json")
+
+	//flag.CommandLine.String("o", "", "Specify output format, supported format: json")
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging
@@ -157,7 +158,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", capitalizeFlagDescriptions)
-	cobra.AddTemplateFunc("ModifyAdditionalFlags", modifyAdditionalFlags)
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 
 	// Create a custom help function that will exit when we enter an invalid command, for example:
@@ -203,28 +203,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	visitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
 	return rootCmd
-}
-
-// modifyAdditionalFlags modifies the flags and updates the descriptions
-// as well as changes whether or not machine readable output
-// has been passed in..
-//
-// Return the flag usages for the help output
-func modifyAdditionalFlags(cmd *cobra.Command) string {
-
-	// Hide the machine readable output if the command
-	// does not have the annotation.
-	machineOutput := cmd.Annotations["machineoutput"]
-	f := cmd.InheritedFlags()
-
-	f.VisitAll(func(f *pflag.Flag) {
-		// Remove json flag if machineoutput has not been passed in
-		if f.Name == "o" && machineOutput == "json" {
-			f.Hidden = false
-		}
-	})
-
-	return capitalizeFlagDescriptions(f)
 }
 
 // capitalizeFlagDescriptions adds capitalizations
