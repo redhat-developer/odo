@@ -67,21 +67,23 @@ func NewCmdCompletion(name, fullName string) *cobra.Command {
 		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
 		Args:                  cobra.ExactValidArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			// Below we ignore the error returns in order to pass golint validation
+			// We will handle the error in the main function / output when the user inputs `odo completion`.
 			switch args[0] {
 			case "bash":
-				cmd.Root().GenBashCompletion(os.Stdout)
+				_ = cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
 				// Due to https://github.com/spf13/cobra/issues/1529 we cannot load zsh
 				// via using source, so we need to add compdef to the beginning of the output so we can easily do:
 				// source <(odo completion zsh)
 				zsh := "#compdef odo\ncompdef _odo odo\n"
 				out := os.Stdout
-				out.Write([]byte(zsh))
-				cmd.Root().GenZshCompletion(out)
+				_, _ = out.Write([]byte(zsh))
+				_ = cmd.Root().GenZshCompletion(out)
 			case "fish":
-				cmd.Root().GenFishCompletion(os.Stdout, true)
+				_ = cmd.Root().GenFishCompletion(os.Stdout, true)
 			case "powershell":
-				cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+				_ = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
 			}
 		},
 	}
