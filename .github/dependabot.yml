@@ -1,0 +1,42 @@
+# This is a configuration file for Dependabot, a GitHub tool that tries to keep dependencies updated on a regular basis
+# by raising pull requests to update those dependencies.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+
+# Maintain dependencies for Go
+- package-ecosystem: "gomod"
+  directory: "/"
+  # Set this to 0 to disable version updates
+  open-pull-requests-limit: 5
+  commit-message:
+    prefix: "Go"
+  schedule:
+    interval: "weekly"
+  reviewers:
+  - "odo-mantainers"
+  labels:
+  - "area/dependency"
+  - "kind/task"
+  - "ok-to-test"
+
+# Maintain dependencies for Website builds
+- package-ecosystem: "npm"
+  directory: "/docs/website"
+  # Set this to 0 to disable version updates
+  open-pull-requests-limit: 3
+  commit-message:
+    prefix: "Website"
+  schedule:
+    interval: "weekly"
+  reviewers:
+    - "odo-mantainers"
+  labels:
+    - "area/dependency"
+    - "kind/task"
+
+## Feel free to add other package managers here if needed.
+## See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem
+## for the full list of supported ecosystems.
