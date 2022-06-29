@@ -24,6 +24,13 @@ commands:
       group:
         kind: build
         isDefault: true
+  - id: my-custom-build
+    exec:
+      component: runtime
+      commandLine: 'echo waiting for one second before starting & sleep 1; mkdir /projects/file-from-my-custom-build && npm install'
+      workingDir: ${PROJECTS_ROOT}
+      group:
+        kind: build
   - id: devrun
     exec:
       component: runtime

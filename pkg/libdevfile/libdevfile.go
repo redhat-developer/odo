@@ -29,9 +29,11 @@ func Deploy(devfileObj parser.DevfileObj, handler Handler) error {
 }
 
 // Build executes the default Build command of the devfile.
-// No error is returned and no operation is performed if the command is not found.
-func Build(devfileObj parser.DevfileObj, handler Handler) error {
-	return ExecuteCommandByNameAndKind(devfileObj, "", v1alpha2.BuildCommandGroupKind, handler, true)
+// If buildCmd is empty, this looks for the default Build command in the Devfile. No error is returned and no operation is performed
+// if the default command could not be found.
+// An error is returned if buildCmd is not empty and has no corresponding command in the Devfile.
+func Build(devfileObj parser.DevfileObj, buildCmd string, handler Handler) error {
+	return ExecuteCommandByNameAndKind(devfileObj, buildCmd, v1alpha2.BuildCommandGroupKind, handler, buildCmd == "")
 }
 
 // ExecuteCommandByNameAndKind executes the specified command cmdName of the given kind in the Devfile.
@@ -44,19 +46,22 @@ func ExecuteCommandByNameAndKind(
 	handler Handler,
 	ignoreCommandNotFound bool,
 ) error {
-	cmd, ok, err := GetCommand(devfileObj, cmdName, kind)
+	cmd, hasDefaultCmd, err := GetCommand(devfileObj, cmdName, kind)
 	if err != nil {
+		if _, isNotFound := err.(NoCommandFoundError); isNotFound {
+			if ignoreCommandNotFound {
+				klog.V(3).Infof("ignoring command not found: %v", cmdName)
+				return nil
+			}
+		}
 		return err
 	}
-	if !ok {
+	if !hasDefaultCmd {
 		if ignoreCommandNotFound {
-			klog.V(3).Infof("ignoring command not found: %v", cmdName)
+			klog.V(3).Infof("ignoring default %v command not found", kind)
 			return nil
 		}
-		if cmdName == "" {
-			return NewNoDefaultCommandFoundError(kind)
-		}
-		return NewNoCommandFoundError(kind, cmdName)
+		return NewNoDefaultCommandFoundError(kind)
 	}
 
 	return executeCommand(devfileObj, cmd, handler)

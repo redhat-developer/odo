@@ -391,6 +391,7 @@ func TestBuild(t *testing.T) {
 	type args struct {
 		devfileObj func() parser.DevfileObj
 		handler    func(ctrl *gomock.Controller) Handler
+		cmdName    string
 	}
 	for _, tt := range []struct {
 		name    string
@@ -437,9 +438,52 @@ func TestBuild(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "missing custom command",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					dData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = dData.AddCommands([]v1alpha2.Command{defaultBuildCommand})
+					_ = dData.AddComponents([]v1alpha2.Component{containerComp})
+					return parser.DevfileObj{
+						Data: dData,
+					}
+				},
+				handler: func(ctrl *gomock.Controller) Handler {
+					h := NewMockHandler(ctrl)
+					h.EXPECT().Execute(gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandExplicit)).Times(0)
+					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					return h
+				},
+				cmdName: "my-explicit-non-default-build-command",
+			},
+			wantErr: true,
+		},
+		{
+			name: "with custom command",
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					dData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					_ = dData.AddCommands([]v1alpha2.Command{nonDefaultBuildCommandExplicit, nonDefaultBuildCommandImplicit})
+					_ = dData.AddComponents([]v1alpha2.Component{containerComp})
+					return parser.DevfileObj{
+						Data: dData,
+					}
+				},
+				handler: func(ctrl *gomock.Controller) Handler {
+					h := NewMockHandler(ctrl)
+					h.EXPECT().Execute(gomock.Eq(defaultBuildCommand)).Times(0)
+					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandExplicit)).Times(1)
+					h.EXPECT().Execute(gomock.Eq(nonDefaultBuildCommandImplicit)).Times(0)
+					return h
+				},
+				cmdName: "my-explicit-non-default-build-command",
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Build(tt.args.devfileObj(), tt.args.handler(gomock.NewController(t)))
+			err := Build(tt.args.devfileObj(), tt.args.cmdName, tt.args.handler(gomock.NewController(t)))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 			}

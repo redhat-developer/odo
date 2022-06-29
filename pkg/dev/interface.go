@@ -15,6 +15,7 @@ import (
 type Client interface {
 	// Start the resources in devfileObj on the platformContext. It then pushes the files in path to the container.
 	// If debug is true, executes the debug command, or the run command by default.
+	// If buildCommand is set, this will look up the specified build command in the Devfile. Otherwise, it uses the default one.
 	// If runCommand is set, this will look up the specified run command in the Devfile and execute it. Otherwise, it uses the default one.
 	Start(
 		devfileObj parser.DevfileObj,
@@ -22,6 +23,7 @@ type Client interface {
 		ignorePaths []string,
 		path string,
 		debug bool,
+		buildCommand string,
 		runCommand string,
 	) error
 
@@ -29,6 +31,7 @@ type Client interface {
 	// It logs messages to out and uses the Handler h to perform push operation when anything changes in path.
 	// It uses devfileObj to notify user to restart odo dev if they change endpoint information in the devfile.
 	// If debug is true, the debug command will be started after a sync, or the run command by default.
+	// If buildCommand is set, this will look up the specified build command in the Devfile. Otherwise, it uses the default one.
 	// If runCommand is set, this will look up the specified run command in the Devfile and execute it. Otherwise, it uses the default one.
 	Watch(
 		devfileObj parser.DevfileObj,
@@ -38,6 +41,7 @@ type Client interface {
 		h Handler,
 		ctx context.Context,
 		debug bool,
+		buildCommand string,
 		runCommand string,
 		variables map[string]string,
 	) error
