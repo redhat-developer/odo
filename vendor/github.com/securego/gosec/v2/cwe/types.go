@@ -12,17 +12,17 @@ type Weakness struct {
 	Description string
 }
 
-//SprintURL format the CWE URL
+// SprintURL format the CWE URL
 func (w *Weakness) SprintURL() string {
 	return fmt.Sprintf("https://cwe.mitre.org/data/definitions/%s.html", w.ID)
 }
 
-//SprintID format the CWE ID
+// SprintID format the CWE ID
 func (w *Weakness) SprintID() string {
 	return fmt.Sprintf("%s-%s", Acronym, w.ID)
 }
 
-//MarshalJSON print only id and URL
+// MarshalJSON print only id and URL
 func (w *Weakness) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		ID  string `json:"id"`
@@ -31,14 +31,4 @@ func (w *Weakness) MarshalJSON() ([]byte, error) {
 		ID:  w.ID,
 		URL: w.SprintURL(),
 	})
-}
-
-//InformationURI link to the published CWE PDF
-func InformationURI() string {
-	return fmt.Sprintf("https://cwe.mitre.org/data/published/cwe_v%s.pdf/", Version)
-}
-
-//DownloadURI link to the zipped XML of the CWE list
-func DownloadURI() string {
-	return fmt.Sprintf("https://cwe.mitre.org/data/xml/cwec_v%s.xml.zip", Version)
 }
