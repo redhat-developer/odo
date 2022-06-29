@@ -112,6 +112,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 			fields: fields{
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().IsServiceBindingSupported().Return(true, nil)
 					client.EXPECT().GetBindableKinds().Return(serviceBindingInstance, nil)
 					client.EXPECT().GetBindableKindStatusRestMapping(serviceBindingInstance.Status).Return([]*meta.RESTMapping{
 						{Resource: clusterGVR, GroupVersionKind: clusterGVK},
@@ -131,6 +132,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 			fields: fields{
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().IsServiceBindingSupported().Return(true, nil)
 					client.EXPECT().GetBindableKinds().Return(serviceBindingInstance, nil)
 					client.EXPECT().GetBindableKindStatusRestMapping(serviceBindingInstance.Status).Return(nil, nil)
 					return client
@@ -143,6 +145,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 			name: "do not fail if no instances of the bindable kind services was found",
 			fields: fields{kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 				client := kclient.NewMockClientInterface(ctrl)
+				client.EXPECT().IsServiceBindingSupported().Return(true, nil)
 				client.EXPECT().GetBindableKinds().Return(serviceBindingInstance, nil)
 				client.EXPECT().GetBindableKindStatusRestMapping(serviceBindingInstance.Status).Return([]*meta.RESTMapping{
 					{Resource: clusterGVR, GroupVersionKind: clusterGVK},
@@ -153,6 +156,16 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 			}},
 			want:    map[string]unstructured.Unstructured{},
 			wantErr: false,
+		},
+		{
+			name: "error out if the servicebinding CRD is not found",
+			fields: fields{kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+				client := kclient.NewMockClientInterface(ctrl)
+				client.EXPECT().IsServiceBindingSupported().Return(false, nil)
+				return client
+			}},
+			want:    nil,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

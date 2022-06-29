@@ -62,7 +62,7 @@ func (c *Client) GetBindableKinds() (bindingApi.BindableKinds, error) {
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			//revive:disable:error-strings This is a top-level error message displayed as is to the end user
-			return bindableKind, errors.New("Service Binding Operator is not installed or it is not completely installed. Please ensure that it is installed successfully before proceeding.")
+			return bindableKind, errors.New("No bindable operators found on the cluster. Please ensure that at least one bindable operator is installed successfully before proceeding. Known Bindable operators: https://github.com/redhat-developer/service-binding-operator#known-bindable-operators")
 			//revive:enable:error-strings
 		}
 		return bindableKind, err
