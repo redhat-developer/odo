@@ -26,11 +26,6 @@ func UsedByCommand(cmd *cobra.Command) {
 		cmd.Annotations = map[string]string{}
 	}
 	cmd.Annotations["machineoutput"] = "json"
-	/*
-		cmd.Flags().StringP("output", "o", "", "Specify output format, supported format: json")
-		viper.BindPFlag("output", cmd.Flags().Lookup("output"))
-		viper.BindPFlags(cmd.Flags())
-	*/
 }
 
 // OutputSuccessUnindented outputs a "successful" machine-readable output format in unindented json
