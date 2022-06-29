@@ -47,7 +47,7 @@ will first delete all resources deployed into the cluster for this session befor
 
 #### Running an alternative build command
 By default, `odo dev` builds the application using the default Build command defined in the Devfile,
-i.e, the command with a group `kind` set to `build` and with `isDefault` set to `true`., if any.
+i.e, the command with a group `kind` set to `build` and with `isDefault` set to `true`, if any.
 
 Passing the `build-command` flag allows to override this behavior by running any other command, provided it is in the `build` group in the Devfile.
 
