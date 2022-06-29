@@ -67,6 +67,8 @@ type preferenceInfo struct {
 	Preference `yaml:",omitempty"`
 }
 
+var _ Client = (*preferenceInfo)(nil)
+
 func getPreferenceFile() (string, error) {
 	if env, ok := os.LookupEnv(GlobalConfigEnvName); ok {
 		return env, nil

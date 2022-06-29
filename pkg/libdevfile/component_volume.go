@@ -11,6 +11,8 @@ type volumeComponent struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ component = (*volumeComponent)(nil)
+
 func newVolumeComponent(devfileObj parser.DevfileObj, component v1alpha2.Component) *volumeComponent {
 	return &volumeComponent{
 		component:  component,

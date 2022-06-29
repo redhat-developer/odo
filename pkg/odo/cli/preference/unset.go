@@ -40,6 +40,8 @@ type UnsetOptions struct {
 	forceFlag bool
 }
 
+var _ genericclioptions.Runnable = (*UnsetOptions)(nil)
+
 // NewUnsetOptions creates a new UnsetOptions instance
 func NewUnsetOptions() *UnsetOptions {
 	return &UnsetOptions{}

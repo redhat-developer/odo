@@ -71,6 +71,8 @@ type Client struct {
 	routeClient   routeclientset.RouteV1Interface
 }
 
+var _ ClientInterface = (*Client)(nil)
+
 // New creates a new client
 func New() (*Client, error) {
 	return NewForConfig(nil)

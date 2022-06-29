@@ -23,6 +23,8 @@ const (
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
 type FlagsBackend struct{}
 
+var _ AddBindingBackend = (*FlagsBackend)(nil)
+
 func NewFlagsBackend() *FlagsBackend {
 	return &FlagsBackend{}
 }

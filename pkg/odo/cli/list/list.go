@@ -57,6 +57,9 @@ type ListOptions struct {
 	namespaceFlag string
 }
 
+var _ genericclioptions.Runnable = (*ListOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*ListOptions)(nil)
+
 // NewListOptions ...
 func NewListOptions() *ListOptions {
 	return &ListOptions{}

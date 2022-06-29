@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
+	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/task"
 	"github.com/redhat-developer/odo/pkg/util"
 )
@@ -26,6 +27,8 @@ type adapterHandler struct {
 }
 
 var _ libdevfile.Handler = (*adapterHandler)(nil)
+var _ common.ComponentAdapter = (*adapterHandler)(nil)
+var _ sync.SyncClient = (*adapterHandler)(nil)
 
 func (a *adapterHandler) ApplyImage(_ devfilev1.Component) error {
 	klog.V(2).Info("this handler can only handle exec commands in container components, not image components")

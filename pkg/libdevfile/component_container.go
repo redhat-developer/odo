@@ -11,6 +11,8 @@ type containerComponent struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ component = (*containerComponent)(nil)
+
 func newContainerComponent(devfileObj parser.DevfileObj, component v1alpha2.Component) *containerComponent {
 	return &containerComponent{
 		component:  component,

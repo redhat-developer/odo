@@ -15,12 +15,11 @@ import (
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
-// this causes compilation to fail if DevClient struct doesn't implement Client interface
-var _ Client = (*DevClient)(nil)
-
 type DevClient struct {
 	watchClient watch.Client
 }
+
+var _ Client = (*DevClient)(nil)
 
 func NewDevClient(watchClient watch.Client) *DevClient {
 	return &DevClient{

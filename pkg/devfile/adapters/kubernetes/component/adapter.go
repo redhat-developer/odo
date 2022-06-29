@@ -89,6 +89,9 @@ type Adapter struct {
 	deployment       *appsv1.Deployment
 }
 
+var _ sync.SyncClient = (*Adapter)(nil)
+var _ common.ComponentAdapter = (*Adapter)(nil)
+
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {

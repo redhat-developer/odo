@@ -15,6 +15,8 @@ import (
 
 type KubernetesClient struct{}
 
+var _ Client = (*KubernetesClient)(nil)
+
 func NewKubernetesClient() *KubernetesClient {
 	return &KubernetesClient{}
 }

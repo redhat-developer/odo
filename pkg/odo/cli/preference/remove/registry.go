@@ -45,6 +45,8 @@ type RegistryOptions struct {
 	user        string
 }
 
+var _ genericclioptions.Runnable = (*RegistryOptions)(nil)
+
 // NewRegistryOptions creates a new RegistryOptions instance
 func NewRegistryOptions() *RegistryOptions {
 	return &RegistryOptions{}

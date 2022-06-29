@@ -54,6 +54,8 @@ type SetOptions struct {
 	commandName string
 }
 
+var _ genericclioptions.Runnable = (*SetOptions)(nil)
+
 // NewSetOptions creates a SetOptions instance
 func NewSetOptions() *SetOptions {
 	return &SetOptions{}

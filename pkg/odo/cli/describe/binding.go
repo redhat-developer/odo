@@ -43,6 +43,9 @@ type BindingOptions struct {
 	contextDir string
 }
 
+var _ genericclioptions.Runnable = (*BindingOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*BindingOptions)(nil)
+
 // NewBindingOptions returns new instance of BindingOptions
 func NewBindingOptions() *BindingOptions {
 	return &BindingOptions{}

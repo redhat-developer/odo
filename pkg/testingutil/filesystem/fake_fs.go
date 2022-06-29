@@ -34,6 +34,8 @@ type fakeFs struct {
 	a afero.Afero
 }
 
+var _ Filesystem = (*fakeFs)(nil)
+
 // NewFakeFs returns a fake Filesystem that exists in-memory, useful for unit tests
 func NewFakeFs() Filesystem {
 	return &fakeFs{a: afero.Afero{Fs: afero.NewMemMapFs()}}
@@ -143,6 +145,8 @@ func (fs *fakeFs) Chmod(name string, mode os.FileMode) error {
 type fakeFile struct {
 	file afero.File
 }
+
+var _ File = (*fakeFile)(nil)
 
 // Name via afero.File.Name
 func (file *fakeFile) Name() string {

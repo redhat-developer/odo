@@ -37,6 +37,8 @@ type WatchClient struct {
 	stateClient  state.Client
 }
 
+var _ Client = (*WatchClient)(nil)
+
 func NewWatchClient(deleteClient _delete.Client, stateClient state.Client) *WatchClient {
 	return &WatchClient{
 		deleteClient: deleteClient,

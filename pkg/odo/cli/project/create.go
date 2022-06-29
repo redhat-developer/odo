@@ -46,6 +46,8 @@ type ProjectCreateOptions struct {
 	waitFlag bool
 }
 
+var _ genericclioptions.Runnable = (*ProjectCreateOptions)(nil)
+
 // NewProjectCreateOptions creates a ProjectCreateOptions instance
 func NewProjectCreateOptions() *ProjectCreateOptions {
 	return &ProjectCreateOptions{}

@@ -3,13 +3,14 @@ package namespace
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
-	"os"
-	"strings"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -50,6 +51,8 @@ type DeleteOptions struct {
 	// value can be either 'project' or 'namespace', depending on what command is called
 	commandName string
 }
+
+var _ genericclioptions.Runnable = (*DeleteOptions)(nil)
 
 // NewDeleteOptions creates a new DeleteOptions instance
 func NewDeleteOptions() *DeleteOptions {

@@ -22,6 +22,9 @@ type AlizerOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*AlizerOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*AlizerOptions)(nil)
+
 // NewAlizerOptions creates a new AlizerOptions instance
 func NewAlizerOptions() *AlizerOptions {
 	return &AlizerOptions{}

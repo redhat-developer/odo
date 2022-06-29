@@ -28,6 +28,8 @@ type kubernetesClient struct {
 	deployment *v1.Deployment
 }
 
+var _ Client = (*kubernetesClient)(nil)
+
 // Create creates a pvc from the given Storage
 func (k kubernetesClient) Create(storage Storage) error {
 

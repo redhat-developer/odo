@@ -30,6 +30,8 @@ type FlagsBackend struct {
 	preferenceClient preference.Client
 }
 
+var _ InitBackend = (*FlagsBackend)(nil)
+
 func NewFlagsBackend(preferenceClient preference.Client) *FlagsBackend {
 	return &FlagsBackend{
 		preferenceClient: preferenceClient,

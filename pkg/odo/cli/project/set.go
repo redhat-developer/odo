@@ -47,6 +47,8 @@ type ProjectSetOptions struct {
 	shortFlag bool
 }
 
+var _ genericclioptions.Runnable = (*ProjectSetOptions)(nil)
+
 // NewProjectSetOptions creates a ProjectSetOptions instance
 func NewProjectSetOptions() *ProjectSetOptions {
 	return &ProjectSetOptions{}

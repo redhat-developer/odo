@@ -51,6 +51,8 @@ type ExecHandler struct {
 	Exec   execFunc
 }
 
+var _ PluginHandler = (*ExecHandler)(nil)
+
 // Lookup implements PluginHandler, using
 // https://golang.org/pkg/os/exec/#LookPath to search for the command.
 func (h *ExecHandler) Lookup(command string) string {

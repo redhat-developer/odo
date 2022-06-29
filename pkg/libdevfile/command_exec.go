@@ -11,6 +11,8 @@ type execCommand struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ command = (*execCommand)(nil)
+
 // newExecCommand creates a new execCommand instance, adapting the devfile-defined command to run in the target component's
 // container, modifying it to add environment variables or adapting the path as needed.
 func newExecCommand(devfileObj parser.DevfileObj, command v1alpha2.Command) *execCommand {

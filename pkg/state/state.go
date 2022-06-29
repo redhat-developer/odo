@@ -14,6 +14,8 @@ type State struct {
 	fs      filesystem.Filesystem
 }
 
+var _ Client = (*State)(nil)
+
 func NewStateClient(fs filesystem.Filesystem) *State {
 	return &State{
 		fs: fs,

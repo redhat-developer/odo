@@ -45,6 +45,8 @@ type VersionOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*VersionOptions)(nil)
+
 // NewVersionOptions creates a new VersionOptions instance
 func NewVersionOptions() *VersionOptions {
 	return &VersionOptions{}

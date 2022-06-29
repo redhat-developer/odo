@@ -11,6 +11,8 @@ type kubernetesComponent struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ component = (*kubernetesComponent)(nil)
+
 func newKubernetesComponent(devfileObj parser.DevfileObj, component v1alpha2.Component) *kubernetesComponent {
 	return &kubernetesComponent{
 		component:  component,

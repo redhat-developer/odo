@@ -11,6 +11,8 @@ type kubernetesClient struct {
 	client kclient.ClientInterface
 }
 
+var _ Client = (*kubernetesClient)(nil)
+
 func NewClient(client kclient.ClientInterface) Client {
 	return kubernetesClient{
 		client: client,

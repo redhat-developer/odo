@@ -29,6 +29,8 @@ type InteractiveBackend struct {
 	registryClient registry.Client
 }
 
+var _ InitBackend = (*InteractiveBackend)(nil)
+
 func NewInteractiveBackend(askerClient asker.Asker, registryClient registry.Client) *InteractiveBackend {
 	return &InteractiveBackend{
 		askerClient:    askerClient,

@@ -12,6 +12,8 @@ type applyCommand struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ command = (*applyCommand)(nil)
+
 // newApplyCommand creates a new applyCommand instance
 func newApplyCommand(devfileObj parser.DevfileObj, command v1alpha2.Command) *applyCommand {
 	return &applyCommand{

@@ -13,6 +13,8 @@ const (
 
 type Survey struct{}
 
+var _ Asker = (*Survey)(nil)
+
 func NewSurveyAsker() *Survey {
 	return &Survey{}
 }

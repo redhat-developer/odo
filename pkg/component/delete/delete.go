@@ -24,6 +24,8 @@ type DeleteComponentClient struct {
 	kubeClient kclient.ClientInterface
 }
 
+var _ Client = (*DeleteComponentClient)(nil)
+
 func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteComponentClient {
 	return &DeleteComponentClient{
 		kubeClient: kubeClient,

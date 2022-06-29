@@ -47,6 +47,9 @@ type ComponentOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*ComponentOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*ComponentOptions)(nil)
+
 // NewComponentOptions returns new instance of ComponentOptions
 func NewComponentOptions() *ComponentOptions {
 	return &ComponentOptions{}

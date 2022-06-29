@@ -29,6 +29,8 @@ type RegistryClient struct {
 	preferenceClient preference.Client
 }
 
+var _ Client = (*RegistryClient)(nil)
+
 func NewRegistryClient(fsys filesystem.Filesystem, preferenceClient preference.Client) RegistryClient {
 	return RegistryClient{
 		fsys:             fsys,
