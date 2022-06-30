@@ -1,0 +1,424 @@
+{
+    "summary": {
+      "title": "odo Threat Model",
+      "owner": "Rodolfo Napoles"
+    },
+    "detail": {
+      "contributors": [],
+      "diagrams": [
+        {
+          "title": "odo CLI",
+          "thumbnail": "./public/content/images/thumbnail.stride.jpg",
+          "diagramType": "STRIDE",
+          "id": 0,
+          "$$hashKey": "object:20",
+          "diagramJson": {
+            "cells": [
+              {
+                "type": "tm.Actor",
+                "size": {
+                  "width": 160,
+                  "height": 80
+                },
+                "position": {
+                  "x": 39,
+                  "y": 76
+                },
+                "angle": 0,
+                "id": "eaf791db-bdcf-4a6a-9d90-201016660fe8",
+                "z": 1,
+                "hasOpenThreats": false,
+                "threats": [],
+                "description": "Developer using odo CLI",
+                "attrs": {
+                  ".element-shape": {
+                    "class": "element-shape hasNoOpenThreats isInScope"
+                  },
+                  "text": {
+                    "text": "developer"
+                  },
+                  ".element-text": {
+                    "class": "element-text hasNoOpenThreats isInScope"
+                  }
+                }
+              },
+              {
+                "type": "tm.Store",
+                "size": {
+                  "width": 160,
+                  "height": 80
+                },
+                "position": {
+                  "x": 342,
+                  "y": 410
+                },
+                "angle": 0,
+                "id": "14049148-be25-4123-a79f-df10c5e34264",
+                "z": 2,
+                "hasOpenThreats": false,
+                "attrs": {
+                  ".element-shape": {
+                    "class": "element-shape hasNoOpenThreats isInScope"
+                  },
+                  "text": {
+                    "text": "cloned repo"
+                  },
+                  ".element-text": {
+                    "class": "element-text hasNoOpenThreats isInScope"
+                  }
+                }
+              },
+              {
+                "type": "tm.Process",
+                "size": {
+                  "width": 100,
+                  "height": 100
+                },
+                "position": {
+                  "x": 398,
+                  "y": 192
+                },
+                "angle": 0,
+                "id": "fbb7304b-54e9-425a-85f8-edc14c222859",
+                "z": 3,
+                "hasOpenThreats": true,
+                "description": "odo CLI",
+                "threats": [
+                  {
+                    "ruleId": "c1377855-ea20-4c97-8861-f95c364fb8d2",
+                    "title": "Generic elevation threat",
+                    "type": "Elevation of privilege",
+                    "modelType": "STRIDE",
+                    "status": "Mitigated",
+                    "severity": "Low",
+                    "description": "A generic elevation threat",
+                    "mitigation": "We set least privilege for those files\nFor preferences \n- env (config) file. \n- temporary files\n- preferences file within the user dir\n\nConcerns:\nFrom blog posts users are concerend about privileges in the cluster side (operators can access the secrets from the cluster), level of risk vary between OCP and kubernetes clusters\nOpened issue: https://github.com/redhat-developer/odo/issues/5831\nEnsure we do not allow anything bad even with the minimal rights of the user in the cluster\n\n- Design access control throughout up fornt\n- Force all requests through access control checks\n- Deny by default\n- Follow principle of least privilege\n- Do not hard code roles\n- Log all access control events\n- Eliminate development/debug backdoors in prod. code",
+                    "$$hashKey": "object:495"
+                  },
+                  {
+                    "ruleId": "87bc37e2-798e-4d68-bb96-feb1da26da48",
+                    "title": "Generic repudiation threat",
+                    "type": "Repudiation",
+                    "modelType": "STRIDE",
+                    "status": "Open",
+                    "severity": "Medium",
+                    "description": "A generic repudiation threat. Ability of user to do things that are not logged or user deleting content from logs or deleting logs",
+                    "mitigation": "Telemetry - We need to check if data is sanatized before we send telemetry data through the hidden command. To ensure there is no risk on the GDPR side.\n\n- Log actions",
+                    "$$hashKey": "object:501"
+                  },
+                  {
+                    "ruleId": "13000296-b17d-4b72-9cc4-f5cc33f80e4c",
+                    "title": "Generic information disclosure threat",
+                    "type": "Information disclosure",
+                    "modelType": "STRIDE",
+                    "status": "Open",
+                    "severity": "High",
+                    "description": "A generic information disclosure threat (API keys, PPI)",
+                    "mitigation": "Telemetry - We need to check if data is sanatized before we send telemetry data through the hidden command. To ensure there is no risk on the GDPR side.\nService bindibg, we use secrets we must give the users toos to not disclose the secrets. Ensure secrets do not get stored in logs.\nUpdate documentation to urge the user to use binding as files instead of env variables:\nhttps://github.com/redhat-developer/odo/issues/5890\n\nWrite integration test to verify secrets are not written into the logs.\nhttps://github.com/redhat-developer/odo/issues/5889\n\n- Avoid writting PII and token/keys into log files",
+                    "$$hashKey": "object:515"
+                  },
+                  {
+                    "ruleId": "edb05d76-a695-455f-947b-7d67b78bc31d",
+                    "title": "Generic DoS threat",
+                    "type": "Denial of service",
+                    "modelType": "STRIDE",
+                    "status": "Open",
+                    "severity": "Low",
+                    "description": "A generic DoS threat. Through buffer overflow",
+                    "mitigation": "There is an issue open for input validation already:\nhttps://github.com/redhat-developer/odo/issues/5765\n\n- Input validation\n- check buffer sizes\n- ru code using lowest privileges to accomplish required tasks",
+                    "$$hashKey": "object:521"
+                  },
+                  {
+                    "ruleId": "c1377855-ea20-4c97-8861-f95c364fb8d2",
+                    "title": "OS command injection",
+                    "type": "Elevation of privilege",
+                    "modelType": "STRIDE",
+                    "status": "Open",
+                    "severity": "Medium",
+                    "description": "OS command injection",
+                    "mitigation": "- Proper input validation:\nhttps://github.com/redhat-developer/odo/issues/5765\n\n- Contextually escape user data",
+                    "$$hashKey": "object:475"
+                  },
+                  {
+                    "status": "Open",
+                    "severity": "Medium",
+                    "modelType": "STRIDE",
+                    "title": "Main in the middle attack",
+                    "type": "Tampering",
+                    "description": "When communicating with any external services, like devfile registry, kubernetes API service, startup projects, any UI in the devfile, etc.",
+                    "mitigation": "Ensure we user secure communication channels / use of encryption.\nEnsure we use the secure flag to true\nhttps://github.com/redhat-developer/odo/issues/5888",
+                    "$$hashKey": "object:531"
+                  }
+                ],
+                "attrs": {
+                  ".element-shape": {
+                    "class": "element-shape hasOpenThreats isInScope"
+                  },
+                  "text": {
+                    "text": "odo CLI"
+                  },
+                  ".element-text": {
+                    "class": "element-text hasOpenThreats isInScope"
+                  }
+                }
+              },
+              {
+                "type": "tm.Boundary",
+                "size": {
+                  "width": 10,
+                  "height": 10
+                },
+                "smooth": true,
+                "source": {
+                  "x": 405,
+                  "y": 79
+                },
+                "target": {
+                  "x": 182,
+                  "y": 455
+                },
+                "vertices": [
+                  {
+                    "x": 244,
+                    "y": 166
+                  },
+                  {
+                    "x": 194,
+                    "y": 353
+                  }
+                ],
+                "id": "29e20af7-aa72-40b3-8147-74b809dc4b4d",
+                "z": 4,
+                "attrs": {}
+              },
+              {
+                "type": "tm.Boundary",
+                "size": {
+                  "width": 10,
+                  "height": 10
+                },
+                "smooth": true,
+                "source": {
+                  "x": 630,
+                  "y": 633
+                },
+                "target": {
+                  "x": 925,
+                  "y": 269
+                },
+                "vertices": [
+                  {
+                    "x": 643,
+                    "y": 505
+                  },
+                  {
+                    "x": 746,
+                    "y": 310
+                  }
+                ],
+                "id": "7d6cf5b7-f53e-4de4-a581-1c7290969f66",
+                "z": 5,
+                "attrs": {}
+              },
+              {
+                "type": "tm.Process",
+                "size": {
+                  "width": 100,
+                  "height": 100
+                },
+                "position": {
+                  "x": 798,
+                  "y": 378
+                },
+                "angle": 0,
+                "id": "4931bd53-6796-49c0-8da1-0055ad40329b",
+                "z": 6,
+                "hasOpenThreats": false,
+                "attrs": {
+                  ".element-shape": {
+                    "class": "element-shape hasNoOpenThreats isInScope"
+                  },
+                  "text": {
+                    "text": "cluster"
+                  },
+                  ".element-text": {
+                    "class": "element-text hasNoOpenThreats isInScope"
+                  }
+                }
+              },
+              {
+                "type": "tm.Flow",
+                "size": {
+                  "width": 10,
+                  "height": 10
+                },
+                "smooth": true,
+                "source": {
+                  "id": "eaf791db-bdcf-4a6a-9d90-201016660fe8"
+                },
+                "target": {
+                  "id": "fbb7304b-54e9-425a-85f8-edc14c222859"
+                },
+                "vertices": [
+                  {
+                    "x": 219,
+                    "y": 157
+                  },
+                  {
+                    "x": 259,
+                    "y": 177
+                  },
+                  {
+                    "x": 317,
+                    "y": 200
+                  },
+                  {
+                    "x": 338,
+                    "y": 207
+                  },
+                  {
+                    "x": 354,
+                    "y": 214
+                  },
+                  {
+                    "x": 369,
+                    "y": 216
+                  }
+                ],
+                "id": "92c54ac0-1c14-4b25-ac82-df17ccd6ca9c",
+                "labels": [
+                  {
+                    "position": 0.5,
+                    "attrs": {
+                      "text": {
+                        "text": "flow 6",
+                        "font-weight": "400",
+                        "font-size": "small"
+                      }
+                    }
+                  }
+                ],
+                "z": 7,
+                "hasOpenThreats": false,
+                "attrs": {
+                  ".marker-target": {
+                    "class": "marker-target hasNoOpenThreats isInScope"
+                  },
+                  ".connection": {
+                    "class": "connection hasNoOpenThreats isInScope"
+                  }
+                }
+              },
+              {
+                "type": "tm.Flow",
+                "size": {
+                  "width": 10,
+                  "height": 10
+                },
+                "smooth": true,
+                "source": {
+                  "id": "fbb7304b-54e9-425a-85f8-edc14c222859"
+                },
+                "target": {
+                  "id": "4931bd53-6796-49c0-8da1-0055ad40329b"
+                },
+                "vertices": [
+                  {
+                    "x": 581,
+                    "y": 295
+                  },
+                  {
+                    "x": 598,
+                    "y": 301
+                  },
+                  {
+                    "x": 631,
+                    "y": 318
+                  },
+                  {
+                    "x": 680,
+                    "y": 344
+                  }
+                ],
+                "id": "37d834fd-3677-4735-808c-297471b170f1",
+                "labels": [
+                  {
+                    "position": 0.5,
+                    "attrs": {
+                      "text": {
+                        "text": "flow 7",
+                        "font-weight": "400",
+                        "font-size": "small"
+                      }
+                    }
+                  }
+                ],
+                "z": 8,
+                "hasOpenThreats": false,
+                "attrs": {
+                  ".marker-target": {
+                    "class": "marker-target hasNoOpenThreats isInScope"
+                  },
+                  ".connection": {
+                    "class": "connection hasNoOpenThreats isInScope"
+                  }
+                }
+              },
+              {
+                "type": "tm.Flow",
+                "size": {
+                  "width": 10,
+                  "height": 10
+                },
+                "smooth": true,
+                "source": {
+                  "id": "fbb7304b-54e9-425a-85f8-edc14c222859"
+                },
+                "target": {
+                  "id": "14049148-be25-4123-a79f-df10c5e34264"
+                },
+                "vertices": [
+                  {
+                    "x": 435,
+                    "y": 312
+                  },
+                  {
+                    "x": 429,
+                    "y": 382
+                  }
+                ],
+                "id": "d313eea9-5751-4952-970b-ad6e2be4af75",
+                "labels": [
+                  {
+                    "position": 0.5,
+                    "attrs": {
+                      "text": {
+                        "text": "flow 8",
+                        "font-weight": "400",
+                        "font-size": "small"
+                      }
+                    }
+                  }
+                ],
+                "z": 9,
+                "hasOpenThreats": false,
+                "attrs": {
+                  ".marker-target": {
+                    "class": "marker-target hasNoOpenThreats isInScope"
+                  },
+                  ".connection": {
+                    "class": "connection hasNoOpenThreats isInScope"
+                  }
+                }
+              }
+            ]
+          },
+          "size": {
+            "height": 659,
+            "width": 3130
+          }
+        }
+      ],
+      "reviewer": "ODO Team"
+    }
+  }
