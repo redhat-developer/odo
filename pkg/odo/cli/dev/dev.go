@@ -329,7 +329,6 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 		clientset.KUBERNETES,
 		clientset.PORT_FORWARD,
 		clientset.PREFERENCE,
-		clientset.STATE,
 		clientset.WATCH,
 	)
 	// Add a defined annotation in order to appear in the help menu

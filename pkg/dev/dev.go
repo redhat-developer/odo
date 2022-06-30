@@ -8,7 +8,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog/v2"
@@ -24,7 +23,6 @@ type DevClient struct {
 	prefClient        preference.Client
 	portForwardClient portForward.Client
 	watchClient       watch.Client
-	stateClient       state.Client
 }
 
 var _ Client = (*DevClient)(nil)
@@ -34,14 +32,12 @@ func NewDevClient(
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
 	watchClient watch.Client,
-	stateClient state.Client,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
 		watchClient:       watchClient,
-		stateClient:       stateClient,
 	}
 }
 
