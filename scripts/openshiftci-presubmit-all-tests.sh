@@ -16,7 +16,6 @@ else
 fi
 make bin
 mkdir -p $GOPATH/bin
-GOFLAGS= make goget-ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export CUSTOM_HOMEDIR=$ARTIFACT_DIR
 

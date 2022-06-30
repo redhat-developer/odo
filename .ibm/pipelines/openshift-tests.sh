@@ -13,7 +13,6 @@ cleanup_namespaces
 
 (
     set -e
-    make goget-ginkgo
     make install
     make test-integration
     make test-interactive
