@@ -384,6 +384,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 			}
 		}
 		err = libdevfile.ExecuteCommandByNameAndKind(a.Devfile, cmdName, cmdKind, &cmdHandler, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	if podChanged {
@@ -395,7 +398,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return fmt.Errorf("fail starting the port forwarding: %w", err)
 	}
 
-	return err
+	return nil
 }
 
 func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
