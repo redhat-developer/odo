@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
 	"github.com/blang/semver"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -153,7 +155,8 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 		return nil, err
 	}
 
-	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(client.KubeClientConfig)
+	config_flags := genericclioptions.NewConfigFlags(true)
+	client.discoveryClient, err = config_flags.ToDiscoveryClient()
 	if err != nil {
 		return nil, err
 	}
