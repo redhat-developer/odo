@@ -66,6 +66,9 @@ type InitOptions struct {
 	contextDir string
 }
 
+var _ genericclioptions.Runnable = (*InitOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*InitOptions)(nil)
+
 // NewInitOptions creates a new InitOptions instance
 func NewInitOptions() *InitOptions {
 	return &InitOptions{}

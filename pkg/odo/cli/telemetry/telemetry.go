@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -20,6 +21,8 @@ type TelemetryOptions struct {
 
 	telemetryData segment.TelemetryData
 }
+
+var _ genericclioptions.Runnable = (*TelemetryOptions)(nil)
 
 func NewTelemetryOptions() *TelemetryOptions {
 	return &TelemetryOptions{}

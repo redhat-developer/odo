@@ -44,6 +44,9 @@ type defaultPushedComponent struct {
 	storageClient storage.Client
 }
 
+var _ provider = (*defaultPushedComponent)(nil)
+var _ PushedComponent = (*defaultPushedComponent)(nil)
+
 func (d defaultPushedComponent) GetLabels() map[string]string {
 	return d.provider.GetLabels()
 }
@@ -89,6 +92,8 @@ func (d defaultPushedComponent) GetApplication() string {
 type devfileComponent struct {
 	d v1.Deployment
 }
+
+var _ provider = (*devfileComponent)(nil)
 
 func (d devfileComponent) GetLinkedSecrets() (secretMounts []SecretMount) {
 	for _, container := range d.d.Spec.Template.Spec.Containers {

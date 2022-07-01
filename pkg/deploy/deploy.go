@@ -23,6 +23,8 @@ type DeployClient struct {
 	kubeClient kclient.ClientInterface
 }
 
+var _ Client = (*DeployClient)(nil)
+
 func NewDeployClient(kubeClient kclient.ClientInterface) *DeployClient {
 	return &DeployClient{
 		kubeClient: kubeClient,
@@ -40,6 +42,8 @@ type deployHandler struct {
 	kubeClient kclient.ClientInterface
 	appName    string
 }
+
+var _ libdevfile.Handler = (*deployHandler)(nil)
 
 func newDeployHandler(devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string) *deployHandler {
 	return &deployHandler{

@@ -48,6 +48,8 @@ type DeployOptions struct {
 	contextDir string
 }
 
+var _ genericclioptions.Runnable = (*DeployOptions)(nil)
+
 var deployExample = templates.Examples(`
   # Deploy components defined in the devfile
   %[1]s

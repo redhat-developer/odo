@@ -141,6 +141,8 @@ type defaultFile struct {
 	file *os.File
 }
 
+var _ File = (*defaultFile)(nil)
+
 // Name via os.File.Name
 func (file *defaultFile) Name() string {
 	return file.file.Name()

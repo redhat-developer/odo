@@ -51,6 +51,9 @@ type ListOptions struct {
 	detailsFlag  bool
 }
 
+var _ genericclioptions.Runnable = (*ListOptions)(nil)
+var _ genericclioptions.JsonOutputter = (*ListOptions)(nil)
+
 // NewListOptions creates a new ListOptions instance
 func NewListOptions() *ListOptions {
 	return &ListOptions{}

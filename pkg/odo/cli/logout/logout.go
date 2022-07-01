@@ -26,6 +26,8 @@ type LogoutOptions struct {
 	*genericclioptions.Context
 }
 
+var _ genericclioptions.Runnable = (*LogoutOptions)(nil)
+
 // NewLogoutOptions creates a new LogoutOptions instance
 func NewLogoutOptions() *LogoutOptions {
 	return &LogoutOptions{}

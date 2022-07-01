@@ -134,9 +134,13 @@ type MachineEventLogEntry interface {
 type NoOpMachineEventLoggingClient struct {
 }
 
+var _ MachineEventLoggingClient = (*NoOpMachineEventLoggingClient)(nil)
+
 // ConsoleMachineEventLoggingClient will output all events to the console as JSON
 type ConsoleMachineEventLoggingClient struct {
 
 	// logFunc is an optional function that can be used instead of writing via the standard machine out logic
 	logFunc func(machineOutput MachineEventWrapper)
 }
+
+var _ MachineEventLoggingClient = (*ConsoleMachineEventLoggingClient)(nil)

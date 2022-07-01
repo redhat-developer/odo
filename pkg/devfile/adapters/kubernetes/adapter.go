@@ -15,6 +15,8 @@ type Adapter struct {
 	componentAdapter common.ComponentAdapter
 }
 
+var _ common.ComponentAdapter = (*Adapter)(nil)
+
 type KubernetesContext struct {
 	Namespace string
 }

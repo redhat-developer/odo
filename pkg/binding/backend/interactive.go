@@ -22,6 +22,8 @@ type InteractiveBackend struct {
 	kubernetesClient kclient.ClientInterface
 }
 
+var _ AddBindingBackend = (*InteractiveBackend)(nil)
+
 func NewInteractiveBackend(askerClient asker.Asker, kubernetesClient kclient.ClientInterface) *InteractiveBackend {
 	return &InteractiveBackend{
 		askerClient:      askerClient,

@@ -14,6 +14,8 @@ type compositeCommand struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ command = (*compositeCommand)(nil)
+
 // newCompositeCommand creates a new command implementation which will execute the provided commands in the specified order
 func newCompositeCommand(devfileObj parser.DevfileObj, command v1alpha2.Command) *compositeCommand {
 	return &compositeCommand{

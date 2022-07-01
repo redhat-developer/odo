@@ -11,6 +11,8 @@ type openshiftComponent struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ component = (*openshiftComponent)(nil)
+
 func newOpenshiftComponent(devfileObj parser.DevfileObj, component v1alpha2.Component) *openshiftComponent {
 	return &openshiftComponent{
 		component:  component,

@@ -19,6 +19,8 @@ type DockerCompatibleBackend struct {
 	name string
 }
 
+var _ Backend = (*DockerCompatibleBackend)(nil)
+
 func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
 	return &DockerCompatibleBackend{name: name}
 }

@@ -10,6 +10,8 @@ type Alizer struct {
 	registryClient registry.Client
 }
 
+var _ Client = (*Alizer)(nil)
+
 func NewAlizerClient(registryClient registry.Client) *Alizer {
 	return &Alizer{
 		registryClient: registryClient,

@@ -34,6 +34,8 @@ type RemoveBindingOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*RemoveBindingOptions)(nil)
+
 // NewRemoveBindingOptions returns new instance of ComponentOptions
 func NewRemoveBindingOptions() *RemoveBindingOptions {
 	return &RemoveBindingOptions{}

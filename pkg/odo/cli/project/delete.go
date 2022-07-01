@@ -47,6 +47,8 @@ type ProjectDeleteOptions struct {
 	waitFlag  bool
 }
 
+var _ genericclioptions.Runnable = (*ProjectDeleteOptions)(nil)
+
 // NewProjectDeleteOptions creates a ProjectDeleteOptions instance
 func NewProjectDeleteOptions() *ProjectDeleteOptions {
 	return &ProjectDeleteOptions{}

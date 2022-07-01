@@ -17,6 +17,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/dev"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -75,7 +76,12 @@ type DevOptions struct {
 	variables map[string]string
 }
 
+var _ genericclioptions.Runnable = (*DevOptions)(nil)
+var _ genericclioptions.SignalHandler = (*DevOptions)(nil)
+
 type Handler struct{}
+
+var _ dev.Handler = (*Handler)(nil)
 
 func NewDevOptions() *DevOptions {
 	return &DevOptions{

@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
@@ -21,6 +22,8 @@ type execHandler struct {
 	msg           string
 	show          bool
 }
+
+var _ libdevfile.Handler = (*execHandler)(nil)
 
 const ShellExecutable string = "/bin/sh"
 

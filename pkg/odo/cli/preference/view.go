@@ -29,6 +29,8 @@ type ViewOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*ViewOptions)(nil)
+
 // NewViewOptions creates a new ViewOptions instance
 func NewViewOptions() *ViewOptions {
 	return &ViewOptions{}

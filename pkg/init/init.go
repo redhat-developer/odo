@@ -37,6 +37,8 @@ type InitClient struct {
 	registryClient   registry.Client
 }
 
+var _ Client = (*InitClient)(nil)
+
 func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Client, registryClient registry.Client, alizerClient alizer.Client) *InitClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()

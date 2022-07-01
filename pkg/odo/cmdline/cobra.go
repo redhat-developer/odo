@@ -3,6 +3,7 @@ package cmdline
 import (
 	"context"
 	"errors"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -15,6 +16,8 @@ import (
 type Cobra struct {
 	cmd *cobra.Command
 }
+
+var _ Cmdline = (*Cobra)(nil)
 
 func NewCobra(cmd *cobra.Command) *Cobra {
 	return &Cobra{

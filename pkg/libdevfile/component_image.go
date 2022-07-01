@@ -11,6 +11,8 @@ type imageComponent struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ component = (*imageComponent)(nil)
+
 func newImageComponent(devfileObj parser.DevfileObj, component v1alpha2.Component) *imageComponent {
 	return &imageComponent{
 		component:  component,

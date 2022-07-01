@@ -46,6 +46,8 @@ type LogsOptions struct {
 	follow     bool
 }
 
+var _ genericclioptions.Runnable = (*LogsOptions)(nil)
+
 type logsMode string
 
 const (

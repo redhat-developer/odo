@@ -28,6 +28,8 @@ type BuildImagesOptions struct {
 	contextFlag string
 }
 
+var _ genericclioptions.Runnable = (*BuildImagesOptions)(nil)
+
 var buildImagesExample = templates.Examples(`
   # Build images defined in the devfile
   %[1]s

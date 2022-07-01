@@ -53,6 +53,8 @@ type AddBindingOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*AddBindingOptions)(nil)
+
 // NewAddBindingOptions returns new instance of ComponentOptions
 func NewAddBindingOptions() *AddBindingOptions {
 	return &AddBindingOptions{}

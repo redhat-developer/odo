@@ -19,6 +19,8 @@ type LogsClient struct {
 	kubernetesClient kclient.ClientInterface
 }
 
+var _ Client = (*LogsClient)(nil)
+
 func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 	return &LogsClient{
 		kubernetesClient: kubernetesClient,

@@ -15,6 +15,8 @@ type parallelCompositeCommand struct {
 	devfileObj parser.DevfileObj
 }
 
+var _ command = (*parallelCompositeCommand)(nil)
+
 // newParallelCompositeCommand creates a new command implementation which will execute the provided commands in parallel
 func newParallelCompositeCommand(devfileObj parser.DevfileObj, command v1alpha2.Command) *parallelCompositeCommand {
 	return &parallelCompositeCommand{

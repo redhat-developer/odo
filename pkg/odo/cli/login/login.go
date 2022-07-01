@@ -33,6 +33,8 @@ type LoginOptions struct {
 	loginClient auth.Client
 }
 
+var _ genericclioptions.Runnable = (*LoginOptions)(nil)
+
 var loginExample = templates.Examples(`
   # Log in interactively
   %[1]s

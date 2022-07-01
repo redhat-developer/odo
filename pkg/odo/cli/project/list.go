@@ -35,6 +35,8 @@ type ProjectListOptions struct {
 	clientset *clientset.Clientset
 }
 
+var _ genericclioptions.Runnable = (*ProjectListOptions)(nil)
+
 // NewProjectListOptions creates a new ProjectListOptions instance
 func NewProjectListOptions() *ProjectListOptions {
 	return &ProjectListOptions{}

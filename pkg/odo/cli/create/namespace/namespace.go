@@ -53,6 +53,8 @@ type NamespaceCreateOptions struct {
 	commandName string
 }
 
+var _ genericclioptions.Runnable = (*NamespaceCreateOptions)(nil)
+
 // NewNamespaceCreateOptions creates a NamespaceCreateOptions instance
 func NewNamespaceCreateOptions() *NamespaceCreateOptions {
 	return &NamespaceCreateOptions{}

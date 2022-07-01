@@ -34,6 +34,8 @@ type BindingClient struct {
 	kubernetesClient kclient.ClientInterface
 }
 
+var _ Client = (*BindingClient)(nil)
+
 func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()

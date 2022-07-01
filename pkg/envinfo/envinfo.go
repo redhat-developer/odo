@@ -61,6 +61,8 @@ type EnvSpecificInfo struct {
 	envinfoFileExists bool
 }
 
+var _ localConfigProvider.LocalConfigProvider = (*EnvSpecificInfo)(nil)
+
 func (esi EnvSpecificInfo) GetDevfilePath() string {
 	return esi.devfilePath
 }

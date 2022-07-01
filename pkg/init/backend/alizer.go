@@ -16,6 +16,8 @@ type AlizerBackend struct {
 	alizerClient alizer.Client
 }
 
+var _ InitBackend = (*AlizerBackend)(nil)
+
 func NewAlizerBackend(askerClient asker.Asker, alizerClient alizer.Client) *AlizerBackend {
 	return &AlizerBackend{
 		askerClient:  askerClient,
