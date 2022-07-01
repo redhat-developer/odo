@@ -65,7 +65,7 @@ Flags:
 {{CapitalizeFlagDescriptions .LocalFlags | trimRightSpace}}{{end}}{{ if .HasAvailableInheritedFlags}}
 
 Additional Flags:
-{{ModifyAdditionalFlags . | trimRightSpace}}{{end}}{{if .HasHelpSubCommands}}
+{{CapitalizeFlagDescriptions .InheritedFlags | trimRightSpace}}{{end}}{{if .HasHelpSubCommands}}
 
 Additional help topics:{{range .Commands}}{{if .IsHelpCommand}}
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{ if .HasAvailableSubCommands }}

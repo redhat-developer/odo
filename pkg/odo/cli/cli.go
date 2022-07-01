@@ -14,6 +14,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/add"
 	"github.com/redhat-developer/odo/pkg/odo/cli/alizer"
 	"github.com/redhat-developer/odo/pkg/odo/cli/build_images"
+	"github.com/redhat-developer/odo/pkg/odo/cli/completion"
 	"github.com/redhat-developer/odo/pkg/odo/cli/create"
 	_delete "github.com/redhat-developer/odo/pkg/odo/cli/delete"
 	"github.com/redhat-developer/odo/pkg/odo/cli/deploy"
@@ -30,7 +31,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/remove"
 	"github.com/redhat-developer/odo/pkg/odo/cli/set"
 	"github.com/redhat-developer/odo/pkg/odo/cli/telemetry"
-	"github.com/redhat-developer/odo/pkg/odo/cli/utils"
 	"github.com/redhat-developer/odo/pkg/odo/cli/version"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 
@@ -135,7 +135,9 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
 	// above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 	// package
+
 	flag.CommandLine.String("o", "", "Specify output format, supported format: json")
+	_ = pflag.CommandLine.MarkHidden("o")
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging
@@ -152,16 +154,11 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	_ = pflag.CommandLine.MarkHidden("skip_headers")
 	_ = pflag.CommandLine.MarkHidden("skip_log_headers")
 
-	// We will mark the command as hidden and then re-enable if the command
-	// supports json output
-	_ = pflag.CommandLine.MarkHidden("o")
-
 	// Override the verbosity flag description
 	verbosity := pflag.Lookup("v")
 	verbosity.Usage += ". Level varies from 0 to 9 (default 0)."
 
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", capitalizeFlagDescriptions)
-	cobra.AddTemplateFunc("ModifyAdditionalFlags", modifyAdditionalFlags)
 	rootCmd.SetUsageTemplate(rootUsageTemplate)
 
 	// Create a custom help function that will exit when we enter an invalid command, for example:
@@ -181,7 +178,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
 		project.NewCmdProject(project.RecommendedCommandName, util.GetFullName(fullName, project.RecommendedCommandName)),
-		utils.NewCmdUtils(utils.RecommendedCommandName, util.GetFullName(fullName, utils.RecommendedCommandName)),
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),
@@ -199,6 +195,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		create.NewCmdCreate(create.RecommendedCommandName, util.GetFullName(fullName, create.RecommendedCommandName)),
 		set.NewCmdSet(set.RecommendedCommandName, util.GetFullName(fullName, set.RecommendedCommandName)),
 		logs.NewCmdLogs(logs.RecommendedCommandName, util.GetFullName(fullName, logs.RecommendedCommandName)),
+		completion.NewCmdCompletion(completion.RecommendedCommandName, util.GetFullName(fullName, completion.RecommendedCommandName)),
 	)
 
 	// Add all subcommands to base commands
@@ -207,28 +204,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	visitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
 	return rootCmd
-}
-
-// modifyAdditionalFlags modifies the flags and updates the descriptions
-// as well as changes whether or not machine readable output
-// has been passed in..
-//
-// Return the flag usages for the help output
-func modifyAdditionalFlags(cmd *cobra.Command) string {
-
-	// Hide the machine readable output if the command
-	// does not have the annotation.
-	machineOutput := cmd.Annotations["machineoutput"]
-	f := cmd.InheritedFlags()
-
-	f.VisitAll(func(f *pflag.Flag) {
-		// Remove json flag if machineoutput has not been passed in
-		if f.Name == "o" && machineOutput == "json" {
-			f.Hidden = false
-		}
-	})
-
-	return capitalizeFlagDescriptions(f)
 }
 
 // capitalizeFlagDescriptions adds capitalizations
