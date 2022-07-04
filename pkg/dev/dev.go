@@ -52,12 +52,15 @@ func (o *DevClient) Start(
 	errOut io.Writer,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
-	adapter, err := component.NewKubernetesAdapter(
+	adapter := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient,
-		devfileObj.GetMetadataName(), path, "app", devfileObj, namespace, randomPorts, errOut)
-	if err != nil {
-		return err
-	}
+		component.AdapterContext{
+			ComponentName: devfileObj.GetMetadataName(),
+			Context:       path,
+			AppName:       "app",
+			Devfile:       devfileObj,
+		},
+		namespace, randomPorts, errOut)
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {

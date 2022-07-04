@@ -72,44 +72,21 @@ func NewKubernetesAdapter(
 	kubernetesClient kclient.ClientInterface,
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
-	componentName string,
-	context string,
-	appName string,
-	devObj parser.DevfileObj,
+	context AdapterContext,
 	namespace string,
 	randomPorts bool,
 	errOut io.Writer,
-) (Adapter, error) {
-
-	adapterContext := AdapterContext{
-		ComponentName: componentName,
-		Context:       context,
-		AppName:       appName,
-		Devfile:       devObj,
-	}
+) Adapter {
 
 	if namespace != "" {
 		kubernetesClient.SetNamespace(namespace)
 	}
 
-	compAdapter := New(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
-	return compAdapter, nil
-}
-
-// New instantiates a component adapter
-func New(
-	adapterContext AdapterContext,
-	kubeClient kclient.ClientInterface,
-	prefClient preference.Client,
-	portForwardClient portForward.Client,
-	randomPorts bool,
-	errOut io.Writer,
-) Adapter {
 	return Adapter{
-		kubeClient:        kubeClient,
+		kubeClient:        kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
-		AdapterContext:    adapterContext,
+		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 		randomPorts:       randomPorts,
 		errOut:            errOut,

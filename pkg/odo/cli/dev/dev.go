@@ -273,14 +273,16 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 		o.clientset.KubernetesClient,
 		o.clientset.PreferenceClient,
 		o.clientset.PortForwardClient,
-		parameters.ComponentName,
-		parameters.Path,
-		parameters.ApplicationName,
-		devObj,
+		kcomponent.AdapterContext{
+			ComponentName: parameters.ComponentName,
+			Context:       parameters.Path,
+			AppName:       parameters.ApplicationName,
+			Devfile:       devObj,
+		},
 		parameters.EnvSpecificInfo.GetNamespace(),
 		o.randomPorts,
 		o.errOut,
-	)
+	), nil
 }
 
 func (o *DevOptions) HandleSignal() error {
