@@ -69,7 +69,7 @@ type AdapterContext struct {
 var _ sync.SyncClient = (*Adapter)(nil)
 var _ ComponentAdapter = (*Adapter)(nil)
 
-// NewComponentAdapter returns a Devfile adapter for the targeted platform
+// NewKubernetesAdapter returns a Devfile adapter for the targeted platform
 func NewKubernetesAdapter(
 	kubernetesClient kclient.ClientInterface,
 	prefClient preference.Client,
