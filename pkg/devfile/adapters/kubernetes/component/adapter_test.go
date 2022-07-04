@@ -136,7 +136,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				AppName: testAppName,
 			})
 			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{}, 0)
+			_, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -349,7 +349,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{}, 0)
+			_, err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
 			if err != nil {
@@ -556,9 +556,8 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 					ComponentName: tt.fields.componentName,
 					AppName:       tt.fields.appName,
 				},
-				deployment: tt.fields.deployment,
 			}
-			got, err := a.generateDeploymentObjectMeta(tt.args.labels, tt.args.annotations)
+			got, err := a.generateDeploymentObjectMeta(tt.fields.deployment, tt.args.labels, tt.args.annotations)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("generateDeploymentObjectMeta() error = %v, wantErr %v", err, tt.wantErr)
 				return
