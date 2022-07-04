@@ -53,9 +53,10 @@ type Client struct {
 	// DynamicClient interacts with client-go's `dynamic` package. It is used
 	// to dynamically create service from an operator. It can take an arbitrary
 	// yaml and create k8s/OpenShift resource from it.
-	DynamicClient   dynamic.Interface
-	discoveryClient discovery.DiscoveryInterface
-	restmapper      *restmapper.DeferredDiscoveryRESTMapper
+	DynamicClient         dynamic.Interface
+	discoveryClient       discovery.DiscoveryInterface
+	cachedDiscoveryClient discovery.CachedDiscoveryInterface
+	restmapper            *restmapper.DeferredDiscoveryRESTMapper
 
 	supportedResources map[string]bool
 	// Is server side apply supported by cluster
@@ -155,8 +156,13 @@ func NewForConfig(config clientcmd.ClientConfig) (client *Client, err error) {
 		return nil, err
 	}
 
+	client.discoveryClient, err = discovery.NewDiscoveryClientForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	config_flags := genericclioptions.NewConfigFlags(true)
-	client.discoveryClient, err = config_flags.ToDiscoveryClient()
+	client.cachedDiscoveryClient, err = config_flags.ToDiscoveryClient()
 	if err != nil {
 		return nil, err
 	}
