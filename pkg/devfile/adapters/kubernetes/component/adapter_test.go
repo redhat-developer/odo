@@ -22,7 +22,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
 
-	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -114,7 +113,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := AdapterContext{
 				ComponentName: testComponentName,
 				AppName:       testAppName,
 				Devfile:       devObj,
@@ -310,7 +309,7 @@ func TestDoesComponentExist(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := AdapterContext{
 				ComponentName: tt.componentName,
 				AppName:       tt.appName,
 				Devfile:       devObj,
@@ -424,7 +423,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := AdapterContext{
 				ComponentName: testComponentName,
 				Devfile:       devObj,
 			}
@@ -552,7 +551,7 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 
 			a := Adapter{
 				kubeClient: fakeClient,
-				AdapterContext: adaptersCommon.AdapterContext{
+				AdapterContext: AdapterContext{
 					ComponentName: tt.fields.componentName,
 					AppName:       tt.fields.appName,
 				},

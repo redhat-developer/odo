@@ -42,7 +42,7 @@ type Adapter struct {
 	prefClient        preference.Client
 	portForwardClient portForward.Client
 
-	common.AdapterContext
+	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
 
 	devfileBuildCmd  string
@@ -54,6 +54,14 @@ type Adapter struct {
 
 	randomPorts bool
 	errOut      io.Writer
+}
+
+// AdapterContext is a construct that is common to all adapters
+type AdapterContext struct {
+	ComponentName string            // ComponentName is the odo component name, it is NOT related to any devfile components
+	Context       string            // Context is the given directory containing the source code and configs
+	AppName       string            // the application name associated to a component
+	Devfile       parser.DevfileObj // Devfile is the object returned by the Devfile parser
 }
 
 var _ sync.SyncClient = (*Adapter)(nil)
@@ -73,7 +81,7 @@ func NewKubernetesAdapter(
 	errOut io.Writer,
 ) (Adapter, error) {
 
-	adapterContext := common.AdapterContext{
+	adapterContext := AdapterContext{
 		ComponentName: componentName,
 		Context:       context,
 		AppName:       appName,
@@ -90,7 +98,7 @@ func NewKubernetesAdapter(
 
 // New instantiates a component adapter
 func New(
-	adapterContext common.AdapterContext,
+	adapterContext AdapterContext,
 	kubeClient kclient.ClientInterface,
 	prefClient preference.Client,
 	portForwardClient portForward.Client,

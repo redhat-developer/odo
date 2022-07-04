@@ -2,18 +2,9 @@ package common
 
 import (
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
 )
-
-// AdapterContext is a construct that is common to all adapters
-type AdapterContext struct {
-	ComponentName string                   // ComponentName is the odo component name, it is NOT related to any devfile components
-	Context       string                   // Context is the given directory containing the source code and configs
-	AppName       string                   // the application name associated to a component
-	Devfile       devfileParser.DevfileObj // Devfile is the object returned by the Devfile parser
-}
 
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component
 type PushParameters struct {
