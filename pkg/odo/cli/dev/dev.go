@@ -18,7 +18,6 @@ import (
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -202,10 +201,7 @@ func (o *DevOptions) Validate() error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj      = o.Context.EnvSpecificInfo.GetDevfileObj()
-		platformContext = kubernetes.KubernetesContext{
-			Namespace: o.Context.GetProject(),
-		}
+		devFileObj  = o.Context.EnvSpecificInfo.GetDevfileObj()
 		path        = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 		devfileName = devFileObj.GetMetadataName()
 		namespace   = o.GetProject()
@@ -223,7 +219,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
+	err = o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
 	if err != nil {
 		return err
 	}
@@ -273,10 +269,6 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 		return nil, err
 	}
 
-	platformContext := kubernetes.KubernetesContext{
-		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
-	}
-
 	return adapters.NewComponentAdapter(
 		o.clientset.KubernetesClient,
 		o.clientset.PreferenceClient,
@@ -285,7 +277,7 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 		parameters.Path,
 		parameters.ApplicationName,
 		devObj,
-		platformContext,
+		parameters.EnvSpecificInfo.GetNamespace(),
 		o.randomPorts,
 		o.errOut,
 	)

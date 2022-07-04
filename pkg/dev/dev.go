@@ -14,7 +14,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -43,7 +42,7 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	devfileObj parser.DevfileObj,
-	platformContext kubernetes.KubernetesContext,
+	namespace string,
 	ignorePaths []string,
 	path string,
 	debug bool,
@@ -55,7 +54,7 @@ func (o *DevClient) Start(
 	klog.V(4).Infoln("Creating new adapter")
 	adapter, err := adapters.NewComponentAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient,
-		devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext, randomPorts, errOut)
+		devfileObj.GetMetadataName(), path, "app", devfileObj, namespace, randomPorts, errOut)
 	if err != nil {
 		return err
 	}

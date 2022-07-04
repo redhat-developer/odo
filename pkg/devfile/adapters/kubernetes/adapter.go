@@ -19,10 +19,6 @@ type Adapter struct {
 
 var _ common.ComponentAdapter = (*Adapter)(nil)
 
-type KubernetesContext struct {
-	Namespace string
-}
-
 // New instantiates a kubernetes adapter
 func New(
 	adapterContext common.AdapterContext,

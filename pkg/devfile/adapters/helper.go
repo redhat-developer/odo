@@ -20,7 +20,7 @@ func NewComponentAdapter(
 	context string,
 	appName string,
 	devObj devfileParser.DevfileObj,
-	platformContext kubernetes.KubernetesContext,
+	namespace string,
 	randomPorts bool,
 	errOut io.Writer,
 ) (common.ComponentAdapter, error) {
@@ -32,8 +32,8 @@ func NewComponentAdapter(
 		Devfile:       devObj,
 	}
 
-	if platformContext.Namespace != "" {
-		kubernetesClient.SetNamespace(platformContext.Namespace)
+	if namespace != "" {
+		kubernetesClient.SetNamespace(namespace)
 	}
 
 	kubernetesAdapter := kubernetes.New(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
