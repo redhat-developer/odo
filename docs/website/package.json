@@ -25,7 +25,7 @@
     "css-what": "^5.0.1",
     "docusaurus-odo-plugin-segment": "file:docusaurus-odo-plugin-segment",
     "file-loader": "^6.2.0",
-    "glob-parent": "^5.1.2",
+    "glob-parent": "^6.0.2",
     "node-forge": "^1.0.0",
     "prism-react-renderer": "^1.2.1",
     "prismjs": "^1.27.0",
