@@ -1,7 +1,6 @@
 package adapters
 
 import (
-	"errors"
 	"io"
 
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
@@ -21,7 +20,7 @@ func NewComponentAdapter(
 	context string,
 	appName string,
 	devObj devfileParser.DevfileObj,
-	platformContext interface{},
+	platformContext kubernetes.KubernetesContext,
 	randomPorts bool,
 	errOut io.Writer,
 ) (common.ComponentAdapter, error) {
@@ -33,13 +32,8 @@ func NewComponentAdapter(
 		Devfile:       devObj,
 	}
 
-	kc, ok := platformContext.(kubernetes.KubernetesContext)
-	if !ok {
-		return nil, errors.New("error retrieving context for Kubernetes")
-	}
-
-	if kc.Namespace != "" {
-		kubernetesClient.SetNamespace(kc.Namespace)
+	if platformContext.Namespace != "" {
+		kubernetesClient.SetNamespace(platformContext.Namespace)
 	}
 
 	kubernetesAdapter := kubernetes.New(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
