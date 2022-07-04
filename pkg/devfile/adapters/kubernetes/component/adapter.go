@@ -47,9 +47,6 @@ type Adapter struct {
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
 
-	devfileBuildCmd  string
-	devfileRunCmd    string
-	devfileDebugCmd  string
 	devfileDebugPort int
 	pod              *corev1.Pod
 	deployment       *appsv1.Deployment
@@ -139,9 +136,6 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 	componentExists := a.deployment != nil
 
-	a.devfileBuildCmd = parameters.DevfileBuildCmd
-	a.devfileRunCmd = parameters.DevfileRunCmd
-	a.devfileDebugCmd = parameters.DevfileDebugCmd
 	a.devfileDebugPort = parameters.DebugPort
 
 	podChanged := false
@@ -175,7 +169,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		return err
 	}
 
-	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
 	if err != nil {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
@@ -191,7 +185,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	currentMode := envinfo.Run
 
 	if parameters.Debug {
-		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.Devfile, a.devfileDebugCmd, devfilev1.DebugCommandGroupKind)
+		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.Devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
 		if e != nil {
 			return fmt.Errorf("debug command is not valid: %w", e)
 		}
@@ -223,7 +217,11 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 
 	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral, libdevfile.DevfileCommands{
+		BuildCmd: parameters.DevfileBuildCmd,
+		RunCmd:   parameters.DevfileRunCmd,
+		DebugCmd: parameters.DevfileDebugCmd,
+	})
 	if err != nil {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
@@ -339,10 +337,10 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 
 	cmdKind := devfilev1.RunCommandGroupKind
-	cmdName := a.devfileRunCmd
+	cmdName := parameters.DevfileRunCmd
 	if parameters.Debug {
 		cmdKind = devfilev1.DebugCommandGroupKind
-		cmdName = a.devfileDebugCmd
+		cmdName = parameters.DevfileDebugCmd
 	}
 
 	cmd, err := libdevfile.ValidateAndGetCommand(a.Devfile, cmdName, cmdKind)
@@ -385,7 +383,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		doExecuteBuildCommand := func() error {
 			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
 				"Building your application in container on cluster", parameters.Show)
-			return libdevfile.Build(a.Devfile, a.devfileBuildCmd, execHandler)
+			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}
 		if componentExists {
 			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
@@ -416,7 +414,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	return nil
 }
 
-func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool) (err error) {
+func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool, commands libdevfile.DevfileCommands) (err error) {
 	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 
@@ -457,12 +455,12 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, a.devfileDebugCmd, a.devfileDebugPort)
+	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, commands.DebugCmd, a.devfileDebugPort)
 	if err != nil {
 		return err
 	}
 
-	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, a.devfileBuildCmd, a.devfileRunCmd, a.devfileDebugCmd)
+	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
 	if err != nil {
 		return err
 	}

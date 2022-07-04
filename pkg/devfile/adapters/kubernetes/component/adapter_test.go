@@ -15,6 +15,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/envinfo"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -135,7 +136,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				AppName: testAppName,
 			})
 			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{})
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -348,7 +349,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{})
 
 			// Checks for unexpected error cases
 			if err != nil {
