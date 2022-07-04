@@ -12,7 +12,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog/v2"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
@@ -67,7 +67,7 @@ func (o *DevClient) Start(
 		return err
 	}
 
-	pushParameters := common.PushParameters{
+	pushParameters := adapters.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
 		DebugPort:       envSpecificInfo.GetDebugPort(),
 		Path:            path,

@@ -10,7 +10,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -111,12 +111,12 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	return a.pod, nil
 }
 
-func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
+func (a *Adapter) ComponentInfo(command devfilev1.Command) (adapters.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
-		return common.ComponentInfo{}, err
+		return adapters.ComponentInfo{}, err
 	}
-	return common.ComponentInfo{
+	return adapters.ComponentInfo{
 		PodName:       pod.Name,
 		ContainerName: command.Exec.Component,
 	}, nil
@@ -124,7 +124,7 @@ func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(parameters common.PushParameters) (err error) {
+func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
 	// Get the Dev deployment:
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
@@ -309,12 +309,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	defer s.End(false)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
-	compInfo := common.ComponentInfo{
+	compInfo := adapters.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
-	syncParams := common.SyncParameters{
+	syncParams := adapters.SyncParameters{
 		PushParams:      parameters,
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
@@ -671,7 +671,7 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
+func (a Adapter) ExtractProjectToComponent(componentInfo adapters.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
 }
 

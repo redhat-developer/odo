@@ -11,7 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	"github.com/golang/mock/gomock"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/sync/mock"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -111,22 +111,22 @@ func TestSyncFiles(t *testing.T) {
 	tests := []struct {
 		name               string
 		client             SyncClient
-		syncParameters     common.SyncParameters
+		syncParameters     adapters.SyncParameters
 		wantErr            bool
 		wantIsPushRequired bool
 	}{
 		{
 			name:   "Case 1: Component does not exist",
 			client: syncClient,
-			syncParameters: common.SyncParameters{
-				PushParams: common.PushParameters{
+			syncParameters: adapters.SyncParameters{
+				PushParams: adapters.PushParameters{
 					Path:              directory,
 					WatchFiles:        []string{},
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
 				},
-				CompInfo: common.ComponentInfo{
+				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
 				ComponentExists: false,
@@ -137,15 +137,15 @@ func TestSyncFiles(t *testing.T) {
 		{
 			name:   "Case 2: Component does exist",
 			client: syncClient,
-			syncParameters: common.SyncParameters{
-				PushParams: common.PushParameters{
+			syncParameters: adapters.SyncParameters{
+				PushParams: adapters.PushParameters{
 					Path:              directory,
 					WatchFiles:        []string{},
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
 				},
-				CompInfo: common.ComponentInfo{
+				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
@@ -156,15 +156,15 @@ func TestSyncFiles(t *testing.T) {
 		{
 			name:   "Case 3: FakeErrorClient error",
 			client: errorSyncClient,
-			syncParameters: common.SyncParameters{
-				PushParams: common.PushParameters{
+			syncParameters: adapters.SyncParameters{
+				PushParams: adapters.PushParameters{
 					Path:              directory,
 					WatchFiles:        []string{},
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        true,
 				},
-				CompInfo: common.ComponentInfo{
+				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
@@ -175,15 +175,15 @@ func TestSyncFiles(t *testing.T) {
 		{
 			name:   "Case 4: File change",
 			client: syncClient,
-			syncParameters: common.SyncParameters{
-				PushParams: common.PushParameters{
+			syncParameters: adapters.SyncParameters{
+				PushParams: adapters.PushParameters{
 					Path:              directory,
 					WatchFiles:        []string{path.Join(directory, "test.log")},
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
 				},
-				CompInfo: common.ComponentInfo{
+				CompInfo: adapters.ComponentInfo{
 					ContainerName: "abcd",
 				},
 				ComponentExists: true,
@@ -251,7 +251,7 @@ func TestPushLocal(t *testing.T) {
 		files       []string
 		delFiles    []string
 		isForcePush bool
-		compInfo    common.ComponentInfo
+		compInfo    adapters.ComponentInfo
 		wantErr     bool
 	}{
 		{
@@ -261,7 +261,7 @@ func TestPushLocal(t *testing.T) {
 			files:       []string{path.Join(directory, "test.log")},
 			delFiles:    []string{},
 			isForcePush: false,
-			compInfo: common.ComponentInfo{
+			compInfo: adapters.ComponentInfo{
 				ContainerName: "abcd",
 			},
 			wantErr: false,
@@ -273,7 +273,7 @@ func TestPushLocal(t *testing.T) {
 			files:       []string{path.Join(directory, "test.log")},
 			delFiles:    []string{},
 			isForcePush: false,
-			compInfo: common.ComponentInfo{
+			compInfo: adapters.ComponentInfo{
 				ContainerName: "abcd",
 			},
 			wantErr: true,
@@ -285,7 +285,7 @@ func TestPushLocal(t *testing.T) {
 			files:       []string{},
 			delFiles:    []string{},
 			isForcePush: false,
-			compInfo: common.ComponentInfo{
+			compInfo: adapters.ComponentInfo{
 				ContainerName: "abcd",
 			},
 			wantErr: false,
@@ -297,7 +297,7 @@ func TestPushLocal(t *testing.T) {
 			files:       []string{},
 			delFiles:    []string{path.Join(directory, "test.log")},
 			isForcePush: false,
-			compInfo: common.ComponentInfo{
+			compInfo: adapters.ComponentInfo{
 				ContainerName: "abcd",
 			},
 			wantErr: false,
@@ -309,7 +309,7 @@ func TestPushLocal(t *testing.T) {
 			files:       []string{},
 			delFiles:    []string{},
 			isForcePush: true,
-			compInfo: common.ComponentInfo{
+			compInfo: adapters.ComponentInfo{
 				ContainerName: "abcd",
 			},
 			wantErr: false,
@@ -321,7 +321,7 @@ func TestPushLocal(t *testing.T) {
 			files:       []string{},
 			delFiles:    []string{},
 			isForcePush: false,
-			compInfo: common.ComponentInfo{
+			compInfo: adapters.ComponentInfo{
 				ContainerName: "abcd",
 				SyncFolder:    "/some/path",
 			},
@@ -414,7 +414,7 @@ func TestUpdateIndexWithWatchChanges(t *testing.T) {
 				t.Fatalf("TestUpdateIndexWithWatchChangesLocal error: unable to write index file: %v", err)
 			}
 
-			pushParams := common.PushParameters{
+			pushParams := adapters.PushParameters{
 				Path: directory,
 			}
 

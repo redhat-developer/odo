@@ -4,10 +4,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-
 	"github.com/devfile/library/pkg/devfile/parser"
 
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -49,5 +48,5 @@ type Client interface {
 }
 
 type Handler interface {
-	RegenerateAdapterAndPush(common.PushParameters, watch.WatchParameters) error
+	RegenerateAdapterAndPush(adapters.PushParameters, watch.WatchParameters) error
 }

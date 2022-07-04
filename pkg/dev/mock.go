@@ -11,7 +11,7 @@ import (
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
-	common "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	adapters "github.com/redhat-developer/odo/pkg/devfile/adapters"
 	watch "github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -90,7 +90,7 @@ func (m *MockHandler) EXPECT() *MockHandlerMockRecorder {
 }
 
 // RegenerateAdapterAndPush mocks base method.
-func (m *MockHandler) RegenerateAdapterAndPush(arg0 common.PushParameters, arg1 watch.WatchParameters) error {
+func (m *MockHandler) RegenerateAdapterAndPush(arg0 adapters.PushParameters, arg1 watch.WatchParameters) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegenerateAdapterAndPush", arg0, arg1)
 	ret0, _ := ret[0].(error)

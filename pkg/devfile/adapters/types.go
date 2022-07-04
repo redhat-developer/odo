@@ -1,4 +1,4 @@
-package common
+package adapters
 
 import (
 	"github.com/redhat-developer/odo/pkg/envinfo"

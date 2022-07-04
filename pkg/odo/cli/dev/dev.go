@@ -16,7 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	kcomponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -247,7 +247,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter kcomponent.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)

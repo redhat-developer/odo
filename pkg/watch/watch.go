@@ -10,13 +10,13 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -59,7 +59,7 @@ type WatchParameters struct {
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(common.PushParameters, WatchParameters) error
+	DevfileWatchHandler func(adapters.PushParameters, WatchParameters) error
 	// Parameter whether or not to show build logs
 	Show bool
 	// EnvSpecificInfo contains information of env.yaml file
@@ -338,7 +338,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 	fmt.Fprintf(out, "Pushing files...\n\n")
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
-	pushParams := common.PushParameters{
+	pushParams := adapters.PushParameters{
 		Path:                     parameters.Path,
 		WatchFiles:               changedFiles,
 		WatchDeletedFiles:        deletedPaths,
