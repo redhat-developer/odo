@@ -15,16 +15,6 @@ const (
 	EnvDebugPort = "DEBUG_PORT"
 )
 
-// GetCommandsMap returns a map of the command Id to the command
-func GetCommandsMap(commands []devfilev1.Command) map[string]devfilev1.Command {
-	commandMap := make(map[string]devfilev1.Command, len(commands))
-	for _, command := range commands {
-		command.Id = strings.ToLower(command.Id)
-		commandMap[command.Id] = command
-	}
-	return commandMap
-}
-
 // GetSyncFilesFromAttributes gets the target files and folders along with their respective remote destination from the devfile
 // it uses the "dev.odo.push.path" attribute in the run command
 func GetSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {

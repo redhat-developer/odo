@@ -2,9 +2,9 @@ package validate
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	v2 "github.com/devfile/library/pkg/devfile/parser/data/v2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"k8s.io/klog"
@@ -25,7 +25,7 @@ func ValidateDevfileData(data interface{}) error {
 			return err
 		}
 
-		commandsMap := common.GetCommandsMap(commands)
+		commandsMap := getCommandsMap(commands)
 
 		// Validate all the devfile components before validating commands
 		if err := validateComponents(components); err != nil {
@@ -45,4 +45,14 @@ func ValidateDevfileData(data interface{}) error {
 	klog.V(2).Info("Successfully validated devfile sections")
 	return nil
 
+}
+
+// getCommandsMap returns a map of the command Id to the command
+func getCommandsMap(commands []devfilev1.Command) map[string]devfilev1.Command {
+	commandMap := make(map[string]devfilev1.Command, len(commands))
+	for _, command := range commands {
+		command.Id = strings.ToLower(command.Id)
+		commandMap[command.Id] = command
+	}
+	return commandMap
 }

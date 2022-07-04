@@ -1,4 +1,4 @@
-package common
+package validate
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
-func TestGetCommands(t *testing.T) {
+func Test_getCommands(t *testing.T) {
 
 	component := []devfilev1.Component{
 		testingutil.GetFakeContainerComponent("alias1"),
@@ -135,7 +135,7 @@ func TestGetCommands(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 
-			commandsMap := GetCommandsMap(commands)
+			commandsMap := getCommandsMap(commands)
 			if len(commandsMap) != len(tt.expectedCommands) {
 				t.Errorf("TestGetCommands error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
 			}
