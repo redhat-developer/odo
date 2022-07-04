@@ -1,9 +1,10 @@
 package backend
 
 import (
-	"github.com/redhat-developer/odo/pkg/binding/asker"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/redhat-developer/odo/pkg/binding/asker"
 )
 
 type AddBindingBackend interface {
@@ -19,6 +20,8 @@ type AddBindingBackend interface {
 	AskBindingName(defaultName string, flags map[string]string) (string, error)
 	// AskBindAsFiles asks if service should be binded as files
 	AskBindAsFiles(flags map[string]string) (bool, error)
+	// AskNamingStrategy asks for the naming strategy to be used
+	AskNamingStrategy(flags map[string]string) (string, error)
 	// SelectCreationOption asks to select how to output the created servicebinding
 	SelectCreationOptions(flags map[string]string) ([]asker.CreationOption, error)
 	// AskOutputFilePath asks for the path of the file to output service binding

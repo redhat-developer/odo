@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	sboApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
 	backendpkg "github.com/redhat-developer/odo/pkg/binding/backend"
@@ -73,9 +74,20 @@ func (o *BindingClient) AskBindAsFiles(flags map[string]string) (bool, error) {
 	return backend.AskBindAsFiles(flags)
 }
 
+func (o *BindingClient) AskNamingStrategy(flags map[string]string) (string, error) {
+	var backend backendpkg.AddBindingBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	return backend.AskNamingStrategy(flags)
+}
+
 func (o *BindingClient) AddBindingToDevfile(
 	bindingName string,
 	bindAsFiles bool,
+	namingStrategy string,
 	unstructuredService unstructured.Unstructured,
 	obj parser.DevfileObj,
 ) (parser.DevfileObj, error) {
@@ -90,7 +102,8 @@ func (o *BindingClient) AddBindingToDevfile(
 		return obj, err
 	}
 
-	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, deploymentName, deploymentGVK, []sboApi.Mapping{}, []sboApi.Service{service}, sboApi.ServiceBindingStatus{})
+	serviceBinding := kclient.NewServiceBindingObject(
+		bindingName, bindAsFiles, deploymentName, namingStrategy, deploymentGVK, []sboApi.Mapping{}, []sboApi.Service{service}, sboApi.ServiceBindingStatus{})
 
 	// Note: we cannot directly marshal the serviceBinding object to yaml because it doesn't do that in the correct k8s manifest format
 	serviceBindingUnstructured, err := kclient.ConvertK8sResourceToUnstructured(serviceBinding)
@@ -109,6 +122,7 @@ func (o *BindingClient) AddBinding(
 	flags map[string]string,
 	bindingName string,
 	bindAsFiles bool,
+	namingStrategy string,
 	unstructuredService unstructured.Unstructured,
 	workloadName string,
 	workloadGVK schema.GroupVersionKind,
@@ -118,7 +132,8 @@ func (o *BindingClient) AddBinding(
 		return nil, "", "", err
 	}
 
-	serviceBinding := kclient.NewServiceBindingObject(bindingName, bindAsFiles, workloadName, workloadGVK, []sboApi.Mapping{}, []sboApi.Service{service}, sboApi.ServiceBindingStatus{})
+	serviceBinding := kclient.NewServiceBindingObject(
+		bindingName, bindAsFiles, workloadName, namingStrategy, workloadGVK, []sboApi.Mapping{}, []sboApi.Service{service}, sboApi.ServiceBindingStatus{})
 
 	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {

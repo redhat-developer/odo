@@ -54,7 +54,8 @@ func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 		if flag == backendpkg.FLAG_NAME ||
 			flag == backendpkg.FLAG_WORKLOAD ||
 			flag == backendpkg.FLAG_SERVICE ||
-			flag == backendpkg.FLAG_BIND_AS_FILES {
+			flag == backendpkg.FLAG_BIND_AS_FILES ||
+			flag == backendpkg.FLAG_NAMING_STRATEGY {
 			bindingFlags[flag] = value
 		}
 	}

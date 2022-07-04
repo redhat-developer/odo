@@ -127,9 +127,15 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		return err
 	}
 
+	namingStrategy, err := o.clientset.BindingClient.AskNamingStrategy(o.flags)
+	if err != nil {
+		return err
+	}
+
 	if withDevfile {
 		var devfileobj parser.DevfileObj
-		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(bindingName, bindAsFiles, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(
+			bindingName, bindAsFiles, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -146,12 +152,16 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 			if !bindAsFiles {
 				exitMessage += " --bind-as-files=false"
 			}
+			if namingStrategy != "" {
+				exitMessage += " --naming-strategy='" + namingStrategy + "'"
+			}
 		}
 		log.Infof(exitMessage)
 		return nil
 	}
 
-	options, output, filename, err := o.clientset.BindingClient.AddBinding(o.flags, bindingName, bindAsFiles, serviceMap[service], workloadName, workloadGVK)
+	options, output, filename, err := o.clientset.BindingClient.AddBinding(
+		o.flags, bindingName, bindAsFiles, namingStrategy, serviceMap[service], workloadName, workloadGVK)
 	if err != nil {
 		return err
 	}
@@ -192,6 +202,10 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	bindingCmd.Flags().String(backend.FLAG_WORKLOAD, "", "Name of the workload to bind, only when no devfile is present in current directory")
 	bindingCmd.Flags().String(backend.FLAG_SERVICE, "", "Name of the service to bind")
 	bindingCmd.Flags().Bool(backend.FLAG_BIND_AS_FILES, true, "Bind the service as a file")
+	bindingCmd.Flags().String(backend.FLAG_NAMING_STRATEGY, "",
+		"Naming strategy to use for binding names. "+
+			"It can be set to pre-defined strategies: 'none', 'lowercase', or 'uppercase'. "+
+			"Otherwise, it is treated as a custom Go template, and it is handled accordingly.")
 	clientset.Add(bindingCmd, clientset.BINDING)
 
 	return bindingCmd

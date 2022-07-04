@@ -114,6 +114,17 @@ func (o *InteractiveBackend) AskBindAsFiles(_ map[string]string) (bool, error) {
 	return o.askerClient.AskBindAsFiles()
 }
 
+func (o *InteractiveBackend) AskNamingStrategy(_ map[string]string) (string, error) {
+	namingStrategy, err := o.askerClient.SelectNamingStrategy()
+	if err != nil {
+		return "", err
+	}
+	if namingStrategy == asker.NamingStrategyCustom {
+		return o.askerClient.AskNamingStrategy()
+	}
+	return namingStrategy, nil
+}
+
 func (o *InteractiveBackend) SelectCreationOptions(flags map[string]string) ([]asker.CreationOption, error) {
 	return o.askerClient.SelectCreationOptions()
 }

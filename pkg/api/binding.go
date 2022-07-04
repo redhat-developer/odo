@@ -16,6 +16,7 @@ type ServiceBindingSpec struct {
 	Services               []corev1.ObjectReference `json:"services"`
 	DetectBindingResources bool                     `json:"detectBindingResources"`
 	BindAsFiles            bool                     `json:"bindAsFiles"`
+	NamingStrategy         string                   `json:"namingStrategy,omitempty"`
 }
 
 type ServiceBindingStatus struct {

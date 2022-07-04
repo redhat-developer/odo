@@ -32,8 +32,16 @@ type Client interface {
 	AskBindingName(serviceName, componentName string, flags map[string]string) (string, error)
 	// AskBindAsFiles asks if the service should be bound as files
 	AskBindAsFiles(flags map[string]string) (bool, error)
+	// AskNamingStrategy asks the naming strategy to be used for the binding
+	AskNamingStrategy(flags map[string]string) (string, error)
 	// AddBindingToDevfile adds the ServiceBinding manifest to the devfile
-	AddBindingToDevfile(bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error)
+	AddBindingToDevfile(
+		bindingName string,
+		bindAsFiles bool,
+		namingStrategy string,
+		unstructuredService unstructured.Unstructured,
+		obj parser.DevfileObj,
+	) (parser.DevfileObj, error)
 	// AddBinding creates a binding in file and cluster (if options selected)
 	// and returns the selected options, the binding definition as string (if option selected)
 	// and the filename where definition is written (if options selected)
@@ -41,6 +49,7 @@ type Client interface {
 		flags map[string]string,
 		bindingName string,
 		bindAsFiles bool,
+		namingStrategy string,
 		unstructuredService unstructured.Unstructured,
 		workloadName string,
 		workloadGVK schema.GroupVersionKind,

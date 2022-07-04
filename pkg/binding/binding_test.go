@@ -10,12 +10,13 @@ import (
 	"github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
-	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	servicebinding "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -212,6 +213,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 	type args struct {
 		bindingName         string
 		bindAsFiles         bool
+		namingStrategy      string
 		unstructuredService unstructured.Unstructured
 		obj                 parser.DevfileObj
 	}
@@ -238,7 +240,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				unstructuredService: clusterUnstructured,
 				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
 			},
-			want:    getDevfileObjWithServiceBinding(bindingName, false),
+			want:    getDevfileObjWithServiceBinding(bindingName, false, ""),
 			wantErr: false,
 		},
 		{
@@ -257,7 +259,27 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				unstructuredService: clusterUnstructured,
 				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
 			},
-			want:    getDevfileObjWithServiceBinding(bindingName, true),
+			want:    getDevfileObjWithServiceBinding(bindingName, true, ""),
+			wantErr: false,
+		},
+		{
+			name: "successfully added binding for a Service Binding with naming strategy",
+			fields: fields{
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().NewServiceBindingServiceObject(clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
+					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
+					return client
+				},
+			},
+			args: args{
+				bindingName:         bindingName,
+				bindAsFiles:         true,
+				namingStrategy:      "uppercase",
+				unstructuredService: clusterUnstructured,
+				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
+			},
+			want:    getDevfileObjWithServiceBinding(bindingName, true, "uppercase"),
 			wantErr: false,
 		},
 	}
@@ -267,7 +289,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, err := o.AddBindingToDevfile(tt.args.bindingName, tt.args.bindAsFiles, tt.args.unstructuredService, tt.args.obj)
+			got, err := o.AddBindingToDevfile(tt.args.bindingName, tt.args.bindAsFiles, tt.args.namingStrategy, tt.args.unstructuredService, tt.args.obj)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddBindingToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -279,7 +301,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 	}
 }
 
-func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool) parser.DevfileObj {
+func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool, namingStrategy string) parser.DevfileObj {
 	obj := odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs())
 	_ = obj.Data.AddComponents([]v1alpha2.Component{{
 		Name: bindingName,
@@ -288,7 +310,17 @@ func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool) parse
 				K8sLikeComponent: v1alpha2.K8sLikeComponent{
 					BaseComponent: v1alpha2.BaseComponent{},
 					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
-						Inlined: fmt.Sprintf(`apiVersion: binding.operators.coreos.com/v1alpha1
+						Inlined: getServiceBindingInlinedContent(bindAsFiles, namingStrategy),
+					},
+				},
+			},
+		},
+	}})
+	return obj
+}
+
+func getServiceBindingInlinedContent(bindAsFiles bool, namingStrategy string) string {
+	h := fmt.Sprintf(`apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
   creationTimestamp: null
@@ -300,7 +332,8 @@ spec:
     name: my-nodejs-app-app
     version: v1
   bindAsFiles: %v
-  detectBindingResources: true
+  detectBindingResources: true`, bindAsFiles)
+	f := `
   services:
   - group: postgresql.k8s.enterprisedb.io
     id: my-nodejs-app-cluster-sample
@@ -310,11 +343,10 @@ spec:
     version: v1
 status:
   secret: ""
-`, bindAsFiles),
-					},
-				},
-			},
-		},
-	}})
-	return obj
+`
+	if namingStrategy != "" {
+		return fmt.Sprintf(`%s
+  namingStrategy: %s%s`, h, namingStrategy, f)
+	}
+	return h + f
 }

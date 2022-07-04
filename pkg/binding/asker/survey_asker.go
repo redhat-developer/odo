@@ -11,6 +11,14 @@ const (
 	bindAsEnvVar = "Bind As Environment Variables"
 )
 
+const (
+	namingStrategyDefault   = "DEFAULT"
+	namingStrategyNone      = "none"
+	namingStrategylowercase = "lowercase"
+	namingStrategyUpperCase = "uppercase"
+	NamingStrategyCustom    = "CUSTOM"
+)
+
 type Survey struct{}
 
 var _ Asker = (*Survey)(nil)
@@ -53,6 +61,22 @@ func (s *Survey) SelectWorkloadResourceName(names []string) (bool, string, error
 		return true, "", nil
 	}
 	return false, answer, nil
+}
+
+func (s *Survey) SelectNamingStrategy() (string, error) {
+	question := &survey.Select{
+		Message: "Select naming strategy for binding names:",
+		Options: []string{namingStrategyDefault, namingStrategyNone, namingStrategylowercase, namingStrategyUpperCase, NamingStrategyCustom},
+	}
+	var answer string
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return "", err
+	}
+	if answer == namingStrategyDefault {
+		return "", nil
+	}
+	return answer, nil
 }
 
 func (s *Survey) AskWorkloadResourceName() (string, error) {
@@ -111,6 +135,19 @@ func (o *Survey) AskBindAsFiles() (bool, error) {
 		bindAsFile = true
 	}
 	return bindAsFile, nil
+}
+
+func (o *Survey) AskNamingStrategy() (string, error) {
+	question := &survey.Input{
+		Message: "Enter the naming strategy:",
+		Default: "",
+	}
+	var answer string
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return "", err
+	}
+	return answer, nil
 }
 
 func (o *Survey) SelectCreationOptions() ([]CreationOption, error) {

@@ -7,17 +7,19 @@ import (
 	"strings"
 
 	dfutil "github.com/devfile/library/pkg/util"
-	"github.com/redhat-developer/odo/pkg/binding/asker"
-	"github.com/redhat-developer/odo/pkg/kclient"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/redhat-developer/odo/pkg/binding/asker"
+	"github.com/redhat-developer/odo/pkg/kclient"
 )
 
 const (
-	FLAG_WORKLOAD      = "workload"
-	FLAG_SERVICE       = "service"
-	FLAG_NAME          = "name"
-	FLAG_BIND_AS_FILES = "bind-as-files"
+	FLAG_WORKLOAD        = "workload"
+	FLAG_SERVICE         = "service"
+	FLAG_NAME            = "name"
+	FLAG_BIND_AS_FILES   = "bind-as-files"
+	FLAG_NAMING_STRATEGY = "naming-strategy"
 )
 
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
@@ -105,6 +107,10 @@ func (o *FlagsBackend) AskBindAsFiles(flags map[string]string) (bool, error) {
 		return false, fmt.Errorf("unable to set %q to --%v, value must be a boolean", flags[FLAG_BIND_AS_FILES], FLAG_BIND_AS_FILES)
 	}
 	return bindAsFiles, nil
+}
+
+func (o *FlagsBackend) AskNamingStrategy(flags map[string]string) (string, error) {
+	return flags[FLAG_NAMING_STRATEGY], nil
 }
 
 func (o *FlagsBackend) SelectCreationOptions(flags map[string]string) ([]asker.CreationOption, error) {
