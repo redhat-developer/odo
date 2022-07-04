@@ -136,7 +136,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				AppName: testAppName,
 			})
 			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
-			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{})
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{}, 0)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -349,7 +349,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
-			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{})
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{}, 0)
 
 			// Checks for unexpected error cases
 			if err != nil {

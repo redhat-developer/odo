@@ -47,9 +47,8 @@ type Adapter struct {
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
 
-	devfileDebugPort int
-	pod              *corev1.Pod
-	deployment       *appsv1.Deployment
+	pod        *corev1.Pod
+	deployment *appsv1.Deployment
 
 	randomPorts bool
 	errOut      io.Writer
@@ -136,8 +135,6 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 	componentExists := a.deployment != nil
 
-	a.devfileDebugPort = parameters.DebugPort
-
 	podChanged := false
 	var podName string
 
@@ -221,7 +218,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
-	})
+	}, parameters.DebugPort)
 	if err != nil {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
@@ -414,7 +411,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	return nil
 }
 
-func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool, commands libdevfile.DevfileCommands) (err error) {
+func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, isMainStorageEphemeral bool, commands libdevfile.DevfileCommands, devfileDebugPort int) (err error) {
 	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 
@@ -455,7 +452,7 @@ func (a *Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSp
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
 
-	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, commands.DebugCmd, a.devfileDebugPort)
+	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, commands.DebugCmd, devfileDebugPort)
 	if err != nil {
 		return err
 	}
