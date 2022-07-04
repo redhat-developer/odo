@@ -18,19 +18,19 @@ import (
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, syncClient SyncClient, kubeClient kclient.ClientInterface) Adapter {
+func New(syncClient SyncClient, kubeClient kclient.ClientInterface, componentName string) Adapter {
 	return Adapter{
-		kubeClient:     kubeClient,
-		SyncClient:     syncClient,
-		AdapterContext: adapterContext,
+		kubeClient:    kubeClient,
+		SyncClient:    syncClient,
+		ComponentName: componentName,
 	}
 }
 
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
-	kubeClient kclient.ClientInterface
-	SyncClient SyncClient
-	common.AdapterContext
+	kubeClient    kclient.ClientInterface
+	SyncClient    SyncClient
+	ComponentName string
 }
 
 // SyncFiles does a couple of things:
