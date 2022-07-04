@@ -46,9 +46,6 @@ type Adapter struct {
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
-
-	randomPorts bool
-	errOut      io.Writer
 }
 
 // AdapterContext is a construct that is common to all adapters
@@ -69,8 +66,6 @@ func NewKubernetesAdapter(
 	portForwardClient portForward.Client,
 	context AdapterContext,
 	namespace string,
-	randomPorts bool,
-	errOut io.Writer,
 ) Adapter {
 
 	if namespace != "" {
@@ -83,8 +78,6 @@ func NewKubernetesAdapter(
 		portForwardClient: portForwardClient,
 		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
-		randomPorts:       randomPorts,
-		errOut:            errOut,
 	}
 }
 
@@ -402,7 +395,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		a.portForwardClient.StopPortForwarding()
 	}
 
-	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, a.randomPorts, a.errOut)
+	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.RandomPorts, parameters.ErrOut)
 	if err != nil {
 		return fmt.Errorf("fail starting the port forwarding: %w", err)
 	}

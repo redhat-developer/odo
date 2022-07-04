@@ -3,7 +3,6 @@ package component
 import (
 	"encoding/json"
 	"errors"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -135,7 +134,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
+			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "")
 			_, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
@@ -348,7 +347,7 @@ func TestDoesComponentExist(t *testing.T) {
 			})
 
 			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
+			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "")
 			_, err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
@@ -444,7 +443,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
 			prefClient.EXPECT().GetPushTimeout().Return(100 * time.Second)
-			componentAdapter := NewKubernetesAdapter(fkclient, prefClient, nil, adapterCtx, "", false, os.Stdout)
+			componentAdapter := NewKubernetesAdapter(fkclient, prefClient, nil, adapterCtx, "")
 			_, err := componentAdapter.getPod(nil, false)
 
 			// Checks for unexpected error cases

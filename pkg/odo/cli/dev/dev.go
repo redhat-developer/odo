@@ -241,7 +241,20 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			randomPorts: o.randomPortsFlag,
 			errOut:      o.errOut,
 		}
-		err = o.clientset.DevClient.Watch(devFileObj, path, o.ignorePaths, o.out, &d, o.ctx, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.variables)
+		err = o.clientset.DevClient.Watch(
+			devFileObj,
+			path,
+			o.ignorePaths,
+			o.out,
+			&d,
+			o.ctx,
+			o.debugFlag,
+			o.buildCommandFlag,
+			o.runCommandFlag,
+			o.variables,
+			o.randomPortsFlag,
+			o.errOut,
+		)
 	}
 	return err
 }
@@ -280,8 +293,6 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 			Devfile:       devObj,
 		},
 		parameters.EnvSpecificInfo.GetNamespace(),
-		o.randomPorts,
-		o.errOut,
 	), nil
 }
 

@@ -78,6 +78,10 @@ type WatchParameters struct {
 	DebugPort int
 	// Variables override Devfile variables
 	Variables map[string]string
+	// RandomPorts is true to forward containers ports on local random ports
+	RandomPorts bool
+	// ErrOut is a Writer to output forwarded port information
+	ErrOut io.Writer
 }
 
 // evaluateChangesFunc evaluates any file changes for the events by ignoring the files in fileIgnores slice and removes
@@ -351,6 +355,8 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
 		Debug:                    parameters.Debug,
 		DebugPort:                parameters.DebugPort,
+		RandomPorts:              parameters.RandomPorts,
+		ErrOut:                   parameters.ErrOut,
 	}
 	err := parameters.DevfileWatchHandler(pushParams, parameters)
 	if err != nil {

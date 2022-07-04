@@ -1,6 +1,8 @@
 package adapters
 
 import (
+	"io"
+
 	"github.com/redhat-developer/odo/pkg/envinfo"
 )
 
@@ -20,6 +22,8 @@ type PushParameters struct {
 	Debug                    bool                    // Runs the component in debug mode
 	DebugPort                int                     // Port used for remote debugging
 	RunModeChanged           bool                    // It determines if run mode is changed from run to debug or vice versa
+	RandomPorts              bool                    // True to forward containers ports on local random ports
+	ErrOut                   io.Writer               // Writer to output forwarded port information
 }
 
 // SyncParameters is a struct containing the parameters to be used when syncing a devfile component
