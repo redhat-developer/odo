@@ -37,35 +37,11 @@ func NewComponentAdapter(
 	if !ok {
 		return nil, errors.New("error retrieving context for Kubernetes")
 	}
-	return createKubernetesAdapter(adapterContext, kubernetesClient, prefClient, portForwardClient, kc.Namespace, randomPorts, errOut)
 
-}
-
-func createKubernetesAdapter(
-	adapterContext common.AdapterContext,
-	kubernetesClient kclient.ClientInterface,
-	prefClient preference.Client,
-	portForwardClient portForward.Client,
-	namespace string,
-	randomPorts bool,
-	errOut io.Writer,
-) (common.ComponentAdapter, error) {
-	if namespace != "" {
-		kubernetesClient.SetNamespace(namespace)
+	if kc.Namespace != "" {
+		kubernetesClient.SetNamespace(kc.Namespace)
 	}
-	return newKubernetesAdapter(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
-}
 
-func newKubernetesAdapter(
-	adapterContext common.AdapterContext,
-	client kclient.ClientInterface,
-	prefClient preference.Client,
-	portForwardClient portForward.Client,
-	randomPorts bool,
-	errOut io.Writer,
-) (common.ComponentAdapter, error) {
-	// Feed the common metadata to the platform-specific adapter
-	kubernetesAdapter := kubernetes.New(adapterContext, client, prefClient, portForwardClient, randomPorts, errOut)
-
+	kubernetesAdapter := kubernetes.New(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
 	return kubernetesAdapter, nil
 }
