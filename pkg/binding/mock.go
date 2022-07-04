@@ -10,6 +10,7 @@ import (
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/redhat-developer/odo/pkg/api"
+	asker "github.com/redhat-developer/odo/pkg/binding/asker"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -38,11 +39,14 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddBinding mocks base method.
-func (m *MockClient) AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) error {
+func (m *MockClient) AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) ([]asker.CreationOption, string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddBinding", flags, bindingName, bindAsFiles, unstructuredService, workloadName, workloadGVK)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].([]asker.CreationOption)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(string)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
 }
 
 // AddBinding indicates an expected call of AddBinding.

@@ -40,17 +40,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, debug bool) error {
+func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, debug, randomPorts bool, errOut io.Writer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, ignorePaths, path, debug)
+	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, ignorePaths, path, debug, randomPorts, errOut)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths, path, debug interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths, path, debug, randomPorts, errOut interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, ignorePaths, path, debug)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, ignorePaths, path, debug, randomPorts, errOut)
 }
 
 // Watch mocks base method.

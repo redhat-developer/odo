@@ -159,20 +159,20 @@ func (o DevSession) WaitEnd() {
 //  WaitSync waits for the synchronization of files to be finished
 // It returns the contents of the standard and error outputs
 // since the end of the dev mode started or previous sync, and until the end of the synchronization.
-func (o DevSession) WaitSync() ([]byte, []byte, error) {
+func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
 	WaitForOutputToContain("Pushing files...", 180, 10, o.session)
 	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, o.session)
 	outContents := o.session.Out.Contents()
 	errContents := o.session.Err.Contents()
 	err := o.session.Out.Clear()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	err = o.session.Err.Clear()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return outContents, errContents, nil
+	return outContents, errContents, getPorts(string(outContents)), nil
 }
 
 func (o DevSession) CheckNotSynced(timeout time.Duration) {

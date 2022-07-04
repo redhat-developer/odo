@@ -78,14 +78,14 @@ var _ = Describe("E2E Test", func() {
 			devSession, _, _, ports, err = helper.StartDevMode()
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
-			_, _, err = devSession.WaitSync()
+			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from updated Node.js Starter Application!")
 
 			// "changes are made to the applications"
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			_, _, err = devSession.WaitSync()
+			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should deploy new changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
@@ -123,7 +123,7 @@ var _ = Describe("E2E Test", func() {
 
 			// making changes to the project again
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
-			_, _, err = devSession.WaitSync()
+			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 			// "should update the changes"
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
@@ -196,7 +196,7 @@ var _ = Describe("E2E Test", func() {
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js", "from updated Node.js")
 			Expect(err).ToNot(HaveOccurred())
 
-			_, _, err = devSession.WaitSync()
+			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 
 			// "should update the changes"
@@ -205,7 +205,7 @@ var _ = Describe("E2E Test", func() {
 			// "changes are made made to the applications"
 
 			helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from updated Node.js", "from Node.js app v2")
-			_, _, err = devSession.WaitSync()
+			_, _, _, err = devSession.WaitSync()
 			Expect(err).ToNot(HaveOccurred())
 
 			// "should deploy new changes"

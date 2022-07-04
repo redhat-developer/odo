@@ -25,6 +25,8 @@ type Client interface {
 		debug bool,
 		buildCommand string,
 		runCommand string,
+		randomPorts bool,
+		errOut io.Writer,
 	) error
 
 	// Watch watches for any changes to the files under path while ignoring the files/directories in ignorePaths.

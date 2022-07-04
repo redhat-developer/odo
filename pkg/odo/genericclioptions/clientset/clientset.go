@@ -13,6 +13,7 @@ package clientset
 
 import (
 	"github.com/redhat-developer/odo/pkg/logs"
+	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
@@ -52,6 +53,8 @@ const (
 	KUBERNETES = "DEP_KUBERNETES"
 	// LOGS instantiates client for pkg/logs
 	LOGS = "DEP_LOGS"
+	// PORT_FORWARD instantiates client for pkg/portForward
+	PORT_FORWARD = "PORT_FORWARD"
 	// PREFERENCE instantiates client for pkg/preference
 	PREFERENCE = "DEP_PREFERENCE"
 	// PROJECT instantiates client for pkg/project
@@ -71,9 +74,10 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
-	DEV:              {WATCH},
+	DEV:              {KUBERNETES, PORT_FORWARD, PREFERENCE, WATCH},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES},
+	PORT_FORWARD:     {KUBERNETES, STATE},
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
@@ -83,21 +87,22 @@ var subdeps map[string][]string = map[string][]string{
 }
 
 type Clientset struct {
-	AlizerClient     alizer.Client
-	DeleteClient     _delete.Client
-	DeployClient     deploy.Client
-	DevClient        dev.Client
-	FS               filesystem.Filesystem
-	InitClient       _init.Client
-	KubernetesClient kclient.ClientInterface
-	LogsClient       logs.Client
-	PreferenceClient preference.Client
-	ProjectClient    project.Client
-	RegistryClient   registry.Client
-	StateClient      state.Client
-	WatchClient      watch.Client
-	BindingClient    binding.Client
-	/* Add client here */
+	AlizerClient      alizer.Client
+	BindingClient     binding.Client
+	DeleteClient      _delete.Client
+	DeployClient      deploy.Client
+	DevClient         dev.Client
+	FS                filesystem.Filesystem
+	InitClient        _init.Client
+	KubernetesClient  kclient.ClientInterface
+	LogsClient        logs.Client
+	PortForwardClient portForward.Client
+	PreferenceClient  preference.Client
+	ProjectClient     project.Client
+	RegistryClient    registry.Client
+	StateClient       state.Client
+	WatchClient       watch.Client
+	/* Add client by alphabetic order */
 }
 
 func Add(command *cobra.Command, dependencies ...string) {
@@ -168,11 +173,14 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 	if isDefined(command, WATCH) {
 		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient, dep.StateClient)
 	}
-	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.WatchClient)
-	}
 	if isDefined(command, BINDING) {
 		dep.BindingClient = binding.NewBindingClient(dep.KubernetesClient)
+	}
+	if isDefined(command, PORT_FORWARD) {
+		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
+	}
+	if isDefined(command, DEV) {
+		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */

@@ -28,6 +28,7 @@ const requestTimer = (req, res, next) => {
 const app = express();
 const server = http.createServer(app)
 const server2 = http.createServer(app)
+const server3 = http.createServer(app)
 
 // See: http://expressjs.com/en/4x/api.html#app.settings.table
 const PRODUCTION = app.get('env') === 'production';
@@ -68,4 +69,8 @@ server.listen(PORT, () => {
 
 server2.listen(4567, () => {
   console.log(`App started on PORT 4567`);
+});
+
+server3.listen(7890, () => {
+  console.log(`App started on PORT 7890`);
 });
