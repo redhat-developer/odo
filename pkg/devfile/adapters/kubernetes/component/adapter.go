@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 	"io"
+	"path/filepath"
+	"strings"
 
 	"k8s.io/utils/pointer"
 
@@ -317,7 +319,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
 		PodChanged:      podChanged,
-		Files:           common.GetSyncFilesFromAttributes(pushDevfileCommands),
+		Files:           getSyncFilesFromAttributes(pushDevfileCommands),
 	}
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
@@ -671,4 +673,22 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
 func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
+}
+
+// PushCommandsMap stores the commands to be executed as per their types.
+type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
+
+// getSyncFilesFromAttributes gets the target files and folders along with their respective remote destination from the devfile
+// it uses the "dev.odo.push.path" attribute in the run command
+func getSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {
+	syncMap := make(map[string]string)
+	if value, ok := commandsMap[devfilev1.RunCommandGroupKind]; ok {
+		for key, value := range value.Attributes.Strings(nil) {
+			if strings.HasPrefix(key, "dev.odo.push.path:") {
+				localValue := strings.ReplaceAll(key, "dev.odo.push.path:", "")
+				syncMap[filepath.Clean(localValue)] = filepath.ToSlash(filepath.Clean(value))
+			}
+		}
+	}
+	return syncMap
 }

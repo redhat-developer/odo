@@ -1,8 +1,6 @@
 package common
 
 import (
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-
 	"github.com/redhat-developer/odo/pkg/envinfo"
 )
 
@@ -42,12 +40,4 @@ type ComponentInfo struct {
 
 func (ci ComponentInfo) IsEmpty() bool {
 	return len(ci.ContainerName) == 0
-}
-
-// PushCommandsMap stores the commands to be executed as per their types.
-type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
-
-// NewPushCommandMap returns the instance of PushCommandsMap
-func NewPushCommandMap() PushCommandsMap {
-	return make(map[devfilev1.CommandGroupKind]devfilev1.Command)
 }
