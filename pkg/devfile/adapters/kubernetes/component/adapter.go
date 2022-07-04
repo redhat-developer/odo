@@ -47,8 +47,6 @@ type Adapter struct {
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
 
-	pod *corev1.Pod
-
 	randomPorts bool
 	errOut      io.Writer
 }
@@ -92,22 +90,23 @@ func NewKubernetesAdapter(
 
 // getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
 // is true, then the pod is refreshed from the cluster regardless of its current local state
-func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
-	if refresh || a.pod == nil {
+func (a *Adapter) getPod(pod *corev1.Pod, refresh bool) (*corev1.Pod, error) {
+	result := pod
+	if refresh || result == nil {
 		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 
 		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		pod, err := a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, a.prefClient.GetPushTimeout())
+		var err error
+		result, err = a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, a.prefClient.GetPushTimeout())
 		if err != nil {
 			return nil, fmt.Errorf("error while waiting for pod %s: %w", podSelector, err)
 		}
-		a.pod = pod
 	}
-	return a.pod, nil
+	return result, nil
 }
 
-func (a *Adapter) ComponentInfo(command devfilev1.Command) (adapters.ComponentInfo, error) {
-	pod, err := a.getPod(false)
+func (a *Adapter) ComponentInfo(pod *corev1.Pod, command devfilev1.Command) (adapters.ComponentInfo, error) {
+	pod, err := a.getPod(pod, false)
 	if err != nil {
 		return adapters.ComponentInfo{}, err
 	}
@@ -144,7 +143,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
 		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
 		if err == nil {
-			pod, podErr := a.getPod(true)
+			pod, podErr := a.getPod(nil, true)
 			if podErr != nil {
 				return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, podErr)
 			}
@@ -228,7 +227,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.getPod(true)
+	pod, err := a.getPod(nil, true)
 	if err != nil {
 		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
@@ -280,7 +279,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err = a.getPod(true)
+	pod, err = a.getPod(pod, true)
 	if err != nil {
 		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
@@ -326,7 +325,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	// didn't previously exist
 	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
 		err = libdevfile.ExecPostStartEvents(a.Devfile,
-			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name, "", parameters.Show))
+			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, pod.Name, "", parameters.Show))
 		if err != nil {
 			return err
 		}
@@ -354,10 +353,11 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		Adapter:         a,
 		parameters:      parameters,
 		componentExists: componentExists,
+		podName:         pod.GetName(),
 	}
 
 	if commandType == devfilev1.ExecCommandType {
-		running, err = cmdHandler.isRemoteProcessForCommandRunning(cmd)
+		running, err = cmdHandler.isRemoteProcessForCommandRunning(cmd, pod.Name)
 		if err != nil {
 			return err
 		}
@@ -377,7 +377,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
-			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, a.pod.Name,
+			execHandler := component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, pod.Name,
 				"Building your application in container on cluster", parameters.Show)
 			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}

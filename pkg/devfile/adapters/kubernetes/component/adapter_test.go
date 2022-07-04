@@ -445,7 +445,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 			prefClient := preference.NewMockClient(ctrl)
 			prefClient.EXPECT().GetPushTimeout().Return(100 * time.Second)
 			componentAdapter := NewKubernetesAdapter(fkclient, prefClient, nil, adapterCtx, "", false, os.Stdout)
-			_, err := componentAdapter.getPod(false)
+			_, err := componentAdapter.getPod(nil, false)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
