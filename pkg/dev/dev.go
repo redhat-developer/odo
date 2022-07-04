@@ -12,8 +12,8 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog/v2"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -52,7 +52,7 @@ func (o *DevClient) Start(
 	errOut io.Writer,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
-	adapter, err := adapters.NewComponentAdapter(
+	adapter, err := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient,
 		devfileObj.GetMetadataName(), path, "app", devfileObj, namespace, randomPorts, errOut)
 	if err != nil {

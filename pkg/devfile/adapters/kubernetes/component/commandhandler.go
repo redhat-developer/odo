@@ -27,7 +27,7 @@ type adapterHandler struct {
 }
 
 var _ libdevfile.Handler = (*adapterHandler)(nil)
-var _ common.ComponentAdapter = (*adapterHandler)(nil)
+var _ ComponentAdapter = (*adapterHandler)(nil)
 var _ sync.SyncClient = (*adapterHandler)(nil)
 
 func (a *adapterHandler) ApplyImage(_ devfilev1.Component) error {

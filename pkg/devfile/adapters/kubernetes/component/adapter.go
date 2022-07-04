@@ -6,9 +6,6 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/devfile/library/pkg/devfile/generator"
-	devfileCommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
@@ -28,6 +25,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -36,6 +35,58 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
+
+// Adapter is a component adapter implementation for Kubernetes
+type Adapter struct {
+	kubeClient        kclient.ClientInterface
+	prefClient        preference.Client
+	portForwardClient portForward.Client
+
+	common.AdapterContext
+	logger machineoutput.MachineEventLoggingClient
+
+	devfileBuildCmd  string
+	devfileRunCmd    string
+	devfileDebugCmd  string
+	devfileDebugPort int
+	pod              *corev1.Pod
+	deployment       *appsv1.Deployment
+
+	randomPorts bool
+	errOut      io.Writer
+}
+
+var _ sync.SyncClient = (*Adapter)(nil)
+var _ ComponentAdapter = (*Adapter)(nil)
+
+// NewComponentAdapter returns a Devfile adapter for the targeted platform
+func NewKubernetesAdapter(
+	kubernetesClient kclient.ClientInterface,
+	prefClient preference.Client,
+	portForwardClient portForward.Client,
+	componentName string,
+	context string,
+	appName string,
+	devObj parser.DevfileObj,
+	namespace string,
+	randomPorts bool,
+	errOut io.Writer,
+) (Adapter, error) {
+
+	adapterContext := common.AdapterContext{
+		ComponentName: componentName,
+		Context:       context,
+		AppName:       appName,
+		Devfile:       devObj,
+	}
+
+	if namespace != "" {
+		kubernetesClient.SetNamespace(namespace)
+	}
+
+	compAdapter := New(adapterContext, kubernetesClient, prefClient, portForwardClient, randomPorts, errOut)
+	return compAdapter, nil
+}
 
 // New instantiates a component adapter
 func New(
@@ -83,29 +134,6 @@ func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo
 		ContainerName: command.Exec.Component,
 	}, nil
 }
-
-// Adapter is a component adapter implementation for Kubernetes
-type Adapter struct {
-	kubeClient        kclient.ClientInterface
-	prefClient        preference.Client
-	portForwardClient portForward.Client
-
-	common.AdapterContext
-	logger machineoutput.MachineEventLoggingClient
-
-	devfileBuildCmd  string
-	devfileRunCmd    string
-	devfileDebugCmd  string
-	devfileDebugPort int
-	pod              *corev1.Pod
-	deployment       *appsv1.Deployment
-
-	randomPorts bool
-	errOut      io.Writer
-}
-
-var _ sync.SyncClient = (*Adapter)(nil)
-var _ common.ComponentAdapter = (*Adapter)(nil)
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
@@ -335,7 +363,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return err
 	}
 
-	commandType, err := devfileCommon.GetCommandType(cmd)
+	commandType, err := parsercommon.GetCommandType(cmd)
 	if err != nil {
 		return err
 	}

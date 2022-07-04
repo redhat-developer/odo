@@ -16,8 +16,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/dev"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	kcomponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -248,7 +248,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
 func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
-	var adapter common.ComponentAdapter
+	var adapter kcomponent.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
 	if err != nil {
@@ -263,13 +263,13 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, wat
 	return nil
 }
 
-func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (kcomponent.ComponentAdapter, error) {
 	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
 	if err != nil {
 		return nil, err
 	}
 
-	return adapters.NewComponentAdapter(
+	return kcomponent.NewKubernetesAdapter(
 		o.clientset.KubernetesClient,
 		o.clientset.PreferenceClient,
 		o.clientset.PortForwardClient,
