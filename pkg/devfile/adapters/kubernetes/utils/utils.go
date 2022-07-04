@@ -9,9 +9,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
-	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/storage"
+)
+
+const (
+	// _envProjectsRoot is the env defined for project mount in a component container when component's mountSources=true
+	_envProjectsRoot = "PROJECTS_ROOT"
+
+	// _envDebugPort is the env defined in the runtime component container which holds the debug port for remote debugging
+	_envDebugPort = "DEBUG_PORT"
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
@@ -64,7 +71,7 @@ func AddOdoProjectVolume(containers *[]corev1.Container) {
 	}
 	for i, container := range *containers {
 		for _, env := range container.Env {
-			if env.Name == adaptersCommon.EnvProjectsRoot {
+			if env.Name == _envProjectsRoot {
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 					Name:      storage.OdoSourceVolume,
 					MountPath: env.Value,
@@ -172,11 +179,11 @@ func UpdateContainerEnvVars(
 
 		// Check if the container belongs to a debug command component
 		for _, c := range debugContainers {
-			if container.Name == c && !isEnvPresent(container.Env, adaptersCommon.EnvDebugPort) {
+			if container.Name == c && !isEnvPresent(container.Env, _envDebugPort) {
 				klog.V(2).Infof("Updating container %v env with debug command's debugPort", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
-						Name:  adaptersCommon.EnvDebugPort,
+						Name:  _envDebugPort,
 						Value: strconv.Itoa(devfileDebugPort),
 					})
 				break

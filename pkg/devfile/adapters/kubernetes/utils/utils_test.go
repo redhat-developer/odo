@@ -16,7 +16,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	appsv1 "k8s.io/api/apps/v1"
 
-	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 
@@ -120,7 +119,7 @@ func TestAddOdoProjectVolume(t *testing.T) {
 					Name: "container1",
 					Env: []corev1.EnvVar{
 						{
-							Name:  adaptersCommon.EnvProjectsRoot,
+							Name:  _envProjectsRoot,
 							Value: "/path1",
 						},
 					},
@@ -129,7 +128,7 @@ func TestAddOdoProjectVolume(t *testing.T) {
 					Name: "container2",
 					Env: []corev1.EnvVar{
 						{
-							Name:  adaptersCommon.EnvProjectsRoot,
+							Name:  _envProjectsRoot,
 							Value: "/path2",
 						},
 					},
@@ -860,7 +859,7 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 						for _, envVar := range container.Env {
 							// if the debug command is also present
 							if len(tt.execCommands) >= 2 {
-								if envVar.Name == adaptersCommon.EnvDebugPort {
+								if envVar.Name == _envDebugPort {
 									// check if the debug command's debugPort env was set properly
 									envDebugPortMatched = true
 								}
@@ -876,7 +875,7 @@ func TestUpdateContainerEnvVars(t *testing.T) {
 
 			if len(tt.execCommands) >= 2 && !envDebugPortMatched {
 				t.Errorf("TestUpdateContainerEnvVars error: missing env var %s in container %q",
-					adaptersCommon.EnvDebugPort, cmp)
+					_envDebugPort, cmp)
 			}
 		})
 	}
