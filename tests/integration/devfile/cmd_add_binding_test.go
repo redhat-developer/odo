@@ -40,7 +40,69 @@ var _ = Describe("odo add binding command tests", func() {
 	})
 
 	It("should create a binding using the workload parameter", func() {
-		helper.Cmd("odo", "add", "binding", "--name", "aname", "--service", "cluster-sample", "--workload", "app/Deployment.apps").ShouldPass()
+		stdout := helper.Cmd("odo", "add", "binding",
+			"--name", "aname",
+			"--service", "cluster-sample",
+			"--workload", "app/Deployment.apps",
+		).ShouldPass().Out()
+		Expect(stdout).To(BeEquivalentTo(`apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  creationTimestamp: null
+  name: aname
+spec:
+  application:
+    group: apps
+    kind: Deployment
+    name: app
+    version: v1
+  bindAsFiles: true
+  detectBindingResources: true
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: aname
+    kind: Cluster
+    name: cluster-sample
+    resource: clusters
+    version: v1
+status:
+  secret: ""
+
+`))
+	})
+
+	It("should create a binding using the workload parameter and naming strategy", func() {
+		stdout := helper.Cmd("odo", "add", "binding",
+			"--name", "aname",
+			"--service", "cluster-sample",
+			"--workload", "app/Deployment.apps",
+			"--naming-strategy", "lowercase",
+		).ShouldPass().Out()
+		Expect(stdout).To(BeEquivalentTo(`apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  creationTimestamp: null
+  name: aname
+spec:
+  application:
+    group: apps
+    kind: Deployment
+    name: app
+    version: v1
+  bindAsFiles: true
+  detectBindingResources: true
+  namingStrategy: lowercase
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: aname
+    kind: Cluster
+    name: cluster-sample
+    resource: clusters
+    version: v1
+status:
+  secret: ""
+
+`))
 	})
 
 	When("the component is bootstrapped", func() {
