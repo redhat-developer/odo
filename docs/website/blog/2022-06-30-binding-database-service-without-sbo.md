@@ -15,11 +15,11 @@ There are a few ways of binding your application to a database service with the 
 
 
 ## Architecture
-We have a simple CRUD application built in Go that can create/list/update/delete a place. This application requires connecting to a mongodb database in order to function correctly, which will be deployed as a microservice on the cluster.
+We have a simple CRUD application built in Go that can create/list/update/delete a place. This application requires connecting to a MongoDB database in order to function correctly, which will be deployed as a microservice on the cluster.
 
 ## Prerequisites:
 This blog assumes:
-- you have access to a Kubernetes or OpenShift cluster.
+- you have admin access to a Kubernetes or OpenShift cluster to be able to install the MongoDB operator.
 - you have _Helm_ installed on your system. See https://helm.sh/docs/intro/install/ for installation instructions.
 
 ## Setting up the application
@@ -35,8 +35,8 @@ odo create namespace restapi-mongodb
 ```
 
 
-## Setting up the mongodb microservice
-We are going to use the Percona's operator for creating our mongodb database. For the sake of simplicity, we will use Helm to deploy our mongodb operator and the service.
+## Setting up the MongoDB microservice
+We are going to use the Percona's operator for creating our MongoDB database. For the sake of simplicity, we will use Helm to deploy our MongoDB operator and the service.
 
 3. Add the Percona’s Helm charts repository and make your Helm client up to date with it:
 ```sh
@@ -97,7 +97,7 @@ my-op-psmdb-operator-69d88f479c-7hj5m   1/1     Running   0          3m34s
 odo init --devfile go --name places
 ```
 
-7. Edit the 'runtime' component container in devfile to add information such as username, password, and host required to connect to the mongodb service.
+7. Edit the 'runtime' container component in devfile to add information such as username, password, and host required to connect to the MongoDB service.
 ```yaml
 components:
 - container:
@@ -113,8 +113,10 @@ components:
   name: runtime
 ```
 
-The _username_, and _password_ values are hard-coded here as a part of the helm deployment, but their value can be obtained from the secret resource called `minimal-cluster` that was deployed via our local helm chart `psmdb-db`.
-The value for _host_ is name of the service that belongs to our database application.
+The _username_, and _password_ values are hard-coded here as a part of the helm deployment, but their value can be obtained from the secret resource called "minimal-cluster" that was deployed via our local helm chart "psmdb-db".
+
+The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "minimal-cluster-mongos".
+Optionally, you can run `kubectl get psmdb/minimal-cluster -ojsonpath='{.status.host}'` to obtain the host's value.
 
 ## Deploy the application
 8. Run `odo dev` to deploy the application on the cluster.
