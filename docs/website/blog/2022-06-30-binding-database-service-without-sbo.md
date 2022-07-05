@@ -22,28 +22,68 @@ This blog assumes:
 - you have admin access to a Kubernetes or OpenShift cluster to be able to install the MongoDB operator.
 - you have _Helm_ installed on your system. See https://helm.sh/docs/intro/install/ for installation instructions.
 
+## (Optional) Setting up the namespace
+0. We will create a new namespace to deploy our application in, with the help of odo.
+```sh
+odo create namespace restapi-mongodb
+```
+
 ## Setting up the application
 1. Clone the repository, and cd into it.
 ```sh
 git clone https://github.com/valaparthvi/restapi-mongodb-odo.git && cd restapi-mongodb-odo
 ```
 
-## Setting up the namespace
-2. We will create a new namespace to deploy our application in, with the help of odo.
+
+## Download the devfile.yaml
+2. Run `odo init` to fetch the necessary devfile.
 ```sh
-odo create namespace restapi-mongodb
+odo init --devfile go --name places
 ```
 
+
+## Deploy the application
+3. Run `odo dev` to deploy the application on the cluster.
+```sh
+$ odo dev
+  __
+ /  \__     Developing using the restapi Devfile
+ \__/  \    Namespace: restapi-mongodb
+ /  \__/    odo version: v3.0.0-alpha3
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [52s]
+ ✓  Syncing files into the container [844ms]
+ ✓  Building your application in container on cluster (command: build) [5s]
+ •  Executing the application (command: run)  ...
+ ✗  Executing the application (command: run) [186ms]
+ ⚠  Devfile command "run" exited with an error status in 20 second(s)
+ ⚠  Last 100 lines of log:
+go: downloading github.com/spf13/viper v1.11.0
+...
+...
+2022/07/05 05:39:47 No binding username found
+
+Your application is now running on the cluster
+
+ - Forwarding from 127.0.0.1:40001 -> 3000
+
+Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+```
+
+You will notice that the 'run' command has failed with some logs, this is expected, because like we mentioned before, our Go application is dependent on the MongoDB service and will not function unless it is connected to it.
 
 ## Setting up the MongoDB microservice
 We are going to use the Percona's operator for creating our MongoDB database. For the sake of simplicity, we will use Helm to deploy our MongoDB operator and the service.
 
-3. Add the Percona’s Helm charts repository and make your Helm client up to date with it:
+4. Add the Percona’s Helm charts repository and make your Helm client up to date with it:
 ```sh
 helm repo add percona https://percona.github.io/percona-helm-charts/ && helm repo update
 ```
 
-4. Install Percona Operator for MongoDB:
+5. Install Percona Operator for MongoDB:
 ```sh
 helm install my-op percona/psmdb-operator
 ```
@@ -54,7 +94,7 @@ NAME                                    READY   STATUS    RESTARTS   AGE
 my-op-psmdb-operator-69d88f479c-7hj5m   1/1     Running   0          3m34s
 ```
 
-5. Install Percona server for MongoDB from our local `psmdb-db` Helm chart.
+6. Install Percona server for MongoDB from our local `psmdb-db` Helm chart.
 ```sh
 helm install my-db ./psmdb-db
 ```
@@ -91,11 +131,7 @@ minimal-cluster-rs0-0                   1/1     Running   0          3m5s
 my-op-psmdb-operator-69d88f479c-7hj5m   1/1     Running   0          3m34s
 ```
 
-## Download the devfile.yaml
-6. Run `odo init` to fetch the necessary devfile.
-```sh
-odo init --devfile go --name places
-```
+## Adding the connection information to devfile.yaml
 
 7. Edit the 'runtime' container component in devfile to add information such as username, password, and host required to connect to the MongoDB service.
 ```yaml
@@ -118,24 +154,22 @@ The _username_, and _password_ values are hard-coded here as a part of the helm 
 The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "minimal-cluster-mongos".
 Optionally, you can run `kubectl get psmdb/minimal-cluster -ojsonpath='{.status.host}'` to obtain the host's value.
 
-## Deploy the application
-8. Run `odo dev` to deploy the application on the cluster.
+We acknowledge that exposing password in the devfile.yaml is a bad practice, but for the sake of this example we will stick to it. For a more secure solution, we recommend going the SBO way.
+
+Changing the devfile.yaml will trigger the `odo dev` command to push the changes and execute the run commands again, wait for it to finish execution.
 ```sh
 $ odo dev
-  __
- /  \__     Developing using the restapi Devfile
- \__/  \    Namespace: restapi-mongodb
- /  \__/    odo version: v3.0.0-alpha3
- \__/
+...
+2022/07/05 05:39:47 No binding username found
+...
+...
+File /home/pvala/restapi-mongodb-odo/devfile.yaml changed
+Pushing files...
 
-↪ Deploying to the cluster in developer mode
- ✓  Waiting for Kubernetes resources [52s]
- ✓  Syncing files into the container [844ms]
- ✓  Building your application in container on cluster (command: build) [5s]
+ ✓  Waiting for Kubernetes resources [35s]
+ ✓  Syncing files into the container [173ms]
+ ✓  Building your application in container on cluster (command: build) [13s]
  •  Executing the application (command: run)  ...
-
-Your application is now running on the cluster
-
  - Forwarding from 127.0.0.1:40001 -> 3000
 
 Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
