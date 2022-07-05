@@ -7,11 +7,11 @@ tags: ["binding"]
 slug: binding-database-service-without-sbo
 ---
 
-How to bind to your application to a database service without SBO.
+How to bind to your application to a database service without the Service Binding Operator.
 
 <!--truncate-->
 
-There are a few ways of binding your application to a database service with the help of odo. The recommended way is with the help of Service Binding Operator, but it is also possible to bind without it, and this blog will show you how.
+There are a few ways of binding your application to a database service with the help of odo. The recommended way is with the help of Service Binding Operator(SBO), but it is also possible to bind without it, and this blog will show you how.
 
 
 ## Architecture
@@ -19,6 +19,7 @@ We have a simple CRUD application built in Go that can create/list/update/delete
 
 ## Prerequisites:
 This blog assumes:
+- [odo v3.0.0-beta1](https://github.com/redhat-developer/odo/releases/tag/v3.0.0-beta1)
 - you have admin access to a Kubernetes or OpenShift cluster to be able to install the MongoDB operator.
 - you have _Helm_ installed on your system. See https://helm.sh/docs/intro/install/ for installation instructions.
 
@@ -35,17 +36,34 @@ git clone https://github.com/valaparthvi/restapi-mongodb-odo.git && cd restapi-m
 ```
 
 
+## Export environment variables
+2. Export the necessary environment variables:
+```sh
+export MY_MONGODB_ROOT_USERNAME=root
+export MY_MONGODB_ROOT_PASSWORD=my-super-secret-root-password
+export MY_MONGODB_USERNAME=my-app-username
+export MY_MONGODB_PASSWORD=my-app-super-secret-password
+export MY_MONGODB_DATABASE=my-app
+```
+
+
 ## Download the devfile.yaml
-2. Run `odo init` to fetch the necessary devfile.
+3. Run `odo init` to fetch the necessary devfile.
 ```sh
 odo init --devfile go --name places
 ```
 
 
 ## Deploy the application
-3. Run `odo dev` to deploy the application on the cluster.
+4. Run `odo dev` to deploy the application on the cluster.
 ```sh
-$ odo dev
+odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME
+```
+<details>
+<summary>Expected output:</summary>
+
+```sh
+$ odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME
   __
  /  \__     Developing using the restapi Devfile
  \__/  \    Namespace: restapi-mongodb
@@ -72,68 +90,103 @@ Your application is now running on the cluster
 Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
+</details>
 
 You will notice that the 'run' command has failed with some logs, this is expected, because like we mentioned before, our Go application is dependent on the MongoDB service and will not function unless it is connected to it.
 
 ## Setting up the MongoDB microservice
-We are going to use the Percona's operator for creating our MongoDB database. For the sake of simplicity, we will use Helm to deploy our MongoDB operator and the service.
+We are going to use the Bitnami's helm charts for creating our MongoDB database.
 
-4. Add the Percona’s Helm charts repository and make your Helm client up to date with it:
+5. Add the Bitnami's Helm charts repository and make your Helm client up to date with it:
 ```sh
-helm repo add percona https://percona.github.io/percona-helm-charts/ && helm repo update
+helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update
 ```
 
-5. Install Percona Operator for MongoDB:
+6. Create the MongoDB service.
 ```sh
-helm install my-op percona/psmdb-operator
-```
-Wait for the pod to come up:
-```sh
-$ kubectl get pods
-NAME                                    READY   STATUS    RESTARTS   AGE
-my-op-psmdb-operator-69d88f479c-7hj5m   1/1     Running   0          3m34s
+helm install mongodb bitnami/mongodb \
+  --set auth.rootPassword=$MY_MONGODB_ROOT_PASSWORD \
+  --set auth.username=$MY_MONGODB_USERNAME \
+  --set auth.password=$MY_MONGODB_PASSWORD \
+  --set auth.database=$MY_MONGODB_DATABASE
 ```
 
-6. Install Percona server for MongoDB from our local `psmdb-db` Helm chart.
-```sh
-helm install my-db ./psmdb-db
-```
+<details>
+<summary>Expected output:</summary>
 
 ```sh
-$ helm install my-db ./psmdb-db
-
-NAME: my-db
-LAST DEPLOYED: Mon Jul  4 13:49:26 2022
+$ helm install mongodb bitnami/mongodb \
+  --set auth.rootPassword=$MY_MONGODB_ROOT_PASSWORD \
+  --set auth.username=$MY_MONGODB_USERNAME \
+  --set auth.password=$MY_MONGODB_PASSWORD \
+  --set auth.database=$MY_MONGODB_DATABASE
+NAME: mongodb
+LAST DEPLOYED: Tue Jul  5 15:53:40 2022
 NAMESPACE: restapi-mongodb
 STATUS: deployed
 REVISION: 1
 TEST SUITE: None
 NOTES:
-To get a MongoDB prompt inside your new cluster you can run:
+CHART NAME: mongodb
+CHART VERSION: 12.1.24
+APP VERSION: 5.0.9
 
-  ADMIN_USER=$(kubectl -n restapi-mongodb get secrets minimal-cluster -o jsonpath="{.data.MONGODB_USER_ADMIN_USER}" | base64 --decode)
-  ADMIN_PASSWORD=$(kubectl -n restapi-mongodb get secrets minimal-cluster -o jsonpath="{.data.MONGODB_USER_ADMIN_PASSWORD}" | base64 --decode)
+** Please be patient while the chart is being deployed **
 
-And then for replica set:
-  $ kubectl run -i --rm --tty percona-client --image=percona/percona-server-mongodb:4.4 --restart=Never -- mongo "mongodb+srv://${ADMIN_USER}:${ADMIN_PASSWORD}@minimal-cluster-rs0.restapi-mongodb.svc.cluster.local/admin?replicaSet=rs0&ssl=false"
+MongoDB&reg; can be accessed on the following DNS name(s) and ports from within your cluster:
 
-Or for sharding setup:
-  $ kubectl run -i --rm --tty percona-client --image=percona/percona-server-mongodb:4.4 --restart=Never -- mongo "mongodb://${ADMIN_USER}:${ADMIN_PASSWORD}@minimal-cluster-mongos.restapi-mongodb.svc.cluster.local/admin?ssl=false"
+    mongodb.restapi-mongodb.svc.cluster.local
+
+To get the root password run:
+
+    export MONGODB_ROOT_PASSWORD=$(kubectl get secret --namespace restapi-mongodb mongodb -o jsonpath="{.data.mongodb-root-password}" | base64 -d)
+
+To get the password for "my-app-username" run:
+
+    export MONGODB_PASSWORD=$(kubectl get secret --namespace restapi-mongodb mongodb -o jsonpath="{.data.mongodb-passwords}" | base64 -d | awk -F'
+,' '{print $1}')
+
+To connect to your database, create a MongoDB&reg; client container:
+
+    kubectl run --namespace restapi-mongodb mongodb-client --rm --tty -i --restart='Never' --env="MONGODB_ROOT_PASSWORD=$MONGODB_ROOT_PASSWORD" --
+image docker.io/bitnami/mongodb:5.0.9-debian-11-r1 --command -- bash
+
+Then, run the following command:
+    mongosh admin --host "mongodb" --authenticationDatabase admin -u root -p $MONGODB_ROOT_PASSWORD
+
+To connect to your database from outside the cluster execute the following commands:
+
+    kubectl port-forward --namespace restapi-mongodb svc/mongodb 27017:27017 &
+    mongosh --host 127.0.0.1 --authenticationDatabase admin -p $MONGODB_ROOT_PASSWORD
+
 ```
+</details>
+
+Notice the resources(sevice, deployment, and secrets) that are deployed.
 
 Wait for the pods to come up, this might take a few minutes:
 ```sh
 $ kubectl get pods
-NAME                                    READY   STATUS    RESTARTS   AGE
-minimal-cluster-cfg-0                   1/1     Running   0          3m6s
-minimal-cluster-mongos-0                1/1     Running   0          3m5s
-minimal-cluster-rs0-0                   1/1     Running   0          3m5s
-my-op-psmdb-operator-69d88f479c-7hj5m   1/1     Running   0          3m34s
+NAME                       READY   STATUS    RESTARTS   AGE
+mongodb-85fff797f6-fnwvl   1/1     Running   0          63s
 ```
 
 ## Adding the connection information to devfile.yaml
+There are 3 changes that we will need to make to our devfile:
 
-7. Edit the 'runtime' container component in devfile to add information such as username, password, and host required to connect to the MongoDB service.
+7.1 Change the `schemaVersion` of devfile to 2.2.0. This change is required to use certain features of the devfile.
+```yaml
+schemaVersion: 2.2.0
+```
+Please note that this change is only necessary because we are using [devfile variable substitution](https://odo.dev/docs/command-reference/dev/#substituting-variables).
+
+7.2 Add a `variables` field in the devfile.
+```yaml
+variables:
+  PASSWORD: password
+  USERNAME: user
+```
+7.3 Edit the 'runtime' container component in devfile to add information such as username, password, and host required to connect to the MongoDB service.
 ```yaml
 components:
 - container:
@@ -141,24 +194,87 @@ components:
     ...
     env:
     - name: username
-      value: userAdmin
+      value: "{{USERNAME}}"
     - name: password
-      value: userAdmin123456
+      value: "{{PASSWORD}}"
     - name: host
-      value: minimal-cluster-mongos
+      value: "mongodb"
   name: runtime
 ```
 
-The _username_, and _password_ values are hard-coded here as a part of the helm deployment, but their value can be obtained from the secret resource called "minimal-cluster" that was deployed via our local helm chart "psmdb-db".
+The _username_, and _password_ values were passed to devfile.yaml when we ran the `odo dev` command.
 
-The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "minimal-cluster-mongos".
-Optionally, you can run `kubectl get psmdb/minimal-cluster -ojsonpath='{.status.host}'` to obtain the host's value.
+The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "mongodb", you might have noticed it when we deployed the helm chart.
 
-We acknowledge that exposing password in the devfile.yaml is a bad practice, but for the sake of this example we will stick to it. For a more secure solution, we recommend going the SBO way.
+<details>
+<summary>Your final devfile.yaml should look something like this:</summary>
+
+```yaml
+commands:
+- exec:
+    commandLine: GOCACHE=${PROJECT_SOURCE}/.cache go build main.go
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    hotReloadCapable: false
+    workingDir: ${PROJECT_SOURCE}
+  id: build
+- exec:
+    commandLine: ./main
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    hotReloadCapable: false
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+components:
+- container:
+    dedicatedPod: false
+    endpoints:
+    - name: port-3000-tcp
+      protocol: tcp
+      secure: false
+      targetPort: 3000
+    image: golang:latest
+    memoryLimit: 1024Mi
+    mountSources: true
+    env:
+    - name: username
+      value: "{{USERNAME}}"
+    - name: password
+      value: "{{PASSWORD}}"
+    - name: host
+      value: mongodb
+  name: runtime
+variables:
+  PASSWORD: password
+  USERNAME: user
+metadata:
+  description: Stack with the latest Go version
+  displayName: Go Runtime
+  icon: https://raw.githubusercontent.com/devfile-samples/devfile-stack-icons/main/golang.svg
+  language: go
+  name: restapi
+  projectType: go
+  tags:
+  - Go
+  version: 1.0.0
+schemaVersion: 2.2.0
+starterProjects:
+- git:
+    checkoutFrom:
+      revision: main
+    remotes:
+      origin: https://github.com/devfile-samples/devfile-stack-go.git
+  name: go-starter
+```
+</details>
 
 Changing the devfile.yaml will trigger the `odo dev` command to push the changes and execute the run commands again, wait for it to finish execution.
 ```sh
-$ odo dev
+$ odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME
 ...
 2022/07/05 05:39:47 No binding username found
 ...
@@ -177,18 +293,18 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
 
 ## Accessing the application
-9. Run the following curl command to test the application:
+8. Run the following curl command to test the application:
 ```sh
 curl 127.0.0.1:40001/api/places
 ```
 This will return a _null_ response since the database is currently empty, but it also means that we have successfully connected to our database application.
 
-10. Add some data to the database:
+9. Add some data to the database:
 ```sh
 curl -sSL -XPOST -d '{"title": "Agra", "description": "Land of Tajmahal"}' 127.0.0.1:40001/api/places
 ```
 
-11. Fetch the list of places again:
+10. Fetch the list of places again:
 ```sh
 $ curl 127.0.0.1:40001/api/places
 
@@ -203,4 +319,8 @@ $ curl 127.0.0.1:40001/api/places
 - DELETE `/api/places/<id>` - Delete place with id `<id>`
 
 ## Conclusion
-To conclude this blog, it is possible to connect your application with another microservice without the Service Binding Operator if you have the correct connection information. Using SBO with a bindable operator makes it easy for you to not care about finding the connection information and ease the binding.
+To conclude this blog, it is possible to connect your application with another microservice without the Service Binding Operator if you have the correct connection information. Using the Service Binding Operator with a [Bindable Operator](https://github.com/redhat-developer/service-binding-operator#known-bindable-operators) makes it easy for you to not care about finding the connection information and ease the binding.
+
+### Related articles on binding:
+* [Binding an external service with odo v3](../blog/2022-06-14-binding-external-service.md)
+* [odo add binding](../../website/docs/command-reference/add-binding.md)
