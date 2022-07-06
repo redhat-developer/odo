@@ -3,8 +3,12 @@ package component
 import (
 	"fmt"
 
+	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/service"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -42,4 +46,34 @@ func (a *Adapter) getPodName() (string, error) {
 		podName = pod.GetName()
 	}
 	return podName, nil
+}
+
+// pushKubernetesComponents gets the Kubernetes components from the Devfile and push them to the cluster
+// adding the specified labels to them
+func (a *Adapter) pushKubernetesComponents(
+	labels map[string]string,
+) ([]v1alpha2.Component, error) {
+	// fetch the "kubernetes inlined components" to create them on cluster
+	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
+	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
+	if err != nil {
+		return nil, fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
+	}
+
+	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
+	err = service.ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the annotations for the component type
+	annotations := make(map[string]string)
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
+
+	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
+	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+	}
+	return k8sComponents, nil
 }

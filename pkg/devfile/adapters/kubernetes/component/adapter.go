@@ -9,7 +9,6 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -142,13 +141,6 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
 
-	// Set the mode to Dev since we are using "odo dev" here
-	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
-
-	// Set the annotations for the component type
-	annotations := make(map[string]string)
-	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
-
 	previousMode := parameters.EnvSpecificInfo.GetRunMode()
 	currentMode := envinfo.Run
 
@@ -165,23 +157,12 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		parameters.RunModeChanged = true
 	}
 
-	// fetch the "kubernetes inlined components" to create them on cluster
-	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
-	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
-	if err != nil {
-		return fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
-	}
+	// Set the mode to Dev since we are using "odo dev" here
+	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
 
-	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = service.ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
+	k8sComponents, err := a.pushKubernetesComponents(labels)
 	if err != nil {
 		return err
-	}
-
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 
 	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
