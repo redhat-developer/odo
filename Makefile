@@ -30,7 +30,7 @@ else
 endif
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
-SLOW_SPEC_THRESHOLD := 120
+SLOW_SPEC_THRESHOLD := 120s
 
 # Env variable GINKGO_TEST_ARGS is used to get control over enabling ginkgo test flags against each test target run.
 # For example:
@@ -45,7 +45,7 @@ export ODO_LOG_LEVEL ?= 4
 # To enable verbosity export or set env GINKGO_TEST_ARGS like "GINKGO_TEST_ARGS=-v"
 UNIT_TEST_ARGS ?=
 
-GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
+GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --slow-spec-threshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
 
 # Flags for tests that must not be run in parallel.
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
@@ -53,7 +53,7 @@ GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 
-RUN_GINKGO = GOFLAGS='-mod=vendor' go run $(COMMON_GOFLAGS) github.com/onsi/ginkgo/ginkgo
+RUN_GINKGO = go run -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 
 default: bin
 

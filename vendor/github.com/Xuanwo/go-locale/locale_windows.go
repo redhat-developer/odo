@@ -1,5 +1,3 @@
-// +build !integration_test
-
 package locale
 
 import (

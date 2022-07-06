@@ -24,7 +24,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/kr/pty"
+	"github.com/creack/pty"
 )
 
 // Console is an interface to automate input and output for interactive
@@ -155,7 +155,7 @@ func NewConsole(opts ...ConsoleOpt) (*Console, error) {
 	if err != nil {
 		return nil, err
 	}
-	closers = append(options.Closers, passthroughPipe)
+	closers = append(closers, passthroughPipe)
 
 	c := &Console{
 		opts:            options,

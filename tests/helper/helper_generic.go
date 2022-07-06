@@ -18,11 +18,9 @@ import (
 	"github.com/redhat-developer/odo/pkg/preference"
 	"github.com/redhat-developer/odo/pkg/segment"
 
-	"github.com/redhat-developer/odo/tests/helper/reporter"
-
 	dfutil "github.com/devfile/library/pkg/util"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -213,10 +211,10 @@ func CommonBeforeEach() CommonVar {
 func CommonAfterEach(commonVar CommonVar) {
 	// Get details, including test filename, test case name, test result, and test duration for each test spec and adds it to local testResults.txt file
 	// Ginkgo test related variables
-	commonVar.testFileName = strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1) + ".go"
-	commonVar.testCase = CurrentGinkgoTestDescription().FullTestText
-	commonVar.testFailed = CurrentGinkgoTestDescription().Failed
-	commonVar.testDuration = CurrentGinkgoTestDescription().Duration.Seconds()
+	commonVar.testFileName = CurrentSpecReport().ContainerHierarchyLocations[0].FileName
+	commonVar.testCase = CurrentSpecReport().FullText()
+	commonVar.testFailed = CurrentSpecReport().Failed()
+	commonVar.testDuration = CurrentSpecReport().RunTime.Seconds()
 
 	var prNum string
 	var resultsRow string
@@ -287,9 +285,10 @@ func JsonPathContentIsValidUserPort(json string, path string) {
 
 // SetProjectName sets projectNames based on the name of the test file name (without path and replacing _ with -), line number of current ginkgo execution, and a random string of 3 letters
 func SetProjectName() string {
-	// Get current test filename and remove file path, file extension and replace undescores with hyphens
-	currGinkgoTestFileName := strings.Replace(CurrentGinkgoTestDescription().FileName[strings.LastIndex(CurrentGinkgoTestDescription().FileName, "/")+1:strings.LastIndex(CurrentGinkgoTestDescription().FileName, ".")], "_", "-", -1)
-	currGinkgoTestLineNum := strconv.Itoa(CurrentGinkgoTestDescription().LineNumber)
+	//Get current test filename and remove file path, file extension and replace undescores with hyphens
+	currGinkgoTestFileName := strings.Replace(strings.Split(strings.Split(CurrentSpecReport().
+		ContainerHierarchyLocations[0].FileName, "/")[len(strings.Split(CurrentSpecReport().ContainerHierarchyLocations[0].FileName, "/"))-1], ".")[0], "_", "-", -1)
+	currGinkgoTestLineNum := fmt.Sprint(CurrentSpecReport().LineNumber())
 	projectName := currGinkgoTestFileName + currGinkgoTestLineNum + RandString(3)
 	return projectName
 }
@@ -298,7 +297,7 @@ func SetProjectName() string {
 func RunTestSpecs(t *testing.T, description string) {
 	os.Setenv(segment.DisableTelemetryEnv, "true")
 	RegisterFailHandler(Fail)
-	RunSpecsWithDefaultAndCustomReporters(t, description, []Reporter{reporter.JunitReport("../../reports/")})
+	RunSpecs(t, description)
 }
 
 func IsKubernetesCluster() bool {

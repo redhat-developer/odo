@@ -7,7 +7,7 @@ import (
 
 	"github.com/redhat-developer/odo/tests/helper"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

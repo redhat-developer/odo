@@ -28,6 +28,7 @@ Now, 256 colors and RGB colors have also been supported to work in Windows CMD a
     - 16-color output is the most commonly used and most widely supported, working on any Windows version
     - Since `v1.2.4` **the 256-color (8-bit), true color (24-bit) support windows CMD and PowerShell**
     - See [this gist](https://gist.github.com/XVilka/8346728) for information on true color support
+  - Support converts `HEX` `HSL` value to RGB color
   - Generic API methods: `Print`, `Printf`, `Println`, `Sprint`, `Sprintf`
   - Supports HTML tag-style color rendering, such as `<green>message</>`.
     - In addition to using built-in tags, it also supports custom color attributes
@@ -417,6 +418,14 @@ rgb.Println("rgb color")
 rgb.C256().Println("256 color")
 ```
 
+**More functions for convert to `RGBColor`**:
+
+- `func RGBFromSlice(rgb []uint8, isBg ...bool) RGBColor`
+- `func RGBFromString(rgb string, isBg ...bool) RGBColor`
+- `func HEX(hex string, isBg ...bool) RGBColor`
+- `func HSL(h, s, l float64, isBg ...bool) RGBColor`
+- `func HSLInt(h, s, l int, isBg ...bool) RGBColor`
+
 ## Func refer
 
 There are some useful functions reference
@@ -432,11 +441,19 @@ There are some useful functions reference
 - `RgbToHex(rgb []int) string` Convert RGB to hex code
 - More useful func please see https://pkg.go.dev/github.com/gookit/color
 
-## Project use
+## Projects using color
 
 Check out these projects, which use https://github.com/gookit/color :
 
 - https://github.com/Delta456/box-cli-maker Make Highly Customized Boxes for your CLI
+- https://github.com/flipped-aurora/gin-vue-admin 基于gin+vue搭建的（中）后台系统框架
+- https://github.com/JanDeDobbeleer/oh-my-posh A prompt theme engine for any shell.
+- https://github.com/jesseduffield/lazygit Simple terminal UI for git commands
+- https://github.com/olivia-ai/olivia 💁‍♀️Your new best friend powered by an artificial neural network  
+- https://github.com/pterm/pterm PTerm is a modern Go module to beautify console output. Featuring charts, progressbars, tables, trees, etc.
+- https://github.com/securego/gosec Golang security checker
+- https://github.com/TNK-Studio/lazykube ⎈ The lazier way to manage kubernetes.
+- [+ See More](https://pkg.go.dev/github.com/gookit/color?tab=importedby)
 
 ## Gookit packages
 

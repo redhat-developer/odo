@@ -78,12 +78,13 @@ func (t *Table) renderColumn(out *strings.Builder, row rowStr, colIdx int, maxCo
 	// if horizontal cell merges are enabled, look ahead and see how many cells
 	// have the same content and merge them all until a cell with a different
 	// content is found; override alignment to Center in this case
-	if t.getRowConfig(hint).AutoMerge && !hint.isSeparatorRow {
+	rowConfig := t.getRowConfig(hint)
+	if rowConfig.AutoMerge && !hint.isSeparatorRow {
 		for idx := colIdx + 1; idx < len(row); idx++ {
 			if row[colIdx] != row[idx] {
 				break
 			}
-			align = text.AlignCenter
+			align = rowConfig.getAutoMergeAlign()
 			maxColumnLength += t.getMaxColumnLengthForMerging(idx)
 			numColumnsRendered++
 		}
@@ -220,7 +221,7 @@ func (t *Table) renderLine(out *strings.Builder, row rowStr, hint renderHint) {
 
 func (t *Table) renderLineMergeOutputs(out *strings.Builder, outLine *strings.Builder) {
 	outLineStr := outLine.String()
-	if text.RuneCount(outLineStr) > t.allowedRowLength {
+	if text.RuneWidthWithoutEscSequences(outLineStr) > t.allowedRowLength {
 		trimLength := t.allowedRowLength - utf8.RuneCountInString(t.style.Box.UnfinishedRow)
 		if trimLength > 0 {
 			out.WriteString(text.Trim(outLineStr, trimLength))
@@ -357,15 +358,15 @@ func (t *Table) renderTitle(out *strings.Builder) {
 			rowLength = t.allowedRowLength
 		}
 		if t.style.Options.DrawBorder {
-			lenBorder := rowLength - text.RuneCount(t.style.Box.TopLeft+t.style.Box.TopRight)
+			lenBorder := rowLength - text.RuneWidthWithoutEscSequences(t.style.Box.TopLeft+t.style.Box.TopRight)
 			out.WriteString(t.style.Box.TopLeft)
 			out.WriteString(text.RepeatAndTrim(t.style.Box.MiddleHorizontal, lenBorder))
 			out.WriteString(t.style.Box.TopRight)
 		}
 
-		lenText := rowLength - text.RuneCount(t.style.Box.PaddingLeft+t.style.Box.PaddingRight)
+		lenText := rowLength - text.RuneWidthWithoutEscSequences(t.style.Box.PaddingLeft+t.style.Box.PaddingRight)
 		if t.style.Options.DrawBorder {
-			lenText -= text.RuneCount(t.style.Box.Left + t.style.Box.Right)
+			lenText -= text.RuneWidthWithoutEscSequences(t.style.Box.Left + t.style.Box.Right)
 		}
 		titleText := text.WrapText(t.title, lenText)
 		for _, titleLine := range strings.Split(titleText, "\n") {

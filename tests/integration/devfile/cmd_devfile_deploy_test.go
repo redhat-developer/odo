@@ -7,7 +7,7 @@ import (
 
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/redhat-developer/odo/tests/helper"

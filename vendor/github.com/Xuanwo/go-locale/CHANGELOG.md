@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.1.0] - 2021-10-25
+
+### Added
+
+- feat(darwin): Allow read global values, add AppleLocale support
+
+### Changed
+
+- Use github actions for test
+- Add tests for go 1.16 and go 1.17
+- ci: Remove tags to simplify build steps
+
+### Fixed
+
+- fix: Windows reports checkptr errors
+
+### Upgraded
+
+- build(deps): Bump golang.org/x/text to 0.3.7 (#33)
+- build(deps): Bump github.com/smartystreets/goconvey to 1.6.7 (#35)
+
 ## [v1.0.0] - 2020-08-03
 
 ### Added
@@ -47,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support Linux, macOS X and Windows platforms
 - Support Detect and DetectAll
 
+[v1.1.0]: https://github.com/Xuanwo/go-locale/compare/v1.0.0...v1.1.0
 [v1.0.0]: https://github.com/Xuanwo/go-locale/compare/v0.3.0...v1.0.0
 [v0.3.0]: https://github.com/Xuanwo/go-locale/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/Xuanwo/go-locale/compare/v0.1.0...v0.2.0

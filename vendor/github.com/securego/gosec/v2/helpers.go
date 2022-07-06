@@ -168,7 +168,6 @@ func GetCallInfo(n ast.Node, ctx *Context) (string, string, error) {
 							}
 						}
 					}
-
 				}
 			}
 		case *ast.Ident:
@@ -220,7 +219,6 @@ func GetIdentStringValues(ident *ast.Ident) []string {
 				}
 			}
 		}
-
 	}
 	return values
 }
@@ -298,7 +296,7 @@ func Gopath() []string {
 }
 
 // Getenv returns the values of the environment variable, otherwise
-//returns the default if variable is not set
+// returns the default if variable is not set
 func Getenv(key, userDefault string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
@@ -404,7 +402,7 @@ func PackagePaths(root string, excludes []*regexp.Regexp) ([]string, error) {
 	err := filepath.Walk(root, func(path string, f os.FileInfo, err error) error {
 		if filepath.Ext(path) == ".go" {
 			path = filepath.Dir(path)
-			if isExcluded(path, excludes) {
+			if isExcluded(filepath.ToSlash(path), excludes) {
 				return nil
 			}
 			paths[path] = true
@@ -439,7 +437,7 @@ func isExcluded(str string, excludes []*regexp.Regexp) bool {
 func ExcludedDirsRegExp(excludedDirs []string) []*regexp.Regexp {
 	var exps []*regexp.Regexp
 	for _, excludedDir := range excludedDirs {
-		str := fmt.Sprintf(`([\\/])?%s([\\/])?`, excludedDir)
+		str := fmt.Sprintf(`([\\/])?%s([\\/])?`, strings.ReplaceAll(filepath.ToSlash(excludedDir), "/", `\/`))
 		r := regexp.MustCompile(str)
 		exps = append(exps, r)
 	}
@@ -448,8 +446,15 @@ func ExcludedDirsRegExp(excludedDirs []string) []*regexp.Regexp {
 
 // RootPath returns the absolute root path of a scan
 func RootPath(root string) (string, error) {
-	if strings.HasSuffix(root, "...") {
-		root = root[0 : len(root)-3]
-	}
+	root = strings.TrimSuffix(root, "...")
 	return filepath.Abs(root)
+}
+
+// GoVersion returns parsed version of Go from runtime
+func GoVersion() (int, int, int) {
+	versionParts := strings.Split(runtime.Version(), ".")
+	major, _ := strconv.Atoi(versionParts[0][2:])
+	minor, _ := strconv.Atoi(versionParts[1])
+	build, _ := strconv.Atoi(versionParts[2])
+	return major, minor, build
 }

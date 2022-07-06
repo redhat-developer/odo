@@ -11,7 +11,7 @@ import (
 
 	dfutil "github.com/devfile/library/pkg/util"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
