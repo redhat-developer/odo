@@ -595,7 +595,7 @@ github.com/operator-framework/api/pkg/operators/v2
 ## explicit; go 1.17
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1
-# github.com/pborman/uuid v1.2.0
+# github.com/pborman/uuid v1.2.1
 ## explicit
 github.com/pborman/uuid
 # github.com/peterbourgon/diskv v2.0.1+incompatible
