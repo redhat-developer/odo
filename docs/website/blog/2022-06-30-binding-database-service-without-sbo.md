@@ -20,7 +20,7 @@ We have a simple CRUD application built in Go that can create/list/update/delete
 ## Prerequisites:
 This blog assumes:
 - [odo v3.0.0-beta1](https://github.com/redhat-developer/odo/releases/tag/v3.0.0-beta1)
-- you have access to a Kubernetes or OpenShift cluster to be able to install the MongoDB operator.
+- you have access to a Kubernetes or OpenShift cluster.
 - you have _Helm_ installed on your system. See https://helm.sh/docs/intro/install/ for installation instructions.
 
 ## (Optional) Setting up the namespace
@@ -39,11 +39,11 @@ helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update
 
 2. Export the necessary environment variables:
 ```sh
-export MY_MONGODB_ROOT_USERNAME=root
-export MY_MONGODB_ROOT_PASSWORD=my-super-secret-root-password
-export MY_MONGODB_USERNAME=my-app-username
-export MY_MONGODB_PASSWORD=my-app-super-secret-password
-export MY_MONGODB_DATABASE=my-app
+MY_MONGODB_ROOT_USERNAME=root
+MY_MONGODB_ROOT_PASSWORD=my-super-secret-root-password
+MY_MONGODB_USERNAME=my-app-username
+MY_MONGODB_PASSWORD=my-app-super-secret-password
+MY_MONGODB_DATABASE=my-app
 ```
 
 3. Create the MongoDB service.
