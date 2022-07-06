@@ -8,7 +8,7 @@ title: odo completion
 
 There is support for the following terminal shell's:
 - [Bash](https://www.gnu.org/software/bash/)
-- [Zsh](https://ohmyz.sh/)
+- [Zsh](https://zsh.sourceforge.io/)
 - [Fish](https://fishshell.com/)
 - [Powershell](https://docs.microsoft.com/en-us/powershell/)
 
