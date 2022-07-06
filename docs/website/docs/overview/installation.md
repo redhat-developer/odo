@@ -298,6 +298,15 @@ type odo.exe.sha256
    odo version
    ```
 
+### Installing `odo` using Maven plugin
+It is possible to integrate the odo binary download in a Maven project using [odo Downloader Plugin](https://github.com/tnb-software/odo-downloader).
+The download can be executed using `download` goal which automatically retrieves the version for the current architecture:
+```shell
+mvn software.tnb:odo-downloader-maven-plugin:0.1.3:download \
+  -Dodo.target.file=$HOME/bin/odo \
+  -Dodo.version=v3.0.0~alpha2
+```
+
 ## IDE Installation
 
 ### Installing `odo` in Visual Studio Code (VSCode)
