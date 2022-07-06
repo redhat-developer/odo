@@ -136,7 +136,7 @@ There are 3 changes that we will need to make to our devfile:
 ```yaml
 schemaVersion: 2.2.0
 ```
-Please note that this change is only necessary because we are using [devfile variable substitution](../../command-reference/dev/#substituting-variables).
+Please note that this change is only necessary because we are using [devfile variable substitution](../docs/command-reference/dev.md#substituting-variables).
 
 6.2 Add a `variables` field in the devfile.
 ```yaml
