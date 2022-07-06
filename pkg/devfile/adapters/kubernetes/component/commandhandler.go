@@ -3,16 +3,21 @@ package component
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/devfile/image"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
+	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/task"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -31,13 +36,45 @@ var _ libdevfile.Handler = (*adapterHandler)(nil)
 var _ ComponentAdapter = (*adapterHandler)(nil)
 var _ sync.SyncClient = (*adapterHandler)(nil)
 
-func (a *adapterHandler) ApplyImage(_ devfilev1.Component) error {
-	klog.V(2).Info("this handler can only handle exec commands in container components, not image components")
-	return nil
+func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
+	return image.BuildPushSpecificImage(a.parameters.Path, img, true)
 }
 
-func (a *adapterHandler) ApplyKubernetes(_ devfilev1.Component) error {
-	klog.V(2).Info("this handler can only handle exec commands in container components, not Kubernetes components")
+func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
+	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
+	_, err := service.ValidateResourceExist(a.kubeClient, a.Devfile, kubernetes, a.parameters.Path)
+	if err != nil {
+		return err
+	}
+
+	// Get the most common labels that's applicable to all resources being deployed.
+	// Set the mode to DEPLOY. Regardless of what Kubernetes resource we are deploying.
+	labels := odolabels.GetLabels(a.Devfile.Data.GetMetadata().Name, a.AppName, odolabels.ComponentDevMode)
+
+	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
+
+	// Create the annotations
+	// Retrieve the component type from the devfile and also inject it into the list of annotations
+	annotations := make(map[string]string)
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.Devfile.Data.GetMetadata()))
+
+	// Get the Kubernetes component
+	u, err := libdevfile.GetK8sComponentAsUnstructured(a.Devfile, kubernetes.Name, a.parameters.Path, devfilefs.DefaultFs{})
+	if err != nil {
+		return err
+	}
+
+	// Deploy the actual Kubernetes component and error out if there's an issue.
+	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
+	isOperatorBackedService, err := service.PushKubernetesResource(a.kubeClient, u, labels, annotations)
+	if err != nil {
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+	}
+
+	if isOperatorBackedService {
+		log.Successf("Kubernetes resource %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
+
+	}
 	return nil
 }
 
