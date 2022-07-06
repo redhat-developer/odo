@@ -21,8 +21,8 @@ go mod edit -require github.com/segmentio/backo-go@v1.0.1-0.20200129164019-23eae
 go mod edit -replace gopkg.in/segmentio/analytics-go.v3=github.com/segmentio/analytics-go/v3@v3.2.1
 go mod edit -replace github.com/apcera/gssapi=github.com/openshift/gssapi@v0.0.0-20161010215902-5fb4217df13b # for oc
 
-go get -u github.com/openshift/oc@openshift-clients-4.11.0-202204020828
-
+# Upgrades recommended by Dependabot
+go mod edit -require github.com/pborman/uuid@v1.2.1
 
 
 go mod tidy -compat=1.17 # why?
