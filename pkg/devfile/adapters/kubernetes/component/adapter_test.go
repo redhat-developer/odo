@@ -131,8 +131,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "")
-			_, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
+			ctrl := gomock.NewController(t)
+			fakePrefClient := preference.NewMockClient(ctrl)
+			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
+			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, adapterCtx, "")
+			_, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

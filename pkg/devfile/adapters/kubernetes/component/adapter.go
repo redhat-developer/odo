@@ -145,8 +145,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		return err
 	}
 
-	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
-	deployment, err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral, libdevfile.DevfileCommands{
+	deployment, err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
@@ -166,24 +165,10 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
 
-	// list the latest state of the PVCs
-	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	ownerReference := generator.GetOwnerReference(deployment)
+	err = a.updatePVCsOwnerReferences(ownerReference)
 	if err != nil {
 		return err
-	}
-
-	ownerReference := generator.GetOwnerReference(deployment)
-	// update the owner reference of the PVCs with the deployment
-	for i := range pvcs {
-		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
-			continue
-		}
-		err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-			return a.kubeClient.UpdateStorageOwnerReference(&pvcs[i], ownerRef)
-		})
-		if err != nil {
-			return err
-		}
 	}
 
 	// Update all services with owner references
@@ -355,11 +340,13 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 func (a *Adapter) createOrUpdateComponent(
 	componentExists bool,
 	ei envinfo.EnvSpecificInfo,
-	isMainStorageEphemeral bool,
 	commands libdevfile.DevfileCommands,
 	devfileDebugPort int,
 	deployment *appsv1.Deployment,
 ) (*appsv1.Deployment, error) {
+
+	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
+
 	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 

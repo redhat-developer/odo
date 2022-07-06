@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/service"
 	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // getComponentDeployment returns the deployment associated with the component, if deployed
@@ -96,4 +97,26 @@ func (a *Adapter) getPushDevfileCommands(parameters adapters.PushParameters) (ma
 	}
 
 	return pushDevfileCommands, nil
+}
+
+func (a *Adapter) updatePVCsOwnerReferences(ownerReference metav1.OwnerReference) error {
+	// list the latest state of the PVCs
+	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	if err != nil {
+		return err
+	}
+
+	// update the owner reference of the PVCs with the deployment
+	for i := range pvcs {
+		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
+			continue
+		}
+		err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
+			return a.kubeClient.UpdateStorageOwnerReference(&pvcs[i], ownerRef)
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
