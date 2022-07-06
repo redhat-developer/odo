@@ -113,35 +113,15 @@ func (a *Adapter) ComponentInfo(pod *corev1.Pod, command devfilev1.Command) (ada
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
-	// Get the Dev deployment:
-	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
-	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
-	selectorLabels := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
-	deployment, err := a.kubeClient.GetOneDeploymentFromSelector(selectorLabels)
-
+	deployment, componentExists, err := a.getComponentDeployment()
 	if err != nil {
-		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
-			return fmt.Errorf("unable to determine if component %s exists: %w", a.ComponentName, err)
-		}
+		return err
 	}
-	componentExists := deployment != nil
-
-	podChanged := false
-	var podName string
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
+	podName := ""
 	if componentExists {
-		// First see if the component does have a pod. it could have been scaled down to zero
-		_, err = a.kubeClient.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
-		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
-		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
-		if err == nil {
-			pod, podErr := a.getPod(nil, true)
-			if podErr != nil {
-				return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, podErr)
-			}
-			podName = pod.GetName()
-		}
+		podName, err = a.getPodName()
 	}
 
 	s := log.Spinner("Waiting for Kubernetes resources")
@@ -280,6 +260,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
+	podChanged := false
 	if componentExists && podName != pod.GetName() {
 		podChanged = true
 	}
