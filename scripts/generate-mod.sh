@@ -13,7 +13,9 @@ go mod edit -require github.com/devfile/api/v2@v2.0.0-20220309195345-48ebbf1e51c
 go mod edit -require github.com/devfile/library@v1.2.1-0.20220602130922-85a4805bd59c
 go mod edit -require github.com/devfile/registry-support/index/generator@v0.0.0-20220222194908-7a90a4214f3e
 go mod edit -require github.com/devfile/registry-support/registry-library@v0.0.0-20220504150710-21de53798172
+go mod edit -require github.com/openshift/oc@v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1
 go mod edit -require github.com/kubernetes-sigs/service-catalog@v0.3.1
+go mod edit -require k8s.io/utils@v0.0.0-20220210201930-3a6ce19ff2f9
 go mod edit -require github.com/redhat-developer/alizer/go@v0.0.0-20220530162645-f27a60be88a1
 go mod edit -require github.com/redhat-developer/service-binding-operator@v1.0.1-0.20211222115357-5b7bbba3bfb3
 go mod edit -require github.com/onsi/ginkgo/v2@v2.1.4

@@ -30,6 +30,7 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/openshift/api v0.0.0-20220124143425-d74727069f6f
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
+	github.com/openshift/oc v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1
 	github.com/operator-framework/api v0.14.1-0.20220413143725-33310d6154f3
 	github.com/operator-framework/operator-lifecycle-manager v0.21.2
 	github.com/pborman/uuid v1.2.1
@@ -147,7 +148,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
 	github.com/openshift/library-go v0.0.0-20220210170159-18f172cff934 // indirect
-	github.com/openshift/oc v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
