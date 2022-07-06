@@ -37,7 +37,7 @@ We are going to use the Bitnami's helm charts for creating our MongoDB database.
 helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update
 ```
 
-2. Export the necessary environment variables:
+2. Declare the necessary environment variables:
 ```sh
 MY_MONGODB_ROOT_USERNAME=root
 MY_MONGODB_ROOT_PASSWORD=my-super-secret-root-password
@@ -128,6 +128,40 @@ git clone https://github.com/valaparthvi/restapi-mongodb-odo.git && cd restapi-m
 odo init --devfile go --name places
 ```
 
+<details>
+<summary>If you run <code>odo dev</code> to deploy the application at this point, you will notice that the 'run' command has failed with some logs, this is expected, because like we mentioned before, our Go application is dependent on the MongoDB service and will not function unless it is connected to it.</summary>
+
+```sh
+$ odo dev
+  __
+ /  \__     Developing using the restapi Devfile
+ \__/  \    Namespace: restapi-mongodb
+ /  \__/    odo version: v3.0.0-alpha3
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [52s]
+ ✓  Syncing files into the container [844ms]
+ ✓  Building your application in container on cluster (command: build) [5s]
+ •  Executing the application (command: run)  ...
+ ✗  Executing the application (command: run) [188ms]
+ ⚠  Devfile command "run" exited with an error status in 20 second(s)
+ ⚠  Last 100 lines of log:
+go: downloading github.com/sirupsen/logrus v1.8.1
+...
+...
+2022/07/06 10:52:10 No binding username found
+ - Forwarding from 127.0.0.1:40001 -> 8080
+
+Your application is now running on the cluster
+
+Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
+Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+```
+</details>
+
+
 
 ## Adding the connection information to devfile.yaml
 There are 3 changes that we will need to make to our devfile:
@@ -161,7 +195,7 @@ components:
   name: runtime
 ```
 
-The values for _username_, _password_, and _host_ will be passed to devfile.yaml when we run the `odo dev` command.
+The values for _username_, _password_, and _host_ will be passed to devfile.yaml with the `--var` flag when we run the `odo dev` command.
 
 
 <details>
