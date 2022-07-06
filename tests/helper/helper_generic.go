@@ -275,6 +275,13 @@ func JsonPathContentContain(json string, path string, value string) {
 	Expect(result.String()).To(ContainSubstring(value), fmt.Sprintf("content of path %q should contain %q but is %q", path, value, result.String()))
 }
 
+// JsonPathDoesNotExist expects that the content of the path does not exist in the JSON string
+func JsonPathDoesNotExist(json string, path string) {
+	result := gjson.Get(json, path)
+	Expect(result.Exists()).To(BeFalse(),
+		fmt.Sprintf("content should not contain %q but is %q", path, result.String()))
+}
+
 func JsonPathContentIsValidUserPort(json string, path string) {
 	result := gjson.Get(json, path)
 	intVal, err := strconv.Atoi(result.String())
