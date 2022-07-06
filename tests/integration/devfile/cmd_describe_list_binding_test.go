@@ -78,6 +78,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.name", "cluster-sample")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.detectBindingResources", "true")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
+				helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
 				helper.JsonPathContentIs(stdout, "bindings.0.status", "")
 				helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
 				helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample")
@@ -150,6 +151,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.name", "cluster-sample")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.detectBindingResources", "true")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
+				helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
 				helper.JsonPathContentContain(stdout, "bindings.0.status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentIs(stdout, "bindings.0.status.bindingEnvVars", "")
 				if devfile {
@@ -227,6 +229,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+				helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.namingStrategy")
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
@@ -296,6 +299,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+				helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.namingStrategy")
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
@@ -366,6 +370,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+				helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.namingStrategy")
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
