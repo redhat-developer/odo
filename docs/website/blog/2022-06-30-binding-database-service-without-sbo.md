@@ -1,5 +1,5 @@
 ---
-title: Binding to a database service without SBO
+title: Binding to a database service without the Service Binding Operator
 author: Parthvi Vala
 author_url: https://github.com/valaparthvi
 author_image_url: https://github.com/valaparthvi.png
@@ -7,7 +7,7 @@ tags: ["binding"]
 slug: binding-database-service-without-sbo
 ---
 
-How to bind to your application to a database service without the Service Binding Operator.
+How to bind your application to a database service without the Service Binding Operator.
 
 <!--truncate-->
 
@@ -20,7 +20,7 @@ We have a simple CRUD application built in Go that can create/list/update/delete
 ## Prerequisites:
 This blog assumes:
 - [odo v3.0.0-beta1](https://github.com/redhat-developer/odo/releases/tag/v3.0.0-beta1)
-- you have admin access to a Kubernetes or OpenShift cluster to be able to install the MongoDB operator.
+- you have access to a Kubernetes or OpenShift cluster to be able to install the MongoDB operator.
 - you have _Helm_ installed on your system. See https://helm.sh/docs/intro/install/ for installation instructions.
 
 ## (Optional) Setting up the namespace
@@ -29,14 +29,14 @@ This blog assumes:
 odo create namespace restapi-mongodb
 ```
 
-## Setting up the application
-1. Clone the repository, and cd into it.
+## Setting up the MongoDB microservice
+We are going to use the Bitnami's helm charts for creating our MongoDB database.
+
+1. Add the Bitnami's Helm charts repository and make your Helm client up to date with it:
 ```sh
-git clone https://github.com/valaparthvi/restapi-mongodb-odo.git && cd restapi-mongodb-odo
+helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update
 ```
 
-
-## Export environment variables
 2. Export the necessary environment variables:
 ```sh
 export MY_MONGODB_ROOT_USERNAME=root
@@ -46,63 +46,7 @@ export MY_MONGODB_PASSWORD=my-app-super-secret-password
 export MY_MONGODB_DATABASE=my-app
 ```
 
-
-## Download the devfile.yaml
-3. Run `odo init` to fetch the necessary devfile.
-```sh
-odo init --devfile go --name places
-```
-
-
-## Deploy the application
-4. Run `odo dev` to deploy the application on the cluster.
-```sh
-odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME
-```
-<details>
-<summary>Expected output:</summary>
-
-```sh
-$ odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME
-  __
- /  \__     Developing using the restapi Devfile
- \__/  \    Namespace: restapi-mongodb
- /  \__/    odo version: v3.0.0-alpha3
- \__/
-
-↪ Deploying to the cluster in developer mode
- ✓  Waiting for Kubernetes resources [52s]
- ✓  Syncing files into the container [844ms]
- ✓  Building your application in container on cluster (command: build) [5s]
- •  Executing the application (command: run)  ...
- ✗  Executing the application (command: run) [186ms]
- ⚠  Devfile command "run" exited with an error status in 20 second(s)
- ⚠  Last 100 lines of log:
-go: downloading github.com/spf13/viper v1.11.0
-...
-...
-2022/07/05 05:39:47 No binding username found
-
-Your application is now running on the cluster
-
- - Forwarding from 127.0.0.1:40001 -> 3000
-
-Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
-Press Ctrl+c to exit `odo dev` and delete resources from the cluster
-```
-</details>
-
-You will notice that the 'run' command has failed with some logs, this is expected, because like we mentioned before, our Go application is dependent on the MongoDB service and will not function unless it is connected to it.
-
-## Setting up the MongoDB microservice
-We are going to use the Bitnami's helm charts for creating our MongoDB database.
-
-5. Add the Bitnami's Helm charts repository and make your Helm client up to date with it:
-```sh
-helm repo add bitnami https://charts.bitnami.com/bitnami && helm repo update
-```
-
-6. Create the MongoDB service.
+3. Create the MongoDB service.
 ```sh
 helm install mongodb bitnami/mongodb \
   --set auth.rootPassword=$MY_MONGODB_ROOT_PASSWORD \
@@ -171,22 +115,37 @@ NAME                       READY   STATUS    RESTARTS   AGE
 mongodb-85fff797f6-fnwvl   1/1     Running   0          63s
 ```
 
+## Setting up the application
+4. Clone the repository, and cd into it.
+```sh
+git clone https://github.com/valaparthvi/restapi-mongodb-odo.git && cd restapi-mongodb-odo
+```
+
+
+## Download the devfile.yaml
+5. Run `odo init` to fetch the necessary devfile.
+```sh
+odo init --devfile go --name places
+```
+
+
 ## Adding the connection information to devfile.yaml
 There are 3 changes that we will need to make to our devfile:
 
-7.1 Change the `schemaVersion` of devfile to 2.2.0. This change is required to use certain features of the devfile.
+6.1 Change the `schemaVersion` of devfile to 2.2.0.
 ```yaml
 schemaVersion: 2.2.0
 ```
-Please note that this change is only necessary because we are using [devfile variable substitution](https://odo.dev/docs/command-reference/dev/#substituting-variables).
+Please note that this change is only necessary because we are using [devfile variable substitution](../../command-reference/dev/#substituting-variables).
 
-7.2 Add a `variables` field in the devfile.
+6.2 Add a `variables` field in the devfile.
 ```yaml
 variables:
   PASSWORD: password
   USERNAME: user
+  HOST: host
 ```
-7.3 Edit the 'runtime' container component in devfile to add information such as username, password, and host required to connect to the MongoDB service.
+6.3 Edit the 'runtime' container component in devfile to add information such as username, password, and host required to connect to the MongoDB service.
 ```yaml
 components:
 - container:
@@ -198,13 +157,12 @@ components:
     - name: password
       value: "{{PASSWORD}}"
     - name: host
-      value: "mongodb"
+      value: "{{HOST}}"
   name: runtime
 ```
 
-The _username_, and _password_ values were passed to devfile.yaml when we ran the `odo dev` command.
+The values for _username_, _password_, and _host_ will be passed to devfile.yaml when we run the `odo dev` command.
 
-The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "mongodb", you might have noticed it when we deployed the helm chart.
 
 <details>
 <summary>Your final devfile.yaml should look something like this:</summary>
@@ -246,11 +204,12 @@ components:
     - name: password
       value: "{{PASSWORD}}"
     - name: host
-      value: mongodb
+      value: "{{HOST}}"
   name: runtime
 variables:
   PASSWORD: password
   USERNAME: user
+  HOST: host
 metadata:
   description: Stack with the latest Go version
   displayName: Go Runtime
@@ -272,25 +231,41 @@ starterProjects:
 ```
 </details>
 
-Changing the devfile.yaml will trigger the `odo dev` command to push the changes and execute the run commands again, wait for it to finish execution.
-```sh
-$ odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME
-...
-2022/07/05 05:39:47 No binding username found
-...
-...
-File /home/pvala/restapi-mongodb-odo/devfile.yaml changed
-Pushing files...
 
- ✓  Waiting for Kubernetes resources [35s]
- ✓  Syncing files into the container [173ms]
- ✓  Building your application in container on cluster (command: build) [13s]
+## Deploy the application
+7. Run `odo dev` to deploy the application on the cluster.
+```sh
+odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME  --var HOST="mongodb"
+```
+
+The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "mongodb", you might have noticed it when we deployed the helm chart.
+
+<details>
+<summary>Expected output:</summary>
+
+```sh
+$ odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME --var HOST="mongodb"
+  __
+ /  \__     Developing using the restapi Devfile
+ \__/  \    Namespace: restapi-mongodb
+ /  \__/    odo version: v3.0.0-alpha3
+ \__/
+
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [52s]
+ ✓  Syncing files into the container [844ms]
+ ✓  Building your application in container on cluster (command: build) [5s]
  •  Executing the application (command: run)  ...
+
+Your application is now running on the cluster
+
  - Forwarding from 127.0.0.1:40001 -> 3000
 
 Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 ```
+</details>
+
 
 ## Accessing the application
 8. Run the following curl command to test the application:
@@ -322,5 +297,5 @@ $ curl 127.0.0.1:40001/api/places
 To conclude this blog, it is possible to connect your application with another microservice without the Service Binding Operator if you have the correct connection information. Using the Service Binding Operator with a [Bindable Operator](https://github.com/redhat-developer/service-binding-operator#known-bindable-operators) makes it easy for you to not care about finding the connection information and ease the binding.
 
 ### Related articles on binding:
-* [Binding an external service with odo v3](../blog/2022-06-14-binding-external-service.md)
-* [odo add binding](../../website/docs/command-reference/add-binding.md)
+* [Binding an external service with odo v3](./2022-06-14-binding-external-service.md)
+* [odo add binding](../docs/command-reference/add-binding.md)
