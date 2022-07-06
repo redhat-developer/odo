@@ -136,7 +136,7 @@ There are 3 changes that we will need to make to our devfile:
 ```yaml
 schemaVersion: 2.2.0
 ```
-Please note that this change is only necessary because we are using [devfile variable substitution](../docs/command-reference/dev.md#substituting-variables).
+Please note that this change is only necessary because we are using [devfile variable substitution](/docs/command-reference/dev#substituting-variables).
 
 6.2 Add a `variables` field in the devfile.
 ```yaml
@@ -298,4 +298,4 @@ To conclude this blog, it is possible to connect your application with another m
 
 ### Related articles on binding:
 * [Binding an external service with odo v3](./2022-06-14-binding-external-service.md)
-* [odo add binding](../docs/command-reference/add-binding.md)
+* [odo add binding](/docs/command-reference/add-binding)
