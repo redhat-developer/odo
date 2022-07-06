@@ -82,3 +82,8 @@ mockgen -source=pkg/binding/interface.go \
 mockgen -source=pkg/binding/backend/interface.go \
     -package backend \
     -destination pkg/binding/backend/mock.go
+
+
+mockgen -source=pkg/sync/sync.go \
+    -package mock \
+    -destination pkg/sync/mock/sync.go

@@ -9,7 +9,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
@@ -22,12 +22,12 @@ const numberOfLinesToOutputLog = 100
 
 type adapterHandler struct {
 	Adapter
-	parameters      common.PushParameters
+	parameters      adapters.PushParameters
 	componentExists bool
 }
 
 var _ libdevfile.Handler = (*adapterHandler)(nil)
-var _ common.ComponentAdapter = (*adapterHandler)(nil)
+var _ ComponentAdapter = (*adapterHandler)(nil)
 var _ sync.SyncClient = (*adapterHandler)(nil)
 
 func (a *adapterHandler) ApplyImage(_ devfilev1.Component) error {

@@ -9,7 +9,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/generator"
 	dfutil "github.com/devfile/library/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/remotecmd"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -18,19 +18,19 @@ import (
 )
 
 // New instantiates a component adapter
-func New(adapterContext common.AdapterContext, syncClient SyncClient, kubeClient kclient.ClientInterface) Adapter {
+func New(syncClient SyncClient, kubeClient kclient.ClientInterface, componentName string) Adapter {
 	return Adapter{
-		kubeClient:     kubeClient,
-		SyncClient:     syncClient,
-		AdapterContext: adapterContext,
+		kubeClient:    kubeClient,
+		SyncClient:    syncClient,
+		ComponentName: componentName,
 	}
 }
 
 // Adapter is a component adapter implementation for sync
 type Adapter struct {
-	kubeClient kclient.ClientInterface
-	SyncClient SyncClient
-	common.AdapterContext
+	kubeClient    kclient.ClientInterface
+	SyncClient    SyncClient
+	ComponentName string
 }
 
 // SyncFiles does a couple of things:
@@ -38,7 +38,7 @@ type Adapter struct {
 // otherwise, it checks which files have changed and syncs the delta
 // it returns a boolean execRequired and an error. execRequired tells us if files have
 // changed and devfile execution is required
-func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
+func (a Adapter) SyncFiles(syncParameters adapters.SyncParameters) (bool, error) {
 
 	// Whether to write the indexer content to the index file path (resolvePath)
 	forceWrite := false
@@ -169,7 +169,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (bool, error) {
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo common.ComponentInfo, ret util.IndexerRet) error {
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo adapters.ComponentInfo, ret util.IndexerRet) error {
 	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -222,7 +222,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 // updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
 // the existing index file; the index file is required to exist when this function is called.
-func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
+func updateIndexWithWatchChanges(pushParameters adapters.PushParameters) error {
 	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)
 
 	if err != nil {

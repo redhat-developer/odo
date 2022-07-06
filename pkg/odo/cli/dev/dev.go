@@ -17,8 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/dev"
 	ododevfile "github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	kcomponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
@@ -202,10 +201,7 @@ func (o *DevOptions) Validate() error {
 
 func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
-		devFileObj      = o.Context.EnvSpecificInfo.GetDevfileObj()
-		platformContext = kubernetes.KubernetesContext{
-			Namespace: o.Context.GetProject(),
-		}
+		devFileObj  = o.Context.EnvSpecificInfo.GetDevfileObj()
 		path        = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
 		devfileName = devFileObj.GetMetadataName()
 		namespace   = o.GetProject()
@@ -223,7 +219,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, platformContext, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
+	err = o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
 	if err != nil {
 		return err
 	}
@@ -251,8 +247,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
-	var adapter common.ComponentAdapter
+func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters) error {
+	var adapter kcomponent.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
 	if err != nil {
@@ -267,28 +263,26 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams common.PushParameters, wat
 	return nil
 }
 
-func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (kcomponent.ComponentAdapter, error) {
 	devObj, err := ododevfile.ParseAndValidateFromFileWithVariables(location.DevfileLocation(""), parameters.Variables)
 	if err != nil {
 		return nil, err
 	}
 
-	platformContext := kubernetes.KubernetesContext{
-		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
-	}
-
-	return adapters.NewComponentAdapter(
+	return kcomponent.NewKubernetesAdapter(
 		o.clientset.KubernetesClient,
 		o.clientset.PreferenceClient,
 		o.clientset.PortForwardClient,
-		parameters.ComponentName,
-		parameters.Path,
-		parameters.ApplicationName,
-		devObj,
-		platformContext,
+		kcomponent.AdapterContext{
+			ComponentName: parameters.ComponentName,
+			Context:       parameters.Path,
+			AppName:       parameters.ApplicationName,
+			Devfile:       devObj,
+		},
+		parameters.EnvSpecificInfo.GetNamespace(),
 		o.randomPorts,
 		o.errOut,
-	)
+	), nil
 }
 
 func (o *DevOptions) HandleSignal() error {

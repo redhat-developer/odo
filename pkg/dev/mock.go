@@ -11,8 +11,7 @@ import (
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
-	common "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	kubernetes "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	adapters "github.com/redhat-developer/odo/pkg/devfile/adapters"
 	watch "github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -40,31 +39,31 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(devfileObj parser.DevfileObj, platformContext kubernetes.KubernetesContext, ignorePaths []string, path string, debug, randomPorts bool, errOut io.Writer) error {
+func (m *MockClient) Start(devfileObj parser.DevfileObj, namespace string, ignorePaths []string, path string, debug bool, buildCommand, runCommand string, randomPorts bool, errOut io.Writer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", devfileObj, platformContext, ignorePaths, path, debug, randomPorts, errOut)
+	ret := m.ctrl.Call(m, "Start", devfileObj, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockClientMockRecorder) Start(devfileObj, platformContext, ignorePaths, path, debug, randomPorts, errOut interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Start(devfileObj, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, platformContext, ignorePaths, path, debug, randomPorts, errOut)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockClient)(nil).Start), devfileObj, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut)
 }
 
 // Watch mocks base method.
-func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, variables map[string]string) error {
+func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug, variables)
+	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug, variables interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug, variables)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables)
 }
 
 // MockHandler is a mock of Handler interface.
@@ -91,7 +90,7 @@ func (m *MockHandler) EXPECT() *MockHandlerMockRecorder {
 }
 
 // RegenerateAdapterAndPush mocks base method.
-func (m *MockHandler) RegenerateAdapterAndPush(arg0 common.PushParameters, arg1 watch.WatchParameters) error {
+func (m *MockHandler) RegenerateAdapterAndPush(arg0 adapters.PushParameters, arg1 watch.WatchParameters) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegenerateAdapterAndPush", arg0, arg1)
 	ret0, _ := ret[0].(error)

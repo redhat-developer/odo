@@ -22,7 +22,6 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/testingutil"
 
-	adaptersCommon "github.com/redhat-developer/odo/pkg/devfile/adapters/common"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
@@ -114,7 +113,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := AdapterContext{
 				ComponentName: testComponentName,
 				AppName:       testAppName,
 				Devfile:       devObj,
@@ -135,7 +134,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := New(adapterCtx, fkclient, nil, nil, false, os.Stdout)
+			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
 			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false)
 
 			// Checks for unexpected error cases
@@ -310,7 +309,7 @@ func TestDoesComponentExist(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := AdapterContext{
 				ComponentName: tt.componentName,
 				AppName:       tt.appName,
 				Devfile:       devObj,
@@ -348,7 +347,7 @@ func TestDoesComponentExist(t *testing.T) {
 			})
 
 			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := New(adapterCtx, fkclient, nil, nil, false, os.Stdout)
+			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "", false, os.Stdout)
 			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false)
 
 			// Checks for unexpected error cases
@@ -424,7 +423,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 				}(),
 			}
 
-			adapterCtx := adaptersCommon.AdapterContext{
+			adapterCtx := AdapterContext{
 				ComponentName: testComponentName,
 				Devfile:       devObj,
 			}
@@ -444,7 +443,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			prefClient := preference.NewMockClient(ctrl)
 			prefClient.EXPECT().GetPushTimeout().Return(100 * time.Second)
-			componentAdapter := New(adapterCtx, fkclient, prefClient, nil, false, os.Stdout)
+			componentAdapter := NewKubernetesAdapter(fkclient, prefClient, nil, adapterCtx, "", false, os.Stdout)
 			_, err := componentAdapter.getPod(false)
 
 			// Checks for unexpected error cases
@@ -552,7 +551,7 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 
 			a := Adapter{
 				kubeClient: fakeClient,
-				AdapterContext: adaptersCommon.AdapterContext{
+				AdapterContext: AdapterContext{
 					ComponentName: tt.fields.componentName,
 					AppName:       tt.fields.appName,
 				},

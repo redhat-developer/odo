@@ -1,19 +1,8 @@
-package common
+package adapters
 
 import (
-	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
-	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-
 	"github.com/redhat-developer/odo/pkg/envinfo"
 )
-
-// AdapterContext is a construct that is common to all adapters
-type AdapterContext struct {
-	ComponentName string                   // ComponentName is the odo component name, it is NOT related to any devfile components
-	Context       string                   // Context is the given directory containing the source code and configs
-	AppName       string                   // the application name associated to a component
-	Devfile       devfileParser.DevfileObj // Devfile is the object returned by the Devfile parser
-}
 
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component
 type PushParameters struct {
@@ -51,12 +40,4 @@ type ComponentInfo struct {
 
 func (ci ComponentInfo) IsEmpty() bool {
 	return len(ci.ContainerName) == 0
-}
-
-// PushCommandsMap stores the commands to be executed as per their types.
-type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
-
-// NewPushCommandMap returns the instance of PushCommandsMap
-func NewPushCommandMap() PushCommandsMap {
-	return make(map[devfilev1.CommandGroupKind]devfilev1.Command)
 }

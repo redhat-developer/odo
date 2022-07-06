@@ -3,15 +3,14 @@ package component
 import (
 	"fmt"
 	"io"
+	"path/filepath"
+	"strings"
 
 	"k8s.io/utils/pointer"
 
-	"github.com/devfile/library/pkg/devfile/generator"
-	devfileCommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/redhat-developer/odo/pkg/envinfo"
@@ -28,6 +27,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/generator"
+	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -37,20 +38,57 @@ import (
 	"k8s.io/klog"
 )
 
-// New instantiates a component adapter
-func New(
-	adapterContext common.AdapterContext,
-	kubeClient kclient.ClientInterface,
+// Adapter is a component adapter implementation for Kubernetes
+type Adapter struct {
+	kubeClient        kclient.ClientInterface
+	prefClient        preference.Client
+	portForwardClient portForward.Client
+
+	AdapterContext
+	logger machineoutput.MachineEventLoggingClient
+
+	devfileBuildCmd  string
+	devfileRunCmd    string
+	devfileDebugCmd  string
+	devfileDebugPort int
+	pod              *corev1.Pod
+	deployment       *appsv1.Deployment
+
+	randomPorts bool
+	errOut      io.Writer
+}
+
+// AdapterContext is a construct that is common to all adapters
+type AdapterContext struct {
+	ComponentName string            // ComponentName is the odo component name, it is NOT related to any devfile components
+	Context       string            // Context is the given directory containing the source code and configs
+	AppName       string            // the application name associated to a component
+	Devfile       parser.DevfileObj // Devfile is the object returned by the Devfile parser
+}
+
+var _ sync.SyncClient = (*Adapter)(nil)
+var _ ComponentAdapter = (*Adapter)(nil)
+
+// NewKubernetesAdapter returns a Devfile adapter for the targeted platform
+func NewKubernetesAdapter(
+	kubernetesClient kclient.ClientInterface,
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
+	context AdapterContext,
+	namespace string,
 	randomPorts bool,
 	errOut io.Writer,
 ) Adapter {
+
+	if namespace != "" {
+		kubernetesClient.SetNamespace(namespace)
+	}
+
 	return Adapter{
-		kubeClient:        kubeClient,
+		kubeClient:        kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
-		AdapterContext:    adapterContext,
+		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 		randomPorts:       randomPorts,
 		errOut:            errOut,
@@ -73,43 +111,20 @@ func (a *Adapter) getPod(refresh bool) (*corev1.Pod, error) {
 	return a.pod, nil
 }
 
-func (a *Adapter) ComponentInfo(command devfilev1.Command) (common.ComponentInfo, error) {
+func (a *Adapter) ComponentInfo(command devfilev1.Command) (adapters.ComponentInfo, error) {
 	pod, err := a.getPod(false)
 	if err != nil {
-		return common.ComponentInfo{}, err
+		return adapters.ComponentInfo{}, err
 	}
-	return common.ComponentInfo{
+	return adapters.ComponentInfo{
 		PodName:       pod.Name,
 		ContainerName: command.Exec.Component,
 	}, nil
 }
 
-// Adapter is a component adapter implementation for Kubernetes
-type Adapter struct {
-	kubeClient        kclient.ClientInterface
-	prefClient        preference.Client
-	portForwardClient portForward.Client
-
-	common.AdapterContext
-	logger machineoutput.MachineEventLoggingClient
-
-	devfileBuildCmd  string
-	devfileRunCmd    string
-	devfileDebugCmd  string
-	devfileDebugPort int
-	pod              *corev1.Pod
-	deployment       *appsv1.Deployment
-
-	randomPorts bool
-	errOut      io.Writer
-}
-
-var _ sync.SyncClient = (*Adapter)(nil)
-var _ common.ComponentAdapter = (*Adapter)(nil)
-
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(parameters common.PushParameters) (err error) {
+func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
 	// Get the Dev deployment:
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
@@ -293,18 +308,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	s = log.Spinner("Syncing files into the container")
 	defer s.End(false)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(a.AdapterContext, &a, a.kubeClient)
-	compInfo := common.ComponentInfo{
+	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
+	compInfo := adapters.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
 		SyncFolder:    syncFolder,
 	}
-	syncParams := common.SyncParameters{
+	syncParams := adapters.SyncParameters{
 		PushParams:      parameters,
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
 		PodChanged:      podChanged,
-		Files:           common.GetSyncFilesFromAttributes(pushDevfileCommands),
+		Files:           getSyncFilesFromAttributes(pushDevfileCommands),
 	}
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
@@ -335,7 +350,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return err
 	}
 
-	commandType, err := devfileCommon.GetCommandType(cmd)
+	commandType, err := parsercommon.GetCommandType(cmd)
 	if err != nil {
 		return err
 	}
@@ -656,6 +671,24 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 }
 
 // ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
-func (a Adapter) ExtractProjectToComponent(componentInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
+func (a Adapter) ExtractProjectToComponent(componentInfo adapters.ComponentInfo, targetPath string, stdin io.Reader) error {
 	return a.kubeClient.ExtractProjectToComponent(componentInfo.ContainerName, componentInfo.PodName, targetPath, stdin)
+}
+
+// PushCommandsMap stores the commands to be executed as per their types.
+type PushCommandsMap map[devfilev1.CommandGroupKind]devfilev1.Command
+
+// getSyncFilesFromAttributes gets the target files and folders along with their respective remote destination from the devfile
+// it uses the "dev.odo.push.path" attribute in the run command
+func getSyncFilesFromAttributes(commandsMap PushCommandsMap) map[string]string {
+	syncMap := make(map[string]string)
+	if value, ok := commandsMap[devfilev1.RunCommandGroupKind]; ok {
+		for key, value := range value.Attributes.Strings(nil) {
+			if strings.HasPrefix(key, "dev.odo.push.path:") {
+				localValue := strings.ReplaceAll(key, "dev.odo.push.path:", "")
+				syncMap[filepath.Clean(localValue)] = filepath.ToSlash(filepath.Clean(value))
+			}
+		}
+	}
+	return syncMap
 }

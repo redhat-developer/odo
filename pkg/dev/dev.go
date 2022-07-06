@@ -13,8 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/common"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -43,7 +42,7 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	devfileObj parser.DevfileObj,
-	platformContext kubernetes.KubernetesContext,
+	namespace string,
 	ignorePaths []string,
 	path string,
 	debug bool,
@@ -53,19 +52,22 @@ func (o *DevClient) Start(
 	errOut io.Writer,
 ) error {
 	klog.V(4).Infoln("Creating new adapter")
-	adapter, err := adapters.NewComponentAdapter(
+	adapter := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient,
-		devfileObj.GetMetadataName(), path, "app", devfileObj, platformContext, randomPorts, errOut)
-	if err != nil {
-		return err
-	}
+		component.AdapterContext{
+			ComponentName: devfileObj.GetMetadataName(),
+			Context:       path,
+			AppName:       "app",
+			Devfile:       devfileObj,
+		},
+		namespace, randomPorts, errOut)
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
 		return err
 	}
 
-	pushParameters := common.PushParameters{
+	pushParameters := adapters.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
 		DebugPort:       envSpecificInfo.GetDebugPort(),
 		Path:            path,
