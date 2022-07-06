@@ -6,7 +6,7 @@ title: odo completion
 
 `odo completion` is used to generate shell completion code. The generated code provides interactive shell completion code for `odo`.
 
-There is support for the following terminal shell's:
+There is support for the following terminal shells:
 - [Bash](https://www.gnu.org/software/bash/)
 - [Zsh](https://zsh.sourceforge.io/)
 - [Fish](https://fishshell.com/)
