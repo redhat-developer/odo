@@ -60,7 +60,7 @@ func (o *DevClient) Start(
 			AppName:       "app",
 			Devfile:       devfileObj,
 		},
-		namespace, randomPorts, errOut)
+		namespace)
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
@@ -75,6 +75,8 @@ func (o *DevClient) Start(
 		Debug:           debug,
 		DevfileBuildCmd: buildCommand,
 		DevfileRunCmd:   runCommand,
+		RandomPorts:     randomPorts,
+		ErrOut:          errOut,
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
@@ -97,6 +99,8 @@ func (o *DevClient) Watch(
 	buildCommand string,
 	runCommand string,
 	variables map[string]string,
+	randomPorts bool,
+	errOut io.Writer,
 ) error {
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
@@ -116,6 +120,8 @@ func (o *DevClient) Watch(
 		DevfileRunCmd:       runCommand,
 		DebugPort:           envSpecificInfo.GetDebugPort(),
 		Variables:           variables,
+		RandomPorts:         randomPorts,
+		ErrOut:              errOut,
 	}
 
 	return o.watchClient.WatchAndPush(out, watchParameters, ctx)

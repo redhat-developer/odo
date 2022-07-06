@@ -44,6 +44,8 @@ type Client interface {
 		buildCommand string,
 		runCommand string,
 		variables map[string]string,
+		randomPorts bool,
+		errOut io.Writer,
 	) error
 }
 

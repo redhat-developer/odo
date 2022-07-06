@@ -53,17 +53,17 @@ func (mr *MockClientMockRecorder) Start(devfileObj, namespace, ignorePaths, path
 }
 
 // Watch mocks base method.
-func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string) error {
+func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string, randomPorts bool, errOut io.Writer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables)
+	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, errOut)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, errOut interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, errOut)
 }
 
 // MockHandler is a mock of Handler interface.
