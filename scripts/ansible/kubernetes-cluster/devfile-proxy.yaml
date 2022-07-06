@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devfile-proxy
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: devfile-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /etc/nginx # mount nginx-conf volumn to /etc/nginx
+          readOnly: true
+          name: nginx-conf
+        - mountPath: /var/log/nginx
+          name: log
+        - mountPath: /var/cache/nginx
+          name: cache
+        - mountPath: /var/run
+          name: run
+        - mountPath: /data/nginx/cache
+          name: nginx-cache
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 256m
+          limits:
+            memory: 256Mi
+            cpu: 256m
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf # place ConfigMap `nginx-conf` on /etc/nginx
+          items:
+            - key: nginx.conf
+              path: nginx.conf
+      - name: log
+        emptyDir: {}
+      - name: cache
+        emptyDir: {}
+      - name: run
+        emptyDir: {}
+      - name: nginx-cache
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: devfile-proxy
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: nginx
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: devfile-proxy
+data:
+  nginx.conf: |
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+    	proxy_cache_path 
+    		/data/nginx/cache 
+    		levels=1:2 
+    		keys_zone=app:1M 
+    		max_size=100M;
+
+    	log_format cacheStatus '$host $server_name $server_port $remote_addr $upstream_cache_status $remote_user [$time_local] " $request " '
+        	                   '$status $body_bytes_sent "$http_referer" '
+            	               '"$http_user_agent" "$http_x_forwarded_for"';
+
+    	server {
+    		listen 8080;
+
+    	  access_log /var/log/nginx/status.log cacheStatus;
+
+    		location / {
+    			  proxy_cache 			    app;
+    			  proxy_pass 				    https://registry.stage.devfile.io;
+        	  proxy_set_header 		  Host registry.stage.devfile.io;
+            proxy_ignore_headers 	Set-Cookie;
+            proxy_ignore_headers 	Cache-Control;
+            proxy_cache_valid 		any 30m;
+    		}
+    	}
+    }
