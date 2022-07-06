@@ -66,7 +66,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	// if we need to restart, issue the remote process handler command to stop all running commands first.
 	// We do not need to restart Hot reload capable commands.
 	if a.componentExists {
-		if a.parameters.RunModeChanged || devfileCmd.Exec == nil || !util.SafeGetBool(devfileCmd.Exec.HotReloadCapable) {
+		if devfileCmd.Exec == nil || !util.SafeGetBool(devfileCmd.Exec.HotReloadCapable) {
 			klog.V(2).Infof("restart required for command %s", devfileCmd.Id)
 
 			cmdDef, err := devfileCommandToRemoteCmdDefinition(devfileCmd)

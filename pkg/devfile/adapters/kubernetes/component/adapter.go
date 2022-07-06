@@ -112,6 +112,17 @@ func (a *Adapter) ComponentInfo(pod *corev1.Pod, command devfilev1.Command) (ada
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
+	// preliminary checks
+	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
+	if err != nil {
+		return err
+	}
+
+	err = dfutil.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
+	if err != nil {
+		return err
+	}
+
 	deployment, componentExists, err := a.getComponentDeployment()
 	if err != nil {
 		return err
@@ -125,37 +136,6 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
 	s := log.Spinner("Waiting for Kubernetes resources")
 	defer s.End(false)
-
-	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
-	if err != nil {
-		return err
-	}
-
-	err = dfutil.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
-	if err != nil {
-		return err
-	}
-
-	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
-	if err != nil {
-		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
-	}
-
-	previousMode := parameters.EnvSpecificInfo.GetRunMode()
-	currentMode := envinfo.Run
-
-	if parameters.Debug {
-		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.Devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
-		if e != nil {
-			return fmt.Errorf("debug command is not valid: %w", e)
-		}
-		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
-		currentMode = envinfo.Debug
-	}
-
-	if currentMode != previousMode {
-		parameters.RunModeChanged = true
-	}
 
 	// Set the mode to Dev since we are using "odo dev" here
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
@@ -255,6 +235,13 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
 	s = log.Spinner("Syncing files into the container")
 	defer s.End(false)
+
+	// Get commands
+	pushDevfileCommands, err := a.getPushDevfileCommands(parameters)
+	if err != nil {
+		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
+	}
+
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
 	compInfo := adapters.ComponentInfo{
@@ -325,10 +312,10 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 			commandType, cmd.Id)
 	}
 
-	klog.V(4).Infof("running=%v, execRequired=%v, parameters.RunModeChanged=%v",
-		running, execRequired, parameters.RunModeChanged)
+	klog.V(4).Infof("running=%v, execRequired=%v",
+		running, execRequired)
 
-	if isComposite || !running || execRequired || parameters.RunModeChanged {
+	if isComposite || !running || execRequired {
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
@@ -337,7 +324,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}
 		if componentExists {
-			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
+			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
 				if err = doExecuteBuildCommand(); err != nil {
 					return err
 				}

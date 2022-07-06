@@ -4,10 +4,13 @@ import (
 	"fmt"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/service"
 	appsv1 "k8s.io/api/apps/v1"
 )
@@ -76,4 +79,21 @@ func (a *Adapter) pushKubernetesComponents(
 		return nil, fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}
 	return k8sComponents, nil
+}
+
+func (a *Adapter) getPushDevfileCommands(parameters adapters.PushParameters) (map[devfilev1.CommandGroupKind]devfilev1.Command, error) {
+	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate devfile build and run commands: %w", err)
+	}
+
+	if parameters.Debug {
+		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.Devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
+		if e != nil {
+			return nil, fmt.Errorf("debug command is not valid: %w", e)
+		}
+		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
+	}
+
+	return pushDevfileCommands, nil
 }
