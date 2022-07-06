@@ -7,7 +7,7 @@ sidebar_position: 3
 
 ## CLI installation
 
-Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/). 
+Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/).
 
 For more information on the changes of each release, they can be viewed either on [GitHub](https://github.com/redhat-developer/odo/releases) or the [blog](/blog).
 
@@ -29,14 +29,14 @@ values={[
 
 Installing `odo` on `amd64` architecture:
 
-1. Download the latest release from the mirror:
+1. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -60,14 +60,14 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 Installing `odo` on `arm64` architecture:
 
-1. Download the latest release from the mirror:
+1. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -91,14 +91,14 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 Installing `odo` on `ppc64le` architecture:
 
-1. Download the latest release from the mirror:
+1. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-ppc64le -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-ppc64le -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-ppc64le.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-ppc64le.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -122,14 +122,14 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 Installing `odo` on `s390x` architecture:
 
-1. Download the latest release from the mirror:
+1. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-s390x -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-s390x -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-linux-s390x.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-linux-s390x.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -167,14 +167,14 @@ values={[
 
 Installing `odo` on `amd64` architecture:
 
-1. Download the latest release from the mirror:
+1. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-darwin-amd64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-amd64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-darwin-amd64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -199,14 +199,14 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 Installing `odo` on `arm64` architecture:
 
-1. Download the latest release from the mirror:
+1. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-arm64 -o odo
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-darwin-arm64 -o odo
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-darwin-arm64.sha256 -o odo.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-darwin-arm64.sha256 -o odo.sha256
 echo "$(<odo.sha256)  odo" | shasum -a 256 --check
 ```
 
@@ -252,14 +252,14 @@ odo version
 
 1. Open a PowerShell terminal
 
-2. Download the latest release from the mirror:
+2. Download the v2.5.1 release from the mirror:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe -o odo.exe
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-windows-amd64.exe -o odo.exe
 ```
 
 2. (Optional) Verify the downloaded binary with the SHA-256 sum:
 ```shell
-curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/latest/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
+curl -L https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/v2.5.1/odo-windows-amd64.exe.sha256 -o odo.exe.sha256
 # Visually compare the output of both files
 Get-FileHash odo.exe
 type odo.exe.sha256
