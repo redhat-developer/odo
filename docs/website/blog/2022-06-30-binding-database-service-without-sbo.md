@@ -269,7 +269,10 @@ starterProjects:
 ## Deploy the application
 7. Run `odo dev` to deploy the application on the cluster.
 ```sh
-odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_ROOT_USERNAME  --var HOST="mongodb"
+odo dev \
+  --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD \
+  --var USERNAME=$MY_MONGODB_ROOT_USERNAME \
+  --var HOST="mongodb"
 ```
 
 The value for _host_ is name of the service that belongs to our database application, in this case it is a service resource called "mongodb", you might have noticed it when we deployed the helm chart.
