@@ -211,13 +211,14 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
+	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.Devfile) {
 		err = libdevfile.ExecPostStartEvents(a.Devfile,
 			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, pod.Name, "", parameters.Show))
 		if err != nil {
 			return err
 		}
 	}
+	componentStatus.PostStartEventsDone = true
 
 	cmdKind := devfilev1.RunCommandGroupKind
 	cmdName := parameters.DevfileRunCmd

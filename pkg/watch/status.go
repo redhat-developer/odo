@@ -14,7 +14,8 @@ const (
 )
 
 type ComponentStatus struct {
-	State State
+	State               State
+	PostStartEventsDone bool
 }
 
 func componentCanSyncFile(state State) bool {
