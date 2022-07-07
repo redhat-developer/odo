@@ -18,7 +18,7 @@ import (
 // Code into this file is heavily inspired from https://github.com/ahmetb/kubectl-tree
 
 func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unstructured.Unstructured, error) {
-	apis, err := findAPIs(c.discoveryClient)
+	apis, err := findAPIs(c.cachedDiscoveryClient)
 	if err != nil {
 		return nil, err
 	}
