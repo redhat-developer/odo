@@ -83,6 +83,9 @@ components:
               containers:
                 - name: main
                   image: "{{CONTAINER_IMAGE}}"
+                  readinessProbe:
+                    httpGet:
+                      port: 3000
   - name: another-deployment
     kubernetes:
       inlined: |
@@ -103,6 +106,9 @@ components:
               containers:
                 - name: main
                   image: "{{CONTAINER_IMAGE}}"
+                  readinessProbe:
+                    httpGet:
+                      port: 3000
   - name: innerloop-pod
     kubernetes:
       inlined: |

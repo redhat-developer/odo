@@ -80,7 +80,7 @@ var _ = Describe("odo logs command tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
-				devSession.Kill()
+				devSession.Stop()
 				devSession.WaitEnd()
 			})
 			It("should successfully show logs of the running component", func() {
@@ -178,7 +178,7 @@ var _ = Describe("odo logs command tests", func() {
 				}).Should(Equal(true))
 			})
 			AfterEach(func() {
-				devSession.Kill()
+				devSession.Stop()
 				devSession.WaitEnd()
 			})
 			It("should successfully show logs of the running component", func() {
