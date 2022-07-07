@@ -63,7 +63,7 @@ type WatchParameters struct {
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(adapters.PushParameters, WatchParameters) error
+	DevfileWatchHandler func(adapters.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
 	// EnvSpecificInfo contains information of env.yaml file
@@ -94,7 +94,7 @@ type WatchParameters struct {
 type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
-type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer)
+type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus)
 
 // cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
 type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
@@ -206,7 +206,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 	return nil
 }
 
-func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context) error {
+func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
 	absIgnorePaths := dfutil.GetAbsGlobExps(parameters.Path, parameters.FileIgnores)
@@ -232,13 +232,13 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return fmt.Errorf("error watching deployment: %v", err)
 	}
 
-	return eventWatcher(ctx, watcher, deploymentWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources)
+	return eventWatcher(ctx, watcher, deploymentWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
+func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
 	var events []fsnotify.Event
 
 	// timer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
@@ -262,7 +262,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, watcher)
 			// process the changes and sync files with remote pod
 			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-				processEventsHandler(changedFiles, deletedPaths, parameters, out)
+				processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus)
 				// empty the events to receive new events
 				events = []fsnotify.Event{} // empty the events slice to capture new events
 			}
@@ -274,7 +274,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
 				ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
 
-			processEventsHandler(nil, nil, parameters, out)
+			processEventsHandler(nil, nil, parameters, out, &componentStatus)
 
 		case <-ctx.Done():
 			return cleanupHandler(parameters.InitialDevfileObj, out)
@@ -348,7 +348,7 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 	return changedFiles, deletedPaths
 }
 
-func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer) {
+func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus) {
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
@@ -374,7 +374,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,
 	}
-	err := parameters.DevfileWatchHandler(pushParams, parameters)
+	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
 	if err != nil {
 		// Log and output, but intentionally not exiting on error here.
 		// We don't want to break watch when push failed, it might be fixed with the next change.

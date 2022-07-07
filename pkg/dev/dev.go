@@ -50,7 +50,7 @@ func (o *DevClient) Start(
 	runCommand string,
 	randomPorts bool,
 	errOut io.Writer,
-) error {
+) (watch.ComponentStatus, error) {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter := component.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient,
@@ -64,7 +64,7 @@ func (o *DevClient) Start(
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
-		return err
+		return watch.ComponentStatus{}, err
 	}
 
 	pushParameters := adapters.PushParameters{
@@ -80,12 +80,13 @@ func (o *DevClient) Start(
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
-	err = adapter.Push(pushParameters)
+	componentStatus := watch.ComponentStatus{}
+	err = adapter.Push(pushParameters, &componentStatus)
 	if err != nil {
-		return err
+		return watch.ComponentStatus{}, err
 	}
 	klog.V(4).Infoln("Successfully created inner-loop resources")
-	return nil
+	return componentStatus, nil
 }
 
 func (o *DevClient) Watch(
@@ -101,6 +102,7 @@ func (o *DevClient) Watch(
 	variables map[string]string,
 	randomPorts bool,
 	errOut io.Writer,
+	componentStatus watch.ComponentStatus,
 ) error {
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
@@ -124,5 +126,5 @@ func (o *DevClient) Watch(
 		ErrOut:              errOut,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, ctx)
+	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
 }

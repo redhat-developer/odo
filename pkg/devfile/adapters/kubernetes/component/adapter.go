@@ -24,6 +24,7 @@ import (
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/watch"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -110,7 +111,8 @@ func (a *Adapter) ComponentInfo(pod *corev1.Pod, command devfilev1.Command) (ada
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
+// The componentStatus will be modified to reflect the status of the component when the function returns
+func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch.ComponentStatus) (err error) {
 
 	// preliminary checks
 	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)

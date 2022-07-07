@@ -41,7 +41,7 @@ func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []
 	return changedFiles, deletedPaths
 }
 
-func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer) {
+func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer, componentStatus *ComponentStatus) {
 	fmt.Fprintf(out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
 }
 
@@ -131,7 +131,7 @@ func Test_eventWatcher(t *testing.T) {
 				cancel()
 			}()
 
-			err := eventWatcher(ctx, watcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler)
+			err := eventWatcher(ctx, watcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, ComponentStatus{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

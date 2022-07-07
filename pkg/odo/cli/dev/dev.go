@@ -222,7 +222,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"odo version: "+version.VERSION)
 
 	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
+	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
 	if err != nil {
 		return err
 	}
@@ -257,13 +257,14 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 			o.variables,
 			o.randomPortsFlag,
 			o.errOut,
+			componentStatus,
 		)
 	}
 	return err
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters) error {
+func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 	var adapter kcomponent.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
@@ -271,7 +272,7 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, w
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
-	err = adapter.Push(pushParams)
+	err = adapter.Push(pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
