@@ -136,7 +136,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		podName, err = a.getPodName()
 	}
 
-	fmt.Printf("° Waiting for Kubernetes resources...\n")
 	//	s := log.Spinner("Waiting for Kubernetes resources")
 	//	defer s.End(false)
 
@@ -192,16 +191,17 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 
 	if updated {
 		fmt.Printf("Deployment has been updated to version %s. Waiting new event...\n", deployment.GetResourceVersion())
+		componentStatus.State = watch.StateWaitDeployment
 		return nil
 	}
 
 	numberReplicas := deployment.Status.ReadyReplicas
 	if numberReplicas != 1 {
 		fmt.Printf("Deployment has %d ready replicas. Waiting new event...\n", numberReplicas)
+		componentStatus.State = watch.StateWaitDeployment
 		return nil
 	}
 
-	fmt.Printf("v One replica is ready\n")
 	/*
 		if needRestart {
 			err = a.kubeClient.WaitForPodDeletion(pod.Name)
@@ -216,6 +216,10 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		}
 	*/
 
+	if componentStatus.State == watch.StateReady {
+		return nil
+	}
+
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
 	pod, err := a.getPod(nil, true)
 	if err != nil {
@@ -224,8 +228,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
-
-	podChanged := true //TODO move it to Status
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
@@ -242,6 +244,8 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
 	}
+
+	podChanged := componentStatus.State == watch.StateWaitDeployment
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
@@ -350,6 +354,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return fmt.Errorf("fail starting the port forwarding: %w", err)
 	}
 
+	componentStatus.State = watch.StateReady
 	return nil
 }
 

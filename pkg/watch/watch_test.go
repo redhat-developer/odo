@@ -76,7 +76,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{},
 			},
-			wantOut:       "changedFiles [file1 file2] deletedPaths []\ncleanup done",
+			wantOut:       "Pushing files...\n\nchangedFiles [file1 file2] deletedPaths []\ncleanup done",
 			wantErr:       false,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Create}, {Name: "file2", Op: fsnotify.Write}},
 			watcherError:  nil,
@@ -96,7 +96,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{FileIgnores: []string{"file1"}},
 			},
-			wantOut:       "changedFiles [] deletedPaths [file1 file2]\ncleanup done",
+			wantOut:       "Pushing files...\n\nchangedFiles [] deletedPaths [file1 file2]\ncleanup done",
 			wantErr:       false,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Remove}, {Name: "file2", Op: fsnotify.Rename}},
 			watcherError:  nil,
@@ -131,7 +131,10 @@ func Test_eventWatcher(t *testing.T) {
 				cancel()
 			}()
 
-			err := eventWatcher(ctx, watcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, ComponentStatus{})
+			componentStatus := ComponentStatus{
+				State: StateReady,
+			}
+			err := eventWatcher(ctx, watcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

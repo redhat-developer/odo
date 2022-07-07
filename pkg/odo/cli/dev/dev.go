@@ -227,8 +227,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	log.Info("\nYour application is now running on the cluster")
-
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)

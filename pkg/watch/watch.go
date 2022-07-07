@@ -13,6 +13,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
@@ -24,6 +25,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 )
@@ -250,6 +252,8 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 	timer := time.NewTimer(time.Millisecond)
 	<-timer.C
 
+	fmt.Printf("Status: %s\n", componentStatus.State)
+
 	for {
 		select {
 		case event := <-watcher.Events:
@@ -258,24 +262,40 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			timer.Reset(100 * time.Millisecond)
 		case <-timer.C:
 			// timer has fired
+			if !componentCanSyncFile(componentStatus.State) {
+				continue
+			}
 			// first find the files that have changed (also includes the ones newly created) or deleted
 			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, watcher)
 			// process the changes and sync files with remote pod
-			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
-				processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus)
-				// empty the events to receive new events
+			if len(changedFiles) == 0 && len(deletedPaths) == 0 {
+				continue
+			}
+			componentStatus.State = StateSyncOutdated
+			fmt.Fprintf(out, "Pushing files...\n\n")
+			processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus)
+			fmt.Printf("Status: %s\n", componentStatus.State)
+			// empty the events to receive new events
+			if componentStatus.State == StateReady {
 				events = []fsnotify.Event{} // empty the events slice to capture new events
 			}
+
 		case watchErr := <-watcher.Errors:
 			return watchErr
 
 		case ev := <-deploymentWatcher.ResultChan():
-			dep := ev.Object.(*appsv1.Deployment)
-			fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
-				ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
+			dep, isDep := ev.Object.(*appsv1.Deployment)
+			if isDep {
+				fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
+					ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
 
-			processEventsHandler(nil, nil, parameters, out, &componentStatus)
-
+				processEventsHandler(nil, nil, parameters, out, &componentStatus)
+				fmt.Printf("Status: %s\n", componentStatus.State)
+			}
+			status, isStatus := ev.Object.(*metav1.Status)
+			if isStatus {
+				fmt.Printf("Status: %+v\n", status)
+			}
 		case <-ctx.Done():
 			return cleanupHandler(parameters.InitialDevfileObj, out)
 		}
@@ -355,7 +375,6 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 
 	var hasFirstSuccessfulPushOccurred bool
 
-	//	fmt.Fprintf(out, "Pushing files...\n\n")
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
 	pushParams := adapters.PushParameters{
@@ -374,14 +393,17 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,
 	}
+	oldState := componentStatus.State
 	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
 	if err != nil {
 		// Log and output, but intentionally not exiting on error here.
 		// We don't want to break watch when push failed, it might be fixed with the next change.
 		klog.V(4).Infof("Error from Push: %v", err)
 		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-		//} else {
-		//		printInfoMessage(out, parameters.Path)
+	} else {
+		if oldState != StateReady && componentStatus.State == StateReady {
+			printInfoMessage(out, parameters.Path)
+		}
 	}
 }
 
@@ -449,6 +471,6 @@ func removeDuplicates(input []string) []string {
 	return result
 }
 
-//func printInfoMessage(out io.Writer, path string) {
-//	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
-//}
+func printInfoMessage(out io.Writer, path string) {
+	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
+}
