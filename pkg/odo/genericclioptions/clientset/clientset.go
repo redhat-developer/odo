@@ -82,7 +82,7 @@ var subdeps map[string][]string = map[string][]string{
 	PROJECT:          {KUBERNETES_NULLABLE},
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
-	WATCH:            {DELETE_COMPONENT, STATE},
+	WATCH:            {KUBERNETES, DELETE_COMPONENT, STATE},
 	BINDING:          {PROJECT, KUBERNETES},
 	/* Add sub-dependencies here, if any */
 }
@@ -172,7 +172,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.StateClient = state.NewStateClient(dep.FS)
 	}
 	if isDefined(command, WATCH) {
-		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient, dep.StateClient)
+		dep.WatchClient = watch.NewWatchClient(dep.KubernetesClient, dep.DeleteClient, dep.StateClient)
 	}
 	if isDefined(command, BINDING) {
 		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)

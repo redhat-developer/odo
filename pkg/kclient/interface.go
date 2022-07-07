@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -55,6 +57,7 @@ type ClientInterface interface {
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	GetDeploymentAPIVersion() (schema.GroupVersionKind, error)
 	IsDeploymentExtensionsV1Beta1() (bool, error)
+	DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error)
 
 	// dynamic.go
 	PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error)

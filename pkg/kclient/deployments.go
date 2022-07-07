@@ -14,11 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
-
-	apiMachineryWatch "k8s.io/apimachinery/pkg/watch"
 )
 
 func boolPtr(b bool) *bool {
@@ -103,11 +102,11 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 
 // WaitForPodDeletion waits for the given pod to be deleted
 func (c *Client) WaitForPodDeletion(name string) error {
-	watch, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
+	watcher, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{FieldSelector: "metadata.name=" + name})
 	if err != nil {
 		return err
 	}
-	defer watch.Stop()
+	defer watcher.Stop()
 
 	if _, err = c.KubeClient.CoreV1().Pods(c.Namespace).Get(context.TODO(), name, metav1.GetOptions{}); kerrors.IsNotFound(err) {
 		return nil
@@ -118,11 +117,11 @@ func (c *Client) WaitForPodDeletion(name string) error {
 		case <-time.After(time.Minute):
 			return fmt.Errorf("timeout while waiting for %q pod to be deleted", name)
 
-		case val, ok := <-watch.ResultChan():
+		case val, ok := <-watcher.ResultChan():
 			if !ok {
 				return errors.New("error getting value from resultchan")
 			}
-			if val.Type == apiMachineryWatch.Deleted {
+			if val.Type == watch.Deleted {
 				return nil
 			}
 		}
@@ -315,4 +314,14 @@ func (c *Client) GetDeploymentAPIVersion() (schema.GroupVersionKind, error) {
 
 func (c *Client) IsDeploymentExtensionsV1Beta1() (bool, error) {
 	return c.IsResourceSupported("extensions", "v1beta1", "deployments")
+}
+
+// DeploymentWatcher returns a watcher on Deployments into the current namespace
+// with the given label selector
+func (o *Client) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	ns := o.GetCurrentNamespace()
+	return o.GetClient().AppsV1().Deployments(ns).
+		Watch(ctx, metav1.ListOptions{
+			LabelSelector: selector,
+		})
 }

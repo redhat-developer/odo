@@ -5,6 +5,7 @@
 package kclient
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 	time "time"
@@ -22,6 +23,7 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	watch "k8s.io/apimachinery/pkg/watch"
 	discovery "k8s.io/client-go/discovery"
 	dynamic "k8s.io/client-go/dynamic"
 	kubernetes "k8s.io/client-go/kubernetes"
@@ -307,6 +309,21 @@ func (m *MockClientInterface) DeleteService(serviceName string) error {
 func (mr *MockClientInterfaceMockRecorder) DeleteService(serviceName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteService", reflect.TypeOf((*MockClientInterface)(nil).DeleteService), serviceName)
+}
+
+// DeploymentWatcher mocks base method.
+func (m *MockClientInterface) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeploymentWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeploymentWatcher indicates an expected call of DeploymentWatcher.
+func (mr *MockClientInterfaceMockRecorder) DeploymentWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeploymentWatcher", reflect.TypeOf((*MockClientInterface)(nil).DeploymentWatcher), ctx, selector)
 }
 
 // ExecCMDInContainer mocks base method.

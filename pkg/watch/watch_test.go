@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -47,6 +48,15 @@ func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters
 func cleanupHandler(_ parser.DevfileObj, out io.Writer) error {
 	fmt.Fprintf(out, "cleanup done")
 	return nil
+}
+
+type fakeWatcher struct{}
+
+func (o fakeWatcher) Stop() {
+}
+
+func (o fakeWatcher) ResultChan() <-chan watch.Event {
+	return make(chan watch.Event, 1)
 }
 
 func Test_eventWatcher(t *testing.T) {
@@ -121,7 +131,7 @@ func Test_eventWatcher(t *testing.T) {
 				cancel()
 			}()
 
-			err := eventWatcher(ctx, watcher, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler)
+			err := eventWatcher(ctx, watcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

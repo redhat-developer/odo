@@ -11,6 +11,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/state"
 
@@ -23,6 +24,8 @@ import (
 
 	dfutil "github.com/devfile/library/pkg/util"
 
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 )
 
@@ -33,14 +36,16 @@ const (
 )
 
 type WatchClient struct {
+	kubeClient   kclient.ClientInterface
 	deleteClient _delete.Client
 	stateClient  state.Client
 }
 
 var _ Client = (*WatchClient)(nil)
 
-func NewWatchClient(deleteClient _delete.Client, stateClient state.Client) *WatchClient {
+func NewWatchClient(kubeClient kclient.ClientInterface, deleteClient _delete.Client, stateClient state.Client) *WatchClient {
 	return &WatchClient{
+		kubeClient:   kubeClient,
 		deleteClient: deleteClient,
 		stateClient:  stateClient,
 	}
@@ -222,13 +227,19 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 
 	printInfoMessage(out, parameters.Path)
 
-	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources)
+	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
+	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
+	if err != nil {
+		return fmt.Errorf("error watching deployment: %v", err)
+	}
+
+	return eventWatcher(ctx, watcher, deploymentWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
+func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
 	var events []fsnotify.Event
 
 	// timer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
@@ -256,6 +267,13 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters Wat
 			events = []fsnotify.Event{} // empty the events slice to capture new events
 		case watchErr := <-watcher.Errors:
 			return watchErr
+
+		case ev := <-deploymentWatcher.ResultChan():
+			dep := ev.Object.(*appsv1.Deployment)
+			fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s\n",
+				ev.Type, dep.GetName(), dep.GetResourceVersion())
+			// TODO
+
 		case <-ctx.Done():
 			return cleanupHandler(parameters.InitialDevfileObj, out)
 		}
