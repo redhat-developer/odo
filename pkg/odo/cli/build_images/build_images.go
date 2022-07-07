@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
@@ -64,6 +65,8 @@ func (o *BuildImagesOptions) Validate() (err error) {
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
 	devfileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 	path := filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
+	// Remove /private from path
+	path = strings.Replace(path, "/private", "", 1)
 	return image.BuildPushImages(devfileObj, path, o.pushFlag)
 }
 

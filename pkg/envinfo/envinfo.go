@@ -64,7 +64,8 @@ type EnvSpecificInfo struct {
 var _ localConfigProvider.LocalConfigProvider = (*EnvSpecificInfo)(nil)
 
 func (esi EnvSpecificInfo) GetDevfilePath() string {
-	return esi.devfilePath
+	// Return esi.devfilePath without /private as the base folder
+	return strings.Replace(esi.devfilePath, "/private", "", 1)
 }
 
 // getEnvInfoFile first checks for the ENVINFO variable

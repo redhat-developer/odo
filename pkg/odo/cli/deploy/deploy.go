@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -154,6 +155,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	// Run actual deploy command to be used
+	klog.V(4).Infof("This is the devfile path that is being passed into deploy: %s", path)
 	err := o.clientset.DeployClient.Deploy(devfileObj, path, appName)
 
 	if err == nil {

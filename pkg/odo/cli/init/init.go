@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -229,6 +230,9 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 	scontext.SetProjectType(ctx, devfileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devfileObj.GetMetadataName())
 
+	// Weird mac m1 issue:
+	// Remove /private directory from devfilePath
+	devfilePath = strings.Replace(devfilePath, "/private", "", 1)
 	return devfileObj, devfilePath, nil
 }
 
