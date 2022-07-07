@@ -19,7 +19,6 @@ import (
 	gitignore "github.com/sabhiram/go-gitignore"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
@@ -225,7 +224,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
 
-	printInfoMessage(out, parameters.Path)
+	//printInfoMessage(out, parameters.Path)
 
 	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
 	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
@@ -262,17 +261,20 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			// first find the files that have changed (also includes the ones newly created) or deleted
 			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, watcher)
 			// process the changes and sync files with remote pod
-			processEventsHandler(changedFiles, deletedPaths, parameters, out)
-			// empty the events to receive new events
-			events = []fsnotify.Event{} // empty the events slice to capture new events
+			if len(changedFiles) > 0 || len(deletedPaths) > 0 {
+				processEventsHandler(changedFiles, deletedPaths, parameters, out)
+				// empty the events to receive new events
+				events = []fsnotify.Event{} // empty the events slice to capture new events
+			}
 		case watchErr := <-watcher.Errors:
 			return watchErr
 
 		case ev := <-deploymentWatcher.ResultChan():
 			dep := ev.Object.(*appsv1.Deployment)
-			fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s\n",
-				ev.Type, dep.GetName(), dep.GetResourceVersion())
-			// TODO
+			fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
+				ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
+
+			processEventsHandler(nil, nil, parameters, out)
 
 		case <-ctx.Done():
 			return cleanupHandler(parameters.InitialDevfileObj, out)
@@ -347,17 +349,13 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 }
 
 func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer) {
-	if len(changedFiles) == 0 && len(deletedPaths) == 0 {
-		return
-	}
-
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
 
 	var hasFirstSuccessfulPushOccurred bool
 
-	fmt.Fprintf(out, "Pushing files...\n\n")
+	//	fmt.Fprintf(out, "Pushing files...\n\n")
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
 	pushParams := adapters.PushParameters{
@@ -382,8 +380,8 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		// We don't want to break watch when push failed, it might be fixed with the next change.
 		klog.V(4).Infof("Error from Push: %v", err)
 		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-	} else {
-		printInfoMessage(out, parameters.Path)
+		//} else {
+		//		printInfoMessage(out, parameters.Path)
 	}
 }
 
@@ -451,6 +449,6 @@ func removeDuplicates(input []string) []string {
 	return result
 }
 
-func printInfoMessage(out io.Writer, path string) {
-	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
-}
+//func printInfoMessage(out io.Writer, path string) {
+//	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
+//}

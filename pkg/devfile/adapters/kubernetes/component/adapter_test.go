@@ -135,7 +135,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			fakePrefClient := preference.NewMockClient(ctrl)
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
 			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, adapterCtx, "")
-			_, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, 0, nil)
+			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
