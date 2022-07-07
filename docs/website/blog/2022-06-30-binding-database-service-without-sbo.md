@@ -126,9 +126,8 @@ git clone https://github.com/valaparthvi/restapi-mongodb-odo.git && cd restapi-m
 ## Download the devfile.yaml
 5. Run `odo init` to fetch the necessary devfile.
 ```sh
-odo init
+odo init --devfile go --name places
 ```
-While running this command, ensure that you delete port 8080, and add a new port 3000 to the 'runtime' container component.
 
 <details>
 <summary>Expected output:</summary>
@@ -141,38 +140,13 @@ While running this command, ensure that you delete port 8080, and add a new port
  \__/
 
 Interactive mode enabled, please answer the following questions:
-Based on the files in the current directory odo detected
-Language: go
-Project type: go
-The devfile "go" from the registry "DefaultDevfileRegistry" will be downloaded.
-? Is this correct? Yes
- ✓  Downloading devfile "go" from registry "DefaultDevfileRegistry" [11s]
-Current component configuration:
-Container "runtime":
-  Opened ports:
-   - 8080
-  Environment variables:
-? Select container for which you want to change configuration? runtime
-? What configuration do you want change? Add new port
- ⚠  Please ensure that you do not add a duplicate port number
-? Enter port number: 3000
-? What configuration do you want change? Delete port "8080"
-? What configuration do you want change? NOTHING - configuration is correct
-Current component configuration:
-Container "runtime":
-  Opened ports:
-   - 3000
-  Environment variables:
-? Select container for which you want to change configuration? NONE - configuration is correct
-? Enter component name: places
+ ✓  Downloading devfile "go" [4s]
 
 Your new component 'places' is ready in the current directory.
 To start editing your component, use 'odo dev' and open this folder in your favorite IDE.
 Changes will be directly reflected on the cluster.
 ```
 </details>
-
-Optionally, you can also run `odo init --name places --devfile go`, and modify the port number once the devfile downloads.
 
 <details>
 <summary>If you run <code>odo dev</code> to deploy the application at this point, you will notice that the 'run' command has failed with some logs, this is expected, because like we mentioned before, our Go application is dependent on the MongoDB service and will not function unless it is connected to it.</summary>
@@ -243,18 +217,6 @@ components:
 
 The values for _username_, _password_, and _host_ will be passed to devfile.yaml with the `--var` flag when we run the `odo dev` command.
 
-6.4 If you have not already set the 'runtime' container component port to 3000, now is the time to do so.
-```yml
-components:
-- container:
-    endpoints:
-    - name: port-3000-tcp
-      protocol: tcp
-      targetPort: 3000
-  ...
-  ...
-  name: runtime
-```
 <details>
 <summary>Your final devfile.yaml should look something like this:</summary>
 
@@ -282,10 +244,8 @@ components:
 - container:
     dedicatedPod: false
     endpoints:
-    - name: port-3000-tcp
-      protocol: tcp
-      secure: false
-      targetPort: 3000
+    - name: http
+      targetPort: 8080
     image: golang:latest
     memoryLimit: 1024Mi
     mountSources: true
@@ -353,7 +313,7 @@ $ odo dev --var PASSWORD=$MY_MONGODB_ROOT_PASSWORD --var USERNAME=$MY_MONGODB_RO
 
 Your application is now running on the cluster
 
- - Forwarding from 127.0.0.1:40001 -> 3000
+ - Forwarding from 127.0.0.1:40001 -> 8080
 
 Watching for changes in the current directory /home/pvala/restapi-mongodb-odo
 Press Ctrl+c to exit `odo dev` and delete resources from the cluster
