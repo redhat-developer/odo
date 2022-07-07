@@ -81,34 +81,6 @@ func NewKubernetesAdapter(
 	}
 }
 
-// getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
-// is true, then the pod is refreshed from the cluster regardless of its current local state
-func (a *Adapter) getPod(pod *corev1.Pod, refresh bool) (*corev1.Pod, error) {
-	result := pod
-	if refresh || result == nil {
-		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
-
-		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		var err error
-		result, err = a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, a.prefClient.GetPushTimeout())
-		if err != nil {
-			return nil, fmt.Errorf("error while waiting for pod %s: %w", podSelector, err)
-		}
-	}
-	return result, nil
-}
-
-func (a *Adapter) ComponentInfo(pod *corev1.Pod, command devfilev1.Command) (adapters.ComponentInfo, error) {
-	pod, err := a.getPod(pod, false)
-	if err != nil {
-		return adapters.ComponentInfo{}, err
-	}
-	return adapters.ComponentInfo{
-		PodName:       pod.Name,
-		ContainerName: command.Exec.Component,
-	}, nil
-}
-
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 // The componentStatus will be modified to reflect the status of the component when the function returns
@@ -128,12 +100,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	deployment, componentExists, err := a.getComponentDeployment()
 	if err != nil {
 		return err
-	}
-
-	// If the component already exists, retrieve the pod's name before it's potentially updated
-	podName := ""
-	if componentExists {
-		podName, err = a.getPodName()
 	}
 
 	//	s := log.Spinner("Waiting for Kubernetes resources")
@@ -157,18 +123,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 
-	/*
-		deployment, err = a.kubeClient.WaitForDeploymentRollout(deployment.Name)
-		if err != nil {
-			return fmt.Errorf("error while waiting for deployment rollout: %w", err)
-		}
-
-		// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-		pod, err := a.getPod(nil, true)
-		if err != nil {
-			return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
-		}
-	*/
 	ownerReference := generator.GetOwnerReference(deployment)
 	err = a.updatePVCsOwnerReferences(ownerReference)
 	if err != nil {
@@ -202,26 +156,13 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return nil
 	}
 
-	/*
-		if needRestart {
-			err = a.kubeClient.WaitForPodDeletion(pod.Name)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = a.kubeClient.WaitForDeploymentRollout(deployment.Name)
-		if err != nil {
-			return fmt.Errorf("failed to update config to component deployed: %w", err)
-		}
-	*/
-
 	if componentStatus.State == watch.StateReady {
+		// If the deployment is already in Ready State, no need to continue
 		return nil
 	}
 
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.getPod(nil, true)
+	// Now the Deployment has a Ready replica, we can get the Pod to work inside it
+	pod, err := a.kubeClient.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
 		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
@@ -232,7 +173,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
-		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", podName, err)
+		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
 	}
 	//s.End(true)
 

@@ -34,24 +34,6 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	return deployment, componentExists, nil
 }
 
-// getPodName returns the name of the pod associated with the component, if any
-// An empty name is returned id no pod exists
-func (a *Adapter) getPodName() (string, error) {
-	var podName string
-	// First see if the component does have a pod. it could have been scaled down to zero
-	_, err := a.kubeClient.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
-	// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
-	// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
-	if err == nil {
-		pod, podErr := a.getPod(nil, true)
-		if podErr != nil {
-			return "", fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, podErr)
-		}
-		podName = pod.GetName()
-	}
-	return podName, nil
-}
-
 // pushKubernetesComponents gets the Kubernetes components from the Devfile and push them to the cluster
 // adding the specified labels to them
 func (a *Adapter) pushKubernetesComponents(
