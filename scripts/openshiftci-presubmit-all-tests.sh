@@ -35,32 +35,19 @@ oc whoami
 if [ "${ARCH}" == "s390x" ]; then
     # Integration tests
     make test-integration
-    make test-integration-devfile
-    make test-cmd-login-logout
-    make test-cmd-project
     # E2e tests
-    make test-e2e-all
+    make test-e2e
 elif  [ "${ARCH}" == "ppc64le" ]; then
     # Integration tests
     make test-integration
-    make test-integration-devfile
-    make test-cmd-login-logout
-    make test-cmd-project
     # E2e tests
-    make test-e2e-all
+    make test-e2e
 else
     # Integration tests
     make test-integration || error=true
-    make test-interactive || error=true
-    make test-integration-devfile || error=true
-    make test-cmd-login-logout || error=true
-    make test-cmd-project || error=true
 
-    # Interactive tests
-   make test-interactive || error=true
- 
     # E2e tests
-    make test-e2e-all || error=true
+    make test-e2e || error=true
 
     # Fail the build if there is any error while test execution
     if [ $error ]; then

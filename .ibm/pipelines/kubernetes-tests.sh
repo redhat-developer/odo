@@ -9,15 +9,12 @@ ibmcloud target -r "${IBM_REGION}"
 ibmcloud ks cluster config --cluster "${IBM_KUBERNETES_ID}" --admin
 
 cleanup_namespaces
-
+export SKIP_USER_LOGIN_TESTS=true
 (
     set -e
     make install
-    make test-integration-devfile
-    make test-interactive
-    make test-e2e-devfile
-    make test-cmd-project
-    make test-generic
+    make test-integration
+    make test-e2e
 ) |& tee "/tmp/${LOGFILE}"
 
 RESULT=${PIPESTATUS[0]}

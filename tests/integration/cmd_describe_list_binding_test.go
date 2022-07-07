@@ -1,4 +1,4 @@
-package devfile
+package integration
 
 import (
 	"fmt"

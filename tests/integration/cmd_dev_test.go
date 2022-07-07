@@ -1,4 +1,4 @@
-package devfile
+package integration
 
 import (
 	"fmt"
@@ -22,7 +22,6 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/redhat-developer/odo/tests/helper"
-	"github.com/redhat-developer/odo/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo dev command tests", func() {
@@ -960,7 +959,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.MatchAllInOutput(output, []string{"package.json"})
 
 			// Verify the sync env variables are correct
-			utils.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/webapp", "/apps", commonVar.CliRunner)
+			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/webapp", "/apps", commonVar.CliRunner)
 		})
 	})
 
@@ -988,7 +987,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.MatchAllInOutput(output, []string{"package.json"})
 
 			// Verify the sync env variables are correct
-			utils.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/nodeshift", "/apps", commonVar.CliRunner)
+			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/nodeshift", "/apps", commonVar.CliRunner)
 		})
 	})
 
@@ -1015,7 +1014,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.MatchAllInOutput(output, []string{"package.json"})
 
 			// Verify the sync env variables are correct
-			utils.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects/webapp", "/projects", commonVar.CliRunner)
+			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects/webapp", "/projects", commonVar.CliRunner)
 		})
 	})
 
@@ -1041,7 +1040,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.MatchAllInOutput(output, []string{"package.json"})
 
 			// Verify the sync env variables are correct
-			utils.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects", "/projects", commonVar.CliRunner)
+			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects", "/projects", commonVar.CliRunner)
 		})
 	})
 
