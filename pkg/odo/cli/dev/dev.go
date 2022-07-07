@@ -29,6 +29,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -180,15 +181,6 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
-	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
-	// 1. create an empty string slice to which paths like .gitignore, .odo/odo-file-index.json, etc. will be added
-	var ignores []string
-	err = genericclioptions.ApplyIgnore(&ignores, "")
-	if err != nil {
-		return err
-	}
-	o.ignorePaths = ignores
-
 	return nil
 }
 
@@ -220,6 +212,31 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	log.Title("Developing using the "+devfileName+" Devfile",
 		"Namespace: "+namespace,
 		"odo version: "+version.VERSION)
+
+	// check for .gitignore file and add odo-file-index.json to .gitignore
+	gitIgnoreFile, err := util.TouchGitIgnoreFile(path)
+	if err != nil {
+		return err
+	}
+
+	// add odo-file-index.json path to .gitignore
+	err = util.AddOdoFileIndex(gitIgnoreFile)
+	if err != nil {
+		return err
+	}
+
+	// add devstate.json path to .gitignore
+	err = util.AddOdoDevState(gitIgnoreFile)
+	if err != nil {
+		return err
+	}
+
+	var ignores []string
+	err = genericclioptions.ApplyIgnore(&ignores, "")
+	if err != nil {
+		return err
+	}
+	o.ignorePaths = ignores
 
 	log.Section("Deploying to the cluster in developer mode")
 	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
