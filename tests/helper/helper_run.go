@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/types"
 	"github.com/redhat-developer/odo/pkg/labels"
 )
 
@@ -38,6 +39,18 @@ func WaitForOutputToContain(substring string, timeoutInSeconds int, intervalInSe
 		return contents
 	}, timeoutInSeconds, intervalInSeconds).Should(ContainSubstring(substring))
 
+}
+
+func WaitForOutputToContainOne(substrings []string, timeoutInSeconds int, intervalInSeconds int, session *gexec.Session) {
+
+	matchers := make([]types.GomegaMatcher, 0, len(substrings))
+	for _, substring := range substrings {
+		matchers = append(matchers, ContainSubstring(substring))
+	}
+	Eventually(func() string {
+		contents := string(session.Out.Contents())
+		return contents
+	}, timeoutInSeconds, intervalInSeconds).Should(SatisfyAny(matchers...))
 }
 
 // WaitForErroutToContain waits for the session stdout output to contain a particular substring

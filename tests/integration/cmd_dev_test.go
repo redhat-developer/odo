@@ -1676,7 +1676,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("Update the devfile.yaml", func() {
 
 			BeforeEach(func() {
-				helper.ReplaceString("devfile.yaml", "memoryLimit: 1024Mi", "memoryLimit: 1023Mi")
+				helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 767Mi")
 				var err error
 				_, _, _, err = session.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
@@ -1724,6 +1724,11 @@ var _ = Describe("odo dev command tests", func() {
 						newPath := filepath.ToSlash(path)
 
 						if strings.HasPrefix(newPath, ".") {
+							return nil
+						}
+
+						// devfile is not synchronized
+						if newPath == "devfile.yaml" {
 							return nil
 						}
 

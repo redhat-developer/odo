@@ -290,7 +290,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 	deployTimer := time.NewTimer(time.Millisecond)
 	<-deployTimer.C
 
-	fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
+	//fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
 
 	for {
 		//		fmt.Fprintf(out, "=> enter select\n")
@@ -318,7 +318,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
+			//			fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
 			// empty the events to receive new events
 			if componentStatus.State == StateReady {
 				events = []fsnotify.Event{} // empty the events slice to capture new events
@@ -347,7 +347,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
+			//			fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
 
 		case <-devfileWatcher.Events:
 			//			fmt.Fprintf(out, "  devfileWatcher.Events: %s\n", ev.String())
@@ -355,6 +355,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 
 		case <-devfileTimer.C:
 			//			fmt.Fprintf(out, "send new devfile")
+			fmt.Fprintf(out, "Updating Component...\n\n")
 			err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err

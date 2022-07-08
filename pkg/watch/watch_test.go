@@ -116,6 +116,7 @@ func Test_eventWatcher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			watcher, _ := fsnotify.NewWatcher()
+			fileWatcher, _ := fsnotify.NewWatcher()
 			var cancel context.CancelFunc
 			ctx, cancel := context.WithCancel(context.Background())
 			out := &bytes.Buffer{}
@@ -135,7 +136,7 @@ func Test_eventWatcher(t *testing.T) {
 			componentStatus := ComponentStatus{
 				State: StateReady,
 			}
-			err := eventWatcher(ctx, watcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, componentStatus)
+			err := eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return
