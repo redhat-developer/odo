@@ -193,6 +193,7 @@ func (c *Client) GetPodUsingComponentName(componentName string) (*corev1.Pod, er
 func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
+		FieldSelector: "status.phase=Running",
 	})
 	if err != nil {
 		// Don't wrap error since we want to know if it's a forbidden error

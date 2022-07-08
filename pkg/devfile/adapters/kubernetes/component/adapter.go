@@ -144,7 +144,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	if updated {
-		fmt.Printf("Deployment has been updated to version %s. Waiting new event...\n", deployment.GetResourceVersion())
+		fmt.Printf("Deployment has been updated to generation %d. Waiting new event...\n", deployment.GetGeneration())
 		componentStatus.State = watch.StateWaitDeployment
 		return nil
 	}
@@ -417,7 +417,7 @@ func (a *Adapter) createOrUpdateComponent(
 		Replicas:          pointer.Int32Ptr(1),
 	}
 
-	// Save resource version to check if deployment is updated later
+	// Save generation to check if deployment is updated later
 	var originalGeneration int64 = 0
 	if deployment != nil {
 		originalGeneration = deployment.GetGeneration()
