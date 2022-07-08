@@ -101,6 +101,7 @@ func (o *DevClient) Watch(
 	runCommand string,
 	variables map[string]string,
 	randomPorts bool,
+	watchFiles bool,
 	errOut io.Writer,
 	componentStatus watch.ComponentStatus,
 ) error {
@@ -123,6 +124,7 @@ func (o *DevClient) Watch(
 		DebugPort:           envSpecificInfo.GetDebugPort(),
 		Variables:           variables,
 		RandomPorts:         randomPorts,
+		WatchFiles:          watchFiles,
 		ErrOut:              errOut,
 	}
 

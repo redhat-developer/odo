@@ -47,6 +47,7 @@ type Client interface {
 		runCommand string,
 		variables map[string]string,
 		randomPorts bool,
+		watchFiles bool,
 		errOut io.Writer,
 		componentStatus watch.ComponentStatus,
 	) error

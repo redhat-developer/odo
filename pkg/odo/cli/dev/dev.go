@@ -249,32 +249,27 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 
-	if o.noWatchFlag {
-		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
-		<-o.ctx.Done()
-		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
-	} else {
-		d := Handler{
-			clientset:   *o.clientset,
-			randomPorts: o.randomPortsFlag,
-			errOut:      o.errOut,
-		}
-		err = o.clientset.DevClient.Watch(
-			devFileObj,
-			path,
-			o.ignorePaths,
-			o.out,
-			&d,
-			o.ctx,
-			o.debugFlag,
-			o.buildCommandFlag,
-			o.runCommandFlag,
-			o.variables,
-			o.randomPortsFlag,
-			o.errOut,
-			componentStatus,
-		)
+	d := Handler{
+		clientset:   *o.clientset,
+		randomPorts: o.randomPortsFlag,
+		errOut:      o.errOut,
 	}
+	err = o.clientset.DevClient.Watch(
+		devFileObj,
+		path,
+		o.ignorePaths,
+		o.out,
+		&d,
+		o.ctx,
+		o.debugFlag,
+		o.buildCommandFlag,
+		o.runCommandFlag,
+		o.variables,
+		o.randomPortsFlag,
+		!o.noWatchFlag,
+		o.errOut,
+		componentStatus,
+	)
 	return err
 }
 

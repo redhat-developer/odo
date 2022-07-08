@@ -86,6 +86,8 @@ type WatchParameters struct {
 	Variables map[string]string
 	// RandomPorts is true to forward containers ports on local random ports
 	RandomPorts bool
+	// WatchFiles indicates to watch for file changes and sync changes to the container
+	WatchFiles bool
 	// ErrOut is a Writer to output forwarded port information
 	ErrOut io.Writer
 }
@@ -211,22 +213,20 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
-	absIgnorePaths := dfutil.GetAbsGlobExps(parameters.Path, parameters.FileIgnores)
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return fmt.Errorf("error setting up filesystem watcher: %v", err)
+	var watcher *fsnotify.Watcher
+	var err error
+	if parameters.WatchFiles {
+		watcher, err = getFullWatcher(parameters.Path, parameters.FileIgnores)
+		if err != nil {
+			return err
+		}
+	} else {
+		watcher, err = fsnotify.NewWatcher()
+		if err != nil {
+			return err
+		}
 	}
 	defer watcher.Close()
-
-	// adding watch on the root folder and the sub folders recursively
-	// so directory and the path in addRecursiveWatch() are the same
-	err = addRecursiveWatch(watcher, parameters.Path, parameters.Path, absIgnorePaths)
-	if err != nil {
-		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
-	}
-
-	//printInfoMessage(out, parameters.Path)
 
 	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
 	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
@@ -235,6 +235,23 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 
 	return eventWatcher(ctx, watcher, deploymentWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+}
+
+func getFullWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
+	absIgnorePaths := dfutil.GetAbsGlobExps(path, fileIgnores)
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, fmt.Errorf("error setting up filesystem watcher: %v", err)
+	}
+
+	// adding watch on the root folder and the sub folders recursively
+	// so directory and the path in addRecursiveWatch() are the same
+	err = addRecursiveWatch(watcher, path, path, absIgnorePaths)
+	if err != nil {
+		return nil, fmt.Errorf("error watching source path %s: %v", path, err)
+	}
+	return watcher, nil
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
