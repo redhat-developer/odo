@@ -160,18 +160,18 @@ func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
 }
 
 // GetServiceInstances mocks base method.
-func (m *MockClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
+func (m *MockClient) GetServiceInstances(namespace string) (map[string]unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServiceInstances")
+	ret := m.ctrl.Call(m, "GetServiceInstances", namespace)
 	ret0, _ := ret[0].(map[string]unstructured.Unstructured)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetServiceInstances indicates an expected call of GetServiceInstances.
-func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
+func (mr *MockClientMockRecorder) GetServiceInstances(namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances), namespace)
 }
 
 // ListAllBindings mocks base method.
@@ -203,6 +203,21 @@ func (m *MockClient) RemoveBinding(bindingName string, obj parser.DevfileObj) (p
 func (mr *MockClientMockRecorder) RemoveBinding(bindingName, obj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveBinding", reflect.TypeOf((*MockClient)(nil).RemoveBinding), bindingName, obj)
+}
+
+// SelectNamespace mocks base method.
+func (m *MockClient) SelectNamespace(flags map[string]string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectNamespace", flags)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectNamespace indicates an expected call of SelectNamespace.
+func (mr *MockClientMockRecorder) SelectNamespace(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectNamespace", reflect.TypeOf((*MockClient)(nil).SelectNamespace), flags)
 }
 
 // SelectServiceInstance mocks base method.

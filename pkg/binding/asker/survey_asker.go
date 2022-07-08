@@ -1,6 +1,7 @@
 package asker
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -25,6 +26,57 @@ var _ Asker = (*Survey)(nil)
 
 func NewSurveyAsker() *Survey {
 	return &Survey{}
+}
+
+func (s *Survey) SelectNamespaceListOption() (ServiceInstancesNamespaceListOption, error) {
+	const (
+		currentNsOption       = "current namespace"
+		allAccessibleNsOption = "all accessible namespaces"
+	)
+	question := &survey.Select{
+		Message: "Do you want to list services from:",
+		Options: []string{currentNsOption, allAccessibleNsOption},
+	}
+	var answer string
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return 0, err
+	}
+
+	switch answer {
+	case currentNsOption:
+		return CurrentNamespace, nil
+	case allAccessibleNsOption:
+		return AllAccessibleNamespaces, nil
+	default:
+		return 0, fmt.Errorf("unknown namespace list option: %s", answer)
+	}
+}
+
+func (s *Survey) AskNamespace() (string, error) {
+	question := &survey.Input{
+		Message: "Enter the namespace containing the service instances or press Enter to use the current namespace:",
+		Default: "",
+	}
+	var answer string
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return "", err
+	}
+	return answer, nil
+}
+
+func (s *Survey) SelectNamespace(options []string) (string, error) {
+	question := &survey.Select{
+		Message: "Select the namespace containing the service instances:",
+		Options: options,
+	}
+	var answer string
+	err := survey.AskOne(question, &answer)
+	if err != nil {
+		return "", err
+	}
+	return answer, nil
 }
 
 func (s *Survey) SelectWorkloadResource(options []string) (int, error) {

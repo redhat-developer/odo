@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	FLAG_WORKLOAD        = "workload"
-	FLAG_SERVICE         = "service"
-	FLAG_NAME            = "name"
-	FLAG_BIND_AS_FILES   = "bind-as-files"
-	FLAG_NAMING_STRATEGY = "naming-strategy"
+	FLAG_WORKLOAD          = "workload"
+	FLAG_SERVICE           = "service"
+	FLAG_SERVICE_NAMESPACE = "service-namespace"
+	FLAG_NAME              = "name"
+	FLAG_BIND_AS_FILES     = "bind-as-files"
+	FLAG_NAMING_STRATEGY   = "naming-strategy"
 )
 
 // FlagsBackend is a backend that will extract all needed information from flags passed to the command
@@ -57,6 +58,10 @@ func (o *FlagsBackend) SelectWorkloadInstance(workloadName string) (string, sche
 		}
 	}
 	return "", schema.GroupVersionKind{}, fmt.Errorf("group/kind %q not found on the cluster", selectedGroup+"/"+selectedKind)
+}
+
+func (o *FlagsBackend) SelectNamespace(flags map[string]string) (string, error) {
+	return flags[FLAG_SERVICE_NAMESPACE], nil
 }
 
 // SelectServiceInstance parses the service's name, kind, and group from arg:serviceName,

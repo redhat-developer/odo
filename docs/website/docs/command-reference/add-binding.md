@@ -27,7 +27,10 @@ To know about the Operators supported by the Service Binding Operator, read its 
 
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
-* a service from the list of bindable service instances as supported by the Service Binding Operator,
+* the namespace containing the service instance you want to bind to,
+* a service from the list of bindable service instances as supported by the Service Binding Operator;
+  if a namespace is selected, the list of services will show the services in that namespace;
+  otherwise, the list of services will show the services in the current namespace,
 * if a Devfile is not present in the directory, a workload resource,
 * option to bind the service as a file (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this),
 * a name for the binding.
@@ -40,6 +43,7 @@ odo add binding
 ### Non-interactive mode
 In the non-interactive mode, you will have to specify the following required information through the command-line:
 * `--service` flag to specify the service you want to bind to,
+* `--service-namespace` flag to specify the namespace containing the service you want to bind to; the current namespace is used if this flag is not specified.
 * `--workload` flag to specify the workload resource, if a Devfile is not present in the directory,
 * `--name` flag to specify a name for the binding (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this)
 * `--bind-as-files` flag to specify if the service should be bound as a file; this flag is set to true by default.

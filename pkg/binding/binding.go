@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/project"
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
@@ -36,12 +37,12 @@ type BindingClient struct {
 
 var _ Client = (*BindingClient)(nil)
 
-func NewBindingClient(kubernetesClient kclient.ClientInterface) *BindingClient {
+func NewBindingClient(projectClient project.Client, kubernetesClient kclient.ClientInterface) *BindingClient {
 	// We create the asker client and the backends here and not at the CLI level, as we want to hide these details to the CLI
 	askerClient := asker.NewSurveyAsker()
 	return &BindingClient{
 		flagsBackend:       backendpkg.NewFlagsBackend(),
-		interactiveBackend: backendpkg.NewInteractiveBackend(askerClient, kubernetesClient),
+		interactiveBackend: backendpkg.NewInteractiveBackend(askerClient, projectClient, kubernetesClient),
 		kubernetesClient:   kubernetesClient,
 	}
 }
@@ -53,6 +54,7 @@ func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 	for flag, value := range flags {
 		if flag == backendpkg.FLAG_NAME ||
 			flag == backendpkg.FLAG_WORKLOAD ||
+			flag == backendpkg.FLAG_SERVICE_NAMESPACE ||
 			flag == backendpkg.FLAG_SERVICE ||
 			flag == backendpkg.FLAG_BIND_AS_FILES ||
 			flag == backendpkg.FLAG_NAMING_STRATEGY {
@@ -62,7 +64,7 @@ func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 	return bindingFlags
 }
 
-func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
+func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstructured.Unstructured, error) {
 	isServiceBindingInstalled, err := o.kubernetesClient.IsServiceBindingSupported()
 	if err != nil {
 		return nil, err
@@ -88,7 +90,7 @@ func (o *BindingClient) GetServiceInstances() (map[string]unstructured.Unstructu
 	for _, restMapping := range bindableKindRestMappings {
 		// TODO: Debug into why List returns all the versions instead of the GVR version
 		// List all the instances of the restMapping object
-		resources, err := o.kubernetesClient.ListDynamicResources(restMapping.Resource)
+		resources, err := o.kubernetesClient.ListDynamicResources(namespace, restMapping.Resource)
 		if err != nil {
 			return nil, err
 		}

@@ -8,6 +8,9 @@ import (
 )
 
 type AddBindingBackend interface {
+	// SelectNamespace returns the namespace which services instances should be listed from.
+	// An empty return value means that service instances will be listed from the current namespace.
+	SelectNamespace(flags map[string]string) (string, error)
 	// Validate returns error if the backend failed to validate; mainly useful for flags backend
 	Validate(flags map[string]string, withDevfile bool) error
 	// SelectWorkloadInstance asks user to select the workload to be bind;

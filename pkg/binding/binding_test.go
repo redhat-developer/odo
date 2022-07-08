@@ -73,6 +73,8 @@ func TestBindingClient_GetFlags(t *testing.T) {
 }
 
 func TestBindingClient_GetServiceInstances(t *testing.T) {
+	ns := "my-ns"
+
 	var clusterUnstructured unstructured.Unstructured
 
 	clusterUnstructured.SetGroupVersionKind(clusterGVK)
@@ -102,9 +104,13 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 	type fields struct {
 		kubernetesClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
+	type args struct {
+		namespace string
+	}
 	tests := []struct {
 		name    string
 		fields  fields
+		args    args
 		want    map[string]unstructured.Unstructured
 		wantErr bool
 	}{
@@ -122,6 +128,29 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 					client.EXPECT().ListDynamicResources("", clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
 					return client
 				},
+			},
+			want: map[string]unstructured.Unstructured{
+				"postgres-cluster (Cluster.postgresql.k8s.enterprisedb.io)": clusterUnstructured,
+			},
+			wantErr: false,
+		},
+		{
+			name: "obtained service instances from specific namespace",
+			fields: fields{
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().IsServiceBindingSupported().Return(true, nil)
+					client.EXPECT().GetBindableKinds().Return(serviceBindingInstance, nil)
+					client.EXPECT().GetBindableKindStatusRestMapping(serviceBindingInstance.Status).Return([]*meta.RESTMapping{
+						{Resource: clusterGVR, GroupVersionKind: clusterGVK},
+					}, nil)
+
+					client.EXPECT().ListDynamicResources(ns, clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
+					return client
+				},
+			},
+			args: args{
+				namespace: ns,
 			},
 			want: map[string]unstructured.Unstructured{
 				"postgres-cluster (Cluster.postgresql.k8s.enterprisedb.io)": clusterUnstructured,
@@ -175,7 +204,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, err := o.GetServiceInstances()
+			got, err := o.GetServiceInstances(tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetServiceInstances() error = %v, wantErr %v", err, tt.wantErr)
 				return

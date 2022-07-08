@@ -8,7 +8,24 @@ const (
 	OutputToFile
 )
 
+type ServiceInstancesNamespaceListOption int
+
+const (
+	CurrentNamespace ServiceInstancesNamespaceListOption = iota + 1
+	AllAccessibleNamespaces
+)
+
 type Asker interface {
+	// SelectNamespaceListOption asks the user to select how service instances should be listed,
+	// i.e. from the current namespace or from all accessible namespaces.
+	// If user selects to list from all accessible namespaces, callers should fetch the list of namespaces
+	// and prompt users to either pick or enter one.
+	// See SelectNamespace and AskNamespace methods.
+	SelectNamespaceListOption() (ServiceInstancesNamespaceListOption, error)
+	// AskNamespace asks the user to enter a namespace
+	AskNamespace() (string, error)
+	// SelectNamespace takes a list of namespaces and asks the user to pick one of them
+	SelectNamespace(options []string) (string, error)
 	// SelectWorkloadResource takes a list of workloads resources and asks user to select one
 	SelectWorkloadResource(options []string) (int, error)
 	// SelectWorkloadResourceName takes a list of workloads resources names and asks user to select one

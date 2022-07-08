@@ -18,6 +18,16 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 
+func (o *BindingClient) SelectNamespace(flags map[string]string) (string, error) {
+	var backend backendpkg.AddBindingBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	return backend.SelectNamespace(flags)
+}
+
 // ValidateAddBinding calls Validate method of the adequate backend
 func (o *BindingClient) ValidateAddBinding(flags map[string]string, withDevfile bool) error {
 	var backend backendpkg.AddBindingBackend

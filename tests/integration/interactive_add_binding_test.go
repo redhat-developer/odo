@@ -76,6 +76,9 @@ var _ = Describe("odo add binding interactive command tests", func() {
 			command := []string{"odo", "add", "binding"}
 
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+				helper.ExpectString(ctx, "Do you want to list services from:")
+				helper.SendLine(ctx, "current namespace")
+
 				helper.ExpectString(ctx, "Select service instance you want to bind to:")
 				helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -101,6 +104,9 @@ var _ = Describe("odo add binding interactive command tests", func() {
 			command := []string{"odo", "add", "binding"}
 
 			_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+				helper.ExpectString(ctx, "Do you want to list services from:")
+				helper.SendLine(ctx, "current namespace")
+
 				helper.ExpectString(ctx, "Select service instance you want to bind to:")
 				helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -128,6 +134,9 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				command := []string{"odo", "add", "binding"}
 
 				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "current namespace")
+
 					helper.ExpectString(ctx, "Select service instance you want to bind to:")
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -174,6 +183,9 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				command := []string{"odo", "add", "binding"}
 
 				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "current namespace")
+
 					helper.ExpectString(ctx, "Select service instance you want to bind to:")
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -206,6 +218,73 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				checkBindingInDevfile(bindingName, true, tt.wantInDevfile)
 			})
 		}
+
+		When("binding to a service in a different namespace", func() {
+			var otherNS string
+			var nsWithNoService string
+
+			BeforeEach(func() {
+				otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+				addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
+					helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+				Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
+
+				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+
+				commonVar.CliRunner.SetProject(commonVar.Project)
+			})
+
+			AfterEach(func() {
+				commonVar.CliRunner.DeleteNamespaceProject(nsWithNoService, false)
+				commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
+			})
+
+			It("should error out if service is not found in the namespace selected", func() {
+				_, err := helper.RunInteractive([]string{"odo", "add", "binding"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "all accessible namespaces")
+
+					helper.ExpectString(ctx, "Select the namespace containing the service instances:")
+					helper.SendLine(ctx, nsWithNoService)
+
+					helper.ExpectString(ctx, fmt.Sprintf("No bindable service instances found in namespace %q", nsWithNoService))
+				})
+				Expect(err).To(HaveOccurred())
+				components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), bindingName)
+				Expect(components).To(HaveLen(0))
+			})
+
+			It("should successfully add binding to the devfile", func() {
+				command := []string{"odo", "add", "binding"}
+
+				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "all accessible namespaces")
+
+					helper.ExpectString(ctx, "Select the namespace containing the service instances:")
+					helper.SendLine(ctx, otherNS)
+
+					helper.ExpectString(ctx, "Select service instance you want to bind to:")
+					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
+
+					helper.ExpectString(ctx, "Enter the Binding's name")
+					helper.SendLine(ctx, "\n")
+
+					helper.ExpectString(ctx, "How do you want to bind the service?")
+					helper.SendLine(ctx, "Bind as Files")
+
+					helper.ExpectString(ctx, "Select naming strategy for binding names")
+					helper.SendLine(ctx, "DEFAULT")
+
+					helper.ExpectString(ctx, "Successfully added the binding to the devfile.")
+				})
+
+				Expect(err).To(BeNil())
+				components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), bindingName)
+				Expect(components).ToNot(BeNil())
+			})
+
+		})
 	})
 
 	When("running a deployment", func() {
@@ -237,6 +316,10 @@ var _ = Describe("odo add binding interactive command tests", func() {
     name: cluster-sample
     resource: clusters
     version: v1`
+
+				helper.ExpectString(ctx, "Do you want to list services from:")
+				helper.SendLine(ctx, "current namespace")
+
 				helper.ExpectString(ctx, "Select service instance you want to bind to:")
 				helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -301,6 +384,10 @@ var _ = Describe("odo add binding interactive command tests", func() {
     name: cluster-sample
     resource: clusters
     version: v1`, predefinedNamingStrategy)
+
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "current namespace")
+
 					helper.ExpectString(ctx, "Select service instance you want to bind to:")
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -399,6 +486,10 @@ var _ = Describe("odo add binding interactive command tests", func() {
     resource: clusters
     version: v1`
 					}
+
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "current namespace")
+
 					helper.ExpectString(ctx, "Select service instance you want to bind to:")
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
@@ -423,7 +514,6 @@ var _ = Describe("odo add binding interactive command tests", func() {
 						inputNamingStrategy = "\n"
 					}
 					helper.SendLine(ctx, inputNamingStrategy)
-
 					helper.ExpectString(ctx, "Check(with Space Bar) one or more operations to perform with the ServiceBinding")
 					helper.SendLine(ctx, " \x1B[B \x1B[B ")
 
@@ -447,5 +537,110 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				Expect(err).To(BeNil())
 			})
 		}
+
+		When("binding to a service in a different namespace", func() {
+			var otherNS string
+			var nsWithNoService string
+
+			BeforeEach(func() {
+				otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+				addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
+					helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+				Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
+
+				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+
+				commonVar.CliRunner.SetProject(commonVar.Project)
+			})
+
+			AfterEach(func() {
+				commonVar.CliRunner.DeleteNamespaceProject(nsWithNoService, false)
+				commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
+
+				commonVar.CliRunner.SetProject(commonVar.Project)
+			})
+
+			It("should error out if service is not found in the namespace selected", func() {
+				_, err := helper.RunInteractive([]string{"odo", "add", "binding"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "all accessible namespaces")
+
+					helper.ExpectString(ctx, "Select the namespace containing the service instances:")
+					helper.SendLine(ctx, nsWithNoService)
+
+					helper.ExpectString(ctx, fmt.Sprintf("No bindable service instances found in namespace %q", nsWithNoService))
+				})
+				Expect(err).To(HaveOccurred())
+				Expect(helper.VerifyFileExists("binding.yaml")).To(BeFalse())
+			})
+
+			It("should successfully add binding without devfile", func() {
+				command := []string{"odo", "add", "binding"}
+
+				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+					outputFile := "binding.yaml"
+					expected := `spec:
+  application:
+    group: apps
+    kind: Deployment
+    name: nginx
+    version: v1
+  bindAsFiles: true
+  detectBindingResources: true
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: nginx-cluster-sample
+    kind: Cluster
+    name: cluster-sample
+    resource: clusters
+    version: v1`
+
+					helper.ExpectString(ctx, "Do you want to list services from:")
+					helper.SendLine(ctx, "all accessible namespaces")
+
+					helper.ExpectString(ctx, "Select the namespace containing the service instances:")
+					helper.SendLine(ctx, otherNS)
+
+					helper.ExpectString(ctx, "Select service instance you want to bind to:")
+					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
+
+					helper.ExpectString(ctx, "Select workload resource you want to bind:")
+					helper.SendLine(ctx, "Deployment")
+
+					helper.ExpectString(ctx, "Select workload resource name you want to bind:")
+					helper.SendLine(ctx, "nginx")
+
+					helper.ExpectString(ctx, "Enter the Binding's name")
+					helper.SendLine(ctx, "\n")
+
+					helper.ExpectString(ctx, "How do you want to bind the service?")
+					helper.SendLine(ctx, "Bind as Files")
+
+					helper.ExpectString(ctx, "Select naming strategy for binding names")
+					helper.SendLine(ctx, "DEFAULT")
+
+					helper.ExpectString(ctx, "Check(with Space Bar) one or more operations to perform with the ServiceBinding")
+					helper.SendLine(ctx, " \x1B[B \x1B[B ")
+
+					helper.ExpectString(ctx, "Save the ServiceBinding to file:")
+					helper.SendLine(ctx, outputFile)
+
+					for _, line := range strings.Split(expected, "\n") {
+						helper.ExpectString(ctx, line)
+					}
+					helper.ExpectString(ctx, "The ServiceBinding has been created in the cluster")
+					inCluster := commonVar.CliRunner.Run("get", "servicebinding", "nginx-cluster-sample", "-o", "yaml").Out.Contents()
+					Expect(string(inCluster)).To(ContainSubstring(expected))
+
+					helper.ExpectString(ctx, fmt.Sprintf("The ServiceBinding has been written to the file %q", outputFile))
+					helper.VerifyFileExists("binding.yaml")
+					fileContent, err := os.ReadFile(filepath.Join(commonVar.Context, outputFile))
+					Expect(err).Should(Succeed())
+					Expect(string(fileContent)).To(ContainSubstring(expected))
+				})
+
+				Expect(err).To(BeNil())
+			})
+		})
 	})
 })
