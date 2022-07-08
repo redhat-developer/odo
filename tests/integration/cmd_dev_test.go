@@ -1147,7 +1147,7 @@ var _ = Describe("odo dev command tests", func() {
 			// Verify the pvc size for secondvol
 			storageSize = commonVar.CliRunner.GetPVCSize(devfileCmpName, "secondvol", commonVar.Project)
 			// should be the specified size in the devfile volume component
-			Expect(storageSize).To(ContainSubstring("3Gi"))
+			Expect(storageSize).To(ContainSubstring("200Mi"))
 		})
 	})
 

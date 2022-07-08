@@ -36,7 +36,7 @@ components:
     volume: {}
   - name: secondvol
     volume:
-      size: 3Gi
+      size: 200Mi
 commands:
   - id: devbuild
     exec:

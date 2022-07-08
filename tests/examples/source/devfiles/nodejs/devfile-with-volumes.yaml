@@ -32,7 +32,7 @@ components:
           path: /data2
   - name: myvol
     volume:
-      size: 3Gi
+      size: 200Mi
   - name: myvol2
     volume: {}
 commands:
