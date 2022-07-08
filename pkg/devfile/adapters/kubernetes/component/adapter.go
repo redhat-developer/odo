@@ -168,8 +168,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
 
-	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
-
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {

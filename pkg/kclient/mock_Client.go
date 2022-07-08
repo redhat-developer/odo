@@ -398,25 +398,6 @@ func (mr *MockClientInterfaceMockRecorder) GetAllResourcesFromSelector(selector,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResourcesFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetAllResourcesFromSelector), selector, ns)
 }
 
-// GetAndUpdateStorageOwnerReference mocks base method.
-func (m *MockClientInterface) GetAndUpdateStorageOwnerReference(pvc *v11.PersistentVolumeClaim, ownerReference ...v12.OwnerReference) error {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{pvc}
-	for _, a := range ownerReference {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetAndUpdateStorageOwnerReference", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// GetAndUpdateStorageOwnerReference indicates an expected call of GetAndUpdateStorageOwnerReference.
-func (mr *MockClientInterfaceMockRecorder) GetAndUpdateStorageOwnerReference(pvc interface{}, ownerReference ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{pvc}, ownerReference...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAndUpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).GetAndUpdateStorageOwnerReference), varargs...)
-}
-
 // GetBindableKindStatusRestMapping mocks base method.
 func (m *MockClientInterface) GetBindableKindStatusRestMapping(bindableKindStatuses []v1alpha10.BindableKindsStatus) ([]*meta.RESTMapping, error) {
 	m.ctrl.T.Helper()

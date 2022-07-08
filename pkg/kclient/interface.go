@@ -160,6 +160,5 @@ type ClientInterface interface {
 	ListPVCNames(selector string) ([]string, error)
 	GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error)
 	UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error
-	GetAndUpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error
 	UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error
 }
