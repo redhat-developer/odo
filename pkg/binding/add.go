@@ -97,11 +97,12 @@ func (o *BindingClient) AskNamingStrategy(flags map[string]string) (string, erro
 func (o *BindingClient) AddBindingToDevfile(
 	bindingName string,
 	bindAsFiles bool,
+	serviceNs string,
 	namingStrategy string,
 	unstructuredService unstructured.Unstructured,
 	obj parser.DevfileObj,
 ) (parser.DevfileObj, error) {
-	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
+	service, err := o.kubernetesClient.NewServiceBindingServiceObject(serviceNs, unstructuredService, bindingName)
 	if err != nil {
 		return obj, err
 	}
@@ -132,12 +133,13 @@ func (o *BindingClient) AddBinding(
 	flags map[string]string,
 	bindingName string,
 	bindAsFiles bool,
+	serviceNs string,
 	namingStrategy string,
 	unstructuredService unstructured.Unstructured,
 	workloadName string,
 	workloadGVK schema.GroupVersionKind,
 ) ([]asker.CreationOption, string, string, error) {
-	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
+	service, err := o.kubernetesClient.NewServiceBindingServiceObject(serviceNs, unstructuredService, bindingName)
 	if err != nil {
 		return nil, "", "", err
 	}

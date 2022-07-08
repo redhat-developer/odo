@@ -1160,18 +1160,18 @@ func (mr *MockClientInterfaceMockRecorder) ListServices(selector interface{}) *g
 }
 
 // NewServiceBindingServiceObject mocks base method.
-func (m *MockClientInterface) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (v1alpha10.Service, error) {
+func (m *MockClientInterface) NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (v1alpha10.Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewServiceBindingServiceObject", unstructuredService, bindingName)
+	ret := m.ctrl.Call(m, "NewServiceBindingServiceObject", serviceNs, unstructuredService, bindingName)
 	ret0, _ := ret[0].(v1alpha10.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewServiceBindingServiceObject indicates an expected call of NewServiceBindingServiceObject.
-func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(unstructuredService, bindingName interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(serviceNs, unstructuredService, bindingName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), unstructuredService, bindingName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), serviceNs, unstructuredService, bindingName)
 }
 
 // PatchDynamicResource mocks base method.

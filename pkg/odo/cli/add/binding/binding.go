@@ -144,7 +144,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if withDevfile {
 		var devfileobj parser.DevfileObj
 		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(
-			bindingName, bindAsFiles, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+			bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	}
 
 	options, output, filename, err := o.clientset.BindingClient.AddBinding(
-		o.flags, bindingName, bindAsFiles, namingStrategy, serviceMap[service], workloadName, workloadGVK)
+		o.flags, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], workloadName, workloadGVK)
 	if err != nil {
 		return err
 	}

@@ -164,12 +164,23 @@ status:
 			name           string
 			beforeEachFunc func(bindingName string) string
 			afterEachFunc  func(ns string)
+			checkFunc      func(bindingName string, ns string, k8sComponentInlined string)
 		}{
 			{
 				name: "current namespace",
 				beforeEachFunc: func(bindingName string) string {
 					helper.Cmd("odo", "add", "binding", "--name", bindingName, "--service", "cluster-sample").ShouldPass()
 					return commonVar.Project
+				},
+				checkFunc: func(bindingName string, _ string, k8sComponentInlined string) {
+					Expect(k8sComponentInlined).To(ContainSubstring(fmt.Sprintf(`
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: %s
+    kind: Cluster
+    name: cluster-sample
+    resource: clusters
+    version: v1`, bindingName)))
 				},
 			},
 			{
@@ -189,6 +200,17 @@ status:
 				},
 				afterEachFunc: func(ns string) {
 					commonVar.CliRunner.DeleteNamespaceProject(ns, false)
+				},
+				checkFunc: func(bindingName string, ns string, k8sComponentInlined string) {
+					Expect(k8sComponentInlined).To(ContainSubstring(fmt.Sprintf(`
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: %s
+    kind: Cluster
+    name: cluster-sample
+    namespace: %s
+    resource: clusters
+    version: v1`, bindingName, ns)))
 				},
 			},
 		} {
@@ -212,6 +234,10 @@ status:
 				It("should successfully add binding between component and service in the devfile", func() {
 					components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), bindingName)
 					Expect(components).ToNot(BeNil())
+					Expect(components).To(HaveLen(1))
+					Expect(components[0].Kubernetes).ToNot(BeNil())
+					Expect(components[0].Kubernetes.Inlined).ToNot(BeEmpty())
+					ctx.checkFunc(bindingName, ns, components[0].Kubernetes.Inlined)
 				})
 
 				When("odo dev is run", func() {

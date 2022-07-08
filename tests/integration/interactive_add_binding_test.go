@@ -282,6 +282,18 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				Expect(err).To(BeNil())
 				components := helper.GetDevfileComponents(filepath.Join(commonVar.Context, "devfile.yaml"), bindingName)
 				Expect(components).ToNot(BeNil())
+				Expect(components).To(HaveLen(1))
+				cmp := components[0]
+				Expect(cmp.Kubernetes).ToNot(BeNil())
+				Expect(cmp.Kubernetes.Inlined).To(ContainSubstring(fmt.Sprintf(`
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: mynode-cluster-sample
+    kind: Cluster
+    name: cluster-sample
+    namespace: %s
+    resource: clusters
+    version: v1`, otherNS)))
 			})
 
 		})
@@ -579,7 +591,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 
 				_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 					outputFile := "binding.yaml"
-					expected := `spec:
+					expected := fmt.Sprintf(`spec:
   application:
     group: apps
     kind: Deployment
@@ -592,8 +604,9 @@ var _ = Describe("odo add binding interactive command tests", func() {
     id: nginx-cluster-sample
     kind: Cluster
     name: cluster-sample
+    namespace: %s
     resource: clusters
-    version: v1`
+    version: v1`, otherNS)
 
 					helper.ExpectString(ctx, "Do you want to list services from:")
 					helper.SendLine(ctx, "all accessible namespaces")

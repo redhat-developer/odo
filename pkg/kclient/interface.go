@@ -38,7 +38,7 @@ type ClientInterface interface {
 	GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error)
 	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
 	ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error)
-	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
+	NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
 	APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) (api.ServiceBinding, error)
 	APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding
 	GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error)

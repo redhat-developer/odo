@@ -41,6 +41,7 @@ type Client interface {
 	AddBindingToDevfile(
 		bindingName string,
 		bindAsFiles bool,
+		serviceNs string,
 		namingStrategy string,
 		unstructuredService unstructured.Unstructured,
 		obj parser.DevfileObj,
@@ -52,6 +53,7 @@ type Client interface {
 		flags map[string]string,
 		bindingName string,
 		bindAsFiles bool,
+		serviceNs string,
 		namingStrategy string,
 		unstructuredService unstructured.Unstructured,
 		workloadName string,
