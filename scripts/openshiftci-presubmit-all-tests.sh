@@ -55,6 +55,5 @@ else
     fi
 fi
 
-cp -r reports tests/reports $ARTIFACT_DIR
 
 oc logout
