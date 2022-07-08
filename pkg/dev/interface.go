@@ -36,6 +36,7 @@ type Client interface {
 	// If runCommand is set, this will look up the specified run command in the Devfile and execute it. Otherwise, it uses the default one.
 	// componentStatus is the status returned from the call to the Start Method
 	Watch(
+		devfilePath string,
 		devfileObj parser.DevfileObj,
 		path string,
 		ignorePaths []string,

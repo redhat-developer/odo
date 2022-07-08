@@ -90,6 +90,7 @@ func (o *DevClient) Start(
 }
 
 func (o *DevClient) Watch(
+	devfilePath string,
 	devfileObj parser.DevfileObj,
 	path string,
 	ignorePaths []string,
@@ -111,6 +112,7 @@ func (o *DevClient) Watch(
 	}
 
 	watchParameters := watch.WatchParameters{
+		DevfilePath:         devfilePath,
 		Path:                path,
 		ComponentName:       devfileObj.GetMetadataName(),
 		ApplicationName:     "app",
