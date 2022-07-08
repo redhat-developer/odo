@@ -205,6 +205,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
+		componentStatus.State = watch.StateReady
 		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
 	}
 	s.End(true)
@@ -293,7 +294,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 
 	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.RandomPorts, parameters.ErrOut)
 	if err != nil {
-		return fmt.Errorf("fail starting the port forwarding: %w", err)
+		return adapters.NewErrPortForward(err)
 	}
 
 	componentStatus.State = watch.StateReady

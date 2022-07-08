@@ -2,6 +2,7 @@ package watch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -98,7 +99,7 @@ type WatchParameters struct {
 type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
-type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus)
+type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus) error
 
 // cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
 type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
@@ -290,7 +291,10 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			}
 			componentStatus.State = StateSyncOutdated
 			fmt.Fprintf(out, "Pushing files...\n\n")
-			processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus)
+			err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus)
+			if err != nil {
+				return err
+			}
 			fmt.Printf("Status: %s\n", componentStatus.State)
 			// empty the events to receive new events
 			if componentStatus.State == StateReady {
@@ -306,7 +310,10 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 				fmt.Printf("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
 					ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
 
-				processEventsHandler(nil, nil, parameters, out, &componentStatus)
+				err := processEventsHandler(nil, nil, parameters, out, &componentStatus)
+				if err != nil {
+					return err
+				}
 				fmt.Printf("Status: %s\n", componentStatus.State)
 			}
 			status, isStatus := ev.Object.(*metav1.Status)
@@ -385,7 +392,7 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 	return changedFiles, deletedPaths
 }
 
-func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus) {
+func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus) error {
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
@@ -413,15 +420,19 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 	oldState := componentStatus.State
 	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
 	if err != nil {
+		if isFatal(err) {
+			return err
+		}
 		// Log and output, but intentionally not exiting on error here.
 		// We don't want to break watch when push failed, it might be fixed with the next change.
 		klog.V(4).Infof("Error from Push: %v", err)
 		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-	} else {
-		if oldState != StateReady && componentStatus.State == StateReady {
-			printInfoMessage(out, parameters.Path)
-		}
+		return nil
 	}
+	if oldState != StateReady && componentStatus.State == StateReady {
+		printInfoMessage(out, parameters.Path)
+	}
+	return nil
 }
 
 func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, out io.Writer) error {
@@ -490,4 +501,8 @@ func removeDuplicates(input []string) []string {
 
 func printInfoMessage(out io.Writer, path string) {
 	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
+}
+
+func isFatal(err error) bool {
+	return errors.As(err, &adapters.ErrPortForward{})
 }
