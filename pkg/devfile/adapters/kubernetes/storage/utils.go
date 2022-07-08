@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -66,7 +67,16 @@ func GetPersistentVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, co
 	}
 
 	var pvcVols []corev1.Volume
-	for volName, volInfo := range volumeNameToVolInfo {
+
+	// We need to sort volumes to create Deployment in a deterministic way
+	keys := make([]string, 0, len(volumeNameToVolInfo))
+	for k := range volumeNameToVolInfo {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, volName := range keys {
+		volInfo := volumeNameToVolInfo[volName]
 		pvcVols = append(pvcVols, getPVC(volInfo.VolumeName, volInfo.PVCName))
 
 		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
@@ -90,7 +100,16 @@ func GetEphemeralVolumesAndVolumeMounts(devfileObj devfileParser.DevfileObj, con
 		return nil, err
 	}
 	var emptydirVols []corev1.Volume
-	for volName, volInfo := range ephemerals {
+
+	// We need to sort volumes to create Deployment in a deterministic way
+	keys := make([]string, 0, len(ephemerals))
+	for k := range ephemerals {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, volName := range keys {
+		volInfo := ephemerals[volName]
 		emptyDir, err := getEmptyDir(volInfo.Name, volInfo.Spec.Size)
 		if err != nil {
 			return nil, err
