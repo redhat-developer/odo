@@ -201,7 +201,7 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 		return nil, nil, nil
 	}
 
-	specsU, err := c.ListDynamicResources(specApi.GroupVersionResource)
+	specsU, err := c.ListDynamicResources("", specApi.GroupVersionResource)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -211,7 +211,7 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 		return nil, nil, err
 	}
 
-	bindingsU, err := c.ListDynamicResources(bindingApi.GroupVersionResource)
+	bindingsU, err := c.ListDynamicResources("", bindingApi.GroupVersionResource)
 	if err != nil {
 		return nil, nil, err
 	}

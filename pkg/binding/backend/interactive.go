@@ -61,7 +61,7 @@ loop:
 			if err != nil {
 				return "", schema.GroupVersionKind{}, err
 			}
-			resourceList, err := o.kubernetesClient.ListDynamicResources(gvr)
+			resourceList, err := o.kubernetesClient.ListDynamicResources("", gvr)
 			if err != nil {
 				return "", schema.GroupVersionKind{}, err
 			}
