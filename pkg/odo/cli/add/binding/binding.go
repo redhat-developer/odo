@@ -98,7 +98,11 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	}
 
 	if len(serviceMap) == 0 {
-		return fmt.Errorf("No bindable service instances found")
+		msg := "current namespace"
+		if ns != "" {
+			msg = fmt.Sprintf("namespace %q", ns)
+		}
+		return fmt.Errorf("No bindable service instances found in %s", msg)
 	}
 
 	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, serviceMap)
