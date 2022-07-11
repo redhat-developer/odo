@@ -145,14 +145,14 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	if updated {
-		fmt.Printf("Deployment has been updated to generation %d. Waiting new event...\n", deployment.GetGeneration())
+		klog.V(4).Infof("Deployment has been updated to generation %d. Waiting new event...\n", deployment.GetGeneration())
 		componentStatus.State = watch.StateWaitDeployment
 		return nil
 	}
 
 	numberReplicas := deployment.Status.ReadyReplicas
 	if numberReplicas != 1 {
-		fmt.Printf("Deployment has %d ready replicas. Waiting new event...\n", numberReplicas)
+		klog.V(4).Infof("Deployment has %d ready replicas. Waiting new event...\n", numberReplicas)
 		componentStatus.State = watch.StateWaitDeployment
 		return nil
 	}

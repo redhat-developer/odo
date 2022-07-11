@@ -291,18 +291,13 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 	deployTimer := time.NewTimer(time.Millisecond)
 	<-deployTimer.C
 
-	//fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
-
 	for {
-		//		fmt.Fprintf(out, "=> enter select\n")
 		select {
 		case event := <-watcher.Events:
-			//			fmt.Fprintf(out, "  watcher.Events: %s%s\n", event.Name, event.Op.String())
 			events = append(events, event)
 			// We are waiting for more events in this interval
 			timer.Reset(100 * time.Millisecond)
 		case <-timer.C:
-			//			fmt.Fprintf(out, "  timer.C\n")
 			// timer has fired
 			if !componentCanSyncFile(componentStatus.State) {
 				continue
@@ -319,43 +314,37 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			if err != nil {
 				return err
 			}
-			//			fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
 			// empty the events to receive new events
 			if componentStatus.State == StateReady {
 				events = []fsnotify.Event{} // empty the events slice to capture new events
 			}
 
 		case watchErr := <-watcher.Errors:
-			//			fmt.Fprintf(out, "  watcher.Errors\n")
 			return watchErr
 
 		case ev := <-deploymentWatcher.ResultChan():
 			dep, isDep := ev.Object.(*appsv1.Deployment)
 			if isDep {
-				fmt.Fprintf(out, "deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
+				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
 					ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
 				deployTimer.Reset(300 * time.Millisecond)
 			} else {
 				status, isStatus := ev.Object.(*metav1.Status)
 				if isStatus {
-					fmt.Fprintf(out, "Status: %+v\n", status)
+					klog.V(4).Infof("Status: %+v\n", status)
 				}
 			}
 
 		case <-deployTimer.C:
-			//			fmt.Fprintf(out, "  deploymentWatcher\n")
 			err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
-			//			fmt.Fprintf(out, "Status: %s\n", componentStatus.State)
 
 		case <-devfileWatcher.Events:
-			//			fmt.Fprintf(out, "  devfileWatcher.Events: %s\n", ev.String())
 			devfileTimer.Reset(100 * time.Millisecond)
 
 		case <-devfileTimer.C:
-			//			fmt.Fprintf(out, "send new devfile")
 			fmt.Fprintf(out, "Updating Component...\n\n")
 			err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
@@ -363,11 +352,9 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 			}
 
 		case watchErr := <-devfileWatcher.Errors:
-			//			fmt.Fprintf(out, "  devfileWatcher.Errors\n")
 			return watchErr
 
 		case <-ctx.Done():
-			//			fmt.Fprintf(out, "  ctx.Done\n")
 			return cleanupHandler(parameters.InitialDevfileObj, out)
 		}
 	}
