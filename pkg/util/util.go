@@ -446,6 +446,7 @@ func sliceContainsString(str string, slice []string) bool {
 
 func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesystem) error {
 	var data []byte
+	filename = filepath.ToSlash(filename)
 	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, dfutil.ModeReadWriteFile)
 	if err != nil {
 		return fmt.Errorf("failed to open .gitignore file: %w", err)
