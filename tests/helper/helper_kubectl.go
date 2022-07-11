@@ -79,7 +79,7 @@ func (kubectl KubectlRunner) CheckCmdOpInRemoteDevfilePod(podName string, contai
 // devfile component by passing component name as a argument
 func (kubectl KubectlRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := Cmd(kubectl.path, "get", ResourceTypePod, "--namespace", namespace, selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
+	stdOut := Cmd(kubectl.path, "get", ResourceTypePod, "--namespace", namespace, "--field-selector=status.phase=Running", selector, "-o", "jsonpath={.items[*].metadata.name}").ShouldPass().Out()
 	return strings.TrimSpace(stdOut)
 }
 
@@ -93,7 +93,7 @@ func (kubectl KubectlRunner) GetPVCSize(compName, storageName, namespace string)
 // GetPodInitContainers executes kubectl command and returns the init containers of the pod
 func (kubectl KubectlRunner) GetPodInitContainers(compName string, namespace string) []string {
 	selector := fmt.Sprintf("--selector=component=%s", compName)
-	stdOut := Cmd(kubectl.path, "get", ResourceTypePod, "--namespace", namespace, selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}").ShouldPass().Out()
+	stdOut := Cmd(kubectl.path, "get", ResourceTypePod, "--namespace", namespace, "--field-selector=status.phase=Running", selector, "-o", "jsonpath={.items[*].spec.initContainers[*].name}").ShouldPass().Out()
 	return strings.Split(stdOut, " ")
 }
 
