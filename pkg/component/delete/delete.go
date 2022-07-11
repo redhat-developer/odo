@@ -156,7 +156,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 
 	klog.V(3).Infof("Checking component status for %q", componentName)
 	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
-	pod, err := do.kubeClient.GetOnePodFromSelector(selector)
+	pod, err := do.kubeClient.GetRunningPodFromSelector(selector)
 	if err != nil {
 		klog.V(1).Info("Component not found on the cluster.")
 

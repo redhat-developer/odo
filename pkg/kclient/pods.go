@@ -186,11 +186,11 @@ func (c *Client) ExtractProjectToComponent(containerName, podName string, target
 // GetPodUsingComponentName gets a pod using the component name
 func (c *Client) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
 	podSelector := fmt.Sprintf("component=%s", componentName)
-	return c.GetOnePodFromSelector(podSelector)
+	return c.GetRunningPodFromSelector(podSelector)
 }
 
 // GetOnePodFromSelector gets a pod from the selector
-func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
+func (c *Client) GetRunningPodFromSelector(selector string) (*corev1.Pod, error) {
 	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
 		FieldSelector: "status.phase=Running",

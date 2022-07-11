@@ -721,21 +721,6 @@ func (mr *MockClientInterfaceMockRecorder) GetOneDeploymentFromSelector(selector
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeploymentFromSelector), selector)
 }
 
-// GetOnePodFromSelector mocks base method.
-func (m *MockClientInterface) GetOnePodFromSelector(selector string) (*v11.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOnePodFromSelector", selector)
-	ret0, _ := ret[0].(*v11.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOnePodFromSelector indicates an expected call of GetOnePodFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetOnePodFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnePodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOnePodFromSelector), selector)
-}
-
 // GetOneService mocks base method.
 func (m *MockClientInterface) GetOneService(componentName, appName string) (*v11.Service, error) {
 	m.ctrl.T.Helper()
@@ -899,6 +884,21 @@ func (m *MockClientInterface) GetRestMappingFromUnstructured(arg0 unstructured.U
 func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromUnstructured(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromUnstructured", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromUnstructured), arg0)
+}
+
+// GetRunningPodFromSelector mocks base method.
+func (m *MockClientInterface) GetRunningPodFromSelector(selector string) (*v11.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRunningPodFromSelector", selector)
+	ret0, _ := ret[0].(*v11.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRunningPodFromSelector indicates an expected call of GetRunningPodFromSelector.
+func (mr *MockClientInterfaceMockRecorder) GetRunningPodFromSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetRunningPodFromSelector), selector)
 }
 
 // GetSecret mocks base method.

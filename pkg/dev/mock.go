@@ -54,17 +54,17 @@ func (mr *MockClientMockRecorder) Start(devfileObj, namespace, ignorePaths, path
 }
 
 // Watch mocks base method.
-func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string, randomPorts, watchFiles bool, errOut io.Writer, componentStatus watch.ComponentStatus) error {
+func (m *MockClient) Watch(devfilePath string, devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string, randomPorts, watchFiles bool, errOut io.Writer, componentStatus watch.ComponentStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
+	ret := m.ctrl.Call(m, "Watch", devfilePath, devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Watch(devfilePath, devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfilePath, devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
 }
 
 // MockHandler is a mock of Handler interface.

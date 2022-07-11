@@ -524,7 +524,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-					client.EXPECT().GetOnePodFromSelector(selector).Return(&corev1.Pod{}, &kclient.PodNotFoundError{Selector: selector})
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(&corev1.Pod{}, &kclient.PodNotFoundError{Selector: selector})
 					return client
 				},
 			},
@@ -541,7 +541,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-					client.EXPECT().GetOnePodFromSelector(selector).Return(nil, errors.New("some un-ignorable error"))
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(nil, errors.New("some un-ignorable error"))
 					return client
 				},
 			},
@@ -558,7 +558,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					client := kclient.NewMockClientInterface(ctrl)
 
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-					client.EXPECT().GetOnePodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
 					client.EXPECT().ExecCMDInContainer("runtime", "runtime", cmd, gomock.Any(), gomock.Any(), nil, false).Return(nil)
@@ -581,7 +581,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					pod := odoTestingUtil.CreateFakePod(componentName, "runtime")
 					pod.Status.Phase = corev1.PodFailed
-					client.EXPECT().GetOnePodFromSelector(selector).Return(pod, nil)
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(pod, nil)
 					return client
 				},
 			},
@@ -600,7 +600,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 					fakePod := odoTestingUtil.CreateFakePod(componentName, "runtime")
 					//Expecting this method to be called twice because if the command execution fails, we try to get the pod logs by calling GetOnePodFromSelector again.
-					client.EXPECT().GetOnePodFromSelector(selector).Return(fakePod, nil).Times(2)
+					client.EXPECT().GetRunningPodFromSelector(selector).Return(fakePod, nil).Times(2)
 
 					client.EXPECT().GetPodLogs(fakePod.Name, gomock.Any(), gomock.Any()).Return(nil, errors.New("an error"))
 

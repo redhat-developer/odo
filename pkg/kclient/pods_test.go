@@ -174,7 +174,7 @@ func TestGetOnePodFromSelector(t *testing.T) {
 				return true, tt.returnedPods, nil
 			})
 
-			got, err := fkclient.GetOnePodFromSelector(tt.args.selector)
+			got, err := fkclient.GetRunningPodFromSelector(tt.args.selector)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetOnePodFromSelector() error = %v, wantErr %v", err, tt.wantErr)
 				return
