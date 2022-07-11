@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
@@ -463,7 +464,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,
 	}
-	oldState := componentStatus.State
+	oldStatus := *componentStatus
 	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
 	if err != nil {
 		if isFatal(err) {
@@ -477,7 +478,9 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		return nil
 	}
 	backoff.Reset()
-	if oldState != StateReady && componentStatus.State == StateReady {
+	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
+		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
+
 		printInfoMessage(out, parameters.Path)
 	}
 	return nil

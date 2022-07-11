@@ -16,6 +16,7 @@ const (
 type ComponentStatus struct {
 	State               State
 	PostStartEventsDone bool
+	EndpointsForwarded  map[string][]int
 }
 
 func componentCanSyncFile(state State) bool {

@@ -44,14 +44,11 @@ func (o *PFClient) StartPortForwarding(
 	errOut io.Writer,
 ) error {
 
-	// get the endpoint/port information for containers in devfile and setup port-forwarding
-	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
-		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
-	})
+	ceMapping, err := o.GetPortsToForward(devFileObj)
 	if err != nil {
 		return err
 	}
-	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
+
 	if o.stopChan != nil && reflect.DeepEqual(ceMapping, o.appliedEndpoints) {
 		return nil
 	}
@@ -104,6 +101,23 @@ func (o *PFClient) StopPortForwarding() {
 	o.stopChan = nil
 	<-o.finishedChan
 	o.finishedChan = nil
+}
+
+func (o *PFClient) GetForwardedPorts() map[string][]int {
+	return o.appliedEndpoints
+}
+
+func (o *PFClient) GetPortsToForward(devFileObj parser.DevfileObj) (map[string][]int, error) {
+
+	// get the endpoint/port information for containers in devfile
+	containers, err := devFileObj.Data.GetComponents(parsercommon.DevfileOptions{
+		ComponentOptions: parsercommon.ComponentOptions{ComponentType: v1alpha2.ContainerComponentType},
+	})
+	if err != nil {
+		return nil, err
+	}
+	ceMapping := libdevfile.GetContainerEndpointMapping(containers)
+	return ceMapping, nil
 }
 
 // randomPortPairsFromContainerEndpoints assigns a random (empty) port on localhost to each port in the provided containerEndpoints map

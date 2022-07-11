@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"k8s.io/utils/pointer"
@@ -156,7 +157,14 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return nil
 	}
 
-	if componentStatus.State == watch.StateReady {
+	// Check if endpoints changed in Devfile
+	portsToForward, err := a.portForwardClient.GetPortsToForward(a.Devfile)
+	if err != nil {
+		return err
+	}
+	portsChanged := !reflect.DeepEqual(portsToForward, a.portForwardClient.GetForwardedPorts())
+
+	if componentStatus.State == watch.StateReady && !portsChanged {
 		// If the deployment is already in Ready State, no need to continue
 		return nil
 	}
@@ -286,7 +294,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		}
 	}
 
-	if podChanged {
+	if podChanged || portsChanged {
 		a.portForwardClient.StopPortForwarding()
 	}
 
@@ -294,6 +302,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return adapters.NewErrPortForward(err)
 	}
+	componentStatus.EndpointsForwarded = a.portForwardClient.GetForwardedPorts()
 
 	componentStatus.State = watch.StateReady
 	return nil
