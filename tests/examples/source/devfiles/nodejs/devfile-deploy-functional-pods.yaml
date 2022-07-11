@@ -115,11 +115,11 @@ components:
         apiVersion: v1
         kind: Pod
         metadata:
-          name: myapp
+          name: myapp-inner
         spec:
           containers:
           - name: main
-            image: alpine
+            image: quay.io/quay/busybox
             command: ["/bin/sh"]
             args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]
   - name: outerloop-pod
@@ -128,10 +128,10 @@ components:
         apiVersion: v1
         kind: Pod
         metadata:
-          name: myapp
+          name: myapp-outer
         spec:
           containers:
           - name: main
-            image: alpine
+            image: quay.io/quay/busybox
             command: ["/bin/sh"]
             args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]
