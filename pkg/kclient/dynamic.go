@@ -21,19 +21,21 @@ import (
 func (c *Client) PatchDynamicResource(resource unstructured.Unstructured) (bool, error) {
 	klog.V(5).Infoln("Applying resource via server-side apply:")
 	klog.V(5).Infoln(resourceAsJson(resource.Object))
-	data, err := json.Marshal(resource.Object)
+	unversionedResource := resource.DeepCopy()
+	unversionedResource.SetResourceVersion("")
+	data, err := json.Marshal(unversionedResource.Object)
 	if err != nil {
 		return false, fmt.Errorf("unable to marshal resource: %w", err)
 	}
 
-	gvr, err := c.GetRestMappingFromUnstructured(resource)
+	gvr, err := c.GetRestMappingFromUnstructured(*unversionedResource)
 	if err != nil {
 		return false, err
 	}
 
 	var previousGeneration int64 = -1
 	// Get the generation of the current resource
-	previous, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Get(context.TODO(), resource.GetName(), metav1.GetOptions{})
+	previous, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Get(context.TODO(), unversionedResource.GetName(), metav1.GetOptions{})
 	if err != nil {
 		if !kerrors.IsNotFound(err) {
 			return false, err
@@ -43,7 +45,7 @@ func (c *Client) PatchDynamicResource(resource unstructured.Unstructured) (bool,
 	}
 
 	// Patch the dynamic resource
-	current, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), resource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
+	current, err := c.DynamicClient.Resource(gvr.Resource).Namespace(c.Namespace).Patch(context.TODO(), unversionedResource.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
 	if err != nil {
 		return false, err
 	}
