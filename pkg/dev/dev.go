@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -22,6 +23,7 @@ type DevClient struct {
 	prefClient        preference.Client
 	portForwardClient portForward.Client
 	watchClient       watch.Client
+	bindingClient     binding.Client
 }
 
 var _ Client = (*DevClient)(nil)
@@ -31,12 +33,14 @@ func NewDevClient(
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
 	watchClient watch.Client,
+	bindingClient binding.Client,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
 		watchClient:       watchClient,
+		bindingClient:     bindingClient,
 	}
 }
 
@@ -53,7 +57,7 @@ func (o *DevClient) Start(
 ) (watch.ComponentStatus, error) {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter := component.NewKubernetesAdapter(
-		o.kubernetesClient, o.prefClient, o.portForwardClient,
+		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient,
 		component.AdapterContext{
 			ComponentName: devfileObj.GetMetadataName(),
 			Context:       path,

@@ -1,6 +1,7 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 
 	"k8s.io/utils/pointer"
 
+	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
@@ -44,6 +46,7 @@ type Adapter struct {
 	kubeClient        kclient.ClientInterface
 	prefClient        preference.Client
 	portForwardClient portForward.Client
+	bindingClient     binding.Client
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -65,6 +68,7 @@ func NewKubernetesAdapter(
 	kubernetesClient kclient.ClientInterface,
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
+	bindingClient binding.Client,
 	context AdapterContext,
 	namespace string,
 ) Adapter {
@@ -77,6 +81,7 @@ func NewKubernetesAdapter(
 		kubeClient:        kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
+		bindingClient:     bindingClient,
 		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 	}
@@ -156,6 +161,16 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		klog.V(4).Infof("Deployment has %d ready replicas. Waiting new event...\n", numberReplicas)
 		componentStatus.State = watch.StateWaitDeployment
 		return nil
+	}
+
+	injected, err := a.bindingClient.CheckServiceBindingsInjectionDone(a.ComponentName, a.AppName)
+	if err != nil {
+		return err
+	}
+
+	if !injected {
+		klog.V(4).Infof("Waiting for all service bindings to be injected...\n")
+		return errors.New("some servicebindings are not injected")
 	}
 
 	// Check if endpoints changed in Devfile

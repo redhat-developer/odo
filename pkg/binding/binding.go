@@ -12,9 +12,11 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"gopkg.in/yaml.v2"
+	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	devfilev1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
@@ -295,4 +297,57 @@ func (o *BindingClient) checkServiceBindingOperatorInstalled() error {
 		//revive:enable:error-strings
 	}
 	return nil
+}
+
+func (o *BindingClient) CheckServiceBindingsInjectionDone(componentName string, appName string) (bool, error) {
+
+	deployment, err := o.kubernetesClient.GetOneDeployment(componentName, appName)
+	if err != nil {
+		// If not deployment yet => all bindings are done
+		if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
+			return true, nil
+		}
+		return false, err
+	}
+	deploymentName := deployment.GetName()
+
+	specList, bindingList, err := o.kubernetesClient.ListServiceBindingsFromAllGroups()
+	if err != nil {
+		// If ServiceBinding kind is not registered => all bindings are done
+		if runtime.IsNotRegisteredError(err) {
+			return true, nil
+		}
+		return false, err
+	}
+
+	for _, binding := range bindingList {
+		app := binding.Spec.Application
+		if app.Group != appsv1.SchemeGroupVersion.Group ||
+			app.Version != appsv1.SchemeGroupVersion.Version ||
+			(app.Kind != "Deployment" && app.Resource != "deployments") {
+			continue
+		}
+		if app.Name != deploymentName {
+			continue
+		}
+		if injected := meta.IsStatusConditionTrue(binding.Status.Conditions, bindingApis.InjectionReady); !injected {
+			return false, nil
+		}
+	}
+
+	for _, binding := range specList {
+		app := binding.Spec.Workload
+		if app.APIVersion != appsv1.SchemeGroupVersion.String() ||
+			app.Kind != "Deployment" {
+			continue
+		}
+		if app.Name != deploymentName {
+			continue
+		}
+		if injected := meta.IsStatusConditionTrue(binding.Status.Conditions, bindingApis.InjectionReady); !injected {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

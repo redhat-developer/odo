@@ -72,4 +72,7 @@ type Client interface {
 	ValidateRemoveBinding(flags map[string]string) error
 	// RemoveBinding removes the binding from devfile
 	RemoveBinding(bindingName string, obj parser.DevfileObj) (parser.DevfileObj, error)
+
+	// CheckServiceBindingsInjectionDone checks that all service bindings poiting to component have InjectionReady condition
+	CheckServiceBindingsInjectionDone(componentName string, appName string) (bool, error)
 }

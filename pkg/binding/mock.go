@@ -115,6 +115,21 @@ func (mr *MockClientMockRecorder) AskNamingStrategy(flags interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskNamingStrategy", reflect.TypeOf((*MockClient)(nil).AskNamingStrategy), flags)
 }
 
+// CheckServiceBindingsInjectionDone mocks base method.
+func (m *MockClient) CheckServiceBindingsInjectionDone(componentName, appName string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckServiceBindingsInjectionDone", componentName, appName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckServiceBindingsInjectionDone indicates an expected call of CheckServiceBindingsInjectionDone.
+func (mr *MockClientMockRecorder) CheckServiceBindingsInjectionDone(componentName, appName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckServiceBindingsInjectionDone", reflect.TypeOf((*MockClient)(nil).CheckServiceBindingsInjectionDone), componentName, appName)
+}
+
 // GetBindingFromCluster mocks base method.
 func (m *MockClient) GetBindingFromCluster(name string) (api.ServiceBinding, error) {
 	m.ctrl.T.Helper()

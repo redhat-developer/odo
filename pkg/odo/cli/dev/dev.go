@@ -302,6 +302,7 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 		o.clientset.KubernetesClient,
 		o.clientset.PreferenceClient,
 		o.clientset.PortForwardClient,
+		o.clientset.BindingClient,
 		kcomponent.AdapterContext{
 			ComponentName: parameters.ComponentName,
 			Context:       parameters.Path,
@@ -344,6 +345,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	clientset.Add(devCmd,
+		clientset.BINDING,
 		clientset.DEV,
 		clientset.FILESYSTEM,
 		clientset.INIT,

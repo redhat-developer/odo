@@ -75,7 +75,7 @@ var subdeps map[string][]string = map[string][]string{
 	ALIZER:           {REGISTRY},
 	DELETE_COMPONENT: {KUBERNETES},
 	DEPLOY:           {KUBERNETES},
-	DEV:              {KUBERNETES, PORT_FORWARD, PREFERENCE, WATCH},
+	DEV:              {BINDING, KUBERNETES, PORT_FORWARD, PREFERENCE, WATCH},
 	INIT:             {ALIZER, FILESYSTEM, PREFERENCE, REGISTRY},
 	LOGS:             {KUBERNETES},
 	PORT_FORWARD:     {KUBERNETES, STATE},
@@ -181,7 +181,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)
 	}
 	if isDefined(command, DEV) {
-		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient)
+		dep.DevClient = dev.NewDevClient(dep.KubernetesClient, dep.PreferenceClient, dep.PortForwardClient, dep.WatchClient, dep.BindingClient)
 	}
 
 	/* Instantiate new clients here. Take care to instantiate after all sub-dependencies */
