@@ -55,5 +55,4 @@ else
     fi
 fi
 
-
 oc logout
