@@ -17,7 +17,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-git/go-git/v5 v5.3.0
 	github.com/go-openapi/spec v0.19.5
-	github.com/golang/mock v1.5.0
+	github.com/golang/mock v1.6.0
 	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/jedib0t/go-pretty/v6 v6.3.5
 	github.com/kr/pty v1.1.5
