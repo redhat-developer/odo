@@ -83,42 +83,43 @@ metadata:
 data:
   nginx.conf: |
     events {
-        worker_connections  1024;
+      worker_connections  1024;
     }
 
     http {
-    	proxy_cache_path 
-    		/data/nginx/cache 
-    		levels=1:2 
-    		keys_zone=app:1M 
-    		max_size=100M;
+      proxy_cache_path 
+        /data/nginx/cache 
+        levels=1:2 
+        keys_zone=app:1M 
+        max_size=100M;
 
-    	log_format cacheStatus '$host $server_name $server_port $remote_addr $upstream_cache_status $remote_user [$time_local] " $request " '
-        	                   '$status $body_bytes_sent "$http_referer" '
-            	               '"$http_user_agent" "$http_x_forwarded_for"';
+      log_format cacheStatus '$host $server_name $server_port $remote_addr $upstream_cache_status $remote_user [$time_local] " $request " '
+                             '$status $body_bytes_sent "$http_referer" '
+                             '"$http_user_agent" "$http_x_forwarded_for"';
 
       # Need to have a DNS server to resolve the FQDNs provided to proxy_pass
       # Use the DNS resolver provided to the container
       resolver 172.21.0.10;
 
       map "$http_user_agent" $proxybackend {
-          default "";
-          "~^containerd" https://registry.stage.devfile.io;
+        default             "";
+        "~^containerd"      https://registry.stage.devfile.io;
+        "~^Go-http-client"  https://registry.stage.devfile.io;
       }
 
-    	server {
-    		listen 8080;
+      server {
+        listen 8080;
 
         error_log   /dev/stderr error;
-    	  access_log  /dev/stdout cacheStatus;
+        access_log  /dev/stdout cacheStatus;
 
-    		location / {
-    			  proxy_cache 			    app;
-    			  proxy_pass 				    $proxybackend;
-        	  proxy_set_header 		  Host registry.stage.devfile.io;
-            proxy_ignore_headers 	Set-Cookie;
-            proxy_ignore_headers 	Cache-Control;
-            proxy_cache_valid 		any 30m;
-    		}
-    	}
+        location / {
+          proxy_cache           app;
+          proxy_pass             $proxybackend;
+          proxy_set_header       Host registry.stage.devfile.io;
+          proxy_ignore_headers   Set-Cookie;
+          proxy_ignore_headers   Cache-Control;
+          proxy_cache_valid     any 30m;
+        }
+      }
     }
