@@ -11,7 +11,7 @@ require (
 	github.com/devfile/library v1.2.1-0.20220602130922-85a4805bd59c
 	github.com/devfile/registry-support/index/generator v0.0.0-20220222194908-7a90a4214f3e
 	github.com/devfile/registry-support/registry-library v0.0.0-20220504150710-21de53798172
-	github.com/fatih/color v1.12.0
+	github.com/fatih/color v1.13.0
 	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/ghodss/yaml v1.0.0
@@ -23,7 +23,7 @@ require (
 	github.com/kr/pty v1.1.5
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
-	github.com/mattn/go-colorable v0.1.8
+	github.com/mattn/go-colorable v0.1.9
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.4
