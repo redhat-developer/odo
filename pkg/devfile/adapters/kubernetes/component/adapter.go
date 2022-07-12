@@ -103,8 +103,9 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return err
 	}
 
-	//	s := log.Spinner("Waiting for Kubernetes resources")
-	//	defer s.End(false)
+	if componentStatus.State != watch.StateWaitDeployment && componentStatus.State != watch.StateReady {
+		log.SpinnerNoSpin("Waiting for Kubernetes resources")
+	}
 
 	// Set the mode to Dev since we are using "odo dev" here
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
