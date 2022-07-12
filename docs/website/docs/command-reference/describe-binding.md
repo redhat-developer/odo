@@ -28,6 +28,7 @@ with the kind `ServiceBinding` and one of these apiVersion:
 For each of these resources, the following information is displayed:
 - the resource name,
 - the list of the services to which the component is bound using this service binding,
+- for each service listed, the namespace containing the service, if any; otherwise, it means that the current namespace was used,
 - if the variables are bound as files or as environment variables,
 - the naming strategy used for binding names, if any,
 - if the binding information is auto-detected.
@@ -40,7 +41,7 @@ ServiceBinding used by the current component:
 
 Service Binding Name: my-nodejs-app-cluster-sample
 Services:
- •  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)
+ •  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)
 Bind as files: false
 Detect binding resources: true
 Naming strategy: uppercase
@@ -65,7 +66,7 @@ ServiceBinding used by the current component:
 
 Service Binding Name: my-nodejs-app-cluster-sample-2
 Services:
- •  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io)
+ •  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)
 Bind as files: false
 Detect binding resources: true
 Naming strategy: uppercase

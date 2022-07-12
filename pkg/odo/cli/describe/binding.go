@@ -138,7 +138,11 @@ func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) bool {
 	log.Info("Services:")
 	for _, service := range binding.Spec.Services {
 		gvk := schema.FromAPIVersionAndKind(service.APIVersion, service.Kind)
-		log.Printf("%s (%s.%s)", service.Name, gvk.Kind, gvk.Group)
+		if service.Namespace != "" {
+			log.Printf("%s (%s.%s) (namespace: %s)", service.Name, gvk.Kind, gvk.Group, service.Namespace)
+		} else {
+			log.Printf("%s (%s.%s)", service.Name, gvk.Kind, gvk.Group)
+		}
 	}
 	log.Describef("Bind as files: ", strconv.FormatBool(binding.Spec.BindAsFiles))
 	log.Describef("Detect binding resources: ", strconv.FormatBool(binding.Spec.DetectBindingResources))

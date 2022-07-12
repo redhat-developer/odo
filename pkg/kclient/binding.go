@@ -243,6 +243,9 @@ func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) 
 			Group:   srcSvc.Group,
 			Version: srcSvc.Version,
 		}.WithKind(srcSvc.Kind).ToAPIVersionAndKind()
+		if srcSvc.Namespace != nil {
+			dstSvc.Namespace = *srcSvc.Namespace
+		}
 		dstSvcs = append(dstSvcs, dstSvc)
 	}
 

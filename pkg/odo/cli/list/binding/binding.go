@@ -171,11 +171,15 @@ func HumanReadableOutput(namespace string, list api.ResourcesList) {
 			if group != "" {
 				group = "." + group
 			}
-			services += fmt.Sprintf("%s (%s%s)",
+			svcDesc := fmt.Sprintf("%s (%s%s)",
 				serviceSpec.Name,
 				serviceSpec.Kind,
 				group,
 			)
+			if serviceSpec.Namespace != "" {
+				svcDesc += fmt.Sprintf(" (namespace: %s)", serviceSpec.Namespace)
+			}
+			services += svcDesc
 		}
 
 		runningIn := "None"
