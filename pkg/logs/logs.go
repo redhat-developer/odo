@@ -63,14 +63,14 @@ func (o *LogsClient) GetLogsForMode(
 
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-		err := o.getPodsForMode(selector, namespace, podChan)
+		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
 			return err
 		}
 	}
 	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
-		err := o.getPodsForMode(selector, namespace, podChan)
+		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
 			return err
 		}
@@ -82,9 +82,9 @@ func (o *LogsClient) GetLogsForMode(
 	return nil
 }
 
-// getPodsForMode gets pods for the resources matching selector in the namespace; Pods found by this method will be
+// getPodsForSelector gets pods for the resources matching selector in the namespace; Pods found by this method will be
 // put on podChan so that caller function can fetch its logs
-func (o *LogsClient) getPodsForMode(
+func (o *LogsClient) getPodsForSelector(
 	selector string,
 	namespace string,
 	podChan chan corev1.Pod,
