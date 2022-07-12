@@ -1,8 +1,8 @@
 package logs
 
 import (
+	"fmt"
 	"io"
-
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,47 +29,72 @@ func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
 
 var _ Client = (*LogsClient)(nil)
 
-func (o *LogsClient) GetLogsForMode(mode string, componentName string, namespace string, follow bool) ([]map[string]io.ReadCloser, error) {
+func (o *LogsClient) GetLogsForMode(
+	mode string,
+	componentName string,
+	namespace string,
+	follow bool,
+	out io.Writer,
+	logChan chan map[string]interface{},
+	doneChan chan struct{},
+) error {
 	var selector string
-	logs := []map[string]io.ReadCloser{}
-	unknownMode := true
+	podChan := make(chan corev1.Pod) // grab the logs of the pod put on this channel
+	done := make(chan struct{})      // because populating doneChan directly would cause odo logs to exit prematurely.
+
+	go func() {
+		// this go routine gets the logs of the pods put on the podChan
+		for {
+			select {
+			case pod := <-podChan:
+				// we received a pod, let's collect its logs and put it on logChan
+				for _, container := range pod.Spec.Containers {
+					containerLogs, err := o.kubernetesClient.GetPodLogs(pod.Name, container.Name, follow)
+					if err != nil {
+						fmt.Fprintf(out, "failed to get logs for container %s; error: %v", container.Name, err)
+					}
+					logChan <- map[string]interface{}{"name": container.Name, "logs": containerLogs}
+				}
+			case <-done:
+				doneChan <- struct{}{}
+			}
+		}
+	}()
 
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
-		unknownMode = false
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
-		l, err := o.getLogsWithSelector(selector, namespace, follow)
+		err := o.getPodsForMode(selector, namespace, podChan)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		logs = append(logs, l...)
 	}
 	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
-		unknownMode = false
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
-		l, err := o.getLogsWithSelector(selector, namespace, follow)
+		err := o.getPodsForMode(selector, namespace, podChan)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		logs = append(logs, l...)
-	}
-	if unknownMode {
-		return nil, InvalidModeError{mode: mode}
 	}
 
-	return logs, nil
+	if !follow {
+		done <- struct{}{}
+	}
+	return nil
 }
 
-// getLogsWithSelector returns logs for the containers created for resources matching selector in the namespace.
-// ignorePods boolean helps get logs for the containers of the independent Pods created in Deploy mode, since they
-// don't have an owner unlike the independent Pods created in Dev mode which are owned by the main Deployment created
-// by odo dev
-func (o *LogsClient) getLogsWithSelector(selector string, namespace string, follow bool) ([]map[string]io.ReadCloser, error) {
+// getPodsForMode gets pods for the resources matching selector in the namespace; Pods found by this method will be
+// put on podChan so that caller function can fetch its logs
+func (o *LogsClient) getPodsForMode(
+	selector string,
+	namespace string,
+	podChan chan corev1.Pod,
+) error {
 	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	// a set of unique Pods with Pod name as key and the Pod as value; these are the Pods whose logs we get from cluster
-	pods := map[string]corev1.Pod{}
+	// set of unique Pods with Pod name as key; these are the Pods whose logs we want to get from the cluster
+	pods := map[string]struct{}{}
 
 	// if there's a Pod in the resources, we add it to the set of Pods whose logs we are interested in
 	for _, r := range resources {
@@ -77,55 +102,41 @@ func (o *LogsClient) getLogsWithSelector(selector string, namespace string, foll
 			var pod corev1.Pod
 			err = runtime.DefaultUnstructuredConverter.FromUnstructured(r.Object, &pod)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			pods[pod.GetName()] = pod
+			pods[pod.GetName()] = struct{}{}
+			if podChan != nil {
+				podChan <- pod
+			}
 		}
 	}
 
 	// get all pods in the namespace
 	podList, err := o.kubernetesClient.GetAllPodsInNamespace()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// match pod ownerReference (if any) with resources matching the selector
 	for _, pod := range podList.Items {
+		match := false
 		for _, owner := range pod.GetOwnerReferences() {
-			match, err := o.matchOwnerReferenceWithResources(owner, resources)
+			match, err = o.matchOwnerReferenceWithResources(owner, resources)
 			if err != nil {
-				return nil, err
+				return err
 			} else if match {
-				pods[pod.GetName()] = pod
+				if _, ok := pods[pod.GetName()]; ok {
+					// Pod's logs have already been displayed to user
+					continue
+				}
+				pods[pod.GetName()] = struct{}{}
+				podChan <- pod
 				break // because we don't need to check other owner references of the pod anymore
 			}
 		}
 	}
 
-	// get all containers from the pods of interest
-	podContainersMap := map[string][]corev1.Container{}
-	for _, pod := range pods {
-		for _, container := range pod.Spec.Containers {
-			if _, ok := podContainersMap[pod.Name]; !ok {
-				podContainersMap[pod.Name] = []corev1.Container{container}
-			} else {
-				podContainersMap[pod.Name] = append(podContainersMap[pod.Name], container)
-			}
-		}
-	}
-
-	logs := []map[string]io.ReadCloser{}
-	for pod, containers := range podContainersMap {
-		for _, container := range containers {
-			containerLogs, err := o.kubernetesClient.GetPodLogs(pod, container.Name, follow)
-			if err != nil {
-				return nil, err
-			}
-			logs = append(logs, map[string]io.ReadCloser{container.Name: containerLogs})
-		}
-	}
-
-	return logs, nil
+	return nil
 }
 
 // matchOwnerReferenceWithResources recursively checks if the owner reference passed to it matches any of the resources
