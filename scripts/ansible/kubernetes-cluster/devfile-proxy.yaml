@@ -97,14 +97,24 @@ data:
         	                   '$status $body_bytes_sent "$http_referer" '
             	               '"$http_user_agent" "$http_x_forwarded_for"';
 
+      # Need to have a DNS server to resolve the FQDNs provided to proxy_pass
+      # Use the DNS resolver provided to the container
+      resolver 172.21.0.10;
+
+      map "$http_user_agent" $proxybackend {
+          default "";
+          "~^containerd" https://registry.stage.devfile.io;
+      }
+
     	server {
     		listen 8080;
 
-    	  access_log /var/log/nginx/status.log cacheStatus;
+        error_log   /dev/stderr error;
+    	  access_log  /dev/stdout cacheStatus;
 
     		location / {
     			  proxy_cache 			    app;
-    			  proxy_pass 				    https://registry.stage.devfile.io;
+    			  proxy_pass 				    $proxybackend;
         	  proxy_set_header 		  Host registry.stage.devfile.io;
             proxy_ignore_headers 	Set-Cookie;
             proxy_ignore_headers 	Cache-Control;
