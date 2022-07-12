@@ -437,7 +437,8 @@ $ odo describe binding -o json
 				}
 			],
 			"detectBindingResources": false,
-			"bindAsFiles": true
+			"bindAsFiles": true,
+			"namingStrategy": "lowercase"
 		},
 		"status": {
 			"bindingFiles": [

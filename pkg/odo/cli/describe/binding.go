@@ -143,6 +143,10 @@ func printSingleBindingHumanReadableOutput(binding api.ServiceBinding) bool {
 	log.Describef("Bind as files: ", strconv.FormatBool(binding.Spec.BindAsFiles))
 	log.Describef("Detect binding resources: ", strconv.FormatBool(binding.Spec.DetectBindingResources))
 
+	if binding.Spec.NamingStrategy != "" {
+		log.Describef("Naming strategy: ", binding.Spec.NamingStrategy)
+	}
+
 	if binding.Status == nil {
 		log.Describef("Available binding information: ", "unknown")
 		return true

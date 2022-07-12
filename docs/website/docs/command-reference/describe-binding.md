@@ -29,6 +29,7 @@ For each of these resources, the following information is displayed:
 - the resource name,
 - the list of the services to which the component is bound using this service binding,
 - if the variables are bound as files or as environment variables,
+- the naming strategy used for binding names, if any,
 - if the binding information is auto-detected.
 
 When the service binding are not deployed yet to the cluster:
@@ -42,6 +43,7 @@ Services:
  •  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)
 Bind as files: false
 Detect binding resources: true
+Naming strategy: uppercase
 Available binding information: unknown
 
 Service Binding Name: my-nodejs-app-redis-standalone
@@ -66,6 +68,7 @@ Services:
  •  cluster-sample-2 (Cluster.postgresql.k8s.enterprisedb.io)
 Bind as files: false
 Detect binding resources: true
+Naming strategy: uppercase
 Available binding information:
  •  CLUSTER_PASSWORD
  •  CLUSTER_PROVIDER

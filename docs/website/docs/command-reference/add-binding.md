@@ -43,12 +43,15 @@ In the non-interactive mode, you will have to specify the following required inf
 * `--workload` flag to specify the workload resource, if a Devfile is not present in the directory,
 * `--name` flag to specify a name for the binding (see [Understanding Bind as Files](#understanding-bind-as-files) for more information on this)
 * `--bind-as-files` flag to specify if the service should be bound as a file; this flag is set to true by default.
-
+* `--naming-strategy` flag to specify the naming strategy to use for binding names. This flag is empty by default, 
+  but it can be set to pre-defined strategies: `none`, `lowercase`, or `uppercase`.
+  Otherwise, it is treated as a custom Go template, and it is handled accordingly.
+  Refer to [this page](https://docs.openshift.com/container-platform/4.10/applications/connecting_applications_to_services/binding-workloads-using-sbo.html#sbo-naming-strategies_binding-workloads-using-sbo) for more details on naming strategies.
 
 ```shell
 # Add binding between a service named 'cluster-sample',
 # and the component present in the working directory in the non-interactive mode
-odo add binding --name mybinding --service myRedisService.Redis
+odo add binding --name mybinding --service cluster-sample
 ```
 
 #### Understanding Bind as Files

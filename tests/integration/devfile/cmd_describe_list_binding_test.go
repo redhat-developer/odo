@@ -46,6 +46,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, "0.spec.services.0.name", "cluster-sample")
 				helper.JsonPathContentIs(stdout, "0.spec.detectBindingResources", "true")
 				helper.JsonPathContentIs(stdout, "0.spec.bindAsFiles", "true")
+				helper.JsonPathContentIs(stdout, "0.spec.namingStrategy", "lowercase")
 				helper.JsonPathContentIs(stdout, "0.status", "")
 			})
 			By("human readable output", func() {
@@ -56,6 +57,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
 				Expect(stdout).To(ContainSubstring("Detect binding resources: true"))
+				Expect(stdout).To(ContainSubstring("Naming strategy: lowercase"))
 				Expect(stdout).To(ContainSubstring("Available binding information: unknown"))
 				Expect(stdout).To(ContainSubstring("Binding information for one or more ServiceBinding is not available"))
 			})
@@ -76,6 +78,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.name", "cluster-sample")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.detectBindingResources", "true")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
+				helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
 				helper.JsonPathContentIs(stdout, "bindings.0.status", "")
 				helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
 				helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample")
@@ -121,6 +124,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, prefix+"spec.services.0.name", "cluster-sample")
 				helper.JsonPathContentIs(stdout, prefix+"spec.detectBindingResources", "true")
 				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "true")
+				helper.JsonPathContentIs(stdout, prefix+"spec.namingStrategy", "lowercase")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentIs(stdout, prefix+"status.bindingEnvVars", "")
 			},
@@ -132,6 +136,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				Expect(stdout).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
 				Expect(stdout).To(ContainSubstring("Detect binding resources: true"))
+				Expect(stdout).To(ContainSubstring("Naming strategy: lowercase"))
 				Expect(stdout).To(ContainSubstring("${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password"))
 			},
 			assertListJsonOutput: func(devfile bool, stdout, stderr string) {
@@ -146,6 +151,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.name", "cluster-sample")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.detectBindingResources", "true")
 				helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
+				helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
 				helper.JsonPathContentContain(stdout, "bindings.0.status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentIs(stdout, "bindings.0.status.bindingEnvVars", "")
 				if devfile {
@@ -190,6 +196,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "false")
 				helper.JsonPathContentIs(stdout, prefix+"status.bindingFiles", "")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingEnvVars", "PASSWORD")
+				helper.JsonPathDoesNotExist(stdout, prefix+"spec.namingStrategy")
 			},
 			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
@@ -200,6 +207,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				Expect(stdout).To(ContainSubstring("Bind as files: false"))
 				Expect(stdout).To(ContainSubstring("Detect binding resources: true"))
 				Expect(stdout).To(ContainSubstring("PASSWORD"))
+				Expect(stdout).ToNot(ContainSubstring("Naming strategy:"))
 			},
 			assertListJsonOutput: func(devfile bool, stdout, stderr string) {
 				Expect(stderr).To(BeEmpty())
@@ -221,6 +229,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+				helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.namingStrategy")
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
@@ -257,6 +266,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "true")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentIs(stdout, prefix+"status.bindingEnvVars", "")
+				helper.JsonPathDoesNotExist(stdout, prefix+"spec.namingStrategy")
 			},
 			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
@@ -267,6 +277,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				Expect(stdout).To(ContainSubstring("Bind as files: true"))
 				Expect(stdout).To(ContainSubstring("Detect binding resources: false"))
 				Expect(stdout).To(ContainSubstring("${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password"))
+				Expect(stdout).ToNot(ContainSubstring("Naming strategy:"))
 			},
 			assertListJsonOutput: func(devfile bool, stdout, stderr string) {
 				Expect(stderr).To(BeEmpty())
@@ -288,6 +299,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+				helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.namingStrategy")
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")
@@ -324,6 +336,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				helper.JsonPathContentIs(stdout, prefix+"spec.bindAsFiles", "true")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingFiles", "${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password")
 				helper.JsonPathContentContain(stdout, prefix+"status.bindingEnvVars", "PASSWD")
+				helper.JsonPathDoesNotExist(stdout, prefix+"spec.namingStrategy")
 			},
 			assertDescribeHumanReadableOutput: func(list bool, stdout, stderr string) {
 				if list {
@@ -335,6 +348,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				Expect(stdout).To(ContainSubstring("Detect binding resources: false"))
 				Expect(stdout).To(ContainSubstring("${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/password"))
 				Expect(stdout).To(ContainSubstring("PASSWD"))
+				Expect(stdout).ToNot(ContainSubstring("Naming strategy:"))
 			},
 			assertListJsonOutput: func(devfile bool, stdout, stderr string) {
 				Expect(stderr).To(BeEmpty())
@@ -356,6 +370,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				} else {
 					helper.JsonPathContentIs(stdout, "bindingsInDevfile", "")
 				}
+				helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.namingStrategy")
 			},
 			assertListHumanReadableOutput: func(devfile bool, stdout, stderr string) {
 				lines := strings.Split(stdout, "\n")

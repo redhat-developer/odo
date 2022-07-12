@@ -58,6 +58,7 @@ components:
           name: my-nodejs-app-app
           kind: Deployment
           version: v1
+        namingStrategy: lowercase
         bindAsFiles: true
         detectBindingResources: true
         services:

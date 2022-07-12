@@ -121,6 +121,7 @@ func NewServiceBindingObject(
 	bindingName string,
 	bindAsFiles bool,
 	workloadName string,
+	namingStrategy string,
 	workloadGVK schema.GroupVersionKind,
 	mappings []bindingApi.Mapping,
 	services []bindingApi.Service,
@@ -137,6 +138,7 @@ func NewServiceBindingObject(
 		Spec: bindingApi.ServiceBindingSpec{
 			DetectBindingResources: true,
 			BindAsFiles:            bindAsFiles,
+			NamingStrategy:         namingStrategy,
 			Application: bindingApi.Application{
 				Ref: bindingApi.Ref{
 					Name:    workloadName,
@@ -266,6 +268,7 @@ func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) 
 			Services:               dstSvcs,
 			DetectBindingResources: binding.Spec.DetectBindingResources,
 			BindAsFiles:            binding.Spec.BindAsFiles,
+			NamingStrategy:         binding.Spec.NamingStrategy,
 		},
 	}, nil
 }

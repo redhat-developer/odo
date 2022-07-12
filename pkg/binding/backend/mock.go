@@ -66,6 +66,21 @@ func (mr *MockAddBindingBackendMockRecorder) AskBindingName(defaultName, flags i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskBindingName", reflect.TypeOf((*MockAddBindingBackend)(nil).AskBindingName), defaultName, flags)
 }
 
+// AskNamingStrategy mocks base method.
+func (m *MockAddBindingBackend) AskNamingStrategy(flags map[string]string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AskNamingStrategy", flags)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AskNamingStrategy indicates an expected call of AskNamingStrategy.
+func (mr *MockAddBindingBackendMockRecorder) AskNamingStrategy(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AskNamingStrategy", reflect.TypeOf((*MockAddBindingBackend)(nil).AskNamingStrategy), flags)
+}
+
 // AskOutputFilePath mocks base method.
 func (m *MockAddBindingBackend) AskOutputFilePath(flags map[string]string, defaultValue string) (string, error) {
 	m.ctrl.T.Helper()

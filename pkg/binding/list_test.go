@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
@@ -42,6 +43,7 @@ var bindingServiceBinding = kclient.NewServiceBindingObject(
 	"my-nodejs-app-cluster-sample",
 	true,
 	"my-nodejs-app-app",
+	"",
 	deploymentGVK,
 	nil,
 	[]v1alpha1.Service{
@@ -112,7 +114,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					return client
 				},
 			}, args: args{
-				devfileObj: getDevfileObjWithServiceBinding("aname", true),
+				devfileObj: getDevfileObjWithServiceBinding("aname", true, ""),
 				context:    "/apath",
 			},
 			want:          []api.ServiceBinding{apiServiceBinding},
@@ -136,7 +138,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					return client
 				},
 			}, args: args{
-				devfileObj: getDevfileObjWithServiceBinding("aname", true),
+				devfileObj: getDevfileObjWithServiceBinding("aname", true, ""),
 				context:    "/apath",
 			},
 			want: []api.ServiceBinding{
