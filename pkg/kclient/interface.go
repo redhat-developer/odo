@@ -117,6 +117,7 @@ type ClientInterface interface {
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
 	GetAllPodsInNamespace() (*corev1.PodList, error)
 	GetPodsMatchingSelector(selector string) (*corev1.PodList, error)
+	PodWatcher(ctx context.Context, selector string) (watch.Interface, error)
 
 	// port_forwarding.go
 	// SetupPortForwarding creates port-forwarding for the pod on the port pairs provided in the

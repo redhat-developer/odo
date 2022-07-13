@@ -250,9 +250,15 @@ func Successf(format string, a ...interface{}) {
 // Warning will output in an appropriate "progress" manner
 //	⚠ <message>
 func Warning(a ...interface{}) {
+	Fwarning(GetStderr(), a...)
+}
+
+// Fwarning will output in an appropriate "progress" manner in out writer
+//	⚠ <message>
+func Fwarning(out io.Writer, a ...interface{}) {
 	if !IsJSON() {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+		fmt.Fprintf(out, "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 
@@ -262,6 +268,15 @@ func Warningf(format string, a ...interface{}) {
 	if !IsJSON() {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
+	}
+}
+
+// Fsuccess will output in an appropriate "progress" manner in out writer
+//	✓ <message>
+func Fsuccess(out io.Writer, a ...interface{}) {
+	if !IsJSON() {
+		green := color.New(color.FgGreen).SprintFunc()
+		fmt.Fprintf(out, "%s%s%s%s", prefixSpacing, green(getSuccessString()), suffixSpacing, fmt.Sprintln(a...))
 	}
 }
 

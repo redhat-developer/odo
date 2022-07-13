@@ -136,7 +136,7 @@ func Test_eventWatcher(t *testing.T) {
 			componentStatus := ComponentStatus{
 				State: StateReady,
 			}
-			err := eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, componentStatus)
+			err := eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

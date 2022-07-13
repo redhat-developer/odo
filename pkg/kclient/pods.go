@@ -18,6 +18,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
@@ -248,4 +249,12 @@ func (c *Client) GetAllPodsInNamespace() (*corev1.PodList, error) {
 
 func (c *Client) GetPodsMatchingSelector(selector string) (*corev1.PodList, error) {
 	return c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+}
+
+func (c *Client) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	ns := c.GetCurrentNamespace()
+	return c.GetClient().CoreV1().Pods(ns).
+		Watch(ctx, metav1.ListOptions{
+			LabelSelector: selector,
+		})
 }

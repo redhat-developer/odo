@@ -27,6 +27,7 @@ import (
 	dfutil "github.com/devfile/library/pkg/util"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
@@ -250,7 +251,12 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return err
 	}
 
-	return eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+	podWatcher, err := o.kubeClient.PodWatcher(ctx, selector)
+	if err != nil {
+		return err
+	}
+
+	return eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
 }
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
@@ -273,7 +279,7 @@ func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
+func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
 
 	expBackoff := NewExpBackoff()
 
@@ -296,6 +302,8 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 
 	retryTimer := time.NewTimer(time.Millisecond)
 	<-retryTimer.C
+
+	podsPhases := NewPodPhases()
 
 	for {
 		select {
@@ -386,6 +394,22 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 			} else {
 				retryTimer.Reset(time.Millisecond)
 				<-retryTimer.C
+			}
+
+		case ev := <-podWatcher.ResultChan():
+			switch ev.Type {
+			case watch.Deleted:
+				pod, ok := ev.Object.(*corev1.Pod)
+				if !ok {
+					return errors.New("unable to decode watch event")
+				}
+				podsPhases.Delete(out, pod)
+			case watch.Added, watch.Modified:
+				pod, ok := ev.Object.(*corev1.Pod)
+				if !ok {
+					return errors.New("unable to decode watch event")
+				}
+				podsPhases.Add(out, pod.GetCreationTimestamp(), pod)
 			}
 
 		case watchErr := <-devfileWatcher.Errors:

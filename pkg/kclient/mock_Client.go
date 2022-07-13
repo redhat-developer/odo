@@ -1202,6 +1202,21 @@ func (mr *MockClientInterfaceMockRecorder) PatchDynamicResource(exampleCustomRes
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).PatchDynamicResource), exampleCustomResource)
 }
 
+// PodWatcher mocks base method.
+func (m *MockClientInterface) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PodWatcher indicates an expected call of PodWatcher.
+func (mr *MockClientInterfaceMockRecorder) PodWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWatcher), ctx, selector)
+}
+
 // RunLogout mocks base method.
 func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
 	m.ctrl.T.Helper()
