@@ -155,3 +155,20 @@ $ helm install nfs-subdir-external-provisioner \
     --set storageClass.defaultClass=true \
     --set storageClass.onDelete=delete
 ```
+
+## Devfile registry reverse proxy
+
+To install a reverse proxy caching the requests to the Staging Devfile registry (https://registry.stage.devfile.io),
+you can run the following command:
+
+```
+kubectl apply -f devfile-proxy.yaml
+```
+
+This will install an nginx install configured as a reverse proxy with the Staging Devfile registry as only backend. 
+
+A Load Balancer service will be created accessible publicly. To limit requests on the proxy, the requests are limited
+to user agents beginning with `containerd` or `Go-http-client`.
+
+The integration tests are able to detect the presence of the Load Balancer service and use the proxy if the service is present
+and providing an external address.
