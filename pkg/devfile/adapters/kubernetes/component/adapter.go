@@ -197,7 +197,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
 	}
-	//s.End(true)
+	// s.End(true)
 
 	s := log.Spinner("Syncing files into the container")
 	defer s.End(false)
@@ -274,8 +274,8 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 			return err
 		}
 	} else if commandType == devfilev1.CompositeCommandType {
-		//this handler will run each command in this composite command individually,
-		//and will determine whether each command is running or not.
+		// this handler will run each command in this composite command individually,
+		// and will determine whether each command is running or not.
 		isComposite = true
 	} else {
 		return fmt.Errorf("unsupported type %q for Devfile command %s, only exec and composite are handled",

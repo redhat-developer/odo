@@ -11,6 +11,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
+	component2 "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -64,9 +65,8 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-
 	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := service.ValidateResourceExist(o.kubeClient, o.devfileObj, kubernetes, o.path)
+	_, err := component2.ValidateResourceExist(o.kubeClient, o.devfileObj, kubernetes, o.path)
 	if err != nil {
 		return err
 	}

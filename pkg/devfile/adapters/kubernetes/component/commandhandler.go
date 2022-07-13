@@ -42,13 +42,14 @@ func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
 
 func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
 	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := service.ValidateResourceExist(a.kubeClient, a.Devfile, kubernetes, a.parameters.Path)
+	_, err := ValidateResourceExist(a.kubeClient, a.Devfile, kubernetes, a.parameters.Path)
 	if err != nil {
 		return err
 	}
 
 	// Get the most common labels that's applicable to all resources being deployed.
-	// Set the mode to DEPLOY. Regardless of what Kubernetes resource we are deploying.
+	// Set the mode to DEV. Regardless of what Kubernetes resource we are deploying.
+	// FIXME: Fix multipleDeploymentFound error
 	labels := odolabels.GetLabels(a.Devfile.Data.GetMetadata().Name, a.AppName, odolabels.ComponentDevMode)
 
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)

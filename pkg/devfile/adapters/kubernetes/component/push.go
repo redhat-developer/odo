@@ -5,6 +5,9 @@ import (
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -12,8 +15,6 @@ import (
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/service"
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // getComponentDeployment returns the deployment associated with the component, if deployed
@@ -47,7 +48,7 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 	}
 
 	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = service.ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
+	err = ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
 	if err != nil {
 		return nil, err
 	}
