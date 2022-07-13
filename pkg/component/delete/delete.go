@@ -120,27 +120,25 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 		}
 	}
 
-	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
-		// Outer Loop
-		// Parse the devfile for outerloop K8s resources
-		localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+	// Parse the devfile for K8s resources; these may belong to either innerloop or outerloop
+	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+	if err != nil {
+		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
+	}
+	for _, lr := range localResources {
+		var gvr *meta.RESTMapping
+		gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
 		if err != nil {
-			return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
+			continue
 		}
-		for _, lr := range localResources {
-			var gvr *meta.RESTMapping
-			gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
-			if err != nil {
-				continue
-			}
-			// Try to fetch the resource from the cluster; if it exists, append it to the resources list
-			var cr *unstructured.Unstructured
-			cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
-			if err != nil {
-				continue
-			}
-			resources = append(resources, *cr)
+		// Try to fetch the resource from the cluster; if it exists, append it to the resources list
+		var cr *unstructured.Unstructured
+		cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
+		// If a specific mode is asked for, then make sure it matches with the cr's mode.
+		if err != nil || (mode != odolabels.ComponentAnyMode && odolabels.GetMode(cr.GetLabels()) != mode) {
+			continue
 		}
+		resources = append(resources, *cr)
 	}
 
 	return isInnerLoopDeployed, resources, nil

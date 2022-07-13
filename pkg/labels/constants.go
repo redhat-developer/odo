@@ -23,7 +23,7 @@ const (
 	// odoModeLabel indicates which command were used to create the component, either dev or deploy
 	odoModeLabel = "odo.dev/mode"
 
-	// odoProjectTypeAnnotation indicates the project type fohe component
+	// odoProjectTypeAnnotation indicates the project type of the component
 	odoProjectTypeAnnotation = "odo.dev/project-type"
 
 	appLabel = "app"
@@ -43,7 +43,7 @@ const (
 	// ComponentDeployMode indicates the resource is deployed using deploy command
 	ComponentDeployMode = "Deploy"
 
-	//  ComponentAnyMode is used to search resources deployed using either dev or deploy comamnd
+	// ComponentAnyMode is used to search resources deployed using either dev or deploy comamnd
 	ComponentAnyMode = ""
 
 	// odoManager is the value of the manager when a component is managed by odo

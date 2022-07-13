@@ -38,6 +38,7 @@ func ValidateResourcesExist(client kclient.ClientInterface, devfileObj parser.De
 	return nil
 }
 
+// ValidateResourceExist validates if a Kubernetes inlined component is installed on the cluster
 func ValidateResourceExist(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponent devfile.Component, context string) (kindErr string, err error) {
 	// get the string representation of the YAML definition of a CRD
 	u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, k8sComponent.Name, context, devfilefs.DefaultFs{})
