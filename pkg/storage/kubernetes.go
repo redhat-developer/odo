@@ -86,7 +86,10 @@ func (k kubernetesClient) Delete(name string) error {
 func (k kubernetesClient) List() (StorageList, error) {
 	if k.deployment == nil {
 		var err error
-		k.deployment, err = k.client.GetOneDeployment(k.componentName, k.appName)
+		// FIXME: Find a better way to add the component label to selector
+		selector := odolabels.GetSelector(k.componentName, k.appName, odolabels.ComponentAnyMode)
+		selector += ",component=" + k.componentName
+		k.deployment, err = k.client.GetOneDeploymentFromSelector(selector)
 		if err != nil {
 			if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
 				return StorageList{}, nil

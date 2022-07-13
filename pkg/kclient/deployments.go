@@ -14,8 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
-
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
 func boolPtr(b bool) *bool {
@@ -34,12 +32,6 @@ func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment.APIVersion = DeploymentAPIVersion
 	deployment.Kind = DeploymentKind
 	return deployment, err
-}
-
-// GetOneDeployment returns the Deployment object associated with the given component and app
-func (c *Client) GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error) {
-	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
-	return c.GetOneDeploymentFromSelector(selector)
 }
 
 // GetOneDeploymentFromSelector returns the Deployment object associated
