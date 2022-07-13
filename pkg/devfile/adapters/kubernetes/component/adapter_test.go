@@ -1,8 +1,6 @@
 package component
 
 import (
-	"encoding/json"
-	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/devfile/library/pkg/devfile/generator"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/preference"
@@ -248,137 +245,6 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDoesComponentExist(t *testing.T) {
-
-	tests := []struct {
-		name             string
-		componentName    string
-		appName          string
-		getComponentName string
-		envInfo          envinfo.EnvSpecificInfo
-		want             bool
-		wantErr          bool
-	}{
-		{
-			name:             "Case 1: Valid component name",
-			componentName:    "test-name",
-			appName:          "app",
-			getComponentName: "test-name",
-			envInfo:          envinfo.EnvSpecificInfo{},
-			want:             true,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 2: Non-existent component name",
-			componentName:    "test-name",
-			appName:          "app",
-			getComponentName: "fake-component",
-			envInfo:          envinfo.EnvSpecificInfo{},
-			want:             false,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 3: Error condition",
-			componentName:    "test-name",
-			appName:          "app",
-			getComponentName: "test-name",
-			envInfo:          envinfo.EnvSpecificInfo{},
-			want:             false,
-			wantErr:          true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddCommands([]devfilev1.Command{getExecCommand("run", devfilev1.RunCommandGroupKind)})
-					if err != nil {
-						t.Error(err)
-					}
-					return devfileData
-				}(),
-			}
-
-			adapterCtx := AdapterContext{
-				ComponentName: tt.componentName,
-				AppName:       tt.appName,
-				Devfile:       devObj,
-			}
-
-			fkclient, fkclientset := kclient.FakeNew()
-			fkWatch := watch.NewFake()
-
-			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
-				Name:    tt.componentName,
-				AppName: tt.appName,
-			})
-
-			fkclientset.Kubernetes.PrependReactor("patch", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if patchAction, is := action.(ktesting.PatchAction); is {
-					patch := patchAction.GetPatch()
-					var deployment v1.Deployment
-					err := json.Unmarshal(patch, &deployment)
-					if err != nil {
-						t.Errorf("unable to parse deployment %q\n", err)
-						return false, nil, err
-					}
-					return true, &deployment, nil
-				}
-				return false, nil, nil
-			})
-
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
-
-			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
-				Name:    tt.componentName,
-				AppName: tt.appName,
-			})
-
-			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "")
-			_, err := componentAdapter.createOrUpdateComponent(false, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
-
-			// Checks for unexpected error cases
-			if err != nil {
-				t.Errorf("component adapter start unexpected error %v", err)
-			}
-
-			fkclientset.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
-				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
-
-				if tt.wantErr {
-					return true, &v1.DeploymentList{Items: []v1.Deployment{*emptyDeployment}}, errors.New("deployment get error")
-				} else if tt.getComponentName == tt.componentName {
-					return true, &v1.DeploymentList{Items: []v1.Deployment{*deployment}}, nil
-				}
-
-				return true, &v1.DeploymentList{Items: []v1.Deployment{}}, nil
-			})
-
-			// Verify that a component with the specified name exists
-			componentExists, err := component.ComponentExists(fkclient, tt.getComponentName, tt.appName)
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			} else if !tt.wantErr && componentExists != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, componentExists)
-			}
-
-		})
-	}
-
 }
 
 func TestWaitAndGetComponentPod(t *testing.T) {
