@@ -59,7 +59,7 @@ func (a *Adapter) pushKubernetesComponents(
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
 	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+		return nil, fmt.Errorf("failed to create Kubernetes resources associated with the component: %w", err)
 	}
 	return k8sComponents, nil
 }

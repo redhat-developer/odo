@@ -147,7 +147,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
 	err = service.PushLinks(a.kubeClient, a.Devfile, k8sComponents, labels, deployment, a.Context)
 	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+		return fmt.Errorf("failed to create service bindings associated with the component: %w", err)
 	}
 
 	if updated {
