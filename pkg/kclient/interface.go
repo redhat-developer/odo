@@ -50,8 +50,6 @@ type ClientInterface interface {
 	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)
 	GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error)
 	GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error)
-	WaitForPodDeletion(name string) error
-	WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error)
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
@@ -67,7 +65,6 @@ type ClientInterface interface {
 	DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error
 
 	// events.go
-	CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int)
 	PodWarningEventWatcher(ctx context.Context) (watch.Interface, error)
 
 	// kclient.go
@@ -110,7 +107,6 @@ type ClientInterface interface {
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
 
 	// pods.go
-	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, pushTimeout time.Duration) (*corev1.Pod, error)
 	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 	ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)

@@ -98,18 +98,6 @@ func (mr *MockClientInterfaceMockRecorder) ApplyDeployment(deploy interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyDeployment", reflect.TypeOf((*MockClientInterface)(nil).ApplyDeployment), deploy)
 }
 
-// CollectEvents mocks base method.
-func (m *MockClientInterface) CollectEvents(selector string, events map[string]v11.Event, quit <-chan int) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "CollectEvents", selector, events, quit)
-}
-
-// CollectEvents indicates an expected call of CollectEvents.
-func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, quit)
-}
-
 // CreateDeployment mocks base method.
 func (m *MockClientInterface) CreateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
 	m.ctrl.T.Helper()
@@ -1419,21 +1407,6 @@ func (mr *MockClientInterfaceMockRecorder) UpdateStorageOwnerReference(pvc inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).UpdateStorageOwnerReference), varargs...)
 }
 
-// WaitAndGetPodWithEvents mocks base method.
-func (m *MockClientInterface) WaitAndGetPodWithEvents(selector string, desiredPhase v11.PodPhase, pushTimeout time.Duration) (*v11.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitAndGetPodWithEvents", selector, desiredPhase, pushTimeout)
-	ret0, _ := ret[0].(*v11.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// WaitAndGetPodWithEvents indicates an expected call of WaitAndGetPodWithEvents.
-func (mr *MockClientInterfaceMockRecorder) WaitAndGetPodWithEvents(selector, desiredPhase, pushTimeout interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetPodWithEvents", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetPodWithEvents), selector, desiredPhase, pushTimeout)
-}
-
 // WaitAndGetSecret mocks base method.
 func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Secret, error) {
 	m.ctrl.T.Helper()
@@ -1447,35 +1420,6 @@ func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Sec
 func (mr *MockClientInterfaceMockRecorder) WaitAndGetSecret(name, namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetSecret", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetSecret), name, namespace)
-}
-
-// WaitForDeploymentRollout mocks base method.
-func (m *MockClientInterface) WaitForDeploymentRollout(deploymentName string) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForDeploymentRollout", deploymentName)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// WaitForDeploymentRollout indicates an expected call of WaitForDeploymentRollout.
-func (mr *MockClientInterfaceMockRecorder) WaitForDeploymentRollout(deploymentName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForDeploymentRollout", reflect.TypeOf((*MockClientInterface)(nil).WaitForDeploymentRollout), deploymentName)
-}
-
-// WaitForPodDeletion mocks base method.
-func (m *MockClientInterface) WaitForPodDeletion(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForPodDeletion", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WaitForPodDeletion indicates an expected call of WaitForPodDeletion.
-func (mr *MockClientInterfaceMockRecorder) WaitForPodDeletion(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForPodDeletion", reflect.TypeOf((*MockClientInterface)(nil).WaitForPodDeletion), name)
 }
 
 // WaitForServiceAccountInNamespace mocks base method.
