@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -23,7 +22,7 @@ type kubernetesClient struct {
 	client kclient.ClientInterface
 
 	// if we don't have access to the local config
-	// we can use the deployment to call ListFromCluster() and
+	// we can use the deployment to call List() and
 	// directly list storage from the cluster without the local config
 	deployment *v1.Deployment
 }
@@ -83,8 +82,8 @@ func (k kubernetesClient) Delete(name string) error {
 	return nil
 }
 
-// ListFromCluster lists pvc based Storage from the cluster
-func (k kubernetesClient) ListFromCluster() (StorageList, error) {
+// List lists pvc based Storage from the cluster
+func (k kubernetesClient) List() (StorageList, error) {
 	if k.deployment == nil {
 		var err error
 		k.deployment, err = k.client.GetOneDeployment(k.componentName, k.appName)
@@ -178,58 +177,4 @@ func (k kubernetesClient) ListFromCluster() (StorageList, error) {
 	}
 
 	return StorageList{Items: storage}, nil
-}
-
-// List lists pvc based Storage and local Storage with respective states
-func (k kubernetesClient) List() (StorageList, error) {
-	if !k.localConfigProvider.Exists() {
-		return StorageList{}, fmt.Errorf("no local config was provided")
-	}
-
-	localConfigStorage, err := k.localConfigProvider.ListStorage()
-	if err != nil {
-		return StorageList{}, err
-	}
-
-	localStorage := ConvertListLocalToMachine(localConfigStorage)
-	var clusterStorage StorageList
-	if k.client != nil {
-		clusterStorage, err = k.ListFromCluster()
-		if err != nil {
-			return StorageList{}, err
-		}
-	}
-
-	var storageList []Storage
-
-	// find the local storage which are in a pushed and not pushed state
-	for _, localStore := range localStorage.Items {
-		found := false
-		for _, clusterStore := range clusterStorage.Items {
-			if reflect.DeepEqual(localStore, clusterStore) {
-				found = true
-			}
-		}
-		if found {
-			localStore.Status = StateTypePushed
-		} else {
-			localStore.Status = StateTypeNotPushed
-		}
-		storageList = append(storageList, localStore)
-	}
-
-	// find the cluster storage which have been deleted locally
-	for _, clusterStore := range clusterStorage.Items {
-		found := false
-		for _, localStore := range localStorage.Items {
-			if reflect.DeepEqual(localStore, clusterStore) {
-				found = true
-			}
-		}
-		if !found {
-			clusterStore.Status = StateTypeLocallyDeleted
-			storageList = append(storageList, clusterStore)
-		}
-	}
-	return NewStorageList(storageList), nil
 }

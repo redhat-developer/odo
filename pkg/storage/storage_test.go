@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/util"
@@ -244,7 +245,7 @@ func TestPush(t *testing.T) {
 
 			fakeLocalConfig.EXPECT().GetName().Return(componentName).AnyTimes()
 
-			fakeStorageClient.EXPECT().ListFromCluster().Return(tt.returnedFromCluster, nil).AnyTimes()
+			fakeStorageClient.EXPECT().List().Return(tt.returnedFromCluster, nil).AnyTimes()
 			fakeLocalConfig.EXPECT().ListStorage().Return(tt.returnedFromLocal, nil).AnyTimes()
 
 			convert := ConvertListLocalToMachine(tt.createdItems)

@@ -41,7 +41,6 @@ type ClientOptions struct {
 type Client interface {
 	Create(Storage) error
 	Delete(string) error
-	ListFromCluster() (StorageList, error)
 	List() (StorageList, error)
 }
 
@@ -75,7 +74,7 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 	// list all the storage in the cluster
 	storageClusterList := StorageList{}
 
-	storageClusterList, err := client.ListFromCluster()
+	storageClusterList, err := client.List()
 	if err != nil {
 		return nil, err
 	}

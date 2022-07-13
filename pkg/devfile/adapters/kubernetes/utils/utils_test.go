@@ -1,104 +1,19 @@
 package utils
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser/data"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
-	appsv1 "k8s.io/api/apps/v1"
-
-	"github.com/redhat-developer/odo/pkg/kclient"
-	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
-
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ktesting "k8s.io/client-go/testing"
 )
-
-func TestComponentExists(t *testing.T) {
-
-	tests := []struct {
-		name             string
-		componentType    devfilev1.ComponentType
-		componentName    string
-		appName          string
-		getComponentName string
-		want             bool
-		wantErr          bool
-	}{
-		{
-			name:             "Case 1: Valid component name",
-			componentName:    "test-name",
-			appName:          "app",
-			getComponentName: "test-name",
-			want:             true,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 2: Non-existent component name",
-			componentName:    "test-name",
-			appName:          "",
-			getComponentName: "fake-component",
-			want:             false,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 3: Error condition",
-			componentName:    "test-name",
-			appName:          "app",
-			getComponentName: "test-name",
-			want:             false,
-			wantErr:          true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			fkclient, fkclientset := kclient.FakeNew()
-			fkclientset.Kubernetes.PrependReactor("list", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
-				emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
-				deployment := odoTestingUtil.CreateFakeDeployment(tt.getComponentName)
-
-				if tt.wantErr {
-					return true, &appsv1.DeploymentList{
-						Items: []appsv1.Deployment{
-							*emptyDeployment,
-						},
-					}, errors.New("deployment get error")
-				} else if tt.getComponentName == tt.componentName {
-					return true, &appsv1.DeploymentList{
-						Items: []appsv1.Deployment{
-							*deployment,
-						},
-					}, nil
-				}
-
-				return true, &appsv1.DeploymentList{
-					Items: []appsv1.Deployment{},
-				}, nil
-			})
-
-			// Verify that a component with the specified name exists
-			componentExists, err := component.ComponentExists(fkclient, tt.getComponentName, tt.appName)
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			} else if !tt.wantErr && componentExists != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, componentExists)
-			}
-
-		})
-	}
-
-}
 
 func TestAddOdoProjectVolume(t *testing.T) {
 
@@ -925,9 +840,9 @@ func TestUpdateContainersEntrypointsIfNeeded(t *testing.T) {
 		runContainerArgs      []string
 		debugContainerArgs    []string
 		wantErr               bool
-		//key is the container name
+		// key is the container name
 		expectedContainerCommand map[string][]string
-		//key is the container name
+		// key is the container name
 		expectedContainerArgs map[string][]string
 	}{
 		{

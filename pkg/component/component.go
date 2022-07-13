@@ -91,16 +91,6 @@ func GetOnePod(client kclient.ClientInterface, componentName string, appName str
 	return client.GetOnePodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode))
 }
 
-// ComponentExists checks whether a deployment by the given name exists in the given app
-func ComponentExists(client kclient.ClientInterface, name string, app string) (bool, error) {
-	deployment, err := client.GetOneDeployment(name, app)
-	if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
-		klog.V(2).Infof("Deployment %s not found for belonging to the %s app ", name, app)
-		return false, nil
-	}
-	return deployment != nil, err
-}
-
 // Log returns log from component
 func Log(client kclient.ClientInterface, componentName string, appName string, follow bool, command v1alpha2.Command) (io.ReadCloser, error) {
 
