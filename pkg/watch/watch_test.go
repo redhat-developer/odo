@@ -41,9 +41,9 @@ func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []
 	return changedFiles, deletedPaths
 }
 
-func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer, componentStatus *ComponentStatus, backo *ExpBackoff) error {
+func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
 	fmt.Fprintf(out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
-	return nil
+	return nil, nil
 }
 
 func cleanupHandler(_ parser.DevfileObj, out io.Writer) error {

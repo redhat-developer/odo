@@ -1,9 +1,10 @@
 package watch
 
 import (
-	"fmt"
+	"time"
 
 	"github.com/segmentio/backo-go"
+	"k8s.io/klog"
 )
 
 type ExpBackoff struct {
@@ -17,10 +18,11 @@ func NewExpBackoff() *ExpBackoff {
 	}
 }
 
-func (o *ExpBackoff) Delay() {
-	fmt.Printf("wait for %v\n", o.backo.Duration(o.attempt))
-	o.backo.Sleep(o.attempt)
+func (o *ExpBackoff) Delay() time.Duration {
+	duration := o.backo.Duration(o.attempt)
+	klog.V(4).Infof("wait for %v\n", duration)
 	o.attempt++
+	return duration
 }
 
 func (o *ExpBackoff) Reset() {

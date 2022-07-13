@@ -102,7 +102,8 @@ type WatchParameters struct {
 type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
-type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) error
+// It returns a Duration after which to recall in case of error
+type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
 // cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
 type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
@@ -220,6 +221,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	var sourcesWatcher *fsnotify.Watcher
 	var err error
 	if parameters.WatchFiles {
+		// TODO(feloy) ignore files included by Devfile?
 		sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
 		if err != nil {
 			return err
@@ -238,6 +240,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return fmt.Errorf("error watching deployment: %v", err)
 	}
 
+	// TODO(feloy) watch files included by Devfile
 	devfileWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -291,6 +294,9 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 	deployTimer := time.NewTimer(time.Millisecond)
 	<-deployTimer.C
 
+	retryTimer := time.NewTimer(time.Millisecond)
+	<-retryTimer.C
+
 	for {
 		select {
 		case event := <-sourcesWatcher.Events:
@@ -310,13 +316,20 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 			}
 			componentStatus.State = StateSyncOutdated
 			fmt.Fprintf(out, "Pushing files...\n\n")
-			err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
 			}
 			// empty the events to receive new events
 			if componentStatus.State == StateReady {
 				events = []fsnotify.Event{} // empty the events slice to capture new events
+			}
+
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
 			}
 
 		case watchErr := <-sourcesWatcher.Errors:
@@ -336,9 +349,15 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 			}
 
 		case <-deployTimer.C:
-			err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
+			}
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
 			}
 
 		case <-devfileWatcher.Events:
@@ -346,9 +365,27 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 
 		case <-devfileTimer.C:
 			fmt.Fprintf(out, "Updating Component...\n\n")
-			err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
+			}
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
+			}
+
+		case <-retryTimer.C:
+			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			if err != nil {
+				return err
+			}
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
 			}
 
 		case watchErr := <-devfileWatcher.Errors:
@@ -426,7 +463,13 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 	return changedFiles, deletedPaths
 }
 
-func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) error {
+func processEvents(
+	changedFiles, deletedPaths []string,
+	parameters WatchParameters,
+	out io.Writer,
+	componentStatus *ComponentStatus,
+	backoff *ExpBackoff,
+) (*time.Duration, error) {
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
@@ -455,14 +498,14 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
 	if err != nil {
 		if isFatal(err) {
-			return err
+			return nil, err
 		}
 		// Log and output, but intentionally not exiting on error here.
 		// We don't want to break watch when push failed, it might be fixed with the next change.
 		klog.V(4).Infof("Error from Push: %v", err)
 		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-		backoff.Delay()
-		return nil
+		wait := backoff.Delay()
+		return &wait, nil
 	}
 	backoff.Reset()
 	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
@@ -470,7 +513,7 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 
 		printInfoMessage(out, parameters.Path)
 	}
-	return nil
+	return nil, nil
 }
 
 func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, out io.Writer) error {
