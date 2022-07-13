@@ -30,6 +30,5 @@ oc whoami
 # Operatorhub integration tests
 make test-operator-hub
 
-cp -r tests/reports $ARTIFACT_DIR 
 
 oc logout

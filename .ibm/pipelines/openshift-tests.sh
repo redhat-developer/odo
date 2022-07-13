@@ -15,11 +15,7 @@ cleanup_namespaces
     set -e
     make install
     make test-integration
-    make test-interactive
-    make test-integration-devfile
-    make test-cmd-login-logout
-    make test-cmd-project
-    make test-e2e-devfile
+    make test-e2e
 ) |& tee "/tmp/${LOGFILE}"
 
 RESULT=${PIPESTATUS[0]}
