@@ -217,20 +217,20 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
-	var watcher *fsnotify.Watcher
+	var sourcesWatcher *fsnotify.Watcher
 	var err error
 	if parameters.WatchFiles {
-		watcher, err = getFullWatcher(parameters.Path, parameters.FileIgnores)
+		sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
 		if err != nil {
 			return err
 		}
 	} else {
-		watcher, err = fsnotify.NewWatcher()
+		sourcesWatcher, err = fsnotify.NewWatcher()
 		if err != nil {
 			return err
 		}
 	}
-	defer watcher.Close()
+	defer sourcesWatcher.Close()
 
 	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
 	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
@@ -247,10 +247,10 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return err
 	}
 
-	return eventWatcher(ctx, watcher, deploymentWatcher, devfileWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+	return eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
 }
 
-func getFullWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
+func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
 	absIgnorePaths := dfutil.GetAbsGlobExps(path, fileIgnores)
 
 	watcher, err := fsnotify.NewWatcher()
@@ -270,20 +270,20 @@ func getFullWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
+func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
 
 	expBackoff := NewExpBackoff()
 
 	var events []fsnotify.Event
 
-	// timer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
-	// at this point. In the select block, however, every time we receive an event, we reset the timer to watch for
+	// sourcesTimer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
+	// at this point. In the select block, however, every time we receive an event, we reset the sourcesTimer to watch for
 	// 100ms since receiving that event. This is done because a single filesystem event by the user triggers multiple
 	// events for fsnotify. It's a known-issue, but not really bug. For more info look at below issues:
 	//    - https://github.com/fsnotify/fsnotify/issues/122
 	//    - https://github.com/fsnotify/fsnotify/issues/344
-	timer := time.NewTimer(time.Millisecond)
-	<-timer.C
+	sourcesTimer := time.NewTimer(time.Millisecond)
+	<-sourcesTimer.C
 
 	devfileTimer := time.NewTimer(time.Millisecond)
 	<-devfileTimer.C
@@ -293,17 +293,17 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 
 	for {
 		select {
-		case event := <-watcher.Events:
+		case event := <-sourcesWatcher.Events:
 			events = append(events, event)
 			// We are waiting for more events in this interval
-			timer.Reset(100 * time.Millisecond)
-		case <-timer.C:
+			sourcesTimer.Reset(100 * time.Millisecond)
+		case <-sourcesTimer.C:
 			// timer has fired
 			if !componentCanSyncFile(componentStatus.State) {
 				continue
 			}
 			// first find the files that have changed (also includes the ones newly created) or deleted
-			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, watcher)
+			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, sourcesWatcher)
 			// process the changes and sync files with remote pod
 			if len(changedFiles) == 0 && len(deletedPaths) == 0 {
 				continue
@@ -319,7 +319,7 @@ func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, deploymentWatc
 				events = []fsnotify.Event{} // empty the events slice to capture new events
 			}
 
-		case watchErr := <-watcher.Errors:
+		case watchErr := <-sourcesWatcher.Errors:
 			return watchErr
 
 		case ev := <-deploymentWatcher.ResultChan():
