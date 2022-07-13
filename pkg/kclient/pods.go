@@ -258,3 +258,15 @@ func (c *Client) PodWatcher(ctx context.Context, selector string) (watch.Interfa
 			LabelSelector: selector,
 		})
 }
+
+func (c *Client) IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error) {
+	ns := c.GetCurrentNamespace()
+	list, err := c.GetClient().CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
+		FieldSelector: "metadata.name=" + podname,
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(list.Items) > 0, nil
+}

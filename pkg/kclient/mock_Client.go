@@ -992,6 +992,21 @@ func (mr *MockClientInterfaceMockRecorder) IsDeploymentExtensionsV1Beta1() *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDeploymentExtensionsV1Beta1", reflect.TypeOf((*MockClientInterface)(nil).IsDeploymentExtensionsV1Beta1))
 }
 
+// IsPodNameMatchingSelector mocks base method.
+func (m *MockClientInterface) IsPodNameMatchingSelector(ctx context.Context, podname, selector string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsPodNameMatchingSelector", ctx, podname, selector)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsPodNameMatchingSelector indicates an expected call of IsPodNameMatchingSelector.
+func (mr *MockClientInterfaceMockRecorder) IsPodNameMatchingSelector(ctx, podname, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPodNameMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).IsPodNameMatchingSelector), ctx, podname, selector)
+}
+
 // IsProjectSupported mocks base method.
 func (m *MockClientInterface) IsProjectSupported() (bool, error) {
 	m.ctrl.T.Helper()
@@ -1200,6 +1215,21 @@ func (m *MockClientInterface) PatchDynamicResource(exampleCustomResource unstruc
 func (mr *MockClientInterfaceMockRecorder) PatchDynamicResource(exampleCustomResource interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).PatchDynamicResource), exampleCustomResource)
+}
+
+// PodWarningEventWatcher mocks base method.
+func (m *MockClientInterface) PodWarningEventWatcher(ctx context.Context) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodWarningEventWatcher", ctx)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PodWarningEventWatcher indicates an expected call of PodWarningEventWatcher.
+func (mr *MockClientInterfaceMockRecorder) PodWarningEventWatcher(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWarningEventWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWarningEventWatcher), ctx)
 }
 
 // PodWatcher mocks base method.

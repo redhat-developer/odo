@@ -68,6 +68,7 @@ type ClientInterface interface {
 
 	// events.go
 	CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int)
+	PodWarningEventWatcher(ctx context.Context) (watch.Interface, error)
 
 	// kclient.go
 	GetClient() kubernetes.Interface
@@ -118,6 +119,7 @@ type ClientInterface interface {
 	GetAllPodsInNamespace() (*corev1.PodList, error)
 	GetPodsMatchingSelector(selector string) (*corev1.PodList, error)
 	PodWatcher(ctx context.Context, selector string) (watch.Interface, error)
+	IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error)
 
 	// port_forwarding.go
 	// SetupPortForwarding creates port-forwarding for the pod on the port pairs provided in the

@@ -256,7 +256,12 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return err
 	}
 
-	return eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+	eventsWatcher, err := o.kubeClient.PodWarningEventWatcher(ctx)
+	if err != nil {
+		return err
+	}
+
+	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, eventsWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
 }
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
@@ -279,7 +284,7 @@ func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
+func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
 
 	expBackoff := NewExpBackoff()
 
@@ -410,6 +415,20 @@ func eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploym
 					return errors.New("unable to decode watch event")
 				}
 				podsPhases.Add(out, pod.GetCreationTimestamp(), pod)
+			}
+
+		case ev := <-eventsWatcher.ResultChan():
+			switch kevent := ev.Object.(type) {
+			case *corev1.Event:
+				podName := kevent.InvolvedObject.Name
+				selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
+				matching, err := o.kubeClient.IsPodNameMatchingSelector(ctx, podName, selector)
+				if err != nil {
+					return err
+				}
+				if matching {
+					log.Fwarning(out, kevent.Message)
+				}
 			}
 
 		case watchErr := <-devfileWatcher.Errors:
