@@ -181,9 +181,12 @@ type CommonVar struct {
 	testDuration float64
 }
 
+const SetupClusterTrue = true
+const SetupClusterFalse = false
+
 // CommonBeforeEach is common function runs before every test Spec (It)
 // returns CommonVar values that are used within the test script
-func CommonBeforeEach() CommonVar {
+func CommonBeforeEach(setupCluster bool) CommonVar {
 	SetDefaultEventuallyTimeout(10 * time.Minute)
 	SetDefaultConsistentlyDuration(30 * time.Second)
 
@@ -193,7 +196,9 @@ func CommonBeforeEach() CommonVar {
 	commonVar.OriginalKubeconfig = os.Getenv("KUBECONFIG")
 	commonVar.CliRunner = GetCliRunner()
 	LocalKubeconfigSet(commonVar.ConfigDir)
-	commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+	if setupCluster {
+		commonVar.Project = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
+	}
 	commonVar.OriginalWorkingDirectory = Getwd()
 	os.Setenv("GLOBALODOCONFIG", filepath.Join(commonVar.ConfigDir, "preference.yaml"))
 	// Set ConsentTelemetry to false so that it does not prompt to set a preference value
@@ -246,9 +251,10 @@ func CommonAfterEach(commonVar CommonVar) {
 		}
 	}
 
-	// delete the random project/namespace created in CommonBeforeEach
-	commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project, false)
-
+	if commonVar.Project != "" {
+		// delete the random project/namespace created in CommonBeforeEach
+		commonVar.CliRunner.DeleteNamespaceProject(commonVar.Project, false)
+	}
 	// restores the original kubeconfig and working directory
 	Chdir(commonVar.OriginalWorkingDirectory)
 	err = os.Setenv("KUBECONFIG", commonVar.OriginalKubeconfig)
