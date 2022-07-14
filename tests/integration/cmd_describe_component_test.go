@@ -16,7 +16,7 @@ var _ = Describe("odo describe component command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 		helper.Chdir(commonVar.Context)
 		cmpName = helper.RandString(6)
 	})

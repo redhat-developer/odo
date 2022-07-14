@@ -16,7 +16,7 @@ var _ = Describe("odo describe/list binding command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 		helper.Chdir(commonVar.Context)
 	})
 

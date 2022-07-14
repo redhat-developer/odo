@@ -28,7 +28,7 @@ var _ = Describe("odo logs command tests", func() {
 	}
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 		componentName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())

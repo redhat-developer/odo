@@ -13,7 +13,7 @@ var _ = Describe("odo remove binding command tests", func() {
 	var commonVar helper.CommonVar
 
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 		helper.Chdir(commonVar.Context)
 		// Note: We do not add any operators here because `odo remove binding` is simply about removing the ServiceBinding from devfile.
 	})
