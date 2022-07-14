@@ -28,7 +28,7 @@ oc login -u developer -p password@123
 oc whoami
 
 # Operatorhub integration tests
-make test-operator-hub
-
+make test-integration
+make test-e2e
 
 oc logout
