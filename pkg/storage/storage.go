@@ -72,8 +72,6 @@ func NewClient(options ClientOptions) Client {
 // it compares the local storage against the storage on the cluster
 func Push(client Client, configProvider localConfigProvider.LocalConfigProvider) (ephemerals map[string]Storage, _ error) {
 	// list all the storage in the cluster
-	storageClusterList := StorageList{}
-
 	storageClusterList, err := client.List()
 	if err != nil {
 		return nil, err

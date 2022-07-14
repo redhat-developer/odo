@@ -1415,7 +1415,7 @@ func TestIsValidProjectDir(t *testing.T) {
 
 			for _, d := range tt.dirToCreate {
 				dir := filepath.Join(tmpDir, d)
-				if e := os.Mkdir(dir, os.FileMode(644)); e != nil {
+				if e := os.Mkdir(dir, os.FileMode(0644)); e != nil {
 					t.Errorf("Error creating dir %s. Err: %s", dir, e)
 				}
 			}
