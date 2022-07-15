@@ -27,6 +27,7 @@ go mod edit -replace github.com/apcera/gssapi=github.com/openshift/gssapi@v0.0.0
 go mod edit -require github.com/pborman/uuid@v1.2.1
 go mod edit -require github.com/posener/complete@v1.2.3
 go mod edit -require github.com/fatih/color@v1.13.0
+go mod edit -require github.com/golang/mock@v1.6.0
 
 go mod tidy -compat=1.17 # why?
 
