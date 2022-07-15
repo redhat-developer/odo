@@ -60,7 +60,6 @@ EOF
     name: service-binding-operator
     source: service-binding-master
     sourceNamespace: openshift-marketplace
-    startingCSV: service-binding-operator.v1.1.1
 EOF
 }
 
