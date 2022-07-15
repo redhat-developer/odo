@@ -3,8 +3,9 @@ package labels
 import (
 	"errors"
 
-	"github.com/redhat-developer/odo/pkg/version"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // GetLabels return labels that should be applied to every object for given component in active application

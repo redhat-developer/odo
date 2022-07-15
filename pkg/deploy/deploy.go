@@ -2,22 +2,15 @@ package deploy
 
 import (
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
-	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
-	"k8s.io/klog"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	component2 "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
-	"github.com/redhat-developer/odo/pkg/log"
-	"github.com/redhat-developer/odo/pkg/service"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
@@ -65,40 +58,7 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := component2.ValidateResourceExist(o.kubeClient, o.devfileObj, kubernetes, o.path)
-	if err != nil {
-		return err
-	}
-
-	// Get the most common labels that's applicable to all resources being deployed.
-	// Set the mode to DEPLOY. Regardless of what Kubernetes resource we are deploying.
-	labels := odolabels.GetLabels(o.devfileObj.Data.GetMetadata().Name, o.appName, odolabels.ComponentDeployMode)
-	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
-
-	// Create the annotations
-	// Retrieve the component type from the devfile and also inject it into the list of annotations
-	annotations := make(map[string]string)
-	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(o.devfileObj.Data.GetMetadata()))
-
-	// Get the Kubernetes component
-	u, err := libdevfile.GetK8sComponentAsUnstructured(o.devfileObj, kubernetes.Name, o.path, devfilefs.DefaultFs{})
-	if err != nil {
-		return err
-	}
-
-	// Deploy the actual Kubernetes component and error out if there's an issue.
-	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
-	isOperatorBackedService, err := service.PushKubernetesResource(o.kubeClient, u, labels, annotations)
-	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
-	}
-
-	if isOperatorBackedService {
-		log.Successf("Kubernetes resource %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
-
-	}
-	return nil
+	return component2.CommonApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.devfileObj, kubernetes, o.kubeClient, o.path)
 }
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml

@@ -360,6 +360,8 @@ func (a *Adapter) createOrUpdateComponent(
 
 	// Set the labels
 	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode)
+	// This label is only applied to the core resources created by odo dev;
+	// it is the only thing that sets these resources apart from other resources that might be created during the session
 	labels["component"] = componentName
 
 	annotations := make(map[string]string)

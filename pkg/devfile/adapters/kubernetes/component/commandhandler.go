@@ -3,16 +3,17 @@ package component
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
+	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -41,42 +42,7 @@ func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
 }
 
 func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
-	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	_, err := ValidateResourceExist(a.kubeClient, a.Devfile, kubernetes, a.parameters.Path)
-	if err != nil {
-		return err
-	}
-
-	// Get the most common labels that's applicable to all resources being deployed.
-	// Set the mode to DEV. Regardless of what Kubernetes resource we are deploying.
-	// FIXME: Fix multipleDeploymentFound error
-	labels := odolabels.GetLabels(a.Devfile.Data.GetMetadata().Name, a.AppName, odolabels.ComponentDevMode)
-
-	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
-
-	// Create the annotations
-	// Retrieve the component type from the devfile and also inject it into the list of annotations
-	annotations := make(map[string]string)
-	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.Devfile.Data.GetMetadata()))
-
-	// Get the Kubernetes component
-	u, err := libdevfile.GetK8sComponentAsUnstructured(a.Devfile, kubernetes.Name, a.parameters.Path, devfilefs.DefaultFs{})
-	if err != nil {
-		return err
-	}
-
-	// Deploy the actual Kubernetes component and error out if there's an issue.
-	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
-	isOperatorBackedService, err := service.PushKubernetesResource(a.kubeClient, u, labels, annotations)
-	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
-	}
-
-	if isOperatorBackedService {
-		log.Successf("Kubernetes resource %q on the cluster; refer %q to know how to link it to the component", strings.Join([]string{u.GetKind(), u.GetName()}, "/"), "odo link -h")
-
-	}
-	return nil
+	return CommonApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.Devfile, kubernetes, a.kubeClient, a.parameters.Path)
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
@@ -162,6 +128,40 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 
 	return a.checkRemoteCommandStatus(devfileCmd, a.podName,
 		fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
+}
+
+func CommonApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kubernetes devfilev1.Component, kubeClient kclient.ClientInterface, path string) error {
+	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
+	_, err := ValidateResourceExist(kubeClient, devfile, kubernetes, path)
+	if err != nil {
+		return err
+	}
+
+	// Get the most common labels that's applicable to all resources being deployed.
+	// Set the mode. Regardless of what Kubernetes resource we are deploying.
+	labels := odolabels.GetLabels(devfile.Data.GetMetadata().Name, appName, mode)
+
+	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
+
+	// Create the annotations
+	// Retrieve the component type from the devfile and also inject it into the list of annotations
+	annotations := make(map[string]string)
+	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(devfile.Data.GetMetadata()))
+
+	// Get the Kubernetes component
+	u, err := libdevfile.GetK8sComponentAsUnstructured(devfile, kubernetes.Name, path, devfilefs.DefaultFs{})
+	if err != nil {
+		return err
+	}
+
+	// Deploy the actual Kubernetes component and error out if there's an issue.
+	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
+	_, err = service.PushKubernetesResource(kubeClient, u, labels, annotations)
+	if err != nil {
+		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+	}
+
+	return nil
 }
 
 // devfileCommandToRemoteCmdDefinition builds and returns a new remotecmd.CommandDefinition object from the specified devfileCmd.

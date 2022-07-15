@@ -87,8 +87,7 @@ func (k kubernetesClient) List() (StorageList, error) {
 	if k.deployment == nil {
 		var err error
 		// FIXME: Find a better way to add the component label to selector
-		selector := odolabels.GetSelector(k.componentName, k.appName, odolabels.ComponentAnyMode)
-		selector += ",component=" + k.componentName
+		selector := fmt.Sprintf("%s,component=%s", odolabels.GetSelector(k.componentName, k.appName, odolabels.ComponentAnyMode), k.componentName)
 		k.deployment, err = k.client.GetOneDeploymentFromSelector(selector)
 		if err != nil {
 			if _, ok := err.(*kclient.DeploymentNotFoundError); ok {
