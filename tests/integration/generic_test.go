@@ -17,7 +17,7 @@ var _ = Describe("odo generic", func() {
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
 		oc = helper.NewOcRunner("oc")
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 	})
 
 	// Clean up after the test

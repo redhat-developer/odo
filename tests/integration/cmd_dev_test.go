@@ -30,7 +30,7 @@ var _ = Describe("odo dev command tests", func() {
 
 	// This is run before every Spec (It)
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 		cmpName = helper.RandString(6)
 		helper.Chdir(commonVar.Context)
 		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())

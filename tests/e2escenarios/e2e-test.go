@@ -19,7 +19,7 @@ import (
 var _ = Describe("E2E Test", func() {
 	var commonVar helper.CommonVar
 	var _ = BeforeEach(func() {
-		commonVar = helper.CommonBeforeEach()
+		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 	})
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
