@@ -19,6 +19,12 @@ type LogsClient struct {
 	kubernetesClient kclient.ClientInterface
 }
 
+type Events struct {
+	Logs chan map[string]interface{}
+	Err  chan error
+	Done chan struct{}
+}
+
 var _ Client = (*LogsClient)(nil)
 
 func NewLogsClient(kubernetesClient kclient.ClientInterface) *LogsClient {
@@ -35,28 +41,46 @@ func (o *LogsClient) GetLogsForMode(
 	namespace string,
 	follow bool,
 	out io.Writer,
-	logChan chan map[string]interface{},
-	doneChan chan struct{},
-) error {
+) (Events, error) {
+	events := Events{
+		Logs: make(chan map[string]interface{}),
+		Err:  make(chan error),
+		Done: make(chan struct{}),
+	}
+
+	go o.getLogsForMode(events, mode, componentName, namespace, follow, out)
+	return events, nil
+}
+
+func (o *LogsClient) getLogsForMode(
+	events Events,
+	mode string,
+	componentName string,
+	namespace string,
+	follow bool,
+	out io.Writer,
+) {
 	var selector string
 	podChan := make(chan corev1.Pod) // grab the logs of the pod put on this channel
-	done := make(chan struct{})      // because populating doneChan directly would cause odo logs to exit prematurely.
+	errChan := make(chan error)
+	doneChan := make(chan struct{}) // because populating doneChan directly would cause odo logs to exit prematurely.
 
 	go func() {
 		// this go routine gets the logs of the pods put on the podChan
 		for {
 			select {
 			case pod := <-podChan:
-				// we received a pod, let's collect its logs and put it on logChan
 				for _, container := range pod.Spec.Containers {
 					containerLogs, err := o.kubernetesClient.GetPodLogs(pod.Name, container.Name, follow)
 					if err != nil {
 						fmt.Fprintf(out, "failed to get logs for container %s; error: %v", container.Name, err)
 					}
-					logChan <- map[string]interface{}{"name": container.Name, "logs": containerLogs}
+					events.Logs <- map[string]interface{}{"name": container.Name, "logs": containerLogs}
 				}
-			case <-done:
-				doneChan <- struct{}{}
+			case err := <-errChan:
+				events.Err <- err
+			case <-doneChan:
+				events.Done <- struct{}{}
 			}
 		}
 	}()
@@ -65,21 +89,20 @@ func (o *LogsClient) GetLogsForMode(
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
 		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
-			return err
+			errChan <- err
 		}
 	}
 	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
 		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
 		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
-			return err
+			errChan <- err
 		}
 	}
 
 	if !follow {
-		done <- struct{}{}
+		doneChan <- struct{}{}
 	}
-	return nil
 }
 
 // getPodsForSelector gets pods for the resources matching selector in the namespace; Pods found by this method will be
@@ -135,7 +158,6 @@ func (o *LogsClient) getPodsForSelector(
 			}
 		}
 	}
-
 	return nil
 }
 

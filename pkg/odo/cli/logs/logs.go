@@ -34,10 +34,9 @@ type LogsOptions struct {
 	clientset *clientset.Clientset
 
 	// variables
-	componentName    string
-	contextDir       string
-	out              io.Writer
-	containerLogChan chan map[string]interface{}
+	componentName string
+	contextDir    string
+	out           io.Writer
 
 	// flags
 	devMode    bool
@@ -56,8 +55,7 @@ const (
 
 func NewLogsOptions() *LogsOptions {
 	return &LogsOptions{
-		out:              log.GetStdout(),
-		containerLogChan: make(chan map[string]interface{}),
+		out: log.GetStdout(),
 	}
 }
 
@@ -123,30 +121,24 @@ func (o *LogsOptions) Run(_ context.Context) error {
 		mode = odolabels.ComponentAnyMode
 	}
 
-	errChan := make(chan error) // errors are put on this channel
-	done := make(chan struct{}) // a struct{}{} on done channel indicates that logs for all pods are fetched
-
-	go func() {
-		err = o.clientset.LogsClient.GetLogsForMode(
-			mode,
-			o.componentName,
-			o.Context.GetProject(),
-			o.follow,
-			o.out,
-			o.containerLogChan,
-			done,
-		)
-		if err != nil {
-			errChan <- err
-		}
-	}()
+	events, err := o.clientset.LogsClient.GetLogsForMode(
+		mode,
+		o.componentName,
+		o.Context.GetProject(),
+		o.follow,
+		o.out,
+	)
+	if err != nil {
+		return err
+	}
 
 	uniqueContainerNames := map[string]struct{}{}
 	wg := sync.WaitGroup{}
+	errChan := make(chan error) // errors are put on this channel
 	var mu sync.Mutex
 	for {
 		select {
-		case containerLogs := <-o.containerLogChan:
+		case containerLogs := <-events.Logs:
 			uniqueName := getUniqueContainerName(containerLogs["name"].(string), uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
 			colour := log.ColorPicker()
@@ -169,7 +161,9 @@ func (o *LogsOptions) Run(_ context.Context) error {
 			}
 		case err = <-errChan:
 			return err
-		case <-done:
+		case err = <-events.Err:
+			return err
+		case <-events.Done:
 			if len(uniqueContainerNames) == 0 {
 				// This will be the case when:
 				// 1. user specifies --dev flag, but the component's running in Deploy mode
