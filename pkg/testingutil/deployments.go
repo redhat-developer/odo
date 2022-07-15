@@ -1,11 +1,12 @@
 package testingutil
 
 import (
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
 // CreateFakeDeployment creates a fake deployment with the given pod name and labels
@@ -26,6 +27,7 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 				WithComponentName(podName).
 				WithManager("odo").
 				WithMode(odolabels.ComponentDevMode).
+				WithComponent(podName).
 				Labels(),
 			Annotations: odolabels.Builder().WithProjectType(podName).Labels(),
 		},

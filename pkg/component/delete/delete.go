@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -90,7 +91,7 @@ func references(list []unstructured.Unstructured, ownerRef metav1.OwnerReference
 
 // ListResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on the cluster and can be deleted
 func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, mode string) (isInnerLoopDeployed bool, resources []unstructured.Unstructured, err error) {
-
+	var deployment *v1.Deployment
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		// Inner Loop
 		// Fetch the deployment of the devfile component
@@ -101,7 +102,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 			return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, componentName, err)
 		}
 
-		deployment, err := do.kubeClient.GetDeploymentByName(deploymentName)
+		deployment, err = do.kubeClient.GetDeploymentByName(deploymentName)
 		if err != nil && !kerrors.IsNotFound(err) {
 			return isInnerLoopDeployed, resources, err
 		}
