@@ -53,8 +53,6 @@ GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 # GolangCi version for unit-validate test
 GOLANGCI_LINT_VERSION=1.37.0
- 
-ARCH=$(shell uname -m)
 
 RUN_GINKGO = go run -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 
@@ -114,14 +112,7 @@ clean:
 
 .PHONY: goget-tools
 goget-tools:
-ifeq '$(ARCH)' 'x86_64'
-	wget https://github.com/golangci/golangci-lint/releases/download/v$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION)-linux-amd64.tar.gz
-else
-	wget https://github.com/golangci/golangci-lint/releases/download/v$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION)-linux-$(ARCH).tar.gz
-endif
-	mkdir -p $(shell go env GOPATH)/bin
-	tar --no-same-owner -xzf golangci-lint-$(GOLANGCI_LINT_VERSION)-linux-amd64.tar.gz
-	mv golangci-lint-$(GOLANGCI_LINT_VERSION)-linux-amd64/golangci-lint $(shell go env GOPATH)/bin/golangci-lint
+	(curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/v$(GOLANGCI_LINT_VERSION)/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)) || go install -mod=readonly github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
