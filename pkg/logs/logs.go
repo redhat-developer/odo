@@ -19,6 +19,11 @@ type LogsClient struct {
 	kubernetesClient kclient.ClientInterface
 }
 
+type ContainerLogs struct {
+	Name string
+	Logs io.ReadCloser
+}
+
 type Events struct {
 	// channel to put the container logs on; key is the name of the container and value is the logs of that container
 	Logs chan ContainerLogs
@@ -46,7 +51,7 @@ func (o *LogsClient) GetLogsForMode(
 	out io.Writer,
 ) (Events, error) {
 	events := Events{
-		Logs: make(chan map[string]interface{}),
+		Logs: make(chan ContainerLogs),
 		Err:  make(chan error),
 		Done: make(chan struct{}),
 	}
@@ -78,7 +83,7 @@ func (o *LogsClient) getLogsForMode(
 					if err != nil {
 						fmt.Fprintf(out, "failed to get logs for container %s; error: %v", container.Name, err)
 					}
-					events.Logs <- map[string]interface{}{"name": container.Name, "logs": containerLogs}
+					events.Logs <- ContainerLogs{container.Name, containerLogs}
 				}
 			case err := <-errChan:
 				events.Err <- err

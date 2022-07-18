@@ -139,10 +139,10 @@ func (o *LogsOptions) Run(_ context.Context) error {
 	for {
 		select {
 		case containerLogs := <-events.Logs:
-			uniqueName := getUniqueContainerName(containerLogs["name"].(string), uniqueContainerNames)
+			uniqueName := getUniqueContainerName(containerLogs.Name, uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
 			colour := log.ColorPicker()
-			logs := containerLogs["logs"].(io.ReadCloser)
+			logs := containerLogs.Logs
 
 			if o.follow {
 				wg.Add(1)
