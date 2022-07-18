@@ -31,7 +31,42 @@ install_service_binding_operator() {
 EOF
 }
 
-if [ "$KUBERNETES" == "true" ]; then
+install_service_binding_operator_master() {
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: CatalogSource
+  metadata:
+    name: service-binding-master
+    namespace: openshift-marketplace
+  spec:
+    displayName: Service Binding Operator build from master
+    image: quay.io/redhat-developer/servicebinding-operator:index
+    priority: 500
+    publisher: Red Hat
+    sourceType: grpc
+    updateStrategy:
+      registryPoll:
+        interval: 10m0s
+EOF
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: service-binding-operator
+    namespace: openshift-operators
+  spec:
+    channel: candidate
+    installPlanApproval: Automatic
+    name: service-binding-operator
+    source: service-binding-master
+    sourceNamespace: openshift-marketplace
+EOF
+}
+
+if [ "$NIGHTLY" == "true" ]; then
+  install_postgres_operator oc openshift-operators certified-operators openshift-marketplace
+  install_service_binding_operator_master
+elif [ "$KUBERNETES" == "true" ]; then
   # install "cloud-native-postgresql" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog source from "olm" namespace
   install_postgres_operator kubectl operators operatorhubio-catalog olm
 
