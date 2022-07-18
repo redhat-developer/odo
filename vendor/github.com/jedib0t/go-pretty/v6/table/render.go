@@ -80,8 +80,11 @@ func (t *Table) renderColumn(out *strings.Builder, row rowStr, colIdx int, maxCo
 	// content is found; override alignment to Center in this case
 	rowConfig := t.getRowConfig(hint)
 	if rowConfig.AutoMerge && !hint.isSeparatorRow {
-		for idx := colIdx + 1; idx < len(row); idx++ {
-			if row[colIdx] != row[idx] {
+		// get the real row to consider all lines in each column instead of just
+		// looking at the current "line"
+		rowUnwrapped := t.getRow(hint.rowNumber-1, hint)
+		for idx := colIdx + 1; idx < len(rowUnwrapped); idx++ {
+			if rowUnwrapped[colIdx] != rowUnwrapped[idx] {
 				break
 			}
 			align = rowConfig.getAutoMergeAlign()
@@ -317,11 +320,19 @@ func (t *Table) renderRows(out *strings.Builder, rows []rowStr, hint renderHint)
 }
 
 func (t *Table) renderRowsBorderBottom(out *strings.Builder) {
-	t.renderRowSeparator(out, renderHint{isBorderBottom: true, isFooterRow: true})
+	if len(t.rowsFooter) > 0 {
+		t.renderRowSeparator(out, renderHint{isBorderBottom: true, isFooterRow: true, rowNumber: len(t.rowsFooter)})
+	} else {
+		t.renderRowSeparator(out, renderHint{isBorderBottom: true, isFooterRow: false, rowNumber: len(t.rows)})
+	}
 }
 
 func (t *Table) renderRowsBorderTop(out *strings.Builder) {
-	t.renderRowSeparator(out, renderHint{isBorderTop: true, isHeaderRow: true})
+	if len(t.rowsHeader) > 0 || t.autoIndex {
+		t.renderRowSeparator(out, renderHint{isBorderTop: true, isHeaderRow: true, rowNumber: 0})
+	} else {
+		t.renderRowSeparator(out, renderHint{isBorderTop: true, isHeaderRow: false, rowNumber: 0})
+	}
 }
 
 func (t *Table) renderRowsFooter(out *strings.Builder) {
@@ -337,17 +348,16 @@ func (t *Table) renderRowsFooter(out *strings.Builder) {
 
 func (t *Table) renderRowsHeader(out *strings.Builder) {
 	if len(t.rowsHeader) > 0 || t.autoIndex {
+		hintSeparator := renderHint{isHeaderRow: true, isLastRow: true, isSeparatorRow: true}
+
 		if len(t.rowsHeader) > 0 {
 			t.renderRows(out, t.rowsHeader, renderHint{isHeaderRow: true})
+			hintSeparator.rowNumber = len(t.rowsHeader)
 		} else if t.autoIndex {
 			t.renderRow(out, t.getAutoIndexColumnIDs(), renderHint{isAutoIndexRow: true, isHeaderRow: true})
+			hintSeparator.rowNumber = 1
 		}
-		t.renderRowSeparator(out, renderHint{
-			isHeaderRow:    true,
-			isLastRow:      true,
-			isSeparatorRow: true,
-			rowNumber:      len(t.rowsHeader),
-		})
+		t.renderRowSeparator(out, hintSeparator)
 	}
 }
 
