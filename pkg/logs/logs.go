@@ -20,8 +20,11 @@ type LogsClient struct {
 }
 
 type Events struct {
-	Logs chan map[string]interface{}
-	Err  chan error
+	// channel to put the container logs on; key is the name of the container and value is the logs of that container
+	Logs chan ContainerLogs
+	// channel to put an error on, if any
+	Err chan error
+	// channel to indicate that logs for all pods have been grabbed; not to be populated if --follow is used
 	Done chan struct{}
 }
 
