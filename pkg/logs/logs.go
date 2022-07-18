@@ -81,7 +81,7 @@ func (o *LogsClient) getLogsForMode(
 				for _, container := range pod.Spec.Containers {
 					containerLogs, err := o.kubernetesClient.GetPodLogs(pod.Name, container.Name, follow)
 					if err != nil {
-						fmt.Fprintf(out, "failed to get logs for container %s; error: %v", container.Name, err)
+						events.Err <- fmt.Errorf("failed to get logs for container %s; error: %v", container.Name, err)
 					}
 					events.Logs <- ContainerLogs{container.Name, containerLogs}
 				}
