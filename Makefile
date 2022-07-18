@@ -51,7 +51,8 @@ GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) --randomize-all --slow-spec-threshold=$(S
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
 # Flags for tests that may be run in parallel
 GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
-
+# GolangCi version for unit-validate test
+GOLANGCI_LINT_VERSION=1.37.0
 
 RUN_GINKGO = go run -mod=vendor github.com/onsi/ginkgo/v2/ginkgo
 
@@ -111,8 +112,7 @@ clean:
 
 .PHONY: goget-tools
 goget-tools:
-	mkdir -p $(shell go env GOPATH)/bin
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.37.0
+	(curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/v$(GOLANGCI_LINT_VERSION)/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)) || go install -mod=readonly github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
 
 .PHONY: goget-ginkgo
 goget-ginkgo:
