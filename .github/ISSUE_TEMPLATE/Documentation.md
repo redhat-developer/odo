@@ -3,7 +3,8 @@ name: Documentation
 about: Report mistakes or request for documentation
 ---
 
-/kind documentation
+/area documentation
+/kind bug
 
 <!--
 
