@@ -90,8 +90,8 @@ func (d *DevfileCtx) Populate() (err error) {
 		return err
 	}
 	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
-	// remove /private from the path name
-	d.absPath = strings.Replace(d.absPath, "/private", "", 1)
+	// Weird M1 bug
+	//d.absPath = strings.Replace(d.absPath, "/private", "", 1)
 
 	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
 	// Read and save devfile content
