@@ -1151,6 +1151,44 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
+	When("running odo dev and devfile with non-exec composite command", func() {
+		deploymentName := "my-component"
+		var session helper.DevSession
+		var sessionOut []byte
+		var err error
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "devfile-composite-non-exec-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			os.Setenv("PODMAN_CMD", "echo")
+			session, sessionOut, _, _, err = helper.StartDevMode()
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			session.Stop()
+			session.WaitEnd()
+			os.Unsetenv("PODMAN_CMD")
+		})
+		It("should execute the non-exec composite commands successfully", func() {
+			Expect(string(sessionOut)).To(ContainSubstring("Building & Pushing Container"))
+			By("checking the deployment was created successfully", func() {
+				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
+				Expect(out).To(ContainSubstring(deploymentName))
+			})
+			By("checking odo dev watches correctly", func() {
+				// making changes to the project again
+				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js app v2", "from Node.js app v3")
+				_, _, _, err = session.WaitSync()
+				Expect(err).ToNot(HaveOccurred())
+			})
+			By("cleaning up the resources on ending the session", func() {
+				session.Stop()
+				session.WaitEnd()
+				out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
+				Expect(out).ToNot(ContainSubstring(deploymentName))
+			})
+		})
+	})
+
 	When("running odo dev and devfile with composite command", func() {
 		devfileCmpName := "nodejs"
 		var session helper.DevSession
@@ -1165,7 +1203,7 @@ var _ = Describe("odo dev command tests", func() {
 			session.WaitEnd()
 		})
 
-		It("should execute all commands in composite commmand", func() {
+		It("should execute all commands in composite command", func() {
 			// Verify the command executed successfully
 			var statErr error
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
@@ -1565,7 +1603,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should error out if called with a command of another kind", func() {
-				//devrun is a valid run command, not a build command
+				// devrun is a valid run command, not a build command
 				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "devrun").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 			})
@@ -1585,7 +1623,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should execute the default build command successfully if specified explicitly", func() {
-				//devbuild is the default build command
+				// devbuild is the default build command
 				buildCmdTestFunc("devbuild", func(stdout, stderr string) {
 					By("checking that it did not execute the custom build command", func() {
 						helper.DontMatchAllInOutput(stdout, []string{
@@ -1614,7 +1652,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should error out if called with a command of another kind", func() {
-				//devbuild is a valid build command, not a run command
+				// devbuild is a valid build command, not a run command
 				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
 			})
@@ -1634,7 +1672,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should execute the default run command successfully if specified explicitly", func() {
-				//devrun is the default run command
+				// devrun is the default run command
 				runCmdTestFunc("devrun", func(stdout, stderr string) {
 					By("checking that it did not execute the custom run command", func() {
 						helper.DontMatchAllInOutput(stdout, []string{
@@ -1889,7 +1927,7 @@ var _ = Describe("odo dev command tests", func() {
 	})
 	*/
 
-	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
+	// Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
 	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238
 	When("a component with endpoints is bootstrapped and pushed", func() {
 
@@ -1958,7 +1996,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
 			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
 
-			//the command has been started directly in the background. Check the PID stored in a specific file.
+			// the command has been started directly in the background. Check the PID stored in a specific file.
 			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
 				commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
 				"runtime",
