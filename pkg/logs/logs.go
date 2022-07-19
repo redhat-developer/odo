@@ -48,7 +48,6 @@ func (o *LogsClient) GetLogsForMode(
 	componentName string,
 	namespace string,
 	follow bool,
-	out io.Writer,
 ) (Events, error) {
 	events := Events{
 		Logs: make(chan ContainerLogs),
@@ -56,7 +55,7 @@ func (o *LogsClient) GetLogsForMode(
 		Done: make(chan struct{}),
 	}
 
-	go o.getLogsForMode(events, mode, componentName, namespace, follow, out)
+	go o.getLogsForMode(events, mode, componentName, namespace, follow)
 	return events, nil
 }
 
@@ -66,7 +65,6 @@ func (o *LogsClient) getLogsForMode(
 	componentName string,
 	namespace string,
 	follow bool,
-	out io.Writer,
 ) {
 	var selector string
 	podChan := make(chan corev1.Pod) // grab the logs of the pod put on this channel
