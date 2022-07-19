@@ -126,7 +126,6 @@ func (o *LogsOptions) Run(_ context.Context) error {
 		o.componentName,
 		o.Context.GetProject(),
 		o.follow,
-		o.out,
 	)
 	if err != nil {
 		return err
