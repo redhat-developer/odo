@@ -25,7 +25,7 @@ type ContainerLogs struct {
 }
 
 type Events struct {
-	// channel to put the container logs on; key is the name of the container and value is the logs of that container
+	// channel to put the container logs on
 	Logs chan ContainerLogs
 	// channel to put an error on, if any
 	Err chan error
