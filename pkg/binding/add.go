@@ -28,7 +28,7 @@ func (o *BindingClient) SelectNamespace(flags map[string]string) (string, error)
 	return backend.SelectNamespace(flags)
 }
 
-// ValidateAddBinding calls Validate method of the adequate backend
+// ValidateAddBinding calls Validate method of the adequate backend and then checks if the ServiceBinding Operator is installed in the cluster.
 func (o *BindingClient) ValidateAddBinding(flags map[string]string, withDevfile bool) error {
 	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
@@ -36,7 +36,12 @@ func (o *BindingClient) ValidateAddBinding(flags map[string]string, withDevfile 
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.Validate(flags, withDevfile)
+	err := backend.Validate(flags, withDevfile)
+	if err != nil {
+		return err
+	}
+
+	return o.checkServiceBindingOperatorInstalled()
 }
 
 func (o *BindingClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {

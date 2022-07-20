@@ -65,15 +65,11 @@ func (o *BindingClient) GetFlags(flags map[string]string) map[string]string {
 }
 
 func (o *BindingClient) GetServiceInstances(namespace string) (map[string]unstructured.Unstructured, error) {
-	isServiceBindingInstalled, err := o.kubernetesClient.IsServiceBindingSupported()
+	err := o.checkServiceBindingOperatorInstalled()
 	if err != nil {
 		return nil, err
 	}
-	if !isServiceBindingInstalled {
-		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
-		return nil, fmt.Errorf("Service Binding Operator is not installed on the cluster, please ensure it is installed before proceeding. See installation instructions: https://odo.dev/docs/overview/cluster-setup/")
-		//revive:enable:error-strings
-	}
+
 	// Get the BindableKinds/bindable-kinds object
 	bindableKind, err := o.kubernetesClient.GetBindableKinds()
 	if err != nil {
@@ -285,4 +281,18 @@ func (o *BindingClient) getStatusFromSpec(name string) (*api.ServiceBindingStatu
 		BindingFiles:   bindingFiles,
 		BindingEnvVars: bindingEnvVars,
 	}, nil
+}
+
+func (o *BindingClient) checkServiceBindingOperatorInstalled() error {
+	isServiceBindingInstalled, err := o.kubernetesClient.IsServiceBindingSupported()
+	if err != nil {
+		return err
+	}
+	if !isServiceBindingInstalled {
+		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+		return fmt.Errorf("Service Binding Operator is not installed on the cluster, please ensure it is installed before proceeding. " +
+			"See installation instructions: https://odo.dev/docs/overview/cluster-setup/")
+		//revive:enable:error-strings
+	}
+	return nil
 }
