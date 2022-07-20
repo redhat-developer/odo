@@ -5,15 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/fatih/color"
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
-
-	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/log"
 
@@ -70,7 +68,7 @@ func (o *LogsOptions) SetClientset(clientset *clientset.Clientset) {
 	o.clientset = clientset
 }
 
-func (o *LogsOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
+func (o *LogsOptions) Complete(cmdline cmdline.Cmdline, _ []string) error {
 	var err error
 	o.contextDir, err = os.Getwd()
 	if err != nil {
@@ -103,10 +101,9 @@ func (o *LogsOptions) Validate() error {
 	return nil
 }
 
-func (o *LogsOptions) Run(ctx context.Context) error {
+func (o *LogsOptions) Run(_ context.Context) error {
 	var logMode logsMode
 	var err error
-	var containersLogs []map[string]io.ReadCloser
 
 	if o.devMode {
 		logMode = DevMode
@@ -123,37 +120,38 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 	default:
 		mode = odolabels.ComponentAnyMode
 	}
-	containersLogs, err = o.clientset.LogsClient.GetLogsForMode(mode, o.componentName, o.Context.GetProject(), o.follow)
+
+	events, err := o.clientset.LogsClient.GetLogsForMode(
+		mode,
+		o.componentName,
+		o.Context.GetProject(),
+		o.follow,
+	)
 	if err != nil {
 		return err
 	}
-	if len(containersLogs) == 0 {
-		// This will be the case when:
-		// 1. user specifies --dev flag, but the component's running in Deploy mode
-		// 2. user specified --deploy flag, but the component's running in Dev mode
-		// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
-		fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", o.componentName)
-		return nil
-	}
 
 	uniqueContainerNames := map[string]struct{}{}
-	errChan := make(chan error)
 	wg := sync.WaitGroup{}
+	errChan := make(chan error) // errors are put on this channel
 	var mu sync.Mutex
-	for _, entry := range containersLogs {
-		for container, logs := range entry {
-			uniqueName := getUniqueContainerName(container, uniqueContainerNames)
+	for {
+		select {
+		case containerLogs := <-events.Logs:
+			uniqueName := getUniqueContainerName(containerLogs.Name, uniqueContainerNames)
 			uniqueContainerNames[uniqueName] = struct{}{}
 			colour := log.ColorPicker()
+			logs := containerLogs.Logs
+
 			if o.follow {
-				l := logs
 				wg.Add(1)
 				go func(out io.Writer) {
 					defer wg.Done()
-					err = printLogs(uniqueName, l, out, colour, &mu)
+					err = printLogs(uniqueName, logs, out, colour, &mu)
 					if err != nil {
 						errChan <- err
 					}
+					events.Done <- struct{}{}
 				}(o.out)
 			} else {
 				err = printLogs(uniqueName, logs, o.out, colour, &mu)
@@ -161,19 +159,22 @@ func (o *LogsOptions) Run(ctx context.Context) error {
 					return err
 				}
 			}
-
+		case err = <-errChan:
+			return err
+		case err = <-events.Err:
+			return err
+		case <-events.Done:
+			if len(uniqueContainerNames) == 0 {
+				// This will be the case when:
+				// 1. user specifies --dev flag, but the component's running in Deploy mode
+				// 2. user specified --deploy flag, but the component's running in Dev mode
+				// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
+				fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", o.componentName)
+			}
+			return nil
 		}
+
 	}
-	select {
-	case err := <-errChan:
-		return err
-	default:
-		// do nothing; this makes sure that we are not blocking on errChan channel
-		// without this default block, odo logs (without follow) will be stuck/blocked on getting something from
-		// errChan channel and the command won't exit.
-	}
-	wg.Wait()
-	return nil
 }
 
 func getUniqueContainerName(name string, uniqueNames map[string]struct{}) string {
