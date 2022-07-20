@@ -64,6 +64,14 @@ function Run-Test {
     oc login -u apikey -p ${API_KEY} ${IBM_OPENSHIFT_ENDPOINT}
     Check-ExitCode $LASTEXITCODE
 
+    Shout "Getting Devfile proxy address"
+    $DEVFILE_PROXY=$(oc get svc -n devfile-proxy nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    if ( $LASTEXITCODE -eq 0 )
+    {
+        Shout "Using Devfile proxy: $DEVFILE_PROXY"
+        [Environment]::SetEnvironmentVariable("DEVFILE_PROXY", "$DEVFILE_PROXY")
+    }
+
     Shout "Create Binary"
     make install 
     Shout "Running test"
