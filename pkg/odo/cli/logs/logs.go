@@ -151,6 +151,7 @@ func (o *LogsOptions) Run(_ context.Context) error {
 					if err != nil {
 						errChan <- err
 					}
+					events.Done <- struct{}{}
 				}(o.out)
 			} else {
 				err = printLogs(uniqueName, logs, o.out, colour, &mu)
@@ -172,6 +173,7 @@ func (o *LogsOptions) Run(_ context.Context) error {
 			}
 			return nil
 		}
+
 	}
 }
 
