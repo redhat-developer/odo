@@ -106,9 +106,7 @@ func (o *LogsClient) getLogsForMode(
 		}
 	}
 
-	if !follow {
-		doneChan <- struct{}{}
-	}
+	doneChan <- struct{}{}
 }
 
 // getPodsForSelector gets pods for the resources matching selector in the namespace; Pods found by this method will be
