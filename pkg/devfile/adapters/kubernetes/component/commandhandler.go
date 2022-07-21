@@ -62,6 +62,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 	// Spinner created but not started yet.
 	// It will be displayed when the statusHandlerFunc function is called with the "Starting" state.
 	spinner := log.NewStatus(log.GetStdout())
+	defer spinner.End(false)
 
 	// if we need to restart, issue the remote process handler command to stop all running commands first.
 	// We do not need to restart Hot reload capable commands.
@@ -122,6 +123,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		return err
 	}
 
+	spinner.End(true)
 	return a.checkRemoteCommandStatus(devfileCmd, a.podName,
 		fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
 }
