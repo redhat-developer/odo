@@ -19,7 +19,7 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 
 	bindingCmd := binding.NewCmdBinding(binding.BindingRecommendedCommandName, util.GetFullName(fullName, binding.BindingRecommendedCommandName))
 	createCmd.AddCommand(bindingCmd)
-	createCmd.Annotations = map[string]string{"command": "main"}
+	createCmd.Annotations = map[string]string{"command": "management"}
 	createCmd.SetUsageTemplate(util.CmdUsageTemplate)
 
 	return createCmd

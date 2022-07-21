@@ -15,7 +15,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	var deleteCmd = &cobra.Command{
 		Use:         name,
 		Short:       "Delete resources",
-		Annotations: map[string]string{"command": "main"},
+		Annotations: map[string]string{"command": "management"},
 	}
 
 	componentCmd := component.NewCmdComponent(component.ComponentRecommendedCommandName,

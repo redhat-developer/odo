@@ -190,7 +190,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 		Long:        "List all components in the current namespace.",
 		Example:     fmt.Sprintf(listExample, fullName),
 		Args:        cobra.NoArgs,
-		Annotations: map[string]string{"command": "main"},
+		Annotations: map[string]string{"command": "management"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

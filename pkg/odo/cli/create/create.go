@@ -23,7 +23,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf("%s\n",
 			namespaceCreateCmd.Example,
 		),
-		Annotations: map[string]string{"command": "main"},
+		Annotations: map[string]string{"command": "management"},
 	}
 
 	createCmd.AddCommand(namespaceCreateCmd)
