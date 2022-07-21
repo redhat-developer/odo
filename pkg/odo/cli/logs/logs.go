@@ -133,8 +133,8 @@ func (o *LogsOptions) Run(_ context.Context) error {
 	}
 
 	uniqueContainerNames := map[string]struct{}{}
-	var goroutines int64        // keep a track of running goroutines so that we don't exit prematurely
-	errChan := make(chan error) // errors are put on this channel
+	var goroutines struct{ count int64 } // keep a track of running goroutines so that we don't exit prematurely
+	errChan := make(chan error)          // errors are put on this channel
 	var mu sync.Mutex
 
 	for {
@@ -146,10 +146,10 @@ func (o *LogsOptions) Run(_ context.Context) error {
 			logs := containerLogs.Logs
 
 			if o.follow {
-				goroutines = atomic.AddInt64(&goroutines, 1)
+				atomic.AddInt64(&goroutines.count, 1)
 				go func(out io.Writer) {
 					defer func() {
-						goroutines = atomic.AddInt64(&goroutines, -1)
+						atomic.AddInt64(&goroutines.count, -1)
 					}()
 					err = printLogs(uniqueName, logs, out, colour, &mu)
 					if err != nil {
@@ -168,7 +168,7 @@ func (o *LogsOptions) Run(_ context.Context) error {
 		case err = <-events.Err:
 			return err
 		case <-events.Done:
-			if goroutines == 0 {
+			if goroutines.count == 0 {
 				if len(uniqueContainerNames) == 0 {
 					// This will be the case when:
 					// 1. user specifies --dev flag, but the component's running in Deploy mode
