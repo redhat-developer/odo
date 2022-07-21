@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/redhat-developer/odo/pkg/log"
 
@@ -132,9 +133,10 @@ func (o *LogsOptions) Run(_ context.Context) error {
 	}
 
 	uniqueContainerNames := map[string]struct{}{}
-	wg := sync.WaitGroup{}
-	errChan := make(chan error) // errors are put on this channel
+	var goroutines struct{ count int64 } // keep a track of running goroutines so that we don't exit prematurely
+	errChan := make(chan error)          // errors are put on this channel
 	var mu sync.Mutex
+
 	for {
 		select {
 		case containerLogs := <-events.Logs:
@@ -144,9 +146,11 @@ func (o *LogsOptions) Run(_ context.Context) error {
 			logs := containerLogs.Logs
 
 			if o.follow {
-				wg.Add(1)
+				atomic.AddInt64(&goroutines.count, 1)
 				go func(out io.Writer) {
-					defer wg.Done()
+					defer func() {
+						atomic.AddInt64(&goroutines.count, -1)
+					}()
 					err = printLogs(uniqueName, logs, out, colour, &mu)
 					if err != nil {
 						errChan <- err
@@ -164,16 +168,17 @@ func (o *LogsOptions) Run(_ context.Context) error {
 		case err = <-events.Err:
 			return err
 		case <-events.Done:
-			if len(uniqueContainerNames) == 0 {
-				// This will be the case when:
-				// 1. user specifies --dev flag, but the component's running in Deploy mode
-				// 2. user specified --deploy flag, but the component's running in Dev mode
-				// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
-				fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", o.componentName)
+			if goroutines.count == 0 {
+				if len(uniqueContainerNames) == 0 {
+					// This will be the case when:
+					// 1. user specifies --dev flag, but the component's running in Deploy mode
+					// 2. user specified --deploy flag, but the component's running in Dev mode
+					// 3. user passes no flag, but component is running in neither Dev nor Deploy mode
+					fmt.Fprintf(o.out, "no containers running in the specified mode for the component %q\n", o.componentName)
+				}
+				return nil
 			}
-			return nil
 		}
-
 	}
 }
 

@@ -50,6 +50,21 @@ var _ = Describe("odo logs command tests", func() {
 		})
 	})
 
+	When("odo logs is executed for a component that's not running in any modes", func() {
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", componentName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-deploy-functional-pods.yaml")).ShouldPass()
+			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
+		})
+		It("should print that no containers are running", func() {
+			noContainersRunning := "no containers running in the specified mode for the component"
+			out := helper.Cmd("odo", "logs").ShouldPass().Out()
+			Expect(out).To(ContainSubstring(noContainersRunning))
+			out = helper.Cmd("odo", "logs", "--follow").ShouldPass().Out()
+			Expect(out).To(ContainSubstring(noContainersRunning))
+		})
+	})
+
 	When("component is created and odo logs is executed", func() {
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
