@@ -7,9 +7,6 @@ import (
 	"github.com/go-openapi/spec"
 	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/redhat-developer/odo/pkg/api"
-	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -21,6 +18,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/redhat-developer/odo/pkg/api"
+	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 )
 
 type ClientInterface interface {
@@ -37,7 +38,7 @@ type ClientInterface interface {
 	GetBindingServiceBinding(name string) (bindingApi.ServiceBinding, error)
 	GetSpecServiceBinding(name string) (specApi.ServiceBinding, error)
 	ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []bindingApi.ServiceBinding, error)
-	NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
+	NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error)
 	APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) (api.ServiceBinding, error)
 	APIServiceBindingFromSpec(spec specApi.ServiceBinding) api.ServiceBinding
 	GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error)
@@ -57,7 +58,7 @@ type ClientInterface interface {
 
 	// dynamic.go
 	PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error)
-	ListDynamicResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error)
+	ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error)
 	GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error)
 	UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error
 	DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error

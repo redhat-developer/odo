@@ -12,9 +12,10 @@
 package clientset
 
 import (
+	"github.com/spf13/cobra"
+
 	"github.com/redhat-developer/odo/pkg/logs"
 	"github.com/redhat-developer/odo/pkg/portForward"
-	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/dev"
@@ -82,7 +83,7 @@ var subdeps map[string][]string = map[string][]string{
 	REGISTRY:         {FILESYSTEM, PREFERENCE},
 	STATE:            {FILESYSTEM},
 	WATCH:            {DELETE_COMPONENT, STATE},
-	BINDING:          {KUBERNETES},
+	BINDING:          {PROJECT, KUBERNETES},
 	/* Add sub-dependencies here, if any */
 }
 
@@ -174,7 +175,7 @@ func Fetch(command *cobra.Command) (*Clientset, error) {
 		dep.WatchClient = watch.NewWatchClient(dep.DeleteClient, dep.StateClient)
 	}
 	if isDefined(command, BINDING) {
-		dep.BindingClient = binding.NewBindingClient(dep.KubernetesClient)
+		dep.BindingClient = binding.NewBindingClient(dep.ProjectClient, dep.KubernetesClient)
 	}
 	if isDefined(command, PORT_FORWARD) {
 		dep.PortForwardClient = portForward.NewPFClient(dep.KubernetesClient, dep.StateClient)

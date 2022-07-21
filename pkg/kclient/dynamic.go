@@ -52,15 +52,20 @@ func (c *Client) PatchDynamicResource(resource unstructured.Unstructured) (bool,
 	return newGeneration > previousGeneration, nil
 }
 
-// ListDynamicResource returns an unstructured list of instances of a Custom
-// Resource currently deployed in the active namespace of the cluster.
-func (c *Client) ListDynamicResources(gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
+// ListDynamicResources returns an unstructured list of instances of a Custom
+// Resource currently deployed in the specified namespace of the cluster. The current namespace is used if the namespace is not specified.
+func (c *Client) ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
 
 	if c.DynamicClient == nil {
 		return nil, nil
 	}
 
-	list, err := c.DynamicClient.Resource(gvr).Namespace(c.Namespace).List(context.TODO(), metav1.ListOptions{})
+	ns := namespace
+	if ns == "" {
+		ns = c.Namespace
+	}
+
+	list, err := c.DynamicClient.Resource(gvr).Namespace(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Assume this is a cluster scoped resource (not namespace scoped) and skip it

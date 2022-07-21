@@ -1,11 +1,18 @@
 package backend
 
 import (
+	"fmt"
+	"sort"
+
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/binding/asker"
 	"github.com/redhat-developer/odo/pkg/kclient"
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/project"
 )
 
 type selectWorkloadStep int
@@ -19,14 +26,16 @@ const (
 // InteractiveBackend is a backend that will ask information interactively using the `asker` package
 type InteractiveBackend struct {
 	askerClient      asker.Asker
+	projectClient    project.Client
 	kubernetesClient kclient.ClientInterface
 }
 
 var _ AddBindingBackend = (*InteractiveBackend)(nil)
 
-func NewInteractiveBackend(askerClient asker.Asker, kubernetesClient kclient.ClientInterface) *InteractiveBackend {
+func NewInteractiveBackend(askerClient asker.Asker, projectClient project.Client, kubernetesClient kclient.ClientInterface) *InteractiveBackend {
 	return &InteractiveBackend{
 		askerClient:      askerClient,
+		projectClient:    projectClient,
 		kubernetesClient: kubernetesClient,
 	}
 }
@@ -61,7 +70,7 @@ loop:
 			if err != nil {
 				return "", schema.GroupVersionKind{}, err
 			}
-			resourceList, err := o.kubernetesClient.ListDynamicResources(gvr)
+			resourceList, err := o.kubernetesClient.ListDynamicResources("", gvr)
 			if err != nil {
 				return "", schema.GroupVersionKind{}, err
 			}
@@ -98,6 +107,39 @@ loop:
 	return selectedName, selectedGVK, nil
 }
 
+// SelectNamespace prompts users to select the namespace which services instances should be listed from.
+// If they choose all the namespaces they have access to, it attempts to get the list of accessible namespaces in the cluster,
+// from which the user can select one.
+// If the list is empty (e.g. because of permission-related issues), the user is prompted to manually provide a namespace.
+func (o *InteractiveBackend) SelectNamespace(_ map[string]string) (string, error) {
+	option, err := o.askerClient.SelectNamespaceListOption()
+	if err != nil {
+		return "", err
+	}
+
+	switch option {
+	case asker.CurrentNamespace:
+		return "", nil
+	case asker.AllAccessibleNamespaces:
+		klog.V(2).Infof("Listing all projects/namespaces...")
+		var nsList []string
+		nsList, err = o.getAllNamespaces()
+		if err != nil {
+			return "", err
+		}
+		sort.Strings(nsList)
+		klog.V(4).Infof("all accessible namespaces: %v", nsList)
+		if len(nsList) == 0 {
+			//User needs to provide a namespace
+			return o.askerClient.AskNamespace()
+		}
+		//Let users select a namespace from the list
+		return o.askerClient.SelectNamespace(nsList)
+	default:
+		return "", fmt.Errorf("unknown namespace list option: %d", option)
+	}
+}
+
 func (o *InteractiveBackend) SelectServiceInstance(_ string, serviceMap map[string]unstructured.Unstructured) (string, error) {
 	var options []string
 	for name := range serviceMap {
@@ -131,4 +173,23 @@ func (o *InteractiveBackend) SelectCreationOptions(flags map[string]string) ([]a
 
 func (o *InteractiveBackend) AskOutputFilePath(flags map[string]string, defaultValue string) (string, error) {
 	return o.askerClient.AskOutputFilePath(defaultValue)
+}
+
+func (o *InteractiveBackend) getAllNamespaces() ([]string, error) {
+	accessibleNsList, err := o.projectClient.List()
+	if err != nil {
+		klog.V(2).Infof("Failed to list namespaces/projects: %v", err)
+		if kerrors.IsForbidden(err) {
+			// If status is forbidden, this might be an RBAC error due to user not having permission to list namespaces.
+			// In this case, user will need to manually specify the namespace.
+			log.Warningf("Failed to list namespaces/projects: %v", err)
+			return nil, nil
+		}
+		return nil, err
+	}
+	nsList := make([]string, 0, len(accessibleNsList.Items))
+	for _, ns := range accessibleNsList.Items {
+		nsList = append(nsList, ns.Name)
+	}
+	return nsList, nil
 }

@@ -87,13 +87,22 @@ func (o *AddBindingOptions) Validate() (err error) {
 func (o *AddBindingOptions) Run(_ context.Context) error {
 	withDevfile := o.EnvSpecificInfo.GetDevfileObj().Data != nil
 
-	serviceMap, err := o.clientset.BindingClient.GetServiceInstances()
+	ns, err := o.clientset.BindingClient.SelectNamespace(o.flags)
+	if err != nil {
+		return err
+	}
+
+	serviceMap, err := o.clientset.BindingClient.GetServiceInstances(ns)
 	if err != nil {
 		return err
 	}
 
 	if len(serviceMap) == 0 {
-		return fmt.Errorf("No bindable service instances found")
+		msg := "current namespace"
+		if ns != "" {
+			msg = fmt.Sprintf("namespace %q", ns)
+		}
+		return fmt.Errorf("No bindable service instances found in %s", msg)
 	}
 
 	service, err := o.clientset.BindingClient.SelectServiceInstance(o.flags, serviceMap)
@@ -135,7 +144,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if withDevfile {
 		var devfileobj parser.DevfileObj
 		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(
-			bindingName, bindAsFiles, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+			bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}
@@ -149,6 +158,9 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		if len(o.flags) == 0 {
 			kindGroup := strings.ReplaceAll(strings.ReplaceAll(splitService[1], "(", ""), ")", "")
 			exitMessage += fmt.Sprintf("\nYou can automate this command by executing:\n  odo add binding --service %s.%s --name %s", serviceName, kindGroup, bindingName)
+			if ns != "" {
+				exitMessage += fmt.Sprintf(" --service-namespace %s", ns)
+			}
 			if !bindAsFiles {
 				exitMessage += " --bind-as-files=false"
 			}
@@ -161,7 +173,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	}
 
 	options, output, filename, err := o.clientset.BindingClient.AddBinding(
-		o.flags, bindingName, bindAsFiles, namingStrategy, serviceMap[service], workloadName, workloadGVK)
+		o.flags, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], workloadName, workloadGVK)
 	if err != nil {
 		return err
 	}
@@ -201,6 +213,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 	bindingCmd.Flags().String(backend.FLAG_NAME, "", "Name of the Binding to create")
 	bindingCmd.Flags().String(backend.FLAG_WORKLOAD, "", "Name of the workload to bind, only when no devfile is present in current directory")
 	bindingCmd.Flags().String(backend.FLAG_SERVICE, "", "Name of the service to bind")
+	bindingCmd.Flags().String(backend.FLAG_SERVICE_NAMESPACE, "", "Namespace of the service to bind to. Default is the component namespace.")
 	bindingCmd.Flags().Bool(backend.FLAG_BIND_AS_FILES, true, "Bind the service as a file")
 	bindingCmd.Flags().String(backend.FLAG_NAMING_STRATEGY, "",
 		"Naming strategy to use for binding names. "+

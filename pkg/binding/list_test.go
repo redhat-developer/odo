@@ -114,7 +114,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					return client
 				},
 			}, args: args{
-				devfileObj: getDevfileObjWithServiceBinding("aname", true, ""),
+				devfileObj: getDevfileObjWithServiceBinding("aname", "", true, ""),
 				context:    "/apath",
 			},
 			want:          []api.ServiceBinding{apiServiceBinding},
@@ -138,7 +138,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					return client
 				},
 			}, args: args{
-				devfileObj: getDevfileObjWithServiceBinding("aname", true, ""),
+				devfileObj: getDevfileObjWithServiceBinding("aname", "", true, ""),
 				context:    "/apath",
 			},
 			want: []api.ServiceBinding{

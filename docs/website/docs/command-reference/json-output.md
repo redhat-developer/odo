@@ -433,7 +433,8 @@ $ odo describe binding -o json
 				{
 					"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
 					"kind": "Cluster",
-					"name": "cluster-sample"
+					"name": "cluster-sample",
+					"namespace": "shared-services-ns"
 				}
 			],
 			"detectBindingResources": false,
@@ -509,7 +510,8 @@ $ odo describe binding --name my-first-binding -o json
 			{
 				"apiVersion": "postgresql.k8s.enterprisedb.io/v1",
 				"kind": "Cluster",
-				"name": "cluster-sample"
+				"name": "cluster-sample",
+                "namespace": "shared-services-ns"
 			}
 		],
 		"detectBindingResources": false,

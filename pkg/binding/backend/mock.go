@@ -111,6 +111,21 @@ func (mr *MockAddBindingBackendMockRecorder) SelectCreationOptions(flags interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectCreationOptions", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectCreationOptions), flags)
 }
 
+// SelectNamespace mocks base method.
+func (m *MockAddBindingBackend) SelectNamespace(flags map[string]string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectNamespace", flags)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectNamespace indicates an expected call of SelectNamespace.
+func (mr *MockAddBindingBackendMockRecorder) SelectNamespace(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectNamespace", reflect.TypeOf((*MockAddBindingBackend)(nil).SelectNamespace), flags)
+}
+
 // SelectServiceInstance mocks base method.
 func (m *MockAddBindingBackend) SelectServiceInstance(serviceName string, serviceMap map[string]unstructured.Unstructured) (string, error) {
 	m.ctrl.T.Helper()

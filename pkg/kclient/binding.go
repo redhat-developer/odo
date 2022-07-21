@@ -96,10 +96,15 @@ func (c Client) GetBindableKindStatusRestMapping(bindableKindStatuses []bindingA
 }
 
 // NewServiceBindingServiceObject returns the bindingApi.Service object based on the RESTMapping
-func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error) {
+func (c *Client) NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (bindingApi.Service, error) {
 	serviceRESTMapping, err := c.GetRestMappingFromUnstructured(unstructuredService)
 	if err != nil {
 		return bindingApi.Service{}, err
+	}
+
+	var ns *string
+	if serviceNs != "" {
+		ns = &serviceNs
 	}
 
 	return bindingApi.Service{
@@ -112,6 +117,7 @@ func (c *Client) NewServiceBindingServiceObject(unstructuredService unstructured
 				Name:     unstructuredService.GetName(),
 				Resource: serviceRESTMapping.Resource.Resource,
 			},
+			Namespace: ns,
 		},
 	}, nil
 }
@@ -201,7 +207,7 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 		return nil, nil, nil
 	}
 
-	specsU, err := c.ListDynamicResources(specApi.GroupVersionResource)
+	specsU, err := c.ListDynamicResources("", specApi.GroupVersionResource)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -211,7 +217,7 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 		return nil, nil, err
 	}
 
-	bindingsU, err := c.ListDynamicResources(bindingApi.GroupVersionResource)
+	bindingsU, err := c.ListDynamicResources("", bindingApi.GroupVersionResource)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -237,6 +243,9 @@ func (c Client) APIServiceBindingFromBinding(binding bindingApi.ServiceBinding) 
 			Group:   srcSvc.Group,
 			Version: srcSvc.Version,
 		}.WithKind(srcSvc.Kind).ToAPIVersionAndKind()
+		if srcSvc.Namespace != nil {
+			dstSvc.Namespace = *srcSvc.Namespace
+		}
 		dstSvcs = append(dstSvcs, dstSvc)
 	}
 

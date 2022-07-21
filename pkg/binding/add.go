@@ -18,7 +18,17 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 )
 
-// ValidateAddBinding calls Validate method of the adequate backend
+func (o *BindingClient) SelectNamespace(flags map[string]string) (string, error) {
+	var backend backendpkg.AddBindingBackend
+	if len(flags) == 0 {
+		backend = o.interactiveBackend
+	} else {
+		backend = o.flagsBackend
+	}
+	return backend.SelectNamespace(flags)
+}
+
+// ValidateAddBinding calls Validate method of the adequate backend and then checks if the ServiceBinding Operator is installed in the cluster.
 func (o *BindingClient) ValidateAddBinding(flags map[string]string, withDevfile bool) error {
 	var backend backendpkg.AddBindingBackend
 	if len(flags) == 0 {
@@ -26,7 +36,12 @@ func (o *BindingClient) ValidateAddBinding(flags map[string]string, withDevfile 
 	} else {
 		backend = o.flagsBackend
 	}
-	return backend.Validate(flags, withDevfile)
+	err := backend.Validate(flags, withDevfile)
+	if err != nil {
+		return err
+	}
+
+	return o.checkServiceBindingOperatorInstalled()
 }
 
 func (o *BindingClient) SelectServiceInstance(flags map[string]string, serviceMap map[string]unstructured.Unstructured) (string, error) {
@@ -87,11 +102,12 @@ func (o *BindingClient) AskNamingStrategy(flags map[string]string) (string, erro
 func (o *BindingClient) AddBindingToDevfile(
 	bindingName string,
 	bindAsFiles bool,
+	serviceNs string,
 	namingStrategy string,
 	unstructuredService unstructured.Unstructured,
 	obj parser.DevfileObj,
 ) (parser.DevfileObj, error) {
-	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
+	service, err := o.kubernetesClient.NewServiceBindingServiceObject(serviceNs, unstructuredService, bindingName)
 	if err != nil {
 		return obj, err
 	}
@@ -122,12 +138,13 @@ func (o *BindingClient) AddBinding(
 	flags map[string]string,
 	bindingName string,
 	bindAsFiles bool,
+	serviceNs string,
 	namingStrategy string,
 	unstructuredService unstructured.Unstructured,
 	workloadName string,
 	workloadGVK schema.GroupVersionKind,
 ) ([]asker.CreationOption, string, string, error) {
-	service, err := o.kubernetesClient.NewServiceBindingServiceObject(unstructuredService, bindingName)
+	service, err := o.kubernetesClient.NewServiceBindingServiceObject(serviceNs, unstructuredService, bindingName)
 	if err != nil {
 		return nil, "", "", err
 	}

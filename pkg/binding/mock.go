@@ -39,9 +39,9 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddBinding mocks base method.
-func (m *MockClient) AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, namingStrategy string, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) ([]asker.CreationOption, string, string, error) {
+func (m *MockClient) AddBinding(flags map[string]string, bindingName string, bindAsFiles bool, serviceNs, namingStrategy string, unstructuredService unstructured.Unstructured, workloadName string, workloadGVK schema.GroupVersionKind) ([]asker.CreationOption, string, string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddBinding", flags, bindingName, bindAsFiles, namingStrategy, unstructuredService, workloadName, workloadGVK)
+	ret := m.ctrl.Call(m, "AddBinding", flags, bindingName, bindAsFiles, serviceNs, namingStrategy, unstructuredService, workloadName, workloadGVK)
 	ret0, _ := ret[0].([]asker.CreationOption)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(string)
@@ -50,24 +50,24 @@ func (m *MockClient) AddBinding(flags map[string]string, bindingName string, bin
 }
 
 // AddBinding indicates an expected call of AddBinding.
-func (mr *MockClientMockRecorder) AddBinding(flags, bindingName, bindAsFiles, namingStrategy, unstructuredService, workloadName, workloadGVK interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) AddBinding(flags, bindingName, bindAsFiles, serviceNs, namingStrategy, unstructuredService, workloadName, workloadGVK interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), flags, bindingName, bindAsFiles, namingStrategy, unstructuredService, workloadName, workloadGVK)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockClient)(nil).AddBinding), flags, bindingName, bindAsFiles, serviceNs, namingStrategy, unstructuredService, workloadName, workloadGVK)
 }
 
 // AddBindingToDevfile mocks base method.
-func (m *MockClient) AddBindingToDevfile(bindingName string, bindAsFiles bool, namingStrategy string, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error) {
+func (m *MockClient) AddBindingToDevfile(bindingName string, bindAsFiles bool, serviceNs, namingStrategy string, unstructuredService unstructured.Unstructured, obj parser.DevfileObj) (parser.DevfileObj, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddBindingToDevfile", bindingName, bindAsFiles, namingStrategy, unstructuredService, obj)
+	ret := m.ctrl.Call(m, "AddBindingToDevfile", bindingName, bindAsFiles, serviceNs, namingStrategy, unstructuredService, obj)
 	ret0, _ := ret[0].(parser.DevfileObj)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddBindingToDevfile indicates an expected call of AddBindingToDevfile.
-func (mr *MockClientMockRecorder) AddBindingToDevfile(bindingName, bindAsFiles, namingStrategy, unstructuredService, obj interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) AddBindingToDevfile(bindingName, bindAsFiles, serviceNs, namingStrategy, unstructuredService, obj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBindingToDevfile", reflect.TypeOf((*MockClient)(nil).AddBindingToDevfile), bindingName, bindAsFiles, namingStrategy, unstructuredService, obj)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBindingToDevfile", reflect.TypeOf((*MockClient)(nil).AddBindingToDevfile), bindingName, bindAsFiles, serviceNs, namingStrategy, unstructuredService, obj)
 }
 
 // AskBindAsFiles mocks base method.
@@ -160,18 +160,18 @@ func (mr *MockClientMockRecorder) GetFlags(flags interface{}) *gomock.Call {
 }
 
 // GetServiceInstances mocks base method.
-func (m *MockClient) GetServiceInstances() (map[string]unstructured.Unstructured, error) {
+func (m *MockClient) GetServiceInstances(namespace string) (map[string]unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServiceInstances")
+	ret := m.ctrl.Call(m, "GetServiceInstances", namespace)
 	ret0, _ := ret[0].(map[string]unstructured.Unstructured)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetServiceInstances indicates an expected call of GetServiceInstances.
-func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
+func (mr *MockClientMockRecorder) GetServiceInstances(namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances), namespace)
 }
 
 // ListAllBindings mocks base method.
@@ -203,6 +203,21 @@ func (m *MockClient) RemoveBinding(bindingName string, obj parser.DevfileObj) (p
 func (mr *MockClientMockRecorder) RemoveBinding(bindingName, obj interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveBinding", reflect.TypeOf((*MockClient)(nil).RemoveBinding), bindingName, obj)
+}
+
+// SelectNamespace mocks base method.
+func (m *MockClient) SelectNamespace(flags map[string]string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectNamespace", flags)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectNamespace indicates an expected call of SelectNamespace.
+func (mr *MockClientMockRecorder) SelectNamespace(flags interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectNamespace", reflect.TypeOf((*MockClient)(nil).SelectNamespace), flags)
 }
 
 // SelectServiceInstance mocks base method.

@@ -73,6 +73,8 @@ func TestBindingClient_GetFlags(t *testing.T) {
 }
 
 func TestBindingClient_GetServiceInstances(t *testing.T) {
+	ns := "my-ns"
+
 	var clusterUnstructured unstructured.Unstructured
 
 	clusterUnstructured.SetGroupVersionKind(clusterGVK)
@@ -102,9 +104,13 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 	type fields struct {
 		kubernetesClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
+	type args struct {
+		namespace string
+	}
 	tests := []struct {
 		name    string
 		fields  fields
+		args    args
 		want    map[string]unstructured.Unstructured
 		wantErr bool
 	}{
@@ -119,9 +125,32 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 						{Resource: clusterGVR, GroupVersionKind: clusterGVK},
 					}, nil)
 
-					client.EXPECT().ListDynamicResources(clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
+					client.EXPECT().ListDynamicResources("", clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
 					return client
 				},
+			},
+			want: map[string]unstructured.Unstructured{
+				"postgres-cluster (Cluster.postgresql.k8s.enterprisedb.io)": clusterUnstructured,
+			},
+			wantErr: false,
+		},
+		{
+			name: "obtained service instances from specific namespace",
+			fields: fields{
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().IsServiceBindingSupported().Return(true, nil)
+					client.EXPECT().GetBindableKinds().Return(serviceBindingInstance, nil)
+					client.EXPECT().GetBindableKindStatusRestMapping(serviceBindingInstance.Status).Return([]*meta.RESTMapping{
+						{Resource: clusterGVR, GroupVersionKind: clusterGVK},
+					}, nil)
+
+					client.EXPECT().ListDynamicResources(ns, clusterGVR).Return(&unstructured.UnstructuredList{Items: []unstructured.Unstructured{clusterUnstructured}}, nil)
+					return client
+				},
+			},
+			args: args{
+				namespace: ns,
 			},
 			want: map[string]unstructured.Unstructured{
 				"postgres-cluster (Cluster.postgresql.k8s.enterprisedb.io)": clusterUnstructured,
@@ -152,7 +181,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 					{Resource: clusterGVR, GroupVersionKind: clusterGVK},
 				}, nil)
 
-				client.EXPECT().ListDynamicResources(clusterGVR).Return(&unstructured.UnstructuredList{Items: nil}, nil)
+				client.EXPECT().ListDynamicResources("", clusterGVR).Return(&unstructured.UnstructuredList{Items: nil}, nil)
 				return client
 			}},
 			want:    map[string]unstructured.Unstructured{},
@@ -175,7 +204,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, err := o.GetServiceInstances()
+			got, err := o.GetServiceInstances(tt.args.namespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetServiceInstances() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -189,6 +218,7 @@ func TestBindingClient_GetServiceInstances(t *testing.T) {
 
 func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 	bindingName := "my-nodejs-app-cluster-sample"
+	ns := "my-ns"
 
 	var clusterUnstructured unstructured.Unstructured
 	clusterUnstructured.SetGroupVersionKind(clusterGVK)
@@ -207,6 +237,20 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 		},
 	}
 
+	serviceBindingRefWithNs := servicebinding.Service{
+		Id: &bindingName,
+		NamespacedRef: servicebinding.NamespacedRef{
+			Ref: servicebinding.Ref{
+				Group:    clusterGVK.Group,
+				Version:  clusterGVK.Version,
+				Kind:     clusterGVK.Kind,
+				Name:     clusterUnstructured.GetName(),
+				Resource: "clusters",
+			},
+			Namespace: &ns,
+		},
+	}
+
 	type fields struct {
 		kubernetesClient func(ctrl *gomock.Controller) kclient.ClientInterface
 	}
@@ -214,6 +258,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 		bindingName         string
 		bindAsFiles         bool
 		namingStrategy      string
+		namespace           string
 		unstructuredService unstructured.Unstructured
 		obj                 parser.DevfileObj
 	}
@@ -229,7 +274,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 			fields: fields{
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().NewServiceBindingServiceObject(clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
+					client.EXPECT().NewServiceBindingServiceObject("", clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
 					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
 					return client
 				},
@@ -240,7 +285,27 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				unstructuredService: clusterUnstructured,
 				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
 			},
-			want:    getDevfileObjWithServiceBinding(bindingName, false, ""),
+			want:    getDevfileObjWithServiceBinding(bindingName, "", false, ""),
+			wantErr: false,
+		},
+		{
+			name: "successfully add binding with namespace",
+			fields: fields{
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().NewServiceBindingServiceObject(ns, clusterUnstructured, bindingName).Return(serviceBindingRefWithNs, nil)
+					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
+					return client
+				},
+			},
+			args: args{
+				bindingName:         bindingName,
+				bindAsFiles:         false,
+				namespace:           ns,
+				unstructuredService: clusterUnstructured,
+				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
+			},
+			want:    getDevfileObjWithServiceBinding(bindingName, ns, false, ""),
 			wantErr: false,
 		},
 		{
@@ -248,7 +313,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 			fields: fields{
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().NewServiceBindingServiceObject(clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
+					client.EXPECT().NewServiceBindingServiceObject("", clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
 					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
 					return client
 				},
@@ -259,7 +324,27 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				unstructuredService: clusterUnstructured,
 				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
 			},
-			want:    getDevfileObjWithServiceBinding(bindingName, true, ""),
+			want:    getDevfileObjWithServiceBinding(bindingName, "", true, ""),
+			wantErr: false,
+		},
+		{
+			name: "successfully added binding for a Service Binding bound as files and namespace",
+			fields: fields{
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().NewServiceBindingServiceObject(ns, clusterUnstructured, bindingName).Return(serviceBindingRefWithNs, nil)
+					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
+					return client
+				},
+			},
+			args: args{
+				bindingName:         bindingName,
+				bindAsFiles:         true,
+				namespace:           ns,
+				unstructuredService: clusterUnstructured,
+				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
+			},
+			want:    getDevfileObjWithServiceBinding(bindingName, ns, true, ""),
 			wantErr: false,
 		},
 		{
@@ -267,7 +352,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 			fields: fields{
 				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
-					client.EXPECT().NewServiceBindingServiceObject(clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
+					client.EXPECT().NewServiceBindingServiceObject("", clusterUnstructured, bindingName).Return(serviceBindingRef, nil)
 					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
 					return client
 				},
@@ -279,7 +364,28 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 				unstructuredService: clusterUnstructured,
 				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
 			},
-			want:    getDevfileObjWithServiceBinding(bindingName, true, "uppercase"),
+			want:    getDevfileObjWithServiceBinding(bindingName, "", true, "uppercase"),
+			wantErr: false,
+		},
+		{
+			name: "successfully added binding for a Service Binding with naming strategy and namespace",
+			fields: fields{
+				kubernetesClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().NewServiceBindingServiceObject(ns, clusterUnstructured, bindingName).Return(serviceBindingRefWithNs, nil)
+					client.EXPECT().GetDeploymentAPIVersion().Return(deploymentGVK, nil)
+					return client
+				},
+			},
+			args: args{
+				bindingName:         bindingName,
+				bindAsFiles:         true,
+				namespace:           ns,
+				namingStrategy:      "uppercase",
+				unstructuredService: clusterUnstructured,
+				obj:                 odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs()),
+			},
+			want:    getDevfileObjWithServiceBinding(bindingName, ns, true, "uppercase"),
 			wantErr: false,
 		},
 	}
@@ -289,7 +395,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, err := o.AddBindingToDevfile(tt.args.bindingName, tt.args.bindAsFiles, tt.args.namingStrategy, tt.args.unstructuredService, tt.args.obj)
+			got, err := o.AddBindingToDevfile(tt.args.bindingName, tt.args.bindAsFiles, tt.args.namespace, tt.args.namingStrategy, tt.args.unstructuredService, tt.args.obj)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddBindingToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -301,7 +407,7 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 	}
 }
 
-func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool, namingStrategy string) parser.DevfileObj {
+func getDevfileObjWithServiceBinding(bindingName string, ns string, bindAsFiles bool, namingStrategy string) parser.DevfileObj {
 	obj := odoTestingUtil.GetTestDevfileObj(filesystem.NewFakeFs())
 	_ = obj.Data.AddComponents([]v1alpha2.Component{{
 		Name: bindingName,
@@ -310,7 +416,7 @@ func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool, namin
 				K8sLikeComponent: v1alpha2.K8sLikeComponent{
 					BaseComponent: v1alpha2.BaseComponent{},
 					K8sLikeComponentLocation: v1alpha2.K8sLikeComponentLocation{
-						Inlined: getServiceBindingInlinedContent(bindAsFiles, namingStrategy),
+						Inlined: getServiceBindingInlinedContent(ns, bindAsFiles, namingStrategy),
 					},
 				},
 			},
@@ -319,7 +425,7 @@ func getDevfileObjWithServiceBinding(bindingName string, bindAsFiles bool, namin
 	return obj
 }
 
-func getServiceBindingInlinedContent(bindAsFiles bool, namingStrategy string) string {
+func getServiceBindingInlinedContent(ns string, bindAsFiles bool, namingStrategy string) string {
 	h := fmt.Sprintf(`apiVersion: binding.operators.coreos.com/v1alpha1
 kind: ServiceBinding
 metadata:
@@ -333,7 +439,8 @@ spec:
     version: v1
   bindAsFiles: %v
   detectBindingResources: true`, bindAsFiles)
-	f := `
+
+	fNoNamespace := `
   services:
   - group: postgresql.k8s.enterprisedb.io
     id: my-nodejs-app-cluster-sample
@@ -344,9 +451,32 @@ spec:
 status:
   secret: ""
 `
+
+	fNamespace := fmt.Sprintf(`
+  services:
+  - group: postgresql.k8s.enterprisedb.io
+    id: my-nodejs-app-cluster-sample
+    kind: Cluster
+    name: cluster-sample
+    namespace: %s
+    resource: clusters
+    version: v1
+status:
+  secret: ""
+`, ns)
+
 	if namingStrategy != "" {
+		if ns != "" {
+			return fmt.Sprintf(`%s
+  namingStrategy: %s%s`, h, namingStrategy, fNamespace)
+		}
 		return fmt.Sprintf(`%s
-  namingStrategy: %s%s`, h, namingStrategy, f)
+  namingStrategy: %s%s`, h, namingStrategy, fNoNamespace)
 	}
-	return h + f
+
+	if ns != "" {
+		return h + fNamespace
+	}
+
+	return h + fNoNamespace
 }

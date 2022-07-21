@@ -12,8 +12,8 @@ import (
 type Client interface {
 	// GetFlags gets the necessary flags for binding
 	GetFlags(flags map[string]string) map[string]string
-	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object, and an error
-	GetServiceInstances() (map[string]unstructured.Unstructured, error)
+	// GetServiceInstances returns a map of bindable instance name with its unstructured.Unstructured object from the specified namespace, and an error
+	GetServiceInstances(namespace string) (map[string]unstructured.Unstructured, error)
 	// GetBindingsFromDevfile returns the bindings defined in the devfile with the status extracted from cluster
 	GetBindingsFromDevfile(devfileObj parser.DevfileObj, context string) ([]api.ServiceBinding, error)
 	// GetBindingFromCluster returns information about a binding in the cluster (either from group binding.operators.coreos.com or servicebinding.io)
@@ -21,6 +21,9 @@ type Client interface {
 
 	// add.go
 
+	// SelectNamespace returns the namespace which services instances should be listed from.
+	// An empty return value means that service instances will be listed from the current namespace.
+	SelectNamespace(flags map[string]string) (string, error)
 	// ValidateAddBinding returns error if the backend failed to validate; mainly useful for flags backend
 	// withDevfile indicates if a Devfile is present in the current directory
 	ValidateAddBinding(flags map[string]string, withDevfile bool) error
@@ -38,6 +41,7 @@ type Client interface {
 	AddBindingToDevfile(
 		bindingName string,
 		bindAsFiles bool,
+		serviceNs string,
 		namingStrategy string,
 		unstructuredService unstructured.Unstructured,
 		obj parser.DevfileObj,
@@ -49,6 +53,7 @@ type Client interface {
 		flags map[string]string,
 		bindingName string,
 		bindAsFiles bool,
+		serviceNs string,
 		namingStrategy string,
 		unstructuredService unstructured.Unstructured,
 		workloadName string,
