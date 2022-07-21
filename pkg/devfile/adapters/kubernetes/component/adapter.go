@@ -414,7 +414,7 @@ func (a *Adapter) createOrUpdateComponent(
 	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 
-	storageClient := storagepkg.NewClient(storagepkg.ClientOptions{
+	storageClient := storagepkg.NewClient(componentName, a.AppName, storagepkg.ClientOptions{
 		Client:              a.kubeClient,
 		LocalConfigProvider: &ei,
 	})

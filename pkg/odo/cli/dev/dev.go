@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -148,33 +149,35 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
+	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
+
+	// ENV.YAML
+	//
+	// Set the appropriate variables in the env.yaml file
+	//
+	// TODO: Eventually refactor with code in deploy/deploy.go
 	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
 	if err != nil {
 		return fmt.Errorf("unable to retrieve configuration information: %v", err)
 	}
 
-	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
-
+	// If the env.yaml does not exist, we will save the project name
 	if !envfileinfo.Exists() {
-		// if env.yaml doesn't exist, get component name from the devfile.yaml
-		var cmpName string
-		cmpName, err = component.GatherName(o.EnvSpecificInfo.GetDevfileObj(), o.GetDevfilePath())
-		if err != nil {
-			return fmt.Errorf("unable to retrieve component name: %w", err)
-		}
-		// create env.yaml file with component, project/namespace and application info
-		// TODO - store only namespace into env.yaml, we don't want to track component or application name via env.yaml
-		err = envfileinfo.SetComponentSettings(envinfo.ComponentSettings{Name: cmpName, Project: o.GetProject(), AppName: "app"})
+		err = envfileinfo.SetComponentSettings(envinfo.ComponentSettings{Project: o.GetProject()})
 		if err != nil {
 			return fmt.Errorf("failed to write new env.yaml file: %w", err)
 		}
-	} else if envfileinfo.GetComponentSettings().Project != o.GetProject() {
-		// set namespace if the evn.yaml exists; that's the only piece we care about in env.yaml
+	} else if envfileinfo.Exists() && envfileinfo.GetComponentSettings().Project != o.GetProject() {
+		// If the env.yaml exists and the project is set incorrectly, we'll override it.
+		klog.V(4).Info("Overriding project name in env.yaml as it's set incorrectly, new project name: ", o.GetProject())
 		err = envfileinfo.SetConfiguration("project", o.GetProject())
 		if err != nil {
 			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
 		}
 	}
+
+	// END ENV.YAML
+
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
 	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
