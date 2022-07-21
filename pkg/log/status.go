@@ -388,6 +388,20 @@ func Sbold(s string) string {
 	return bold(fmt.Sprint(s))
 }
 
+// Bold will print out a bolded string
+func Bold(s string) {
+	if !IsJSON() {
+		bold := color.New(color.Bold).SprintFunc()
+		fmt.Fprintf(GetStdout(), "%s\n", bold(fmt.Sprintln(s)))
+	}
+}
+
+// BoldColor will print out a bolded string with a color (that's passed in)
+func SboldColor(c color.Attribute, s string) string {
+	chosenColor := color.New(c).SprintFunc()
+	return chosenColor(fmt.Sprintln(Sbold(s)))
+}
+
 // Describef will print out the first variable as BOLD and then the second not..
 // this is intended to be used with `odo describe` and other outputs that list
 // a lot of information

@@ -8,7 +8,6 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
-	"github.com/fatih/color"
 
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
@@ -210,7 +209,6 @@ func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileO
 }
 
 func PrintConfiguration(config asker.DevfileConfiguration) {
-	color.New(color.Bold, color.FgGreen).Println("Current component configuration:")
 
 	var keys []string
 	for key := range config {
@@ -220,18 +218,24 @@ func PrintConfiguration(config asker.DevfileConfiguration) {
 
 	for _, key := range keys {
 		container := config[key]
-		color.Green("Container %q:", key)
-		color.Green("  Opened ports:")
+		log.Sectionf("Container Configuration %q:", key)
 
-		for _, port := range container.Ports {
-			color.New(color.Bold, color.FgWhite).Printf("   - %s\n", port)
+		fmt.Printf("  OPEN PORTS:\n")
+
+		for _, value := range container.Ports {
+			fmt.Printf("    - %s\n", value)
 		}
 
-		color.Green("  Environment variables:")
+		fmt.Println("  ENVIRONMENT VARIABLES:")
+
 		for key, value := range container.Envs {
-			color.New(color.Bold, color.FgWhite).Printf("   - %s = %s\n", key, value)
+			fmt.Printf("    - %s = %s\n", key, value)
 		}
+
 	}
+
+	// Make sure we add a newline at the end
+	fmt.Println()
 }
 
 func getPortsAndEnvVar(obj parser.DevfileObj) (asker.DevfileConfiguration, error) {
