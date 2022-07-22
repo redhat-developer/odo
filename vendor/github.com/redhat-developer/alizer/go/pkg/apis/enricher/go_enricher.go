@@ -15,7 +15,7 @@ import (
 	"io/ioutil"
 
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/go"
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
 	"golang.org/x/mod/modfile"
 )
@@ -23,7 +23,7 @@ import (
 type GoEnricher struct{}
 
 type GoFrameworkDetector interface {
-	DoFrameworkDetection(language *language.Language, goMod *modfile.File)
+	DoFrameworkDetection(language *model.Language, goMod *modfile.File)
 }
 
 func getGoFrameworkDetectors() []GoFrameworkDetector {
@@ -41,7 +41,7 @@ func (j GoEnricher) GetSupportedLanguages() []string {
 	return []string{"go"}
 }
 
-func (j GoEnricher) DoEnrichLanguage(language *language.Language, files *[]string) {
+func (j GoEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	goModPath := utils.GetFile(files, "go.mod")
 
 	if goModPath != "" {
@@ -56,6 +56,11 @@ func (j GoEnricher) DoEnrichLanguage(language *language.Language, files *[]strin
 	}
 }
 
+func (j GoEnricher) DoEnrichComponent(component *model.Component) {
+	projectName := GetDefaultProjectName(component.Path)
+	component.Name = projectName
+}
+
 func (j GoEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
 	return IsConfigurationValidForLanguage(language, config)
 }
@@ -68,7 +73,7 @@ func getGoModFile(filePath string) (*modfile.File, error) {
 	return modfile.Parse(filePath, b, nil)
 }
 
-func detectGoFrameworks(language *language.Language, configFile *modfile.File) {
+func detectGoFrameworks(language *model.Language, configFile *modfile.File) {
 	for _, detector := range getGoFrameworkDetectors() {
 		detector.DoFrameworkDetection(language, configFile)
 	}

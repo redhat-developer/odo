@@ -27,6 +27,7 @@ type LanguageItem struct {
 	ConfigurationFiles []string
 	ExcludeFolders     []string
 	Component          bool
+	disabled           bool
 }
 
 type LanguageFile struct {
@@ -62,12 +63,14 @@ func create() *LanguageFile {
 			Group:   properties.Group,
 		}
 		customizeLanguage(&languageItem)
-		languages[name] = languageItem
-		extensions := properties.Extensions
-		for _, ext := range extensions {
-			languagesByExtension := extensionsXLanguage[ext]
-			languagesByExtension = append(languagesByExtension, languageItem)
-			extensionsXLanguage[ext] = languagesByExtension
+		if !languageItem.disabled {
+			languages[name] = languageItem
+			extensions := properties.Extensions
+			for _, ext := range extensions {
+				languagesByExtension := extensionsXLanguage[ext]
+				languagesByExtension = append(languagesByExtension, languageItem)
+				extensionsXLanguage[ext] = languagesByExtension
+			}
 		}
 	}
 
@@ -84,6 +87,7 @@ func customizeLanguage(languageItem *LanguageItem) {
 		(*languageItem).ExcludeFolders = customization.ExcludeFolders
 		(*languageItem).Component = customization.Component
 		(*languageItem).Aliases = appendSlice((*languageItem).Aliases, customization.Aliases)
+		(*languageItem).disabled = customization.Disabled
 	}
 }
 

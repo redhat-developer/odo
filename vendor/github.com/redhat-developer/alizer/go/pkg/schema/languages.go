@@ -31,6 +31,7 @@ type LanguageCustomization struct {
 	Component          bool     `yaml:"component"`
 	ExcludeFolders     []string `yaml:"exclude_folders,omitempty"`
 	Aliases            []string `yaml:"aliases"`
+	Disabled           bool     `default:"false" yaml:"disable_detection"`
 }
 
 type LanguagesCustomizations map[string]LanguageCustomization

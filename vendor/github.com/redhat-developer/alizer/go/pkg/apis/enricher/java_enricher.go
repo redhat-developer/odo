@@ -11,11 +11,13 @@
 package recognizer
 
 import (
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/java"
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
@@ -35,7 +37,7 @@ func (j JavaEnricher) GetSupportedLanguages() []string {
 	return []string{"java"}
 }
 
-func (j JavaEnricher) DoEnrichLanguage(language *language.Language, files *[]string) {
+func (j JavaEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	gradle := utils.GetFile(files, "build.gradle")
 	maven := utils.GetFile(files, "pom.xml")
 	ant := utils.GetFile(files, "build.xml")
@@ -49,6 +51,47 @@ func (j JavaEnricher) DoEnrichLanguage(language *language.Language, files *[]str
 	} else if ant != "" {
 		language.Tools = []string{"Ant"}
 	}
+}
+
+func (j JavaEnricher) DoEnrichComponent(component *model.Component) {
+	projectName := getProjectNameMaven(component.Path)
+	if projectName == "" {
+		projectName = getProjectNameGradle(component.Path)
+	}
+	if projectName == "" {
+		projectName = GetDefaultProjectName(component.Path)
+	}
+	component.Name = projectName
+}
+
+func getProjectNameGradle(root string) string {
+	settingsGradlePath := filepath.Join(root, "settings.gradle")
+	if _, err := os.Stat(settingsGradlePath); err == nil {
+		re := regexp.MustCompile(`rootProject.name\s*=\s*(.*)`)
+		bytes, err := os.ReadFile(settingsGradlePath)
+		if err != nil {
+			return ""
+		}
+		content := string(bytes)
+		matchProjectName := re.FindStringSubmatch(content)
+		if len(matchProjectName) > 0 && matchProjectName[1] != "" {
+			projectName := strings.TrimLeft(matchProjectName[1], "\"'")
+			projectName = strings.TrimRight(projectName, "\"' ")
+			return projectName
+		}
+	}
+	return ""
+}
+
+func getProjectNameMaven(root string) string {
+	pomXMLPath := filepath.Join(root, "pom.xml")
+	if _, err := os.Stat(pomXMLPath); err == nil {
+		pomXML, err := utils.GetPomFileContent(pomXMLPath)
+		if err == nil {
+			return pomXML.ArtifactId
+		}
+	}
+	return ""
 }
 
 func (j JavaEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
@@ -72,7 +115,7 @@ func isParentModuleMaven(configPath string) bool {
 	return hasTag
 }
 
-func detectJavaFrameworks(language *language.Language, configFile string) {
+func detectJavaFrameworks(language *model.Language, configFile string) {
 	for _, detector := range getJavaFrameworkDetectors() {
 		detector.DoFrameworkDetection(language, configFile)
 	}

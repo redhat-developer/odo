@@ -11,13 +11,13 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"golang.org/x/mod/modfile"
 )
 
 type BeegoDetector struct{}
 
-func (e BeegoDetector) DoFrameworkDetection(language *language.Language, goMod *modfile.File) {
+func (e BeegoDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/beego/beego") {
 		language.Frameworks = append(language.Frameworks, "Beego")
 	}

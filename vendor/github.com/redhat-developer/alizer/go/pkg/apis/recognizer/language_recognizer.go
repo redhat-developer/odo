@@ -11,6 +11,7 @@
 package recognizer
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,22 +19,23 @@ import (
 	"strings"
 
 	enricher "github.com/redhat-developer/alizer/go/pkg/apis/enricher"
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	langfile "github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
+	ignore "github.com/sabhiram/go-gitignore"
 )
 
 type languageItem struct {
-	item       langfile.LanguageItem
-	percentage int
+	item   langfile.LanguageItem
+	weight int
 }
 
-func Analyze(path string) ([]language.Language, error) {
+func Analyze(path string) ([]model.Language, error) {
 	languagesFile := langfile.Get()
 	languagesDetected := make(map[string]languageItem)
 
-	paths, err := getFilePathsFromRoot(path)
+	paths, err := GetFilePathsFromRoot(path)
 	if err != nil {
-		return []language.Language{}, err
+		return []model.Language{}, err
 	}
 	extensionsGrouped := extractExtensions(paths)
 	extensionHasProgrammingLanguage := false
@@ -56,8 +58,8 @@ func Analyze(path string) ([]language.Language, error) {
 					}
 				}
 				tmpLanguageItem := languageItem{languageFileItem, 0}
-				percentage := languagesDetected[tmpLanguageItem.item.Name].percentage + extensionsGrouped[extension]
-				tmpLanguageItem.percentage = percentage
+				weight := languagesDetected[tmpLanguageItem.item.Name].weight + extensionsGrouped[extension]
+				tmpLanguageItem.weight = weight
 				languagesDetected[tmpLanguageItem.item.Name] = tmpLanguageItem
 				extensionHasProgrammingLanguage = true
 			}
@@ -68,18 +70,18 @@ func Analyze(path string) ([]language.Language, error) {
 		}
 	}
 
-	var languagesFound []language.Language
+	var languagesFound []model.Language
 	for name, item := range languagesDetected {
-		tmpPercentage := float64(item.percentage) / float64(totalProgrammingOccurrences)
-		tmpPercentage = float64(int(tmpPercentage*10000)) / 10000
-		if tmpPercentage > 0.02 {
-			tmpLanguage := language.Language{
-				Name:              name,
-				Aliases:           item.item.Aliases,
-				UsageInPercentage: tmpPercentage * 100,
-				Frameworks:        []string{},
-				Tools:             []string{},
-				CanBeComponent:    item.item.Component}
+		tmpWeight := float64(item.weight) / float64(totalProgrammingOccurrences)
+		tmpWeight = float64(int(tmpWeight*10000)) / 10000
+		if tmpWeight > 0.02 {
+			tmpLanguage := model.Language{
+				Name:           name,
+				Aliases:        item.item.Aliases,
+				Weight:         tmpWeight * 100,
+				Frameworks:     []string{},
+				Tools:          []string{},
+				CanBeComponent: item.item.Component}
 			langEnricher := enricher.GetEnricherByLanguage(name)
 			if langEnricher != nil {
 				langEnricher.DoEnrichLanguage(&tmpLanguage, &paths)
@@ -89,7 +91,7 @@ func Analyze(path string) ([]language.Language, error) {
 	}
 
 	sort.SliceStable(languagesFound, func(i, j int) bool {
-		return languagesFound[i].UsageInPercentage > languagesFound[j].UsageInPercentage
+		return languagesFound[i].Weight > languagesFound[j].Weight
 	})
 
 	return languagesFound, nil
@@ -108,10 +110,18 @@ func extractExtensions(paths []string) map[string]int {
 	return extensions
 }
 
-func getFilePathsFromRoot(root string) ([]string, error) {
+func GetFilePathsFromRoot(root string) ([]string, error) {
 	var files []string
-	err := filepath.Walk(root,
+	ignoreFile, errorIgnoreFile := getIgnoreFile(root)
+	errWalk := filepath.Walk(root,
 		func(path string, info os.FileInfo, err error) error {
+			if errorIgnoreFile == nil && ignoreFile.MatchesPath(path) {
+				if info.IsDir() {
+					return filepath.SkipDir
+				} else {
+					return nil
+				}
+			}
 			if !info.IsDir() && isFileInRoot(root, path) {
 				files = append([]string{path}, files...)
 			} else {
@@ -119,7 +129,15 @@ func getFilePathsFromRoot(root string) ([]string, error) {
 			}
 			return nil
 		})
-	return files, err
+	return files, errWalk
+}
+
+func getIgnoreFile(root string) (*ignore.GitIgnore, error) {
+	gitIgnorePath := filepath.Join(root, ".gitignore")
+	if _, err := os.Stat(gitIgnorePath); err == nil {
+		return ignore.CompileIgnoreFile(gitIgnorePath)
+	}
+	return nil, errors.New("no git ignore file found")
 }
 
 func isFileInRoot(root string, file string) bool {

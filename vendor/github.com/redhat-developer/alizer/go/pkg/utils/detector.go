@@ -13,6 +13,7 @@ package utils
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -98,17 +99,8 @@ func GetPomFileContent(pomFilePath string) (schema.Pom, error) {
 }
 
 func IsTagInPackageJsonFile(file string, tag string) bool {
-	jsonFile, err := os.Open(file)
-	if err != nil {
-		return false
-	}
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var packageJson schema.PackageJson
-	json.Unmarshal(byteValue, &packageJson)
-
-	defer jsonFile.Close()
-	if packageJson.Dependencies != nil {
+	packageJson, err := GetPackageJsonFile(file)
+	if err == nil && packageJson.Dependencies != nil {
 		for dependency := range packageJson.Dependencies {
 			if strings.Contains(dependency, tag) {
 				return true
@@ -116,6 +108,19 @@ func IsTagInPackageJsonFile(file string, tag string) bool {
 		}
 	}
 	return false
+}
+
+func GetPackageJsonFile(file string) (schema.PackageJson, error) {
+	jsonFile, err := os.Open(file)
+	if err != nil {
+		return schema.PackageJson{}, errors.New("error opening file")
+	}
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var packageJson schema.PackageJson
+	err = json.Unmarshal(byteValue, &packageJson)
+	defer jsonFile.Close()
+	return packageJson, err
 }
 
 func AddToArrayIfValueExist(arr *[]string, val string) {

@@ -35,7 +35,7 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.21.2
 	github.com/pborman/uuid v1.2.1
 	github.com/posener/complete v1.2.3
-	github.com/redhat-developer/alizer/go v0.0.0-20220530162645-f27a60be88a1
+	github.com/redhat-developer/alizer/go v0.0.0-20220714080930-59b004fd4586
 	github.com/redhat-developer/service-binding-operator v1.0.1-0.20211222115357-5b7bbba3bfb3
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/securego/gosec/v2 v2.12.0

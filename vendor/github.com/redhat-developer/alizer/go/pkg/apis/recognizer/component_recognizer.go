@@ -18,36 +18,31 @@ import (
 	"strings"
 
 	enricher "github.com/redhat-developer/alizer/go/pkg/apis/enricher"
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
 )
 
-type Component struct {
-	Path      string
-	Languages []language.Language
-}
-
-func DetectComponentsInRoot(path string) ([]Component, error) {
+func DetectComponentsInRoot(path string) ([]model.Component, error) {
 	files, err := getFilePathsInRoot(path)
 	if err != nil {
-		return []Component{}, err
+		return []model.Component{}, err
 	}
-	components, err := detectComponents(files)
+	components, err := DetectComponentsFromFilesList(files)
 	if err != nil {
-		return []Component{}, err
+		return []model.Component{}, err
 	}
 
 	return components, nil
 }
 
-func DetectComponents(path string) ([]Component, error) {
-	files, err := getFilePathsFromRoot(path)
+func DetectComponents(path string) ([]model.Component, error) {
+	files, err := GetFilePathsFromRoot(path)
 	if err != nil {
-		return []Component{}, err
+		return []model.Component{}, err
 	}
-	components, err := detectComponents(files)
+	components, err := DetectComponentsFromFilesList(files)
 	if err != nil {
-		return []Component{}, err
+		return []model.Component{}, err
 	}
 
 	// it may happen that a language has no a specific configuration file (e.g opposite to JAVA -> pom.xml and Nodejs -> package.json)
@@ -65,8 +60,8 @@ func DetectComponents(path string) ([]Component, error) {
 	Returns:
 		components found
 */
-func getComponentsWithoutConfigFile(directories []string) []Component {
-	var components []Component
+func getComponentsWithoutConfigFile(directories []string) []model.Component {
+	var components []model.Component
 	for _, dir := range directories {
 		component, _ := detectComponent(dir, []string{})
 		if component.Path != "" && isLangForNoConfigComponent(component.Languages) {
@@ -83,7 +78,7 @@ func getComponentsWithoutConfigFile(directories []string) []Component {
 	Returns:
 		bool: true if language does not require any config file
 */
-func isLangForNoConfigComponent(languages []language.Language) bool {
+func isLangForNoConfigComponent(languages []model.Language) bool {
 	if len(languages) == 0 {
 		return false
 	}
@@ -104,7 +99,7 @@ func isLangForNoConfigComponent(languages []language.Language) bool {
 	Returns:
 		list of directories path that does not contain any component
 */
-func getDirectoriesWithoutConfigFile(root string, components []Component) []string {
+func getDirectoriesWithoutConfigFile(root string, components []model.Component) []string {
 	if len(components) == 0 {
 		return []string{root}
 	}
@@ -156,7 +151,7 @@ func getParentFolders(target string, directories []string) []string {
 	Returns:
 		true if a component is found starting from path
 */
-func isAnyComponentInPath(path string, components []Component) bool {
+func isAnyComponentInPath(path string, components []model.Component) bool {
 	for _, component := range components {
 		if strings.EqualFold(path, component.Path) || isFirstPathParentOfSecond(component.Path, path) || isFirstPathParentOfSecond(path, component.Path) {
 			return true
@@ -178,15 +173,15 @@ func isFirstPathParentOfSecond(firstPath string, secondPath string) bool {
 }
 
 /*
-	detectComponents detect components by analyzing all files
+	DetectComponentsFromFilesList detect components by analyzing all files
 	Parameters:
 		files: list of files to analyze
 	Returns:
 		list of components detected or err if any error occurs
 */
-func detectComponents(files []string) ([]Component, error) {
+func DetectComponentsFromFilesList(files []string) ([]model.Component, error) {
 	configurationPerLanguage := langfiles.Get().GetConfigurationPerLanguageMapping()
-	var components []Component
+	var components []model.Component
 	for _, file := range files {
 		dir, fileName := filepath.Split(file)
 		if dir == "" {
@@ -209,7 +204,7 @@ func detectComponents(files []string) ([]Component, error) {
 	return components, nil
 }
 
-func appendIfMissing(components []Component, component Component) []Component {
+func appendIfMissing(components []model.Component, component model.Component) []model.Component {
 	for _, comp := range components {
 		if strings.EqualFold(comp.Path, component.Path) {
 			return components
@@ -233,26 +228,29 @@ func getLanguagesByConfigurationFile(configurationPerLanguage map[string][]strin
 					, error otherwise
 	Parameters:
 		root: path to be used as root where to start the detection
+		configFile: name of configuration file
 		configLanguages: languages associated to the config file found and to be used as target for detection
 	Returns:
 		component detected or error if any error occurs
 */
-func detectComponent(root string, configLanguages []string) (Component, error) {
+func detectComponent(root string, configLanguages []string) (model.Component, error) {
 	languages, err := Analyze(root)
 	if err != nil {
-		return Component{}, err
+		return model.Component{}, err
 	}
 	languages = getLanguagesWeightedByConfigFile(languages, configLanguages)
 	if len(languages) > 0 {
 		if mainLang := languages[0]; mainLang.CanBeComponent {
-			return Component{
+			component := model.Component{
 				Path:      root,
 				Languages: languages,
-			}, nil
+			}
+			enrichComponent(&component)
+			return component, nil
 		}
 	}
 
-	return Component{}, nil
+	return model.Component{}, nil
 
 }
 
@@ -265,7 +263,7 @@ func detectComponent(root string, configLanguages []string) (Component, error) {
 	Returns:
 		list of languages reordered
 */
-func getLanguagesWeightedByConfigFile(languages []language.Language, configLanguages []string) []language.Language {
+func getLanguagesWeightedByConfigFile(languages []model.Language, configLanguages []string) []model.Language {
 	if len(configLanguages) == 0 {
 		return languages
 	}
@@ -274,7 +272,7 @@ func getLanguagesWeightedByConfigFile(languages []language.Language, configLangu
 		for _, configLanguage := range configLanguages {
 			if strings.EqualFold(lang.Name, configLanguage) {
 				sliceWithoutLang := append(languages[:index], languages[index+1:]...)
-				return append([]language.Language{lang}, sliceWithoutLang...)
+				return append([]model.Language{lang}, sliceWithoutLang...)
 			}
 		}
 	}
@@ -287,4 +285,11 @@ func isConfigurationValid(language string, file string) bool {
 		return langEnricher.IsConfigValidForComponentDetection(language, file)
 	}
 	return false
+}
+
+func enrichComponent(component *model.Component) {
+	componentEnricher := enricher.GetEnricherByLanguage(component.Languages[0].Name)
+	if componentEnricher != nil {
+		componentEnricher.DoEnrichComponent(component)
+	}
 }

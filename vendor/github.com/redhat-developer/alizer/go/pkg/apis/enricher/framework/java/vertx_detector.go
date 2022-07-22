@@ -10,13 +10,11 @@
  ******************************************************************************/
 package recognizer
 
-import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
-)
+import "github.com/redhat-developer/alizer/go/pkg/apis/model"
 
 type VertxDetector struct{}
 
-func (v VertxDetector) DoFrameworkDetection(language *language.Language, config string) {
+func (v VertxDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFwk, _ := hasFramework(config, "io.vertx"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Vertx")
 	}

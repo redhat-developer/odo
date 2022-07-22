@@ -16,7 +16,7 @@ go mod edit -require github.com/devfile/registry-support/registry-library@v0.0.0
 go mod edit -require github.com/openshift/oc@v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1
 go mod edit -require github.com/kubernetes-sigs/service-catalog@v0.3.1
 go mod edit -require k8s.io/utils@v0.0.0-20220210201930-3a6ce19ff2f9
-go mod edit -require github.com/redhat-developer/alizer/go@v0.0.0-20220530162645-f27a60be88a1
+go mod edit -require github.com/redhat-developer/alizer/go@v0.0.0-20220714080930-59b004fd4586
 go mod edit -require github.com/redhat-developer/service-binding-operator@v1.0.1-0.20211222115357-5b7bbba3bfb3
 go mod edit -require github.com/onsi/ginkgo/v2@v2.1.4
 go mod edit -require github.com/segmentio/backo-go@v1.0.1-0.20200129164019-23eae7c10bd3 # fixing this revision because of the missing license in the latest released version

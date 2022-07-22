@@ -16,14 +16,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/schema"
 	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type DotNetDetector struct{}
 
-func (m DotNetDetector) DoFrameworkDetection(language *language.Language, configFilePath string) {
+func (m DotNetDetector) DoFrameworkDetection(language *model.Language, configFilePath string) {
 	framework := getFrameworks(configFilePath)
 	if framework == "" {
 		return

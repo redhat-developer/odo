@@ -11,13 +11,13 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"golang.org/x/mod/modfile"
 )
 
 type GinDetector struct{}
 
-func (e GinDetector) DoFrameworkDetection(language *language.Language, goMod *modfile.File) {
+func (e GinDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gin-gonic/gin") {
 		language.Frameworks = append(language.Frameworks, "Gin")
 	}

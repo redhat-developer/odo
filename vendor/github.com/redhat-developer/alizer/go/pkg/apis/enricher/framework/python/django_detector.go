@@ -11,13 +11,13 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
 type DjangoDetector struct{}
 
-func (d DjangoDetector) DoFrameworkDetection(language *language.Language, files *[]string) {
+func (d DjangoDetector) DoFrameworkDetection(language *model.Language, files *[]string) {
 	managePy := utils.GetFile(files, "manage.py")
 	urlsPy := utils.GetFile(files, "urls.py")
 	wsgiPy := utils.GetFile(files, "wsgi.py")
