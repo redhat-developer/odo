@@ -16,7 +16,7 @@ updates:
   schedule:
     interval: "weekly"
   reviewers:
-  - "odo-mantainers"
+  - "redhat-developer/odo-mantainers"
   labels:
   - "area/dependency"
   - "kind/task"
@@ -32,7 +32,7 @@ updates:
   schedule:
     interval: "weekly"
   reviewers:
-    - "odo-mantainers"
+    - "redhat-developer/odo-mantainers"
   labels:
     - "area/dependency"
     - "kind/task"
