@@ -10,30 +10,34 @@ updates:
 - package-ecosystem: "gomod"
   directory: "/"
   # Set this to 0 to disable version updates
-  open-pull-requests-limit: 5
+  open-pull-requests-limit: 3
   commit-message:
     prefix: "Go"
   schedule:
     interval: "weekly"
   reviewers:
-  - "odo-mantainers"
+  - "redhat-developer/odo-mantainers"
   labels:
   - "area/dependency"
   - "kind/task"
   - "ok-to-test"
+  # 'do-not-merge/hold' because we also need to update the 'scripts/generate-mod.sh' file (and re-run it) accordingly
+  - "do-not-merge/hold"
 
 # Maintain dependencies for Website builds
 - package-ecosystem: "npm"
   directory: "/docs/website"
   # Set this to 0 to disable version updates
-  open-pull-requests-limit: 3
+  open-pull-requests-limit: 2
   commit-message:
     prefix: "Website"
   schedule:
     interval: "weekly"
   reviewers:
-    - "odo-mantainers"
+    - "redhat-developer/odo-mantainers"
   labels:
+    # We are purposely not adding the "ok-to-test" label, because this relates to the website,
+    # and it does not necessarily make sense to run all the Prow tests here.
     - "area/dependency"
     - "kind/task"
 
