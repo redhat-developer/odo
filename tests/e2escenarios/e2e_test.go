@@ -33,7 +33,7 @@ var _ = Describe("E2E Test", func() {
 
 			body, _ := io.ReadAll(resp.Body)
 			return string(body)
-		}, 60*time.Second, 10*time.Second).Should(Equal(assertString))
+		}, 120*time.Second, 15*time.Second).Should(Equal(assertString))
 	}
 
 	Context("starting with empty Directory", func() {
