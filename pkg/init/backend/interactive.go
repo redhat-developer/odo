@@ -220,16 +220,18 @@ func PrintConfiguration(config asker.DevfileConfiguration) {
 		container := config[key]
 		log.Sectionf("Container Configuration %q:", key)
 
-		fmt.Printf("  OPEN PORTS:\n")
+		stdout := log.GetStdout()
+
+		fmt.Fprintf(stdout, "  OPEN PORTS:\n")
 
 		for _, value := range container.Ports {
-			fmt.Printf("    - %s\n", value)
+			fmt.Fprintf(stdout, "    - %s\n", value)
 		}
 
-		fmt.Println("  ENVIRONMENT VARIABLES:")
+		fmt.Fprintf(stdout, "  ENVIRONMENT VARIABLES:\n")
 
 		for key, value := range container.Envs {
-			fmt.Printf("    - %s = %s\n", key, value)
+			fmt.Fprintf(stdout, "    - %s = %s\n", key, value)
 		}
 
 	}
