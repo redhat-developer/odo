@@ -12,7 +12,7 @@ package recognizer
 
 import (
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/python"
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 )
 
 type PythonEnricher struct{}
@@ -27,16 +27,21 @@ func (p PythonEnricher) GetSupportedLanguages() []string {
 	return []string{"python"}
 }
 
-func (p PythonEnricher) DoEnrichLanguage(language *language.Language, files *[]string) {
+func (p PythonEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	language.Tools = []string{}
 	detectPythonFrameworks(language, files)
+}
+
+func (j PythonEnricher) DoEnrichComponent(component *model.Component) {
+	projectName := GetDefaultProjectName(component.Path)
+	component.Name = projectName
 }
 
 func (p PythonEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
 	return IsConfigurationValidForLanguage(language, config)
 }
 
-func detectPythonFrameworks(language *language.Language, files *[]string) {
+func detectPythonFrameworks(language *model.Language, files *[]string) {
 	for _, detector := range getPythonFrameworkDetectors() {
 		detector.DoFrameworkDetection(language, files)
 	}

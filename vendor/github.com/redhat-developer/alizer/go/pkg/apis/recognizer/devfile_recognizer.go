@@ -14,7 +14,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 )
 
 type DevFileType struct {
@@ -52,7 +52,7 @@ func SelectDevFileFromTypes(path string, devFileTypes []DevFileType) (int, error
 	return devfile, nil
 }
 
-func SelectDevFileUsingLanguagesFromTypes(languages []language.Language, devFileTypes []DevFileType) (int, error) {
+func SelectDevFileUsingLanguagesFromTypes(languages []model.Language, devFileTypes []DevFileType) (int, error) {
 	for _, language := range languages {
 		devfile, err := selectDevFileByLanguage(language, devFileTypes)
 		if err == nil {
@@ -62,7 +62,7 @@ func SelectDevFileUsingLanguagesFromTypes(languages []language.Language, devFile
 	return -1, errors.New("no valid devfile found by using those languages")
 }
 
-func selectDevFileByLanguage(language language.Language, devFileTypes []DevFileType) (int, error) {
+func selectDevFileByLanguage(language model.Language, devFileTypes []DevFileType) (int, error) {
 	scoreTarget := 0
 	devfileTarget := -1
 	FRAMEWORK_WEIGHT := 10

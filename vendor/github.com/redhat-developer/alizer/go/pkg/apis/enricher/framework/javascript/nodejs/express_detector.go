@@ -10,13 +10,11 @@
  ******************************************************************************/
 package recognizer
 
-import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
-)
+import "github.com/redhat-developer/alizer/go/pkg/apis/model"
 
 type ExpressDetector struct{}
 
-func (e ExpressDetector) DoFrameworkDetection(language *language.Language, config string) {
+func (e ExpressDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "express") {
 		language.Frameworks = append(language.Frameworks, "Express")
 	}

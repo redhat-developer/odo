@@ -12,6 +12,8 @@ F#:
     - ".*\\.\\w+proj"
     - "appsettings.json"
   component: true
+GCC Machine Description:
+  disable_detection: true
 Go:
   configuration_files:
     - "go.mod"

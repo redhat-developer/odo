@@ -11,13 +11,13 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"golang.org/x/mod/modfile"
 )
 
 type FastHttpDetector struct{}
 
-func (e FastHttpDetector) DoFrameworkDetection(language *language.Language, goMod *modfile.File) {
+func (e FastHttpDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/valyala/fasthttp") {
 		language.Frameworks = append(language.Frameworks, "FastHttp")
 	}

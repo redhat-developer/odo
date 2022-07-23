@@ -16,22 +16,23 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"github.com/redhat-developer/alizer/go/pkg/utils/langfiles"
 )
 
 type Enricher interface {
 	GetSupportedLanguages() []string
-	DoEnrichLanguage(language *language.Language, files *[]string)
+	DoEnrichLanguage(language *model.Language, files *[]string)
+	DoEnrichComponent(component *model.Component)
 	IsConfigValidForComponentDetection(language string, configFile string) bool
 }
 
 type FrameworkDetectorWithConfigFile interface {
-	DoFrameworkDetection(language *language.Language, config string)
+	DoFrameworkDetection(language *model.Language, config string)
 }
 
 type FrameworkDetectorWithoutConfigFile interface {
-	DoFrameworkDetection(language *language.Language, files *[]string)
+	DoFrameworkDetection(language *model.Language, files *[]string)
 }
 
 /*
@@ -106,4 +107,8 @@ func isLanguageSupportedByEnricher(nameLanguage string, enricher Enricher) bool 
 		}
 	}
 	return false
+}
+
+func GetDefaultProjectName(path string) string {
+	return filepath.Base(path)
 }

@@ -11,13 +11,13 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"golang.org/x/mod/modfile"
 )
 
 type MuxDetector struct{}
 
-func (e MuxDetector) DoFrameworkDetection(language *language.Language, goMod *modfile.File) {
+func (e MuxDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gorilla/mux") {
 		language.Frameworks = append(language.Frameworks, "Mux")
 	}

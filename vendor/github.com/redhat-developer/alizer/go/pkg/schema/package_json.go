@@ -11,5 +11,6 @@
 package schema
 
 type PackageJson struct {
+	Name         string            `json:"name"`
 	Dependencies map[string]string `json:"dependencies"`
 }

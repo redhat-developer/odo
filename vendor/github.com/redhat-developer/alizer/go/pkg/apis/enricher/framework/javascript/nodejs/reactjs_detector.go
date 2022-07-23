@@ -10,13 +10,11 @@
  ******************************************************************************/
 package recognizer
 
-import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
-)
+import "github.com/redhat-developer/alizer/go/pkg/apis/model"
 
 type ReactJsDetector struct{}
 
-func (r ReactJsDetector) DoFrameworkDetection(language *language.Language, config string) {
+func (r ReactJsDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFramework(config, "react") {
 		language.Frameworks = append(language.Frameworks, "React")
 	}

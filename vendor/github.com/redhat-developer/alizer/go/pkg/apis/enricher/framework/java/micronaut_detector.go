@@ -10,13 +10,11 @@
  ******************************************************************************/
 package recognizer
 
-import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
-)
+import "github.com/redhat-developer/alizer/go/pkg/apis/model"
 
 type MicronautDetector struct{}
 
-func (m MicronautDetector) DoFrameworkDetection(language *language.Language, config string) {
+func (m MicronautDetector) DoFrameworkDetection(language *model.Language, config string) {
 	if hasFwk, _ := hasFramework(config, "io.micronaut"); hasFwk {
 		language.Frameworks = append(language.Frameworks, "Micronaut")
 	}

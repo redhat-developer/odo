@@ -11,13 +11,13 @@
 package recognizer
 
 import (
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	"golang.org/x/mod/modfile"
 )
 
 type GoFiberDetector struct{}
 
-func (e GoFiberDetector) DoFrameworkDetection(language *language.Language, goMod *modfile.File) {
+func (e GoFiberDetector) DoFrameworkDetection(language *model.Language, goMod *modfile.File) {
 	if hasFramework(goMod.Require, "github.com/gofiber/fiber") {
 		language.Frameworks = append(language.Frameworks, "GoFiber")
 	}

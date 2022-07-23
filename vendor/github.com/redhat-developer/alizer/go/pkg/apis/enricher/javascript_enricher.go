@@ -11,8 +11,11 @@
 package recognizer
 
 import (
+	"os"
+	"path/filepath"
+
 	framework "github.com/redhat-developer/alizer/go/pkg/apis/enricher/framework/javascript/nodejs"
-	"github.com/redhat-developer/alizer/go/pkg/apis/language"
+	"github.com/redhat-developer/alizer/go/pkg/apis/model"
 	utils "github.com/redhat-developer/alizer/go/pkg/utils"
 )
 
@@ -29,7 +32,7 @@ func (j JavaScriptEnricher) GetSupportedLanguages() []string {
 	return []string{"javascript", "typescript"}
 }
 
-func (j JavaScriptEnricher) DoEnrichLanguage(language *language.Language, files *[]string) {
+func (j JavaScriptEnricher) DoEnrichLanguage(language *model.Language, files *[]string) {
 	packageJson := utils.GetFile(files, "package.json")
 
 	if packageJson != "" {
@@ -38,11 +41,26 @@ func (j JavaScriptEnricher) DoEnrichLanguage(language *language.Language, files 
 	}
 }
 
+func (j JavaScriptEnricher) DoEnrichComponent(component *model.Component) {
+	projectName := ""
+	packageJsonPath := filepath.Join(component.Path, "package.json")
+	if _, err := os.Stat(packageJsonPath); err == nil {
+		packageJson, err := utils.GetPackageJsonFile(packageJsonPath)
+		if err == nil {
+			projectName = packageJson.Name
+		}
+	}
+	if projectName == "" {
+		projectName = GetDefaultProjectName(component.Path)
+	}
+	component.Name = projectName
+}
+
 func (j JavaScriptEnricher) IsConfigValidForComponentDetection(language string, config string) bool {
 	return IsConfigurationValidForLanguage(language, config)
 }
 
-func detectJavaScriptFrameworks(language *language.Language, configFile string) {
+func detectJavaScriptFrameworks(language *model.Language, configFile string) {
 	for _, detector := range getJavaScriptFrameworkDetectors() {
 		detector.DoFrameworkDetection(language, configFile)
 	}

@@ -24,4 +24,5 @@ type Pom struct {
 	Modules struct {
 		Module string `xml:"module"`
 	} `xml:"modules,omitempty"`
+	ArtifactId string `xml:"artifactId"`
 }
