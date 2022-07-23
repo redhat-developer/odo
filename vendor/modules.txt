@@ -126,6 +126,9 @@ github.com/containerd/containerd/remotes/docker/schema1
 github.com/containerd/containerd/remotes/errors
 github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
+# github.com/coreos/go-semver v0.3.0
+## explicit
+github.com/coreos/go-semver/semver
 # github.com/creack/pty v1.1.17
 ## explicit; go 1.13
 github.com/creack/pty
@@ -587,12 +590,11 @@ github.com/openshift/oc/pkg/helpers/tokencmd
 ## explicit; go 1.17
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/operators
-github.com/operator-framework/api/pkg/operators/v1
 github.com/operator-framework/api/pkg/operators/v1alpha1
-github.com/operator-framework/api/pkg/operators/v1alpha2
-github.com/operator-framework/api/pkg/operators/v2
-# github.com/operator-framework/operator-lifecycle-manager v0.21.2
-## explicit; go 1.17
+# github.com/operator-framework/operator-lifecycle-manager v3.11.0+incompatible
+## explicit
+github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators
+github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1
 # github.com/pborman/uuid v1.2.1
@@ -994,6 +996,8 @@ k8s.io/api/storage/v1beta1
 ## explicit; go 1.16
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
 # k8s.io/apimachinery v0.23.2
 ## explicit; go 1.16
 k8s.io/apimachinery/pkg/api/equality

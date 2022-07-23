@@ -32,7 +32,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
 	github.com/openshift/oc v0.0.0-alpha.0.0.20220402064836-f1f09a392fd1
 	github.com/operator-framework/api v0.14.1-0.20220413143725-33310d6154f3
-	github.com/operator-framework/operator-lifecycle-manager v0.21.2
+	github.com/operator-framework/operator-lifecycle-manager v3.11.0+incompatible
 	github.com/pborman/uuid v1.2.1
 	github.com/posener/complete v1.2.3
 	github.com/redhat-developer/alizer/go v0.0.0-20220714080930-59b004fd4586
@@ -85,6 +85,7 @@ require (
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.2 // indirect
+	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/creack/pty v1.1.17 // indirect
 	github.com/danieljoos/wincred v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
