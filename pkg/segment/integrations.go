@@ -24,7 +24,6 @@ func getTelemetryForDevfileRegistry() (registryLibrary.TelemetryData, error) {
 	}
 
 	if !IsTelemetryEnabled(cfg) {
-		// should also take into account the file envvar.
 		return td, nil
 	}
 
