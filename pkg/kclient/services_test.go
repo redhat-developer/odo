@@ -12,11 +12,12 @@ import (
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	"github.com/devfile/library/pkg/testingutil"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 
 	ktesting "k8s.io/client-go/testing"
 )
@@ -211,7 +212,7 @@ func TestListServices(t *testing.T) {
 		{
 			name: "case 1: returned 3 services",
 			args: args{
-				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode),
+				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode, false),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: odoTestingUtil.FakeKubeServices("nodejs"),
@@ -221,7 +222,7 @@ func TestListServices(t *testing.T) {
 		{
 			name: "case 2: no service returned",
 			args: args{
-				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode),
+				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode, false),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: nil,
@@ -268,7 +269,7 @@ func TestClient_GetOneServiceFromSelector(t *testing.T) {
 		{
 			name: "case 1: returned the correct service",
 			args: args{
-				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode),
+				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode, false),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: []corev1.Service{
@@ -280,7 +281,7 @@ func TestClient_GetOneServiceFromSelector(t *testing.T) {
 		{
 			name: "case 2: no service returned",
 			args: args{
-				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode),
+				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode, false),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: nil,
@@ -290,7 +291,7 @@ func TestClient_GetOneServiceFromSelector(t *testing.T) {
 		{
 			name: "case 3: more than one service returned",
 			args: args{
-				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode),
+				selector: odolabels.GetSelector("nodejs", "app", odolabels.ComponentDevMode, false),
 			},
 			returnedServices: corev1.ServiceList{
 				Items: odoTestingUtil.FakeKubeServices("nodejs"),

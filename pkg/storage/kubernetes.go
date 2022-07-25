@@ -41,7 +41,7 @@ func (k kubernetesClient) Create(storage Storage) error {
 		return err
 	}
 
-	labels := odolabels.GetLabels(k.componentName, k.appName, odolabels.ComponentDevMode)
+	labels := odolabels.GetLabels(k.componentName, k.appName, odolabels.ComponentDevMode, false)
 	odolabels.AddStorageInfo(labels, storage.Name, strings.Contains(storage.Name, OdoSourceVolume))
 
 	objectMeta := generator.GetObjectMeta(pvcName, k.client.GetCurrentNamespace(), labels, nil)
@@ -86,8 +86,7 @@ func (k kubernetesClient) Delete(name string) error {
 func (k kubernetesClient) List() (StorageList, error) {
 	if k.deployment == nil {
 		var err error
-		// FIXME: Find a better way to add the component label to selector
-		selector := fmt.Sprintf("%s,component=%s", odolabels.GetSelector(k.componentName, k.appName, odolabels.ComponentAnyMode), k.componentName)
+		selector := odolabels.GetSelector(k.componentName, k.appName, odolabels.ComponentAnyMode, true)
 		k.deployment, err = k.client.GetOneDeploymentFromSelector(selector)
 		if err != nil {
 			if _, ok := err.(*kclient.DeploymentNotFoundError); ok {

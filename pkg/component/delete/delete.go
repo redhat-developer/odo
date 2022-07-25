@@ -37,7 +37,7 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
 func (do *DeleteComponentClient) ListClusterResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
-	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentAnyMode)
+	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentAnyMode, false)
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 	klog.V(4).Infof("Gathering information for component: %q", componentName)
 
 	klog.V(3).Infof("Checking component status for %q", componentName)
-	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false)
 	pod, err := do.kubeClient.GetRunningPodFromSelector(selector)
 	if err != nil {
 		klog.V(1).Info("Component not found on the cluster.")

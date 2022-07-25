@@ -113,8 +113,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
-	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
-	labels["component"] = a.ComponentName
+	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, true)
 
 	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
 	if err != nil {
@@ -359,10 +358,7 @@ func (a *Adapter) createOrUpdateComponent(
 	}
 
 	// Set the labels
-	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode)
-	// This label is only applied to the core resources created by odo dev;
-	// it is the only thing that sets these resources apart from other resources that might be created during the session
-	labels["component"] = componentName
+	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode, true)
 
 	annotations := make(map[string]string)
 	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))

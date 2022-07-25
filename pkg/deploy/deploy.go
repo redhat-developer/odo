@@ -58,7 +58,7 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-	return component2.CommonApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.devfileObj, kubernetes, o.kubeClient, o.path)
+	return component2.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.devfileObj, kubernetes, o.kubeClient, o.path)
 }
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml

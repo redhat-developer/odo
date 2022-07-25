@@ -1,13 +1,14 @@
 package testingutil
 
 import (
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
 func FakeKubeService(componentName, serviceName string) corev1.Service {
-	labels := odolabels.GetLabels(componentName, "app", odolabels.ComponentDevMode)
+	labels := odolabels.GetLabels(componentName, "app", odolabels.ComponentDevMode, false)
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   serviceName,

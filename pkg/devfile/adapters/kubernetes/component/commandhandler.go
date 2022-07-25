@@ -42,7 +42,7 @@ func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
 }
 
 func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
-	return CommonApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.Devfile, kubernetes, a.kubeClient, a.parameters.Path)
+	return ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.Devfile, kubernetes, a.kubeClient, a.parameters.Path)
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
@@ -130,7 +130,14 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 		fmt.Sprintf("Devfile command %q exited with an error status in %.0f second(s)", devfileCmd.Id, totalWaitTime))
 }
 
-func CommonApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kubernetes devfilev1.Component, kubeClient kclient.ClientInterface, path string) error {
+// ApplyKubernetes contains the logic to create the k8s resources defined by the `apply` command
+// mode(Dev, Deploy): the mode in which the resources are deployed
+// appName: application name
+// devfile: the devfile object
+// kubernetes: the kubernetes devfile component to be deployed
+// kubeClient: Kubernetes client to be used to deploy the resource
+// path: path to the context directory
+func ApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kubernetes devfilev1.Component, kubeClient kclient.ClientInterface, path string) error {
 	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
 	_, err := ValidateResourceExist(kubeClient, devfile, kubernetes, path)
 	if err != nil {
@@ -139,7 +146,7 @@ func CommonApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kube
 
 	// Get the most common labels that's applicable to all resources being deployed.
 	// Set the mode. Regardless of what Kubernetes resource we are deploying.
-	labels := odolabels.GetLabels(devfile.Data.GetMetadata().Name, appName, mode)
+	labels := odolabels.GetLabels(devfile.Data.GetMetadata().Name, appName, mode, false)
 
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
 
