@@ -137,6 +137,11 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 		cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
 		// If a specific mode is asked for, then make sure it matches with the cr's mode.
 		if err != nil || (mode != odolabels.ComponentAnyMode && odolabels.GetMode(cr.GetLabels()) != mode) {
+			if cr != nil {
+				klog.V(4).Infof("Ignoring resource: %s/%s; its mode(%s) does not match with the given mode(%s)", gvr.Resource.Resource, lr.GetName(), odolabels.GetMode(cr.GetLabels()), mode)
+			} else {
+				klog.V(4).Infof("Ignoring resource: %s/%s; it does not exist on the cluster", gvr.Resource.Resource, lr.GetName())
+			}
 			continue
 		}
 		resources = append(resources, *cr)

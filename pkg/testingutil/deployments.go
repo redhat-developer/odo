@@ -27,7 +27,6 @@ func CreateFakeDeployment(podName string) *appsv1.Deployment {
 				WithComponentName(podName).
 				WithManager("odo").
 				WithMode(odolabels.ComponentDevMode).
-				WithComponent(podName).
 				Labels(),
 			Annotations: odolabels.Builder().WithProjectType(podName).Labels(),
 		},

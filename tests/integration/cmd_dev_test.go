@@ -1158,7 +1158,7 @@ var _ = Describe("odo dev command tests", func() {
 		var err error
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "devfile-composite-non-exec-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-non-exec-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			os.Setenv("PODMAN_CMD", "echo")
 			session, sessionOut, _, _, err = helper.StartDevMode()
 			Expect(err).ToNot(HaveOccurred())
