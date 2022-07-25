@@ -26,19 +26,24 @@ func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unst
 }
 
 func getAllResources(client dynamic.Interface, apis []apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
-	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var out []unstructured.Unstructured
+	outChan := make(chan []unstructured.Unstructured)
 
-	start := time.Now()
-	klog.V(2).Infof("starting to query %d APIs in concurrently", len(apis))
-
-	var errResult error
+	var apisOfInterest []apiResource
 	for _, api := range apis {
 		if !api.r.Namespaced {
 			klog.V(4).Infof("[query api] api (%s) is non-namespaced, skipping", api.r.Name)
 			continue
 		}
+		apisOfInterest = append(apisOfInterest, api)
+	}
+
+	start := time.Now()
+	klog.V(2).Infof("starting to query %d APIs in concurrently", len(apis))
+
+	var errResult error
+	for _, api := range apisOfInterest {
 		wg.Add(1)
 		go func(a apiResource) {
 			defer wg.Done()
@@ -49,11 +54,13 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 				errResult = err
 				return
 			}
-			mu.Lock()
-			out = append(out, v...)
-			mu.Unlock()
+			outChan <- v
 			klog.V(4).Infof("[query api]  done: %s, found %d apis", a.GroupVersionResource(), len(v))
 		}(api)
+	}
+
+	for i := 0; i < len(apisOfInterest); i++ {
+		out = append(out, <-outChan...)
 	}
 
 	klog.V(2).Infof("fired up all goroutines to query APIs")
