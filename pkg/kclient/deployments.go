@@ -69,8 +69,7 @@ func (c *Client) GetOneDeploymentFromSelector(selector string) (*appsv1.Deployme
 	return &deployments[0], nil
 }
 
-// GetDeploymentFromSelector returns an array of Deployment resources which
-// match the given selector
+// GetDeploymentFromSelector returns an array of Deployment resources which match the given selector
 func (c *Client) GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error) {
 	var deploymentList *appsv1.DeploymentList
 	var err error
