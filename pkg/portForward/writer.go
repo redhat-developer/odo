@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-
 	"github.com/redhat-developer/odo/pkg/api"
+	"github.com/redhat-developer/odo/pkg/log"
 
 	"k8s.io/klog"
 )
@@ -37,11 +37,6 @@ func NewPortWriter(buffer io.Writer, len int, mapping map[string][]int) *PortWri
 
 func (o *PortWriter) Write(buf []byte) (n int, err error) {
 
-	// Set the colours to green (to indicate that the port is OPEN)
-	// as well as bold. So it stands our that the application is currently
-	// being port forwarded.
-	color.Set(color.FgGreen, color.Bold)
-	defer color.Unset() // Use it in your function
 	s := string(buf)
 	if strings.HasPrefix(s, "Forwarding from 127.0.0.1") {
 
@@ -52,7 +47,8 @@ func (o *PortWriter) Write(buf []byte) (n int, err error) {
 			klog.V(4).Infof("unable to get forwarded port: %v", err)
 		}
 
-		fmt.Fprintf(o.buffer, " - %s", s)
+		// Also set the colour to bolded green for easier readability
+		fmt.Fprintf(o.buffer, " -  %s", log.SboldColor(color.FgGreen, s))
 		o.len--
 		if o.len == 0 {
 			o.end <- true
