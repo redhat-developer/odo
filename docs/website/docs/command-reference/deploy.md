@@ -65,6 +65,8 @@ components:
                   image: {{CONTAINER_IMAGE}}
 ```
 
+Note that the `uri` for the Dockerfile could also be an HTTP or HTTPS URL.
+
 ## Sustituting variables
 
 The Devfile can define variables to make the Devfile parameterizable. The Devfile can define values for these variables, and you 
