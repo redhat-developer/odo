@@ -72,6 +72,9 @@ Examples:
 Main Commands:{{range .Commands}}{{if eq .Annotations.command "main"}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
 
+Management Commands:{{range .Commands}}{{if eq .Annotations.command "management"}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+
 OpenShift Commands:{{range .Commands}}{{if eq .Annotations.command "openshift"}}
   {{rpad .Name .NamePadding }} {{.Short}} {{end}}{{end}}
 

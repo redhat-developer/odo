@@ -24,7 +24,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf("%s\n",
 			namespaceSetCmd.Example,
 		),
-		Annotations: map[string]string{"command": "main"},
+		Annotations: map[string]string{"command": "management"},
 	}
 
 	setCmd.AddCommand(namespaceSetCmd)
