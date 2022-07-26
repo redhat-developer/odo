@@ -299,13 +299,13 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			fields: fields{
 				componentName: "nodejs",
 				appName:       "app",
-				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs"),
+				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs", false),
 			},
 			args: args{
-				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				labels:      odoTestingUtil.CreateFakeDeployment("nodejs", false).Labels,
 				annotations: nil,
 			},
-			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs", false).Labels, nil),
 			wantErr: false,
 		},
 		{
@@ -316,10 +316,10 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 				deployment:    nil,
 			},
 			args: args{
-				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				labels:      odoTestingUtil.CreateFakeDeployment("nodejs", false).Labels,
 				annotations: nil,
 			},
-			want:    generator.GetObjectMeta(namespacedKubernetesName, "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, nil),
+			want:    generator.GetObjectMeta(namespacedKubernetesName, "project-0", odoTestingUtil.CreateFakeDeployment("nodejs", false).Labels, nil),
 			wantErr: false,
 		},
 		{
@@ -327,13 +327,13 @@ func TestAdapter_generateDeploymentObjectMeta(t *testing.T) {
 			fields: fields{
 				componentName: "nodejs",
 				appName:       "app",
-				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs"),
+				deployment:    odoTestingUtil.CreateFakeDeployment("nodejs", false),
 			},
 			args: args{
-				labels:      odoTestingUtil.CreateFakeDeployment("nodejs").Labels,
+				labels:      odoTestingUtil.CreateFakeDeployment("nodejs", false).Labels,
 				annotations: odolabels.Builder().WithMode(odolabels.ComponentDevMode).Labels(),
 			},
-			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs").Labels, odolabels.Builder().WithMode(odolabels.ComponentDevMode).Labels()),
+			want:    generator.GetObjectMeta("nodejs", "project-0", odoTestingUtil.CreateFakeDeployment("nodejs", false).Labels, odolabels.Builder().WithMode(odolabels.ComponentDevMode).Labels()),
 			wantErr: false,
 		},
 	}

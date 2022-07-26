@@ -42,8 +42,8 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeployment("nodejs"),
-					*testingutil.CreateFakeDeployment("nodejs"),
+					*testingutil.CreateFakeDeployment("nodejs", true),
+					*testingutil.CreateFakeDeployment("nodejs", true),
 				},
 			},
 			wantErr: true,
@@ -72,7 +72,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 			},
 			returnedDeployments: &appsv1.DeploymentList{
 				Items: []appsv1.Deployment{
-					*testingutil.CreateFakeDeployment("nodejs"),
+					*testingutil.CreateFakeDeployment("nodejs", true),
 				},
 			},
 			want:    StorageList{},
@@ -93,7 +93,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 							{Name: "volume-0-vol", MountPath: "/data"},
 							{Name: "volume-1-vol", MountPath: "/path"},
 						}),
-					}, []corev1.Container{}),
+					}, []corev1.Container{}, true),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
@@ -128,7 +128,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 						testingutil.CreateFakeContainerWithVolumeMounts("container-1", []corev1.VolumeMount{
 							{Name: "volume-1-vol", MountPath: "/path"},
 						}),
-					}, []corev1.Container{}),
+					}, []corev1.Container{}, true),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
@@ -161,7 +161,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 							{Name: "volume-0-vol", MountPath: "/data"},
 						}),
 						testingutil.CreateFakeContainer("container-1"),
-					}, []corev1.Container{}),
+					}, []corev1.Container{}, true),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
@@ -186,7 +186,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 						testingutil.CreateFakeContainerWithVolumeMounts("container-0", []corev1.VolumeMount{
 							{Name: "volume-0-nodejs-vol", MountPath: "/data"},
 						}),
-					}, []corev1.Container{}),
+					}, []corev1.Container{}, true),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
@@ -220,7 +220,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 							{Name: "volume-1-vol", MountPath: "/path"},
 							{Name: "volume-vol", MountPath: "/path1"},
 						}),
-					}, []corev1.Container{}),
+					}, []corev1.Container{}, true),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{
@@ -251,7 +251,7 @@ func Test_kubernetesClient_List(t *testing.T) {
 							{Name: "volume-1-vol", MountPath: "/path"},
 							{Name: OdoSourceVolume, MountPath: "/path1"},
 						}),
-					}, []corev1.Container{}),
+					}, []corev1.Container{}, true),
 				},
 			},
 			returnedPVCs: &corev1.PersistentVolumeClaimList{

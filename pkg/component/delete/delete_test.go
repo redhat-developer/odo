@@ -242,8 +242,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 	innerLoopCoreDeploymentName, _ := util.NamespaceKubernetesObject(compName, appName)
 
 	// innerLoopCoreDeployment is the deployment created by odo dev for the component
-	innerLoopCoreDeployment := odoTestingUtil.CreateFakeDeployment(compName)
-	innerLoopCoreDeployment.Labels["component"] = compName
+	innerLoopCoreDeployment := odoTestingUtil.CreateFakeDeployment(compName, true)
 
 	innerLoopCoreDeploymentUnstructured, e := kclient.ConvertK8sResourceToUnstructured(innerLoopCoreDeployment)
 	if e != nil {

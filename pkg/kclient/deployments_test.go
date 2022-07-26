@@ -158,10 +158,10 @@ func TestGetDeploymentByName(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "mydeploy2" {
-					emptyDeployment := odoTestingUtil.CreateFakeDeployment("")
+					emptyDeployment := odoTestingUtil.CreateFakeDeployment("", false)
 					return true, emptyDeployment, nil
 				} else if tt.deploymentName == "mydeploy1" {
-					deployment := odoTestingUtil.CreateFakeDeployment(tt.deploymentName)
+					deployment := odoTestingUtil.CreateFakeDeployment(tt.deploymentName, false)
 					return true, deployment, nil
 				} else {
 					return true, nil, errors.New("deployment get error")
