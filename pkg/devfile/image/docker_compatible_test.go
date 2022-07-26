@@ -113,6 +113,26 @@ func TestGetShellCommand(t *testing.T) {
 				"cli", "build", "-t", "registry.io/myimagename:tag", "-f", filepath.Join(devfilePath, "Dockerfile.rhel"), devfilePath,
 			},
 		},
+		{
+			name:    "using an absolute Dockerfile path",
+			cmdName: "cli",
+			image: &devfile.ImageComponent{
+				Image: devfile.Image{
+					ImageName: "registry.io/myimagename:tag",
+					ImageUnion: devfile.ImageUnion{
+						Dockerfile: &devfile.DockerfileImage{
+							DockerfileSrc: devfile.DockerfileSrc{
+								Uri: filepath.Join("/", "path", "to", "Dockerfile.rhel"),
+							},
+						},
+					},
+				},
+			},
+			devfilePath: devfilePath,
+			want: []string{
+				"cli", "build", "-t", "registry.io/myimagename:tag", "-f", filepath.Join("/", "path", "to", "Dockerfile.rhel"), devfilePath,
+			},
+		},
 	}
 
 	for _, tt := range tests {

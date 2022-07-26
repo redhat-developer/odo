@@ -124,7 +124,10 @@ func resolveDockerfile(fs filesystem.Filesystem, uri string) (string, bool, erro
 func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
 	var shellCmd []string
 	imageName := image.ImageName
-	dockerfile := filepath.Join(devfilePath, dockerfilePath)
+	dockerfile := dockerfilePath
+	if !filepath.IsAbs(dockerfile) {
+		dockerfile = filepath.Join(devfilePath, dockerfilePath)
+	}
 	buildpath := image.Dockerfile.BuildContext
 	if buildpath == "" {
 		buildpath = devfilePath
