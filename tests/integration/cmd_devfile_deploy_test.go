@@ -2,8 +2,11 @@ package integration
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path"
 	"path/filepath"
+	"regexp"
 
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
@@ -283,4 +286,86 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			})
 		}
 	})
+
+	for _, env := range [][]string{
+		{"PODMAN_CMD=echo"},
+		{
+			"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+			"DOCKER_CMD=echo",
+		},
+	} {
+		env := env
+		Describe("using a Devfile with an image component using a remote Dockerfile", func() {
+
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"),
+					path.Join(commonVar.Context, "devfile.yaml"))
+			})
+
+			When("remote server returns an error", func() {
+				var server *httptest.Server
+				var url string
+				BeforeEach(func() {
+					server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.WriteHeader(http.StatusNotFound)
+					}))
+					url = server.URL
+
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
+				})
+
+				AfterEach(func() {
+					server.Close()
+				})
+
+				It("should not build images", func() {
+					cmdWrapper := helper.Cmd("odo", "deploy").AddEnv(env...).ShouldFail()
+					stderr := cmdWrapper.Err()
+					stdout := cmdWrapper.Out()
+					Expect(stderr).To(ContainSubstring("failed to retrieve " + url))
+					Expect(stdout).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
+					Expect(stdout).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
+				})
+			})
+
+			When("remote server returns a valid file", func() {
+				var buildRegexp string
+				var server *httptest.Server
+				var url string
+
+				BeforeEach(func() {
+					buildRegexp = regexp.QuoteMeta("build -t quay.io/unknown-account/myimage -f ") +
+						".*\\.dockerfile " + regexp.QuoteMeta(commonVar.Context)
+					server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						fmt.Fprintf(w, `# Dockerfile
+FROM node:8.11.1-alpine
+COPY . /app
+WORKDIR /app
+RUN npm install
+CMD ["npm", "start"]
+`)
+					}))
+					url = server.URL
+
+					helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
+				})
+
+				AfterEach(func() {
+					server.Close()
+				})
+
+				It("should run odo deploy", func() {
+					stdout := helper.Cmd("odo", "deploy").AddEnv(env...).ShouldPass().Out()
+
+					By("building and pushing images", func() {
+						lines, _ := helper.ExtractLines(stdout)
+						_, ok := helper.FindFirstElementIndexMatchingRegExp(lines, buildRegexp)
+						Expect(ok).To(BeTrue(), "build regexp not found in output: "+buildRegexp)
+						Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+					})
+				})
+			})
+		})
+	}
 })
