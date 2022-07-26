@@ -10,8 +10,12 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
-	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/klog"
+
+	dfutil "github.com/devfile/library/pkg/util"
+
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // This backend uses a CLI compatible with the docker CLI (at least docker itself and podman)
@@ -70,6 +74,38 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 
 	buildSpinner.End(true)
 	return nil
+}
+
+// resolveDockerfile resolves the specified Dockerfile URI.
+// For now, it only supports resolving HTTP(S) URIs, in which case it downloads the remote file
+// to a temporary file. The path to that temporary file is then returned.
+//
+// In all other cases, the specified URI path is returned as is.
+// This means that non-HTTP(S) URIs will *not* get resolved, but will be returned as is.
+//
+// In addition to the path, a boolean and a potential error is returned. The boolean indicates whether
+// the returned path is a temporary one; in such case, it is the caller's responsibility to delete this file
+// once it is done working with the file.
+func resolveDockerfile(fs filesystem.Filesystem, uri string) (string, bool, error) {
+	uriLower := strings.ToLower(uri)
+	if strings.HasPrefix(uriLower, "http://") || strings.HasPrefix(uriLower, "https://") {
+		s := log.Spinner("Downloading Dockerfile")
+		defer s.End(false)
+		tempFile, err := fs.TempFile("", "odo_*.dockerfile")
+		if err != nil {
+			return "", false, err
+		}
+		dockerfile := tempFile.Name()
+		err = dfutil.DownloadFile(dfutil.DownloadParams{
+			Request: dfutil.HTTPRequestParams{
+				URL: uri,
+			},
+			Filepath: dockerfile,
+		})
+		s.End(err == nil)
+		return dockerfile, true, err
+	}
+	return uri, false, nil
 }
 
 //getShellCommand creates the docker compatible build command from detected backend,
