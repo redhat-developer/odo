@@ -12,6 +12,7 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // Backend is in interface that must be implemented by container runtimes
@@ -29,9 +30,9 @@ var getEnvFunc = os.Getenv
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error {
+func BuildPushImages(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, push bool) error {
 
-	backend, err := selectBackend()
+	backend, err := selectBackend(fs)
 	if err != nil {
 		return err
 	}
@@ -57,8 +58,8 @@ func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error
 
 // BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(devfilePath string, component devfile.Component, push bool) error {
-	backend, err := selectBackend()
+func BuildPushSpecificImage(fs filesystem.Filesystem, devfilePath string, component devfile.Component, push bool) error {
+	backend, err := selectBackend(fs)
 	if err != nil {
 		return err
 	}
@@ -89,7 +90,7 @@ func buildPushImage(backend Backend, image *devfile.ImageComponent, devfilePath 
 // selectBackend selects the container backend to use for building and pushing images
 // It will detect podman and docker CLIs (in this order),
 // or return an error if none are present locally
-func selectBackend() (Backend, error) {
+func selectBackend(fs filesystem.Filesystem) (Backend, error) {
 
 	podmanCmd := getEnvFunc("PODMAN_CMD")
 	if podmanCmd == "" {
@@ -111,7 +112,7 @@ func selectBackend() (Backend, error) {
 			log.Warning("WARNING: Building images on Apple Silicon / M1 is not (yet) supported natively on Podman")
 			log.Warning("There is however a temporary workaround: https://github.com/containers/podman/discussions/12899")
 		}
-		return NewDockerCompatibleBackend(podmanCmd), nil
+		return NewDockerCompatibleBackend(podmanCmd, fs), nil
 	}
 
 	dockerCmd := getEnvFunc("DOCKER_CMD")
@@ -119,7 +120,7 @@ func selectBackend() (Backend, error) {
 		dockerCmd = "docker"
 	}
 	if _, err := lookPathCmd(dockerCmd); err == nil {
-		return NewDockerCompatibleBackend(dockerCmd), nil
+		return NewDockerCompatibleBackend(dockerCmd, fs), nil
 	}
 	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
 	return nil, errors.New("odo requires either Podman or Docker to be installed in your environment. Please install one of them and try again.")

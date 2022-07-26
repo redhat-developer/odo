@@ -1,7 +1,6 @@
 package image
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,29 +17,41 @@ import (
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
-// This backend uses a CLI compatible with the docker CLI (at least docker itself and podman)
+// DockerCompatibleBackend uses a CLI compatible with the docker CLI (at least docker itself and podman)
 type DockerCompatibleBackend struct {
 	name string
+	fs   filesystem.Filesystem
 }
 
 var _ Backend = (*DockerCompatibleBackend)(nil)
 
-func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
-	return &DockerCompatibleBackend{name: name}
+func NewDockerCompatibleBackend(name string, fs filesystem.Filesystem) *DockerCompatibleBackend {
+	return &DockerCompatibleBackend{
+		name: name,
+		fs:   fs,
+	}
 }
 
 // Build an image, as defined in devfile, using a Docker compatible CLI
 func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePath string) error {
 
-	if strings.HasPrefix(image.Dockerfile.Uri, "http") {
-		return errors.New("HTTP URL for uri is not supported")
+	dockerfile, isTemp, err := resolveDockerfile(o.fs, image.Dockerfile.Uri)
+	if isTemp {
+		defer func(path string) {
+			if e := o.fs.Remove(path); e != nil {
+				klog.V(3).Infof("could not remove temporary Dockerfile at path %q: %v", path, err)
+			}
+		}(dockerfile)
+	}
+	if err != nil {
+		return err
 	}
 
 	// We use a "No Spin" since we are outputting to stdout / stderr
 	buildSpinner := log.SpinnerNoSpin("Building image locally")
 	defer buildSpinner.End(false)
 
-	err := os.Setenv("PROJECTS_ROOT", devfilePath)
+	err = os.Setenv("PROJECTS_ROOT", devfilePath)
 	if err != nil {
 		return err
 	}
@@ -50,7 +61,7 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 		return err
 	}
 
-	shellCmd := getShellCommand(o.name, image, devfilePath)
+	shellCmd := getShellCommand(o.name, image, devfilePath, dockerfile)
 	klog.V(4).Infof("Running command: %v", shellCmd)
 	for i, cmd := range shellCmd {
 		shellCmd[i] = os.ExpandEnv(cmd)
@@ -110,10 +121,10 @@ func resolveDockerfile(fs filesystem.Filesystem, uri string) (string, bool, erro
 
 //getShellCommand creates the docker compatible build command from detected backend,
 //container image and devfile path
-func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) []string {
+func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
 	var shellCmd []string
 	imageName := image.ImageName
-	dockerfile := filepath.Join(devfilePath, image.Dockerfile.Uri)
+	dockerfile := filepath.Join(devfilePath, dockerfilePath)
 	buildpath := image.Dockerfile.BuildContext
 	if buildpath == "" {
 		buildpath = devfilePath

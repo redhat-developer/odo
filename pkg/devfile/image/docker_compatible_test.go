@@ -117,7 +117,7 @@ func TestGetShellCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getShellCommand(tt.cmdName, tt.image, tt.devfilePath)
+			got := getShellCommand(tt.cmdName, tt.image, tt.devfilePath, tt.image.Dockerfile.Uri)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("%s:\n  Expected %v,\n       got %v", tt.name, tt.want, got)
 			}

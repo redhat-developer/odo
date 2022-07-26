@@ -9,6 +9,7 @@ import (
 
 	parser "github.com/devfile/library/pkg/devfile/parser"
 	gomock "github.com/golang/mock/gomock"
+	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // MockClient is a mock of Client interface.
@@ -35,15 +36,15 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Deploy mocks base method.
-func (m *MockClient) Deploy(devfileObj parser.DevfileObj, path, appName string) error {
+func (m *MockClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path, appName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Deploy", devfileObj, path, appName)
+	ret := m.ctrl.Call(m, "Deploy", fs, devfileObj, path, appName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Deploy indicates an expected call of Deploy.
-func (mr *MockClientMockRecorder) Deploy(devfileObj, path, appName interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Deploy(fs, devfileObj, path, appName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deploy", reflect.TypeOf((*MockClient)(nil).Deploy), devfileObj, path, appName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deploy", reflect.TypeOf((*MockClient)(nil).Deploy), fs, devfileObj, path, appName)
 }

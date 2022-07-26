@@ -8,6 +8,8 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	gomock "github.com/golang/mock/gomock"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestBuildPushImage(t *testing.T) {
@@ -208,7 +210,7 @@ func TestSelectBackend(t *testing.T) {
 			defer func() { getEnvFunc = os.Getenv }()
 			lookPathCmd = tt.lookPathCmd
 			defer func() { lookPathCmd = exec.LookPath }()
-			backend, err := selectBackend()
+			backend, err := selectBackend(filesystem.NewFakeFs())
 			if tt.wantErr != (err != nil) {
 				t.Errorf("%s: Error result wanted %v, got %v", tt.name, tt.wantErr, err != nil)
 			}
