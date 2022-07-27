@@ -87,17 +87,17 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	return nil
 }
 
-// resolveDockerfile resolves the specified Dockerfile URI.
+// resolveAndDownloadDockerfile resolves and downloads (if needed) the specified Dockerfile URI.
 // For now, it only supports resolving HTTP(S) URIs, in which case it downloads the remote file
 // to a temporary file. The path to that temporary file is then returned.
 //
 // In all other cases, the specified URI path is returned as is.
 // This means that non-HTTP(S) URIs will *not* get resolved, but will be returned as is.
 //
-// In addition to the path, a boolean and a potential error is returned. The boolean indicates whether
+// In addition to the path, a boolean and a potential error are returned. The boolean indicates whether
 // the returned path is a temporary one; in such case, it is the caller's responsibility to delete this file
-// once it is done working with the file.
-func resolveDockerfile(fs filesystem.Filesystem, uri string) (string, bool, error) {
+// once it is done working with it.
+func resolveAndDownloadDockerfile(fs filesystem.Filesystem, uri string) (string, bool, error) {
 	uriLower := strings.ToLower(uri)
 	if strings.HasPrefix(uriLower, "http://") || strings.HasPrefix(uriLower, "https://") {
 		s := log.Spinner("Downloading Dockerfile")

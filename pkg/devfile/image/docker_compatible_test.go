@@ -145,7 +145,7 @@ func TestGetShellCommand(t *testing.T) {
 	}
 }
 
-func Test_resolveDockerfile(t *testing.T) {
+func Test_resolveAndDownloadDockerfile(t *testing.T) {
 	fakeFs := filesystem.NewFakeFs()
 
 	for _, tt := range []struct {
@@ -195,7 +195,7 @@ func Test_resolveDockerfile(t *testing.T) {
 			if server != nil {
 				defer server.Close()
 			}
-			got, gotIsTemp, err := resolveDockerfile(fakeFs, uri)
+			got, gotIsTemp, err := resolveAndDownloadDockerfile(fakeFs, uri)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("%s:\n  Expected error %v,\n       got %v", tt.name, tt.wantErr, err)
 			}
