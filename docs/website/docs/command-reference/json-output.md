@@ -25,25 +25,37 @@ from the devfiles in the registries defined in the list of preferred registries 
 The output of this command contains a list of devfile name and registry name:
 
 ```bash
-$ odo analyze -o json
+odo analyze -o json
+```
+```json
 [
 	{
 	    "devfile": "nodejs",
 	    "devfileRegistry": "DefaultDevfileRegistry"
 	}
 ]
-$ echo $?
+```
+```console
+echo $?
+```
+```console
 0
 ```
 
 If the command is executed in an empty directory, it will return an error in the standard error stream and terminate with a non-zero exit status:
 
 ```bash
-$ odo analyze -o json
+odo analyze -o json
+```
+```json
 {
 	"message": "No valid devfile found for project in /home/user/my/empty/directory"
 }
-$ echo $?
+```
+```console
+echo $?
+```
+```console
 1
 ```
 
@@ -58,6 +70,8 @@ $ odo init -o json \
     --name aname \
     --devfile go \
     --starter go-starter
+```
+```json
 {
 	"devfilePath": "/home/user/my-project/devfile.yaml",
 	"devfileData": {
@@ -75,7 +89,11 @@ $ odo init -o json \
 	"runningIn": [],
 	"managedBy": "odo"
 }
-$ echo $?
+```
+```console
+echo $?
+```
+```console
 0
 ```
 
@@ -87,10 +105,16 @@ $ odo init -o json \
     --name aname \
     --devfile go \
     --starter go-starter
+```
+```json
 {
 	"message": "a devfile already exists in the current directory"
 }
-$ echo $?
+```
+```console
+echo $?
+```
+```console
 1
 ```
 
@@ -109,7 +133,9 @@ When the `describe component` command is executed without parameter from a direc
   - the modes in which the component is deployed (either none, Dev, Deploy or both)
 
 ```bash
-$ odo describe component -o json
+odo describe component -o json
+```
+```json
 {
 	"devfilePath": "/home/phmartin/Documents/tests/tmp/devfile.yaml",
 	"devfileData": {
@@ -146,7 +172,9 @@ The command with name and namespace will never return information about the Devf
 The command with name and namespace will never return information about the forwarded ports, as the information resides in the directory of the Devfile.
 
 ```bash
-$ odo describe component --name aname -o json
+odo describe component --name aname -o json
+```
+```json
 {
 	"runningIn": ["Dev"],
 	"managedBy": "odo"
@@ -164,7 +192,9 @@ The `componentInDevfile` field gives the name of the component present in the `c
 In this example, the `component2` component is running in Deploy mode, and the command has been executed from a directory containing a Devfile defining a `component1` component, not running.
 
 ```bash
-$ odo list --namespace project1
+odo list --namespace project1
+```
+```json
 {
 	"componentInDevfile": "component1",
 	"components": [
@@ -193,7 +223,9 @@ The `odo registry` command lists all the Devfile stacks from Devfile registries.
 The default output will return information found into the registry index for stacks:
 
 ```shell
-$ odo registry -o json
+odo registry -o json
+```
+```json
 [
 	{
 		"name": "python-django",
@@ -222,7 +254,9 @@ $ odo registry -o json
 Using the `--details` flag, you will also get information about the Devfile:
 
 ```shell
-$ odo registry --details -o json
+odo registry --details -o json
+```
+```json
 [
 	{
 		"name": "python-django",
@@ -275,7 +309,9 @@ the component in the `status.bindingFiles` and/or `status.bindingEnvVars` fields
 When a service binding resource is defined in the Devfile, and the component is not deployed, you get an output similar to:
 
 ```shell
-$ odo list binding -o json
+odo list binding -o json
+```
+```json
 {
 	"bindingsInDevfile": [
 		"my-nodejs-app-cluster-sample"
@@ -308,7 +344,9 @@ With the same Devfile, when `odo dev` is running, you get an output similar to
 
 
 ```shell
-$ odo list binding -o json
+odo list binding -o json
+```
+```json
 {
 	"bindingsInDevfile": [
 		"my-nodejs-app-cluster-sample"
@@ -361,7 +399,9 @@ you get an output similar to (note that the `.bindingsInDevfile` field is not pr
 
 
 ```shell
-$ odo list binding -o json
+odo list binding -o json
+```
+```json
 {
 	"bindings": [
 		{
@@ -419,7 +459,9 @@ information from the deployed resource with the given name.
 Without a name, the output of the command is a list of service binding details, for example:
 
 ```shell
-$ odo describe binding -o json
+odo describe binding -o json
+```
+```json
 [
 	{
 		"name": "my-first-binding",
@@ -497,7 +539,9 @@ $ odo describe binding -o json
 When specifying a name, the output is a unique service binding:
 
 ```shell
-$ odo describe binding --name my-first-binding -o json
+odo describe binding --name my-first-binding -o json
+```
+```json
 {
 	"name": "my-first-binding",
 	"spec": {

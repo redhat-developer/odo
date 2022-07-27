@@ -19,14 +19,10 @@ To get more information about a specific service binding, you can run the comman
 ## Running the Command
 
 To list all the service bindings, you can run `odo list binding`:
-```shell
+```console
 odo list binding
 ```
-
-Example:
-
-```sh
-$ odo list binding
+```console
  NAME                              APPLICATION                     SERVICES                                                                            RUNNING IN 
  binding-to-redis                  my-nodejs-app-app (Deployment)  redis (Service)                                                                     Dev
  * my-nodejs-app-cluster-sample    my-nodejs-app-app (Deployment)  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)    Dev       

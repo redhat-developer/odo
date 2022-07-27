@@ -11,13 +11,10 @@ it will return a list of Project resources.
 ## Running the Command
 
 To list all the namespaces, you can run `odo list namespace`:
-```shell
+```console
 odo list namespace
 ```
-
-Example - 
-```sh
-$ odo list namespace
+```console
 ACTIVE     NAME
 *          default
            kube-node-lease
@@ -32,13 +29,10 @@ ACTIVE     NAME
  Optionally, you can also use `project` as an alias to `namespace`.
  
  To list all the projects, you can run `odo list project`:
- ```shell
+ ```console
  odo list project
  ```
-
- Example -
- ```sh
- $ odo list project
+ ```console
  ACTIVE     NAME
 *          default
            kube-node-lease

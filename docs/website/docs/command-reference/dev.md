@@ -14,8 +14,10 @@ If you haven't already done so, you must [initialize](../command-reference/init)
 
 Afterwards, run `odo dev`:
 
-```sh
-$ odo dev
+```console
+odo dev
+```
+```console
   __
  /  \__     Developing using the my-nodejs-app Devfile
  \__/  \    Namespace: default
@@ -73,8 +75,10 @@ For example, given the following excerpt from a Devfile:
 
 - running `odo dev` will build the application using the default `my-build` command.
 - running `odo dev --build-command my-build-with-version` will build the application using the `my-build-with-version` command:
-```shell
-$ odo dev --build-command my-build-with-version
+```console
+odo dev --build-command my-build-with-version
+```
+```console
 
   __
  /  \__     Developing using the my-sample-go Devfile
@@ -126,8 +130,10 @@ For example, given the following excerpt from a Devfile:
 
 - running `odo dev` will run the default `my-run` command
 - running `odo dev --run-command my-run-with-postgres` will run the `my-run-with-postgres` command:
-```shell
-$ odo dev --run-command my-run-with-postgres
+```console
+odo dev --run-command my-run-with-postgres
+```
+```console
 
   __
  /  \__     Developing using the my-java-springboot-app Devfile
@@ -177,7 +183,7 @@ This command will override the `USER` Devfile variable with the value of the `US
 It will also override the value of the `DEBUG` Devfile variable with the `true` value.
 
 ```shell
-$ odo dev --var USER --var DEBUG=true
+odo dev --var USER --var DEBUG=true
 ```
 
 If you create a file `config.vars` containing:
@@ -190,14 +196,14 @@ DEBUG=true
 The following command will have the same behaviour as the previous one:
 
 ```shell
-$ odo dev --var-file config.vars
+odo dev --var-file config.vars
 ```
 
 The following command will override the `USER` Devfile variable with the `john` value:
 
 
 ```shell
-$ odo dev --var USER=john --var-file config.vars
+odo dev --var USER=john --var-file config.vars
 ```
 
 ## Devfile (Advanced Usage)

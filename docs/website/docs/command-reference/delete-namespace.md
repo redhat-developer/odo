@@ -8,10 +8,7 @@ To delete a namespace you can run `odo delete namespace <name>`:
 ```shell
 odo delete namespace mynamespace
 ```
-
-Example:
 ```shell
-odo delete namespace mynamespace
  ✓  Namespace "mynamespace" deleted
 ```
 
@@ -21,10 +18,7 @@ To delete a project you can run `odo delete project <name>`:
 ```shell
 odo delete project myproject
 ```
-
-Example:
 ```shell
-odo delete project myproject    
   ✓  Project "myproject" deleted
 ```
 

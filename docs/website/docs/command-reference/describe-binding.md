@@ -35,8 +35,10 @@ For each of these resources, the following information is displayed:
 
 When the service binding are not deployed yet to the cluster:
 
-```shell
-$ odo describe binding
+```console
+odo describe binding
+```
+```console
 ServiceBinding used by the current component:
 
 Service Binding Name: my-nodejs-app-cluster-sample
@@ -60,8 +62,10 @@ Start "odo dev" first to see binding information.
 
 When the resources have been deployed to the cluster, the command also extracts information from the status of the resources to display information about the variables that can be used from the component.
 
-```shell
-$ odo describe binding 
+```console
+odo describe binding 
+```
+```console
 ServiceBinding used by the current component:
 
 Service Binding Name: my-nodejs-app-cluster-sample-2
@@ -98,7 +102,7 @@ Available binding information:
 
 ### Describe without access to Devfile
 
-```shell
+```console
 odo describe binding --name <component_name>
 ```
 

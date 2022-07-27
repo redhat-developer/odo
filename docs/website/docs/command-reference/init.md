@@ -33,8 +33,10 @@ The required `--name` flag indicates how the component initialized by this comma
 
 ### Interactive mode
 
+```console
+odo init
 ```
-$ odo init
+```console
 ? Select language: java
 ? Select project type: Maven Java (java-maven, registry: DefaultDevfileRegistry)
 ? Which starter project do you want to use? springbootproject
@@ -52,8 +54,10 @@ To deploy your component to a cluster use "odo deploy".
 
 In this example, the devfile will be downloaded from the **Staging** registry, which is the first one in the list containing the `nodejs-react` devfile.
 
+```console
+odo preference view
 ```
-$ odo preference view
+```console
 Preference parameters:
  PARAMETER           VALUE
  ConsentTelemetry    true
@@ -82,8 +86,10 @@ To deploy your component to a cluster use "odo deploy".
 
 In this example, the devfile will be downloaded from the **DefaultDevfileRegistry** registry, as explicitly indicated by the `--devfile-registry` flag.
 
+```console
+odo preference view
 ```
-$ odo preference view
+```console
 Preference parameters:
  PARAMETER           VALUE
  ConsentTelemetry    true
@@ -110,8 +116,10 @@ To deploy your component to a cluster use "odo deploy".
 
 ### Non-interactive mode from a URL
 
+```console
+odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
 ```
-$ odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
+```console
  ✓  Downloading devfile from "https://registry.devfile.io/devfiles/nodejs-angular" [415ms]
  ✓  Downloading starter project "nodejs-angular-starter" [484ms]
 

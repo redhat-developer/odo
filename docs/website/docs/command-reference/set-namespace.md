@@ -7,26 +7,20 @@ title: odo set namespace
 Executing this command inside a component directory will not update the namespace or project of the existing component.
 
 To set the current active namespace you can run `odo set namespace <name>`:
-```shell
+```console
 odo set namespace mynamespace
 ```
-
-Example:
-```shell
-odo set namespace mynamespace
+```console
  ✓  Current active namespace set to "mynamespace"
 ```
 
 Optionally, you can also use `project` as an alias to `namespace`.
 
 To set the current active project you can run `odo set project <name>`:
-```shell
+```console
 odo set project myproject
 ```
-
-Example:
-```shell
-odo set project myproject    
+```console
   ✓  Current active project set to "myproject"
 ```
 
