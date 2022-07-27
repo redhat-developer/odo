@@ -40,7 +40,7 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 	}
 
 	start := time.Now()
-	klog.V(2).Infof("starting to query %d APIs in concurrently", len(apis))
+	klog.V(2).Infof("starting to concurrently query %d APIs", len(apis))
 
 	var errResult error
 	for _, api := range apisOfInterest {
