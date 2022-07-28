@@ -6,7 +6,6 @@ import (
 	v1 "k8s.io/api/apps/v1"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/labels"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/log"
 )
@@ -45,21 +44,17 @@ type Client interface {
 }
 
 // NewClient gets the appropriate Storage client based on the parameters
-func NewClient(options ClientOptions) Client {
+func NewClient(componentName string, appName string, options ClientOptions) Client {
 	var genericInfo generic
 
 	if options.LocalConfigProvider != nil {
 		genericInfo = generic{
-			appName:             options.LocalConfigProvider.GetApplication(),
-			componentName:       options.LocalConfigProvider.GetName(),
 			localConfigProvider: options.LocalConfigProvider,
 		}
 	}
 
-	if options.Deployment != nil {
-		genericInfo.appName = labels.GetAppName(options.Deployment.Labels)
-		genericInfo.componentName = labels.GetComponentName(options.Deployment.Labels)
-	}
+	genericInfo.componentName = componentName
+	genericInfo.appName = appName
 
 	return kubernetesClient{
 		generic:    genericInfo,

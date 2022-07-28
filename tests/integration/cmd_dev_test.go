@@ -273,6 +273,7 @@ var _ = Describe("odo dev command tests", func() {
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+				helper.FileShouldNotContainSubstring(".odo/env/env.yaml", "Name: "+cmpName)
 			})
 
 			AfterEach(func() {
@@ -302,6 +303,12 @@ var _ = Describe("odo dev command tests", func() {
 						Not(BeEmpty()),
 						ContainSubstring(fmt.Sprintf("%s-app-", cmpName)),
 					))
+				})
+
+				// Returned pvc yaml contains ownerreference
+				By("creating a pvc with ownerreference", func() {
+					output := commonVar.CliRunner.Run("get", "pvc", "--namespace", commonVar.Project, "-o", `jsonpath='{range .items[*].metadata.ownerReferences[*]}{@..kind}{"/"}{@..name}{"\n"}{end}'`).Out.Contents()
+					Expect(string(output)).To(ContainSubstring(fmt.Sprintf("Deployment/%s-app", cmpName)))
 				})
 			})
 

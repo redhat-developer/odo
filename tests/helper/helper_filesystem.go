@@ -165,6 +165,13 @@ func FileShouldContainSubstring(file string, subString string) {
 	Expect(string(data)).To(ContainSubstring(subString))
 }
 
+// FileShouldNotContainSubstring check if file does not contain subString
+func FileShouldNotContainSubstring(file string, subString string) {
+	data, err := ioutil.ReadFile(file)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(string(data)).NotTo(ContainSubstring(subString))
+}
+
 // ReplaceString replaces oldString with newString in text file
 func ReplaceString(filename string, oldString string, newString string) {
 	fmt.Fprintf(GinkgoWriter, "Replacing \"%s\" with \"%s\" in %s\n", oldString, newString, filename)
