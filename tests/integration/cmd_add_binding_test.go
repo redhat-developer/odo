@@ -242,7 +242,7 @@ status:
 
 				When("odo dev is run", func() {
 					BeforeEach(func() {
-						devSession, _, _, _, err = helper.StartDevMode()
+						devSession, _, _, _, err = helper.StartDevMode(nil)
 						Expect(err).ToNot(HaveOccurred())
 					})
 					AfterEach(func() {

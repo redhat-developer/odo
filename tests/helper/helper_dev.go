@@ -24,7 +24,7 @@ import (
 		var outContents []byte
 		var errContents []byte
 		BeforeEach(func() {
-			devSession, outContents, errContents = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode(nil)
 		})
 		AfterEach(func() {
 			devSession.Stop()
@@ -48,7 +48,7 @@ import (
 		var outContents []byte
 		var errContents []byte
 		BeforeEach(func() {
-			devSession, outContents, errContents = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode(nil)
 			defer devSession.Stop()
 			[...]
 		})
@@ -71,7 +71,7 @@ import (
 		var outContents []byte
 		var errContents []byte
 		BeforeEach(func() {
-			devSession, outContents, errContents = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode(nil)
 			defer devSession.Kill()
 			[...]
 		})
@@ -115,10 +115,10 @@ type DevSession struct {
 // It returns a session structure, the contents of the standard and error outputs
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode(opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
+func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
 	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
-	session := CmdRunner("odo", args...)
+	session := Cmd("odo", args...).AddEnv(envvars...).Runner().session
 	WaitForOutputToContain("Press Ctrl+c to exit `odo dev` and delete resources from the cluster", 360, 10, session)
 	result := DevSession{
 		session: session,
@@ -184,8 +184,8 @@ func (o DevSession) CheckNotSynced(timeout time.Duration) {
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
 // The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
 // and a slice of strings - ports - giving the redirections in the form localhost:<port_number> to access ports opened by component
-func RunDevMode(additionalOpts []string, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
-	session, outContents, errContents, urls, err := StartDevMode(additionalOpts...)
+func RunDevMode(additionalOpts []string, envvars []string, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
+	session, outContents, errContents, urls, err := StartDevMode(envvars, additionalOpts...)
 	if err != nil {
 		return err
 	}

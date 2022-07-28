@@ -1,0 +1,94 @@
+schemaVersion: 2.2.0
+metadata:
+  name: nodejs
+variables:
+  CONTAINER_IMAGE: quay.io/unknown-account/myimage
+
+components:
+  - container:
+      endpoints:
+        - name: http-3000
+          targetPort: 3000
+        - name: tcp-5858
+          targetPort: 5858
+      image: registry.access.redhat.com/ubi8/nodejs-14:latest
+    name: runtime
+
+  - name: image-build-component
+    image:
+      imageName: "{{CONTAINER_IMAGE}}"
+      dockerfile:
+        uri: ./Dockerfile
+
+  - name: my-k8s-resource
+    kubernetes:
+      inlined: |
+        kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: my-component
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: node-app
+          template:
+            metadata:
+              labels:
+                app: node-app
+            spec:
+              containers:
+                - name: main
+                  image: "{{CONTAINER_IMAGE}}"
+                  resources:
+                    limits:
+                      memory: "128Mi"
+                      cpu: "500m"
+commands:
+  - id: build-image
+    apply:
+      component: image-build-component
+
+  - id: create-k8s-resource
+    apply:
+      component: my-k8s-resource
+
+  - id: install
+    exec:
+      commandLine: npm install
+      component: runtime
+      workingDir: /projects
+
+  - id: start
+    exec:
+      workingDir: /projects
+      commandLine: npm start
+      component: runtime
+
+  - id: start-debug
+    exec:
+      workingDir: /projects
+      commandLine: npm run debug
+      component: runtime
+
+  - id: run
+    composite:
+      commands:
+        - build-image
+        - create-k8s-resource
+        - install
+        - start
+      group:
+        isDefault: true
+        kind: run
+
+  - id: debug
+    composite:
+      commands:
+        - build-image
+        - create-k8s-resource
+        - install
+        - start-debug
+      group:
+        isDefault: true
+        kind: debug

@@ -40,7 +40,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			var ports map[string]string
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, ports, err = helper.StartDevMode("--debug")
+				devSession, _, _, ports, err = helper.StartDevMode(nil, "--debug")
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -66,7 +66,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			var err error
-			session, stdout, stderr, ports, err = helper.StartDevMode("--debug")
+			session, stdout, stderr, ports, err = helper.StartDevMode(nil, "--debug")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -122,6 +122,72 @@ var _ = Describe("odo dev debug command tests", func() {
 			})
 		})
 	})
+	FWhen("a composite apply command is used as debug command", func() {
+		deploymentName := "my-component"
+		var session helper.DevSession
+		var sessionOut []byte
+		var err error
+		var ports map[string]string
+		const (
+			DEVFILE_DEBUG_PORT = "5858"
+		)
+
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands-debug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"}, "--debug")
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			session.Stop()
+			session.WaitEnd()
+		})
+		It("should execute the non-exec composite commands successfully", func() {
+			checkDeploymentExists := func() {
+				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
+				Expect(out).To(ContainSubstring(deploymentName))
+			}
+			checkImageBuilt := func() {
+				Expect(string(sessionOut)).To(ContainSubstring("Building & Pushing Container"))
+				Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+				Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+			}
+
+			checkWSConnection := func() {
+				// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+				// We are just using this to validate if nodejs agent is listening on the other side
+				helper.HttpWaitForWithStatus("http://"+ports[DEVFILE_DEBUG_PORT], "WebSockets request was expected", 12, 5, 400)
+			}
+			By("expecting a ws connection when tried to connect on default debug port locally", func() {
+				checkWSConnection()
+			})
+
+			By("checking is the image was successfully built", func() {
+				checkImageBuilt()
+			})
+
+			By("checking the deployment was created successfully", func() {
+				checkDeploymentExists()
+			})
+
+			By("checking odo dev watches correctly", func() {
+				// making changes to the project again
+				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
+				_, _, _, err = session.WaitSync()
+				Expect(err).ToNot(HaveOccurred())
+				checkDeploymentExists()
+				checkImageBuilt()
+				checkWSConnection()
+			})
+
+			By("cleaning up the resources on ending the session", func() {
+				session.Stop()
+				session.WaitEnd()
+				out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
+				Expect(out).ToNot(ContainSubstring(deploymentName))
+			})
+		})
+	})
 
 	When("running build and debug commands as composite in different containers and a shared volume", func() {
 		const devfileCmpName = "nodejs"
@@ -135,7 +201,7 @@ var _ = Describe("odo dev debug command tests", func() {
 				filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			var err error
-			session, stdout, stderr, ports, err = helper.StartDevMode("--debug")
+			session, stdout, stderr, ports, err = helper.StartDevMode(nil, "--debug")
 			Expect(err).ToNot(HaveOccurred())
 		})
 

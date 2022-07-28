@@ -102,7 +102,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				})
 
 				It("should run odo dev successfully", func() {
-					session, _, _, _, err := helper.StartDevMode()
+					session, _, _, _, err := helper.StartDevMode(nil)
 					Expect(err).ToNot(HaveOccurred())
 					session.Kill()
 					session.WaitEnd()
@@ -138,7 +138,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 				When("running and stopping odo dev", func() {
 					BeforeEach(func() {
-						session, _, _, _, err := helper.StartDevMode()
+						session, _, _, _, err := helper.StartDevMode(nil)
 						Expect(err).ShouldNot(HaveOccurred())
 						session.Stop()
 						session.WaitEnd()
