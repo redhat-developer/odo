@@ -18,7 +18,7 @@ import (
 // Backend is in interface that must be implemented by container runtimes
 type Backend interface {
 	// Build the image as defined in the devfile.
-	// The filesystem specified will be used to download and store the Dockerfile it is referenced as a remote URL.
+	// The filesystem specified will be used to download and store the Dockerfile if it is referenced as a remote URL.
 	Build(fs filesystem.Filesystem, image *devfile.ImageComponent, devfilePath string) error
 	// Push the image to its registry as defined in the devfile
 	Push(image string) error
