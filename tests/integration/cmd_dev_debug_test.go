@@ -122,7 +122,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			})
 		})
 	})
-	FWhen("a composite apply command is used as debug command", func() {
+	When("a composite apply command is used as debug command", func() {
 		deploymentName := "my-component"
 		var session helper.DevSession
 		var sessionOut []byte
@@ -134,7 +134,7 @@ var _ = Describe("odo dev debug command tests", func() {
 
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands-debug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"}, "--debug")
 			Expect(err).ToNot(HaveOccurred())
 		})

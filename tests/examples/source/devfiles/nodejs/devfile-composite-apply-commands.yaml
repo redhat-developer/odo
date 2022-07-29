@@ -9,6 +9,8 @@ components:
       endpoints:
         - name: http-3000
           targetPort: 3000
+        - name: tcp-5858
+          targetPort: 5858
       image: registry.access.redhat.com/ubi8/nodejs-14:latest
     name: runtime
 
@@ -63,6 +65,12 @@ commands:
       commandLine: npm start
       component: runtime
 
+  - id: start-debug
+    exec:
+      workingDir: /projects
+      commandLine: npm run debug
+      component: runtime
+
   - id: run
     composite:
       commands:
@@ -73,3 +81,14 @@ commands:
       group:
         isDefault: true
         kind: run
+
+  - id: debug
+    composite:
+      commands:
+        - build-image
+        - create-k8s-resource
+        - install
+        - start-debug
+      group:
+        isDefault: true
+        kind: debug
