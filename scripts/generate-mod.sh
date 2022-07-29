@@ -6,6 +6,8 @@ rm -f go.mod go.sum
 
 go mod init github.com/redhat-developer/odo
 
+K8S_IO_VERSION="v0.24.3"
+
 go mod edit -require oras.land/oras-go@v0.4.0 # for github.com/devfile/registry-support
 
 # for odo
@@ -30,6 +32,11 @@ go mod edit -require github.com/fatih/color@v1.13.0
 go mod edit -require github.com/jedib0t/go-pretty/v6@v6.3.5
 go mod edit -require github.com/golang/mock@v1.6.0
 go mod edit -require k8s.io/klog/v2@v2.70.1
+go mod edit -require k8s.io/client-go@$K8S_IO_VERSION
+go mod edit -require k8s.io/api@$K8S_IO_VERSION
+go mod edit -require k8s.io/apimachinery@$K8S_IO_VERSION
+go mod edit -require k8s.io/cli-runtime@$K8S_IO_VERSION
+go mod edit -require k8s.io/kubectl@$K8S_IO_VERSION
 
 go mod tidy -compat=1.17 # why?
 
