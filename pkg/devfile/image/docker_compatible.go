@@ -20,25 +20,21 @@ import (
 // DockerCompatibleBackend uses a CLI compatible with the docker CLI (at least docker itself and podman)
 type DockerCompatibleBackend struct {
 	name string
-	fs   filesystem.Filesystem
 }
 
 var _ Backend = (*DockerCompatibleBackend)(nil)
 
-func NewDockerCompatibleBackend(name string, fs filesystem.Filesystem) *DockerCompatibleBackend {
-	return &DockerCompatibleBackend{
-		name: name,
-		fs:   fs,
-	}
+func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
+	return &DockerCompatibleBackend{name: name}
 }
 
 // Build an image, as defined in devfile, using a Docker compatible CLI
-func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePath string) error {
+func (o *DockerCompatibleBackend) Build(fs filesystem.Filesystem, image *devfile.ImageComponent, devfilePath string) error {
 
-	dockerfile, isTemp, err := resolveAndDownloadDockerfile(o.fs, image.Dockerfile.Uri)
+	dockerfile, isTemp, err := resolveAndDownloadDockerfile(fs, image.Dockerfile.Uri)
 	if isTemp {
 		defer func(path string) {
-			if e := o.fs.Remove(path); e != nil {
+			if e := fs.Remove(path); e != nil {
 				klog.V(3).Infof("could not remove temporary Dockerfile at path %q: %v", path, err)
 			}
 		}(dockerfile)
