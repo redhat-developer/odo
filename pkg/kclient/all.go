@@ -3,8 +3,8 @@ package kclient
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"strings"
-	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +26,6 @@ func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unst
 }
 
 func getAllResources(client dynamic.Interface, apis []apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
-	var wg sync.WaitGroup
 	var out []unstructured.Unstructured
 	outChan := make(chan []unstructured.Unstructured)
 
@@ -40,34 +39,33 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 	}
 
 	start := time.Now()
+	group := new(errgroup.Group) // an error group errors when any of the go routines encounters an error
 	klog.V(2).Infof("starting to concurrently query %d APIs", len(apis))
 
-	var errResult error
 	for _, api := range apisOfInterest {
-		wg.Add(1)
-		go func(a apiResource) {
-			defer wg.Done()
-			klog.V(4).Infof("[query api] start: %s", a.GroupVersionResource())
-			v, err := queryAPI(client, a, ns, selector)
+		group.Go(func() error {
+			klog.V(4).Infof("[query api] start: %s", api.GroupVersionResource())
+			v, err := queryAPI(client, api, ns, selector)
 			if err != nil {
-				klog.V(4).Infof("[query api] error querying: %s, error=%v", a.GroupVersionResource(), err)
-				errResult = err
-				return
+				klog.V(4).Infof("[query api] error querying: %s, error=%v", api.GroupVersionResource(), err)
+				return err
 			}
 			outChan <- v
-			klog.V(4).Infof("[query api]  done: %s, found %d apis", a.GroupVersionResource(), len(v))
-		}(api)
+			klog.V(4).Infof("[query api]  done: %s, found %d apis", api.GroupVersionResource(), len(v))
+			return nil
+		})
 	}
 
-	for i := 0; i < len(apisOfInterest); i++ {
-		out = append(out, <-outChan...)
-	}
+	go func() {
+		for val := range outChan {
+			out = append(out, val...)
+		}
+	}()
 
 	klog.V(2).Infof("fired up all goroutines to query APIs")
-	wg.Wait()
 	klog.V(2).Infof("all goroutines have returned in %v", time.Since(start))
-	klog.V(2).Infof("query result: error=%v, objects=%d", errResult, len(out))
-	return out, errResult
+	klog.V(2).Infof("query result: objects=%d", len(out))
+	return out, group.Wait()
 }
 
 func queryAPI(client dynamic.Interface, api apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
