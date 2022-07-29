@@ -43,6 +43,7 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 	klog.V(2).Infof("starting to concurrently query %d APIs", len(apis))
 
 	for _, api := range apisOfInterest {
+		api := api // shadowing because go vet complains "loop variable api captured by func literal"
 		group.Go(func() error {
 			klog.V(4).Infof("[query api] start: %s", api.GroupVersionResource())
 			v, err := queryAPI(client, api, ns, selector)
