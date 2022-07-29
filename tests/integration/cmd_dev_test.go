@@ -1188,7 +1188,7 @@ var _ = Describe("odo dev command tests", func() {
 			session.Stop()
 			session.WaitEnd()
 		})
-		It("should execute the non-exec composite commands successfully", func() {
+		It("should execute the composite apply commands successfully", func() {
 			checkDeploymentExists := func() {
 				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
 				Expect(out).To(ContainSubstring(deploymentName))
@@ -1199,8 +1199,8 @@ var _ = Describe("odo dev command tests", func() {
 			}
 			checkEndpointAccessible := func(message []string) {
 				url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
-				resp, err := http.Get(url)
-				Expect(err).ToNot(HaveOccurred())
+				resp, e := http.Get(url)
+				Expect(e).ToNot(HaveOccurred())
 				defer resp.Body.Close()
 
 				body, _ := io.ReadAll(resp.Body)

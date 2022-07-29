@@ -142,7 +142,7 @@ var _ = Describe("odo dev debug command tests", func() {
 			session.Stop()
 			session.WaitEnd()
 		})
-		It("should execute the non-exec composite commands successfully", func() {
+		It("should execute the composite apply commands successfully", func() {
 			checkDeploymentExists := func() {
 				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
 				Expect(out).To(ContainSubstring(deploymentName))
