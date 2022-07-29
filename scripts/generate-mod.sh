@@ -21,6 +21,7 @@ go mod edit -require k8s.io/utils@v0.0.0-20220210201930-3a6ce19ff2f9
 go mod edit -require github.com/redhat-developer/alizer/go@v0.0.0-20220714080930-59b004fd4586
 go mod edit -require github.com/redhat-developer/service-binding-operator@v1.0.1-0.20211222115357-5b7bbba3bfb3
 go mod edit -require github.com/onsi/ginkgo/v2@v2.1.4
+go mod edit -require github.com/spf13/cobra@v1.4.0
 go mod edit -require github.com/segmentio/backo-go@v1.0.1-0.20200129164019-23eae7c10bd3 # fixing this revision because of the missing license in the latest released version
 go mod edit -replace gopkg.in/segmentio/analytics-go.v3=github.com/segmentio/analytics-go/v3@v3.2.1
 go mod edit -replace github.com/apcera/gssapi=github.com/openshift/gssapi@v0.0.0-20161010215902-5fb4217df13b # for oc
