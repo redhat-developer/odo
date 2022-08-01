@@ -542,7 +542,7 @@ CMD ["npm", "start"]
 Let's modify the `devfile.yaml` and add the respective deployment code.
 
 :::caution
-When copy/pasting to `devfile.yaml`, make sure that the lines that you inserted are correctly indented.
+When copy/pasting to `devfile.yaml`, make sure the lines you inserted are correctly indented.
 :::
 
 `odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
