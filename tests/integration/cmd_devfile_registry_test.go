@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -9,8 +11,13 @@ import (
 
 var _ = Describe("odo devfile registry command tests", func() {
 	const registryName string = "RegistryName"
+
 	// Use staging OCI-based registry for tests to avoid overload
-	const addRegistryURL string = "https://registry.stage.devfile.io"
+	var addRegistryURL string = "https://registry.stage.devfile.io"
+	proxy := os.Getenv("DEVFILE_PROXY")
+	if proxy != "" {
+		addRegistryURL = "http://" + proxy
+	}
 
 	var commonVar helper.CommonVar
 
