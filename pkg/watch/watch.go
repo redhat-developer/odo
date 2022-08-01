@@ -246,9 +246,11 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	if err != nil {
 		return err
 	}
-	err = devfileWatcher.Add(parameters.DevfilePath)
-	if err != nil {
-		return err
+	if parameters.WatchFiles {
+		err = devfileWatcher.Add(parameters.DevfilePath)
+		if err != nil {
+			return err
+		}
 	}
 
 	podWatcher, err := o.kubeClient.PodWatcher(ctx, selector)
