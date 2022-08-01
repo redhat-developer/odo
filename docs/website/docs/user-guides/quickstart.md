@@ -180,7 +180,7 @@ The easiest way to connect `odo` to an OpenShift cluster is use copy "Copy login
 1. Login to OpenShift Web Console.
 2. At the top right corner click on your username and then on "Copy login command".
 3. You will be prompted to enter your login credentials again.
-4. After login open "Display Token" link.
+4. After login, open "Display Token" link.
 5. Copy whole `oc login --token ...` command and paste it into the terminal, **before executing the command replace `oc` with `odo`.**
 
 ### Create a new project
