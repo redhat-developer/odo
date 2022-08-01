@@ -149,7 +149,54 @@ $ go mod init my.example.go.project
 
 Your source code has now been generated and created in the directory.
 
-## Step 1. Creating your application (`odo init`)
+
+## Step 1. Connect to your cluster and create a new namespace or project
+
+Before starting you should make sure that odo is connected to your cluster and that you have created a new namespace (or project if you are using OpenShift).
+
+
+
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+### Creating a new namespace
+
+If you are using Kubernetes, you can create a new namespace with the `odo create namespace` command.
+
+```console
+$ odo create namespace odo-dev
+ ✓  Namespace "odo-dev" is ready for use
+ ✓  New namespace created and now using namespace: odo-dev
+```
+
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+### Login to OpenShift Cluster
+
+The easiest way to connect `odo` to an OpenShift cluster is use copy "Copy login command" function in OpenShift Web Console.
+
+1. Login to OpenShift Web Console.
+2. At the top right corner click on your username and then on "Copy login command".
+3. You will be prompted to enter your login credentials again.
+4. After login, open "Display Token" link.
+5. Copy whole `oc login --token ...` command and paste it into the terminal, **before executing the command replace `oc` with `odo`.**
+
+### Create a new project
+
+If you are using OpenShift, you can create a new namespace with the `odo create project` command.
+
+```console
+$ odo create project odo-dev
+ ✓  Project "odo-dev" is ready for use
+ ✓  New project created and now using namespace: odo-dev
+```
+
+  </TabItem>
+</Tabs>
+
+## Step 2. Creating your application (`odo init`)
 
 Now we'll initialize your application by creating a `devfile.yaml` to be deployed.
 
@@ -307,7 +354,7 @@ Changes will be directly reflected on the cluster.
 
 </Tabs>
 
-## Step 2. Developing your application continuously (`odo dev`)
+## Step 3. Developing your application continuously (`odo dev`)
 
 Now that we've generated our code as well as our Devfile, let's start on development.
 
@@ -425,7 +472,7 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 You can now access the application at [127.0.0.1:40001](http://127.0.0.1:40001) in your local browser and start your development loop. `odo` will watch for changes and push the code for real-time updates.
 
 
-## Step 3. Deploying your application to the world (`odo deploy`)
+## Step 4. Deploying your application to the world (`odo deploy`)
 
 **Prerequisites:**
 
@@ -494,6 +541,10 @@ CMD ["npm", "start"]
 
 Let's modify the `devfile.yaml` and add the respective deployment code.
 
+:::caution
+When copy/pasting to `devfile.yaml`, make sure the lines you inserted are correctly indented.
+:::
+
 `odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
 
 ```yaml
@@ -524,7 +575,7 @@ commands:
     - build-image
     - k8s-deployment
     - k8s-service
-    - k8s-ingress
+    - k8s-url
     group:
       isDefault: true
       kind: deploy
@@ -539,9 +590,9 @@ commands:
 - id: k8s-service
   apply:
     component: outerloop-service
-- id: k8s-ingress
+- id: k8s-url
   apply:
-    component: outerloop-ingress
+    component: outerloop-url
 ```
 
 Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
@@ -607,9 +658,16 @@ components:
         selector:
           app: {{RESOURCE_NAME}}
         type: ClusterIP
+```
 
-# Let's create an Ingress so we can access the application via a domain name
-- name: outerloop-ingress
+To be able to access our application let's add one more `component` to the Devfile.
+For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+```yaml
+- name: outerloop-url
   kubernetes:
     inlined: |
       apiVersion: networking.k8s.io/v1
@@ -629,7 +687,27 @@ components:
                       port:
                         number: {{CONTAINER_PORT}}
 ```
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
 
+```yaml
+- name: outerloop-url
+  kubernetes:
+    inlined: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        path: /
+        to:
+          kind: Service
+          name: {{RESOURCE_NAME}}
+        port:
+          targetPort: {{CONTAINER_PORT}}
+```
+</TabItem>
+</Tabs>
 
 #### 3. Run the `odo deploy` command
 
@@ -664,9 +742,23 @@ $ odo deploy
 Your Devfile has been successfully deployed
 ```
 
-Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress resources.
+Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress or Route resources.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
 
 Test your application by visiting the `DOMAIN_NAME` variable that you had set in the `devfile.yaml`.
+
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+  
+There is currently no way to get the Route url using only the `odo` command. This will be fixed in the next odo release.
+
+For now, you have to use `oc get routes` command to get the Route URL.
+
+</TabItem>
+</Tabs>
+
 
   </TabItem>
   <TabItem value="dotnet" label=".NET">
@@ -692,6 +784,10 @@ CMD ["dotnet", "app.dll"]
 #### 2. Modify the Devfile
 
 Let's modify the `devfile.yaml` and add the respective deployment code.
+
+:::caution
+When copy/pasting to `devfile.yaml`, make sure the lines you inserted are correctly indented.
+:::
 
 `odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
 
@@ -723,7 +819,7 @@ commands:
     - build-image
     - k8s-deployment
     - k8s-service
-    - k8s-ingress
+    - k8s-url
     group:
       isDefault: true
       kind: deploy
@@ -738,12 +834,12 @@ commands:
 - id: k8s-service
   apply:
     component: outerloop-service
-- id: k8s-ingress
+- id: k8s-url
   apply:
-    component: outerloop-ingress
+    component: outerloop-url
 ```
 
-Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
+Add the Docker image location as well as Kubernetes Deployment and Service resources to `components`:
 ```yaml
 components:
 
@@ -806,9 +902,16 @@ components:
         selector:
           app: {{RESOURCE_NAME}}
         type: ClusterIP
+```
 
-# Let's create an Ingress so we can access the application via a domain name
-- name: outerloop-ingress
+To be able to access our application we need to add one more `component` to the Devfile.
+For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+```yaml
+- name: outerloop-url
   kubernetes:
     inlined: |
       apiVersion: networking.k8s.io/v1
@@ -828,6 +931,27 @@ components:
                       port:
                         number: {{CONTAINER_PORT}}
 ```
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+```yaml
+- name: outerloop-url
+  kubernetes:
+    inlined: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        path: /
+        to:
+          kind: Service
+          name: {{RESOURCE_NAME}}
+        port:
+          targetPort: {{CONTAINER_PORT}}
+```
+</TabItem>
+</Tabs>
 
 
 #### 3. Run the `odo deploy` command
@@ -890,6 +1014,10 @@ COPY --from=builder /tmp/src/target/*.jar /deployments/app.jar
 
 Let's modify the `devfile.yaml` and add the respective deployment code.
 
+:::caution
+When copy/pasting to `devfile.yaml`, make sure the lines you inserted are correctly indented.
+:::
+
 `odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
 
 ```yaml
@@ -920,7 +1048,7 @@ commands:
     - build-image
     - k8s-deployment
     - k8s-service
-    - k8s-ingress
+    - k8s-url
     group:
       isDefault: true
       kind: deploy
@@ -935,12 +1063,12 @@ commands:
 - id: k8s-service
   apply:
     component: outerloop-service
-- id: k8s-ingress
+- id: k8s-url
   apply:
-    component: outerloop-ingress
+    component: outerloop-url
 ```
 
-Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
+Add the Docker image location as well as Kubernetes Deployment and Service resources to `components`:
 ```yaml
 components:
 
@@ -1003,9 +1131,16 @@ components:
         selector:
           app: {{RESOURCE_NAME}}
         type: ClusterIP
+```
 
-# Let's create an Ingress so we can access the application via a domain name
-- name: outerloop-ingress
+To be able to access our application we need to add one more `component` to the Devfile.
+For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+```yaml
+- name: outerloop-url
   kubernetes:
     inlined: |
       apiVersion: networking.k8s.io/v1
@@ -1025,6 +1160,27 @@ components:
                       port:
                         number: {{CONTAINER_PORT}}
 ```
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+```yaml
+- name: outerloop-url
+  kubernetes:
+    inlined: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        path: /
+        to:
+          kind: Service
+          name: {{RESOURCE_NAME}}
+        port:
+          targetPort: {{CONTAINER_PORT}}
+```
+</TabItem>
+</Tabs>
 
 
 #### 3. Run the `odo deploy` command
@@ -1098,6 +1254,10 @@ CMD ["/app/server"]
 
 Let's modify the `devfile.yaml` and add the respective deployment code.
 
+:::caution
+When copy/pasting to `devfile.yaml`, make sure the lines you inserted are correctly indented.
+:::
+
 `odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
 
 ```yaml
@@ -1128,7 +1288,7 @@ commands:
     - build-image
     - k8s-deployment
     - k8s-service
-    - k8s-ingress
+    - k8s-url
     group:
       isDefault: true
       kind: deploy
@@ -1143,9 +1303,9 @@ commands:
 - id: k8s-service
   apply:
     component: outerloop-service
-- id: k8s-ingress
+- id: k8s-url
   apply:
-    component: outerloop-ingress
+    component: outerloop-url
 ```
 
 Add the Docker image location and Kubernetes Deployment, Service, and Ingress resources to `components`:
@@ -1212,8 +1372,16 @@ components:
           app: {{RESOURCE_NAME}}
         type: ClusterIP
 
-# Let's create an Ingress so we can access the application via a domain name
-- name: outerloop-ingress
+```
+
+To be able to access our application let's add one more `component` to the Devfile.
+For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+```yaml
+- name: outerloop-url
   kubernetes:
     inlined: |
       apiVersion: networking.k8s.io/v1
@@ -1233,7 +1401,27 @@ components:
                       port:
                         number: {{CONTAINER_PORT}}
 ```
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
 
+```yaml
+- name: outerloop-url
+  kubernetes:
+    inlined: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        path: /
+        to:
+          kind: Service
+          name: {{RESOURCE_NAME}}
+        port:
+          targetPort: {{CONTAINER_PORT}}
+```
+</TabItem>
+</Tabs>
 
 #### 3. Run the `odo deploy` command
 
