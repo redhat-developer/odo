@@ -752,7 +752,7 @@ Test your application by visiting the `DOMAIN_NAME` variable that you had set in
   </TabItem>
   <TabItem value="openshift" label="OpenShift">
   
-The is currently no way to get the Route url using only the `odo` command. This will be fixed in the next odo release.
+There is currently no way to get the Route url using only the `odo` command. This will be fixed in the next odo release.
 
 For now, you have to use `oc get routes` command to get the Route URL.
 
