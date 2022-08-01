@@ -742,9 +742,23 @@ $ odo deploy
 Your Devfile has been successfully deployed
 ```
 
-Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress resources.
+Your application has now been deployed to the Kubernetes cluster with Deployment, Service, and Ingress or Route resources.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
 
 Test your application by visiting the `DOMAIN_NAME` variable that you had set in the `devfile.yaml`.
+
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+  
+The is currently no way to get the Route url using only the `odo` command. This will be fixed in the next odo release.
+
+For now, you have to use `oc get routes` command to get the Route URL.
+
+</TabItem>
+</Tabs>
+
 
   </TabItem>
   <TabItem value="dotnet" label=".NET">
