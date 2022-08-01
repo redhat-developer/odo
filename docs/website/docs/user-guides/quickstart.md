@@ -825,7 +825,7 @@ commands:
     component: outerloop-url
 ```
 
-Add the Docker image location and Kubernetes Deployment, and Service resources to `components`:
+Add the Docker image location as well as Kubernetes Deployment and Service resources to `components`:
 ```yaml
 components:
 
