@@ -150,7 +150,7 @@ $ go mod init my.example.go.project
 Your source code has now been generated and created in the directory.
 
 
-## Step 1. Connect to your cluster and create a new namespace or project"
+## Step 1. Connect to your cluster and create a new namespace or project
 
 Before starting you should make sure that odo is connected to your cluster and that you have created a new namespace (or project if you are using OpenShift).
 
