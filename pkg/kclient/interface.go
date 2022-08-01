@@ -65,7 +65,7 @@ type ClientInterface interface {
 	DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error
 
 	// events.go
-	PodWarningEventWatcher(ctx context.Context) (watch.Interface, error)
+	PodWarningEventWatcher(ctx context.Context) (result watch.Interface, isForbidden bool, err error)
 
 	// kclient.go
 	GetClient() kubernetes.Interface

@@ -258,9 +258,12 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return err
 	}
 
-	eventsWatcher, err := o.kubeClient.PodWarningEventWatcher(ctx)
+	eventsWatcher, isForbidden, err := o.kubeClient.PodWarningEventWatcher(ctx)
 	if err != nil {
 		return err
+	}
+	if isForbidden {
+		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
 	}
 
 	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, eventsWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)

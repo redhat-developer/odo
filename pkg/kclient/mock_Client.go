@@ -1206,12 +1206,13 @@ func (mr *MockClientInterfaceMockRecorder) PatchDynamicResource(exampleCustomRes
 }
 
 // PodWarningEventWatcher mocks base method.
-func (m *MockClientInterface) PodWarningEventWatcher(ctx context.Context) (watch.Interface, error) {
+func (m *MockClientInterface) PodWarningEventWatcher(ctx context.Context) (watch.Interface, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PodWarningEventWatcher", ctx)
 	ret0, _ := ret[0].(watch.Interface)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // PodWarningEventWatcher indicates an expected call of PodWarningEventWatcher.
