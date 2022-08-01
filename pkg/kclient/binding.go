@@ -208,23 +208,29 @@ func (c Client) ListServiceBindingsFromAllGroups() ([]specApi.ServiceBinding, []
 	}
 
 	specsU, err := c.ListDynamicResources("", specApi.GroupVersionResource)
-	if err != nil {
-		return nil, nil, err
-	}
 	var specs specApi.ServiceBindingList
-	err = ConvertUnstructuredListToResource(*specsU, &specs)
 	if err != nil {
-		return nil, nil, err
+		if !kerrors.IsForbidden(err) {
+			return nil, nil, err
+		}
+	} else {
+		err = ConvertUnstructuredListToResource(*specsU, &specs)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	bindingsU, err := c.ListDynamicResources("", bindingApi.GroupVersionResource)
-	if err != nil {
-		return nil, nil, err
-	}
 	var bindings bindingApi.ServiceBindingList
-	err = ConvertUnstructuredListToResource(*bindingsU, &bindings)
 	if err != nil {
-		return nil, nil, err
+		if !kerrors.IsForbidden(err) {
+			return nil, nil, err
+		}
+	} else {
+		err = ConvertUnstructuredListToResource(*bindingsU, &bindings)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return specs.Items, bindings.Items, nil
