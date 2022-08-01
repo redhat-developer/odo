@@ -1,7 +1,6 @@
 package image
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,11 +9,15 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/fatih/color"
-	"github.com/redhat-developer/odo/pkg/log"
 	"k8s.io/klog"
+
+	dfutil "github.com/devfile/library/pkg/util"
+
+	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
-// This backend uses a CLI compatible with the docker CLI (at least docker itself and podman)
+// DockerCompatibleBackend uses a CLI compatible with the docker CLI (at least docker itself and podman)
 type DockerCompatibleBackend struct {
 	name string
 }
@@ -26,17 +29,25 @@ func NewDockerCompatibleBackend(name string) *DockerCompatibleBackend {
 }
 
 // Build an image, as defined in devfile, using a Docker compatible CLI
-func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePath string) error {
+func (o *DockerCompatibleBackend) Build(fs filesystem.Filesystem, image *devfile.ImageComponent, devfilePath string) error {
 
-	if strings.HasPrefix(image.Dockerfile.Uri, "http") {
-		return errors.New("HTTP URL for uri is not supported")
+	dockerfile, isTemp, err := resolveAndDownloadDockerfile(fs, image.Dockerfile.Uri)
+	if isTemp {
+		defer func(path string) {
+			if e := fs.Remove(path); e != nil {
+				klog.V(3).Infof("could not remove temporary Dockerfile at path %q: %v", path, err)
+			}
+		}(dockerfile)
+	}
+	if err != nil {
+		return err
 	}
 
 	// We use a "No Spin" since we are outputting to stdout / stderr
 	buildSpinner := log.SpinnerNoSpin("Building image locally")
 	defer buildSpinner.End(false)
 
-	err := os.Setenv("PROJECTS_ROOT", devfilePath)
+	err = os.Setenv("PROJECTS_ROOT", devfilePath)
 	if err != nil {
 		return err
 	}
@@ -46,7 +57,7 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 		return err
 	}
 
-	shellCmd := getShellCommand(o.name, image, devfilePath)
+	shellCmd := getShellCommand(o.name, image, devfilePath, dockerfile)
 	klog.V(4).Infof("Running command: %v", shellCmd)
 	for i, cmd := range shellCmd {
 		shellCmd[i] = os.ExpandEnv(cmd)
@@ -72,12 +83,47 @@ func (o *DockerCompatibleBackend) Build(image *devfile.ImageComponent, devfilePa
 	return nil
 }
 
+// resolveAndDownloadDockerfile resolves and downloads (if needed) the specified Dockerfile URI.
+// For now, it only supports resolving HTTP(S) URIs, in which case it downloads the remote file
+// to a temporary file. The path to that temporary file is then returned.
+//
+// In all other cases, the specified URI path is returned as is.
+// This means that non-HTTP(S) URIs will *not* get resolved, but will be returned as is.
+//
+// In addition to the path, a boolean and a potential error are returned. The boolean indicates whether
+// the returned path is a temporary one; in such case, it is the caller's responsibility to delete this file
+// once it is done working with it.
+func resolveAndDownloadDockerfile(fs filesystem.Filesystem, uri string) (string, bool, error) {
+	uriLower := strings.ToLower(uri)
+	if strings.HasPrefix(uriLower, "http://") || strings.HasPrefix(uriLower, "https://") {
+		s := log.Spinner("Downloading Dockerfile")
+		defer s.End(false)
+		tempFile, err := fs.TempFile("", "odo_*.dockerfile")
+		if err != nil {
+			return "", false, err
+		}
+		dockerfile := tempFile.Name()
+		err = dfutil.DownloadFile(dfutil.DownloadParams{
+			Request: dfutil.HTTPRequestParams{
+				URL: uri,
+			},
+			Filepath: dockerfile,
+		})
+		s.End(err == nil)
+		return dockerfile, true, err
+	}
+	return uri, false, nil
+}
+
 //getShellCommand creates the docker compatible build command from detected backend,
 //container image and devfile path
-func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string) []string {
+func getShellCommand(cmdName string, image *devfile.ImageComponent, devfilePath string, dockerfilePath string) []string {
 	var shellCmd []string
 	imageName := image.ImageName
-	dockerfile := filepath.Join(devfilePath, image.Dockerfile.Uri)
+	dockerfile := dockerfilePath
+	if !filepath.IsAbs(dockerfile) {
+		dockerfile = filepath.Join(devfilePath, dockerfilePath)
+	}
 	buildpath := image.Dockerfile.BuildContext
 	if buildpath == "" {
 		buildpath = devfilePath

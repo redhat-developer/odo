@@ -9,6 +9,7 @@ import (
 
 	v1alpha2 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	gomock "github.com/golang/mock/gomock"
+	filesystem "github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // MockBackend is a mock of Backend interface.
@@ -35,17 +36,17 @@ func (m *MockBackend) EXPECT() *MockBackendMockRecorder {
 }
 
 // Build mocks base method.
-func (m *MockBackend) Build(image *v1alpha2.ImageComponent, devfilePath string) error {
+func (m *MockBackend) Build(fs filesystem.Filesystem, image *v1alpha2.ImageComponent, devfilePath string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Build", image, devfilePath)
+	ret := m.ctrl.Call(m, "Build", fs, image, devfilePath)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Build indicates an expected call of Build.
-func (mr *MockBackendMockRecorder) Build(image, devfilePath interface{}) *gomock.Call {
+func (mr *MockBackendMockRecorder) Build(fs, image, devfilePath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockBackend)(nil).Build), image, devfilePath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockBackend)(nil).Build), fs, image, devfilePath)
 }
 
 // Push mocks base method.

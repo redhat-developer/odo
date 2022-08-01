@@ -17,6 +17,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/service"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 type DeployClient struct {
@@ -31,12 +32,13 @@ func NewDeployClient(kubeClient kclient.ClientInterface) *DeployClient {
 	}
 }
 
-func (o *DeployClient) Deploy(devfileObj parser.DevfileObj, path string, appName string) error {
-	deployHandler := newDeployHandler(devfileObj, path, o.kubeClient, appName)
+func (o *DeployClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string) error {
+	deployHandler := newDeployHandler(fs, devfileObj, path, o.kubeClient, appName)
 	return libdevfile.Deploy(devfileObj, deployHandler)
 }
 
 type deployHandler struct {
+	fs         filesystem.Filesystem
 	devfileObj parser.DevfileObj
 	path       string
 	kubeClient kclient.ClientInterface
@@ -45,8 +47,9 @@ type deployHandler struct {
 
 var _ libdevfile.Handler = (*deployHandler)(nil)
 
-func newDeployHandler(devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string) *deployHandler {
+func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string) *deployHandler {
 	return &deployHandler{
+		fs:         fs,
 		devfileObj: devfileObj,
 		path:       path,
 		kubeClient: kubeClient,
@@ -56,7 +59,7 @@ func newDeployHandler(devfileObj parser.DevfileObj, path string, kubeClient kcli
 
 // ApplyImage builds and pushes the OCI image to be used on Kubernetes
 func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
-	return image.BuildPushSpecificImage(o.path, img, true)
+	return image.BuildPushSpecificImage(o.fs, o.path, img, true)
 }
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file

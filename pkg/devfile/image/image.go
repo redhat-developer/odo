@@ -12,12 +12,14 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // Backend is in interface that must be implemented by container runtimes
 type Backend interface {
-	// Build the image as defined in the devfile
-	Build(image *devfile.ImageComponent, devfilePath string) error
+	// Build the image as defined in the devfile.
+	// The filesystem specified will be used to download and store the Dockerfile if it is referenced as a remote URL.
+	Build(fs filesystem.Filesystem, image *devfile.ImageComponent, devfilePath string) error
 	// Push the image to its registry as defined in the devfile
 	Push(image string) error
 	// Return the name of the backend
@@ -29,7 +31,7 @@ var getEnvFunc = os.Getenv
 
 // BuildPushImages build all images defined in the devfile with the detected backend
 // If push is true, also push the images to their registries
-func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error {
+func BuildPushImages(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, push bool) error {
 
 	backend, err := selectBackend()
 	if err != nil {
@@ -47,7 +49,7 @@ func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error
 	}
 
 	for _, component := range components {
-		err = buildPushImage(backend, component.Image, path, push)
+		err = buildPushImage(backend, fs, component.Image, path, push)
 		if err != nil {
 			return err
 		}
@@ -57,23 +59,23 @@ func BuildPushImages(devfileObj parser.DevfileObj, path string, push bool) error
 
 // BuildPushSpecificImage build an image defined in the devfile present in devfilePath
 // If push is true, also push the image to its registry
-func BuildPushSpecificImage(devfilePath string, component devfile.Component, push bool) error {
+func BuildPushSpecificImage(fs filesystem.Filesystem, devfilePath string, component devfile.Component, push bool) error {
 	backend, err := selectBackend()
 	if err != nil {
 		return err
 	}
 
-	return buildPushImage(backend, component.Image, devfilePath, push)
+	return buildPushImage(backend, fs, component.Image, devfilePath, push)
 }
 
 // buildPushImage build an image using the provided backend
 // If push is true, also push the image to its registry
-func buildPushImage(backend Backend, image *devfile.ImageComponent, devfilePath string, push bool) error {
+func buildPushImage(backend Backend, fs filesystem.Filesystem, image *devfile.ImageComponent, devfilePath string, push bool) error {
 	if image == nil {
 		return errors.New("image should not be nil")
 	}
 	log.Sectionf("Building & Pushing Container: %s", image.ImageName)
-	err := backend.Build(image, devfilePath)
+	err := backend.Build(fs, image, devfilePath)
 	if err != nil {
 		return err
 	}

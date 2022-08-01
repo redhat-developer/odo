@@ -5,23 +5,27 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+	"k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
-	"github.com/spf13/cobra"
-	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended command name
 const RecommendedCommandName = "build-images"
 
-// LoginOptions encapsulates the options for the odo command
+// BuildImagesOptions encapsulates the options for the odo command
 type BuildImagesOptions struct {
 	// Context
 	*genericclioptions.Context
+
+	// Clients
+	clientset *clientset.Clientset
 
 	// Flags
 	pushFlag    bool
@@ -38,12 +42,13 @@ var buildImagesExample = templates.Examples(`
   %[1]s --push
 `)
 
-// NewLoginOptions creates a new LoginOptions instance
+// NewBuildImagesOptions creates a new BuildImagesOptions instance
 func NewBuildImagesOptions() *BuildImagesOptions {
 	return &BuildImagesOptions{}
 }
 
 func (o *BuildImagesOptions) SetClientset(clientset *clientset.Clientset) {
+	o.clientset = clientset
 }
 
 // Complete completes LoginOptions after they've been created
@@ -64,10 +69,10 @@ func (o *BuildImagesOptions) Validate() (err error) {
 func (o *BuildImagesOptions) Run(ctx context.Context) (err error) {
 	devfileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 	path := filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-	return image.BuildPushImages(devfileObj, path, o.pushFlag)
+	return image.BuildPushImages(o.clientset.FS, devfileObj, path, o.pushFlag)
 }
 
-// NewCmdLogin implements the odo command
+// NewCmdBuildImages implements the odo command
 func NewCmdBuildImages(name, fullName string) *cobra.Command {
 	o := NewBuildImagesOptions()
 	buildImagesCmd := &cobra.Command{
@@ -86,5 +91,7 @@ func NewCmdBuildImages(name, fullName string) *cobra.Command {
 	buildImagesCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	buildImagesCmd.Flags().BoolVar(&o.pushFlag, "push", false, "If true, build and push the images")
 	util.AddContextFlag(buildImagesCmd, &o.contextFlag)
+	clientset.Add(buildImagesCmd, clientset.FILESYSTEM)
+
 	return buildImagesCmd
 }

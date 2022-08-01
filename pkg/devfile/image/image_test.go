@@ -8,9 +8,12 @@ import (
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	gomock "github.com/golang/mock/gomock"
+
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 func TestBuildPushImage(t *testing.T) {
+	fakeFs := filesystem.NewFakeFs()
 	tests := []struct {
 		name            string
 		devfilePath     string
@@ -95,16 +98,16 @@ func TestBuildPushImage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			backend := NewMockBackend(ctrl)
 			if tt.wantBuildCalled {
-				backend.EXPECT().Build(tt.image, tt.devfilePath).Return(tt.BuildReturns).Times(1)
+				backend.EXPECT().Build(fakeFs, tt.image, tt.devfilePath).Return(tt.BuildReturns).Times(1)
 			} else {
-				backend.EXPECT().Build(nil, tt.devfilePath).Times(0)
+				backend.EXPECT().Build(fakeFs, nil, tt.devfilePath).Times(0)
 			}
 			if tt.wantPushCalled {
 				backend.EXPECT().Push(tt.image.ImageName).Return(tt.PushReturns).Times(1)
 			} else {
 				backend.EXPECT().Push(nil).Times(0)
 			}
-			err := buildPushImage(backend, tt.image, "", tt.push)
+			err := buildPushImage(backend, fakeFs, tt.image, "", tt.push)
 
 			if tt.wantErr != (err != nil) {
 				t.Errorf("%s: Error result wanted %v, got %v", tt.name, tt.wantErr, err != nil)

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 
@@ -18,9 +20,6 @@ import (
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
-
-	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -161,7 +160,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	// Run actual deploy command to be used
-	err := o.clientset.DeployClient.Deploy(devfileObj, path, appName)
+	err := o.clientset.DeployClient.Deploy(o.clientset.FS, devfileObj, path, appName)
 
 	if err == nil {
 		log.Info("\nYour Devfile has been successfully deployed")
