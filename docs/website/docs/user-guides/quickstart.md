@@ -175,7 +175,7 @@ $ odo create namespace odo-dev
 
 ### Login to OpenShift Cluster
 
-The easies way to connect `odo` to an OpenShift cluster is use copy "Copy login command" function in OpenShift Web Console.
+The easiest way to connect `odo` to an OpenShift cluster is use copy "Copy login command" function in OpenShift Web Console.
 
 1. Login to OpenShift Web Console.
 2. At the top right corner click on your username and than on "Copy login command".
