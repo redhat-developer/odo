@@ -351,16 +351,14 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 			return watchErr
 
 		case ev := <-deploymentWatcher.ResultChan():
-			dep, isDep := ev.Object.(*appsv1.Deployment)
-			if isDep {
+			switch obj := ev.Object.(type) {
+			case *appsv1.Deployment:
 				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
-					ev.Type, dep.GetName(), dep.GetResourceVersion(), dep.Status.ReadyReplicas)
+					ev.Type, obj.GetName(), obj.GetResourceVersion(), obj.Status.ReadyReplicas)
 				deployTimer.Reset(300 * time.Millisecond)
-			} else {
-				status, isStatus := ev.Object.(*metav1.Status)
-				if isStatus {
-					klog.V(4).Infof("Status: %+v\n", status)
-				}
+
+			case *metav1.Status:
+				klog.V(4).Infof("Status: %+v\n", obj)
 			}
 
 		case <-deployTimer.C:
