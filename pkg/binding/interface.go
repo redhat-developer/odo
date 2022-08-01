@@ -73,6 +73,6 @@ type Client interface {
 	// RemoveBinding removes the binding from devfile
 	RemoveBinding(bindingName string, obj parser.DevfileObj) (parser.DevfileObj, error)
 
-	// CheckServiceBindingsInjectionDone checks that all service bindings poiting to component have InjectionReady condition
+	// CheckServiceBindingsInjectionDone checks that all service bindings pointing to component have InjectionReady condition
 	CheckServiceBindingsInjectionDone(componentName string, appName string) (bool, error)
 }

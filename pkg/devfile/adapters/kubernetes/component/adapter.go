@@ -115,7 +115,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	// Set the mode to Dev since we are using "odo dev" here
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
 
-	k8sComponents, err := a.pushKubernetesComponents(labels)
+	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
 	if err != nil {
 		return err
 	}

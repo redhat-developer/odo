@@ -236,7 +236,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
-	// Ignore the devfile, as it will be handlded independently
+	// Ignore the devfile, as it will be handled independently
 	o.ignorePaths = append(ignores, o.GetDevfilePath())
 
 	log.Section("Deploying to the cluster in developer mode")

@@ -42,7 +42,7 @@ func (o *PodPhases) Delete(out io.Writer, pod *corev1.Pod) {
 func (o PodPhases) Display(out io.Writer) {
 
 	if len(o) == 0 {
-		log.Fwarning(out, "No pod exist")
+		log.Fwarning(out, "No pod exists")
 		return
 	}
 

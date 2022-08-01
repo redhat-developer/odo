@@ -17,7 +17,7 @@ import (
 )
 
 // getComponentDeployment returns the deployment associated with the component, if deployed
-// and indicate if the deplyment has been found
+// and indicate if the deployment has been found
 func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	// Get the Dev deployment:
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
@@ -34,13 +34,13 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	return deployment, componentExists, nil
 }
 
-// pushKubernetesComponents gets the Kubernetes components from the Devfile and push them to the cluster
+// pushDevfileKubernetesComponents gets the Kubernetes components from the Devfile and push them to the cluster
 // adding the specified labels to them
-func (a *Adapter) pushKubernetesComponents(
+func (a *Adapter) pushDevfileKubernetesComponents(
 	labels map[string]string,
 ) ([]v1alpha2.Component, error) {
 	// fetch the "kubernetes inlined components" to create them on cluster
-	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
+	// from odo standpoint, these components contain yaml manifest of ServiceBinding
 	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
 	if err != nil {
 		return nil, fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
