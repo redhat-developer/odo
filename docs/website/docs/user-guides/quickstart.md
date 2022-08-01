@@ -891,7 +891,7 @@ components:
 ```
 
 To be able to access our application we need to add one more `component` to the Devfile.
-For OpenShift cluster we add Route for Kubernetes cluster Ingress.
+For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
 
 <Tabs groupId="quickstart">
   <TabItem value="kubernetes" label="Kubernetes">
