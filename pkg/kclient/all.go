@@ -56,6 +56,7 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 			return nil
 		})
 	}
+	klog.V(2).Infof("fired up all goroutines to query APIs")
 
 	go func() {
 		for val := range outChan {
@@ -63,10 +64,12 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 		}
 	}()
 
-	klog.V(2).Infof("fired up all goroutines to query APIs")
+	err := group.Wait()
 	klog.V(2).Infof("all goroutines have returned in %v", time.Since(start))
+	close(outChan) // because we are ranging over the channel in a goroutine
+
 	klog.V(2).Infof("query result: objects=%d", len(out))
-	return out, group.Wait()
+	return out, err
 }
 
 func queryAPI(client dynamic.Interface, api apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
