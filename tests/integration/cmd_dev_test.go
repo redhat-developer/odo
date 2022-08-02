@@ -5,8 +5,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -1171,70 +1173,151 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("running odo dev and devfile with composite apply command", func() {
-		deploymentName := "my-component"
+	Describe("running odo dev for a devfile with composite apply command", func() {
+		const (
+			deploymentName = "my-component"
+			DEVFILEPORT    = "3000"
+		)
 		var session helper.DevSession
 		var sessionOut []byte
 		var err error
 		var ports map[string]string
-		const DEVFILEPORT = "3000"
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
-			Expect(err).ToNot(HaveOccurred())
 		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-		It("should execute the composite apply commands successfully", func() {
-			checkDeploymentExists := func() {
-				out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
-				Expect(out).To(ContainSubstring(deploymentName))
-			}
-			checkImageBuilt := func() {
-				Expect(sessionOut).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
-				Expect(sessionOut).To(ContainSubstring("push quay.io/unknown-account/myimage"))
-			}
-			checkEndpointAccessible := func(message []string) {
-				url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
-				resp, e := http.Get(url)
-				Expect(e).ToNot(HaveOccurred())
-				defer resp.Body.Close()
-
-				body, _ := io.ReadAll(resp.Body)
-				// helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
-				helper.MatchAllInOutput(string(body), message)
-			}
-			By("checking is the image was successfully built", func() {
-				checkImageBuilt()
-			})
-
-			By("checking the endpoint accessiblity", func() {
-				checkEndpointAccessible([]string{"Hello from Node.js Starter Application!"})
-			})
-
-			By("checking the deployment was created successfully", func() {
-				checkDeploymentExists()
-			})
-
-			By("checking odo dev watches correctly", func() {
-				// making changes to the project again
-				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
-				_, _, _, err = session.WaitSync()
+		When("running odo dev and devfile with composite apply command", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
 				Expect(err).ToNot(HaveOccurred())
-				checkDeploymentExists()
-				checkImageBuilt()
-				checkEndpointAccessible([]string{"Hello from the new Node.js Starter Application!"})
 			})
-
-			By("cleaning up the resources on ending the session", func() {
+			AfterEach(func() {
 				session.Stop()
 				session.WaitEnd()
-				out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
-				Expect(out).ToNot(ContainSubstring(deploymentName))
 			})
+			It("should execute the composite apply commands successfully", func() {
+				checkDeploymentExists := func() {
+					out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
+					Expect(out).To(ContainSubstring(deploymentName))
+				}
+				checkImageBuilt := func() {
+					Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+					Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+				}
+				checkEndpointAccessible := func(message []string) {
+					url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
+					resp, e := http.Get(url)
+					Expect(e).ToNot(HaveOccurred())
+					defer resp.Body.Close()
+
+					body, _ := io.ReadAll(resp.Body)
+					// helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+					helper.MatchAllInOutput(string(body), message)
+				}
+				By("checking is the image was successfully built", func() {
+					checkImageBuilt()
+				})
+
+				By("checking the endpoint accessiblity", func() {
+					checkEndpointAccessible([]string{"Hello from Node.js Starter Application!"})
+				})
+
+				By("checking the deployment was created successfully", func() {
+					checkDeploymentExists()
+				})
+
+				By("checking odo dev watches correctly", func() {
+					// making changes to the project again
+					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
+					_, _, _, err = session.WaitSync()
+					Expect(err).ToNot(HaveOccurred())
+					checkDeploymentExists()
+					checkImageBuilt()
+					checkEndpointAccessible([]string{"Hello from the new Node.js Starter Application!"})
+				})
+
+				By("cleaning up the resources on ending the session", func() {
+					session.Stop()
+					session.WaitEnd()
+					out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
+					Expect(out).ToNot(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
+		Context("using a Devfile with an image component that uses a remote Dockerfile", func() {
+			for _, env := range [][]string{
+				{"PODMAN_CMD=echo"},
+				{
+					"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+					"DOCKER_CMD=echo",
+				},
+			} {
+				env := env
+				When(fmt.Sprintf("%v remote server returns a valid file and odo dev is run", env), func() {
+					var buildRegexp string
+					var server *httptest.Server
+					var url string
+
+					BeforeEach(func() {
+						buildRegexp = regexp.QuoteMeta("build -t quay.io/unknown-account/myimage -f ") +
+							".*\\.dockerfile " + regexp.QuoteMeta(commonVar.Context)
+						server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							fmt.Fprintf(w, `# Dockerfile
+FROM node:8.11.1-alpine
+COPY . /app
+WORKDIR /app
+RUN npm install
+CMD ["npm", "start"]
+`)
+						}))
+						url = server.URL
+
+						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
+						session, sessionOut, _, ports, err = helper.StartDevMode(env)
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					AfterEach(func() {
+						session.Stop()
+						session.WaitEnd()
+						server.Close()
+					})
+
+					It("should build and push image when odo dev is run", func() {
+						lines, _ := helper.ExtractLines(string(sessionOut))
+						_, ok := helper.FindFirstElementIndexMatchingRegExp(lines, buildRegexp)
+						Expect(ok).To(BeTrue(), "build regexp not found in output: "+buildRegexp)
+						Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+					})
+				})
+				When(fmt.Sprintf("%v remote server returns an error", env), func() {
+					var server *httptest.Server
+					var url string
+					var out, sessionErr string
+					BeforeEach(func() {
+						server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotFound)
+						}))
+						url = server.URL
+
+						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
+						out, sessionErr = helper.Cmd("odo", "dev", "--random-ports").ShouldFail().OutAndErr()
+					})
+
+					AfterEach(func() {
+						server.Close()
+					})
+
+					It("should not build images when odo dev is run", func() {
+						Expect(sessionErr).To(ContainSubstring("failed to retrieve " + url))
+						Expect(out).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
+						Expect(out).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
+					})
+				})
+			}
 		})
 	})
 
@@ -1586,7 +1669,7 @@ var _ = Describe("odo dev command tests", func() {
 			checkFunc         func(stdout, stderr string)
 		}
 		testForCmd := func(tt testCase) {
-			err := helper.RunDevMode(nil, tt.devAdditionalOpts, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(tt.devAdditionalOpts, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 				stdout := string(outContents)
 				stderr := string(errContents)
 

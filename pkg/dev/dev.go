@@ -9,6 +9,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"k8s.io/klog/v2"
@@ -54,6 +55,7 @@ func (o *DevClient) Start(
 	runCommand string,
 	randomPorts bool,
 	errOut io.Writer,
+	fs filesystem.Filesystem,
 ) (watch.ComponentStatus, error) {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter := component.NewKubernetesAdapter(
@@ -63,6 +65,7 @@ func (o *DevClient) Start(
 			Context:       path,
 			AppName:       "app",
 			Devfile:       devfileObj,
+			FS:            fs,
 		},
 		namespace)
 

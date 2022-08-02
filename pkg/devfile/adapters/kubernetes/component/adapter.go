@@ -26,6 +26,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
 
@@ -54,10 +55,11 @@ type Adapter struct {
 
 // AdapterContext is a construct that is common to all adapters
 type AdapterContext struct {
-	ComponentName string            // ComponentName is the odo component name, it is NOT related to any devfile components
-	Context       string            // Context is the given directory containing the source code and configs
-	AppName       string            // the application name associated to a component
-	Devfile       parser.DevfileObj // Devfile is the object returned by the Devfile parser
+	ComponentName string                // ComponentName is the odo component name, it is NOT related to any devfile components
+	Context       string                // Context is the given directory containing the source code and configs
+	AppName       string                // the application name associated to a component
+	Devfile       parser.DevfileObj     // Devfile is the object returned by the Devfile parser
+	FS            filesystem.Filesystem // FS is the object used for building image component if present
 }
 
 var _ sync.SyncClient = (*Adapter)(nil)

@@ -156,7 +156,7 @@ func (o DevSession) WaitEnd() {
 	o.session.Wait(3 * time.Minute)
 }
 
-//  WaitSync waits for the synchronization of files to be finished
+// WaitSync waits for the synchronization of files to be finished
 // It returns the contents of the standard and error outputs
 // since the end of the dev mode started or previous sync, and until the end of the synchronization.
 func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {

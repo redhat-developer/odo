@@ -38,7 +38,7 @@ var _ ComponentAdapter = (*adapterHandler)(nil)
 var _ sync.SyncClient = (*adapterHandler)(nil)
 
 func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
-	return image.BuildPushSpecificImage(a.parameters.Path, img, true)
+	return image.BuildPushSpecificImage(a.FS, a.parameters.Path, img, true)
 }
 
 func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
