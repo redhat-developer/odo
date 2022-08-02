@@ -2,7 +2,9 @@
 title: Configuration
 sidebar_position: 6
 ---
-# Configuring odo global settings
+# Configuration
+
+## Configuring odo global settings
 
 The global settings for odo can be found in `preference.yaml` file; which is located by default in the `.odo` directory of the user's HOME directory.
 
@@ -93,14 +95,14 @@ Unsetting a preference key sets it to an empty value in the preference file. odo
 
 ### Preference Key Table
 
-| Preference         | Description                                                                    | Default                |
-|--------------------|--------------------------------------------------------------------------------|------------------------|
-| UpdateNotification | Control whether a notification to update odo is shown                          | True                   |
-| Timeout            | Timeout for Kubernetes server connection check                                 | 1 second               |
-| PushTimeout        | Timeout for waiting for a component to start                                   | 240 seconds            |
-| RegistryCacheTime  | For how long (in minutes) odo will cache information from the Devfile registry | 4 Minutes              |
-| Ephemeral          | Control whether odo should create a emptyDir volume to store source code       | True                   |
-| ConsentTelemetry   | Control whether odo can collect telemetry for the user's odo usage             | False                  |
+| Preference         | Description                                                                    | Default     |
+| ------------------ | ------------------------------------------------------------------------------ | ----------- |
+| UpdateNotification | Control whether a notification to update odo is shown                          | True        |
+| Timeout            | Timeout for Kubernetes server connection check                                 | 1 second    |
+| PushTimeout        | Timeout for waiting for a component to start                                   | 240 seconds |
+| RegistryCacheTime  | For how long (in minutes) odo will cache information from the Devfile registry | 4 Minutes   |
+| Ephemeral          | Control whether odo should create a emptyDir volume to store source code       | True        |
+| ConsentTelemetry   | Control whether odo can collect telemetry for the user's odo usage             | False       |
 
 
 ## Managing Devfile registries
@@ -148,3 +150,20 @@ You can use the `--force` (or `-f`) flag to force the deletion of the registry w
 :::note
 To update a registry, you can delete it and add it again.
 :::
+
+## Advanced configuration
+
+This is a configuration that normal `odo` users don't need to touch.
+Options here are mostly used for debugging and testing `odo` behavior.
+
+### Environment variables controlling odo behavior
+
+| Variable                   | Usage |
+| -------------------------- | ----- |
+| `PODMAN_CMD`               |   The command executed to run the local podman binary. `podman` by default    |
+| `DOCKER_CMD`               |  The command executed to run the local docker binary. `docker` by default     |
+| `ODO_BOOTSTRAPPER_IMAGE`   |       |
+| `ODO_LOG_LEVEL`            |       |
+| `ODO_DISABLE_TELEMETRY`    |       |
+| `GLOBALODOCONFIG`          |       |
+| `ODO_DEBUG_TELEMETRY_FILE` | Useful for debugging telemetry. When set it will save telemetry data to a file instead of sending it to the server. |
