@@ -160,8 +160,8 @@ Options here are mostly used for debugging and testing `odo` behavior.
 
 | Variable                   | Usage |
 | -------------------------- | ----- |
-| `PODMAN_CMD`               |       |
-| `DOCKER_CMD`               |       |
+| `PODMAN_CMD`               |   The command executed to run the local podman binary. `podman` by default    |
+| `DOCKER_CMD`               |  The command executed to run the local docker binary. `docker` by default     |
 | `ODO_BOOTSTRAPPER_IMAGE`   |       |
 | `ODO_LOG_LEVEL`            |       |
 | `ODO_DISABLE_TELEMETRY`    |       |
