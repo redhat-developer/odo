@@ -15,6 +15,7 @@ To list all the namespaces, you can run `odo list namespace`:
 odo list namespace
 ```
 ```console
+$ odo list namespace
 ACTIVE     NAME
 *          default
            kube-node-lease
@@ -33,6 +34,7 @@ ACTIVE     NAME
  odo list project
  ```
  ```console
+ $ odo list project
  ACTIVE     NAME
 *          default
            kube-node-lease

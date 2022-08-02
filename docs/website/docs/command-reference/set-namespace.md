@@ -11,6 +11,7 @@ To set the current active namespace you can run `odo set namespace <name>`:
 odo set namespace mynamespace
 ```
 ```console
+$ odo set namespace mynamespace
  ✓  Current active namespace set to "mynamespace"
 ```
 
@@ -21,6 +22,7 @@ To set the current active project you can run `odo set project <name>`:
 odo set project myproject
 ```
 ```console
+$ odo set project myproject
   ✓  Current active project set to "myproject"
 ```
 

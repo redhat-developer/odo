@@ -39,6 +39,7 @@ When the service binding are not deployed yet to the cluster:
 odo describe binding
 ```
 ```console
+$ odo describe binding
 ServiceBinding used by the current component:
 
 Service Binding Name: my-nodejs-app-cluster-sample
@@ -66,6 +67,7 @@ When the resources have been deployed to the cluster, the command also extracts 
 odo describe binding 
 ```
 ```console
+$ odo describe binding 
 ServiceBinding used by the current component:
 
 Service Binding Name: my-nodejs-app-cluster-sample-2

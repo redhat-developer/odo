@@ -43,7 +43,8 @@ npm install express --save
 ```console
 npx express-generator
 ```
-```sh
+```console
+$ npx express-generator
   warning: the default view engine will not be jade in future releases
   warning: use `--view=jade' or `--help' for additional options
 
@@ -83,9 +84,10 @@ npx express-generator
   1. Generate an example project:
 
 ```console
-$ dotnet new mvc --name app
+dotnet new mvc --name app
 ```
 ```console
+$ dotnet new mvc --name app
 Welcome to .NET 6.0!
 ---------------------
 SDK Version: 6.0.104
@@ -168,6 +170,7 @@ Let's run `odo init` and select Node.js:
 odo init
 ```
 ```console
+$ odo init
   __
  /  \__     Initializing new component
  \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
@@ -205,6 +208,7 @@ Let's run `odo init` and select .NET 6.0:
 odo init
 ```
 ```console
+$ odo init
   __
  /  \__     Initializing new component
  \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
@@ -247,6 +251,7 @@ Let's run `odo init` and select Java Spring Boot:
 odo init
 ```
 ```console
+$ odo init
   __
  /  \__     Initializing new component
  \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
@@ -287,6 +292,7 @@ Let's run `odo init` and select Go:
 odo init
 ```
 ```console
+$ odo init
   __
  /  \__     Initializing new component
  \__/  \    Files: Source code detected, a Devfile will be determined based upon source code autodetection
@@ -333,6 +339,7 @@ Let's run `odo dev` to start development on your Node.JS application:
 odo dev
 ```
 ```console
+$ odo dev
   __
  /  \__     Developing using the my-nodejs-app Devfile
  \__/  \    Namespace: default
@@ -361,6 +368,7 @@ Let's run `odo dev` to start development on your .NET application:
 odo dev
 ```
 ```console
+$ odo dev
   __
  /  \__     Developing using the my-dotnet60-app Devfile
  \__/  \    Namespace: default
@@ -388,6 +396,7 @@ Let's run `odo dev` to start development on your Java Spring Boot application:
 odo dev
 ```
 ```console
+$ odo dev
   __
  /  \__     Developing using the my-java-springboot-app Devfile
  \__/  \    Namespace: default
@@ -418,6 +427,7 @@ Let's run `odo dev` to start development on your .NET application:
 odo dev
 ```
 ```console
+$ odo dev
   __
  /  \__     Developing using the my-go-app Devfile
  \__/  \    Namespace: default
@@ -659,6 +669,7 @@ Now we're ready to run `odo deploy`:
 odo deploy
 ```
 ```console
+$ odo deploy
   __
  /  \__     Deploying the application using my-nodejs-app Devfile
  \__/  \    Namespace: default
@@ -860,6 +871,7 @@ Now we're ready to run `odo deploy`:
 odo deploy
 ```
 ```console
+$ odo deploy
   __
  /  \__     Deploying the application using my-dotnet-app Devfile
  \__/  \    Namespace: default
@@ -1059,6 +1071,7 @@ Now we're ready to run `odo deploy`:
 odo deploy
 ```
 ```console
+$ odo deploy
   __
  /  \__     Deploying the application using my-java-springboot-app Devfile
  \__/  \    Namespace: default
@@ -1269,6 +1282,7 @@ Now we're ready to run `odo deploy`:
 odo deploy
 ```
 ```console
+$ odo deploy
   __
  /  \__     Deploying the application using my-go-app Devfile
  \__/  \    Namespace: default
@@ -1311,6 +1325,7 @@ After testing your application, you may optionally undeploy using the `odo delet
 odo delete component
 ```
 ```console
+$ odo delete component
 Searching resources to delete, please wait...
 This will delete "my-app" from the namespace "default".
  •  The component contains the following resources that will get deleted:

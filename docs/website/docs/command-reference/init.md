@@ -37,6 +37,7 @@ The required `--name` flag indicates how the component initialized by this comma
 odo init
 ```
 ```console
+$ odo init
 ? Select language: java
 ? Select project type: Maven Java (java-maven, registry: DefaultDevfileRegistry)
 ? Which starter project do you want to use? springbootproject
@@ -58,6 +59,7 @@ In this example, the devfile will be downloaded from the **Staging** registry, w
 odo preference view
 ```
 ```console
+$ odo preference view
 Preference parameters:
  PARAMETER           VALUE
  ConsentTelemetry    true
@@ -90,6 +92,7 @@ In this example, the devfile will be downloaded from the **DefaultDevfileRegistr
 odo preference view
 ```
 ```console
+$ odo preference view
 Preference parameters:
  PARAMETER           VALUE
  ConsentTelemetry    true
@@ -120,6 +123,7 @@ To deploy your component to a cluster use "odo deploy".
 odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
 ```
 ```console
+$ odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
  ✓  Downloading devfile from "https://registry.devfile.io/devfiles/nodejs-angular" [415ms]
  ✓  Downloading starter project "nodejs-angular-starter" [484ms]
 

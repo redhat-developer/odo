@@ -23,6 +23,7 @@ To list all the service bindings, you can run `odo list binding`:
 odo list binding
 ```
 ```console
+$ odo list binding
  NAME                              APPLICATION                     SERVICES                                                                            RUNNING IN 
  binding-to-redis                  my-nodejs-app-app (Deployment)  redis (Service)                                                                     Dev
  * my-nodejs-app-cluster-sample    my-nodejs-app-app (Deployment)  cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: shared-ns-1)    Dev       

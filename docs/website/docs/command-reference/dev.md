@@ -18,6 +18,7 @@ Afterwards, run `odo dev`:
 odo dev
 ```
 ```console
+$ odo dev
   __
  /  \__     Developing using the my-nodejs-app Devfile
  \__/  \    Namespace: default
@@ -79,6 +80,7 @@ For example, given the following excerpt from a Devfile:
 odo dev --build-command my-build-with-version
 ```
 ```console
+$ odo dev --build-command my-build-with-version
 
   __
  /  \__     Developing using the my-sample-go Devfile
@@ -134,6 +136,7 @@ For example, given the following excerpt from a Devfile:
 odo dev --run-command my-run-with-postgres
 ```
 ```console
+$ odo dev --run-command my-run-with-postgres
 
   __
  /  \__     Developing using the my-java-springboot-app Devfile
