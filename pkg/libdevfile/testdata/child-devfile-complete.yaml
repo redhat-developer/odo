@@ -1,0 +1,34 @@
+commands:
+- exec:
+    commandLine: GOCACHE=${PROJECT_SOURCE}/.cache go build main.go
+    component: runtime
+    group:
+      isDefault: true
+      kind: build
+    workingDir: ${PROJECT_SOURCE}
+  id: build
+- exec:
+    commandLine: ./main
+    component: runtime
+    group:
+      isDefault: true
+      kind: run
+    workingDir: ${PROJECT_SOURCE}
+  id: run
+components:
+- container:
+    endpoints:
+    - name: http
+      targetPort: 8080
+    image: quay.io/devfile/golang:latest
+    memoryLimit: 1024Mi
+    mountSources: true
+  name: runtime
+- kubernetes:
+    uri: "manifest.yaml"
+  name: kube-cmp
+metadata:
+  name: my-go-app
+schemaVersion: 2.1.0
+parent:
+  uri: parent/parent-devfile-empty.yaml
