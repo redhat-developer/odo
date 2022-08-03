@@ -28,7 +28,9 @@ func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unst
 func getAllResources(client dynamic.Interface, apis []apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
 	var out []unstructured.Unstructured
 	outChan := make(chan []unstructured.Unstructured)
+	defer close(outChan)
 	errChan := make(chan struct{}) // use this to ensure that go routine doesn't keep waiting on outChan
+	defer close(errChan)
 
 	var apisOfInterest []apiResource
 	for _, api := range apis {
