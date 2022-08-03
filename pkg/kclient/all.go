@@ -28,6 +28,7 @@ func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unst
 func getAllResources(client dynamic.Interface, apis []apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
 	var out []unstructured.Unstructured
 	outChan := make(chan []unstructured.Unstructured)
+	errChan := make(chan struct{}) // use this to ensure that go routine doesn't keep waiting on outChan
 
 	var apisOfInterest []apiResource
 	for _, api := range apis {
@@ -49,6 +50,7 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 			v, err := queryAPI(client, api, ns, selector)
 			if err != nil {
 				klog.V(4).Infof("[query api] error querying: %s, error=%v", api.GroupVersionResource(), err)
+				errChan <- struct{}{}
 				return err
 			}
 			outChan <- v
@@ -59,15 +61,18 @@ func getAllResources(client dynamic.Interface, apis []apiResource, ns string, se
 	klog.V(2).Infof("fired up all goroutines to query APIs")
 
 	go func() {
-		for val := range outChan {
-			out = append(out, val...)
+		for {
+			select {
+			case <-errChan:
+				return
+			case val := <-outChan:
+				out = append(out, val...)
+			}
 		}
 	}()
 
 	err := group.Wait()
 	klog.V(2).Infof("all goroutines have returned in %v", time.Since(start))
-	close(outChan) // because we are ranging over the channel in a goroutine
-
 	klog.V(2).Infof("query result: objects=%d", len(out))
 	return out, err
 }
