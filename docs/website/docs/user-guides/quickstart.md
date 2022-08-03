@@ -374,7 +374,8 @@ Changes will be directly reflected on the cluster.
 
 Now that we've generated our code as well as our Devfile, let's start on development.
 
-`odo` uses inner loop development and allows you to code, build, run and test the application in a continuous workflow.
+`odo` uses [inner loop development](/docs/introduction#what-is-inner-loop-and-outer-loop) and allows you to code, 
+build, run and test the application in a continuous workflow.
 
 Once you run `odo dev`, you can freely edit code in your favourite IDE and watch as `odo` rebuilds and redeploys it.
 
