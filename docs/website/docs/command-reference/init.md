@@ -33,7 +33,10 @@ The required `--name` flag indicates how the component initialized by this comma
 
 ### Interactive mode
 
+```console
+odo init
 ```
+```console
 $ odo init
 ? Select language: java
 ? Select project type: Maven Java (java-maven, registry: DefaultDevfileRegistry)
@@ -52,7 +55,10 @@ To deploy your component to a cluster use "odo deploy".
 
 In this example, the devfile will be downloaded from the **Staging** registry, which is the first one in the list containing the `nodejs-react` devfile.
 
+```console
+odo preference view
 ```
+```console
 $ odo preference view
 Preference parameters:
  PARAMETER           VALUE
@@ -82,7 +88,10 @@ To deploy your component to a cluster use "odo deploy".
 
 In this example, the devfile will be downloaded from the **DefaultDevfileRegistry** registry, as explicitly indicated by the `--devfile-registry` flag.
 
+```console
+odo preference view
 ```
+```console
 $ odo preference view
 Preference parameters:
  PARAMETER           VALUE
@@ -110,7 +119,10 @@ To deploy your component to a cluster use "odo deploy".
 
 ### Non-interactive mode from a URL
 
+```console
+odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
 ```
+```console
 $ odo init --devfile-path https://registry.devfile.io/devfiles/nodejs-angular --name my-nodejs-app --starter nodejs-angular-starter
  ✓  Downloading devfile from "https://registry.devfile.io/devfiles/nodejs-angular" [415ms]
  ✓  Downloading starter project "nodejs-angular-starter" [484ms]

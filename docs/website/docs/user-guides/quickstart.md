@@ -36,13 +36,15 @@ For Node.JS we will use the [Express](https://expressjs.com/) framework for our 
 
 1. Install Express:
 ```console
-$ npm install express --save
+npm install express --save
 ```
 
 2. Generate an example project:
 ```console
+npx express-generator
+```
+```console
 $ npx express-generator
-
   warning: the default view engine will not be jade in future releases
   warning: use `--view=jade' or `--help' for additional options
 
@@ -82,8 +84,10 @@ $ npx express-generator
   1. Generate an example project:
 
 ```console
+dotnet new mvc --name app
+```
+```console
 $ dotnet new mvc --name app
-
 Welcome to .NET 6.0!
 ---------------------
 SDK Version: 6.0.104
@@ -142,7 +146,7 @@ func HelloServer(w http.ResponseWriter, r *http.Request) {
 2. Initialize a `go.mod` file:
 
 ```console
-$ go mod init my.example.go.project
+go mod init my.example.go.project
 ```
   </TabItem>
 </Tabs>
@@ -210,6 +214,9 @@ Now we'll initialize your application by creating a `devfile.yaml` to be deploye
 Let's run `odo init` and select Node.js:
 
 ```console
+odo init
+```
+```console
 $ odo init
   __
  /  \__     Initializing new component
@@ -244,6 +251,9 @@ A `devfile.yaml` has now been added to your directory and now you're ready to st
 
 Let's run `odo init` and select .NET 6.0:
 
+```console
+odo init
+```
 ```console
 $ odo init
   __
@@ -285,6 +295,9 @@ A `devfile.yaml` has now been added to your directory and now you're ready to st
 Let's run `odo init` and select Java Spring Boot:
 
 ```console
+odo init
+```
+```console
 $ odo init
   __
  /  \__     Initializing new component
@@ -322,6 +335,9 @@ A `devfile.yaml` has now been added to your directory and now you're ready to st
 
 Let's run `odo init` and select Go:
 
+```console
+odo init
+```
 ```console
 $ odo init
   __
@@ -367,6 +383,9 @@ Once you run `odo dev`, you can freely edit code in your favourite IDE and watch
 
 Let's run `odo dev` to start development on your Node.JS application:
 ```console
+odo dev
+```
+```console
 $ odo dev
   __
  /  \__     Developing using the my-nodejs-app Devfile
@@ -393,6 +412,9 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 Let's run `odo dev` to start development on your .NET application:
 
 ```console
+odo dev
+```
+```console
 $ odo dev
   __
  /  \__     Developing using the my-dotnet60-app Devfile
@@ -417,6 +439,9 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 
 Let's run `odo dev` to start development on your Java Spring Boot application:
 
+```console
+odo dev
+```
 ```console
 $ odo dev
   __
@@ -447,6 +472,9 @@ Let's run `odo dev` to start development on your .NET application:
 
 ```console
 odo dev
+```
+```console
+$ odo dev
   __
  /  \__     Developing using the my-go-app Devfile
  \__/  \    Namespace: default
@@ -481,9 +509,11 @@ Before we begin, you must login to a container registry that we will be pushing 
 Login to your container registry with either `podman` or `docker`:
 
 ```console
-$ podman login
-# or
-$ docker login
+podman login
+```
+Or
+```console
+docker login
 ```
 
 In order for `odo deploy` to push your image, your container registry needs to be accessible.
@@ -713,6 +743,9 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
 
 Now we're ready to run `odo deploy`:
 
+```console
+odo deploy
+```
 ```console
 $ odo deploy
   __
@@ -959,6 +992,9 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
 Now we're ready to run `odo deploy`:
 
 ```console
+odo deploy
+```
+```console
 $ odo deploy
   __
  /  \__     Deploying the application using my-dotnet-app Devfile
@@ -1187,6 +1223,9 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
 
 Now we're ready to run `odo deploy`:
 
+```console
+odo deploy
+```
 ```console
 $ odo deploy
   __
@@ -1428,6 +1467,9 @@ For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
 Now we're ready to run `odo deploy`:
 
 ```console
+odo deploy
+```
+```console
 $ odo deploy
   __
  /  \__     Deploying the application using my-go-app Devfile
@@ -1469,6 +1511,9 @@ After testing your application, you may optionally undeploy using the `odo delet
 
 ```console
 odo delete component
+```
+```console
+$ odo delete component
 Searching resources to delete, please wait...
 This will delete "my-app" from the namespace "default".
  •  The component contains the following resources that will get deleted:

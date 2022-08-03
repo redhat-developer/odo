@@ -10,10 +10,8 @@ To create a namespace you can run `odo create namespace <name>`:
 ```shell
 odo create namespace mynamespace
 ```
-
-Example - 
 ```shell
-odo create namespace mynamespace
+$ odo create namespace mynamespace
  ✓  Namespace "mynamespace" is ready for use
  ✓  New namespace created and now using namespace: mynamespace
 ```
@@ -24,10 +22,8 @@ To create a project you can run `odo create project <name>`:
 ```shell
 odo create project myproject
 ```
-
-Example -
 ```shell
-odo create project myproject    
+$ odo create project myproject
  ✓  Project "myproject" is ready for use
  ✓  New project created and now using project: myproject
 ```

@@ -30,8 +30,10 @@ This flag lets you change the content of the output:
 
 For these examples, we consider we have two registries in our preferences:
 
+```console
+odo preference view
 ```
-shell
+```console
 $ odo preference view
 Preference parameters:
  PARAMETER           VALUE
@@ -50,7 +52,10 @@ Devfile registries:
 
 To get the complete list of accessible Devfile stacks:
 
-```shell
+```console
+odo registry
+```
+```console
 $ odo registry
  NAME                          REGISTRY                DESCRIPTION                                 
  dotnet50                      Staging                 Stack with .NET 5.0                         
@@ -68,7 +73,10 @@ $ odo registry
 
 To list the Devfile stacks from the Staging registry only:
 
-```shell
+```console
+odo registry --devfile-registry Staging
+```
+```console
 $ odo registry --devfile-registry Staging
  NAME                          REGISTRY                DESCRIPTION                                 
  dotnet50                      Staging                 Stack with .NET 5.0                         
@@ -81,7 +89,10 @@ $ odo registry --devfile-registry Staging
 
 To list the Devfile stacks related to Maven:
 
-```shell
+```console
+odo registry --filter Maven
+```
+```console
 $ odo registry --filter Maven
  NAME                       REGISTRY                DESCRIPTION                                 
  java-maven                 Staging                 Upstream Maven and OpenJDK 11               
@@ -96,7 +107,10 @@ $ odo registry --filter Maven
 
 To get the details of the `java-maven` Devfile in the Staging registry:
 
-```shell
+```console
+odo registry --devfile java-maven --devfile-registry Staging --details
+```
+```console
 $ odo registry --devfile java-maven --devfile-registry Staging --details
 Name: java-maven
 Display Name: Maven Java

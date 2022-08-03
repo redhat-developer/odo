@@ -11,12 +11,10 @@ it will return a list of Project resources.
 ## Running the Command
 
 To list all the namespaces, you can run `odo list namespace`:
-```shell
+```console
 odo list namespace
 ```
-
-Example - 
-```sh
+```console
 $ odo list namespace
 ACTIVE     NAME
 *          default
@@ -32,12 +30,10 @@ ACTIVE     NAME
  Optionally, you can also use `project` as an alias to `namespace`.
  
  To list all the projects, you can run `odo list project`:
- ```shell
+ ```console
  odo list project
  ```
-
- Example -
- ```sh
+ ```console
  $ odo list project
  ACTIVE     NAME
 *          default

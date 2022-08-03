@@ -19,13 +19,10 @@ To get more information about a specific service binding, you can run the comman
 ## Running the Command
 
 To list all the service bindings, you can run `odo list binding`:
-```shell
+```console
 odo list binding
 ```
-
-Example:
-
-```sh
+```console
 $ odo list binding
  NAME                              APPLICATION                     SERVICES                                                                            RUNNING IN 
  binding-to-redis                  my-nodejs-app-app (Deployment)  redis (Service)                                                                     Dev
