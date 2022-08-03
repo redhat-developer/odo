@@ -546,10 +546,14 @@ func processEvents(
 		if isFatal(err) {
 			return nil, err
 		}
-		// Log and output, but intentionally not exiting on error here.
-		// We don't want to break watch when push failed, it might be fixed with the next change.
 		klog.V(4).Infof("Error from Push: %v", err)
-		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+		if parameters.WatchFiles {
+			// Log and output, but intentionally not exiting on error here.
+			// We don't want to break watch when push failed, it might be fixed with the next change.
+			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+		} else {
+			return nil, err
+		}
 		wait := backoff.Delay()
 		return &wait, nil
 	}
