@@ -224,12 +224,11 @@ var _ = Describe("odo add binding interactive command tests", func() {
 			var nsWithNoService string
 
 			BeforeEach(func() {
+				nsWithNoService = commonVar.Project
 				otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
 					helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 				Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
-
-				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 
 				commonVar.CliRunner.SetProject(commonVar.Project)
 			})
@@ -555,12 +554,11 @@ var _ = Describe("odo add binding interactive command tests", func() {
 			var nsWithNoService string
 
 			BeforeEach(func() {
+				nsWithNoService = commonVar.Project
 				otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				addBindableKindInOtherNs := commonVar.CliRunner.Run("-n", otherNS, "apply", "-f",
 					helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 				Expect(addBindableKindInOtherNs.ExitCode()).To(BeEquivalentTo(0))
-
-				nsWithNoService = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 
 				commonVar.CliRunner.SetProject(commonVar.Project)
 			})
