@@ -158,12 +158,13 @@ Options here are mostly used for debugging and testing `odo` behavior.
 
 ### Environment variables controlling odo behavior
 
-| Variable                   | Usage |
-| -------------------------- | ----- |
-| `PODMAN_CMD`               |   The command executed to run the local podman binary. `podman` by default    |
-| `DOCKER_CMD`               |  The command executed to run the local docker binary. `docker` by default     |
-| `ODO_BOOTSTRAPPER_IMAGE`   |       |
-| `ODO_LOG_LEVEL`            |       |
-| `ODO_DISABLE_TELEMETRY`    |       |
-| `GLOBALODOCONFIG`          |       |
-| `ODO_DEBUG_TELEMETRY_FILE` | Useful for debugging telemetry. When set it will save telemetry data to a file instead of sending it to the server. |
+| Variable                   | Usage                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `PODMAN_CMD`               | The command executed to run the local podman binary. `podman` by default                                              |
+| `DOCKER_CMD`               | The command executed to run the local docker binary. `docker` by default                                              |
+| `ODO_BOOTSTRAPPER_IMAGE`   |                                                                                                                       |
+| `ODO_LOG_LEVEL`            |                                                                                                                       |
+| `ODO_DISABLE_TELEMETRY`    |                                                                                                                       |
+| `GLOBALODOCONFIG`          |                                                                                                                       |
+| `ODO_DEBUG_TELEMETRY_FILE` | Useful for debugging telemetry. When set it will save telemetry data to a file instead of sending it to the server.   |
+| `DEVFILE_PROXY`            | Integration tests will use this address as Devfile registry instead of `https://registry.stage.devfile.io`            |
