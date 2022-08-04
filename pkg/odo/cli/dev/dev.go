@@ -237,7 +237,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 	// Ignore the devfile, as it will be handled independently
-	o.ignorePaths = append(ignores, o.GetDevfilePath())
+	o.ignorePaths = ignores
 
 	log.Section("Deploying to the cluster in developer mode")
 	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)

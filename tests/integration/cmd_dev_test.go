@@ -1744,11 +1744,6 @@ var _ = Describe("odo dev command tests", func() {
 							return nil
 						}
 
-						// devfile is not synchronized
-						if newPath == "devfile.yaml" {
-							return nil
-						}
-
 						localFiles = append(localFiles, newPath)
 						return nil
 					})
