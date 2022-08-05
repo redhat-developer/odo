@@ -6,6 +6,10 @@ title: odo create namespace
 
 Any new namespace created with this command will also be set as the current active namespace, this applies to project as well.
 
+:::note
+Executing this command inside a component directory will not update the namespace or project of the existing component.
+:::
+
 To create a namespace you can run `odo create namespace <name>`:
 ```shell
 odo create namespace mynamespace

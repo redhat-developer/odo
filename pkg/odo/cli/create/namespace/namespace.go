@@ -30,6 +30,7 @@ var (
 	This command directly performs actions on the cluster and doesn't require a push.
 
 	Any new namespace created with this command will also be set as the current active namespace.
+	If executed inside a component directory, this command will not update the namespace of the existing component.
 	`)
 
 	createShortDesc = `Create a new namespace`
