@@ -26,7 +26,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cli/logout"
 	"github.com/redhat-developer/odo/pkg/odo/cli/plugins"
 	"github.com/redhat-developer/odo/pkg/odo/cli/preference"
-	"github.com/redhat-developer/odo/pkg/odo/cli/project"
 	"github.com/redhat-developer/odo/pkg/odo/cli/registry"
 	"github.com/redhat-developer/odo/pkg/odo/cli/remove"
 	"github.com/redhat-developer/odo/pkg/odo/cli/set"
@@ -180,7 +179,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	rootCmdList := append([]*cobra.Command{},
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
-		project.NewCmdProject(project.RecommendedCommandName, util.GetFullName(fullName, project.RecommendedCommandName)),
 		version.NewCmdVersion(version.RecommendedCommandName, util.GetFullName(fullName, version.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		telemetry.NewCmdTelemetry(telemetry.RecommendedCommandName),

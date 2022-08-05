@@ -27,7 +27,7 @@ var (
 `)
 )
 
-// NamespaceListOptions encapsulates the options for the odo project list command
+// NamespaceListOptions encapsulates the options for the odo list project command
 type NamespaceListOptions struct {
 	// Context
 	*genericclioptions.Context
@@ -60,7 +60,7 @@ func (plo *NamespaceListOptions) Validate() (err error) {
 	return nil
 }
 
-// Run contains the logic for the odo project list command
+// Run contains the logic for the odo list project command
 func (plo *NamespaceListOptions) Run(ctx context.Context) error {
 	namespaces, err := plo.clientset.ProjectClient.List()
 	if err != nil {
@@ -70,7 +70,7 @@ func (plo *NamespaceListOptions) Run(ctx context.Context) error {
 	return HumanReadableOutput(os.Stdout, namespaces, plo.commandName)
 }
 
-// NewCmdNamespaceList implements the odo project list command.
+// NewCmdNamespaceList implements the odo list project command.
 func NewCmdNamespaceList(name, fullName string) *cobra.Command {
 	o := NewNamespaceListOptions()
 	projectListCmd := &cobra.Command{

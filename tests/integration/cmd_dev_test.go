@@ -392,7 +392,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("devfile has single endpoint", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			})
 
@@ -457,7 +457,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("devfile has multiple endpoints", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			})
 
@@ -1565,7 +1565,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should error out if called with a command of another kind", func() {
-				//devrun is a valid run command, not a build command
+				// devrun is a valid run command, not a build command
 				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "devrun").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 			})
@@ -1585,7 +1585,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should execute the default build command successfully if specified explicitly", func() {
-				//devbuild is the default build command
+				// devbuild is the default build command
 				buildCmdTestFunc("devbuild", func(stdout, stderr string) {
 					By("checking that it did not execute the custom build command", func() {
 						helper.DontMatchAllInOutput(stdout, []string{
@@ -1614,7 +1614,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should error out if called with a command of another kind", func() {
-				//devbuild is a valid build command, not a run command
+				// devbuild is a valid build command, not a run command
 				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
 			})
@@ -1634,7 +1634,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should execute the default run command successfully if specified explicitly", func() {
-				//devrun is the default run command
+				// devrun is the default run command
 				runCmdTestFunc("devrun", func(stdout, stderr string) {
 					By("checking that it did not execute the custom run command", func() {
 						helper.DontMatchAllInOutput(stdout, []string{
@@ -1889,7 +1889,7 @@ var _ = Describe("odo dev command tests", func() {
 	})
 	*/
 
-	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
+	// Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
 	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238
 	When("a component with endpoints is bootstrapped and pushed", func() {
 
@@ -1958,7 +1958,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
 			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
 
-			//the command has been started directly in the background. Check the PID stored in a specific file.
+			// the command has been started directly in the background. Check the PID stored in a specific file.
 			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
 				commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
 				"runtime",
@@ -1981,7 +1981,7 @@ var _ = Describe("odo dev command tests", func() {
 		var devSession helper.DevSession
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 			var err error
