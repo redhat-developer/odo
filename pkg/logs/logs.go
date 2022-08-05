@@ -3,8 +3,6 @@ package logs
 import (
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,46 +114,41 @@ func (o *LogsClient) getPodsForSelector(
 	namespace string,
 	podChan chan corev1.Pod,
 ) error {
+	// set of unique Pods with Pod name as key; these are the Pods whose logs we want to get from the cluster
+	pods := map[string]struct{}{}
+
+	podList, err := o.kubernetesClient.GetPodsMatchingSelector(selector)
+	if err != nil {
+		return err
+	}
+	for _, pod := range podList.Items {
+		podChan <- pod
+		pods[pod.GetName()] = struct{}{}
+	}
+
 	resources, err := o.kubernetesClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return err
 	}
-	// set of unique Pods with Pod name as key; these are the Pods whose logs we want to get from the cluster
-	pods := map[string]struct{}{}
-
-	// if there's a Pod in the resources, we add it to the set of Pods whose logs we are interested in
-	for _, r := range resources {
-		if r.GetKind() == "Pod" {
-			var pod corev1.Pod
-			err = runtime.DefaultUnstructuredConverter.FromUnstructured(r.Object, &pod)
-			if err != nil {
-				return err
-			}
-			pods[pod.GetName()] = struct{}{}
-			if podChan != nil {
-				podChan <- pod
-			}
-		}
-	}
 
 	// get all pods in the namespace
-	podList, err := o.kubernetesClient.GetAllPodsInNamespace()
+	podList, err = o.kubernetesClient.GetAllPodsInNamespace()
 	if err != nil {
 		return err
 	}
 
 	// match pod ownerReference (if any) with resources matching the selector
 	for _, pod := range podList.Items {
+		if _, ok := pods[pod.GetName()]; ok {
+			// Pod's logs have already been displayed to user
+			continue
+		}
 		match := false
 		for _, owner := range pod.GetOwnerReferences() {
 			match, err = o.matchOwnerReferenceWithResources(owner, resources)
 			if err != nil {
 				return err
 			} else if match {
-				if _, ok := pods[pod.GetName()]; ok {
-					// Pod's logs have already been displayed to user
-					continue
-				}
 				pods[pod.GetName()] = struct{}{}
 				podChan <- pod
 				break // because we don't need to check other owner references of the pod anymore

@@ -828,6 +828,21 @@ func (mr *MockClientInterfaceMockRecorder) GetPodUsingComponentName(componentNam
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodUsingComponentName", reflect.TypeOf((*MockClientInterface)(nil).GetPodUsingComponentName), componentName)
 }
 
+// GetPodsMatchingSelector mocks base method.
+func (m *MockClientInterface) GetPodsMatchingSelector(selector string) (*v11.PodList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodsMatchingSelector", selector)
+	ret0, _ := ret[0].(*v11.PodList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodsMatchingSelector indicates an expected call of GetPodsMatchingSelector.
+func (mr *MockClientInterfaceMockRecorder) GetPodsMatchingSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodsMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).GetPodsMatchingSelector), selector)
+}
+
 // GetProject mocks base method.
 func (m *MockClientInterface) GetProject(projectName string) (*v1.Project, error) {
 	m.ctrl.T.Helper()

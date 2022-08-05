@@ -3,8 +3,8 @@ package kclient
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"strings"
-	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,41 +26,52 @@ func (c *Client) GetAllResourcesFromSelector(selector string, ns string) ([]unst
 }
 
 func getAllResources(client dynamic.Interface, apis []apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
-	var mu sync.Mutex
-	var wg sync.WaitGroup
 	var out []unstructured.Unstructured
+	outChan := make(chan []unstructured.Unstructured)
 
-	start := time.Now()
-	klog.V(2).Infof("starting to query %d APIs in concurrently", len(apis))
-
-	var errResult error
+	var apisOfInterest []apiResource
 	for _, api := range apis {
 		if !api.r.Namespaced {
 			klog.V(4).Infof("[query api] api (%s) is non-namespaced, skipping", api.r.Name)
 			continue
 		}
-		wg.Add(1)
-		go func(a apiResource) {
-			defer wg.Done()
-			klog.V(4).Infof("[query api] start: %s", a.GroupVersionResource())
-			v, err := queryAPI(client, a, ns, selector)
-			if err != nil {
-				klog.V(4).Infof("[query api] error querying: %s, error=%v", a.GroupVersionResource(), err)
-				errResult = err
-				return
-			}
-			mu.Lock()
-			out = append(out, v...)
-			mu.Unlock()
-			klog.V(4).Infof("[query api]  done: %s, found %d apis", a.GroupVersionResource(), len(v))
-		}(api)
+		apisOfInterest = append(apisOfInterest, api)
 	}
 
+	start := time.Now()
+	group := new(errgroup.Group) // an error group errors when any of the go routines encounters an error
+	klog.V(2).Infof("starting to concurrently query %d APIs", len(apis))
+
+	for _, api := range apisOfInterest {
+		api := api // shadowing because go vet complains "loop variable api captured by func literal"
+		group.Go(func() error {
+			klog.V(4).Infof("[query api] start: %s", api.GroupVersionResource())
+			v, err := queryAPI(client, api, ns, selector)
+			if err != nil {
+				klog.V(4).Infof("[query api] error querying: %s, error=%v", api.GroupVersionResource(), err)
+				return err
+			}
+			outChan <- v
+			klog.V(4).Infof("[query api]  done: %s, found %d apis", api.GroupVersionResource(), len(v))
+			return nil
+		})
+	}
 	klog.V(2).Infof("fired up all goroutines to query APIs")
-	wg.Wait()
-	klog.V(2).Infof("all goroutines have returned in %v", time.Since(start))
-	klog.V(2).Infof("query result: error=%v, objects=%d", errResult, len(out))
-	return out, errResult
+
+	errChan := make(chan error)
+	go func() {
+		err := group.Wait()
+		klog.V(2).Infof("all goroutines have returned in %v", time.Since(start))
+		close(outChan)
+		errChan <- err
+	}()
+
+	for v := range outChan {
+		out = append(out, v...)
+	}
+
+	klog.V(2).Infof("query result: objects=%d", len(out))
+	return out, <-errChan
 }
 
 func queryAPI(client dynamic.Interface, api apiResource, ns string, selector string) ([]unstructured.Unstructured, error) {
