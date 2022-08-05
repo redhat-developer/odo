@@ -1248,6 +1248,9 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		Context("using a Devfile with an image component that uses a remote Dockerfile", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			})
 			for _, env := range [][]string{
 				{"PODMAN_CMD=echo"},
 				{
