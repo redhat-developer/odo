@@ -258,7 +258,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return err
 	}
 
-	eventsWatcher, isForbidden, err := o.kubeClient.PodWarningEventWatcher(ctx)
+	warningsWatcher, isForbidden, err := o.kubeClient.PodWarningEventWatcher(ctx)
 	if err != nil {
 		return err
 	}
@@ -266,7 +266,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
 	}
 
-	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, eventsWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
 }
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
