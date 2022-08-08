@@ -88,7 +88,7 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 
 // GetOnePod gets a pod using the component and app name
 func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
-	return client.GetOnePodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode))
+	return client.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode))
 }
 
 // Log returns log from component

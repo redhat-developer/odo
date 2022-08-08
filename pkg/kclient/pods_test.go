@@ -8,96 +8,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/redhat-developer/odo/pkg/preference"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/apimachinery/pkg/watch"
-
 	ktesting "k8s.io/client-go/testing"
 )
-
-func fakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
-		},
-		Status: corev1.PodStatus{
-			Phase: status,
-		},
-	}
-}
-
-// NOTE: We do *not* collection the amount of actions taken in this function as there could be any number of fake
-// 'event' actions that are happening in the background.
-func TestWaitAndGetPodWithEvents(t *testing.T) {
-	tests := []struct {
-		name                string
-		podName             string
-		status              corev1.PodPhase
-		wantEventWarning    bool
-		wantErr             bool
-		eventWarningMessage string
-	}{
-		{
-			name:             "Case 1: Pod running",
-			podName:          "ruby",
-			status:           corev1.PodRunning,
-			wantEventWarning: false,
-			wantErr:          false,
-		},
-		{
-			name:             "Case 2: Pod failed",
-			podName:          "ruby",
-			status:           corev1.PodFailed,
-			wantEventWarning: false,
-			wantErr:          true,
-		},
-		{
-			name:             "Case 3: Pod unknown",
-			podName:          "ruby",
-			status:           corev1.PodUnknown,
-			wantEventWarning: false,
-			wantErr:          true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			fakeClient, fakeClientSet := FakeNew()
-			fakePodWatch := watch.NewRaceFreeFake()
-
-			// Watch for Pods
-			fakePod := fakePodStatus(tt.status, tt.podName)
-			go func(pod *corev1.Pod) {
-				fakePodWatch.Modify(pod)
-			}(fakePod)
-
-			// Prepend watch reactor (beginning of the chain)
-			fakeClientSet.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fakePodWatch, nil
-			})
-
-			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
-
-			pod, err := fakeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, preference.DefaultPushTimeout)
-
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if err == nil {
-				if pod.Name != tt.podName {
-					t.Errorf("pod name is not matching to expected name, expected: %s, got %s", tt.podName, pod.Name)
-				}
-			}
-
-		})
-	}
-}
 
 func TestGetOnePodFromSelector(t *testing.T) {
 	fakePod := FakePodStatus(corev1.PodRunning, "nodejs")
@@ -174,7 +89,7 @@ func TestGetOnePodFromSelector(t *testing.T) {
 				return true, tt.returnedPods, nil
 			})
 
-			got, err := fkclient.GetOnePodFromSelector(tt.args.selector)
+			got, err := fkclient.GetRunningPodFromSelector(tt.args.selector)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetOnePodFromSelector() error = %v, wantErr %v", err, tt.wantErr)
 				return

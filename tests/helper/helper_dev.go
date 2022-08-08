@@ -160,7 +160,7 @@ func (o DevSession) WaitEnd() {
 // It returns the contents of the standard and error outputs
 // since the end of the dev mode started or previous sync, and until the end of the synchronization.
 func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
-	WaitForOutputToContain("Pushing files...", 180, 10, o.session)
+	WaitForOutputToContainOne([]string{"Pushing files...", "Updating Component..."}, 180, 10, o.session)
 	WaitForOutputToContain("Watching for changes in the current directory", 240, 10, o.session)
 	outContents := o.session.Out.Contents()
 	errContents := o.session.Err.Contents()

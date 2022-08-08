@@ -5,6 +5,7 @@
 package kclient
 
 import (
+	context "context"
 	io "io"
 	reflect "reflect"
 	time "time"
@@ -22,6 +23,7 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	watch "k8s.io/apimachinery/pkg/watch"
 	discovery "k8s.io/client-go/discovery"
 	dynamic "k8s.io/client-go/dynamic"
 	kubernetes "k8s.io/client-go/kubernetes"
@@ -94,18 +96,6 @@ func (m *MockClientInterface) ApplyDeployment(deploy v10.Deployment) (*v10.Deplo
 func (mr *MockClientInterfaceMockRecorder) ApplyDeployment(deploy interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyDeployment", reflect.TypeOf((*MockClientInterface)(nil).ApplyDeployment), deploy)
-}
-
-// CollectEvents mocks base method.
-func (m *MockClientInterface) CollectEvents(selector string, events map[string]v11.Event, quit <-chan int) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "CollectEvents", selector, events, quit)
-}
-
-// CollectEvents indicates an expected call of CollectEvents.
-func (mr *MockClientInterfaceMockRecorder) CollectEvents(selector, events, quit interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CollectEvents", reflect.TypeOf((*MockClientInterface)(nil).CollectEvents), selector, events, quit)
 }
 
 // CreateDeployment mocks base method.
@@ -309,6 +299,21 @@ func (mr *MockClientInterfaceMockRecorder) DeleteService(serviceName interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteService", reflect.TypeOf((*MockClientInterface)(nil).DeleteService), serviceName)
 }
 
+// DeploymentWatcher mocks base method.
+func (m *MockClientInterface) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeploymentWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeploymentWatcher indicates an expected call of DeploymentWatcher.
+func (mr *MockClientInterfaceMockRecorder) DeploymentWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeploymentWatcher", reflect.TypeOf((*MockClientInterface)(nil).DeploymentWatcher), ctx, selector)
+}
+
 // ExecCMDInContainer mocks base method.
 func (m *MockClientInterface) ExecCMDInContainer(containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
 	m.ctrl.T.Helper()
@@ -379,25 +384,6 @@ func (m *MockClientInterface) GetAllResourcesFromSelector(selector, ns string) (
 func (mr *MockClientInterfaceMockRecorder) GetAllResourcesFromSelector(selector, ns interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResourcesFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetAllResourcesFromSelector), selector, ns)
-}
-
-// GetAndUpdateStorageOwnerReference mocks base method.
-func (m *MockClientInterface) GetAndUpdateStorageOwnerReference(pvc *v11.PersistentVolumeClaim, ownerReference ...v12.OwnerReference) error {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{pvc}
-	for _, a := range ownerReference {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetAndUpdateStorageOwnerReference", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// GetAndUpdateStorageOwnerReference indicates an expected call of GetAndUpdateStorageOwnerReference.
-func (mr *MockClientInterfaceMockRecorder) GetAndUpdateStorageOwnerReference(pvc interface{}, ownerReference ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{pvc}, ownerReference...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAndUpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).GetAndUpdateStorageOwnerReference), varargs...)
 }
 
 // GetBindableKindStatusRestMapping mocks base method.
@@ -723,21 +709,6 @@ func (mr *MockClientInterfaceMockRecorder) GetOneDeploymentFromSelector(selector
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeploymentFromSelector), selector)
 }
 
-// GetOnePodFromSelector mocks base method.
-func (m *MockClientInterface) GetOnePodFromSelector(selector string) (*v11.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOnePodFromSelector", selector)
-	ret0, _ := ret[0].(*v11.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOnePodFromSelector indicates an expected call of GetOnePodFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetOnePodFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOnePodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOnePodFromSelector), selector)
-}
-
 // GetOneService mocks base method.
 func (m *MockClientInterface) GetOneService(componentName, appName string) (*v11.Service, error) {
 	m.ctrl.T.Helper()
@@ -903,6 +874,21 @@ func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromUnstructured(arg0 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromUnstructured", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromUnstructured), arg0)
 }
 
+// GetRunningPodFromSelector mocks base method.
+func (m *MockClientInterface) GetRunningPodFromSelector(selector string) (*v11.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRunningPodFromSelector", selector)
+	ret0, _ := ret[0].(*v11.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRunningPodFromSelector indicates an expected call of GetRunningPodFromSelector.
+func (mr *MockClientInterfaceMockRecorder) GetRunningPodFromSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetRunningPodFromSelector), selector)
+}
+
 // GetSecret mocks base method.
 func (m *MockClientInterface) GetSecret(name, namespace string) (*v11.Secret, error) {
 	m.ctrl.T.Helper()
@@ -992,6 +978,21 @@ func (m *MockClientInterface) IsDeploymentExtensionsV1Beta1() (bool, error) {
 func (mr *MockClientInterfaceMockRecorder) IsDeploymentExtensionsV1Beta1() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDeploymentExtensionsV1Beta1", reflect.TypeOf((*MockClientInterface)(nil).IsDeploymentExtensionsV1Beta1))
+}
+
+// IsPodNameMatchingSelector mocks base method.
+func (m *MockClientInterface) IsPodNameMatchingSelector(ctx context.Context, podname, selector string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsPodNameMatchingSelector", ctx, podname, selector)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsPodNameMatchingSelector indicates an expected call of IsPodNameMatchingSelector.
+func (mr *MockClientInterfaceMockRecorder) IsPodNameMatchingSelector(ctx, podname, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPodNameMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).IsPodNameMatchingSelector), ctx, podname, selector)
 }
 
 // IsProjectSupported mocks base method.
@@ -1204,6 +1205,37 @@ func (mr *MockClientInterfaceMockRecorder) PatchDynamicResource(exampleCustomRes
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).PatchDynamicResource), exampleCustomResource)
 }
 
+// PodWarningEventWatcher mocks base method.
+func (m *MockClientInterface) PodWarningEventWatcher(ctx context.Context) (watch.Interface, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodWarningEventWatcher", ctx)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// PodWarningEventWatcher indicates an expected call of PodWarningEventWatcher.
+func (mr *MockClientInterfaceMockRecorder) PodWarningEventWatcher(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWarningEventWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWarningEventWatcher), ctx)
+}
+
+// PodWatcher mocks base method.
+func (m *MockClientInterface) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PodWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PodWatcher indicates an expected call of PodWatcher.
+func (mr *MockClientInterfaceMockRecorder) PodWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWatcher), ctx, selector)
+}
+
 // RunLogout mocks base method.
 func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
 	m.ctrl.T.Helper()
@@ -1376,21 +1408,6 @@ func (mr *MockClientInterfaceMockRecorder) UpdateStorageOwnerReference(pvc inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).UpdateStorageOwnerReference), varargs...)
 }
 
-// WaitAndGetPodWithEvents mocks base method.
-func (m *MockClientInterface) WaitAndGetPodWithEvents(selector string, desiredPhase v11.PodPhase, pushTimeout time.Duration) (*v11.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitAndGetPodWithEvents", selector, desiredPhase, pushTimeout)
-	ret0, _ := ret[0].(*v11.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// WaitAndGetPodWithEvents indicates an expected call of WaitAndGetPodWithEvents.
-func (mr *MockClientInterfaceMockRecorder) WaitAndGetPodWithEvents(selector, desiredPhase, pushTimeout interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetPodWithEvents", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetPodWithEvents), selector, desiredPhase, pushTimeout)
-}
-
 // WaitAndGetSecret mocks base method.
 func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Secret, error) {
 	m.ctrl.T.Helper()
@@ -1404,35 +1421,6 @@ func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Sec
 func (mr *MockClientInterfaceMockRecorder) WaitAndGetSecret(name, namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetSecret", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetSecret), name, namespace)
-}
-
-// WaitForDeploymentRollout mocks base method.
-func (m *MockClientInterface) WaitForDeploymentRollout(deploymentName string) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForDeploymentRollout", deploymentName)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// WaitForDeploymentRollout indicates an expected call of WaitForDeploymentRollout.
-func (mr *MockClientInterfaceMockRecorder) WaitForDeploymentRollout(deploymentName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForDeploymentRollout", reflect.TypeOf((*MockClientInterface)(nil).WaitForDeploymentRollout), deploymentName)
-}
-
-// WaitForPodDeletion mocks base method.
-func (m *MockClientInterface) WaitForPodDeletion(name string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForPodDeletion", name)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WaitForPodDeletion indicates an expected call of WaitForPodDeletion.
-func (mr *MockClientInterfaceMockRecorder) WaitForPodDeletion(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForPodDeletion", reflect.TypeOf((*MockClientInterface)(nil).WaitForPodDeletion), name)
 }
 
 // WaitForServiceAccountInNamespace mocks base method.

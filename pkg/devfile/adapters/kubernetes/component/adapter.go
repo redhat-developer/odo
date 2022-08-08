@@ -1,15 +1,17 @@
 package component
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"k8s.io/utils/pointer"
 
+	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/component"
-	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -25,6 +27,7 @@ import (
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/watch"
 
 	devfilev1 "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
@@ -43,6 +46,7 @@ type Adapter struct {
 	kubeClient        kclient.ClientInterface
 	prefClient        preference.Client
 	portForwardClient portForward.Client
+	bindingClient     binding.Client
 
 	AdapterContext
 	logger machineoutput.MachineEventLoggingClient
@@ -64,6 +68,7 @@ func NewKubernetesAdapter(
 	kubernetesClient kclient.ClientInterface,
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
+	bindingClient binding.Client,
 	context AdapterContext,
 	namespace string,
 ) Adapter {
@@ -76,77 +81,18 @@ func NewKubernetesAdapter(
 		kubeClient:        kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
+		bindingClient:     bindingClient,
 		AdapterContext:    context,
 		logger:            machineoutput.NewMachineEventLoggingClient(),
 	}
 }
 
-// getPod lazily records and retrieves the pod associated with the component associated with this adapter. If refresh parameter
-// is true, then the pod is refreshed from the cluster regardless of its current local state
-func (a *Adapter) getPod(pod *corev1.Pod, refresh bool) (*corev1.Pod, error) {
-	result := pod
-	if refresh || result == nil {
-		podSelector := fmt.Sprintf("component=%s", a.ComponentName)
-
-		// Wait for Pod to be in running state otherwise we can't sync data to it.
-		var err error
-		result, err = a.kubeClient.WaitAndGetPodWithEvents(podSelector, corev1.PodRunning, a.prefClient.GetPushTimeout())
-		if err != nil {
-			return nil, fmt.Errorf("error while waiting for pod %s: %w", podSelector, err)
-		}
-	}
-	return result, nil
-}
-
-func (a *Adapter) ComponentInfo(pod *corev1.Pod, command devfilev1.Command) (adapters.ComponentInfo, error) {
-	pod, err := a.getPod(pod, false)
-	if err != nil {
-		return adapters.ComponentInfo{}, err
-	}
-	return adapters.ComponentInfo{
-		PodName:       pod.Name,
-		ContainerName: command.Exec.Component,
-	}, nil
-}
-
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
+// The componentStatus will be modified to reflect the status of the component when the function returns
+func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch.ComponentStatus) (err error) {
 
-	// Get the Dev deployment:
-	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
-	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
-	selectorLabels := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
-	deployment, err := a.kubeClient.GetOneDeploymentFromSelector(selectorLabels)
-
-	if err != nil {
-		if _, ok := err.(*kclient.DeploymentNotFoundError); !ok {
-			return fmt.Errorf("unable to determine if component %s exists: %w", a.ComponentName, err)
-		}
-	}
-	componentExists := deployment != nil
-
-	podChanged := false
-	var podName string
-
-	// If the component already exists, retrieve the pod's name before it's potentially updated
-	if componentExists {
-		// First see if the component does have a pod. it could have been scaled down to zero
-		_, err = a.kubeClient.GetOnePodFromSelector(fmt.Sprintf("component=%s", a.ComponentName))
-		// If an error occurs, we don't call a.getPod (a blocking function that waits till it finds a pod in "Running" state.)
-		// We would rely on a call to a.createOrUpdateComponent to reset the pod count for the component to one.
-		if err == nil {
-			pod, podErr := a.getPod(nil, true)
-			if podErr != nil {
-				return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, podErr)
-			}
-			podName = pod.GetName()
-		}
-	}
-
-	s := log.Spinner("Waiting for Kubernetes resources")
-	defer s.End(false)
-
+	// preliminary checks
 	err = dfutil.ValidateK8sResourceName("component name", a.ComponentName)
 	if err != nil {
 		return err
@@ -157,55 +103,25 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		return err
 	}
 
-	pushDevfileCommands, err := libdevfile.ValidateAndGetPushCommands(a.Devfile, parameters.DevfileBuildCmd, parameters.DevfileRunCmd)
+	deployment, componentExists, err := a.getComponentDeployment()
 	if err != nil {
-		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
+		return err
+	}
+
+	if componentStatus.State != watch.StateWaitDeployment && componentStatus.State != watch.StateReady {
+		log.SpinnerNoSpin("Waiting for Kubernetes resources")
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
 
-	// Set the annotations for the component type
-	annotations := make(map[string]string)
-	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
-
-	previousMode := parameters.EnvSpecificInfo.GetRunMode()
-	currentMode := envinfo.Run
-
-	if parameters.Debug {
-		pushDevfileDebugCommands, e := libdevfile.ValidateAndGetCommand(a.Devfile, parameters.DevfileDebugCmd, devfilev1.DebugCommandGroupKind)
-		if e != nil {
-			return fmt.Errorf("debug command is not valid: %w", e)
-		}
-		pushDevfileCommands[devfilev1.DebugCommandGroupKind] = pushDevfileDebugCommands
-		currentMode = envinfo.Debug
-	}
-
-	if currentMode != previousMode {
-		parameters.RunModeChanged = true
-	}
-
-	// fetch the "kubernetes inlined components" to create them on cluster
-	// from odo standpoint, these components contain yaml manifest of an odo service or an odo link
-	k8sComponents, err := devfile.GetKubernetesComponentsToPush(a.Devfile)
-	if err != nil {
-		return fmt.Errorf("error while trying to fetch service(s) from devfile: %w", err)
-	}
-
-	// validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
-	err = service.ValidateResourcesExist(a.kubeClient, a.Devfile, k8sComponents, a.Context)
+	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
 	if err != nil {
 		return err
 	}
 
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
-	}
-
-	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
-	deployment, err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, isMainStorageEphemeral, libdevfile.DevfileCommands{
+	var updated bool
+	deployment, updated, err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
@@ -214,35 +130,10 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
 
-	deployment, err = a.kubeClient.WaitForDeploymentRollout(deployment.Name)
-	if err != nil {
-		return fmt.Errorf("error while waiting for deployment rollout: %w", err)
-	}
-
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.getPod(nil, true)
-	if err != nil {
-		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
-	}
-
-	// list the latest state of the PVCs
-	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", a.ComponentName))
+	ownerReference := generator.GetOwnerReference(deployment)
+	err = a.updatePVCsOwnerReferences(ownerReference)
 	if err != nil {
 		return err
-	}
-
-	ownerReference := generator.GetOwnerReference(deployment)
-	// update the owner reference of the PVCs with the deployment
-	for i := range pvcs {
-		if pvcs[i].OwnerReferences != nil || pvcs[i].DeletionTimestamp != nil {
-			continue
-		}
-		err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-			return a.kubeClient.UpdateStorageOwnerReference(&pvcs[i], ownerRef)
-		})
-		if err != nil {
-			return err
-		}
 	}
 
 	// Update all services with owner references
@@ -254,45 +145,71 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 	}
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	needRestart, err := service.PushLinks(a.kubeClient, a.Devfile, k8sComponents, labels, deployment, a.Context)
+	err = service.PushLinks(a.kubeClient, a.Devfile, k8sComponents, labels, deployment, a.Context)
 	if err != nil {
-		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
+		return fmt.Errorf("failed to create service bindings associated with the component: %w", err)
 	}
 
-	if needRestart {
-		err = a.kubeClient.WaitForPodDeletion(pod.Name)
-		if err != nil {
-			return err
-		}
+	if updated {
+		klog.V(4).Infof("Deployment has been updated to generation %d. Waiting new event...\n", deployment.GetGeneration())
+		componentStatus.State = watch.StateWaitDeployment
+		return nil
 	}
 
-	_, err = a.kubeClient.WaitForDeploymentRollout(deployment.Name)
+	numberReplicas := deployment.Status.ReadyReplicas
+	if numberReplicas != 1 {
+		klog.V(4).Infof("Deployment has %d ready replicas. Waiting new event...\n", numberReplicas)
+		componentStatus.State = watch.StateWaitDeployment
+		return nil
+	}
+
+	injected, err := a.bindingClient.CheckServiceBindingsInjectionDone(a.ComponentName, a.AppName)
 	if err != nil {
-		return fmt.Errorf("failed to update config to component deployed: %w", err)
+		return err
 	}
 
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err = a.getPod(pod, true)
+	if !injected {
+		klog.V(4).Infof("Waiting for all service bindings to be injected...\n")
+		return errors.New("some servicebindings are not injected")
+	}
+
+	// Check if endpoints changed in Devfile
+	portsToForward, err := a.portForwardClient.GetPortsToForward(a.Devfile)
+	if err != nil {
+		return err
+	}
+	portsChanged := !reflect.DeepEqual(portsToForward, a.portForwardClient.GetForwardedPorts())
+
+	if componentStatus.State == watch.StateReady && !portsChanged {
+		// If the deployment is already in Ready State, no need to continue
+		return nil
+	}
+
+	// Now the Deployment has a Ready replica, we can get the Pod to work inside it
+	pod, err := a.kubeClient.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
 		return fmt.Errorf("unable to get pod for component %s: %w", a.ComponentName, err)
 	}
-
 	parameters.EnvSpecificInfo.SetDevfileObj(a.Devfile)
-
-	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
-	if componentExists && podName != pod.GetName() {
-		podChanged = true
-	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, syncFolder, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
-		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", podName, err)
+		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
 	}
-	s.End(true)
+	//s.End(true)
 
-	s = log.Spinner("Syncing files into the container")
+	s := log.Spinner("Syncing files into the container")
 	defer s.End(false)
+
+	// Get commands
+	pushDevfileCommands, err := a.getPushDevfileCommands(parameters)
+	if err != nil {
+		return fmt.Errorf("failed to validate devfile build and run commands: %w", err)
+	}
+
+	podChanged := componentStatus.State == watch.StateWaitDeployment
+
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(&a, a.kubeClient, a.ComponentName)
 	compInfo := adapters.ComponentInfo{
@@ -310,19 +227,21 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
+		componentStatus.State = watch.StateReady
 		return fmt.Errorf("failed to sync to component with name %s: %w", a.ComponentName, err)
 	}
 	s.End(true)
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentExists && libdevfile.HasPostStartEvents(a.Devfile) {
+	if !componentStatus.PostStartEventsDone && libdevfile.HasPostStartEvents(a.Devfile) {
 		err = libdevfile.ExecPostStartEvents(a.Devfile,
 			component.NewExecHandler(a.kubeClient, a.AppName, a.ComponentName, pod.Name, "", parameters.Show))
 		if err != nil {
 			return err
 		}
 	}
+	componentStatus.PostStartEventsDone = true
 
 	cmdKind := devfilev1.RunCommandGroupKind
 	cmdName := parameters.DevfileRunCmd
@@ -363,10 +282,10 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 			commandType, cmd.Id)
 	}
 
-	klog.V(4).Infof("running=%v, execRequired=%v, parameters.RunModeChanged=%v",
-		running, execRequired, parameters.RunModeChanged)
+	klog.V(4).Infof("running=%v, execRequired=%v",
+		running, execRequired)
 
-	if isComposite || !running || execRequired || parameters.RunModeChanged {
+	if isComposite || !running || execRequired {
 		// Invoke the build command once (before calling libdevfile.ExecuteCommandByNameAndKind), as, if cmd is a composite command,
 		// the handler we pass will be called for each command in that composite command.
 		doExecuteBuildCommand := func() error {
@@ -375,7 +294,7 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}
 		if componentExists {
-			if parameters.RunModeChanged || cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
+			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
 				if err = doExecuteBuildCommand(); err != nil {
 					return err
 				}
@@ -391,26 +310,33 @@ func (a Adapter) Push(parameters adapters.PushParameters) (err error) {
 		}
 	}
 
-	if podChanged {
+	if podChanged || portsChanged {
 		a.portForwardClient.StopPortForwarding()
 	}
 
 	err = a.portForwardClient.StartPortForwarding(a.Devfile, a.ComponentName, parameters.RandomPorts, parameters.ErrOut)
 	if err != nil {
-		return fmt.Errorf("fail starting the port forwarding: %w", err)
+		return adapters.NewErrPortForward(err)
 	}
+	componentStatus.EndpointsForwarded = a.portForwardClient.GetForwardedPorts()
 
+	componentStatus.State = watch.StateReady
 	return nil
 }
 
+// createOrUpdateComponent creates the deployment or updates it if it already exists
+// with the expected spec.
+// Returns the new deployment and if the generation of the deployment has been updated
 func (a *Adapter) createOrUpdateComponent(
 	componentExists bool,
 	ei envinfo.EnvSpecificInfo,
-	isMainStorageEphemeral bool,
 	commands libdevfile.DevfileCommands,
 	devfileDebugPort int,
 	deployment *appsv1.Deployment,
-) (*appsv1.Deployment, error) {
+) (*appsv1.Deployment, bool, error) {
+
+	isMainStorageEphemeral := a.prefClient.GetEphemeralSourceVolume()
+
 	ei.SetDevfileObj(a.Devfile)
 	componentName := a.ComponentName
 
@@ -422,13 +348,13 @@ func (a *Adapter) createOrUpdateComponent(
 	// handle the ephemeral storage
 	err := storage.HandleEphemeralStorage(a.kubeClient, storageClient, componentName, isMainStorageEphemeral)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// From devfile info, create PVCs and return ephemeral storages
 	ephemerals, err := storagepkg.Push(storageClient, &ei)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// Set the labels
@@ -441,10 +367,10 @@ func (a *Adapter) createOrUpdateComponent(
 
 	containers, err := generator.GetContainers(a.Devfile, parsercommon.DevfileOptions{})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if len(containers) == 0 {
-		return nil, fmt.Errorf("no valid components found in the devfile")
+		return nil, false, fmt.Errorf("no valid components found in the devfile")
 	}
 
 	// Add the project volume before generating init containers
@@ -453,28 +379,28 @@ func (a *Adapter) createOrUpdateComponent(
 
 	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, commands.DebugCmd, devfileDebugPort)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	initContainers, err := generator.GetInitContainers(a.Devfile)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// list all the pvcs for the component
 	pvcs, err := a.kubeClient.ListPVCs(fmt.Sprintf("%v=%v", "component", componentName))
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	odoSourcePVCName, volumeNameToVolInfo, err := storage.GetVolumeInfos(pvcs)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	var allVolumes []corev1.Volume
@@ -482,13 +408,13 @@ func (a *Adapter) createOrUpdateComponent(
 	// Get PVC volumes and Volume Mounts
 	pvcVolumes, err := storage.GetPersistentVolumesAndVolumeMounts(a.Devfile, containers, initContainers, volumeNameToVolInfo, parsercommon.DevfileOptions{})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	allVolumes = append(allVolumes, pvcVolumes...)
 
 	ephemeralVolumes, err := storage.GetEphemeralVolumesAndVolumeMounts(a.Devfile, containers, initContainers, ephemerals, parsercommon.DevfileOptions{})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	allVolumes = append(allVolumes, ephemeralVolumes...)
 
@@ -501,7 +427,7 @@ func (a *Adapter) createOrUpdateComponent(
 
 	deploymentObjectMeta, err := a.generateDeploymentObjectMeta(deployment, labels, annotations)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	deployParams := generator.DeploymentParams{
@@ -514,9 +440,15 @@ func (a *Adapter) createOrUpdateComponent(
 		Replicas:          pointer.Int32Ptr(1),
 	}
 
+	// Save generation to check if deployment is updated later
+	var originalGeneration int64 = 0
+	if deployment != nil {
+		originalGeneration = deployment.GetGeneration()
+	}
+
 	deployment, err = generator.GetDeployment(a.Devfile, deployParams)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
@@ -533,7 +465,7 @@ func (a *Adapter) createOrUpdateComponent(
 
 	serviceName, err := util.NamespaceKubernetesObjectWithTrim(componentName, a.AppName)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	serviceObjectMeta := generator.GetObjectMeta(serviceName, a.kubeClient.GetCurrentNamespace(), labels, serviceAnnotations)
 	serviceParams := generator.ServiceParams{
@@ -543,7 +475,7 @@ func (a *Adapter) createOrUpdateComponent(
 	svc, err := generator.GetService(a.Devfile, serviceParams, parsercommon.DevfileOptions{})
 
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
@@ -558,13 +490,13 @@ func (a *Adapter) createOrUpdateComponent(
 			deployment, err = a.kubeClient.UpdateDeployment(*deployment)
 		}
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		klog.V(2).Infof("Successfully updated component %v", componentName)
 		ownerReference := generator.GetOwnerReference(deployment)
 		err = a.createOrUpdateServiceForComponent(svc, componentName, ownerReference)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	} else {
 		if a.kubeClient.IsSSASupported() {
@@ -574,7 +506,7 @@ func (a *Adapter) createOrUpdateComponent(
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		klog.V(2).Infof("Successfully created component %v", componentName)
@@ -587,14 +519,15 @@ func (a *Adapter) createOrUpdateComponent(
 				return err
 			})
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			klog.V(2).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
+	newGeneration := deployment.GetGeneration()
 
-	return deployment, nil
+	return deployment, newGeneration != originalGeneration, nil
 }
 
 func (a *Adapter) createOrUpdateServiceForComponent(svc *corev1.Service, componentName string, ownerReference metav1.OwnerReference) error {

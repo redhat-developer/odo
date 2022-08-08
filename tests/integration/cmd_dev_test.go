@@ -185,31 +185,50 @@ var _ = Describe("odo dev command tests", func() {
 			})
 		})
 
+		When("recording telemetry data", func() {
+			BeforeEach(func() {
+				helper.EnableTelemetryDebug()
+				session, _, _, _, _ := helper.StartDevMode()
+				session.Stop()
+				session.WaitEnd()
+			})
+			AfterEach(func() {
+				helper.ResetTelemetry()
+			})
+			It("should record the telemetry data correctly", func() {
+				td := helper.GetTelemetryDebugData()
+				Expect(td.Event).To(ContainSubstring("odo dev"))
+				Expect(td.Properties.Success).To(BeTrue())
+				Expect(td.Properties.Error).ToNot(ContainSubstring("interrupt"))
+				Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
+				Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
+				Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
+			})
+		})
+
 		When("odo dev is executed", func() {
 
+			var devSession helper.DevSession
+
 			BeforeEach(func() {
-				devSession, _, _, _, err := helper.StartDevMode()
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
-				defer func() {
-					devSession.Kill()
-					devSession.WaitEnd()
-				}()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 			})
 
+			AfterEach(func() {
+				devSession.Kill()
+				devSession.WaitEnd()
+			})
+
 			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
 				var otherNS string
 				BeforeEach(func() {
-					helper.Cmd("odo", "delete", "component", "--name", cmpName, "-f").ShouldPass()
-					output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-					Expect(string(output)).To(ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
-
-					Eventually(func() string {
-						return string(commonVar.CliRunner.Run("get", "pods", "-n", commonVar.Project).Err.Contents())
-					}, 180, 10).Should(ContainSubstring("No resources found"))
-
+					devSession.Stop()
+					devSession.WaitEnd()
 					otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
 				})
 
@@ -228,34 +247,14 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
-			When("recording telemetry data", func() {
-				BeforeEach(func() {
-					helper.EnableTelemetryDebug()
-					session, _, _, _, _ := helper.StartDevMode()
-					session.Stop()
-					session.WaitEnd()
-				})
-				AfterEach(func() {
-					helper.ResetTelemetry()
-				})
-				It("should record the telemetry data correctly", func() {
-					td := helper.GetTelemetryDebugData()
-					Expect(td.Event).To(ContainSubstring("odo dev"))
-					Expect(td.Properties.Success).To(BeTrue())
-					Expect(td.Properties.Error).ToNot(ContainSubstring("interrupt"))
-					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
-					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
-					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
-				})
-			})
 			When("odo dev is stopped", func() {
+				BeforeEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
 				It("should delete component from the cluster", func() {
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
-					err := helper.RunDevMode(nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-						out := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-						Expect(string(out)).To(ContainSubstring(deploymentName))
-					})
-					Expect(err).ToNot(HaveOccurred())
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
 				})
@@ -359,16 +358,21 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		When("odo is executed with --no-watch flag", func() {
+
+			var devSession helper.DevSession
+
 			BeforeEach(func() {
-				devSession, _, _, _, err := helper.StartDevMode("--no-watch")
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode("--no-watch")
 				Expect(err).ToNot(HaveOccurred())
-				defer func() {
-					devSession.Kill()
-					devSession.WaitEnd()
-				}()
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
 				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+			})
+
+			AfterEach(func() {
+				devSession.Kill()
+				devSession.WaitEnd()
 			})
 
 			When("a file in component directory is modified", func() {
@@ -1143,7 +1147,7 @@ var _ = Describe("odo dev command tests", func() {
 			// Verify the pvc size for secondvol
 			storageSize = commonVar.CliRunner.GetPVCSize(devfileCmpName, "secondvol", commonVar.Project)
 			// should be the specified size in the devfile volume component
-			Expect(storageSize).To(ContainSubstring("3Gi"))
+			Expect(storageSize).To(ContainSubstring("200Mi"))
 		})
 	})
 
@@ -1283,7 +1287,7 @@ var _ = Describe("odo dev command tests", func() {
 				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
 				// The bracket allows to match the last occurrence with the command execution timing information.
 				Expect(strings.Count(string(stdout), "Building your application in container on cluster (command: install) [")).
-					To(BeNumerically("==", 1))
+					To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
 			})
 
 			By("verifying that the command did run successfully", func() {
@@ -1348,7 +1352,7 @@ var _ = Describe("odo dev command tests", func() {
 				out := string(stdout)
 				for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
 					Expect(strings.Count(out, fmt.Sprintf("Building your application in container on cluster (command: %s) [", cmd))).
-						To(BeNumerically("==", 1))
+						To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
 				}
 			})
 
@@ -1404,12 +1408,12 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	When("running odo dev and build command throws an error", func() {
+	When("running odo dev --no-watch and build command throws an error", func() {
 		var stderr string
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm install", "npm install-does-not-exist")
-			stderr = helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
+			stderr = helper.Cmd("odo", "dev", "--no-watch", "--random-ports").ShouldFail().Err()
 		})
 
 		It("should error out with some log", func() {
@@ -1689,7 +1693,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("Update the devfile.yaml", func() {
 
 			BeforeEach(func() {
-				helper.ReplaceString("devfile.yaml", "memoryLimit: 1024Mi", "memoryLimit: 1023Mi")
+				helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 767Mi")
 				var err error
 				_, _, _, err = session.WaitSync()
 				Expect(err).ToNot(HaveOccurred())
@@ -1889,14 +1893,20 @@ var _ = Describe("odo dev command tests", func() {
 	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238
 	When("a component with endpoints is bootstrapped and pushed", func() {
 
+		var devSession helper.DevSession
+
 		BeforeEach(func() {
 			cmpName = "nodejs-with-endpoints"
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path",
 				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 
-			devSession, _, _, _, err := helper.StartDevMode()
+			var err error
+			devSession, _, _, _, err = helper.StartDevMode()
 			Expect(err).ShouldNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
 			devSession.Kill()
 			devSession.WaitEnd()
 		})

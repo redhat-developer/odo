@@ -31,12 +31,11 @@ import (
 )
 
 // PushLinks updates Link(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-// returns true if the component needs to be restarted (when a link has been created or deleted)
 // if service binding operator is not present, it will call pushLinksWithoutOperator to create the links without it.
-func PushLinks(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
+func PushLinks(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) error {
 	serviceBindingSupport, err := client.IsServiceBindingSupported()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if !serviceBindingSupport {
@@ -48,13 +47,12 @@ func PushLinks(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8s
 }
 
 // pushLinksWithOperator creates links or deletes links (if service binding operator is installed) between components and services
-// returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
+func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) error {
 
 	ownerReference := generator.GetOwnerReference(deployment)
 	deployed, err := ListDeployedServices(client, labels)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	for key, deployedResource := range deployed {
@@ -63,21 +61,19 @@ func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.Dev
 		}
 	}
 
-	restartNeeded := false
-
 	// create an object on the kubernetes cluster for all the Kubernetes Inlined components
 	var strCRD string
 	for _, c := range k8sComponents {
 		// get the string representation of the YAML definition of a CRD
 		strCRD, err = libdevfile.GetK8sManifestWithVariablesSubstituted(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		u := unstructured.Unstructured{}
 		if e := yaml.Unmarshal([]byte(strCRD), &u.Object); e != nil {
-			return false, e
+			return e
 		}
 
 		if !isLinkResource(u.GetKind()) {
@@ -90,22 +86,16 @@ func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.Dev
 		u.SetOwnerReferences([]metav1.OwnerReference{ownerReference})
 		u.SetLabels(labels)
 
-		var updated bool
-		updated, err = updateOperatorService(client, u)
+		_, err = updateOperatorService(client, u)
 		delete(deployed, u.GetKind()+"/"+crdName)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				// TODO: better way to handle this might be introduced by https://github.com/redhat-developer/odo/issues/4553
 				continue // this ensures that services slice is not updated
 			} else {
-				return false, err
+				return err
 			}
 		}
-
-		// uncomment/modify when service linking is enabled in v3
-		// name := u.GetName()
-		// log.Successf("Created link %q using Service Binding Operator on the cluster; component will be restarted", name)
-		restartNeeded = restartNeeded || updated
 	}
 
 	for key, val := range deployed {
@@ -114,30 +104,27 @@ func pushLinksWithOperator(client kclient.ClientInterface, devfileObj parser.Dev
 		}
 		err = DeleteOperatorService(client, key)
 		if err != nil {
-			return false, err
+			return err
 
 		}
-		// uncomment/modify when service linking is enabled in v3
-		// log.Successf("Deleted link %q using Service Binding Operator on the cluster; component will be restarted", key)
-		restartNeeded = true
 	}
 
-	return restartNeeded, nil
+	return nil
 }
 
 // pushLinksWithoutOperator creates links or deletes links (if service binding operator is not installed) between components and services
 // returns true if the component needs to be restarted (a secret was generated and added to the deployment)
-func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) (bool, error) {
+func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, deployment *v1.Deployment, context string) error {
 
 	// check csv support before proceeding
 	csvSupport, err := client.IsCSVSupported()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	secrets, err := client.ListSecrets(odolabels.GetSelector(odolabels.GetComponentName(labels), odolabels.GetAppName(labels), odolabels.ComponentAnyMode))
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	ownerReferences := generator.GetOwnerReference(deployment)
@@ -156,13 +143,13 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 		// get the string representation of the YAML definition of a CRD
 		strCRD, err = libdevfile.GetK8sManifestWithVariablesSubstituted(devfileObj, c.Name, context, devfilefs.DefaultFs{})
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		// convert the YAML definition into map[string]interface{} since it's needed to create dynamic resource
 		u := unstructured.Unstructured{}
 		if e := yaml.Unmarshal([]byte(strCRD), &u.Object); e != nil {
-			return false, e
+			return e
 		}
 
 		if !isLinkResource(u.GetKind()) {
@@ -176,10 +163,8 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 
 	deploymentGVK, err := client.GetDeploymentAPIVersion()
 	if err != nil {
-		return false, err
+		return err
 	}
-
-	var restartRequired bool
 
 	// delete the links not present on the devfile
 	for linkName, secretName := range clusterLinksMap {
@@ -208,23 +193,20 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 			if processingPipeline == nil {
 				processingPipeline, err = getPipeline(client)
 				if err != nil {
-					return false, err
+					return err
 				}
 			}
 			_, err = processingPipeline.Process(&newServiceBinding)
 			if err != nil {
-				return false, err
+				return err
 			}
 
 			// since the library currently doesn't delete the secret after unbinding
 			// delete the secret manually
 			err = client.DeleteSecret(secretName, client.GetCurrentNamespace())
 			if err != nil {
-				return false, err
+				return err
 			}
-			restartRequired = true
-			// uncomment/modify when service linking is enabled in v3
-			// log.Successf("Deleted link %q on the cluster; component will be restarted", linkName)
 		}
 	}
 
@@ -237,7 +219,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 				// prevent listing of services unless required
 				services, e := client.ListServices("")
 				if e != nil {
-					return false, e
+					return e
 				}
 
 				// get the services and get match them against the component
@@ -251,7 +233,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 			var serviceBinding sboApi.ServiceBinding
 			err = yaml.Unmarshal([]byte(strCRD), &serviceBinding)
 			if err != nil {
-				return false, err
+				return err
 			}
 
 			if len(serviceBinding.Spec.Services) != 1 {
@@ -271,13 +253,13 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 
 			_, err = json.MarshalIndent(serviceBinding, " ", " ")
 			if err != nil {
-				return false, err
+				return err
 			}
 
 			if processingPipeline == nil {
 				processingPipeline, err = getPipeline(client)
 				if err != nil {
-					return false, err
+					return err
 				}
 			}
 
@@ -285,19 +267,19 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 			if err != nil {
 				if kerrors.IsForbidden(err) {
 					// due to https://github.com/redhat-developer/service-binding-operator/issues/1003
-					return false, fmt.Errorf("please install the service binding operator")
+					return fmt.Errorf("please install the service binding operator")
 				}
-				return false, err
+				return err
 			}
 
 			if len(serviceBinding.Status.Secret) == 0 {
-				return false, fmt.Errorf("no secret was provided by service binding's pipleine")
+				return fmt.Errorf("no secret was provided by service binding's pipleine")
 			}
 
 			// get the generated secret and update it with the labels and owner reference
 			secret, err := client.GetSecret(serviceBinding.Status.Secret, client.GetCurrentNamespace())
 			if err != nil {
-				return false, err
+				return err
 			}
 			secret.Labels = labels
 			secret.Labels[LinkLabel] = linkName
@@ -314,19 +296,12 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 			secret.SetOwnerReferences([]metav1.OwnerReference{ownerReferences})
 			_, err = client.UpdateSecret(secret, client.GetCurrentNamespace())
 			if err != nil {
-				return false, err
+				return err
 			}
-			restartRequired = true
-			// uncomment/modify when service linking is enabled in v3
-			// log.Successf("Created link %q on the cluster; component will be restarted", linkName)
 		}
 	}
 
-	if restartRequired {
-		return true, nil
-	}
-
-	return false, nil
+	return nil
 }
 
 // getPipeline gets the pipeline to process service binding requests

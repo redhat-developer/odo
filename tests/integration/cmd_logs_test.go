@@ -78,9 +78,13 @@ var _ = Describe("odo logs command tests", func() {
 			BeforeEach(func() {
 				devSession, _, _, _, err = helper.StartDevMode()
 				Expect(err).ToNot(HaveOccurred())
+				// We need to wait for the pod deployed as a Kubernetes component
+				Eventually(func() bool {
+					return areAllPodsRunning()
+				}).Should(Equal(true))
 			})
 			AfterEach(func() {
-				devSession.Kill()
+				devSession.Stop()
 				devSession.WaitEnd()
 			})
 			It("should successfully show logs of the running component", func() {
@@ -178,7 +182,7 @@ var _ = Describe("odo logs command tests", func() {
 				}).Should(Equal(true))
 			})
 			AfterEach(func() {
-				devSession.Kill()
+				devSession.Stop()
 				devSession.WaitEnd()
 			})
 			It("should successfully show logs of the running component", func() {

@@ -15,6 +15,7 @@ type Client interface {
 	// If debug is true, executes the debug command, or the run command by default.
 	// If buildCommand is set, this will look up the specified build command in the Devfile. Otherwise, it uses the default one.
 	// If runCommand is set, this will look up the specified run command in the Devfile and execute it. Otherwise, it uses the default one.
+	// Returns the status of the started component
 	Start(
 		devfileObj parser.DevfileObj,
 		namespace string,
@@ -25,7 +26,7 @@ type Client interface {
 		runCommand string,
 		randomPorts bool,
 		errOut io.Writer,
-	) error
+	) (watch.ComponentStatus, error)
 
 	// Watch watches for any changes to the files under path while ignoring the files/directories in ignorePaths.
 	// It logs messages to out and uses the Handler h to perform push operation when anything changes in path.
@@ -33,7 +34,9 @@ type Client interface {
 	// If debug is true, the debug command will be started after a sync, or the run command by default.
 	// If buildCommand is set, this will look up the specified build command in the Devfile. Otherwise, it uses the default one.
 	// If runCommand is set, this will look up the specified run command in the Devfile and execute it. Otherwise, it uses the default one.
+	// componentStatus is the status returned from the call to the Start Method
 	Watch(
+		devfilePath string,
 		devfileObj parser.DevfileObj,
 		path string,
 		ignorePaths []string,
@@ -45,10 +48,12 @@ type Client interface {
 		runCommand string,
 		variables map[string]string,
 		randomPorts bool,
+		watchFiles bool,
 		errOut io.Writer,
+		componentStatus watch.ComponentStatus,
 	) error
 }
 
 type Handler interface {
-	RegenerateAdapterAndPush(adapters.PushParameters, watch.WatchParameters) error
+	RegenerateAdapterAndPush(adapters.PushParameters, watch.WatchParameters, *watch.ComponentStatus) error
 }

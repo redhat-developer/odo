@@ -2,27 +2,34 @@ package watch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/state"
 
 	"github.com/fsnotify/fsnotify"
 	gitignore "github.com/sabhiram/go-gitignore"
 
 	"github.com/redhat-developer/odo/pkg/envinfo"
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/klog"
 )
 
@@ -33,14 +40,16 @@ const (
 )
 
 type WatchClient struct {
+	kubeClient   kclient.ClientInterface
 	deleteClient _delete.Client
 	stateClient  state.Client
 }
 
 var _ Client = (*WatchClient)(nil)
 
-func NewWatchClient(deleteClient _delete.Client, stateClient state.Client) *WatchClient {
+func NewWatchClient(kubeClient kclient.ClientInterface, deleteClient _delete.Client, stateClient state.Client) *WatchClient {
 	return &WatchClient{
+		kubeClient:   kubeClient,
 		deleteClient: deleteClient,
 		stateClient:  stateClient,
 	}
@@ -52,6 +61,8 @@ type WatchParameters struct {
 	ComponentName string
 	// Name of application, the component is part of
 	ApplicationName string
+	// DevfilePath is the path of the devfile
+	DevfilePath string
 	// The path to the source of component(local or binary)
 	Path string
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
@@ -59,7 +70,7 @@ type WatchParameters struct {
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	// WatchHandler func(kclient.ClientInterface, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
-	DevfileWatchHandler func(adapters.PushParameters, WatchParameters) error
+	DevfileWatchHandler func(adapters.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
 	// EnvSpecificInfo contains information of env.yaml file
@@ -80,6 +91,8 @@ type WatchParameters struct {
 	Variables map[string]string
 	// RandomPorts is true to forward containers ports on local random ports
 	RandomPorts bool
+	// WatchFiles indicates to watch for file changes and sync changes to the container
+	WatchFiles bool
 	// ErrOut is a Writer to output forwarded port information
 	ErrOut io.Writer
 }
@@ -90,7 +103,8 @@ type WatchParameters struct {
 type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores []string, watcher *fsnotify.Watcher) (changedFiles, deletedPaths []string)
 
 // processEventsFunc processes the events received on the watcher. It uses the WatchParameters to trigger watch handler and writes to out
-type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer)
+// It returns a Duration after which to recall in case of error
+type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
 // cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
 type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
@@ -202,60 +216,227 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, rootPath string, path string, 
 	return nil
 }
 
-func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context) error {
+func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
-	absIgnorePaths := dfutil.GetAbsGlobExps(parameters.Path, parameters.FileIgnores)
+	var sourcesWatcher *fsnotify.Watcher
+	var err error
+	if parameters.WatchFiles {
+		// TODO(feloy) ignore files included by Devfile?
+		sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
+		if err != nil {
+			return err
+		}
+	} else {
+		sourcesWatcher, err = fsnotify.NewWatcher()
+		if err != nil {
+			return err
+		}
+	}
+	defer sourcesWatcher.Close()
+
+	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
+	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
+	if err != nil {
+		return fmt.Errorf("error watching deployment: %v", err)
+	}
+
+	// TODO(feloy) watch files included by Devfile
+	devfileWatcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	if parameters.WatchFiles {
+		err = devfileWatcher.Add(parameters.DevfilePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	podWatcher, err := o.kubeClient.PodWatcher(ctx, selector)
+	if err != nil {
+		return err
+	}
+
+	warningsWatcher, isForbidden, err := o.kubeClient.PodWarningEventWatcher(ctx)
+	if err != nil {
+		return err
+	}
+	if isForbidden {
+		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
+	}
+
+	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+}
+
+func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
+	absIgnorePaths := dfutil.GetAbsGlobExps(path, fileIgnores)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return fmt.Errorf("error setting up filesystem watcher: %v", err)
+		return nil, fmt.Errorf("error setting up filesystem watcher: %v", err)
 	}
-	defer watcher.Close()
 
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
-	err = addRecursiveWatch(watcher, parameters.Path, parameters.Path, absIgnorePaths)
+	err = addRecursiveWatch(watcher, path, path, absIgnorePaths)
 	if err != nil {
-		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
+		return nil, fmt.Errorf("error watching source path %s: %v", path, err)
 	}
-
-	printInfoMessage(out, parameters.Path)
-
-	return eventWatcher(ctx, watcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources)
+	return watcher, nil
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func eventWatcher(ctx context.Context, watcher *fsnotify.Watcher, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc) error {
+func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
+
+	expBackoff := NewExpBackoff()
+
 	var events []fsnotify.Event
 
-	// timer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
-	// at this point. In the select block, however, every time we receive an event, we reset the timer to watch for
+	// sourcesTimer helps collect multiple events that happen in a quick succession. We start with 1ms as we don't care much
+	// at this point. In the select block, however, every time we receive an event, we reset the sourcesTimer to watch for
 	// 100ms since receiving that event. This is done because a single filesystem event by the user triggers multiple
 	// events for fsnotify. It's a known-issue, but not really bug. For more info look at below issues:
 	//    - https://github.com/fsnotify/fsnotify/issues/122
 	//    - https://github.com/fsnotify/fsnotify/issues/344
-	timer := time.NewTimer(time.Millisecond)
-	<-timer.C
+	sourcesTimer := time.NewTimer(time.Millisecond)
+	<-sourcesTimer.C
+
+	devfileTimer := time.NewTimer(time.Millisecond)
+	<-devfileTimer.C
+
+	deployTimer := time.NewTimer(time.Millisecond)
+	<-deployTimer.C
+
+	retryTimer := time.NewTimer(time.Millisecond)
+	<-retryTimer.C
+
+	podsPhases := NewPodPhases()
 
 	for {
 		select {
-		case event := <-watcher.Events:
+		case event := <-sourcesWatcher.Events:
 			events = append(events, event)
 			// We are waiting for more events in this interval
-			timer.Reset(100 * time.Millisecond)
-		case <-timer.C:
+			sourcesTimer.Reset(100 * time.Millisecond)
+		case <-sourcesTimer.C:
 			// timer has fired
+			if !componentCanSyncFile(componentStatus.State) {
+				continue
+			}
 			// first find the files that have changed (also includes the ones newly created) or deleted
-			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, watcher)
+			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, sourcesWatcher)
 			// process the changes and sync files with remote pod
-			processEventsHandler(changedFiles, deletedPaths, parameters, out)
+			if len(changedFiles) == 0 && len(deletedPaths) == 0 {
+				continue
+			}
+			componentStatus.State = StateSyncOutdated
+			fmt.Fprintf(out, "Pushing files...\n\n")
+			retry, err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+			if err != nil {
+				return err
+			}
 			// empty the events to receive new events
-			events = []fsnotify.Event{} // empty the events slice to capture new events
-		case watchErr := <-watcher.Errors:
+			if componentStatus.State == StateReady {
+				events = []fsnotify.Event{} // empty the events slice to capture new events
+			}
+
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
+			}
+
+		case watchErr := <-sourcesWatcher.Errors:
 			return watchErr
+
+		case ev := <-deploymentWatcher.ResultChan():
+			switch obj := ev.Object.(type) {
+			case *appsv1.Deployment:
+				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
+					ev.Type, obj.GetName(), obj.GetResourceVersion(), obj.Status.ReadyReplicas)
+				deployTimer.Reset(300 * time.Millisecond)
+
+			case *metav1.Status:
+				klog.V(4).Infof("Status: %+v\n", obj)
+			}
+
+		case <-deployTimer.C:
+			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			if err != nil {
+				return err
+			}
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
+			}
+
+		case <-devfileWatcher.Events:
+			devfileTimer.Reset(100 * time.Millisecond)
+
+		case <-devfileTimer.C:
+			fmt.Fprintf(out, "Updating Component...\n\n")
+			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			if err != nil {
+				return err
+			}
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
+			}
+
+		case <-retryTimer.C:
+			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
+			if err != nil {
+				return err
+			}
+			if retry != nil {
+				retryTimer.Reset(*retry)
+			} else {
+				retryTimer.Reset(time.Millisecond)
+				<-retryTimer.C
+			}
+
+		case ev := <-podWatcher.ResultChan():
+			switch ev.Type {
+			case watch.Deleted:
+				pod, ok := ev.Object.(*corev1.Pod)
+				if !ok {
+					return errors.New("unable to decode watch event")
+				}
+				podsPhases.Delete(out, pod)
+			case watch.Added, watch.Modified:
+				pod, ok := ev.Object.(*corev1.Pod)
+				if !ok {
+					return errors.New("unable to decode watch event")
+				}
+				podsPhases.Add(out, pod.GetCreationTimestamp(), pod)
+			}
+
+		case ev := <-eventsWatcher.ResultChan():
+			switch kevent := ev.Object.(type) {
+			case *corev1.Event:
+				podName := kevent.InvolvedObject.Name
+				selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
+				matching, err := o.kubeClient.IsPodNameMatchingSelector(ctx, podName, selector)
+				if err != nil {
+					return err
+				}
+				if matching {
+					log.Fwarning(out, kevent.Message)
+				}
+			}
+
+		case watchErr := <-devfileWatcher.Errors:
+			return watchErr
+
 		case <-ctx.Done():
 			return cleanupHandler(parameters.InitialDevfileObj, out)
 		}
@@ -328,18 +509,19 @@ func evaluateFileChanges(events []fsnotify.Event, path string, fileIgnores []str
 	return changedFiles, deletedPaths
 }
 
-func processEvents(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer) {
-	if len(changedFiles) == 0 && len(deletedPaths) == 0 {
-		return
-	}
-
+func processEvents(
+	changedFiles, deletedPaths []string,
+	parameters WatchParameters,
+	out io.Writer,
+	componentStatus *ComponentStatus,
+	backoff *ExpBackoff,
+) (*time.Duration, error) {
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
 		fmt.Fprintf(out, "\nFile %s changed\n", file)
 	}
 
 	var hasFirstSuccessfulPushOccurred bool
 
-	fmt.Fprintf(out, "Pushing files...\n\n")
 	klog.V(4).Infof("Copying files %s to pod", changedFiles)
 
 	pushParams := adapters.PushParameters{
@@ -358,15 +540,30 @@ func processEvents(changedFiles, deletedPaths []string, parameters WatchParamete
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,
 	}
-	err := parameters.DevfileWatchHandler(pushParams, parameters)
+	oldStatus := *componentStatus
+	err := parameters.DevfileWatchHandler(pushParams, parameters, componentStatus)
 	if err != nil {
-		// Log and output, but intentionally not exiting on error here.
-		// We don't want to break watch when push failed, it might be fixed with the next change.
+		if isFatal(err) {
+			return nil, err
+		}
 		klog.V(4).Infof("Error from Push: %v", err)
-		fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-	} else {
+		if parameters.WatchFiles {
+			// Log and output, but intentionally not exiting on error here.
+			// We don't want to break watch when push failed, it might be fixed with the next change.
+			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+		} else {
+			return nil, err
+		}
+		wait := backoff.Delay()
+		return &wait, nil
+	}
+	backoff.Reset()
+	if oldStatus.State != StateReady && componentStatus.State == StateReady ||
+		!reflect.DeepEqual(oldStatus.EndpointsForwarded, componentStatus.EndpointsForwarded) {
+
 		printInfoMessage(out, parameters.Path)
 	}
+	return nil, nil
 }
 
 func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, out io.Writer) error {
@@ -435,4 +632,8 @@ func removeDuplicates(input []string) []string {
 
 func printInfoMessage(out io.Writer, path string) {
 	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
+}
+
+func isFatal(err error) bool {
+	return errors.As(err, &adapters.ErrPortForward{})
 }

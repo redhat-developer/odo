@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/redhat-developer/odo/pkg/binding"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/portForward"
@@ -22,6 +23,7 @@ type DevClient struct {
 	prefClient        preference.Client
 	portForwardClient portForward.Client
 	watchClient       watch.Client
+	bindingClient     binding.Client
 }
 
 var _ Client = (*DevClient)(nil)
@@ -31,12 +33,14 @@ func NewDevClient(
 	prefClient preference.Client,
 	portForwardClient portForward.Client,
 	watchClient watch.Client,
+	bindingClient binding.Client,
 ) *DevClient {
 	return &DevClient{
 		kubernetesClient:  kubernetesClient,
 		prefClient:        prefClient,
 		portForwardClient: portForwardClient,
 		watchClient:       watchClient,
+		bindingClient:     bindingClient,
 	}
 }
 
@@ -50,10 +54,10 @@ func (o *DevClient) Start(
 	runCommand string,
 	randomPorts bool,
 	errOut io.Writer,
-) error {
+) (watch.ComponentStatus, error) {
 	klog.V(4).Infoln("Creating new adapter")
 	adapter := component.NewKubernetesAdapter(
-		o.kubernetesClient, o.prefClient, o.portForwardClient,
+		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient,
 		component.AdapterContext{
 			ComponentName: devfileObj.GetMetadataName(),
 			Context:       path,
@@ -64,7 +68,7 @@ func (o *DevClient) Start(
 
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
-		return err
+		return watch.ComponentStatus{}, err
 	}
 
 	pushParameters := adapters.PushParameters{
@@ -80,15 +84,17 @@ func (o *DevClient) Start(
 	}
 
 	klog.V(4).Infoln("Creating inner-loop resources for the component")
-	err = adapter.Push(pushParameters)
+	componentStatus := watch.ComponentStatus{}
+	err = adapter.Push(pushParameters, &componentStatus)
 	if err != nil {
-		return err
+		return watch.ComponentStatus{}, err
 	}
 	klog.V(4).Infoln("Successfully created inner-loop resources")
-	return nil
+	return componentStatus, nil
 }
 
 func (o *DevClient) Watch(
+	devfilePath string,
 	devfileObj parser.DevfileObj,
 	path string,
 	ignorePaths []string,
@@ -100,7 +106,9 @@ func (o *DevClient) Watch(
 	runCommand string,
 	variables map[string]string,
 	randomPorts bool,
+	watchFiles bool,
 	errOut io.Writer,
+	componentStatus watch.ComponentStatus,
 ) error {
 	envSpecificInfo, err := envinfo.NewEnvSpecificInfo(path)
 	if err != nil {
@@ -108,6 +116,7 @@ func (o *DevClient) Watch(
 	}
 
 	watchParameters := watch.WatchParameters{
+		DevfilePath:         devfilePath,
 		Path:                path,
 		ComponentName:       devfileObj.GetMetadataName(),
 		ApplicationName:     "app",
@@ -121,8 +130,9 @@ func (o *DevClient) Watch(
 		DebugPort:           envSpecificInfo.GetDebugPort(),
 		Variables:           variables,
 		RandomPorts:         randomPorts,
+		WatchFiles:          watchFiles,
 		ErrOut:              errOut,
 	}
 
-	return o.watchClient.WatchAndPush(out, watchParameters, ctx)
+	return o.watchClient.WatchAndPush(out, watchParameters, ctx, componentStatus)
 }

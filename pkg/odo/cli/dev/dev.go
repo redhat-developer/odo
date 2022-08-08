@@ -29,6 +29,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
+	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/vars"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/pkg/watch"
@@ -180,15 +181,6 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
-	// 3 steps to evaluate the paths to be ignored when "watching" the pwd/cwd for changes
-	// 1. create an empty string slice to which paths like .gitignore, .odo/odo-file-index.json, etc. will be added
-	var ignores []string
-	err = genericclioptions.ApplyIgnore(&ignores, "")
-	if err != nil {
-		return err
-	}
-	o.ignorePaths = ignores
-
 	return nil
 }
 
@@ -221,49 +213,70 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		"Namespace: "+namespace,
 		"odo version: "+version.VERSION)
 
-	log.Section("Deploying to the cluster in developer mode")
-	err = o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
+	// check for .gitignore file and add odo-file-index.json to .gitignore
+	gitIgnoreFile, err := util.TouchGitIgnoreFile(path)
 	if err != nil {
 		return err
 	}
 
-	log.Info("\nYour application is now running on the cluster")
+	// add odo-file-index.json path to .gitignore
+	err = util.AddOdoFileIndex(gitIgnoreFile)
+	if err != nil {
+		return err
+	}
+
+	// add devstate.json path to .gitignore
+	err = util.AddOdoDevState(gitIgnoreFile)
+	if err != nil {
+		return err
+	}
+
+	var ignores []string
+	err = genericclioptions.ApplyIgnore(&ignores, "")
+	if err != nil {
+		return err
+	}
+	// Ignore the devfile, as it will be handled independently
+	o.ignorePaths = ignores
+
+	log.Section("Deploying to the cluster in developer mode")
+	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
+	if err != nil {
+		return err
+	}
 
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
 	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
 
-	if o.noWatchFlag {
-		log.Finfof(log.GetStdout(), "\n"+watch.CtrlCMessage)
-		<-o.ctx.Done()
-		err = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
-	} else {
-		d := Handler{
-			clientset:   *o.clientset,
-			randomPorts: o.randomPortsFlag,
-			errOut:      o.errOut,
-		}
-		err = o.clientset.DevClient.Watch(
-			devFileObj,
-			path,
-			o.ignorePaths,
-			o.out,
-			&d,
-			o.ctx,
-			o.debugFlag,
-			o.buildCommandFlag,
-			o.runCommandFlag,
-			o.variables,
-			o.randomPortsFlag,
-			o.errOut,
-		)
+	d := Handler{
+		clientset:   *o.clientset,
+		randomPorts: o.randomPortsFlag,
+		errOut:      o.errOut,
 	}
+	err = o.clientset.DevClient.Watch(
+		o.GetDevfilePath(),
+		devFileObj,
+		path,
+		o.ignorePaths,
+		o.out,
+		&d,
+		o.ctx,
+		o.debugFlag,
+		o.buildCommandFlag,
+		o.runCommandFlag,
+		o.variables,
+		o.randomPortsFlag,
+		!o.noWatchFlag,
+		o.errOut,
+		componentStatus,
+	)
 	return err
 }
 
 // RegenerateAdapterAndPush regenerates the adapter and pushes the files to remote pod
-func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters) error {
+func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, watchParams watch.WatchParameters, componentStatus *watch.ComponentStatus) error {
 	var adapter kcomponent.ComponentAdapter
 
 	adapter, err := o.regenerateComponentAdapterFromWatchParams(watchParams)
@@ -271,7 +284,7 @@ func (o *Handler) RegenerateAdapterAndPush(pushParams adapters.PushParameters, w
 		return fmt.Errorf("unable to generate component from watch parameters: %w", err)
 	}
 
-	err = adapter.Push(pushParams)
+	err = adapter.Push(pushParams, componentStatus)
 	if err != nil {
 		return fmt.Errorf("watch command was unable to push component: %w", err)
 	}
@@ -289,6 +302,7 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 		o.clientset.KubernetesClient,
 		o.clientset.PreferenceClient,
 		o.clientset.PortForwardClient,
+		o.clientset.BindingClient,
 		kcomponent.AdapterContext{
 			ComponentName: parameters.ComponentName,
 			Context:       parameters.Path,
@@ -331,6 +345,7 @@ It forwards endpoints with exposure values 'public' or 'internal' to a port on l
 	devCmd.Flags().StringVar(&o.runCommandFlag, "run-command", "",
 		"Alternative run command to execute. The default one will be used if this flag is not set.")
 	clientset.Add(devCmd,
+		clientset.BINDING,
 		clientset.DEV,
 		clientset.FILESYSTEM,
 		clientset.INIT,

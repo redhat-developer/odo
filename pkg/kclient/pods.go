@@ -3,12 +3,9 @@ package kclient
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"k8s.io/klog"
 
@@ -18,105 +15,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 )
-
-// WaitAndGetPod block and waits until pod matching selector is in in Running state
-// desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, pushTimeout time.Duration) (*corev1.Pod, error) {
-
-	klog.V(3).Infof("Waiting for %s pod", selector)
-
-	var spinner *log.Status
-	defer func() {
-		if spinner != nil {
-			spinner.End(false)
-		}
-	}()
-
-	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(context.TODO(), metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("unable to watch pod: %w", err)
-	}
-	defer w.Stop()
-
-	// Here we are going to start a loop watching for the pod status
-	podChannel := make(chan *corev1.Pod)
-	watchErrorChannel := make(chan error)
-	failedEvents := make(map[string]corev1.Event)
-	go func() {
-	loop:
-		for {
-			val, ok := <-w.ResultChan()
-			if !ok {
-				watchErrorChannel <- errors.New("watch channel was closed")
-				break loop
-			}
-			if e, ok := val.Object.(*corev1.Pod); ok {
-				klog.V(3).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
-				for _, cond := range e.Status.Conditions {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonCond, _ := json.Marshal(cond)
-					klog.V(3).Infof("Pod Conditions: %s", string(jsonCond))
-				}
-				for _, status := range e.Status.ContainerStatuses {
-					// using this just for debugging message, so ignoring error on purpose
-					jsonStatus, _ := json.Marshal(status)
-					klog.V(3).Infof("Container Status: %s", string(jsonStatus))
-				}
-				switch e.Status.Phase {
-				case desiredPhase:
-					klog.V(3).Infof("Pod %s is %v", e.Name, desiredPhase)
-					podChannel <- e
-					break loop
-				case corev1.PodFailed, corev1.PodUnknown:
-					watchErrorChannel <- fmt.Errorf("pod %s status %s", e.Name, e.Status.Phase)
-					break loop
-				default:
-					// we start in a phase different from the desired one, let's wait
-					// Collect all the events in a separate go routine
-					quit := make(chan int)
-					go c.CollectEvents(selector, failedEvents, quit)
-					defer close(quit)
-				}
-			} else {
-				watchErrorChannel <- errors.New("unable to convert event object to Pod")
-				break loop
-			}
-		}
-		close(podChannel)
-		close(watchErrorChannel)
-	}()
-
-	select {
-	case val := <-podChannel:
-		if spinner != nil {
-			spinner.End(true)
-		}
-		return val, nil
-	case err := <-watchErrorChannel:
-		return nil, err
-	case <-time.After(pushTimeout):
-
-		// Create a useful error if there are any failed events
-		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, pushTimeout, selector)
-
-		if len(failedEvents) != 0 {
-
-			tableString := getErrorMessageFromEvents(failedEvents)
-
-			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
-For more information to help determine the cause of the error, re-run with '-v'.
-See below for a list of failed events that occured more than %d times during deployment:
-%s`, pushTimeout, selector, failedEventCount, tableString.String())
-		}
-
-		return nil, fmt.Errorf(errorMessage)
-	}
-}
 
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
 func (c *Client) ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
@@ -186,13 +88,14 @@ func (c *Client) ExtractProjectToComponent(containerName, podName string, target
 // GetPodUsingComponentName gets a pod using the component name
 func (c *Client) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
 	podSelector := fmt.Sprintf("component=%s", componentName)
-	return c.GetOnePodFromSelector(podSelector)
+	return c.GetRunningPodFromSelector(podSelector)
 }
 
-// GetOnePodFromSelector gets a pod from the selector
-func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
+// GetRunningPodFromSelector gets a pod from the selector
+func (c *Client) GetRunningPodFromSelector(selector string) (*corev1.Pod, error) {
 	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: selector,
+		FieldSelector: "status.phase=Running",
 	})
 	if err != nil {
 		// Don't wrap error since we want to know if it's a forbidden error
@@ -247,4 +150,24 @@ func (c *Client) GetAllPodsInNamespace() (*corev1.PodList, error) {
 
 func (c *Client) GetPodsMatchingSelector(selector string) (*corev1.PodList, error) {
 	return c.KubeClient.CoreV1().Pods(c.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
+}
+
+func (c *Client) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	ns := c.GetCurrentNamespace()
+	return c.GetClient().CoreV1().Pods(ns).
+		Watch(ctx, metav1.ListOptions{
+			LabelSelector: selector,
+		})
+}
+
+func (c *Client) IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error) {
+	ns := c.GetCurrentNamespace()
+	list, err := c.GetClient().CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
+		FieldSelector: "metadata.name=" + podname,
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(list.Items) > 0, nil
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -40,13 +41,23 @@ func evaluateChangesHandler(events []fsnotify.Event, path string, fileIgnores []
 	return changedFiles, deletedPaths
 }
 
-func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer) {
+func processEventsHandler(changedFiles, deletedPaths []string, _ WatchParameters, out io.Writer, componentStatus *ComponentStatus, backo *ExpBackoff) (*time.Duration, error) {
 	fmt.Fprintf(out, "changedFiles %s deletedPaths %s\n", changedFiles, deletedPaths)
+	return nil, nil
 }
 
 func cleanupHandler(_ parser.DevfileObj, out io.Writer) error {
 	fmt.Fprintf(out, "cleanup done")
 	return nil
+}
+
+type fakeWatcher struct{}
+
+func (o fakeWatcher) Stop() {
+}
+
+func (o fakeWatcher) ResultChan() <-chan watch.Event {
+	return make(chan watch.Event, 1)
 }
 
 func Test_eventWatcher(t *testing.T) {
@@ -66,7 +77,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{},
 			},
-			wantOut:       "changedFiles [file1 file2] deletedPaths []\ncleanup done",
+			wantOut:       "Pushing files...\n\nchangedFiles [file1 file2] deletedPaths []\ncleanup done",
 			wantErr:       false,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Create}, {Name: "file2", Op: fsnotify.Write}},
 			watcherError:  nil,
@@ -86,7 +97,7 @@ func Test_eventWatcher(t *testing.T) {
 			args: args{
 				parameters: WatchParameters{FileIgnores: []string{"file1"}},
 			},
-			wantOut:       "changedFiles [] deletedPaths [file1 file2]\ncleanup done",
+			wantOut:       "Pushing files...\n\nchangedFiles [] deletedPaths [file1 file2]\ncleanup done",
 			wantErr:       false,
 			watcherEvents: []fsnotify.Event{{Name: "file1", Op: fsnotify.Remove}, {Name: "file2", Op: fsnotify.Rename}},
 			watcherError:  nil,
@@ -105,6 +116,7 @@ func Test_eventWatcher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			watcher, _ := fsnotify.NewWatcher()
+			fileWatcher, _ := fsnotify.NewWatcher()
 			var cancel context.CancelFunc
 			ctx, cancel := context.WithCancel(context.Background())
 			out := &bytes.Buffer{}
@@ -121,7 +133,12 @@ func Test_eventWatcher(t *testing.T) {
 				cancel()
 			}()
 
-			err := eventWatcher(ctx, watcher, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler)
+			componentStatus := ComponentStatus{
+				State: StateReady,
+			}
+
+			o := WatchClient{}
+			err := o.eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, fakeWatcher{}, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, cleanupHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return

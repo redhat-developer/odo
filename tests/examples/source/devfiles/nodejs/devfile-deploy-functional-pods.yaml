@@ -83,6 +83,9 @@ components:
               containers:
                 - name: main
                   image: "{{CONTAINER_IMAGE}}"
+                  readinessProbe:
+                    httpGet:
+                      port: 3000
   - name: another-deployment
     kubernetes:
       inlined: |
@@ -103,17 +106,20 @@ components:
               containers:
                 - name: main
                   image: "{{CONTAINER_IMAGE}}"
+                  readinessProbe:
+                    httpGet:
+                      port: 3000
   - name: innerloop-pod
     kubernetes:
       inlined: |
         apiVersion: v1
         kind: Pod
         metadata:
-          name: myapp
+          name: myapp-inner
         spec:
           containers:
           - name: main
-            image: alpine
+            image: quay.io/quay/busybox
             command: ["/bin/sh"]
             args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]
   - name: outerloop-pod
@@ -122,10 +128,10 @@ components:
         apiVersion: v1
         kind: Pod
         metadata:
-          name: myapp
+          name: myapp-outer
         spec:
           containers:
           - name: main
-            image: alpine
+            image: quay.io/quay/busybox
             command: ["/bin/sh"]
             args: [ "-c", "while true; do echo \"`date` - this is infinite while loop\"; sleep 5; done" ]

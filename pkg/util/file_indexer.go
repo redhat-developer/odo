@@ -20,6 +20,7 @@ import (
 
 const DotOdoDirectory = ".odo"
 const fileIndexName = "odo-file-index.json"
+const fileDevState = "devstate.json"
 
 // FileIndex holds the file index used for storing local file state change
 type FileIndex struct {
@@ -103,6 +104,15 @@ func AddOdoFileIndex(gitIgnoreFile string) error {
 
 func addOdoFileIndex(gitIgnoreFile string, fs filesystem.Filesystem) error {
 	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(DotOdoDirectory, fileIndexName), fs)
+}
+
+// AddOdoDevState adds devstate.json to .gitignore
+func AddOdoDevState(gitIgnoreFile string) error {
+	return addOdoDevState(gitIgnoreFile, filesystem.DefaultFs{})
+}
+
+func addOdoDevState(gitIgnoreFile string, fs filesystem.Filesystem) error {
+	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(DotOdoDirectory, fileDevState), fs)
 }
 
 // TouchGitIgnoreFile checks .gitignore file exists or not, if not then create it
@@ -212,18 +222,6 @@ func WriteFile(newFileMap map[string]FileData, resolvedPath string) error {
 func RunIndexerWithRemote(directory string, originalIgnoreRules []string, remoteDirectories map[string]string) (ret IndexerRet, err error) {
 	directory = filepath.FromSlash(directory)
 	ret.ResolvedPath, err = ResolveIndexFilePath(directory)
-	if err != nil {
-		return ret, err
-	}
-
-	// check for .gitignore file and add odo-file-index.json to .gitignore
-	gitIgnoreFile, err := TouchGitIgnoreFile(directory)
-	if err != nil {
-		return ret, err
-	}
-
-	// add odo-file-index.json path to .gitignore
-	err = AddOdoFileIndex(gitIgnoreFile)
 	if err != nil {
 		return ret, err
 	}

@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -48,13 +50,12 @@ type ClientInterface interface {
 	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)
 	GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error)
 	GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error)
-	WaitForPodDeletion(name string) error
-	WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error)
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	UpdateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	ApplyDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
 	GetDeploymentAPIVersion() (schema.GroupVersionKind, error)
 	IsDeploymentExtensionsV1Beta1() (bool, error)
+	DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error)
 
 	// dynamic.go
 	PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error)
@@ -64,7 +65,7 @@ type ClientInterface interface {
 	DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error
 
 	// events.go
-	CollectEvents(selector string, events map[string]corev1.Event, quit <-chan int)
+	PodWarningEventWatcher(ctx context.Context) (result watch.Interface, isForbidden bool, err error)
 
 	// kclient.go
 	GetClient() kubernetes.Interface
@@ -106,14 +107,15 @@ type ClientInterface interface {
 	TryWithBlockOwnerDeletion(ownerReference metav1.OwnerReference, exec func(ownerReference metav1.OwnerReference) error) error
 
 	// pods.go
-	WaitAndGetPodWithEvents(selector string, desiredPhase corev1.PodPhase, pushTimeout time.Duration) (*corev1.Pod, error)
 	ExecCMDInContainer(containerName, podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 	ExtractProjectToComponent(containerName, podName string, targetPath string, stdin io.Reader) error
 	GetPodUsingComponentName(componentName string) (*corev1.Pod, error)
-	GetOnePodFromSelector(selector string) (*corev1.Pod, error)
+	GetRunningPodFromSelector(selector string) (*corev1.Pod, error)
 	GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error)
 	GetAllPodsInNamespace() (*corev1.PodList, error)
 	GetPodsMatchingSelector(selector string) (*corev1.PodList, error)
+	PodWatcher(ctx context.Context, selector string) (watch.Interface, error)
+	IsPodNameMatchingSelector(ctx context.Context, podname string, selector string) (bool, error)
 
 	// port_forwarding.go
 	// SetupPortForwarding creates port-forwarding for the pod on the port pairs provided in the
@@ -157,6 +159,5 @@ type ClientInterface interface {
 	ListPVCNames(selector string) ([]string, error)
 	GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, error)
 	UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[string]string) error
-	GetAndUpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error
 	UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error
 }

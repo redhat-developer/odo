@@ -380,15 +380,15 @@ func isLinkResource(kind string) bool {
 func updateOperatorService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
 
 	// Create the service on cluster
-	createSpinner := log.Spinnerf("Creating kind %s", u.GetKind())
-	defer createSpinner.End(false)
-
 	updated, err := client.PatchDynamicResource(u)
 	if err != nil {
 		return false, err
 	}
 
-	createSpinner.End(true)
+	if updated {
+		createSpinner := log.Spinnerf("Creating kind %s", u.GetKind())
+		createSpinner.End(true)
+	}
 	return updated, err
 }
 

@@ -20,4 +20,10 @@ type Client interface {
 
 	// StopPortForwarding stops the port forwarding
 	StopPortForwarding()
+
+	// GetForwardedPorts returns the list of ports for each containers currently forwarded
+	GetForwardedPorts() map[string][]int
+
+	// GetPortsToForward returns the endpoints to forward from the Devfile
+	GetPortsToForward(devFileObj parser.DevfileObj) (map[string][]int, error)
 }

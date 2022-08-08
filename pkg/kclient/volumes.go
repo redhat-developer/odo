@@ -2,12 +2,14 @@ package kclient
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/devfile/library/pkg/devfile/generator"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // constants for volumes
@@ -72,26 +74,6 @@ func (c *Client) UpdatePVCLabels(pvc *corev1.PersistentVolumeClaim, labels map[s
 	return nil
 }
 
-// GetAndUpdateStorageOwnerReference updates the given storage with the given owner references
-func (c *Client) GetAndUpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
-	if len(ownerReference) <= 0 {
-		return errors.New("owner references are empty")
-	}
-	// get the latest version of the PVC to avoid conflict errors
-	latestPVC, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(context.TODO(), pvc.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	for _, owRf := range ownerReference {
-		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
-	}
-	_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), latestPVC, metav1.UpdateOptions{FieldManager: FieldManager})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // UpdateStorageOwnerReference updates the given storage with the given owner references
 func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, ownerReference ...metav1.OwnerReference) error {
 	if len(ownerReference) <= 0 {
@@ -106,9 +88,23 @@ func (c *Client) UpdateStorageOwnerReference(pvc *corev1.PersistentVolumeClaim, 
 	updatedPVC.OwnerReferences = ownerReference
 	updatedPVC.Spec = pvc.Spec
 
-	_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), updatedPVC, metav1.UpdateOptions{FieldManager: FieldManager})
-	if err != nil {
-		return err
+	if c.IsSSASupported() {
+		updatedPVC.APIVersion, updatedPVC.Kind = corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim").ToAPIVersionAndKind()
+		updatedPVC.SetManagedFields(nil)
+		updatedPVC.SetResourceVersion("")
+		data, err := json.Marshal(updatedPVC)
+		if err != nil {
+			return fmt.Errorf("unable to marshal deployment: %w", err)
+		}
+		_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Patch(context.TODO(), updatedPVC.Name, types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: FieldManager, Force: boolPtr(true)})
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(context.TODO(), updatedPVC, metav1.UpdateOptions{FieldManager: FieldManager})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

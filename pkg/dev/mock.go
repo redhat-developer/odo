@@ -39,11 +39,12 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Start mocks base method.
-func (m *MockClient) Start(devfileObj parser.DevfileObj, namespace string, ignorePaths []string, path string, debug bool, buildCommand, runCommand string, randomPorts bool, errOut io.Writer) error {
+func (m *MockClient) Start(devfileObj parser.DevfileObj, namespace string, ignorePaths []string, path string, debug bool, buildCommand, runCommand string, randomPorts bool, errOut io.Writer) (watch.ComponentStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Start", devfileObj, namespace, ignorePaths, path, debug, buildCommand, runCommand, randomPorts, errOut)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(watch.ComponentStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Start indicates an expected call of Start.
@@ -53,17 +54,17 @@ func (mr *MockClientMockRecorder) Start(devfileObj, namespace, ignorePaths, path
 }
 
 // Watch mocks base method.
-func (m *MockClient) Watch(devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string, randomPorts bool, errOut io.Writer) error {
+func (m *MockClient) Watch(devfilePath string, devfileObj parser.DevfileObj, path string, ignorePaths []string, out io.Writer, h Handler, ctx context.Context, debug bool, buildCommand, runCommand string, variables map[string]string, randomPorts, watchFiles bool, errOut io.Writer, componentStatus watch.ComponentStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Watch", devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, errOut)
+	ret := m.ctrl.Call(m, "Watch", devfilePath, devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Watch indicates an expected call of Watch.
-func (mr *MockClientMockRecorder) Watch(devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, errOut interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Watch(devfilePath, devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, errOut)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockClient)(nil).Watch), devfilePath, devfileObj, path, ignorePaths, out, h, ctx, debug, buildCommand, runCommand, variables, randomPorts, watchFiles, errOut, componentStatus)
 }
 
 // MockHandler is a mock of Handler interface.
@@ -90,15 +91,15 @@ func (m *MockHandler) EXPECT() *MockHandlerMockRecorder {
 }
 
 // RegenerateAdapterAndPush mocks base method.
-func (m *MockHandler) RegenerateAdapterAndPush(arg0 adapters.PushParameters, arg1 watch.WatchParameters) error {
+func (m *MockHandler) RegenerateAdapterAndPush(arg0 adapters.PushParameters, arg1 watch.WatchParameters, arg2 *watch.ComponentStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegenerateAdapterAndPush", arg0, arg1)
+	ret := m.ctrl.Call(m, "RegenerateAdapterAndPush", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RegenerateAdapterAndPush indicates an expected call of RegenerateAdapterAndPush.
-func (mr *MockHandlerMockRecorder) RegenerateAdapterAndPush(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockHandlerMockRecorder) RegenerateAdapterAndPush(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegenerateAdapterAndPush", reflect.TypeOf((*MockHandler)(nil).RegenerateAdapterAndPush), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegenerateAdapterAndPush", reflect.TypeOf((*MockHandler)(nil).RegenerateAdapterAndPush), arg0, arg1, arg2)
 }

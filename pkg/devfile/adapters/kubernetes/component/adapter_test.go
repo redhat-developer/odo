@@ -3,7 +3,6 @@ package component
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser/data"
 	"github.com/golang/mock/gomock"
@@ -27,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
 
@@ -131,8 +129,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				Name:    testComponentName,
 				AppName: testAppName,
 			})
-			componentAdapter := NewKubernetesAdapter(fkclient, nil, nil, adapterCtx, "")
-			_, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, false, libdevfile.DevfileCommands{}, 0, nil)
+			ctrl := gomock.NewController(t)
+			fakePrefClient := preference.NewMockClient(ctrl)
+			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
+			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, adapterCtx, "")
+			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, 0, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -245,80 +246,6 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestWaitAndGetComponentPod(t *testing.T) {
-
-	testComponentName := "test"
-
-	tests := []struct {
-		name          string
-		componentType devfilev1.ComponentType
-		status        corev1.PodPhase
-		wantErr       bool
-	}{
-		{
-			name:    "Case 1: Running",
-			status:  corev1.PodRunning,
-			wantErr: false,
-		},
-		{
-			name:    "Case 2: Failed pod",
-			status:  corev1.PodFailed,
-			wantErr: true,
-		},
-		{
-			name:    "Case 3: Unknown pod",
-			status:  corev1.PodUnknown,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: func() data.DevfileData {
-					devfileData, err := data.NewDevfileData(string(data.APISchemaVersion200))
-					if err != nil {
-						t.Error(err)
-					}
-					err = devfileData.AddComponents([]devfilev1.Component{testingutil.GetFakeContainerComponent("component")})
-					if err != nil {
-						t.Error(err)
-					}
-					return devfileData
-				}(),
-			}
-
-			adapterCtx := AdapterContext{
-				ComponentName: testComponentName,
-				Devfile:       devObj,
-			}
-
-			fkclient, fkclientset := kclient.FakeNew()
-			fkWatch := watch.NewFake()
-
-			// Change the status
-			go func() {
-				fkWatch.Modify(kclient.FakePodStatus(tt.status, testComponentName))
-			}()
-
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
-
-			ctrl := gomock.NewController(t)
-			prefClient := preference.NewMockClient(ctrl)
-			prefClient.EXPECT().GetPushTimeout().Return(100 * time.Second)
-			componentAdapter := NewKubernetesAdapter(fkclient, prefClient, nil, adapterCtx, "")
-			_, err := componentAdapter.getPod(nil, false)
-
-			// Checks for unexpected error cases
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-
 }
 
 func getExecCommand(id string, group devfilev1.CommandGroupKind) devfilev1.Command {
