@@ -26,7 +26,12 @@ $ odo delete project myproject
 
 :::note
 This command is smart enough to detect the resources supported by your cluster and make an informed decision on the type of resource that should be deleted, using either of the aliases.
-So you can run `odo delete project` on a Kubernetes cluster, and it will delete a Namespace resource, and you can run `odo delete namespace` on an OpenShift cluster, it will delete a Project resource.
+So you can run `odo delete project` on a Kubernetes cluster, and it will delete a Namespace resource, or you can run `odo delete namespace` on an OpenShift cluster, it will delete a Project resource.
+:::
+
+
+:::note
+Running `odo delete <namespace/project>` to delete namespace/project does not ensure that a component using it will also get updated. See [odo dev#env-file](./dev.md#env-file) or [odo deploy#env-file](./deploy.md#env-file) for more information.
 :::
 
 ## Available Flags
