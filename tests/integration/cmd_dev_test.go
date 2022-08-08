@@ -1173,7 +1173,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
-	Describe("running odo dev for a devfile with composite apply command", func() {
+	Describe("devfile contains composite apply command", func() {
 		const (
 			deploymentName = "my-component"
 			DEVFILEPORT    = "3000"
@@ -1183,13 +1183,11 @@ var _ = Describe("odo dev command tests", func() {
 		var err error
 		var ports map[string]string
 		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 		})
-		When("running odo dev and devfile with composite apply command", func() {
+		When("odo dev is running", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 				session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -1247,7 +1245,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 		})
 
-		Context("using a Devfile with an image component that uses a remote Dockerfile", func() {
+		Context("the devfile contains an image component that uses a remote Dockerfile", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 			})
@@ -1259,7 +1257,7 @@ var _ = Describe("odo dev command tests", func() {
 				},
 			} {
 				env := env
-				When(fmt.Sprintf("%v remote server returns a valid file and odo dev is run", env), func() {
+				When(fmt.Sprintf("%v remote server returns a valid file when odo dev is run", env), func() {
 					var buildRegexp string
 					var server *httptest.Server
 					var url string
@@ -1296,7 +1294,7 @@ CMD ["npm", "start"]
 						Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
 					})
 				})
-				When(fmt.Sprintf("%v remote server returns an error", env), func() {
+				When(fmt.Sprintf("%v remote server returns an error when odo dev is run", env), func() {
 					var server *httptest.Server
 					var url string
 					var out, sessionErr string
@@ -1307,7 +1305,7 @@ CMD ["npm", "start"]
 						url = server.URL
 
 						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
-						out, sessionErr = helper.Cmd("odo", "dev", "--random-ports").ShouldFail().OutAndErr()
+						out, sessionErr = helper.Cmd("odo", "dev", "--random-ports").AddEnv(env...).ShouldFail().OutAndErr()
 					})
 
 					AfterEach(func() {
