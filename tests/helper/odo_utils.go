@@ -46,7 +46,7 @@ func CreateRandProject() string {
 func DeleteProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
 	session := Cmd("odo", "delete", "project", projectName, "-f").ShouldPass().Out()
-	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
+	Expect(session).To(ContainSubstring(fmt.Sprintf("Project %q deleted", projectName)))
 }
 
 // GetMetadataFromDevfile retrieves the metadata from devfile
