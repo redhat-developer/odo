@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"time"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"k8s.io/apimachinery/pkg/util/runtime"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/state"
 	"github.com/redhat-developer/odo/pkg/util"
+	"github.com/redhat-developer/odo/pkg/watch"
 )
 
 var _ Client = (*PFClient)(nil)
@@ -28,6 +31,11 @@ type PFClient struct {
 	stopChan chan struct{}
 	// finishedChan is written when the port forwarding is finished
 	finishedChan chan struct{}
+
+	originalErrorHandlers []func(error)
+
+	// indicates that the port forwarding is started, and not stopped
+	isRunning bool
 }
 
 func NewPFClient(kubernetesClient kclient.ClientInterface, stateClient state.Client) *PFClient {
@@ -58,7 +66,6 @@ func (o *PFClient) StartPortForwarding(
 	o.StopPortForwarding()
 
 	o.stopChan = make(chan struct{}, 1)
-	o.finishedChan = make(chan struct{}, 1)
 
 	var portPairs map[string][]string
 	if randomPorts {
@@ -76,10 +83,33 @@ func (o *PFClient) StartPortForwarding(
 	}
 
 	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
+
+	o.originalErrorHandlers = runtime.ErrorHandlers
+	runtime.ErrorHandlers = append(runtime.ErrorHandlers, func(err error) {
+		if err.Error() == "lost connection to pod" {
+			// Stop the low-level port forwarding
+			// the infinite loop will restart it
+			if o.stopChan == nil {
+				return
+			}
+			o.stopChan <- struct{}{}
+			o.stopChan = make(chan struct{}, 1)
+		}
+	})
+
+	o.isRunning = true
 	go func() {
-		err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan)
-		if err != nil {
-			fmt.Printf("failed to setup port-forwarding: %v\n", err)
+		backo := watch.NewExpBackoff()
+		for {
+			o.finishedChan = make(chan struct{}, 1)
+			err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan)
+			if err != nil {
+				fmt.Printf("failed to setup port-forwarding: %v\n", err)
+				time.Sleep(backo.Delay())
+			}
+			if !o.isRunning {
+				break
+			}
 		}
 		o.finishedChan <- struct{}{}
 	}()
@@ -97,10 +127,18 @@ func (o *PFClient) StopPortForwarding() {
 	if o.stopChan == nil {
 		return
 	}
+	// Ask the low-level port forward to stop
 	o.stopChan <- struct{}{}
 	o.stopChan = nil
+
+	// Ask the inifinte loop to stop
+	o.isRunning = false
+
+	// Wait for low level port forward to be finished
+	// and the infinite loop to exit
 	<-o.finishedChan
 	o.finishedChan = nil
+	runtime.ErrorHandlers = o.originalErrorHandlers
 }
 
 func (o *PFClient) GetForwardedPorts() map[string][]int {
