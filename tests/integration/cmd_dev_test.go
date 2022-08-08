@@ -1179,7 +1179,7 @@ var _ = Describe("odo dev command tests", func() {
 			DEVFILEPORT    = "3000"
 		)
 		var session helper.DevSession
-		var sessionOut []byte
+		var sessionOut, sessionErr []byte
 		var err error
 		var ports map[string]string
 		BeforeEach(func() {
@@ -1188,7 +1188,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("odo dev is running", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				session, sessionOut, _, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
+				session, sessionOut, sessionErr, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -1218,14 +1218,16 @@ var _ = Describe("odo dev command tests", func() {
 					checkImageBuilt()
 				})
 
-				By("checking the endpoint accessiblity", func() {
+				By("checking the endpoint accessibility", func() {
 					checkEndpointAccessible([]string{"Hello from Node.js Starter Application!"})
 				})
 
 				By("checking the deployment was created successfully", func() {
 					checkDeploymentExists()
 				})
-
+				By("ensuring multiple deployments exist for selector error is not occurred", func() {
+					Expect(string(sessionErr)).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
+				})
 				By("checking odo dev watches correctly", func() {
 					// making changes to the project again
 					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
@@ -1297,7 +1299,6 @@ CMD ["npm", "start"]
 				When(fmt.Sprintf("%v remote server returns an error when odo dev is run", env), func() {
 					var server *httptest.Server
 					var url string
-					var out, sessionErr string
 					BeforeEach(func() {
 						server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							w.WriteHeader(http.StatusNotFound)
@@ -1305,7 +1306,6 @@ CMD ["npm", "start"]
 						url = server.URL
 
 						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
-						out, sessionErr = helper.Cmd("odo", "dev", "--random-ports").AddEnv(env...).ShouldFail().OutAndErr()
 					})
 
 					AfterEach(func() {
@@ -1313,9 +1313,10 @@ CMD ["npm", "start"]
 					})
 
 					It("should not build images when odo dev is run", func() {
-						Expect(sessionErr).To(ContainSubstring("failed to retrieve " + url))
-						Expect(out).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
-						Expect(out).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
+						_, sessionOut, _, err := helper.DevModeShouldFail(env, "failed to retrieve "+url)
+						Expect(err).To(BeNil())
+						Expect(sessionOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
+						Expect(sessionOut).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
 					})
 				})
 			}

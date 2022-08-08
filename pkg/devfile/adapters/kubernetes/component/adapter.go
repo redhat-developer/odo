@@ -115,7 +115,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
-	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, true)
+	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
 
 	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
 	if err != nil {
@@ -199,7 +199,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
 	}
-	// s.End(true)
 
 	s := log.Spinner("Syncing files into the container")
 	defer s.End(false)

@@ -6,10 +6,6 @@ package kclient
 
 import (
 	context "context"
-	io "io"
-	reflect "reflect"
-	time "time"
-
 	spec "github.com/go-openapi/spec"
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/openshift/api/project/v1"
@@ -17,6 +13,7 @@ import (
 	api "github.com/redhat-developer/odo/pkg/api"
 	v1alpha10 "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	v1alpha3 "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+	io "io"
 	v10 "k8s.io/api/apps/v1"
 	v11 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
@@ -29,349 +26,34 @@ import (
 	kubernetes "k8s.io/client-go/kubernetes"
 	rest "k8s.io/client-go/rest"
 	clientcmd "k8s.io/client-go/tools/clientcmd"
+	reflect "reflect"
+	time "time"
 )
 
-// MockClientInterface is a mock of ClientInterface interface.
+// MockClientInterface is a mock of ClientInterface interface
 type MockClientInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientInterfaceMockRecorder
 }
 
-// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface.
+// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface
 type MockClientInterfaceMockRecorder struct {
 	mock *MockClientInterface
 }
 
-// NewMockClientInterface creates a new mock instance.
+// NewMockClientInterface creates a new mock instance
 func NewMockClientInterface(ctrl *gomock.Controller) *MockClientInterface {
 	mock := &MockClientInterface{ctrl: ctrl}
 	mock.recorder = &MockClientInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 	return m.recorder
 }
 
-// APIServiceBindingFromBinding mocks base method.
-func (m *MockClientInterface) APIServiceBindingFromBinding(binding v1alpha10.ServiceBinding) (api.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServiceBindingFromBinding", binding)
-	ret0, _ := ret[0].(api.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// APIServiceBindingFromBinding indicates an expected call of APIServiceBindingFromBinding.
-func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromBinding(binding interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromBinding", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromBinding), binding)
-}
-
-// APIServiceBindingFromSpec mocks base method.
-func (m *MockClientInterface) APIServiceBindingFromSpec(spec v1alpha3.ServiceBinding) api.ServiceBinding {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "APIServiceBindingFromSpec", spec)
-	ret0, _ := ret[0].(api.ServiceBinding)
-	return ret0
-}
-
-// APIServiceBindingFromSpec indicates an expected call of APIServiceBindingFromSpec.
-func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromSpec(spec interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromSpec", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromSpec), spec)
-}
-
-// ApplyDeployment mocks base method.
-func (m *MockClientInterface) ApplyDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ApplyDeployment", deploy)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ApplyDeployment indicates an expected call of ApplyDeployment.
-func (mr *MockClientInterfaceMockRecorder) ApplyDeployment(deploy interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyDeployment", reflect.TypeOf((*MockClientInterface)(nil).ApplyDeployment), deploy)
-}
-
-// CreateDeployment mocks base method.
-func (m *MockClientInterface) CreateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDeployment", deploy)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateDeployment indicates an expected call of CreateDeployment.
-func (mr *MockClientInterfaceMockRecorder) CreateDeployment(deploy interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeployment", reflect.TypeOf((*MockClientInterface)(nil).CreateDeployment), deploy)
-}
-
-// CreateNamespace mocks base method.
-func (m *MockClientInterface) CreateNamespace(name string) (*v11.Namespace, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNamespace", name)
-	ret0, _ := ret[0].(*v11.Namespace)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateNamespace indicates an expected call of CreateNamespace.
-func (mr *MockClientInterfaceMockRecorder) CreateNamespace(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespace", reflect.TypeOf((*MockClientInterface)(nil).CreateNamespace), name)
-}
-
-// CreateNewProject mocks base method.
-func (m *MockClientInterface) CreateNewProject(projectName string, wait bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNewProject", projectName, wait)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateNewProject indicates an expected call of CreateNewProject.
-func (mr *MockClientInterfaceMockRecorder) CreateNewProject(projectName, wait interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNewProject", reflect.TypeOf((*MockClientInterface)(nil).CreateNewProject), projectName, wait)
-}
-
-// CreatePVC mocks base method.
-func (m *MockClientInterface) CreatePVC(pvc v11.PersistentVolumeClaim) (*v11.PersistentVolumeClaim, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatePVC", pvc)
-	ret0, _ := ret[0].(*v11.PersistentVolumeClaim)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreatePVC indicates an expected call of CreatePVC.
-func (mr *MockClientInterfaceMockRecorder) CreatePVC(pvc interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePVC", reflect.TypeOf((*MockClientInterface)(nil).CreatePVC), pvc)
-}
-
-// CreateSecret mocks base method.
-func (m *MockClientInterface) CreateSecret(objectMeta v12.ObjectMeta, data map[string]string, ownerReference v12.OwnerReference) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSecret", objectMeta, data, ownerReference)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateSecret indicates an expected call of CreateSecret.
-func (mr *MockClientInterfaceMockRecorder) CreateSecret(objectMeta, data, ownerReference interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecret", reflect.TypeOf((*MockClientInterface)(nil).CreateSecret), objectMeta, data, ownerReference)
-}
-
-// CreateSecrets mocks base method.
-func (m *MockClientInterface) CreateSecrets(componentName string, commonObjectMeta v12.ObjectMeta, svc *v11.Service, ownerReference v12.OwnerReference) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSecrets", componentName, commonObjectMeta, svc, ownerReference)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateSecrets indicates an expected call of CreateSecrets.
-func (mr *MockClientInterfaceMockRecorder) CreateSecrets(componentName, commonObjectMeta, svc, ownerReference interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecrets", reflect.TypeOf((*MockClientInterface)(nil).CreateSecrets), componentName, commonObjectMeta, svc, ownerReference)
-}
-
-// CreateService mocks base method.
-func (m *MockClientInterface) CreateService(svc v11.Service) (*v11.Service, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateService", svc)
-	ret0, _ := ret[0].(*v11.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateService indicates an expected call of CreateService.
-func (mr *MockClientInterfaceMockRecorder) CreateService(svc interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateService", reflect.TypeOf((*MockClientInterface)(nil).CreateService), svc)
-}
-
-// CreateTLSSecret mocks base method.
-func (m *MockClientInterface) CreateTLSSecret(tlsCertificate, tlsPrivKey []byte, objectMeta v12.ObjectMeta) (*v11.Secret, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTLSSecret", tlsCertificate, tlsPrivKey, objectMeta)
-	ret0, _ := ret[0].(*v11.Secret)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateTLSSecret indicates an expected call of CreateTLSSecret.
-func (mr *MockClientInterfaceMockRecorder) CreateTLSSecret(tlsCertificate, tlsPrivKey, objectMeta interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTLSSecret", reflect.TypeOf((*MockClientInterface)(nil).CreateTLSSecret), tlsCertificate, tlsPrivKey, objectMeta)
-}
-
-// DeleteDynamicResource mocks base method.
-func (m *MockClientInterface) DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDynamicResource", name, gvr, wait)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteDynamicResource indicates an expected call of DeleteDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, gvr, wait interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, gvr, wait)
-}
-
-// DeleteNamespace mocks base method.
-func (m *MockClientInterface) DeleteNamespace(name string, wait bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNamespace", name, wait)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteNamespace indicates an expected call of DeleteNamespace.
-func (mr *MockClientInterfaceMockRecorder) DeleteNamespace(name, wait interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockClientInterface)(nil).DeleteNamespace), name, wait)
-}
-
-// DeletePVC mocks base method.
-func (m *MockClientInterface) DeletePVC(pvcName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeletePVC", pvcName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeletePVC indicates an expected call of DeletePVC.
-func (mr *MockClientInterfaceMockRecorder) DeletePVC(pvcName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePVC", reflect.TypeOf((*MockClientInterface)(nil).DeletePVC), pvcName)
-}
-
-// DeleteProject mocks base method.
-func (m *MockClientInterface) DeleteProject(name string, wait bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteProject", name, wait)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteProject indicates an expected call of DeleteProject.
-func (mr *MockClientInterfaceMockRecorder) DeleteProject(name, wait interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockClientInterface)(nil).DeleteProject), name, wait)
-}
-
-// DeleteSecret mocks base method.
-func (m *MockClientInterface) DeleteSecret(secretName, namespace string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSecret", secretName, namespace)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteSecret indicates an expected call of DeleteSecret.
-func (mr *MockClientInterfaceMockRecorder) DeleteSecret(secretName, namespace interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecret", reflect.TypeOf((*MockClientInterface)(nil).DeleteSecret), secretName, namespace)
-}
-
-// DeleteService mocks base method.
-func (m *MockClientInterface) DeleteService(serviceName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteService", serviceName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteService indicates an expected call of DeleteService.
-func (mr *MockClientInterfaceMockRecorder) DeleteService(serviceName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteService", reflect.TypeOf((*MockClientInterface)(nil).DeleteService), serviceName)
-}
-
-// DeploymentWatcher mocks base method.
-func (m *MockClientInterface) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeploymentWatcher", ctx, selector)
-	ret0, _ := ret[0].(watch.Interface)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DeploymentWatcher indicates an expected call of DeploymentWatcher.
-func (mr *MockClientInterfaceMockRecorder) DeploymentWatcher(ctx, selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeploymentWatcher", reflect.TypeOf((*MockClientInterface)(nil).DeploymentWatcher), ctx, selector)
-}
-
-// ExecCMDInContainer mocks base method.
-func (m *MockClientInterface) ExecCMDInContainer(containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecCMDInContainer", containerName, podName, cmd, stdout, stderr, stdin, tty)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ExecCMDInContainer indicates an expected call of ExecCMDInContainer.
-func (mr *MockClientInterfaceMockRecorder) ExecCMDInContainer(containerName, podName, cmd, stdout, stderr, stdin, tty interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecCMDInContainer", reflect.TypeOf((*MockClientInterface)(nil).ExecCMDInContainer), containerName, podName, cmd, stdout, stderr, stdin, tty)
-}
-
-// ExtractProjectToComponent mocks base method.
-func (m *MockClientInterface) ExtractProjectToComponent(containerName, podName, targetPath string, stdin io.Reader) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtractProjectToComponent", containerName, podName, targetPath, stdin)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ExtractProjectToComponent indicates an expected call of ExtractProjectToComponent.
-func (mr *MockClientInterfaceMockRecorder) ExtractProjectToComponent(containerName, podName, targetPath, stdin interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractProjectToComponent", reflect.TypeOf((*MockClientInterface)(nil).ExtractProjectToComponent), containerName, podName, targetPath, stdin)
-}
-
-// GeneratePortForwardReq mocks base method.
-func (m *MockClientInterface) GeneratePortForwardReq(podName string) *rest.Request {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GeneratePortForwardReq", podName)
-	ret0, _ := ret[0].(*rest.Request)
-	return ret0
-}
-
-// GeneratePortForwardReq indicates an expected call of GeneratePortForwardReq.
-func (mr *MockClientInterfaceMockRecorder) GeneratePortForwardReq(podName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GeneratePortForwardReq", reflect.TypeOf((*MockClientInterface)(nil).GeneratePortForwardReq), podName)
-}
-
-// GetAllPodsInNamespace mocks base method.
-func (m *MockClientInterface) GetAllPodsInNamespace() (*v11.PodList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllPodsInNamespace")
-	ret0, _ := ret[0].(*v11.PodList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllPodsInNamespace indicates an expected call of GetAllPodsInNamespace.
-func (mr *MockClientInterfaceMockRecorder) GetAllPodsInNamespace() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodsInNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetAllPodsInNamespace))
-}
-
-// GetAllResourcesFromSelector mocks base method.
+// GetAllResourcesFromSelector mocks base method
 func (m *MockClientInterface) GetAllResourcesFromSelector(selector, ns string) ([]unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllResourcesFromSelector", selector, ns)
@@ -380,666 +62,13 @@ func (m *MockClientInterface) GetAllResourcesFromSelector(selector, ns string) (
 	return ret0, ret1
 }
 
-// GetAllResourcesFromSelector indicates an expected call of GetAllResourcesFromSelector.
+// GetAllResourcesFromSelector indicates an expected call of GetAllResourcesFromSelector
 func (mr *MockClientInterfaceMockRecorder) GetAllResourcesFromSelector(selector, ns interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllResourcesFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetAllResourcesFromSelector), selector, ns)
 }
 
-// GetBindableKindStatusRestMapping mocks base method.
-func (m *MockClientInterface) GetBindableKindStatusRestMapping(bindableKindStatuses []v1alpha10.BindableKindsStatus) ([]*meta.RESTMapping, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBindableKindStatusRestMapping", bindableKindStatuses)
-	ret0, _ := ret[0].([]*meta.RESTMapping)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBindableKindStatusRestMapping indicates an expected call of GetBindableKindStatusRestMapping.
-func (mr *MockClientInterfaceMockRecorder) GetBindableKindStatusRestMapping(bindableKindStatuses interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKindStatusRestMapping", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKindStatusRestMapping), bindableKindStatuses)
-}
-
-// GetBindableKinds mocks base method.
-func (m *MockClientInterface) GetBindableKinds() (v1alpha10.BindableKinds, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBindableKinds")
-	ret0, _ := ret[0].(v1alpha10.BindableKinds)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBindableKinds indicates an expected call of GetBindableKinds.
-func (mr *MockClientInterfaceMockRecorder) GetBindableKinds() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKinds", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKinds))
-}
-
-// GetBindingServiceBinding mocks base method.
-func (m *MockClientInterface) GetBindingServiceBinding(name string) (v1alpha10.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBindingServiceBinding", name)
-	ret0, _ := ret[0].(v1alpha10.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBindingServiceBinding indicates an expected call of GetBindingServiceBinding.
-func (mr *MockClientInterfaceMockRecorder) GetBindingServiceBinding(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetBindingServiceBinding), name)
-}
-
-// GetCSVWithCR mocks base method.
-func (m *MockClientInterface) GetCSVWithCR(name string) (*v1alpha1.ClusterServiceVersion, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCSVWithCR", name)
-	ret0, _ := ret[0].(*v1alpha1.ClusterServiceVersion)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCSVWithCR indicates an expected call of GetCSVWithCR.
-func (mr *MockClientInterfaceMockRecorder) GetCSVWithCR(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCSVWithCR", reflect.TypeOf((*MockClientInterface)(nil).GetCSVWithCR), name)
-}
-
-// GetClient mocks base method.
-func (m *MockClientInterface) GetClient() kubernetes.Interface {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetClient")
-	ret0, _ := ret[0].(kubernetes.Interface)
-	return ret0
-}
-
-// GetClient indicates an expected call of GetClient.
-func (mr *MockClientInterfaceMockRecorder) GetClient() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClientInterface)(nil).GetClient))
-}
-
-// GetClientConfig mocks base method.
-func (m *MockClientInterface) GetClientConfig() *rest.Config {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetClientConfig")
-	ret0, _ := ret[0].(*rest.Config)
-	return ret0
-}
-
-// GetClientConfig indicates an expected call of GetClientConfig.
-func (mr *MockClientInterfaceMockRecorder) GetClientConfig() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientConfig", reflect.TypeOf((*MockClientInterface)(nil).GetClientConfig))
-}
-
-// GetConfig mocks base method.
-func (m *MockClientInterface) GetConfig() clientcmd.ClientConfig {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfig")
-	ret0, _ := ret[0].(clientcmd.ClientConfig)
-	return ret0
-}
-
-// GetConfig indicates an expected call of GetConfig.
-func (mr *MockClientInterfaceMockRecorder) GetConfig() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockClientInterface)(nil).GetConfig))
-}
-
-// GetCurrentNamespace mocks base method.
-func (m *MockClientInterface) GetCurrentNamespace() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentNamespace")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetCurrentNamespace indicates an expected call of GetCurrentNamespace.
-func (mr *MockClientInterfaceMockRecorder) GetCurrentNamespace() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentNamespace))
-}
-
-// GetCurrentProjectName mocks base method.
-func (m *MockClientInterface) GetCurrentProjectName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentProjectName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetCurrentProjectName indicates an expected call of GetCurrentProjectName.
-func (mr *MockClientInterfaceMockRecorder) GetCurrentProjectName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentProjectName", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentProjectName))
-}
-
-// GetCustomResourcesFromCSV mocks base method.
-func (m *MockClientInterface) GetCustomResourcesFromCSV(csv *v1alpha1.ClusterServiceVersion) *[]v1alpha1.CRDDescription {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCustomResourcesFromCSV", csv)
-	ret0, _ := ret[0].(*[]v1alpha1.CRDDescription)
-	return ret0
-}
-
-// GetCustomResourcesFromCSV indicates an expected call of GetCustomResourcesFromCSV.
-func (mr *MockClientInterfaceMockRecorder) GetCustomResourcesFromCSV(csv interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomResourcesFromCSV", reflect.TypeOf((*MockClientInterface)(nil).GetCustomResourcesFromCSV), csv)
-}
-
-// GetDeploymentAPIVersion mocks base method.
-func (m *MockClientInterface) GetDeploymentAPIVersion() (schema.GroupVersionKind, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeploymentAPIVersion")
-	ret0, _ := ret[0].(schema.GroupVersionKind)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDeploymentAPIVersion indicates an expected call of GetDeploymentAPIVersion.
-func (mr *MockClientInterfaceMockRecorder) GetDeploymentAPIVersion() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentAPIVersion", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentAPIVersion))
-}
-
-// GetDeploymentByName mocks base method.
-func (m *MockClientInterface) GetDeploymentByName(name string) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeploymentByName", name)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDeploymentByName indicates an expected call of GetDeploymentByName.
-func (mr *MockClientInterfaceMockRecorder) GetDeploymentByName(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentByName", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentByName), name)
-}
-
-// GetDeploymentFromSelector mocks base method.
-func (m *MockClientInterface) GetDeploymentFromSelector(selector string) ([]v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeploymentFromSelector", selector)
-	ret0, _ := ret[0].([]v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDeploymentFromSelector indicates an expected call of GetDeploymentFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetDeploymentFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentFromSelector), selector)
-}
-
-// GetDynamicClient mocks base method.
-func (m *MockClientInterface) GetDynamicClient() dynamic.Interface {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDynamicClient")
-	ret0, _ := ret[0].(dynamic.Interface)
-	return ret0
-}
-
-// GetDynamicClient indicates an expected call of GetDynamicClient.
-func (mr *MockClientInterfaceMockRecorder) GetDynamicClient() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicClient", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicClient))
-}
-
-// GetDynamicResource mocks base method.
-func (m *MockClientInterface) GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDynamicResource", gvr, name)
-	ret0, _ := ret[0].(*unstructured.Unstructured)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetDynamicResource indicates an expected call of GetDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(gvr, name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), gvr, name)
-}
-
-// GetGVKFromGVR mocks base method.
-func (m *MockClientInterface) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGVKFromGVR", gvr)
-	ret0, _ := ret[0].(schema.GroupVersionKind)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetGVKFromGVR indicates an expected call of GetGVKFromGVR.
-func (mr *MockClientInterfaceMockRecorder) GetGVKFromGVR(gvr interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVKFromGVR", reflect.TypeOf((*MockClientInterface)(nil).GetGVKFromGVR), gvr)
-}
-
-// GetGVRFromGVK mocks base method.
-func (m *MockClientInterface) GetGVRFromGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetGVRFromGVK", gvk)
-	ret0, _ := ret[0].(schema.GroupVersionResource)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetGVRFromGVK indicates an expected call of GetGVRFromGVK.
-func (mr *MockClientInterfaceMockRecorder) GetGVRFromGVK(gvk interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVRFromGVK", reflect.TypeOf((*MockClientInterface)(nil).GetGVRFromGVK), gvk)
-}
-
-// GetNamespace mocks base method.
-func (m *MockClientInterface) GetNamespace(name string) (*v11.Namespace, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespace", name)
-	ret0, _ := ret[0].(*v11.Namespace)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNamespace indicates an expected call of GetNamespace.
-func (mr *MockClientInterfaceMockRecorder) GetNamespace(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetNamespace), name)
-}
-
-// GetNamespaceNormal mocks base method.
-func (m *MockClientInterface) GetNamespaceNormal(name string) (*v11.Namespace, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespaceNormal", name)
-	ret0, _ := ret[0].(*v11.Namespace)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNamespaceNormal indicates an expected call of GetNamespaceNormal.
-func (mr *MockClientInterfaceMockRecorder) GetNamespaceNormal(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceNormal", reflect.TypeOf((*MockClientInterface)(nil).GetNamespaceNormal), name)
-}
-
-// GetNamespaces mocks base method.
-func (m *MockClientInterface) GetNamespaces() ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespaces")
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetNamespaces indicates an expected call of GetNamespaces.
-func (mr *MockClientInterfaceMockRecorder) GetNamespaces() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaces", reflect.TypeOf((*MockClientInterface)(nil).GetNamespaces))
-}
-
-// GetOneDeployment mocks base method.
-func (m *MockClientInterface) GetOneDeployment(componentName, appName string) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneDeployment", componentName, appName)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOneDeployment indicates an expected call of GetOneDeployment.
-func (mr *MockClientInterfaceMockRecorder) GetOneDeployment(componentName, appName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeployment", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeployment), componentName, appName)
-}
-
-// GetOneDeploymentFromSelector mocks base method.
-func (m *MockClientInterface) GetOneDeploymentFromSelector(selector string) (*v10.Deployment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneDeploymentFromSelector", selector)
-	ret0, _ := ret[0].(*v10.Deployment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOneDeploymentFromSelector indicates an expected call of GetOneDeploymentFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetOneDeploymentFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeploymentFromSelector), selector)
-}
-
-// GetOneService mocks base method.
-func (m *MockClientInterface) GetOneService(componentName, appName string) (*v11.Service, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneService", componentName, appName)
-	ret0, _ := ret[0].(*v11.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOneService indicates an expected call of GetOneService.
-func (mr *MockClientInterfaceMockRecorder) GetOneService(componentName, appName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneService", reflect.TypeOf((*MockClientInterface)(nil).GetOneService), componentName, appName)
-}
-
-// GetOneServiceFromSelector mocks base method.
-func (m *MockClientInterface) GetOneServiceFromSelector(selector string) (*v11.Service, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOneServiceFromSelector", selector)
-	ret0, _ := ret[0].(*v11.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOneServiceFromSelector indicates an expected call of GetOneServiceFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetOneServiceFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneServiceFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneServiceFromSelector), selector)
-}
-
-// GetOperatorGVRList mocks base method.
-func (m *MockClientInterface) GetOperatorGVRList() ([]meta.RESTMapping, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOperatorGVRList")
-	ret0, _ := ret[0].([]meta.RESTMapping)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetOperatorGVRList indicates an expected call of GetOperatorGVRList.
-func (mr *MockClientInterfaceMockRecorder) GetOperatorGVRList() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperatorGVRList", reflect.TypeOf((*MockClientInterface)(nil).GetOperatorGVRList))
-}
-
-// GetPVCFromName mocks base method.
-func (m *MockClientInterface) GetPVCFromName(pvcName string) (*v11.PersistentVolumeClaim, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPVCFromName", pvcName)
-	ret0, _ := ret[0].(*v11.PersistentVolumeClaim)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPVCFromName indicates an expected call of GetPVCFromName.
-func (mr *MockClientInterfaceMockRecorder) GetPVCFromName(pvcName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPVCFromName", reflect.TypeOf((*MockClientInterface)(nil).GetPVCFromName), pvcName)
-}
-
-// GetPodLogs mocks base method.
-func (m *MockClientInterface) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodLogs", podName, containerName, followLog)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPodLogs indicates an expected call of GetPodLogs.
-func (mr *MockClientInterfaceMockRecorder) GetPodLogs(podName, containerName, followLog interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockClientInterface)(nil).GetPodLogs), podName, containerName, followLog)
-}
-
-// GetPodUsingComponentName mocks base method.
-func (m *MockClientInterface) GetPodUsingComponentName(componentName string) (*v11.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodUsingComponentName", componentName)
-	ret0, _ := ret[0].(*v11.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPodUsingComponentName indicates an expected call of GetPodUsingComponentName.
-func (mr *MockClientInterfaceMockRecorder) GetPodUsingComponentName(componentName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodUsingComponentName", reflect.TypeOf((*MockClientInterface)(nil).GetPodUsingComponentName), componentName)
-}
-
-// GetPodsMatchingSelector mocks base method.
-func (m *MockClientInterface) GetPodsMatchingSelector(selector string) (*v11.PodList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPodsMatchingSelector", selector)
-	ret0, _ := ret[0].(*v11.PodList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPodsMatchingSelector indicates an expected call of GetPodsMatchingSelector.
-func (mr *MockClientInterfaceMockRecorder) GetPodsMatchingSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodsMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).GetPodsMatchingSelector), selector)
-}
-
-// GetProject mocks base method.
-func (m *MockClientInterface) GetProject(projectName string) (*v1.Project, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProject", projectName)
-	ret0, _ := ret[0].(*v1.Project)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetProject indicates an expected call of GetProject.
-func (mr *MockClientInterfaceMockRecorder) GetProject(projectName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockClientInterface)(nil).GetProject), projectName)
-}
-
-// GetResourceSpecDefinition mocks base method.
-func (m *MockClientInterface) GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResourceSpecDefinition", group, version, kind)
-	ret0, _ := ret[0].(*spec.Schema)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetResourceSpecDefinition indicates an expected call of GetResourceSpecDefinition.
-func (mr *MockClientInterfaceMockRecorder) GetResourceSpecDefinition(group, version, kind interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceSpecDefinition", reflect.TypeOf((*MockClientInterface)(nil).GetResourceSpecDefinition), group, version, kind)
-}
-
-// GetRestMappingFromGVK mocks base method.
-func (m *MockClientInterface) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRestMappingFromGVK", gvk)
-	ret0, _ := ret[0].(*meta.RESTMapping)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRestMappingFromGVK indicates an expected call of GetRestMappingFromGVK.
-func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromGVK(gvk interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromGVK", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromGVK), gvk)
-}
-
-// GetRestMappingFromUnstructured mocks base method.
-func (m *MockClientInterface) GetRestMappingFromUnstructured(arg0 unstructured.Unstructured) (*meta.RESTMapping, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRestMappingFromUnstructured", arg0)
-	ret0, _ := ret[0].(*meta.RESTMapping)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRestMappingFromUnstructured indicates an expected call of GetRestMappingFromUnstructured.
-func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromUnstructured(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromUnstructured", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromUnstructured), arg0)
-}
-
-// GetRunningPodFromSelector mocks base method.
-func (m *MockClientInterface) GetRunningPodFromSelector(selector string) (*v11.Pod, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRunningPodFromSelector", selector)
-	ret0, _ := ret[0].(*v11.Pod)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRunningPodFromSelector indicates an expected call of GetRunningPodFromSelector.
-func (mr *MockClientInterfaceMockRecorder) GetRunningPodFromSelector(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetRunningPodFromSelector), selector)
-}
-
-// GetSecret mocks base method.
-func (m *MockClientInterface) GetSecret(name, namespace string) (*v11.Secret, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSecret", name, namespace)
-	ret0, _ := ret[0].(*v11.Secret)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSecret indicates an expected call of GetSecret.
-func (mr *MockClientInterfaceMockRecorder) GetSecret(name, namespace interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecret", reflect.TypeOf((*MockClientInterface)(nil).GetSecret), name, namespace)
-}
-
-// GetServerVersion mocks base method.
-func (m *MockClientInterface) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServerVersion", timeout)
-	ret0, _ := ret[0].(*ServerInfo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetServerVersion indicates an expected call of GetServerVersion.
-func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
-}
-
-// GetSpecServiceBinding mocks base method.
-func (m *MockClientInterface) GetSpecServiceBinding(name string) (v1alpha3.ServiceBinding, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSpecServiceBinding", name)
-	ret0, _ := ret[0].(v1alpha3.ServiceBinding)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSpecServiceBinding indicates an expected call of GetSpecServiceBinding.
-func (mr *MockClientInterfaceMockRecorder) GetSpecServiceBinding(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpecServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetSpecServiceBinding), name)
-}
-
-// GetWorkloadKinds mocks base method.
-func (m *MockClientInterface) GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWorkloadKinds")
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].([]schema.GroupVersionKind)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// GetWorkloadKinds indicates an expected call of GetWorkloadKinds.
-func (mr *MockClientInterfaceMockRecorder) GetWorkloadKinds() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkloadKinds", reflect.TypeOf((*MockClientInterface)(nil).GetWorkloadKinds))
-}
-
-// IsCSVSupported mocks base method.
-func (m *MockClientInterface) IsCSVSupported() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsCSVSupported")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsCSVSupported indicates an expected call of IsCSVSupported.
-func (mr *MockClientInterfaceMockRecorder) IsCSVSupported() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCSVSupported", reflect.TypeOf((*MockClientInterface)(nil).IsCSVSupported))
-}
-
-// IsDeploymentExtensionsV1Beta1 mocks base method.
-func (m *MockClientInterface) IsDeploymentExtensionsV1Beta1() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsDeploymentExtensionsV1Beta1")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsDeploymentExtensionsV1Beta1 indicates an expected call of IsDeploymentExtensionsV1Beta1.
-func (mr *MockClientInterfaceMockRecorder) IsDeploymentExtensionsV1Beta1() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDeploymentExtensionsV1Beta1", reflect.TypeOf((*MockClientInterface)(nil).IsDeploymentExtensionsV1Beta1))
-}
-
-// IsPodNameMatchingSelector mocks base method.
-func (m *MockClientInterface) IsPodNameMatchingSelector(ctx context.Context, podname, selector string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPodNameMatchingSelector", ctx, podname, selector)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsPodNameMatchingSelector indicates an expected call of IsPodNameMatchingSelector.
-func (mr *MockClientInterfaceMockRecorder) IsPodNameMatchingSelector(ctx, podname, selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPodNameMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).IsPodNameMatchingSelector), ctx, podname, selector)
-}
-
-// IsProjectSupported mocks base method.
-func (m *MockClientInterface) IsProjectSupported() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsProjectSupported")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsProjectSupported indicates an expected call of IsProjectSupported.
-func (mr *MockClientInterfaceMockRecorder) IsProjectSupported() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsProjectSupported", reflect.TypeOf((*MockClientInterface)(nil).IsProjectSupported))
-}
-
-// IsResourceSupported mocks base method.
-func (m *MockClientInterface) IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsResourceSupported", apiGroup, apiVersion, resourceName)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsResourceSupported indicates an expected call of IsResourceSupported.
-func (mr *MockClientInterfaceMockRecorder) IsResourceSupported(apiGroup, apiVersion, resourceName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsResourceSupported", reflect.TypeOf((*MockClientInterface)(nil).IsResourceSupported), apiGroup, apiVersion, resourceName)
-}
-
-// IsSSASupported mocks base method.
-func (m *MockClientInterface) IsSSASupported() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsSSASupported")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsSSASupported indicates an expected call of IsSSASupported.
-func (mr *MockClientInterfaceMockRecorder) IsSSASupported() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSSASupported", reflect.TypeOf((*MockClientInterface)(nil).IsSSASupported))
-}
-
-// IsServiceBindingSupported mocks base method.
+// IsServiceBindingSupported mocks base method
 func (m *MockClientInterface) IsServiceBindingSupported() (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsServiceBindingSupported")
@@ -1048,103 +77,73 @@ func (m *MockClientInterface) IsServiceBindingSupported() (bool, error) {
 	return ret0, ret1
 }
 
-// IsServiceBindingSupported indicates an expected call of IsServiceBindingSupported.
+// IsServiceBindingSupported indicates an expected call of IsServiceBindingSupported
 func (mr *MockClientInterfaceMockRecorder) IsServiceBindingSupported() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsServiceBindingSupported", reflect.TypeOf((*MockClientInterface)(nil).IsServiceBindingSupported))
 }
 
-// ListClusterServiceVersions mocks base method.
-func (m *MockClientInterface) ListClusterServiceVersions() (*v1alpha1.ClusterServiceVersionList, error) {
+// GetBindableKinds mocks base method
+func (m *MockClientInterface) GetBindableKinds() (v1alpha10.BindableKinds, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListClusterServiceVersions")
-	ret0, _ := ret[0].(*v1alpha1.ClusterServiceVersionList)
+	ret := m.ctrl.Call(m, "GetBindableKinds")
+	ret0, _ := ret[0].(v1alpha10.BindableKinds)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListClusterServiceVersions indicates an expected call of ListClusterServiceVersions.
-func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.Call {
+// GetBindableKinds indicates an expected call of GetBindableKinds
+func (mr *MockClientInterfaceMockRecorder) GetBindableKinds() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKinds", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKinds))
 }
 
-// ListDynamicResources mocks base method.
-func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
+// GetBindableKindStatusRestMapping mocks base method
+func (m *MockClientInterface) GetBindableKindStatusRestMapping(bindableKindStatuses []v1alpha10.BindableKindsStatus) ([]*meta.RESTMapping, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr)
-	ret0, _ := ret[0].(*unstructured.UnstructuredList)
+	ret := m.ctrl.Call(m, "GetBindableKindStatusRestMapping", bindableKindStatuses)
+	ret0, _ := ret[0].([]*meta.RESTMapping)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDynamicResources indicates an expected call of ListDynamicResources.
-func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr interface{}) *gomock.Call {
+// GetBindableKindStatusRestMapping indicates an expected call of GetBindableKindStatusRestMapping
+func (mr *MockClientInterfaceMockRecorder) GetBindableKindStatusRestMapping(bindableKindStatuses interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindableKindStatusRestMapping", reflect.TypeOf((*MockClientInterface)(nil).GetBindableKindStatusRestMapping), bindableKindStatuses)
 }
 
-// ListPVCNames mocks base method.
-func (m *MockClientInterface) ListPVCNames(selector string) ([]string, error) {
+// GetBindingServiceBinding mocks base method
+func (m *MockClientInterface) GetBindingServiceBinding(name string) (v1alpha10.ServiceBinding, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListPVCNames", selector)
-	ret0, _ := ret[0].([]string)
+	ret := m.ctrl.Call(m, "GetBindingServiceBinding", name)
+	ret0, _ := ret[0].(v1alpha10.ServiceBinding)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListPVCNames indicates an expected call of ListPVCNames.
-func (mr *MockClientInterfaceMockRecorder) ListPVCNames(selector interface{}) *gomock.Call {
+// GetBindingServiceBinding indicates an expected call of GetBindingServiceBinding
+func (mr *MockClientInterfaceMockRecorder) GetBindingServiceBinding(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPVCNames", reflect.TypeOf((*MockClientInterface)(nil).ListPVCNames), selector)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetBindingServiceBinding), name)
 }
 
-// ListPVCs mocks base method.
-func (m *MockClientInterface) ListPVCs(selector string) ([]v11.PersistentVolumeClaim, error) {
+// GetSpecServiceBinding mocks base method
+func (m *MockClientInterface) GetSpecServiceBinding(name string) (v1alpha3.ServiceBinding, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListPVCs", selector)
-	ret0, _ := ret[0].([]v11.PersistentVolumeClaim)
+	ret := m.ctrl.Call(m, "GetSpecServiceBinding", name)
+	ret0, _ := ret[0].(v1alpha3.ServiceBinding)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListPVCs indicates an expected call of ListPVCs.
-func (mr *MockClientInterfaceMockRecorder) ListPVCs(selector interface{}) *gomock.Call {
+// GetSpecServiceBinding indicates an expected call of GetSpecServiceBinding
+func (mr *MockClientInterfaceMockRecorder) GetSpecServiceBinding(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPVCs", reflect.TypeOf((*MockClientInterface)(nil).ListPVCs), selector)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpecServiceBinding", reflect.TypeOf((*MockClientInterface)(nil).GetSpecServiceBinding), name)
 }
 
-// ListProjectNames mocks base method.
-func (m *MockClientInterface) ListProjectNames() ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListProjectNames")
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListProjectNames indicates an expected call of ListProjectNames.
-func (mr *MockClientInterfaceMockRecorder) ListProjectNames() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjectNames", reflect.TypeOf((*MockClientInterface)(nil).ListProjectNames))
-}
-
-// ListSecrets mocks base method.
-func (m *MockClientInterface) ListSecrets(labelSelector string) ([]v11.Secret, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListSecrets", labelSelector)
-	ret0, _ := ret[0].([]v11.Secret)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListSecrets indicates an expected call of ListSecrets.
-func (mr *MockClientInterfaceMockRecorder) ListSecrets(labelSelector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecrets", reflect.TypeOf((*MockClientInterface)(nil).ListSecrets), labelSelector)
-}
-
-// ListServiceBindingsFromAllGroups mocks base method.
+// ListServiceBindingsFromAllGroups mocks base method
 func (m *MockClientInterface) ListServiceBindingsFromAllGroups() ([]v1alpha3.ServiceBinding, []v1alpha10.ServiceBinding, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListServiceBindingsFromAllGroups")
@@ -1154,28 +153,13 @@ func (m *MockClientInterface) ListServiceBindingsFromAllGroups() ([]v1alpha3.Ser
 	return ret0, ret1, ret2
 }
 
-// ListServiceBindingsFromAllGroups indicates an expected call of ListServiceBindingsFromAllGroups.
+// ListServiceBindingsFromAllGroups indicates an expected call of ListServiceBindingsFromAllGroups
 func (mr *MockClientInterfaceMockRecorder) ListServiceBindingsFromAllGroups() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServiceBindingsFromAllGroups", reflect.TypeOf((*MockClientInterface)(nil).ListServiceBindingsFromAllGroups))
 }
 
-// ListServices mocks base method.
-func (m *MockClientInterface) ListServices(selector string) ([]v11.Service, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListServices", selector)
-	ret0, _ := ret[0].([]v11.Service)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListServices indicates an expected call of ListServices.
-func (mr *MockClientInterfaceMockRecorder) ListServices(selector interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServices", reflect.TypeOf((*MockClientInterface)(nil).ListServices), selector)
-}
-
-// NewServiceBindingServiceObject mocks base method.
+// NewServiceBindingServiceObject mocks base method
 func (m *MockClientInterface) NewServiceBindingServiceObject(serviceNs string, unstructuredService unstructured.Unstructured, bindingName string) (v1alpha10.Service, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewServiceBindingServiceObject", serviceNs, unstructuredService, bindingName)
@@ -1184,13 +168,208 @@ func (m *MockClientInterface) NewServiceBindingServiceObject(serviceNs string, u
 	return ret0, ret1
 }
 
-// NewServiceBindingServiceObject indicates an expected call of NewServiceBindingServiceObject.
+// NewServiceBindingServiceObject indicates an expected call of NewServiceBindingServiceObject
 func (mr *MockClientInterfaceMockRecorder) NewServiceBindingServiceObject(serviceNs, unstructuredService, bindingName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewServiceBindingServiceObject", reflect.TypeOf((*MockClientInterface)(nil).NewServiceBindingServiceObject), serviceNs, unstructuredService, bindingName)
 }
 
-// PatchDynamicResource mocks base method.
+// APIServiceBindingFromBinding mocks base method
+func (m *MockClientInterface) APIServiceBindingFromBinding(binding v1alpha10.ServiceBinding) (api.ServiceBinding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServiceBindingFromBinding", binding)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// APIServiceBindingFromBinding indicates an expected call of APIServiceBindingFromBinding
+func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromBinding(binding interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromBinding", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromBinding), binding)
+}
+
+// APIServiceBindingFromSpec mocks base method
+func (m *MockClientInterface) APIServiceBindingFromSpec(spec v1alpha3.ServiceBinding) api.ServiceBinding {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServiceBindingFromSpec", spec)
+	ret0, _ := ret[0].(api.ServiceBinding)
+	return ret0
+}
+
+// APIServiceBindingFromSpec indicates an expected call of APIServiceBindingFromSpec
+func (mr *MockClientInterfaceMockRecorder) APIServiceBindingFromSpec(spec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServiceBindingFromSpec", reflect.TypeOf((*MockClientInterface)(nil).APIServiceBindingFromSpec), spec)
+}
+
+// GetWorkloadKinds mocks base method
+func (m *MockClientInterface) GetWorkloadKinds() ([]string, []schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorkloadKinds")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].([]schema.GroupVersionKind)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetWorkloadKinds indicates an expected call of GetWorkloadKinds
+func (mr *MockClientInterfaceMockRecorder) GetWorkloadKinds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkloadKinds", reflect.TypeOf((*MockClientInterface)(nil).GetWorkloadKinds))
+}
+
+// GetDeploymentByName mocks base method
+func (m *MockClientInterface) GetDeploymentByName(name string) (*v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeploymentByName", name)
+	ret0, _ := ret[0].(*v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeploymentByName indicates an expected call of GetDeploymentByName
+func (mr *MockClientInterfaceMockRecorder) GetDeploymentByName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentByName", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentByName), name)
+}
+
+// GetOneDeployment mocks base method
+func (m *MockClientInterface) GetOneDeployment(componentName, appName string, isPartOfComponent bool) (*v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOneDeployment", componentName, appName, isPartOfComponent)
+	ret0, _ := ret[0].(*v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOneDeployment indicates an expected call of GetOneDeployment
+func (mr *MockClientInterfaceMockRecorder) GetOneDeployment(componentName, appName, isPartOfComponent interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeployment", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeployment), componentName, appName, isPartOfComponent)
+}
+
+// GetOneDeploymentFromSelector mocks base method
+func (m *MockClientInterface) GetOneDeploymentFromSelector(selector string) (*v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOneDeploymentFromSelector", selector)
+	ret0, _ := ret[0].(*v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOneDeploymentFromSelector indicates an expected call of GetOneDeploymentFromSelector
+func (mr *MockClientInterfaceMockRecorder) GetOneDeploymentFromSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneDeploymentFromSelector), selector)
+}
+
+// GetDeploymentFromSelector mocks base method
+func (m *MockClientInterface) GetDeploymentFromSelector(selector string) ([]v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeploymentFromSelector", selector)
+	ret0, _ := ret[0].([]v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeploymentFromSelector indicates an expected call of GetDeploymentFromSelector
+func (mr *MockClientInterfaceMockRecorder) GetDeploymentFromSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentFromSelector), selector)
+}
+
+// CreateDeployment mocks base method
+func (m *MockClientInterface) CreateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDeployment", deploy)
+	ret0, _ := ret[0].(*v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDeployment indicates an expected call of CreateDeployment
+func (mr *MockClientInterfaceMockRecorder) CreateDeployment(deploy interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeployment", reflect.TypeOf((*MockClientInterface)(nil).CreateDeployment), deploy)
+}
+
+// UpdateDeployment mocks base method
+func (m *MockClientInterface) UpdateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDeployment", deploy)
+	ret0, _ := ret[0].(*v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDeployment indicates an expected call of UpdateDeployment
+func (mr *MockClientInterfaceMockRecorder) UpdateDeployment(deploy interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeployment", reflect.TypeOf((*MockClientInterface)(nil).UpdateDeployment), deploy)
+}
+
+// ApplyDeployment mocks base method
+func (m *MockClientInterface) ApplyDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyDeployment", deploy)
+	ret0, _ := ret[0].(*v10.Deployment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ApplyDeployment indicates an expected call of ApplyDeployment
+func (mr *MockClientInterfaceMockRecorder) ApplyDeployment(deploy interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyDeployment", reflect.TypeOf((*MockClientInterface)(nil).ApplyDeployment), deploy)
+}
+
+// GetDeploymentAPIVersion mocks base method
+func (m *MockClientInterface) GetDeploymentAPIVersion() (schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeploymentAPIVersion")
+	ret0, _ := ret[0].(schema.GroupVersionKind)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeploymentAPIVersion indicates an expected call of GetDeploymentAPIVersion
+func (mr *MockClientInterfaceMockRecorder) GetDeploymentAPIVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentAPIVersion", reflect.TypeOf((*MockClientInterface)(nil).GetDeploymentAPIVersion))
+}
+
+// IsDeploymentExtensionsV1Beta1 mocks base method
+func (m *MockClientInterface) IsDeploymentExtensionsV1Beta1() (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsDeploymentExtensionsV1Beta1")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsDeploymentExtensionsV1Beta1 indicates an expected call of IsDeploymentExtensionsV1Beta1
+func (mr *MockClientInterfaceMockRecorder) IsDeploymentExtensionsV1Beta1() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDeploymentExtensionsV1Beta1", reflect.TypeOf((*MockClientInterface)(nil).IsDeploymentExtensionsV1Beta1))
+}
+
+// DeploymentWatcher mocks base method
+func (m *MockClientInterface) DeploymentWatcher(ctx context.Context, selector string) (watch.Interface, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeploymentWatcher", ctx, selector)
+	ret0, _ := ret[0].(watch.Interface)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeploymentWatcher indicates an expected call of DeploymentWatcher
+func (mr *MockClientInterfaceMockRecorder) DeploymentWatcher(ctx, selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeploymentWatcher", reflect.TypeOf((*MockClientInterface)(nil).DeploymentWatcher), ctx, selector)
+}
+
+// PatchDynamicResource mocks base method
 func (m *MockClientInterface) PatchDynamicResource(exampleCustomResource unstructured.Unstructured) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PatchDynamicResource", exampleCustomResource)
@@ -1199,13 +378,71 @@ func (m *MockClientInterface) PatchDynamicResource(exampleCustomResource unstruc
 	return ret0, ret1
 }
 
-// PatchDynamicResource indicates an expected call of PatchDynamicResource.
+// PatchDynamicResource indicates an expected call of PatchDynamicResource
 func (mr *MockClientInterfaceMockRecorder) PatchDynamicResource(exampleCustomResource interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).PatchDynamicResource), exampleCustomResource)
 }
 
-// PodWarningEventWatcher mocks base method.
+// ListDynamicResources mocks base method
+func (m *MockClientInterface) ListDynamicResources(namespace string, gvr schema.GroupVersionResource) (*unstructured.UnstructuredList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDynamicResources", namespace, gvr)
+	ret0, _ := ret[0].(*unstructured.UnstructuredList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDynamicResources indicates an expected call of ListDynamicResources
+func (mr *MockClientInterfaceMockRecorder) ListDynamicResources(namespace, gvr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicResources", reflect.TypeOf((*MockClientInterface)(nil).ListDynamicResources), namespace, gvr)
+}
+
+// GetDynamicResource mocks base method
+func (m *MockClientInterface) GetDynamicResource(gvr schema.GroupVersionResource, name string) (*unstructured.Unstructured, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDynamicResource", gvr, name)
+	ret0, _ := ret[0].(*unstructured.Unstructured)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDynamicResource indicates an expected call of GetDynamicResource
+func (mr *MockClientInterfaceMockRecorder) GetDynamicResource(gvr, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicResource), gvr, name)
+}
+
+// UpdateDynamicResource mocks base method
+func (m *MockClientInterface) UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDynamicResource", gvr, name, u)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDynamicResource indicates an expected call of UpdateDynamicResource
+func (mr *MockClientInterfaceMockRecorder) UpdateDynamicResource(gvr, name, u interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).UpdateDynamicResource), gvr, name, u)
+}
+
+// DeleteDynamicResource mocks base method
+func (m *MockClientInterface) DeleteDynamicResource(name string, gvr schema.GroupVersionResource, wait bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDynamicResource", name, gvr, wait)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteDynamicResource indicates an expected call of DeleteDynamicResource
+func (mr *MockClientInterfaceMockRecorder) DeleteDynamicResource(name, gvr, wait interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).DeleteDynamicResource), name, gvr, wait)
+}
+
+// PodWarningEventWatcher mocks base method
 func (m *MockClientInterface) PodWarningEventWatcher(ctx context.Context) (watch.Interface, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PodWarningEventWatcher", ctx)
@@ -1215,13 +452,533 @@ func (m *MockClientInterface) PodWarningEventWatcher(ctx context.Context) (watch
 	return ret0, ret1, ret2
 }
 
-// PodWarningEventWatcher indicates an expected call of PodWarningEventWatcher.
+// PodWarningEventWatcher indicates an expected call of PodWarningEventWatcher
 func (mr *MockClientInterfaceMockRecorder) PodWarningEventWatcher(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWarningEventWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWarningEventWatcher), ctx)
 }
 
-// PodWatcher mocks base method.
+// GetClient mocks base method
+func (m *MockClientInterface) GetClient() kubernetes.Interface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClient")
+	ret0, _ := ret[0].(kubernetes.Interface)
+	return ret0
+}
+
+// GetClient indicates an expected call of GetClient
+func (mr *MockClientInterfaceMockRecorder) GetClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClientInterface)(nil).GetClient))
+}
+
+// GetConfig mocks base method
+func (m *MockClientInterface) GetConfig() clientcmd.ClientConfig {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfig")
+	ret0, _ := ret[0].(clientcmd.ClientConfig)
+	return ret0
+}
+
+// GetConfig indicates an expected call of GetConfig
+func (mr *MockClientInterfaceMockRecorder) GetConfig() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockClientInterface)(nil).GetConfig))
+}
+
+// GetClientConfig mocks base method
+func (m *MockClientInterface) GetClientConfig() *rest.Config {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClientConfig")
+	ret0, _ := ret[0].(*rest.Config)
+	return ret0
+}
+
+// GetClientConfig indicates an expected call of GetClientConfig
+func (mr *MockClientInterfaceMockRecorder) GetClientConfig() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientConfig", reflect.TypeOf((*MockClientInterface)(nil).GetClientConfig))
+}
+
+// GetDynamicClient mocks base method
+func (m *MockClientInterface) GetDynamicClient() dynamic.Interface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDynamicClient")
+	ret0, _ := ret[0].(dynamic.Interface)
+	return ret0
+}
+
+// GetDynamicClient indicates an expected call of GetDynamicClient
+func (mr *MockClientInterfaceMockRecorder) GetDynamicClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicClient", reflect.TypeOf((*MockClientInterface)(nil).GetDynamicClient))
+}
+
+// GeneratePortForwardReq mocks base method
+func (m *MockClientInterface) GeneratePortForwardReq(podName string) *rest.Request {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GeneratePortForwardReq", podName)
+	ret0, _ := ret[0].(*rest.Request)
+	return ret0
+}
+
+// GeneratePortForwardReq indicates an expected call of GeneratePortForwardReq
+func (mr *MockClientInterfaceMockRecorder) GeneratePortForwardReq(podName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GeneratePortForwardReq", reflect.TypeOf((*MockClientInterface)(nil).GeneratePortForwardReq), podName)
+}
+
+// SetDiscoveryInterface mocks base method
+func (m *MockClientInterface) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDiscoveryInterface", client)
+}
+
+// SetDiscoveryInterface indicates an expected call of SetDiscoveryInterface
+func (mr *MockClientInterfaceMockRecorder) SetDiscoveryInterface(client interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDiscoveryInterface", reflect.TypeOf((*MockClientInterface)(nil).SetDiscoveryInterface), client)
+}
+
+// IsResourceSupported mocks base method
+func (m *MockClientInterface) IsResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsResourceSupported", apiGroup, apiVersion, resourceName)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsResourceSupported indicates an expected call of IsResourceSupported
+func (mr *MockClientInterfaceMockRecorder) IsResourceSupported(apiGroup, apiVersion, resourceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsResourceSupported", reflect.TypeOf((*MockClientInterface)(nil).IsResourceSupported), apiGroup, apiVersion, resourceName)
+}
+
+// IsSSASupported mocks base method
+func (m *MockClientInterface) IsSSASupported() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsSSASupported")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsSSASupported indicates an expected call of IsSSASupported
+func (mr *MockClientInterfaceMockRecorder) IsSSASupported() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSSASupported", reflect.TypeOf((*MockClientInterface)(nil).IsSSASupported))
+}
+
+// GetCurrentNamespace mocks base method
+func (m *MockClientInterface) GetCurrentNamespace() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentNamespace")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetCurrentNamespace indicates an expected call of GetCurrentNamespace
+func (mr *MockClientInterfaceMockRecorder) GetCurrentNamespace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentNamespace))
+}
+
+// SetNamespace mocks base method
+func (m *MockClientInterface) SetNamespace(ns string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetNamespace", ns)
+}
+
+// SetNamespace indicates an expected call of SetNamespace
+func (mr *MockClientInterfaceMockRecorder) SetNamespace(ns interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockClientInterface)(nil).SetNamespace), ns)
+}
+
+// GetNamespaces mocks base method
+func (m *MockClientInterface) GetNamespaces() ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespaces")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNamespaces indicates an expected call of GetNamespaces
+func (mr *MockClientInterfaceMockRecorder) GetNamespaces() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaces", reflect.TypeOf((*MockClientInterface)(nil).GetNamespaces))
+}
+
+// GetNamespace mocks base method
+func (m *MockClientInterface) GetNamespace(name string) (*v11.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespace", name)
+	ret0, _ := ret[0].(*v11.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNamespace indicates an expected call of GetNamespace
+func (mr *MockClientInterfaceMockRecorder) GetNamespace(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetNamespace), name)
+}
+
+// GetNamespaceNormal mocks base method
+func (m *MockClientInterface) GetNamespaceNormal(name string) (*v11.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNamespaceNormal", name)
+	ret0, _ := ret[0].(*v11.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNamespaceNormal indicates an expected call of GetNamespaceNormal
+func (mr *MockClientInterfaceMockRecorder) GetNamespaceNormal(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceNormal", reflect.TypeOf((*MockClientInterface)(nil).GetNamespaceNormal), name)
+}
+
+// CreateNamespace mocks base method
+func (m *MockClientInterface) CreateNamespace(name string) (*v11.Namespace, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateNamespace", name)
+	ret0, _ := ret[0].(*v11.Namespace)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateNamespace indicates an expected call of CreateNamespace
+func (mr *MockClientInterfaceMockRecorder) CreateNamespace(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespace", reflect.TypeOf((*MockClientInterface)(nil).CreateNamespace), name)
+}
+
+// DeleteNamespace mocks base method
+func (m *MockClientInterface) DeleteNamespace(name string, wait bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteNamespace", name, wait)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteNamespace indicates an expected call of DeleteNamespace
+func (mr *MockClientInterfaceMockRecorder) DeleteNamespace(name, wait interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockClientInterface)(nil).DeleteNamespace), name, wait)
+}
+
+// SetCurrentNamespace mocks base method
+func (m *MockClientInterface) SetCurrentNamespace(namespace string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetCurrentNamespace", namespace)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetCurrentNamespace indicates an expected call of SetCurrentNamespace
+func (mr *MockClientInterfaceMockRecorder) SetCurrentNamespace(namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentNamespace", reflect.TypeOf((*MockClientInterface)(nil).SetCurrentNamespace), namespace)
+}
+
+// WaitForServiceAccountInNamespace mocks base method
+func (m *MockClientInterface) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitForServiceAccountInNamespace", namespace, serviceAccountName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WaitForServiceAccountInNamespace indicates an expected call of WaitForServiceAccountInNamespace
+func (mr *MockClientInterfaceMockRecorder) WaitForServiceAccountInNamespace(namespace, serviceAccountName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForServiceAccountInNamespace", reflect.TypeOf((*MockClientInterface)(nil).WaitForServiceAccountInNamespace), namespace, serviceAccountName)
+}
+
+// GetServerVersion mocks base method
+func (m *MockClientInterface) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServerVersion", timeout)
+	ret0, _ := ret[0].(*ServerInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServerVersion indicates an expected call of GetServerVersion
+func (mr *MockClientInterfaceMockRecorder) GetServerVersion(timeout interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerVersion", reflect.TypeOf((*MockClientInterface)(nil).GetServerVersion), timeout)
+}
+
+// IsCSVSupported mocks base method
+func (m *MockClientInterface) IsCSVSupported() (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsCSVSupported")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsCSVSupported indicates an expected call of IsCSVSupported
+func (mr *MockClientInterfaceMockRecorder) IsCSVSupported() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCSVSupported", reflect.TypeOf((*MockClientInterface)(nil).IsCSVSupported))
+}
+
+// ListClusterServiceVersions mocks base method
+func (m *MockClientInterface) ListClusterServiceVersions() (*v1alpha1.ClusterServiceVersionList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListClusterServiceVersions")
+	ret0, _ := ret[0].(*v1alpha1.ClusterServiceVersionList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListClusterServiceVersions indicates an expected call of ListClusterServiceVersions
+func (mr *MockClientInterfaceMockRecorder) ListClusterServiceVersions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClusterServiceVersions", reflect.TypeOf((*MockClientInterface)(nil).ListClusterServiceVersions))
+}
+
+// GetCustomResourcesFromCSV mocks base method
+func (m *MockClientInterface) GetCustomResourcesFromCSV(csv *v1alpha1.ClusterServiceVersion) *[]v1alpha1.CRDDescription {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCustomResourcesFromCSV", csv)
+	ret0, _ := ret[0].(*[]v1alpha1.CRDDescription)
+	return ret0
+}
+
+// GetCustomResourcesFromCSV indicates an expected call of GetCustomResourcesFromCSV
+func (mr *MockClientInterfaceMockRecorder) GetCustomResourcesFromCSV(csv interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCustomResourcesFromCSV", reflect.TypeOf((*MockClientInterface)(nil).GetCustomResourcesFromCSV), csv)
+}
+
+// GetCSVWithCR mocks base method
+func (m *MockClientInterface) GetCSVWithCR(name string) (*v1alpha1.ClusterServiceVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCSVWithCR", name)
+	ret0, _ := ret[0].(*v1alpha1.ClusterServiceVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCSVWithCR indicates an expected call of GetCSVWithCR
+func (mr *MockClientInterfaceMockRecorder) GetCSVWithCR(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCSVWithCR", reflect.TypeOf((*MockClientInterface)(nil).GetCSVWithCR), name)
+}
+
+// GetResourceSpecDefinition mocks base method
+func (m *MockClientInterface) GetResourceSpecDefinition(group, version, kind string) (*spec.Schema, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceSpecDefinition", group, version, kind)
+	ret0, _ := ret[0].(*spec.Schema)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourceSpecDefinition indicates an expected call of GetResourceSpecDefinition
+func (mr *MockClientInterfaceMockRecorder) GetResourceSpecDefinition(group, version, kind interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceSpecDefinition", reflect.TypeOf((*MockClientInterface)(nil).GetResourceSpecDefinition), group, version, kind)
+}
+
+// GetRestMappingFromUnstructured mocks base method
+func (m *MockClientInterface) GetRestMappingFromUnstructured(arg0 unstructured.Unstructured) (*meta.RESTMapping, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestMappingFromUnstructured", arg0)
+	ret0, _ := ret[0].(*meta.RESTMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestMappingFromUnstructured indicates an expected call of GetRestMappingFromUnstructured
+func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromUnstructured(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromUnstructured", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromUnstructured), arg0)
+}
+
+// GetRestMappingFromGVK mocks base method
+func (m *MockClientInterface) GetRestMappingFromGVK(gvk schema.GroupVersionKind) (*meta.RESTMapping, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRestMappingFromGVK", gvk)
+	ret0, _ := ret[0].(*meta.RESTMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRestMappingFromGVK indicates an expected call of GetRestMappingFromGVK
+func (mr *MockClientInterfaceMockRecorder) GetRestMappingFromGVK(gvk interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRestMappingFromGVK", reflect.TypeOf((*MockClientInterface)(nil).GetRestMappingFromGVK), gvk)
+}
+
+// GetOperatorGVRList mocks base method
+func (m *MockClientInterface) GetOperatorGVRList() ([]meta.RESTMapping, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOperatorGVRList")
+	ret0, _ := ret[0].([]meta.RESTMapping)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOperatorGVRList indicates an expected call of GetOperatorGVRList
+func (mr *MockClientInterfaceMockRecorder) GetOperatorGVRList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOperatorGVRList", reflect.TypeOf((*MockClientInterface)(nil).GetOperatorGVRList))
+}
+
+// GetGVKFromGVR mocks base method
+func (m *MockClientInterface) GetGVKFromGVR(gvr schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGVKFromGVR", gvr)
+	ret0, _ := ret[0].(schema.GroupVersionKind)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGVKFromGVR indicates an expected call of GetGVKFromGVR
+func (mr *MockClientInterfaceMockRecorder) GetGVKFromGVR(gvr interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVKFromGVR", reflect.TypeOf((*MockClientInterface)(nil).GetGVKFromGVR), gvr)
+}
+
+// GetGVRFromGVK mocks base method
+func (m *MockClientInterface) GetGVRFromGVK(gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGVRFromGVK", gvk)
+	ret0, _ := ret[0].(schema.GroupVersionResource)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGVRFromGVK indicates an expected call of GetGVRFromGVK
+func (mr *MockClientInterfaceMockRecorder) GetGVRFromGVK(gvk interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGVRFromGVK", reflect.TypeOf((*MockClientInterface)(nil).GetGVRFromGVK), gvk)
+}
+
+// TryWithBlockOwnerDeletion mocks base method
+func (m *MockClientInterface) TryWithBlockOwnerDeletion(ownerReference v12.OwnerReference, exec func(v12.OwnerReference) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryWithBlockOwnerDeletion", ownerReference, exec)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TryWithBlockOwnerDeletion indicates an expected call of TryWithBlockOwnerDeletion
+func (mr *MockClientInterfaceMockRecorder) TryWithBlockOwnerDeletion(ownerReference, exec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryWithBlockOwnerDeletion", reflect.TypeOf((*MockClientInterface)(nil).TryWithBlockOwnerDeletion), ownerReference, exec)
+}
+
+// ExecCMDInContainer mocks base method
+func (m *MockClientInterface) ExecCMDInContainer(containerName, podName string, cmd []string, stdout, stderr io.Writer, stdin io.Reader, tty bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExecCMDInContainer", containerName, podName, cmd, stdout, stderr, stdin, tty)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecCMDInContainer indicates an expected call of ExecCMDInContainer
+func (mr *MockClientInterfaceMockRecorder) ExecCMDInContainer(containerName, podName, cmd, stdout, stderr, stdin, tty interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecCMDInContainer", reflect.TypeOf((*MockClientInterface)(nil).ExecCMDInContainer), containerName, podName, cmd, stdout, stderr, stdin, tty)
+}
+
+// ExtractProjectToComponent mocks base method
+func (m *MockClientInterface) ExtractProjectToComponent(containerName, podName, targetPath string, stdin io.Reader) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExtractProjectToComponent", containerName, podName, targetPath, stdin)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExtractProjectToComponent indicates an expected call of ExtractProjectToComponent
+func (mr *MockClientInterfaceMockRecorder) ExtractProjectToComponent(containerName, podName, targetPath, stdin interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractProjectToComponent", reflect.TypeOf((*MockClientInterface)(nil).ExtractProjectToComponent), containerName, podName, targetPath, stdin)
+}
+
+// GetPodUsingComponentName mocks base method
+func (m *MockClientInterface) GetPodUsingComponentName(componentName string) (*v11.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodUsingComponentName", componentName)
+	ret0, _ := ret[0].(*v11.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodUsingComponentName indicates an expected call of GetPodUsingComponentName
+func (mr *MockClientInterfaceMockRecorder) GetPodUsingComponentName(componentName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodUsingComponentName", reflect.TypeOf((*MockClientInterface)(nil).GetPodUsingComponentName), componentName)
+}
+
+// GetRunningPodFromSelector mocks base method
+func (m *MockClientInterface) GetRunningPodFromSelector(selector string) (*v11.Pod, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRunningPodFromSelector", selector)
+	ret0, _ := ret[0].(*v11.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRunningPodFromSelector indicates an expected call of GetRunningPodFromSelector
+func (mr *MockClientInterfaceMockRecorder) GetRunningPodFromSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunningPodFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetRunningPodFromSelector), selector)
+}
+
+// GetPodLogs mocks base method
+func (m *MockClientInterface) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodLogs", podName, containerName, followLog)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodLogs indicates an expected call of GetPodLogs
+func (mr *MockClientInterfaceMockRecorder) GetPodLogs(podName, containerName, followLog interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockClientInterface)(nil).GetPodLogs), podName, containerName, followLog)
+}
+
+// GetAllPodsInNamespace mocks base method
+func (m *MockClientInterface) GetAllPodsInNamespace() (*v11.PodList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllPodsInNamespace")
+	ret0, _ := ret[0].(*v11.PodList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllPodsInNamespace indicates an expected call of GetAllPodsInNamespace
+func (mr *MockClientInterfaceMockRecorder) GetAllPodsInNamespace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllPodsInNamespace", reflect.TypeOf((*MockClientInterface)(nil).GetAllPodsInNamespace))
+}
+
+// GetPodsMatchingSelector mocks base method
+func (m *MockClientInterface) GetPodsMatchingSelector(selector string) (*v11.PodList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodsMatchingSelector", selector)
+	ret0, _ := ret[0].(*v11.PodList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodsMatchingSelector indicates an expected call of GetPodsMatchingSelector
+func (mr *MockClientInterfaceMockRecorder) GetPodsMatchingSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodsMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).GetPodsMatchingSelector), selector)
+}
+
+// PodWatcher mocks base method
 func (m *MockClientInterface) PodWatcher(ctx context.Context, selector string) (watch.Interface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PodWatcher", ctx, selector)
@@ -1230,65 +987,28 @@ func (m *MockClientInterface) PodWatcher(ctx context.Context, selector string) (
 	return ret0, ret1
 }
 
-// PodWatcher indicates an expected call of PodWatcher.
+// PodWatcher indicates an expected call of PodWatcher
 func (mr *MockClientInterfaceMockRecorder) PodWatcher(ctx, selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PodWatcher", reflect.TypeOf((*MockClientInterface)(nil).PodWatcher), ctx, selector)
 }
 
-// RunLogout mocks base method.
-func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
+// IsPodNameMatchingSelector mocks base method
+func (m *MockClientInterface) IsPodNameMatchingSelector(ctx context.Context, podname, selector string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RunLogout", stdout)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "IsPodNameMatchingSelector", ctx, podname, selector)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// RunLogout indicates an expected call of RunLogout.
-func (mr *MockClientInterfaceMockRecorder) RunLogout(stdout interface{}) *gomock.Call {
+// IsPodNameMatchingSelector indicates an expected call of IsPodNameMatchingSelector
+func (mr *MockClientInterfaceMockRecorder) IsPodNameMatchingSelector(ctx, podname, selector interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunLogout", reflect.TypeOf((*MockClientInterface)(nil).RunLogout), stdout)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPodNameMatchingSelector", reflect.TypeOf((*MockClientInterface)(nil).IsPodNameMatchingSelector), ctx, podname, selector)
 }
 
-// SetCurrentNamespace mocks base method.
-func (m *MockClientInterface) SetCurrentNamespace(namespace string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCurrentNamespace", namespace)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetCurrentNamespace indicates an expected call of SetCurrentNamespace.
-func (mr *MockClientInterfaceMockRecorder) SetCurrentNamespace(namespace interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCurrentNamespace", reflect.TypeOf((*MockClientInterface)(nil).SetCurrentNamespace), namespace)
-}
-
-// SetDiscoveryInterface mocks base method.
-func (m *MockClientInterface) SetDiscoveryInterface(client discovery.DiscoveryInterface) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetDiscoveryInterface", client)
-}
-
-// SetDiscoveryInterface indicates an expected call of SetDiscoveryInterface.
-func (mr *MockClientInterfaceMockRecorder) SetDiscoveryInterface(client interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDiscoveryInterface", reflect.TypeOf((*MockClientInterface)(nil).SetDiscoveryInterface), client)
-}
-
-// SetNamespace mocks base method.
-func (m *MockClientInterface) SetNamespace(ns string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetNamespace", ns)
-}
-
-// SetNamespace indicates an expected call of SetNamespace.
-func (mr *MockClientInterfaceMockRecorder) SetNamespace(ns interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockClientInterface)(nil).SetNamespace), ns)
-}
-
-// SetupPortForwarding mocks base method.
+// SetupPortForwarding mocks base method
 func (m *MockClientInterface) SetupPortForwarding(pod *v11.Pod, portPairs []string, out, errOut io.Writer, stopChan chan struct{}) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetupPortForwarding", pod, portPairs, out, errOut, stopChan)
@@ -1296,70 +1016,130 @@ func (m *MockClientInterface) SetupPortForwarding(pod *v11.Pod, portPairs []stri
 	return ret0
 }
 
-// SetupPortForwarding indicates an expected call of SetupPortForwarding.
+// SetupPortForwarding indicates an expected call of SetupPortForwarding
 func (mr *MockClientInterfaceMockRecorder) SetupPortForwarding(pod, portPairs, out, errOut, stopChan interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupPortForwarding", reflect.TypeOf((*MockClientInterface)(nil).SetupPortForwarding), pod, portPairs, out, errOut, stopChan)
 }
 
-// TryWithBlockOwnerDeletion mocks base method.
-func (m *MockClientInterface) TryWithBlockOwnerDeletion(ownerReference v12.OwnerReference, exec func(v12.OwnerReference) error) error {
+// CreateNewProject mocks base method
+func (m *MockClientInterface) CreateNewProject(projectName string, wait bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TryWithBlockOwnerDeletion", ownerReference, exec)
+	ret := m.ctrl.Call(m, "CreateNewProject", projectName, wait)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// TryWithBlockOwnerDeletion indicates an expected call of TryWithBlockOwnerDeletion.
-func (mr *MockClientInterfaceMockRecorder) TryWithBlockOwnerDeletion(ownerReference, exec interface{}) *gomock.Call {
+// CreateNewProject indicates an expected call of CreateNewProject
+func (mr *MockClientInterfaceMockRecorder) CreateNewProject(projectName, wait interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryWithBlockOwnerDeletion", reflect.TypeOf((*MockClientInterface)(nil).TryWithBlockOwnerDeletion), ownerReference, exec)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNewProject", reflect.TypeOf((*MockClientInterface)(nil).CreateNewProject), projectName, wait)
 }
 
-// UpdateDeployment mocks base method.
-func (m *MockClientInterface) UpdateDeployment(deploy v10.Deployment) (*v10.Deployment, error) {
+// DeleteProject mocks base method
+func (m *MockClientInterface) DeleteProject(name string, wait bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDeployment", deploy)
-	ret0, _ := ret[0].(*v10.Deployment)
+	ret := m.ctrl.Call(m, "DeleteProject", name, wait)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteProject indicates an expected call of DeleteProject
+func (mr *MockClientInterfaceMockRecorder) DeleteProject(name, wait interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockClientInterface)(nil).DeleteProject), name, wait)
+}
+
+// GetCurrentProjectName mocks base method
+func (m *MockClientInterface) GetCurrentProjectName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentProjectName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetCurrentProjectName indicates an expected call of GetCurrentProjectName
+func (mr *MockClientInterfaceMockRecorder) GetCurrentProjectName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentProjectName", reflect.TypeOf((*MockClientInterface)(nil).GetCurrentProjectName))
+}
+
+// GetProject mocks base method
+func (m *MockClientInterface) GetProject(projectName string) (*v1.Project, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProject", projectName)
+	ret0, _ := ret[0].(*v1.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateDeployment indicates an expected call of UpdateDeployment.
-func (mr *MockClientInterfaceMockRecorder) UpdateDeployment(deploy interface{}) *gomock.Call {
+// GetProject indicates an expected call of GetProject
+func (mr *MockClientInterfaceMockRecorder) GetProject(projectName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeployment", reflect.TypeOf((*MockClientInterface)(nil).UpdateDeployment), deploy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProject", reflect.TypeOf((*MockClientInterface)(nil).GetProject), projectName)
 }
 
-// UpdateDynamicResource mocks base method.
-func (m *MockClientInterface) UpdateDynamicResource(gvr schema.GroupVersionResource, name string, u *unstructured.Unstructured) error {
+// IsProjectSupported mocks base method
+func (m *MockClientInterface) IsProjectSupported() (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDynamicResource", gvr, name, u)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "IsProjectSupported")
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// UpdateDynamicResource indicates an expected call of UpdateDynamicResource.
-func (mr *MockClientInterfaceMockRecorder) UpdateDynamicResource(gvr, name, u interface{}) *gomock.Call {
+// IsProjectSupported indicates an expected call of IsProjectSupported
+func (mr *MockClientInterfaceMockRecorder) IsProjectSupported() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDynamicResource", reflect.TypeOf((*MockClientInterface)(nil).UpdateDynamicResource), gvr, name, u)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsProjectSupported", reflect.TypeOf((*MockClientInterface)(nil).IsProjectSupported))
 }
 
-// UpdatePVCLabels mocks base method.
-func (m *MockClientInterface) UpdatePVCLabels(pvc *v11.PersistentVolumeClaim, labels map[string]string) error {
+// ListProjectNames mocks base method
+func (m *MockClientInterface) ListProjectNames() ([]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePVCLabels", pvc, labels)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "ListProjectNames")
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// UpdatePVCLabels indicates an expected call of UpdatePVCLabels.
-func (mr *MockClientInterfaceMockRecorder) UpdatePVCLabels(pvc, labels interface{}) *gomock.Call {
+// ListProjectNames indicates an expected call of ListProjectNames
+func (mr *MockClientInterfaceMockRecorder) ListProjectNames() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePVCLabels", reflect.TypeOf((*MockClientInterface)(nil).UpdatePVCLabels), pvc, labels)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProjectNames", reflect.TypeOf((*MockClientInterface)(nil).ListProjectNames))
 }
 
-// UpdateSecret mocks base method.
+// CreateTLSSecret mocks base method
+func (m *MockClientInterface) CreateTLSSecret(tlsCertificate, tlsPrivKey []byte, objectMeta v12.ObjectMeta) (*v11.Secret, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateTLSSecret", tlsCertificate, tlsPrivKey, objectMeta)
+	ret0, _ := ret[0].(*v11.Secret)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateTLSSecret indicates an expected call of CreateTLSSecret
+func (mr *MockClientInterfaceMockRecorder) CreateTLSSecret(tlsCertificate, tlsPrivKey, objectMeta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTLSSecret", reflect.TypeOf((*MockClientInterface)(nil).CreateTLSSecret), tlsCertificate, tlsPrivKey, objectMeta)
+}
+
+// GetSecret mocks base method
+func (m *MockClientInterface) GetSecret(name, namespace string) (*v11.Secret, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSecret", name, namespace)
+	ret0, _ := ret[0].(*v11.Secret)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSecret indicates an expected call of GetSecret
+func (mr *MockClientInterfaceMockRecorder) GetSecret(name, namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecret", reflect.TypeOf((*MockClientInterface)(nil).GetSecret), name, namespace)
+}
+
+// UpdateSecret mocks base method
 func (m *MockClientInterface) UpdateSecret(secret *v11.Secret, namespace string) (*v11.Secret, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSecret", secret, namespace)
@@ -1368,13 +1148,100 @@ func (m *MockClientInterface) UpdateSecret(secret *v11.Secret, namespace string)
 	return ret0, ret1
 }
 
-// UpdateSecret indicates an expected call of UpdateSecret.
+// UpdateSecret indicates an expected call of UpdateSecret
 func (mr *MockClientInterfaceMockRecorder) UpdateSecret(secret, namespace interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecret", reflect.TypeOf((*MockClientInterface)(nil).UpdateSecret), secret, namespace)
 }
 
-// UpdateService mocks base method.
+// DeleteSecret mocks base method
+func (m *MockClientInterface) DeleteSecret(secretName, namespace string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSecret", secretName, namespace)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteSecret indicates an expected call of DeleteSecret
+func (mr *MockClientInterfaceMockRecorder) DeleteSecret(secretName, namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecret", reflect.TypeOf((*MockClientInterface)(nil).DeleteSecret), secretName, namespace)
+}
+
+// CreateSecret mocks base method
+func (m *MockClientInterface) CreateSecret(objectMeta v12.ObjectMeta, data map[string]string, ownerReference v12.OwnerReference) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSecret", objectMeta, data, ownerReference)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateSecret indicates an expected call of CreateSecret
+func (mr *MockClientInterfaceMockRecorder) CreateSecret(objectMeta, data, ownerReference interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecret", reflect.TypeOf((*MockClientInterface)(nil).CreateSecret), objectMeta, data, ownerReference)
+}
+
+// CreateSecrets mocks base method
+func (m *MockClientInterface) CreateSecrets(componentName string, commonObjectMeta v12.ObjectMeta, svc *v11.Service, ownerReference v12.OwnerReference) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSecrets", componentName, commonObjectMeta, svc, ownerReference)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateSecrets indicates an expected call of CreateSecrets
+func (mr *MockClientInterfaceMockRecorder) CreateSecrets(componentName, commonObjectMeta, svc, ownerReference interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecrets", reflect.TypeOf((*MockClientInterface)(nil).CreateSecrets), componentName, commonObjectMeta, svc, ownerReference)
+}
+
+// ListSecrets mocks base method
+func (m *MockClientInterface) ListSecrets(labelSelector string) ([]v11.Secret, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSecrets", labelSelector)
+	ret0, _ := ret[0].([]v11.Secret)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListSecrets indicates an expected call of ListSecrets
+func (mr *MockClientInterfaceMockRecorder) ListSecrets(labelSelector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecrets", reflect.TypeOf((*MockClientInterface)(nil).ListSecrets), labelSelector)
+}
+
+// WaitAndGetSecret mocks base method
+func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Secret, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WaitAndGetSecret", name, namespace)
+	ret0, _ := ret[0].(*v11.Secret)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WaitAndGetSecret indicates an expected call of WaitAndGetSecret
+func (mr *MockClientInterfaceMockRecorder) WaitAndGetSecret(name, namespace interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetSecret", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetSecret), name, namespace)
+}
+
+// CreateService mocks base method
+func (m *MockClientInterface) CreateService(svc v11.Service) (*v11.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateService", svc)
+	ret0, _ := ret[0].(*v11.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateService indicates an expected call of CreateService
+func (mr *MockClientInterfaceMockRecorder) CreateService(svc interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateService", reflect.TypeOf((*MockClientInterface)(nil).CreateService), svc)
+}
+
+// UpdateService mocks base method
 func (m *MockClientInterface) UpdateService(svc v11.Service) (*v11.Service, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateService", svc)
@@ -1383,13 +1250,174 @@ func (m *MockClientInterface) UpdateService(svc v11.Service) (*v11.Service, erro
 	return ret0, ret1
 }
 
-// UpdateService indicates an expected call of UpdateService.
+// UpdateService indicates an expected call of UpdateService
 func (mr *MockClientInterfaceMockRecorder) UpdateService(svc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockClientInterface)(nil).UpdateService), svc)
 }
 
-// UpdateStorageOwnerReference mocks base method.
+// ListServices mocks base method
+func (m *MockClientInterface) ListServices(selector string) ([]v11.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListServices", selector)
+	ret0, _ := ret[0].([]v11.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListServices indicates an expected call of ListServices
+func (mr *MockClientInterfaceMockRecorder) ListServices(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServices", reflect.TypeOf((*MockClientInterface)(nil).ListServices), selector)
+}
+
+// DeleteService mocks base method
+func (m *MockClientInterface) DeleteService(serviceName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteService", serviceName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteService indicates an expected call of DeleteService
+func (mr *MockClientInterfaceMockRecorder) DeleteService(serviceName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteService", reflect.TypeOf((*MockClientInterface)(nil).DeleteService), serviceName)
+}
+
+// GetOneService mocks base method
+func (m *MockClientInterface) GetOneService(componentName, appName string) (*v11.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOneService", componentName, appName)
+	ret0, _ := ret[0].(*v11.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOneService indicates an expected call of GetOneService
+func (mr *MockClientInterfaceMockRecorder) GetOneService(componentName, appName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneService", reflect.TypeOf((*MockClientInterface)(nil).GetOneService), componentName, appName)
+}
+
+// GetOneServiceFromSelector mocks base method
+func (m *MockClientInterface) GetOneServiceFromSelector(selector string) (*v11.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOneServiceFromSelector", selector)
+	ret0, _ := ret[0].(*v11.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOneServiceFromSelector indicates an expected call of GetOneServiceFromSelector
+func (mr *MockClientInterfaceMockRecorder) GetOneServiceFromSelector(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOneServiceFromSelector", reflect.TypeOf((*MockClientInterface)(nil).GetOneServiceFromSelector), selector)
+}
+
+// RunLogout mocks base method
+func (m *MockClientInterface) RunLogout(stdout io.Writer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RunLogout", stdout)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RunLogout indicates an expected call of RunLogout
+func (mr *MockClientInterfaceMockRecorder) RunLogout(stdout interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunLogout", reflect.TypeOf((*MockClientInterface)(nil).RunLogout), stdout)
+}
+
+// CreatePVC mocks base method
+func (m *MockClientInterface) CreatePVC(pvc v11.PersistentVolumeClaim) (*v11.PersistentVolumeClaim, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePVC", pvc)
+	ret0, _ := ret[0].(*v11.PersistentVolumeClaim)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreatePVC indicates an expected call of CreatePVC
+func (mr *MockClientInterfaceMockRecorder) CreatePVC(pvc interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePVC", reflect.TypeOf((*MockClientInterface)(nil).CreatePVC), pvc)
+}
+
+// DeletePVC mocks base method
+func (m *MockClientInterface) DeletePVC(pvcName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePVC", pvcName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePVC indicates an expected call of DeletePVC
+func (mr *MockClientInterfaceMockRecorder) DeletePVC(pvcName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePVC", reflect.TypeOf((*MockClientInterface)(nil).DeletePVC), pvcName)
+}
+
+// ListPVCs mocks base method
+func (m *MockClientInterface) ListPVCs(selector string) ([]v11.PersistentVolumeClaim, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPVCs", selector)
+	ret0, _ := ret[0].([]v11.PersistentVolumeClaim)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPVCs indicates an expected call of ListPVCs
+func (mr *MockClientInterfaceMockRecorder) ListPVCs(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPVCs", reflect.TypeOf((*MockClientInterface)(nil).ListPVCs), selector)
+}
+
+// ListPVCNames mocks base method
+func (m *MockClientInterface) ListPVCNames(selector string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPVCNames", selector)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPVCNames indicates an expected call of ListPVCNames
+func (mr *MockClientInterfaceMockRecorder) ListPVCNames(selector interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPVCNames", reflect.TypeOf((*MockClientInterface)(nil).ListPVCNames), selector)
+}
+
+// GetPVCFromName mocks base method
+func (m *MockClientInterface) GetPVCFromName(pvcName string) (*v11.PersistentVolumeClaim, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPVCFromName", pvcName)
+	ret0, _ := ret[0].(*v11.PersistentVolumeClaim)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPVCFromName indicates an expected call of GetPVCFromName
+func (mr *MockClientInterfaceMockRecorder) GetPVCFromName(pvcName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPVCFromName", reflect.TypeOf((*MockClientInterface)(nil).GetPVCFromName), pvcName)
+}
+
+// UpdatePVCLabels mocks base method
+func (m *MockClientInterface) UpdatePVCLabels(pvc *v11.PersistentVolumeClaim, labels map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePVCLabels", pvc, labels)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePVCLabels indicates an expected call of UpdatePVCLabels
+func (mr *MockClientInterfaceMockRecorder) UpdatePVCLabels(pvc, labels interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePVCLabels", reflect.TypeOf((*MockClientInterface)(nil).UpdatePVCLabels), pvc, labels)
+}
+
+// UpdateStorageOwnerReference mocks base method
 func (m *MockClientInterface) UpdateStorageOwnerReference(pvc *v11.PersistentVolumeClaim, ownerReference ...v12.OwnerReference) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{pvc}
@@ -1401,38 +1429,9 @@ func (m *MockClientInterface) UpdateStorageOwnerReference(pvc *v11.PersistentVol
 	return ret0
 }
 
-// UpdateStorageOwnerReference indicates an expected call of UpdateStorageOwnerReference.
+// UpdateStorageOwnerReference indicates an expected call of UpdateStorageOwnerReference
 func (mr *MockClientInterfaceMockRecorder) UpdateStorageOwnerReference(pvc interface{}, ownerReference ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{pvc}, ownerReference...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStorageOwnerReference", reflect.TypeOf((*MockClientInterface)(nil).UpdateStorageOwnerReference), varargs...)
-}
-
-// WaitAndGetSecret mocks base method.
-func (m *MockClientInterface) WaitAndGetSecret(name, namespace string) (*v11.Secret, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitAndGetSecret", name, namespace)
-	ret0, _ := ret[0].(*v11.Secret)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// WaitAndGetSecret indicates an expected call of WaitAndGetSecret.
-func (mr *MockClientInterfaceMockRecorder) WaitAndGetSecret(name, namespace interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitAndGetSecret", reflect.TypeOf((*MockClientInterface)(nil).WaitAndGetSecret), name, namespace)
-}
-
-// WaitForServiceAccountInNamespace mocks base method.
-func (m *MockClientInterface) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForServiceAccountInNamespace", namespace, serviceAccountName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// WaitForServiceAccountInNamespace indicates an expected call of WaitForServiceAccountInNamespace.
-func (mr *MockClientInterfaceMockRecorder) WaitForServiceAccountInNamespace(namespace, serviceAccountName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForServiceAccountInNamespace", reflect.TypeOf((*MockClientInterface)(nil).WaitForServiceAccountInNamespace), namespace, serviceAccountName)
 }

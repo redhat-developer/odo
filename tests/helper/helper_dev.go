@@ -197,6 +197,35 @@ func RunDevMode(additionalOpts []string, envvars []string, inside func(session *
 	return nil
 }
 
+// DevModeShouldFail runs `odo dev` with an intention to fail, and checks for a given substring
+// `odo dev` runs in an infinite reconciliation loop, and hence running it with Cmd will not work for a lot of failing cases,
+// this function is helpful in such cases.
+// TODO(pvala): Modify StartDevMode to take substring arg into account, and replace this method with it.
+func DevModeShouldFail(envvars []string, substring string, opts ...string) (DevSession, []byte, []byte, error) {
+	args := []string{"dev", "--random-ports"}
+	args = append(args, opts...)
+	session := Cmd("odo", args...).AddEnv(envvars...).Runner().session
+	WaitForOutputToContain(substring, 360, 10, session)
+	result := DevSession{
+		session: session,
+	}
+	defer func() {
+		result.Stop()
+		result.WaitEnd()
+	}()
+	outContents := session.Out.Contents()
+	errContents := session.Err.Contents()
+	err := session.Out.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, err
+	}
+	err = session.Err.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, err
+	}
+	return result, outContents, errContents, nil
+}
+
 // getPorts returns a map of ports redirected depending on the information in s
 //  `- Forwarding from 127.0.0.1:40001 -> 3000` will return { "3000": "127.0.0.1:40001" }
 func getPorts(s string) map[string]string {

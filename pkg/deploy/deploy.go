@@ -6,7 +6,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 
-	component2 "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/image"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
@@ -58,7 +58,7 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-	return component2.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.devfileObj, kubernetes, o.kubeClient, o.path)
+	return component.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.devfileObj, kubernetes, o.kubeClient, o.path)
 }
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml

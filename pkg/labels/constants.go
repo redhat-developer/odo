@@ -43,7 +43,7 @@ const (
 	// ComponentDeployMode indicates the resource is deployed using deploy command
 	ComponentDeployMode = "Deploy"
 
-	// ComponentAnyMode is used to search resources deployed using either dev or deploy comamnd
+	// ComponentAnyMode is used to search resources deployed using either dev or deploy command
 	ComponentAnyMode = ""
 
 	// odoManager is the value of the manager when a component is managed by odo

@@ -23,7 +23,7 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 	// Get the Dev deployment:
 	// Since `odo deploy` can theoretically deploy a deployment as well with the same instance name
 	// we make sure that we are retrieving the deployment with the Dev mode, NOT Deploy.
-	selectorLabels := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
+	selectorLabels := odolabels.GetSelector(a.ComponentName, a.AppName, odolabels.ComponentDevMode, true)
 	deployment, err := a.kubeClient.GetOneDeploymentFromSelector(selectorLabels)
 
 	if err != nil {

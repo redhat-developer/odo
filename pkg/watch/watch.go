@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
@@ -235,7 +236,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	}
 	defer sourcesWatcher.Close()
 
-	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
+	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
 	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
 	if err != nil {
 		return fmt.Errorf("error watching deployment: %v", err)
@@ -424,7 +425,7 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 			switch kevent := ev.Object.(type) {
 			case *corev1.Event:
 				podName := kevent.InvolvedObject.Name
-				selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode)
+				selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
 				matching, err := o.kubeClient.IsPodNameMatchingSelector(ctx, podName, selector)
 				if err != nil {
 					return err

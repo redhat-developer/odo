@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"

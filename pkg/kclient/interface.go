@@ -47,6 +47,7 @@ type ClientInterface interface {
 
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
+	GetOneDeployment(componentName, appName string, isPartOfComponent bool) (*appsv1.Deployment, error)
 	GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error)
 	GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error)
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)
