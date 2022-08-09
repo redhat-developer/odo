@@ -594,3 +594,8 @@ func (oc OcRunner) GetAllNamespaceProjects() []string {
 	Expect(err).ShouldNot(HaveOccurred())
 	return result
 }
+
+func (oc OcRunner) GetLogs(podName string) string {
+	output := Cmd(oc.path, "logs", podName).ShouldPass().Out()
+	return output
+}

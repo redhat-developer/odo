@@ -50,4 +50,5 @@ type CliRunner interface {
 	EnsureOperatorIsInstalled(partialOperatorName string)
 	GetBindableKinds() (string, string)
 	GetServiceBinding(name, projectName string) (string, string)
+	GetLogs(podName string) string
 }

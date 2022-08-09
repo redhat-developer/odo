@@ -402,3 +402,8 @@ func (kubectl KubectlRunner) GetAllNamespaceProjects() []string {
 	Expect(err).ShouldNot(HaveOccurred())
 	return result
 }
+
+func (kubectl KubectlRunner) GetLogs(podName string) string {
+	output := Cmd(kubectl.path, "logs", podName).ShouldPass().Out()
+	return output
+}
