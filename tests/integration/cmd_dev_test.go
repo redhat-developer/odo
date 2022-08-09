@@ -249,26 +249,6 @@ var _ = Describe("odo dev command tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
-			When("recording telemetry data", func() {
-				BeforeEach(func() {
-					helper.EnableTelemetryDebug()
-					session, _, _, _, _ := helper.StartDevMode(nil)
-					session.Stop()
-					session.WaitEnd()
-				})
-				AfterEach(func() {
-					helper.ResetTelemetry()
-				})
-				It("should record the telemetry data correctly", func() {
-					td := helper.GetTelemetryDebugData()
-					Expect(td.Event).To(ContainSubstring("odo dev"))
-					Expect(td.Properties.Success).To(BeTrue())
-					Expect(td.Properties.Error).ToNot(ContainSubstring("interrupt"))
-					Expect(td.Properties.CmdProperties[segment.ComponentType]).To(ContainSubstring("nodejs"))
-					Expect(td.Properties.CmdProperties[segment.Language]).To(ContainSubstring("nodejs"))
-					Expect(td.Properties.CmdProperties[segment.ProjectType]).To(ContainSubstring("nodejs"))
-				})
-			})
 			When("odo dev is stopped", func() {
 				BeforeEach(func() {
 					devSession.Stop()
@@ -1211,7 +1191,6 @@ var _ = Describe("odo dev command tests", func() {
 					defer resp.Body.Close()
 
 					body, _ := io.ReadAll(resp.Body)
-					// helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
 					helper.MatchAllInOutput(string(body), message)
 				}
 				By("checking is the image was successfully built", func() {
@@ -1847,6 +1826,90 @@ CMD ["npm", "start"]
 		})
 	})
 
+	// Tests https://github.com/redhat-developer/odo/issues/3838
+	When("java-springboot application is created and running odo dev", func() {
+		var session helper.DevSession
+		BeforeEach(func() {
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
+			var err error
+			session, _, _, _, err = helper.StartDevMode(nil, "-v", "4")
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			session.Stop()
+			session.WaitEnd()
+		})
+
+		When("Update the devfile.yaml", func() {
+
+			BeforeEach(func() {
+				helper.ReplaceString("devfile.yaml", "memoryLimit: 768Mi", "memoryLimit: 767Mi")
+				var err error
+				_, _, _, err = session.WaitSync()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("Should build the application successfully", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				podLogs := commonVar.CliRunner.Run("-n", commonVar.Project, "logs", podName).Out.Contents()
+				Expect(string(podLogs)).To(ContainSubstring("BUILD SUCCESS"))
+			})
+
+			When("compare the local and remote files", func() {
+
+				remoteFiles := []string{}
+				localFiles := []string{}
+
+				BeforeEach(func() {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, podName)
+					output := commonVar.CliRunner.Exec(podName, commonVar.Project, "find", "/projects")
+					outputArr := strings.Split(output, "\n")
+					for _, line := range outputArr {
+
+						if !strings.HasPrefix(line, "/projects"+"/") || strings.Contains(line, "lost+found") {
+							continue
+						}
+
+						newLine, err := filepath.Rel("/projects", line)
+						Expect(err).ToNot(HaveOccurred())
+
+						newLine = filepath.ToSlash(newLine)
+						if strings.HasPrefix(newLine, "target/") || newLine == "target" || strings.HasPrefix(newLine, ".") {
+							continue
+						}
+
+						remoteFiles = append(remoteFiles, newLine)
+					}
+
+					// 5) Acquire file from local context, filtering out .*
+					err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+						if err != nil {
+							return err
+						}
+
+						newPath := filepath.ToSlash(path)
+
+						if strings.HasPrefix(newPath, ".") {
+							return nil
+						}
+
+						localFiles = append(localFiles, newPath)
+						return nil
+					})
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("localFiles and remoteFiles should match", func() {
+					sort.Strings(localFiles)
+					sort.Strings(remoteFiles)
+					Expect(localFiles).To(Equal(remoteFiles))
+				})
+			})
+		})
+	})
+
 	When("node-js application is created and deployed with devfile schema 2.2.0", func() {
 
 		ensureResource := func(cpulimit, cpurequest, memoryrequest string) {
@@ -1901,58 +1964,6 @@ CMD ["npm", "start"]
 			It("should check cpuLimit, cpuRequests, memoryRequests after restart", func() {
 				ensureResource("700m", "250m", "550Mi")
 			})
-			When("compare the local and remote files", func() {
-
-				remoteFiles := []string{}
-				localFiles := []string{}
-
-				BeforeEach(func() {
-					podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
-					commonVar.CliRunner.PodsShouldBeRunning(commonVar.Project, podName)
-					output := commonVar.CliRunner.Exec(podName, commonVar.Project, "find", "/projects")
-					outputArr := strings.Split(output, "\n")
-					for _, line := range outputArr {
-
-						if !strings.HasPrefix(line, "/projects"+"/") || strings.Contains(line, "lost+found") {
-							continue
-						}
-
-						newLine, err := filepath.Rel("/projects", line)
-						Expect(err).ToNot(HaveOccurred())
-
-						newLine = filepath.ToSlash(newLine)
-						if strings.HasPrefix(newLine, "node_modules/") || newLine == "node_modules" || newLine == "package-lock.json" || strings.HasPrefix(newLine, ".") {
-							continue
-						}
-
-						remoteFiles = append(remoteFiles, newLine)
-					}
-
-					// 5) Acquire file from local context, filtering out .*
-					err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-						if err != nil {
-							return err
-						}
-
-						newPath := filepath.ToSlash(path)
-
-						if strings.HasPrefix(newPath, ".") {
-							return nil
-						}
-
-						localFiles = append(localFiles, newPath)
-						return nil
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("localFiles and remoteFiles should match", func() {
-					sort.Strings(localFiles)
-					sort.Strings(remoteFiles)
-					Expect(localFiles).To(Equal(remoteFiles))
-				})
-			})
-
 		})
 	})
 
