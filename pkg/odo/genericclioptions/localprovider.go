@@ -2,9 +2,12 @@ package genericclioptions
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // GetValidEnvInfo accesses the environment file
@@ -33,11 +36,24 @@ func GetValidEnvInfo(cmdline cmdline.Cmdline) (*envinfo.EnvSpecificInfo, error) 
 
 	// Check to see if the environment file exists
 	if !envInfo.Exists() {
+		exitMessage := `The current directory does not represent an odo component. 
+
+To get started,%s
+  * Open this folder in your favorite IDE and start editing, your changes will be reflected directly on the cluster.
+
+Visit https://odo.dev for more information.`
+
+		if isEmpty, _ := location.DirIsEmpty(filesystem.DefaultFs{}, componentContext); isEmpty {
+			exitMessage = fmt.Sprintf(exitMessage, `
+  * Create and move to a new directory
+  * Use "odo init" to initialize an odo component in the folder.
+  * Use "odo dev" to deploy it on cluster.`)
+		} else {
+			exitMessage = fmt.Sprintf(exitMessage, `
+  * Use "odo dev" to initialize an odo component for this folder and deploy it on cluster.`)
+		}
 		//revive:disable:error-strings This is a top-level error message displayed as is to the end user
-		return nil, errors.New(`The current directory does not represent an odo component.
-To start editing your component, use "odo dev" and open this folder in your favorite IDE. Changes will be directly reflected on the cluster.
-To deploy your component to a cluster use "odo deploy".
-Or switch to directory with a component.`)
+		return nil, errors.New(exitMessage)
 		//revive:enable:error-strings
 	}
 

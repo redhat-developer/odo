@@ -312,15 +312,28 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name: "no env file",
+			name: "no env file; non-empty directory",
 			input: input{
 				needDevfile: false,
 				isOffline:   true,
 				workingDir:  filepath.Join(prefixDir, "myapp"),
 				populateWorkingDir: func(fs filesystem.Filesystem) {
+					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", "main.go"), []byte{}, 0644)
 				},
 			},
-			expectedErr: "The current directory does not represent an odo component",
+			expectedErr: "Use \"odo dev\" to initialize an odo component for this folder and deploy it on cluster",
+		},
+		{
+			name: "no env file; empty directory",
+			input: input{
+				needDevfile: false,
+				isOffline:   true,
+				workingDir:  filepath.Join(prefixDir, "myapp"),
+				populateWorkingDir: func(fs filesystem.Filesystem) {
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp"), 0755)
+				},
+			},
+			expectedErr: "Use \"odo init\" to initialize an odo component in the folder.",
 		},
 	}
 

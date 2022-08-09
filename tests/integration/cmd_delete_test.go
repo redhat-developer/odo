@@ -29,6 +29,32 @@ var _ = Describe("odo delete command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
+	When("running odo delete from a directory that does not contain a .odo/env/env.yaml file", func() {
+		var files []string
+		BeforeEach(func() {
+			files = helper.ListFilesInDir(commonVar.Context)
+			Expect(files).ToNot(ContainElement(".odo"))
+		})
+		When("the directory is empty", func() {
+			BeforeEach(func() {
+				Expect(len(files)).To(BeZero())
+			})
+			It("should fail", func() {
+				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
+				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component", "Use \"odo init\" to initialize an odo component in the folder."})
+			})
+		})
+		When("the directory is not empty", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			})
+			It("should fail", func() {
+				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
+				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component", "Use \"odo dev\" to initialize an odo component for this folder and deploy it on cluster."})
+			})
+		})
+	})
+
 	for _, ctx := range []struct {
 		title       string
 		devfileName string
@@ -63,12 +89,6 @@ var _ = Describe("odo delete command tests", func() {
 				if ctx.setupFunc != nil {
 					ctx.setupFunc()
 				}
-			})
-			It("should fail when the directory does not contain a .odo/env.yaml file", func() {
-				files := helper.ListFilesInDir(commonVar.Context)
-				Expect(files).ToNot(ContainElement(".odo"))
-				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				Expect(errOut).To(ContainSubstring("The current directory does not represent an odo component"))
 			})
 			When("the components are not deployed", func() {
 				var stdOut string
