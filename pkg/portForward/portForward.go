@@ -82,8 +82,6 @@ func (o *PFClient) StartPortForwarding(
 		return err
 	}
 
-	portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
-
 	o.originalErrorHandlers = runtime.ErrorHandlers
 	runtime.ErrorHandlers = append(runtime.ErrorHandlers, func(err error) {
 		if err.Error() == "lost connection to pod" {
@@ -98,13 +96,26 @@ func (o *PFClient) StartPortForwarding(
 	})
 
 	o.isRunning = true
+
+	devstateChan := make(chan error)
 	go func() {
 		backo := watch.NewExpBackoff()
 		for {
 			o.finishedChan = make(chan struct{}, 1)
+			portsBuf := NewPortWriter(log.GetStdout(), len(portPairsSlice), ceMapping)
+
+			go func() {
+				portsBuf.Wait()
+				err = o.stateClient.SetForwardedPorts(portsBuf.GetForwardedPorts())
+				if err != nil {
+					err = fmt.Errorf("unable to save forwarded ports to state file: %v", err)
+				}
+				devstateChan <- err
+			}()
+
 			err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan)
 			if err != nil {
-				fmt.Printf("failed to setup port-forwarding: %v\n", err)
+				fmt.Fprintf(errOut, "Failed to setup port-forwarding: %v\n", err)
 				time.Sleep(backo.Delay())
 			}
 			if !o.isRunning {
@@ -114,13 +125,9 @@ func (o *PFClient) StartPortForwarding(
 		o.finishedChan <- struct{}{}
 	}()
 
-	portsBuf.Wait()
-	err = o.stateClient.SetForwardedPorts(portsBuf.GetForwardedPorts())
-	if err != nil {
-		return fmt.Errorf("unable to save forwarded ports to state file: %v", err)
-	}
-
-	return nil
+	// Wait the first time the devstate file is written
+	err = <-devstateChan
+	return err
 }
 
 func (o *PFClient) StopPortForwarding() {
