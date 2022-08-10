@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 
 	devfile "github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/generator"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
 	"github.com/ghodss/yaml"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +21,8 @@ import (
 	authv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
 
@@ -122,7 +124,7 @@ func pushLinksWithoutOperator(client kclient.ClientInterface, devfileObj parser.
 		return err
 	}
 
-	secrets, err := client.ListSecrets(odolabels.GetSelector(odolabels.GetComponentName(labels), odolabels.GetAppName(labels), odolabels.ComponentAnyMode))
+	secrets, err := client.ListSecrets(odolabels.GetSelector(odolabels.GetComponentName(labels), odolabels.GetAppName(labels), odolabels.ComponentAnyMode, false))
 	if err != nil {
 		return err
 	}

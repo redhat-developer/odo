@@ -4,15 +4,17 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/redhat-developer/odo/pkg/version"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 func Test_getLabels(t *testing.T) {
 	type args struct {
-		componentName   string
-		applicationName string
-		additional      bool
+		componentName     string
+		applicationName   string
+		additional        bool
+		isPartOfComponent bool
 	}
 	tests := []struct {
 		name string
@@ -48,10 +50,25 @@ func Test_getLabels(t *testing.T) {
 				"odo.dev/mode":                  "Dev",
 			},
 		},
+		{
+			name: "everything with isPartOfComponent",
+			args: args{
+				componentName:     "componentname",
+				applicationName:   "applicationname",
+				isPartOfComponent: true,
+			},
+			want: labels.Set{
+				kubernetesManagedByLabel: "odo",
+				kubernetesPartOfLabel:    "applicationname",
+				kubernetesInstanceLabel:  "componentname",
+				"odo.dev/mode":           "Dev",
+				componentLabel:           "componentname",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getLabels(tt.args.componentName, tt.args.applicationName, ComponentDevMode, tt.args.additional); !reflect.DeepEqual(got, tt.want) {
+			if got := getLabels(tt.args.componentName, tt.args.applicationName, ComponentDevMode, tt.args.additional, tt.args.isPartOfComponent); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetLabels() = %v, want %v", got, tt.want)
 			}
 		})

@@ -24,7 +24,7 @@ import (
 		var outContents []byte
 		var errContents []byte
 		BeforeEach(func() {
-			devSession, outContents, errContents = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode(nil)
 		})
 		AfterEach(func() {
 			devSession.Stop()
@@ -48,7 +48,7 @@ import (
 		var outContents []byte
 		var errContents []byte
 		BeforeEach(func() {
-			devSession, outContents, errContents = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode(nil)
 			defer devSession.Stop()
 			[...]
 		})
@@ -71,7 +71,7 @@ import (
 		var outContents []byte
 		var errContents []byte
 		BeforeEach(func() {
-			devSession, outContents, errContents = helper.StartDevMode()
+			devSession, outContents, errContents = helper.StartDevMode(nil)
 			defer devSession.Kill()
 			[...]
 		})
@@ -115,10 +115,10 @@ type DevSession struct {
 // It returns a session structure, the contents of the standard and error outputs
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
-func StartDevMode(opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
+func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
 	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
-	session := CmdRunner("odo", args...)
+	session := Cmd("odo", args...).AddEnv(envvars...).Runner().session
 	WaitForOutputToContain("Press Ctrl+c to exit `odo dev` and delete resources from the cluster", 360, 10, session)
 	result := DevSession{
 		session: session,
@@ -156,7 +156,7 @@ func (o DevSession) WaitEnd() {
 	o.session.Wait(3 * time.Minute)
 }
 
-//  WaitSync waits for the synchronization of files to be finished
+// WaitSync waits for the synchronization of files to be finished
 // It returns the contents of the standard and error outputs
 // since the end of the dev mode started or previous sync, and until the end of the synchronization.
 func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
@@ -184,8 +184,8 @@ func (o DevSession) CheckNotSynced(timeout time.Duration) {
 // RunDevMode runs a dev session and executes the `inside` code when the dev mode is completely started
 // The inside handler is passed the internal session pointer, the contents of the standard and error outputs,
 // and a slice of strings - ports - giving the redirections in the form localhost:<port_number> to access ports opened by component
-func RunDevMode(additionalOpts []string, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
-	session, outContents, errContents, urls, err := StartDevMode(additionalOpts...)
+func RunDevMode(additionalOpts []string, envvars []string, inside func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string)) error {
+	session, outContents, errContents, urls, err := StartDevMode(envvars, additionalOpts...)
 	if err != nil {
 		return err
 	}
@@ -195,6 +195,35 @@ func RunDevMode(additionalOpts []string, inside func(session *gexec.Session, out
 	}()
 	inside(session.session, outContents, errContents, urls)
 	return nil
+}
+
+// DevModeShouldFail runs `odo dev` with an intention to fail, and checks for a given substring
+// `odo dev` runs in an infinite reconciliation loop, and hence running it with Cmd will not work for a lot of failing cases,
+// this function is helpful in such cases.
+// TODO(pvala): Modify StartDevMode to take substring arg into account, and replace this method with it.
+func DevModeShouldFail(envvars []string, substring string, opts ...string) (DevSession, []byte, []byte, error) {
+	args := []string{"dev", "--random-ports"}
+	args = append(args, opts...)
+	session := Cmd("odo", args...).AddEnv(envvars...).Runner().session
+	WaitForOutputToContain(substring, 360, 10, session)
+	result := DevSession{
+		session: session,
+	}
+	defer func() {
+		result.Stop()
+		result.WaitEnd()
+	}()
+	outContents := session.Out.Contents()
+	errContents := session.Err.Contents()
+	err := session.Out.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, err
+	}
+	err = session.Err.Clear()
+	if err != nil {
+		return DevSession{}, nil, nil, err
+	}
+	return result, outContents, errContents, nil
 }
 
 // getPorts returns a map of ports redirected depending on the information in s

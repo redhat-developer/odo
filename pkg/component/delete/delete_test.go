@@ -17,10 +17,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/redhat-developer/odo/pkg/kclient"
-	"github.com/redhat-developer/odo/pkg/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	odoTestingUtil "github.com/redhat-developer/odo/pkg/testingutil"
 	"github.com/redhat-developer/odo/pkg/util"
+)
+
+const (
+	appName = "app"
 )
 
 func TestDeleteComponentClient_ListClusterResourcesToDelete(t *testing.T) {
@@ -235,18 +238,19 @@ func TestDeleteComponentClient_DeleteResources(t *testing.T) {
 }
 
 func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
-	const appName = "app"
-	const projectName = "default"
 	const compName = "nodejs-prj1-api-abhz"
-	innerLoopDeploymentName, _ := util.NamespaceKubernetesObject(compName, appName)
-	deployment := odoTestingUtil.CreateFakeDeployment(compName)
+	innerLoopCoreDeploymentName, _ := util.NamespaceKubernetesObject(compName, appName)
 
-	deployedInnerLoopResource, e := kclient.ConvertK8sResourceToUnstructured(deployment)
+	// innerLoopCoreDeployment is the deployment created by odo dev for the component
+	innerLoopCoreDeployment := odoTestingUtil.CreateFakeDeployment(compName, true)
+
+	innerLoopCoreDeploymentUnstructured, e := kclient.ConvertK8sResourceToUnstructured(innerLoopCoreDeployment)
 	if e != nil {
 		t.Errorf("unable to convert deployment to unstructured")
 	}
 
-	outerLoopResource := unstructured.Unstructured{
+	// outerLoopResourceUnstructured is the deployment created by odo deploy
+	outerLoopResourceUnstructured := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "apps/v1",
 			"kind":       "Deployment",
@@ -284,14 +288,18 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			},
 		},
 	}
-	outerLoopGVR := meta.RESTMapping{
-		Resource: schema.GroupVersionResource{
-			Group:    "apps",
-			Version:  "v1",
-			Resource: outerLoopResource.GetKind(),
-		},
+
+	// labeledOuterloopResource is the deployment with labels set
+	labeledOuterloopResource := *outerLoopResourceUnstructured.DeepCopy()
+	labeledOuterloopResource.SetLabels(odolabels.GetLabels(compName, appName, odolabels.ComponentDeployMode, false))
+
+	// innerLoopResourceUnstructured is the deployment that will be deployed by apply command with `odo dev`
+	innerLoopResourceUnstructured := *outerLoopResourceUnstructured.DeepCopy()
+	innerLoopResourceUnstructured.SetLabels(odolabels.GetLabels(compName, appName, odolabels.ComponentDevMode, false))
+
+	deploymentRESTMapping := meta.RESTMapping{
+		Resource: getGVR("apps", "v1", "Deployment"),
 	}
-	deployedOuterLoopResource := getUnstructured("my-component", "Deployment", "apps/v1", projectName)
 
 	type fields struct {
 		kubeClient func(ctrl *gomock.Controller) kclient.ClientInterface
@@ -299,6 +307,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 	type args struct {
 		devfileObj parser.DevfileObj
 		appName    string
+		mode       string
 	}
 	tests := []struct {
 		name                    string
@@ -309,17 +318,17 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 		wantErr                 bool
 	}{
 		{
-			name: "both innerloop and outerloop resources are pushed to the cluster",
+			name: "list innerloop core resource(deployment), and outerloop resources",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
 
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).Return(deployment, nil)
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(innerLoopCoreDeployment, nil)
 
-					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(&deploymentRESTMapping, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
-						Return(&deployedOuterLoopResource, nil)
+						GetDynamicResource(deploymentRESTMapping.Resource, outerLoopResourceUnstructured.GetName()).
+						Return(&labeledOuterloopResource, nil)
 
 					return kubeClient
 				},
@@ -327,18 +336,19 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			args: args{
 				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
+				mode:       odolabels.ComponentAnyMode,
 			},
 			wantIsInnerLoopDeployed: true,
-			wantResources:           []unstructured.Unstructured{deployedInnerLoopResource, deployedOuterLoopResource},
+			wantResources:           []unstructured.Unstructured{innerLoopCoreDeploymentUnstructured, labeledOuterloopResource},
 			wantErr:                 false,
 		},
 		{
-			name: "no outerloop resources are present in the devfile",
+			name: "list innerloop core resource(deployment) only",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
 
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).Return(deployment, nil)
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(innerLoopCoreDeployment, nil)
 					return kubeClient
 				},
 			},
@@ -352,55 +362,89 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 					return obj
 				}(),
 				appName: appName,
+				mode:    odolabels.ComponentDevMode,
 			},
 			wantIsInnerLoopDeployed: true,
-			wantResources:           []unstructured.Unstructured{deployedInnerLoopResource},
+			wantResources:           []unstructured.Unstructured{innerLoopCoreDeploymentUnstructured},
 			wantErr:                 false,
 		},
 		{
-			name: "only outerloop resources are deployed; innerloop resource is not found",
+			name: "list innerloop core resources(deployment), another innerloop resources",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).
-						Return(&appsv1.Deployment{}, kerrors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "Deployments"}, innerLoopDeploymentName))
-					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
+
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(innerLoopCoreDeployment, nil)
+
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(&deploymentRESTMapping, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
-						Return(&deployedOuterLoopResource, nil)
+						GetDynamicResource(deploymentRESTMapping.Resource, outerLoopResourceUnstructured.GetName()).
+						Return(&innerLoopResourceUnstructured, nil)
+
+					return kubeClient
+				},
+			},
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-composite-apply-commands.yaml")
+					// change the metadata name to the desired one since devfile.yaml has a different name
+					metadata := obj.Data.GetMetadata()
+					metadata.Name = compName
+					obj.Data.SetMetadata(metadata)
+					return obj
+				}(),
+				appName: appName,
+				mode:    odolabels.ComponentDevMode,
+			},
+			wantIsInnerLoopDeployed: true,
+			wantResources:           []unstructured.Unstructured{innerLoopCoreDeploymentUnstructured, innerLoopResourceUnstructured},
+			wantErr:                 false,
+		},
+		{
+			name: "list outerloop resources only",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).
+						Return(&appsv1.Deployment{}, kerrors.NewNotFound(deploymentRESTMapping.Resource.GroupResource(), innerLoopCoreDeploymentName))
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(&deploymentRESTMapping, nil)
+					kubeClient.EXPECT().
+						GetDynamicResource(deploymentRESTMapping.Resource, outerLoopResourceUnstructured.GetName()).
+						Return(&labeledOuterloopResource, nil)
 					return kubeClient
 				},
 			},
 			args: args{
 				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
+				mode:       odolabels.ComponentAnyMode,
 			},
 			wantIsInnerLoopDeployed: false,
-			wantResources:           []unstructured.Unstructured{deployedOuterLoopResource},
+			wantResources:           []unstructured.Unstructured{labeledOuterloopResource},
 			wantErr:                 false,
 		},
 		{
-			name: "only uri-referenced outerloop resources are deployed; innerloop resource is not found",
+			name: "list uri-referenced outerloop resources",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).
-						Return(&appsv1.Deployment{},
-							kerrors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "Deployments"},
-								innerLoopDeploymentName))
-					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).
+						Return(&appsv1.Deployment{}, kerrors.NewNotFound(schema.GroupResource{Group: "apps", Resource: "Deployments"}, innerLoopCoreDeploymentName))
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(&deploymentRESTMapping, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
-						Return(&deployedOuterLoopResource, nil)
+						GetDynamicResource(deploymentRESTMapping.Resource, outerLoopResourceUnstructured.GetName()).
+						Return(&labeledOuterloopResource, nil)
 					return kubeClient
 				},
 			},
 			args: args{
 				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy-with-k8s-uri.yaml"),
 				appName:    appName,
+				mode:       odolabels.ComponentAnyMode,
 			},
 			wantIsInnerLoopDeployed: false,
-			wantResources:           []unstructured.Unstructured{deployedOuterLoopResource},
+			wantResources:           []unstructured.Unstructured{labeledOuterloopResource},
 			wantErr:                 false,
 		},
 		{
@@ -408,13 +452,14 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).Return(&appsv1.Deployment{}, errors.New("some error"))
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(&appsv1.Deployment{}, errors.New("some error"))
 					return kubeClient
 				},
 			},
 			args: args{
 				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
+				mode:       odolabels.ComponentAnyMode,
 			},
 			wantIsInnerLoopDeployed: false,
 			wantResources:           nil,
@@ -425,17 +470,18 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).Return(deployment, nil)
-					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(nil, errors.New("some error"))
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(innerLoopCoreDeployment, nil)
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(nil, errors.New("some error"))
 					return kubeClient
 				},
 			},
 			args: args{
 				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
+				mode:       odolabels.ComponentAnyMode,
 			},
 			wantIsInnerLoopDeployed: true,
-			wantResources:           []unstructured.Unstructured{deployedInnerLoopResource},
+			wantResources:           []unstructured.Unstructured{innerLoopCoreDeploymentUnstructured},
 			wantErr:                 false,
 		},
 		{
@@ -443,10 +489,10 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					kubeClient := kclient.NewMockClientInterface(ctrl)
-					kubeClient.EXPECT().GetDeploymentByName(innerLoopDeploymentName).Return(deployment, nil)
-					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResource).Return(&outerLoopGVR, nil)
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(innerLoopCoreDeployment, nil)
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(&deploymentRESTMapping, nil)
 					kubeClient.EXPECT().
-						GetDynamicResource(outerLoopGVR.Resource, outerLoopResource.GetName()).
+						GetDynamicResource(deploymentRESTMapping.Resource, outerLoopResourceUnstructured.GetName()).
 						Return(nil, errors.New("some error"))
 					return kubeClient
 				},
@@ -454,9 +500,42 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			args: args{
 				devfileObj: odoTestingUtil.GetTestDevfileObjFromFile("devfile-deploy.yaml"),
 				appName:    appName,
+				mode:       odolabels.ComponentAnyMode,
 			},
 			wantIsInnerLoopDeployed: true,
-			wantResources:           []unstructured.Unstructured{deployedInnerLoopResource},
+			wantResources:           []unstructured.Unstructured{innerLoopCoreDeploymentUnstructured},
+			wantErr:                 false,
+		},
+		{
+			name: "do not list outerloop resource if Dev mode is asked",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					kubeClient := kclient.NewMockClientInterface(ctrl)
+
+					kubeClient.EXPECT().GetDeploymentByName(innerLoopCoreDeploymentName).Return(innerLoopCoreDeployment, nil)
+
+					kubeClient.EXPECT().GetRestMappingFromUnstructured(outerLoopResourceUnstructured).Return(&deploymentRESTMapping, nil)
+					kubeClient.EXPECT().
+						GetDynamicResource(deploymentRESTMapping.Resource, outerLoopResourceUnstructured.GetName()).
+						Return(&outerLoopResourceUnstructured, nil)
+
+					return kubeClient
+				},
+			},
+			args: args{
+				devfileObj: func() parser.DevfileObj {
+					obj := odoTestingUtil.GetTestDevfileObjFromFile("devfile-composite-apply-commands.yaml")
+					// change the metadata name to the desired one since devfile.yaml has a different name
+					metadata := obj.Data.GetMetadata()
+					metadata.Name = compName
+					obj.Data.SetMetadata(metadata)
+					return obj
+				}(),
+				appName: appName,
+				mode:    odolabels.ComponentDevMode,
+			},
+			wantIsInnerLoopDeployed: true,
+			wantResources:           []unstructured.Unstructured{innerLoopCoreDeploymentUnstructured},
 			wantErr:                 false,
 		},
 	}
@@ -466,7 +545,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			do := DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, labels.ComponentAnyMode)
+			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.mode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -523,7 +602,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(&corev1.Pod{}, &kclient.PodNotFoundError{Selector: selector})
 					return client
 				},
@@ -540,7 +619,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(nil, errors.New("some un-ignorable error"))
 					return client
 				},
@@ -557,7 +636,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(odoTestingUtil.CreateFakePod(componentName, "runtime"), nil)
 
 					cmd := []string{"/bin/sh", "-c", "cd /projects/nodejs-starter && (echo \"Hello World!\") 1>>/proc/1/fd/1 2>>/proc/1/fd/2"}
@@ -578,7 +657,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
 					pod := odoTestingUtil.CreateFakePod(componentName, "runtime")
 					pod.Status.Phase = corev1.PodFailed
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(pod, nil)
@@ -597,9 +676,9 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					client := kclient.NewMockClientInterface(ctrl)
 
-					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+					selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
 					fakePod := odoTestingUtil.CreateFakePod(componentName, "runtime")
-					//Expecting this method to be called twice because if the command execution fails, we try to get the pod logs by calling GetOnePodFromSelector again.
+					// Expecting this method to be called twice because if the command execution fails, we try to get the pod logs by calling GetOnePodFromSelector again.
 					client.EXPECT().GetRunningPodFromSelector(selector).Return(fakePod, nil).Times(2)
 
 					client.EXPECT().GetPodLogs(fakePod.Name, gomock.Any(), gomock.Any()).Return(nil, errors.New("an error"))

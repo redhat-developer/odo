@@ -5,8 +5,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -61,7 +63,7 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 		})
 		It("should show validation errors if the devfile is incorrect", func() {
-			err := helper.RunDevMode(nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "kind: run", "kind: build")
 				helper.WaitForOutputToContain("Error occurred on Push", 180, 10, session)
 			})
@@ -71,7 +73,7 @@ var _ = Describe("odo dev command tests", func() {
 			// Create a new file A
 			fileAPath, fileAText := helper.CreateSimpleFile(commonVar.Context, "my-file-", ".txt")
 			// watch that project
-			err := helper.RunDevMode(nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				// Change some other file B
 				helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "App started", "App is super started")
 
@@ -83,7 +85,7 @@ var _ = Describe("odo dev command tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("ensure that index information is updated", func() {
-			err := helper.RunDevMode(nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 				indexAfterPush, err := util.ReadFileIndex(filepath.Join(commonVar.Context, ".odo", "odo-file-index.json"))
 				Expect(err).ToNot(HaveOccurred())
 
@@ -188,7 +190,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("recording telemetry data", func() {
 			BeforeEach(func() {
 				helper.EnableTelemetryDebug()
-				session, _, _, _, _ := helper.StartDevMode()
+				session, _, _, _, _ := helper.StartDevMode(nil)
 				session.Stop()
 				session.WaitEnd()
 			})
@@ -212,7 +214,7 @@ var _ = Describe("odo dev command tests", func() {
 
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode()
+				devSession, _, _, _, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -237,7 +239,7 @@ var _ = Describe("odo dev command tests", func() {
 				})
 
 				It("should run odo dev on initial namespace", func() {
-					err := helper.RunDevMode(nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
+					err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
 						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
 						Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
 
@@ -267,7 +269,7 @@ var _ = Describe("odo dev command tests", func() {
 			BeforeEach(func() {
 				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode()
+				devSession, _, _, _, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -363,7 +365,7 @@ var _ = Describe("odo dev command tests", func() {
 
 			BeforeEach(func() {
 				var err error
-				devSession, _, _, _, err = helper.StartDevMode("--no-watch")
+				devSession, _, _, _, err = helper.StartDevMode(nil, "--no-watch")
 				Expect(err).ToNot(HaveOccurred())
 				// An ENV file should have been created indicating current namespace
 				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
@@ -401,7 +403,7 @@ var _ = Describe("odo dev command tests", func() {
 				var ports map[string]string
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, ports, err = helper.StartDevMode()
+					devSession, _, _, ports, err = helper.StartDevMode(nil)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -466,7 +468,7 @@ var _ = Describe("odo dev command tests", func() {
 				var ports map[string]string
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, ports, err = helper.StartDevMode()
+					devSession, _, _, ports, err = helper.StartDevMode(nil)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
@@ -573,7 +575,7 @@ var _ = Describe("odo dev command tests", func() {
 			var session helper.DevSession
 			BeforeEach(func() {
 				var err error
-				session, _, _, _, err = helper.StartDevMode()
+				session, _, _, _, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -592,7 +594,7 @@ var _ = Describe("odo dev command tests", func() {
 			var session helper.DevSession
 			BeforeEach(func() {
 				var err error
-				session, _, _, _, err = helper.StartDevMode("--var", "VALUE_TEST=baz")
+				session, _, _, _, err = helper.StartDevMode(nil, "--var", "VALUE_TEST=baz")
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -614,7 +616,7 @@ var _ = Describe("odo dev command tests", func() {
 				var err error
 				err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
 				Expect(err).ToNot(HaveOccurred())
-				session, _, _, _, err = helper.StartDevMode("--var-file", "vars.txt")
+				session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -638,7 +640,7 @@ var _ = Describe("odo dev command tests", func() {
 				_ = os.Setenv("VALUE_TEST", "baz")
 				err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
 				Expect(err).ToNot(HaveOccurred())
-				session, _, _, _, err = helper.StartDevMode("--var-file", "vars.txt")
+				session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
 				Expect(err).ToNot(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -664,7 +666,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should be able to exec command", func() {
-			err := helper.RunDevMode(nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 				helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
@@ -681,7 +683,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should be able to exec command", func() {
-			err := helper.RunDevMode(nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 				helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
@@ -698,7 +700,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should be able to exec command", func() {
-			err := helper.RunDevMode(nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
 				helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
@@ -723,7 +725,7 @@ var _ = Describe("odo dev command tests", func() {
 			// Create a new directory
 			helper.MakeDir(newDirPath)
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -790,7 +792,7 @@ var _ = Describe("odo dev command tests", func() {
 				// Create a new directory
 				helper.MakeDir(newDirPath)
 				var err error
-				session, _, _, _, err = helper.StartDevMode()
+				session, _, _, _, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -854,7 +856,7 @@ var _ = Describe("odo dev command tests", func() {
 				fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
 			}
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -916,7 +918,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 
 		})
@@ -952,7 +954,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -984,7 +986,7 @@ var _ = Describe("odo dev command tests", func() {
 			// reset clonePath and change the workdir accordingly, it should sync to project name
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1009,7 +1011,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1036,7 +1038,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1061,7 +1063,7 @@ var _ = Describe("odo dev command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1129,7 +1131,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1151,13 +1153,162 @@ var _ = Describe("odo dev command tests", func() {
 		})
 	})
 
+	Describe("devfile contains composite apply command", func() {
+		const (
+			deploymentName = "my-component"
+			DEVFILEPORT    = "3000"
+		)
+		var session helper.DevSession
+		var sessionOut, sessionErr []byte
+		var err error
+		var ports map[string]string
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-composite-apply-commands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+		When("odo dev is running", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				session, sessionOut, sessionErr, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+			It("should execute the composite apply commands successfully", func() {
+				checkDeploymentExists := func() {
+					out := commonVar.CliRunner.Run("get", "deployments", deploymentName).Out.Contents()
+					Expect(out).To(ContainSubstring(deploymentName))
+				}
+				checkImageBuilt := func() {
+					Expect(string(sessionOut)).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " + filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+					Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+				}
+				checkEndpointAccessible := func(message []string) {
+					url := fmt.Sprintf("http://%s", ports[DEVFILEPORT])
+					resp, e := http.Get(url)
+					Expect(e).ToNot(HaveOccurred())
+					defer resp.Body.Close()
+
+					body, _ := io.ReadAll(resp.Body)
+					helper.MatchAllInOutput(string(body), message)
+				}
+				By("checking is the image was successfully built", func() {
+					checkImageBuilt()
+				})
+
+				By("checking the endpoint accessibility", func() {
+					checkEndpointAccessible([]string{"Hello from Node.js Starter Application!"})
+				})
+
+				By("checking the deployment was created successfully", func() {
+					checkDeploymentExists()
+				})
+				By("ensuring multiple deployments exist for selector error is not occurred", func() {
+					Expect(string(sessionErr)).ToNot(ContainSubstring("multiple Deployments exist for the selector"))
+				})
+				By("checking odo dev watches correctly", func() {
+					// making changes to the project again
+					helper.ReplaceString(filepath.Join(commonVar.Context, "server.js"), "from Node.js Starter Application", "from the new Node.js Starter Application")
+					_, _, _, err = session.WaitSync()
+					Expect(err).ToNot(HaveOccurred())
+					checkDeploymentExists()
+					checkImageBuilt()
+					checkEndpointAccessible([]string{"Hello from the new Node.js Starter Application!"})
+				})
+
+				By("cleaning up the resources on ending the session", func() {
+					session.Stop()
+					session.WaitEnd()
+					out := commonVar.CliRunner.Run("get", "deployments").Out.Contents()
+					Expect(out).ToNot(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
+		Context("the devfile contains an image component that uses a remote Dockerfile", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			})
+			for _, env := range [][]string{
+				{"PODMAN_CMD=echo"},
+				{
+					"PODMAN_CMD=a-command-not-found-for-podman-should-make-odo-fallback-to-docker",
+					"DOCKER_CMD=echo",
+				},
+			} {
+				env := env
+				When(fmt.Sprintf("%v remote server returns a valid file when odo dev is run", env), func() {
+					var buildRegexp string
+					var server *httptest.Server
+					var url string
+
+					BeforeEach(func() {
+						buildRegexp = regexp.QuoteMeta("build -t quay.io/unknown-account/myimage -f ") +
+							".*\\.dockerfile " + regexp.QuoteMeta(commonVar.Context)
+						server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							fmt.Fprintf(w, `# Dockerfile
+FROM node:8.11.1-alpine
+COPY . /app
+WORKDIR /app
+RUN npm install
+CMD ["npm", "start"]
+`)
+						}))
+						url = server.URL
+
+						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
+						session, sessionOut, _, ports, err = helper.StartDevMode(env)
+						Expect(err).ToNot(HaveOccurred())
+					})
+
+					AfterEach(func() {
+						session.Stop()
+						session.WaitEnd()
+						server.Close()
+					})
+
+					It("should build and push image when odo dev is run", func() {
+						lines, _ := helper.ExtractLines(string(sessionOut))
+						_, ok := helper.FindFirstElementIndexMatchingRegExp(lines, buildRegexp)
+						Expect(ok).To(BeTrue(), "build regexp not found in output: "+buildRegexp)
+						Expect(string(sessionOut)).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+					})
+				})
+				When(fmt.Sprintf("%v remote server returns an error when odo dev is run", env), func() {
+					var server *httptest.Server
+					var url string
+					BeforeEach(func() {
+						server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							w.WriteHeader(http.StatusNotFound)
+						}))
+						url = server.URL
+
+						helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "./Dockerfile", url)
+					})
+
+					AfterEach(func() {
+						server.Close()
+					})
+
+					It("should not build images when odo dev is run", func() {
+						_, sessionOut, _, err := helper.DevModeShouldFail(env, "failed to retrieve "+url)
+						Expect(err).To(BeNil())
+						Expect(sessionOut).NotTo(ContainSubstring("build -t quay.io/unknown-account/myimage -f "))
+						Expect(sessionOut).NotTo(ContainSubstring("push quay.io/unknown-account/myimage"))
+					})
+				})
+			}
+		})
+	})
+
 	When("running odo dev and devfile with composite command", func() {
 		devfileCmpName := "nodejs"
 		var session helper.DevSession
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1165,7 +1316,7 @@ var _ = Describe("odo dev command tests", func() {
 			session.WaitEnd()
 		})
 
-		It("should execute all commands in composite commmand", func() {
+		It("should execute all commands in composite command", func() {
 			// Verify the command executed successfully
 			var statErr error
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
@@ -1189,7 +1340,7 @@ var _ = Describe("odo dev command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1221,7 +1372,7 @@ var _ = Describe("odo dev command tests", func() {
 		BeforeEach(func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1256,7 +1407,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			var err error
-			session, stdout, stderr, _, err = helper.StartDevMode()
+			session, stdout, stderr, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -1317,7 +1468,7 @@ var _ = Describe("odo dev command tests", func() {
 				filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			var err error
-			session, stdout, stderr, _, err = helper.StartDevMode()
+			session, stdout, stderr, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -1392,7 +1543,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
 			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "npm starts")
 			var err error
-			session, _, initErr, _, err = helper.StartDevMode()
+			session, _, initErr, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1432,7 +1583,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", devfileCmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1475,7 +1626,7 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should create vcs-uri annotation for the deployment when running odo dev", func() {
-			err := helper.RunDevMode(nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 				annotations := commonVar.CliRunner.GetAnnotationsDeployment(devfileCmpName, "app", commonVar.Project)
 				var valueFound bool
 				for key, value := range annotations {
@@ -1499,7 +1650,7 @@ var _ = Describe("odo dev command tests", func() {
 			checkFunc         func(stdout, stderr string)
 		}
 		testForCmd := func(tt testCase) {
-			err := helper.RunDevMode(tt.devAdditionalOpts, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+			err := helper.RunDevMode(tt.devAdditionalOpts, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
 				stdout := string(outContents)
 				stderr := string(errContents)
 
@@ -1565,7 +1716,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should error out if called with a command of another kind", func() {
-				//devrun is a valid run command, not a build command
+				// devrun is a valid run command, not a build command
 				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "devrun").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 			})
@@ -1585,7 +1736,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should execute the default build command successfully if specified explicitly", func() {
-				//devbuild is the default build command
+				// devbuild is the default build command
 				buildCmdTestFunc("devbuild", func(stdout, stderr string) {
 					By("checking that it did not execute the custom build command", func() {
 						helper.DontMatchAllInOutput(stdout, []string{
@@ -1614,7 +1765,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should error out if called with a command of another kind", func() {
-				//devbuild is a valid build command, not a run command
+				// devbuild is a valid build command, not a run command
 				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
 				Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
 			})
@@ -1634,7 +1785,7 @@ var _ = Describe("odo dev command tests", func() {
 			})
 
 			It("should execute the default run command successfully if specified explicitly", func() {
-				//devrun is the default run command
+				// devrun is the default run command
 				runCmdTestFunc("devrun", func(stdout, stderr string) {
 					By("checking that it did not execute the custom run command", func() {
 						helper.DontMatchAllInOutput(stdout, []string{
@@ -1682,7 +1833,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "springboot", "devfile-registry.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), commonVar.Context)
 			var err error
-			session, _, _, _, err = helper.StartDevMode("-v", "4")
+			session, _, _, _, err = helper.StartDevMode(nil, "-v", "4")
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1789,7 +1940,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-MR-CL-CR.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1828,7 +1979,7 @@ var _ = Describe("odo dev command tests", func() {
 
 			helper.ReplaceString("package.json", "node server.js", "node server/server.js")
 			var err error
-			session, _, _, _, err = helper.StartDevMode()
+			session, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 		AfterEach(func() {
@@ -1859,7 +2010,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
-			session, _, errContents, _, err := helper.StartDevMode()
+			session, _, errContents, _, err := helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 			defer func() {
 				session.Stop()
@@ -1881,7 +2032,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 
-			session, _, errContents, err := helper.StartDevMode()
+			session, _, errContents, err := helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 			defer session.Stop()
 			helper.MatchAllInOutput(string(errContents), []string{"odo may not work as expected in the default project"})
@@ -1889,7 +2040,7 @@ var _ = Describe("odo dev command tests", func() {
 	})
 	*/
 
-	//Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
+	// Test reused and adapted from the now-removed `cmd_devfile_delete_test.go`.
 	// cf. https://github.com/redhat-developer/odo/blob/24fd02673d25eb4c7bb166ec3369554a8e64b59c/tests/integration/devfile/cmd_devfile_delete_test.go#L172-L238
 	When("a component with endpoints is bootstrapped and pushed", func() {
 
@@ -1902,7 +2053,7 @@ var _ = Describe("odo dev command tests", func() {
 				helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode()
+			devSession, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 
@@ -1951,14 +2102,14 @@ var _ = Describe("odo dev command tests", func() {
 		})
 
 		It("should run odo dev successfully (#5620)", func() {
-			devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode()
+			devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(nil)
 			Expect(err).ShouldNot(HaveOccurred())
 			defer devSession.Stop()
 			const errorMessage = "Failed to create the component:"
 			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
 			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
 
-			//the command has been started directly in the background. Check the PID stored in a specific file.
+			// the command has been started directly in the background. Check the PID stored in a specific file.
 			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
 				commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
 				"runtime",
@@ -1985,7 +2136,7 @@ var _ = Describe("odo dev command tests", func() {
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 			var err error
-			devSession, _, _, _, err = helper.StartDevMode()
+			devSession, _, _, _, err = helper.StartDevMode(nil)
 			Expect(err).ToNot(HaveOccurred())
 		})
 

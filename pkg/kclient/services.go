@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
 )
 
 // CreateService generates and creates the service
@@ -52,7 +53,7 @@ func (c *Client) DeleteService(serviceName string) error {
 // GetOneService retrieves the service with the given component and app name
 // An error is thrown when exactly one service is not found for the selector.
 func (c *Client) GetOneService(componentName, appName string) (*corev1.Service, error) {
-	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false)
 	return c.GetOneServiceFromSelector(selector)
 }
 

@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/redhat-developer/odo/pkg/project"
 	bindingApis "github.com/redhat-developer/service-binding-operator/apis"
 	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
 	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
+
+	"github.com/redhat-developer/odo/pkg/project"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	devfilefs "github.com/devfile/library/pkg/testingutil/filesystem"
@@ -301,7 +302,7 @@ func (o *BindingClient) checkServiceBindingOperatorInstalled() error {
 
 func (o *BindingClient) CheckServiceBindingsInjectionDone(componentName string, appName string) (bool, error) {
 
-	deployment, err := o.kubernetesClient.GetOneDeployment(componentName, appName)
+	deployment, err := o.kubernetesClient.GetOneDeployment(componentName, appName, true)
 	if err != nil {
 		// If not deployment yet => all bindings are done
 		if _, ok := err.(*kclient.DeploymentNotFoundError); ok {

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -36,7 +37,7 @@ func NewDeleteComponentClient(kubeClient kclient.ClientInterface) *DeleteCompone
 // It only returns resources not owned by another resource of the component, letting the garbage collector do its job
 func (do *DeleteComponentClient) ListClusterResourcesToDelete(componentName string, namespace string) ([]unstructured.Unstructured, error) {
 	var result []unstructured.Unstructured
-	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentAnyMode)
+	selector := odolabels.GetSelector(componentName, "app", odolabels.ComponentAnyMode, false)
 	list, err := do.kubeClient.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func references(list []unstructured.Unstructured, ownerRef metav1.OwnerReference
 
 // ListResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on the cluster and can be deleted
 func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, mode string) (isInnerLoopDeployed bool, resources []unstructured.Unstructured, err error) {
-
+	var deployment *v1.Deployment
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		// Inner Loop
 		// Fetch the deployment of the devfile component
@@ -101,7 +102,7 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 			return isInnerLoopDeployed, resources, fmt.Errorf("failed to get the resource %q name for component %q; cause: %w", kclient.DeploymentKind, componentName, err)
 		}
 
-		deployment, err := do.kubeClient.GetDeploymentByName(deploymentName)
+		deployment, err = do.kubeClient.GetDeploymentByName(deploymentName)
 		if err != nil && !kerrors.IsNotFound(err) {
 			return isInnerLoopDeployed, resources, err
 		}
@@ -120,27 +121,30 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 		}
 	}
 
-	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
-		// Outer Loop
-		// Parse the devfile for outerloop K8s resources
-		localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+	// Parse the devfile for K8s resources; these may belong to either innerloop or outerloop
+	localResources, err := libdevfile.ListKubernetesComponents(devfileObj, filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+	if err != nil {
+		return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
+	}
+	for _, lr := range localResources {
+		var gvr *meta.RESTMapping
+		gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
 		if err != nil {
-			return isInnerLoopDeployed, resources, fmt.Errorf("failed to gather resources for deletion: %w", err)
+			continue
 		}
-		for _, lr := range localResources {
-			var gvr *meta.RESTMapping
-			gvr, err = do.kubeClient.GetRestMappingFromUnstructured(lr)
-			if err != nil {
-				continue
+		// Try to fetch the resource from the cluster; if it exists, append it to the resources list
+		var cr *unstructured.Unstructured
+		cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
+		// If a specific mode is asked for, then make sure it matches with the cr's mode.
+		if err != nil || (mode != odolabels.ComponentAnyMode && odolabels.GetMode(cr.GetLabels()) != mode) {
+			if cr != nil {
+				klog.V(4).Infof("Ignoring resource: %s/%s; its mode(%s) does not match with the given mode(%s)", gvr.Resource.Resource, lr.GetName(), odolabels.GetMode(cr.GetLabels()), mode)
+			} else {
+				klog.V(4).Infof("Ignoring resource: %s/%s; it does not exist on the cluster", gvr.Resource.Resource, lr.GetName())
 			}
-			// Try to fetch the resource from the cluster; if it exists, append it to the resources list
-			var cr *unstructured.Unstructured
-			cr, err = do.kubeClient.GetDynamicResource(gvr.Resource, lr.GetName())
-			if err != nil {
-				continue
-			}
-			resources = append(resources, *cr)
+			continue
 		}
+		resources = append(resources, *cr)
 	}
 
 	return isInnerLoopDeployed, resources, nil
@@ -155,7 +159,7 @@ func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileO
 	klog.V(4).Infof("Gathering information for component: %q", componentName)
 
 	klog.V(3).Infof("Checking component status for %q", componentName)
-	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode)
+	selector := odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false)
 	pod, err := do.kubeClient.GetRunningPodFromSelector(selector)
 	if err != nil {
 		klog.V(1).Info("Component not found on the cluster.")

@@ -113,7 +113,7 @@ ComponentSettings:
 				var devSession helper.DevSession
 				BeforeEach(func() {
 					var err error
-					devSession, _, _, _, err = helper.StartDevMode()
+					devSession, _, _, _, err = helper.StartDevMode(nil)
 					Expect(err).ToNot(HaveOccurred())
 					defer func() {
 						devSession.Kill()

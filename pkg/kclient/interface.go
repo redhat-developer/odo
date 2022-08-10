@@ -8,6 +8,8 @@ import (
 	"github.com/go-openapi/spec"
 	projectv1 "github.com/openshift/api/project/v1"
 	olm "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
+	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -22,8 +24,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	bindingApi "github.com/redhat-developer/service-binding-operator/apis/binding/v1alpha1"
-	specApi "github.com/redhat-developer/service-binding-operator/apis/spec/v1alpha3"
 )
 
 type ClientInterface interface {
@@ -47,7 +47,7 @@ type ClientInterface interface {
 
 	// deployment.go
 	GetDeploymentByName(name string) (*appsv1.Deployment, error)
-	GetOneDeployment(componentName, appName string) (*appsv1.Deployment, error)
+	GetOneDeployment(componentName, appName string, isPartOfComponent bool) (*appsv1.Deployment, error)
 	GetOneDeploymentFromSelector(selector string) (*appsv1.Deployment, error)
 	GetDeploymentFromSelector(selector string) ([]appsv1.Deployment, error)
 	CreateDeployment(deploy appsv1.Deployment) (*appsv1.Deployment, error)

@@ -3,14 +3,16 @@ package logs
 import (
 	"fmt"
 	"io"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
-	corev1 "k8s.io/api/core/v1"
 )
 
 type LogsClient struct {
@@ -90,14 +92,14 @@ func (o *LogsClient) getLogsForMode(
 	}()
 
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
-		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode)
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDevMode, false)
 		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
 			errChan <- err
 		}
 	}
 	if mode == odolabels.ComponentDeployMode || mode == odolabels.ComponentAnyMode {
-		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode)
+		selector = odolabels.GetSelector(componentName, "app", odolabels.ComponentDeployMode, false)
 		err := o.getPodsForSelector(selector, namespace, podChan)
 		if err != nil {
 			errChan <- err

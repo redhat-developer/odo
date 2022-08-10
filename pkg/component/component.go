@@ -88,7 +88,7 @@ func Exists(client kclient.ClientInterface, componentName, applicationName strin
 
 // GetOnePod gets a pod using the component and app name
 func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
-	return client.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode))
+	return client.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false))
 }
 
 // Log returns log from component
@@ -209,7 +209,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 }
 
 func getResourcesForComponent(client kclient.ClientInterface, name string, namespace string) ([]unstructured.Unstructured, error) {
-	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode)
+	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode, false)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)
 	if err != nil {
 		return nil, err

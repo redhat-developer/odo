@@ -7,6 +7,7 @@ import (
 	"github.com/devfile/library/pkg/devfile/parser"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -26,6 +27,7 @@ type Client interface {
 		runCommand string,
 		randomPorts bool,
 		errOut io.Writer,
+		fs filesystem.Filesystem,
 	) (watch.ComponentStatus, error)
 
 	// Watch watches for any changes to the files under path while ignoring the files/directories in ignorePaths.

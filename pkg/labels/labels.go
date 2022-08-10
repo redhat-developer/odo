@@ -3,14 +3,17 @@ package labels
 import (
 	"errors"
 
-	"github.com/redhat-developer/odo/pkg/version"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/redhat-developer/odo/pkg/version"
 )
 
 // GetLabels return labels that should be applied to every object for given component in active application
 // if you need labels to filter component then use GetSelector instead
-func GetLabels(componentName string, applicationName string, mode string) map[string]string {
-	labels := getLabels(componentName, applicationName, mode, true)
+// Note: isPartOfComponent denotes if the label is required for a core resource(deployment, svc, pvc, pv) of a given component deployed with `odo dev`;
+// it is the only thing that sets it apart from the resources created via other ways (`odo deploy`, deploying resource with apply command during `odo dev`)
+func GetLabels(componentName string, applicationName string, mode string, isPartOfComponent bool) map[string]string {
+	labels := getLabels(componentName, applicationName, mode, true, isPartOfComponent)
 	return labels
 }
 
@@ -69,25 +72,32 @@ func SetProjectType(annotations map[string]string, value string) {
 }
 
 // GetSelector returns a selector string used for selection of resources which are part of the given component in given mode
-func GetSelector(componentName string, applicationName string, mode string) string {
-	labels := getLabels(componentName, applicationName, mode, false)
+// Note: isPartOfComponent denotes if the selector is required for a core resource(deployment, svc, pvc, pv) of a given component deployed with `odo dev`
+// it is the only thing that sets it apart from the resources created via other ways (`odo deploy`, deploying resource with apply command during `odo dev`)
+func GetSelector(componentName string, applicationName string, mode string, isPartOfComponent bool) string {
+	labels := getLabels(componentName, applicationName, mode, false, isPartOfComponent)
 	return labels.String()
 }
 
-// GetLabels return labels that should be applied to every object for given component in active application
+// getLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
 // if you are creating something use additional=true
 // if you need labels to filter component then use additional=false
-func getLabels(componentName string, applicationName string, mode string, additional bool) labels.Set {
+// isPartOfComponent denotes if the label is required for a core resource(deployment, svc, pvc, pv) of a given component deployed with `odo dev`
+// it is the only thing that sets it apart from the resources created via other ways (`odo deploy`, deploying resource with apply command during `odo dev`)
+func getLabels(componentName string, applicationName string, mode string, additional bool, isPartOfComponent bool) labels.Set {
 	labels := getApplicationLabels(applicationName, additional)
 	labels[kubernetesInstanceLabel] = componentName
 	if mode != ComponentAnyMode {
 		labels[odoModeLabel] = mode
 	}
+	if isPartOfComponent {
+		labels[componentLabel] = componentName
+	}
 	return labels
 }
 
-// GetLabels return labels that identifies given application
+// getApplicationLabels return labels that identifies given application
 // additional labels are used only when creating object
 // if you are creating something use additional=true
 // if you need labels to filter component then use additional=false

@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/devfile/library/pkg/devfile/generator"
+
 	"github.com/redhat-developer/odo/pkg/util"
 )
 
@@ -140,7 +141,7 @@ func TestDeletePVC(t *testing.T) {
 
 			err := fakeClient.DeletePVC(tt.pvcName)
 
-			//Checks for error in positive cases
+			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" client.DeletePVC(name) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
@@ -270,7 +271,7 @@ func TestGetPVCFromName(t *testing.T) {
 
 			returnPVC, err := fakeClient.GetPVCFromName(tt.pvcName)
 
-			//Checks for error in positive cases
+			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf(" client.GetPVCFromName(name) unexpected error %v, wantErr %v", err, tt.wantErr)
 			}

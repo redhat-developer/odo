@@ -240,7 +240,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	o.ignorePaths = ignores
 
 	log.Section("Deploying to the cluster in developer mode")
-	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut)
+	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut, o.clientset.FS)
 	if err != nil {
 		return err
 	}
@@ -308,6 +308,7 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 			Context:       parameters.Path,
 			AppName:       parameters.ApplicationName,
 			Devfile:       devObj,
+			FS:            o.clientset.FS,
 		},
 		parameters.EnvSpecificInfo.GetNamespace(),
 	), nil

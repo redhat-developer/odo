@@ -26,6 +26,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
+	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 	"github.com/redhat-developer/odo/pkg/util"
 	"github.com/redhat-developer/odo/pkg/watch"
 
@@ -54,10 +55,11 @@ type Adapter struct {
 
 // AdapterContext is a construct that is common to all adapters
 type AdapterContext struct {
-	ComponentName string            // ComponentName is the odo component name, it is NOT related to any devfile components
-	Context       string            // Context is the given directory containing the source code and configs
-	AppName       string            // the application name associated to a component
-	Devfile       parser.DevfileObj // Devfile is the object returned by the Devfile parser
+	ComponentName string                // ComponentName is the odo component name, it is NOT related to any devfile components
+	Context       string                // Context is the given directory containing the source code and configs
+	AppName       string                // the application name associated to a component
+	Devfile       parser.DevfileObj     // Devfile is the object returned by the Devfile parser
+	FS            filesystem.Filesystem // FS is the object used for building image component if present
 }
 
 var _ sync.SyncClient = (*Adapter)(nil)
@@ -113,7 +115,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	// Set the mode to Dev since we are using "odo dev" here
-	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode)
+	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
 
 	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
 	if err != nil {
@@ -197,7 +199,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("error while retrieving container from pod %s with a mounted project volume: %w", pod.GetName(), err)
 	}
-	//s.End(true)
 
 	s := log.Spinner("Syncing files into the container")
 	defer s.End(false)
@@ -274,8 +275,8 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 			return err
 		}
 	} else if commandType == devfilev1.CompositeCommandType {
-		//this handler will run each command in this composite command individually,
-		//and will determine whether each command is running or not.
+		// this handler will run each command in this composite command individually,
+		// and will determine whether each command is running or not.
 		isComposite = true
 	} else {
 		return fmt.Errorf("unsupported type %q for Devfile command %s, only exec and composite are handled",
@@ -358,8 +359,7 @@ func (a *Adapter) createOrUpdateComponent(
 	}
 
 	// Set the labels
-	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode)
-	labels["component"] = componentName
+	labels := odolabels.GetLabels(componentName, a.AppName, odolabels.ComponentDevMode, true)
 
 	annotations := make(map[string]string)
 	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
