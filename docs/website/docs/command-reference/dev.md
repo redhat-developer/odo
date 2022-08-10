@@ -40,7 +40,7 @@ Press Ctrl+c to exit `odo dev` and delete resources from the cluster
 
 In the above example, three things have happened:
   * Your application has been built and deployed to the cluster
-  * `odo` has port-forwarded your application for local accessability
+  * `odo` has port-forwarded your application for local accessibility
   * `odo` will watch for changes in the current directory and rebuild the application when changes are detected
 
 You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
@@ -414,3 +414,16 @@ This state file contains the forwarded ports:
  ]
 }
 ```
+
+## Env File
+
+When `odo dev` is executed, a `.odo/env/env.yaml` file is created if it does not exist. It stores the namespace/project that will be used by the component, and its default value is set to currently active namespace/project.
+
+```yaml
+ComponentSettings:
+  Project: myproject
+```
+
+:::note
+Creating, deleting or setting a namespace/project will not modify this value. To use a different namespace/project, user will have to manually change `.ComponentSettings.Project` value, or delete the `.odo` directory.
+:::
