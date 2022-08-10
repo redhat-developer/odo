@@ -326,7 +326,7 @@ func (oc OcRunner) CreateAndSetRandNamespaceProjectOfLength(i int) string {
 
 func (oc OcRunner) createAndSetRandNamespaceProject(projectName string) string {
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
+	session := Cmd("odo", "create", "project", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring(projectName))
 	oc.addConfigMapForCleanup(projectName)
 	return projectName
@@ -334,15 +334,15 @@ func (oc OcRunner) createAndSetRandNamespaceProject(projectName string) string {
 
 func (oc OcRunner) SetProject(namespace string) string {
 	fmt.Fprintf(GinkgoWriter, "Setting project: %s\n", namespace)
-	Cmd("odo", "project", "set", namespace).ShouldPass()
+	Cmd("odo", "set", "project", namespace).ShouldPass()
 	return namespace
 }
 
 // DeleteNamespaceProject deletes a specified project in oc cluster
 func (oc OcRunner) DeleteNamespaceProject(projectName string, wait bool) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	session := Cmd("odo", "project", "delete", projectName, "-f", "--wait="+strconv.FormatBool(wait)).ShouldPass().Out()
-	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
+	session := Cmd("odo", "delete", "project", projectName, "-f", "--wait="+strconv.FormatBool(wait)).ShouldPass().Out()
+	Expect(session).To(ContainSubstring(fmt.Sprintf("Project %q deleted", projectName)))
 }
 
 func (oc OcRunner) GetAllPVCNames(namespace string) []string {

@@ -36,7 +36,7 @@ func GetPreferenceValue(key string) string {
 func CreateRandProject() string {
 	projectName := SetProjectName()
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	session := Cmd("odo", "project", "create", projectName, "-w", "-v4").ShouldPass().Out()
+	session := Cmd("odo", "create", "project", projectName, "-w", "-v4").ShouldPass().Out()
 	Expect(session).To(ContainSubstring("New project created"))
 	Expect(session).To(ContainSubstring(projectName))
 	return projectName
@@ -45,8 +45,8 @@ func CreateRandProject() string {
 // DeleteProject deletes a specified project
 func DeleteProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	session := Cmd("odo", "project", "delete", projectName, "-f").ShouldPass().Out()
-	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
+	session := Cmd("odo", "delete", "project", projectName, "-f").ShouldPass().Out()
+	Expect(session).To(ContainSubstring(fmt.Sprintf("Project %q deleted", projectName)))
 }
 
 // GetMetadataFromDevfile retrieves the metadata from devfile

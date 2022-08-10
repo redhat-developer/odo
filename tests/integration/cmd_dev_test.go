@@ -394,7 +394,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("devfile has single endpoint", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
 			})
 
@@ -459,7 +459,7 @@ var _ = Describe("odo dev command tests", func() {
 		When("devfile has multiple endpoints", func() {
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-				helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+				helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 				helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			})
 
@@ -2132,7 +2132,7 @@ CMD ["npm", "start"]
 		var devSession helper.DevSession
 		BeforeEach(func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
-			helper.Cmd("odo", "project", "set", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
 			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
 			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
 			var err error

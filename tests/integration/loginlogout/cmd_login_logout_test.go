@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -52,7 +53,7 @@ var _ = Describe("odo login and logout command tests", func() {
 			session1 = helper.Cmd("odo", "login", "-u", loginTestUserForNoProject, "-p", loginTestUserPassword).ShouldPass().Out()
 			Expect(session1).To(ContainSubstring("Login successful"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
-			Expect(session1).To(ContainSubstring("odo project create <project-name>"))
+			Expect(session1).To(ContainSubstring("odo create project <project-name>"))
 			session1 = oc.GetLoginUser()
 			Expect(session1).To(ContainSubstring(loginTestUserForNoProject))
 
@@ -63,7 +64,7 @@ var _ = Describe("odo login and logout command tests", func() {
 			session1 = helper.Cmd("odo", "login", "-t", testUserToken).ShouldPass().Out()
 			Expect(session1).To(ContainSubstring("Logged into"))
 			Expect(session1).To(ContainSubstring("You don't have any projects. You can try to create a new project, by running"))
-			Expect(session1).To(ContainSubstring("odo project create <project-name>"))
+			Expect(session1).To(ContainSubstring("odo create project <project-name>"))
 			session1 = oc.GetLoginUser()
 			Expect(session1).To(ContainSubstring(loginTestUserForNoProject))
 

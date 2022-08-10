@@ -261,7 +261,7 @@ func TestClientUploadWithContext(t *testing.T) {
 		case scontext.ClusterType:
 			fakeClient, _ := kclient.FakeNew()
 			scontext.SetClusterType(ctx, fakeClient)
-			uploadData = fakeTelemetryData("odo project set", nil, ctx)
+			uploadData = fakeTelemetryData("odo set project", nil, ctx)
 		}
 		c, err := newCustomClient(cfg, createConfigDir(t), server.URL)
 		if err != nil {
