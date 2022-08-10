@@ -398,7 +398,7 @@ var _ = Describe("odo dev command tests", func() {
 				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "sleep 20 ; npm start")
 
 				var err error
-				devSession, _, _, ports, err = helper.StartDevMode()
+				devSession, _, _, ports, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
