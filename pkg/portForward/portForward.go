@@ -138,7 +138,7 @@ func (o *PFClient) StopPortForwarding() {
 	o.stopChan <- struct{}{}
 	o.stopChan = nil
 
-	// Ask the inifinte loop to stop
+	// Ask the infinite loop to stop
 	o.isRunning = false
 
 	// Wait for low level port forward to be finished
