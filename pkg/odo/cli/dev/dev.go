@@ -202,12 +202,6 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		namespace   = o.GetProject()
 	)
 
-	defer func() {
-		if err != nil {
-			_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
-		}
-	}()
-
 	// Output what the command is doing / information
 	log.Title("Developing using the "+devfileName+" Devfile",
 		"Namespace: "+namespace,
@@ -315,11 +309,17 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 }
 
 func (o *DevOptions) HandleSignal() error {
-	fmt.Fprintf(o.out, "\n\nCancelling deployment.\nThis is non-preemptive operation, it will wait for other tasks to finish first\n\n")
 	o.cancel()
 	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
 	// wait for the cleanup to finish and let the main thread finish instead of signal handler go routine from runnable
 	select {}
+}
+
+func (o *DevOptions) Cleanup(err error) {
+	if err != nil {
+		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
+		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
+	}
 }
 
 // NewCmdDev implements the odo dev command

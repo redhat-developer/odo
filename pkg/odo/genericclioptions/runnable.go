@@ -51,6 +51,10 @@ type SignalHandler interface {
 	HandleSignal() error
 }
 
+type Cleanuper interface {
+	Cleanup(err error)
+}
+
 // JsonOutputter must be implemented by commands with JSON output
 // For these commands, the `-o json` flag will be added
 // when err is not nil, the text of the error will be returned in a `message` field on stderr with an exit status of 1
@@ -142,7 +146,13 @@ func GenericRun(o Runnable, cmd *cobra.Command, args []string) {
 		err = o.Run(cmdLineObj.Context())
 	}
 	startTelemetry(cmd, err, startTime)
-	util.LogErrorAndExit(err, "")
+	util.LogError(err, "")
+	if cleanuper, ok := o.(Cleanuper); ok {
+		cleanuper.Cleanup(err)
+	}
+	if err != nil {
+		os.Exit(1)
+	}
 }
 
 // startTelemetry uploads the data to segment if user has consented to usage data collection and the command is not telemetry
