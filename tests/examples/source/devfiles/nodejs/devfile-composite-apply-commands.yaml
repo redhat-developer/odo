@@ -71,12 +71,20 @@ commands:
       commandLine: npm run debug
       component: runtime
 
+  - id: build
+    exec:
+      commandLine: npm install
+      component: runtime
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        isDefault: true
+        kind: build
+
   - id: run
     composite:
       commands:
         - build-image
         - create-k8s-resource
-        - install
         - start
       group:
         isDefault: true

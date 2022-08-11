@@ -388,6 +388,47 @@ var _ = Describe("odo dev command tests", func() {
 				})
 			})
 		})
+
+		When("a delay is necessary for the component to start and running odo dev", func() {
+
+			var devSession helper.DevSession
+			var ports map[string]string
+
+			BeforeEach(func() {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "npm start", "sleep 20 ; npm start")
+
+				var err error
+				devSession, _, _, ports, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				devSession.Kill()
+				devSession.WaitEnd()
+			})
+
+			It("should first fail then succeed querying endpoint", func() {
+				url := fmt.Sprintf("http://%s", ports["3000"])
+				_, err := http.Get(url)
+				Expect(err).To(HaveOccurred())
+
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				Eventually(func() bool {
+					logs := helper.GetCliRunner().GetLogs(podName)
+					return strings.Contains(logs, "App started on PORT")
+				}, 180, 10).Should(Equal(true))
+
+				// Get new random port after restart
+				_, _, ports, err = devSession.GetInfo()
+				Expect(err).ToNot(HaveOccurred())
+				url = fmt.Sprintf("http://%s", ports["3000"])
+
+				resp, err := http.Get(url)
+				Expect(err).ToNot(HaveOccurred())
+				body, _ := io.ReadAll(resp.Body)
+				helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+			})
+		})
 	})
 
 	Context("port-forwarding for the component", func() {
