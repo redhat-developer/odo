@@ -156,12 +156,12 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		}
 
 		// Get the managedBy label
-		// IMPORTANT. If "managed-by" label is BLANK, it is most likely an operator
+		// IMPORTANT. If both "managed-by" and "instance" labels are BLANK, it is most likely an operator
 		// or a non-component. We do not want to show these in the list of components
 		// so we skip them if there is no "managed-by" label.
 
 		managedBy := odolabels.GetManagedBy(labels)
-		if managedBy == "" {
+		if managedBy == "" && name == "" {
 			continue
 		}
 
