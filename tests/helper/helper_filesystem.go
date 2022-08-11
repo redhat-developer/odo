@@ -273,3 +273,15 @@ func CreateSimpleFile(context, filePrefix, fileExtension string) (string, string
 
 	return FilePath, string(content)
 }
+
+func AppendToFile(filepath string, s string) error {
+	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close() // #nosec G307
+	if _, err := f.WriteString(s); err != nil {
+		return err
+	}
+	return nil
+}

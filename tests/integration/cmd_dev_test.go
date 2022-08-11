@@ -2215,4 +2215,40 @@ CMD ["npm", "start"]
 			})
 		})
 	})
+
+	When("a devfile with a local parent is used for odo dev and the parent is not synced", func() {
+		var devSession helper.DevSession
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-child.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-parent.yaml"), filepath.Join(commonVar.Context, "devfile-parent.yaml"))
+			helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+			var err error
+			devSession, _, _, _, err = helper.StartDevMode(nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			gitignorePath := filepath.Join(commonVar.Context, ".gitignore")
+			err = helper.AppendToFile(gitignorePath, "\n/devfile-parent.yaml\n")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			// We stop the process so the process does not remain after the end of the tests
+			devSession.Kill()
+			devSession.WaitEnd()
+		})
+
+		When("updating the parent", func() {
+			BeforeEach(func() {
+				helper.ReplaceString("devfile-parent.yaml", "1024Mi", "1023Mi")
+			})
+
+			It("should update the component", func() {
+				Eventually(func() string {
+					stdout, _, _, err := devSession.GetInfo()
+					Expect(err).ToNot(HaveOccurred())
+					return string(stdout)
+				}, 180, 10).Should(ContainSubstring("Updating Component"))
+			})
+		})
+	})
 })
