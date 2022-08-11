@@ -1,6 +1,7 @@
 package portForward
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -117,7 +118,10 @@ func (o *PFClient) StartPortForwarding(
 			err = o.kubernetesClient.SetupPortForwarding(pod, portPairsSlice, portsBuf, errOut, o.stopChan)
 			if err != nil {
 				fmt.Fprintf(errOut, "Failed to setup port-forwarding: %v\n", err)
-				time.Sleep(backo.Delay())
+				d := backo.Delay()
+				time.Sleep(d)
+			} else {
+				backo.Reset()
 			}
 			if !o.isRunning {
 				break
@@ -127,8 +131,13 @@ func (o *PFClient) StartPortForwarding(
 	}()
 
 	// Wait the first time the devstate file is written
-	err = <-devstateChan
-	return err
+	timeout := 1 * time.Minute
+	select {
+	case err = <-devstateChan:
+		return err
+	case <-time.After(timeout):
+		return errors.New("unable to setup port forwarding")
+	}
 }
 
 func (o *PFClient) StopPortForwarding() {
