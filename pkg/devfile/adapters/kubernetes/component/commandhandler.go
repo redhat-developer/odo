@@ -55,7 +55,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 				// Creating with no spin because the command could be long-running, and we cannot determine when it will end.
 				s.Start(fmt.Sprintf("Executing the application (command: %s)", devfileCmd.Id), true)
 			case remotecmd.Stopped, remotecmd.Errored:
-				s.EndWithStatus(fmt.Sprintf("Finished executing the long running application (command: %s)", devfileCmd.Id), status == remotecmd.Stopped)
+				s.EndWithStatus(fmt.Sprintf("Finished executing the application (command: %s)", devfileCmd.Id), status == remotecmd.Stopped)
 				if err != nil {
 					klog.V(2).Infof("error while running background command: %v", err)
 				}
