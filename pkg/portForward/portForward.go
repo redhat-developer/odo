@@ -82,7 +82,8 @@ func (o *PFClient) StartPortForwarding(
 		return err
 	}
 
-	o.originalErrorHandlers = runtime.ErrorHandlers
+	o.originalErrorHandlers = append([]func(error){}, runtime.ErrorHandlers...)
+
 	runtime.ErrorHandlers = append(runtime.ErrorHandlers, func(err error) {
 		if err.Error() == "lost connection to pod" {
 			// Stop the low-level port forwarding
