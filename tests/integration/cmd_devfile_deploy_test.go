@@ -69,7 +69,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 		When(ctx.title, func() {
 			// from devfile
-			cmpName := "nodejs-prj1-api-abhz"
 			deploymentName := "my-component"
 			BeforeEach(func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
@@ -106,34 +105,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 					session.Kill()
 					session.WaitEnd()
-				})
-
-				When("deleting previous deployment and switching kubeconfig to another namespace", func() {
-					var otherNS string
-					BeforeEach(func() {
-						helper.Cmd("odo", "delete", "component", "--name", cmpName, "-f").ShouldPass()
-						output := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
-						Expect(string(output)).To(
-							ContainSubstring("No resources found in " + commonVar.Project + " namespace."))
-
-						otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
-					})
-
-					AfterEach(func() {
-						commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
-					})
-
-					It("should run odo deploy on initial namespace", func() {
-						helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-
-						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-						Expect(string(output)).To(
-							ContainSubstring("No resources found in " + otherNS + " namespace."))
-
-						output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-						Expect(string(output)).To(ContainSubstring(deploymentName))
-					})
-
 				})
 
 				When("running and stopping odo dev", func() {

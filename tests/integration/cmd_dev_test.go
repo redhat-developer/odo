@@ -226,29 +226,6 @@ var _ = Describe("odo dev command tests", func() {
 				devSession.WaitEnd()
 			})
 
-			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
-				var otherNS string
-				BeforeEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-					otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
-				})
-
-				AfterEach(func() {
-					commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
-				})
-
-				It("should run odo dev on initial namespace", func() {
-					err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-						Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
-
-						output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-						Expect(string(output)).To(ContainSubstring(cmpName))
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-			})
 			When("odo dev is stopped", func() {
 				BeforeEach(func() {
 					devSession.Stop()

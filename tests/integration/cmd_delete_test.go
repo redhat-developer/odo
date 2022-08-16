@@ -260,42 +260,6 @@ ComponentSettings:
 				})
 
 			})
-			When("component is deployed to the cluster in the namespace set in env.yaml which is not the same as the current active namespace", func() {
-				var projectName string
-				BeforeEach(func() {
-					// deploy the component to the cluster
-					session := helper.CmdRunner("odo", "dev", "--random-ports")
-					defer session.Kill()
-					helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
-					Expect(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())).To(ContainSubstring(cmpName))
-
-					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-					Expect(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())).To(ContainSubstring(deploymentName))
-					Expect(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents())).To(ContainSubstring(serviceName))
-
-					// create and set a new namespace
-					projectName = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
-				})
-				AfterEach(func() {
-					commonVar.CliRunner.DeleteNamespaceProject(projectName, false)
-				})
-				When("the component is deleted", func() {
-					BeforeEach(func() {
-						helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
-					})
-					It("should have deleted the component", func() {
-						By("deleting the component", func() {
-							Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(cmpName))
-						})
-						By("deleting the deployment", func() {
-							Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-						})
-						By("deleting the service", func() {
-							Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
-						})
-					})
-				})
-			})
 		})
 	}
 
