@@ -307,19 +307,9 @@ func (esi *EnvSpecificInfo) SetRunMode(runMode RUNMode) error {
 	return esi.writeToFile()
 }
 
-// GetNamespace returns component namespace
-func (ei *EnvInfo) GetNamespace() string {
-	return ei.componentSettings.Project
-}
-
 // GetApplication returns the application name
 func (ei *EnvInfo) GetApplication() string {
 	return ei.componentSettings.AppName
-}
-
-// MatchComponent matches a component information provided by a devfile component with the local env info
-func (ei *EnvInfo) MatchComponent(name, app, namespace string) bool {
-	return name == ei.GetName() && app == ei.GetApplication() && namespace == ei.GetNamespace()
 }
 
 // SetDevfileObj sets the devfileObj for the envinfo

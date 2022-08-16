@@ -100,7 +100,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return err
 	}
 
-	err = dfutil.ValidateK8sResourceName("component namespace", parameters.EnvSpecificInfo.GetNamespace())
+	err = dfutil.ValidateK8sResourceName("component namespace", a.kubeClient.GetCurrentNamespace())
 	if err != nil {
 		return err
 	}

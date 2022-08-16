@@ -24,7 +24,6 @@ type LocalContainer struct {
 type LocalConfigProvider interface {
 	GetApplication() string
 	GetName() string
-	GetNamespace() string
 	GetDebugPort() int
 	GetContainers() ([]LocalContainer, error)
 
