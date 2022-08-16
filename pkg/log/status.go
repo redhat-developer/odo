@@ -221,6 +221,15 @@ func (s *Status) End(success bool) {
 	s.status = ""
 }
 
+// EndWithStatus is similar to End, but lets the user specify a custom message/status while ending
+func (s *Status) EndWithStatus(status string, success bool) {
+	if status == "" {
+		return
+	}
+	s.status = status
+	s.End(success)
+}
+
 // Printf will output in an appropriate "information" manner; for e.g.
 // • <message>
 func Printf(format string, a ...interface{}) {
