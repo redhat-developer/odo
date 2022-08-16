@@ -181,7 +181,7 @@ func TestNew(t *testing.T) {
 			expectedErr: "",
 			expected: &Context{
 				internalCxt: internalCxt{
-					project:     "a-project",
+					project:     "",
 					application: "an-app-name",
 					component:   "a-name",
 					// empty when no devfile

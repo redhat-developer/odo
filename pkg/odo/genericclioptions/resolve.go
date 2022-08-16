@@ -27,15 +27,12 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, config
 		}
 		namespace = projectFlag
 	} else {
-		namespace = configProvider.GetNamespace()
-		if namespace == "" {
-			namespace = o.KClient.GetCurrentNamespace()
-			if len(namespace) <= 0 {
-				errFormat := "Could not get current namespace. Please create or set a namespace\n"
-				err := checkProjectCreateOrDeleteOnlyOnInvalidNamespace(cmdline, errFormat)
-				if err != nil {
-					return err
-				}
+		namespace = o.KClient.GetCurrentNamespace()
+		if len(namespace) <= 0 {
+			errFormat := "Could not get current namespace. Please create or set a namespace\n"
+			err := checkProjectCreateOrDeleteOnlyOnInvalidNamespace(cmdline, errFormat)
+			if err != nil {
+				return err
 			}
 		}
 
@@ -91,11 +88,7 @@ func resolveComponent(cmdline cmdline.Cmdline, localConfiguration localConfigPro
 }
 
 func resolveProject(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
-	projectFlag := cmdline.FlagValueIfSet(util.ProjectFlagName)
-	if projectFlag != "" {
-		return projectFlag
-	}
-	return localConfiguration.GetNamespace()
+	return cmdline.FlagValueIfSet(util.ProjectFlagName)
 }
 
 // checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
