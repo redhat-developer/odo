@@ -53,7 +53,12 @@ func (o *AlizerBackend) SelectStarterProject(devfile parser.DevfileObj, flags ma
 }
 
 func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
-	return devfile.GetMetadataName(), nil
+	// Get the absolute path to the directory from the Devfile context
+	path := devfile.Ctx.GetAbsPath()
+	if path == "" {
+		return "", fmt.Errorf("cannot determine the absolute path of the directory")
+	}
+	return alizer.DetectName(path)
 }
 
 func (o *AlizerBackend) PersonalizeDevfileConfig(devfile parser.DevfileObj) (parser.DevfileObj, error) {

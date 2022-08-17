@@ -199,6 +199,7 @@ func TestInteractiveBackend_SelectStarterProject(t *testing.T) {
 }
 
 func TestInteractiveBackend_PersonalizeName(t *testing.T) {
+
 	type fields struct {
 		asker          func(ctrl *gomock.Controller) asker.Asker
 		registryClient registry.Client
@@ -226,6 +227,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 			args: args{
 				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
 					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+
 					obj := parser.DevfileObj{
 						Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
 						Data: devfileData,

@@ -132,3 +132,64 @@ func TestDetectFramework(t *testing.T) {
 		})
 	}
 }
+
+func TestDetectName(t *testing.T) {
+
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantedName string
+		wantErr    bool
+	}{
+		{
+			name: "Case 1: Detect Node.JS name through package.json",
+			args: args{
+				path: GetTestProjectPath("nodejs"),
+			},
+			wantedName: "node-echo",
+			wantErr:    false,
+		},
+		{
+			// NOTE
+			// Alizer does NOT support Python yet, so this test is expected to fail once Python support
+			// is implemented
+			name: "Case 2: Detect Python name through DIRECTORY name",
+			args: args{
+				path: GetTestProjectPath("python"),
+			},
+			// Directory name is 'python' so expect that name to be returned
+			wantedName: "python",
+			wantErr:    false,
+		},
+		{
+
+			// NOTE
+			// Returns "insultapp" instead of "InsultApp" as it does DNS1123 sanitization
+			// See DetectName function
+			name: "Case 3: Detect Java name through pom.xml",
+			args: args{
+				path: GetTestProjectPath("wildfly"),
+			},
+			wantedName: "insultapp",
+			wantErr:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			name, err := DetectName(tt.args.path)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if name != tt.wantedName {
+				t.Errorf("unexpected name %q, wanted: %q", name, tt.wantedName)
+			}
+		})
+	}
+}
