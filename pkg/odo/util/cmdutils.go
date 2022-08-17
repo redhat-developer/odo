@@ -10,13 +10,8 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 )
 
-// LogErrorAndExit prints the given error and exits the code with an exit code of 1.
-// If the context is provided, then that is printed alongside the error.
-// *If* we are using the global json parameter, we instead output the json output
-func LogErrorAndExit(err error, context string, a ...interface{}) {
-
+func LogError(err error, context string) {
 	if err != nil {
-
 		// If it's JSON, we'll output  the error
 		if log.IsJSON() {
 
@@ -35,10 +30,19 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 				log.Errorf(printstring, err)
 			}
 		}
+	}
+}
 
+// LogErrorAndExit prints the given error and exits the code with an exit code of 1.
+// If the context is provided, then that is printed alongside the error.
+// *If* we are using the global json parameter, we instead output the json output
+func LogErrorAndExit(err error, context string) {
+
+	LogError(err, context)
+
+	if err != nil {
 		// Always exit 1 anyways
 		os.Exit(1)
-
 	}
 }
 

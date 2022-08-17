@@ -107,9 +107,6 @@ type evaluateChangesFunc func(events []fsnotify.Event, path string, fileIgnores 
 // It returns a Duration after which to recall in case of error
 type processEventsFunc func(changedFiles, deletedPaths []string, parameters WatchParameters, out io.Writer, componentStatus *ComponentStatus, backoff *ExpBackoff) (*time.Duration, error)
 
-// cleanupFunc deletes the component created using the devfileObj and writes any outputs to out
-type cleanupFunc func(devfileObj parser.DevfileObj, out io.Writer) error
-
 // addRecursiveWatch handles adding watches recursively for the path provided
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
 // Files matching glob pattern defined in ignores will be ignored.
@@ -267,7 +264,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
 	}
 
-	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, parameters, out, evaluateFileChanges, processEvents, o.CleanupDevResources, componentStatus)
+	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, parameters, out, evaluateFileChanges, processEvents, componentStatus)
 }
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
@@ -290,7 +287,7 @@ func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, cleanupHandler cleanupFunc, componentStatus ComponentStatus) error {
+func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, componentStatus ComponentStatus) error {
 
 	expBackoff := NewExpBackoff()
 
@@ -439,7 +436,7 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 			return watchErr
 
 		case <-ctx.Done():
-			return cleanupHandler(parameters.InitialDevfileObj, out)
+			return errors.New("Dev mode interrupted by user")
 		}
 	}
 }
