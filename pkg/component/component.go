@@ -165,11 +165,14 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			continue
 		}
 
+		managedByVersion := odolabels.GetManagedByVersion(labels)
+
 		// Generate the appropriate "component" with all necessary information
 		component := api.ComponentAbstract{
-			Name:      name,
-			ManagedBy: managedBy,
-			Type:      componentType,
+			Name:             name,
+			ManagedBy:        managedBy,
+			Type:             componentType,
+			ManagedByVersion: managedByVersion,
 		}
 		mode := odolabels.GetMode(labels)
 		componentFound := false

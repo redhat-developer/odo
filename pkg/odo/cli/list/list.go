@@ -258,7 +258,10 @@ func humanReadableOutput(list api.ResourcesList) {
 
 		// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
 		if managedBy == "odo" {
-			managedBy = text.Colors{text.FgBlue}.Sprint("odo")
+			managedBy = text.Colors{text.FgBlue}.Sprintf("odo (%s)", comp.ManagedByVersion)
+		} else if managedBy != "" && comp.ManagedByVersion != "" {
+			// this is done to maintain the color of the output
+			managedBy += fmt.Sprintf("(%s)", comp.ManagedByVersion)
 		}
 
 		t.AppendRow(table.Row{name, componentType, mode, managedBy})
