@@ -12,14 +12,16 @@ import (
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 
-	"github.com/redhat-developer/odo/pkg/api"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/redhat-developer/odo/pkg/api"
 )
 
 func TestListAllClusterComponents(t *testing.T) {
 	res1 := getUnstructured("dep1", "deployment", "v1", "Unknown", "Unknown", "my-ns")
 	res2 := getUnstructured("svc1", "service", "v1", "odo", "nodejs", "my-ns")
-
+	res3 := getUnstructured("dep1", "deployment", "v1", "Unknown", "Unknown", "my-ns")
+	res3.SetLabels(map[string]string{})
 	commonLabels := labels.Builder().WithComponentName("comp1").WithManager("odo")
 
 	resDev := getUnstructured("depDev", "deployment", "v1", "odo", "nodejs", "my-ns")
@@ -67,14 +69,30 @@ func TestListAllClusterComponents(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "0 non-odo resource without instance label is not returned",
+			fields: fields{
+				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
+					var resources []unstructured.Unstructured
+					resources = append(resources, res3)
+					client := kclient.NewMockClientInterface(ctrl)
+					client.EXPECT().GetAllResourcesFromSelector(gomock.Any(), "my-ns").Return(resources, nil)
+					return client
+				},
+			},
+			args: args{
+				namespace: "my-ns",
+			},
+			want:    nil,
+			wantErr: false,
+		},
+		{
 			name: "1 non-odo resource returned with Unknown, and 1 odo resource returned with odo",
 			fields: fields{
 				kubeClient: func(ctrl *gomock.Controller) kclient.ClientInterface {
 					var resources []unstructured.Unstructured
 					resources = append(resources, res1, res2)
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := ""
-					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					client.EXPECT().GetAllResourcesFromSelector(gomock.Any(), "my-ns").Return(resources, nil)
 					return client
 				},
 			},
@@ -101,8 +119,7 @@ func TestListAllClusterComponents(t *testing.T) {
 					var resources []unstructured.Unstructured
 					resources = append(resources, resDev, resDeploy)
 					client := kclient.NewMockClientInterface(ctrl)
-					selector := ""
-					client.EXPECT().GetAllResourcesFromSelector(selector, "my-ns").Return(resources, nil)
+					client.EXPECT().GetAllResourcesFromSelector(gomock.Any(), "my-ns").Return(resources, nil)
 					return client
 				},
 			},

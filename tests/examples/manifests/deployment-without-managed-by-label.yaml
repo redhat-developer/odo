@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    alpha.image.policy.openshift.io/resolve-names: '*'
+    app.openshift.io/vcs-ref: ""
+    app.openshift.io/vcs-uri: https://github.com/devfile-samples/devfile-sample-java-springboot-basic.git
+    deployment.kubernetes.io/revision: "2"
+    image.openshift.io/triggers: '[{"from":{"kind":"ImageStreamTag","name":"java-springboot-basic:latest","namespace":"myproject"},"fieldPath":"spec.template.spec.containers[?(@.name==\"java-springboot-basic\")].image","pause":"false"}]'
+    isFromDevfile: "true"
+    openshift.io/generated-by: OpenShiftWebConsole
+  labels:
+    app: java-springboot-basic
+    app.kubernetes.io/component: java-springboot-basic
+    app.kubernetes.io/instance: java-springboot-basic
+    app.kubernetes.io/name: java-springboot-basic
+    app.kubernetes.io/part-of: sample-app
+    app.openshift.io/runtime: java-springboot-basic
+  name: java-springboot-basic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-springboot-basic
+  template:
+    metadata:
+      labels:
+        app: java-springboot-basic
+    spec:
+      containers:
+      - env:
+        - name: DEBUG_PORT
+          value: "5858"
+        - name: PROJECTS_ROOT
+          value: /projects
+        - name: PROJECT_SOURCE
+          value: /projects
+        image: image-registry.openshift-image-registry.svc:5000/myproject/java-springboot-basic@sha256:4a02a410484e01984a05e50b8ca4dbb336baf03f85ce504bb7f4fdc4f18d5d9c
+        imagePullPolicy: Always
+        name: java-springboot-basic
+        ports:
+        - containerPort: 8080
+          name: 8080-tcp
+          protocol: TCP
+        resources:
+          limits:
+            memory: 768Mi

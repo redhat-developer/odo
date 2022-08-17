@@ -5,7 +5,7 @@ metadata:
   labels:
     app: app
     app.kubernetes.io/instance: example-deployment
-    app.kubernetes.io/managed-by: console
+    app.kubernetes.io/managed-by: some-tool
     app.kubernetes.io/managed-by-version: v4.7.0
     app.kubernetes.io/name: example-deployment
     app.kubernetes.io/part-of: app
@@ -18,11 +18,6 @@ spec:
     metadata:
       labels:
         app: app
-        app.kubernetes.io/instance: example-deployment
-        app.kubernetes.io/managed-by: console
-        app.kubernetes.io/managed-by-version: v4.7.0
-        app.kubernetes.io/name: example-deployment
-        app.kubernetes.io/part-of: app
     spec:
       containers:
         - name: httpd

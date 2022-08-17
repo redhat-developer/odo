@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/tidwall/gjson"
 
 	"github.com/redhat-developer/odo/tests/helper"
 
@@ -24,6 +25,69 @@ var _ = Describe("odo list with devfile", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.CommonAfterEach(commonVar)
+	})
+	Context("listing non-odo managed components", func() {
+		When("a non-odo managed component is deployed", func() {
+			const (
+				// hard coded names from the deployment-app-label.yaml
+				deploymentName = "example-deployment"
+				managedBy      = "some-tool"
+			)
+			BeforeEach(func() {
+				commonVar.CliRunner.Run("create", "-f", helper.GetExamplePath("manifests", "deployment-app-label.yaml"))
+			})
+			AfterEach(func() {
+				commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "deployment-app-label.yaml"))
+			})
+			It("should list the component with odo list", func() {
+				output := helper.Cmd("odo", "list").ShouldPass().Out()
+				helper.MatchAllInOutput(output, []string{deploymentName, "Unknown", "None", managedBy})
+			})
+			It("should list the component in JSON", func() {
+				output := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
+				helper.JsonPathContentIs(output, "components.0.name", deploymentName)
+				Expect(gjson.Get(output, "components.0.runningIn").String()).To(BeEmpty())
+				helper.JsonPathContentIs(output, "components.0.projectType", "Unknown")
+				helper.JsonPathContentIs(output, "components.0.managedBy", managedBy)
+			})
+		})
+		When("a non-odo managed component without the managed-by label is deployed", func() {
+			const (
+				// hard coded names from the deployment-without-managed-by-label.yaml
+				deploymentName = "java-springboot-basic"
+			)
+			BeforeEach(func() {
+				commonVar.CliRunner.Run("create", "-f", helper.GetExamplePath("manifests", "deployment-without-managed-by-label.yaml"))
+			})
+			AfterEach(func() {
+				commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "deployment-without-managed-by-label.yaml"))
+			})
+			It("should list the component with odo list", func() {
+				output := helper.Cmd("odo", "list").ShouldPass().Out()
+				helper.MatchAllInOutput(output, []string{deploymentName, "Unknown", "None", "Unknown"})
+			})
+			It("should list the component in JSON", func() {
+				output := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
+				helper.JsonPathContentContain(output, "components.0.name", deploymentName)
+				Expect(gjson.Get(output, "components.0.runningIn").String()).To(BeEmpty())
+				helper.JsonPathContentContain(output, "components.0.projectType", "Unknown")
+				helper.JsonPathContentContain(output, "components.0.managedBy", "")
+			})
+		})
+		When("an operator managed deployment(without instance and managed-by label) is deployed", func() {
+			deploymentName := "nginx"
+			BeforeEach(func() {
+				commonVar.CliRunner.Run("create", "deployment", deploymentName, "--image=nginx")
+			})
+			AfterEach(func() {
+				commonVar.CliRunner.Run("delete", "deployment", deploymentName)
+			})
+			It("should not be listed in the odo list output", func() {
+				output := helper.Cmd("odo", "list").ShouldRun().Out()
+				Expect(output).ToNot(ContainSubstring(deploymentName))
+
+			})
+		})
 	})
 
 	When("a component created in 'app' application", func() {
