@@ -70,3 +70,23 @@ func GetKubernetesComponent(params KubernetesComponentParams) v1alpha2.Component
 	}
 	return cmp
 }
+
+type OpenshiftComponentParams struct {
+	Name       string
+	Attributes *attributes.Attributes
+
+	Openshift *v1alpha2.OpenshiftComponent
+}
+
+func GetOpenshiftComponent(params OpenshiftComponentParams) v1alpha2.Component {
+	cmp := v1alpha2.Component{
+		Name: params.Name,
+		ComponentUnion: v1alpha2.ComponentUnion{
+			Openshift: params.Openshift,
+		},
+	}
+	if params.Attributes != nil {
+		cmp.Attributes = *params.Attributes
+	}
+	return cmp
+}

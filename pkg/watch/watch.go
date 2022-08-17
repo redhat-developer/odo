@@ -16,6 +16,7 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/state"
 
@@ -220,7 +221,6 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 	var sourcesWatcher *fsnotify.Watcher
 	var err error
 	if parameters.WatchFiles {
-		// TODO(feloy) ignore files included by Devfile?
 		sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
 		if err != nil {
 			return err
@@ -239,15 +239,22 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		return fmt.Errorf("error watching deployment: %v", err)
 	}
 
-	// TODO(feloy) watch files included by Devfile
 	devfileWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 	if parameters.WatchFiles {
-		err = devfileWatcher.Add(parameters.DevfilePath)
+		var devfileFiles []string
+		devfileFiles, err = libdevfile.GetReferencedLocalFiles(parameters.InitialDevfileObj)
 		if err != nil {
 			return err
+		}
+		devfileFiles = append(devfileFiles, parameters.DevfilePath)
+		for _, f := range devfileFiles {
+			err = devfileWatcher.Add(f)
+			if err != nil {
+				klog.V(4).Infof("error adding watcher for path %s: %v", f, err)
+			}
 		}
 	}
 
