@@ -237,6 +237,11 @@ var _ = Describe("odo dev command tests", func() {
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
 				})
+
+				It("should unset project from env.yaml file", func() {
+					Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+					helper.FileShouldNotContainSubstring(".odo/env/env.yaml", "Project")
+				})
 			})
 		})
 

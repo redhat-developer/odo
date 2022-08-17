@@ -315,11 +315,31 @@ func (o *DevOptions) HandleSignal() error {
 	select {}
 }
 
-func (o *DevOptions) Cleanup(err error) {
+func (o *DevOptions) Cleanup(commandError error) {
+	err := unsetProjectInEnvfile()
 	if err != nil {
+		klog.V(4).Infof("Error unsetting project into env.yaml file")
+	}
+
+	if commandError != nil {
 		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	}
+}
+
+func unsetProjectInEnvfile() error {
+	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
+	if err != nil {
+		return err
+	}
+
+	if envfileinfo.Exists() {
+		err = envfileinfo.SetConfiguration("project", "")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewCmdDev implements the odo dev command
