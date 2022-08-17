@@ -87,57 +87,6 @@ func (o *Cobra) FlagValueIfSet(flagName string) string {
 	return flag
 }
 
-// CheckIfConfigurationNeeded checks against a set of commands that need configuration.
-func (o *Cobra) CheckIfConfigurationNeeded() (bool, error) {
-	// Here we will check for parent commands, if the match a certain criteria, we will skip
-	// using the configuration.
-	//
-	// For example, `odo init` should NOT check to see if there is actually a configuration yet.
-	if o.cmd.HasParent() {
-
-		// Find the first child of the command, as some groups are allowed even with non existent configuration
-		firstChildCommand := getFirstChildOfCommand(o.cmd)
-
-		// This should *never* happen, but added just to be safe
-		if firstChildCommand == nil {
-			return false, errors.New("unable to get first child of command")
-		}
-
-		// Gather necessary preliminary information
-		componentNameFlagValue := o.FlagValueIfSet(util.ComponentNameFlagName)
-		// if command is `odo delete component` and name flag is not used, require configuration
-		if firstChildCommand.Name() == "delete" && o.cmd.Name() == "component" && len(componentNameFlagValue) == 0 {
-			return true, nil
-		}
-		// if command is `odo build-images`, require configuration
-		if o.cmd.Name() == "build-images" {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// getFirstChildOfCommand gets the first child command of the root command of command
-func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
-	// If command does not have a parent no point checking
-	if command.HasParent() {
-		// Get the root command and set current command and its parent
-		rootCommand := command.Root()
-		parentCommand := command.Parent()
-		mainCommand := command
-		for {
-			// if parent is root, then we have our first child in c
-			if parentCommand == rootCommand {
-				return mainCommand
-			}
-			// Traverse backwards making current command as the parent and parent as the grandparent
-			mainCommand = parentCommand
-			parentCommand = mainCommand.Parent()
-		}
-	}
-	return nil
-}
-
 func (o *Cobra) GetKubeClient() (kclient.ClientInterface, error) {
 	return kclient.New()
 }

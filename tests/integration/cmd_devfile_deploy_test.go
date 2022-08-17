@@ -23,7 +23,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 	var _ = BeforeEach(func() {
 		commonVar = helper.CommonBeforeEach(helper.SetupClusterTrue)
 		helper.Chdir(commonVar.Context)
-		Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeFalse())
 	})
 
 	// This is run after every Spec (It)
@@ -83,9 +82,6 @@ var _ = Describe("odo devfile deploy command tests", func() {
 				var stdout string
 				BeforeEach(func() {
 					stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
-					// An ENV file should have been created indicating current namespace
-					Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
-					helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 				})
 				It("should succeed", func() {
 					By("building and pushing image to registry", func() {

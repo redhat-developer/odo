@@ -41,7 +41,7 @@ var _ = Describe("odo delete command tests", func() {
 			})
 			It("should fail", func() {
 				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component", "Use \"odo init\" to initialize an odo component in the folder."})
+				helper.MatchAllInOutput(errOut, []string{"no devfile found"})
 			})
 		})
 		When("the directory is not empty", func() {
@@ -50,7 +50,7 @@ var _ = Describe("odo delete command tests", func() {
 			})
 			It("should fail", func() {
 				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component", "Use \"odo dev\" to initialize an odo component for this folder and deploy it on cluster."})
+				helper.MatchAllInOutput(errOut, []string{"no devfile found"})
 			})
 		})
 	})
@@ -93,16 +93,6 @@ var _ = Describe("odo delete command tests", func() {
 			When("the components are not deployed", func() {
 				var stdOut string
 				BeforeEach(func() {
-					// Bootstrap the component with a .odo/env/env.yaml file
-					odoDir := filepath.Join(commonVar.Context, ".odo", "env")
-					helper.MakeDir(odoDir)
-					err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), fmt.Sprintf(`
-ComponentSettings:
-  Name: %s
-  Project: %s
-  AppName: app
-`, cmpName, commonVar.Project))
-					Expect(err).To(BeNil())
 					stdOut = helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
 				})
 				It("should output that there are no resources to be deleted", func() {
@@ -251,9 +241,8 @@ ComponentSettings:
 						By("deleting the service", func() {
 							Eventually(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(serviceName))
 						})
-						By("ensuring that devfile.yaml and .odo still exists", func() {
+						By("ensuring that devfile.yaml still exists", func() {
 							files := helper.ListFilesInDir(commonVar.Context)
-							Expect(files).To(ContainElement(".odo"))
 							Expect(files).To(ContainElement("devfile.yaml"))
 						})
 					})
