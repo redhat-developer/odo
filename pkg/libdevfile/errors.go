@@ -106,3 +106,14 @@ type NoCommandForGroup struct {
 func (n NoCommandForGroup) Error() string {
 	return fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", n.Group)
 }
+
+// NotExactlyOneContainer is returned when there's more or less than exactly one container component matching a command
+type NotExactlyOneContainer struct{}
+
+func NewNotExactlyOneContainer() NotExactlyOneContainer {
+	return NotExactlyOneContainer{}
+}
+
+func (_ NotExactlyOneContainer) Error() string {
+	return fmt.Sprintf("need exactly one container component to run exec command")
+}

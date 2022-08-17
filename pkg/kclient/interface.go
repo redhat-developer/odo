@@ -3,6 +3,7 @@ package kclient
 import (
 	"context"
 	"io"
+	batchv1 "k8s.io/api/batch/v1"
 	"time"
 
 	"github.com/go-openapi/spec"
@@ -66,6 +67,9 @@ type ClientInterface interface {
 
 	// events.go
 	PodWarningEventWatcher(ctx context.Context) (result watch.Interface, isForbidden bool, err error)
+
+	// jobs.go
+	CreateJob(job batchv1.Job) error
 
 	// kclient.go
 	GetClient() kubernetes.Interface

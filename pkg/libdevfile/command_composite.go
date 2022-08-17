@@ -29,7 +29,8 @@ func (o *compositeCommand) CheckValidity() error {
 	if err != nil {
 		return err
 	}
-	cmds := o.command.Composite.Commands
+	var cmds []string
+	copy(cmds, o.command.Composite.Commands)
 	for _, cmd := range cmds {
 		if _, ok := allCommands[strings.ToLower(cmd)]; !ok {
 			return fmt.Errorf("composite command %q references command %q not found in devfile", o.command.Id, cmd)
