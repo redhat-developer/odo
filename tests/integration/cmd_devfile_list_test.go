@@ -3,6 +3,7 @@ package integration
 import (
 	"path"
 	"path/filepath"
+	"regexp"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
 	"github.com/tidwall/gjson"
@@ -112,6 +113,25 @@ var _ = Describe("odo list with devfile", func() {
 				Expect(stdOut).To(ContainSubstring(componentType))
 			})
 		}
+		Context("verifying the managedBy Version in the odo list output", func() {
+			var version string
+			BeforeEach(func() {
+				versionOut := helper.Cmd("odo", "version").ShouldPass().Out()
+				reOdoVersion := regexp.MustCompile(`v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?`)
+				version = reOdoVersion.FindString(versionOut)
+
+			})
+			It("should show managedBy Version", func() {
+				By("checking the normal output", func() {
+					stdout := helper.Cmd("odo", "list").ShouldPass().Out()
+					Expect(stdout).To(ContainSubstring(version))
+				})
+				By("checking the JSON output", func() {
+					stdout := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
+					helper.JsonPathContentContain(stdout, "components.0.managedByVersion", version)
+				})
+			})
+		})
 
 		It("show an odo deploy or dev in the list", func() {
 			By("should display the component as 'Dev' in odo list", func() {

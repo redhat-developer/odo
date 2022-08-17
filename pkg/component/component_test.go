@@ -18,17 +18,19 @@ import (
 )
 
 func TestListAllClusterComponents(t *testing.T) {
-	res1 := getUnstructured("dep1", "deployment", "v1", "Unknown", "Unknown", "my-ns")
-	res2 := getUnstructured("svc1", "service", "v1", "odo", "nodejs", "my-ns")
-	res3 := getUnstructured("dep1", "deployment", "v1", "Unknown", "Unknown", "my-ns")
+	const odoVersion = "v3.0.0-beta3"
+	res1 := getUnstructured("dep1", "deployment", "v1", "Unknown", "", "Unknown", "my-ns")
+	res2 := getUnstructured("svc1", "service", "v1", "odo", odoVersion, "nodejs", "my-ns")
+	res3 := getUnstructured("dep1", "deployment", "v1", "Unknown", "", "Unknown", "my-ns")
 	res3.SetLabels(map[string]string{})
-	commonLabels := labels.Builder().WithComponentName("comp1").WithManager("odo")
 
-	resDev := getUnstructured("depDev", "deployment", "v1", "odo", "nodejs", "my-ns")
+	commonLabels := labels.Builder().WithComponentName("comp1").WithManager("odo").WithManagedByVersion(odoVersion)
+
+	resDev := getUnstructured("depDev", "deployment", "v1", "odo", odoVersion, "nodejs", "my-ns")
 	labelsDev := commonLabels.WithMode("Dev").Labels()
 	resDev.SetLabels(labelsDev)
 
-	resDeploy := getUnstructured("depDeploy", "deployment", "v1", "odo", "nodejs", "my-ns")
+	resDeploy := getUnstructured("depDeploy", "deployment", "v1", "odo", odoVersion, "nodejs", "my-ns")
 	labelsDeploy := commonLabels.WithMode("Deploy").Labels()
 	resDeploy.SetLabels(labelsDeploy)
 
@@ -61,10 +63,11 @@ func TestListAllClusterComponents(t *testing.T) {
 				namespace: "my-ns",
 			},
 			want: []api.ComponentAbstract{{
-				Name:      "dep1",
-				ManagedBy: "Unknown",
-				RunningIn: nil,
-				Type:      "Unknown",
+				Name:             "dep1",
+				ManagedBy:        "Unknown",
+				ManagedByVersion: "",
+				RunningIn:        nil,
+				Type:             "Unknown",
 			}},
 			wantErr: false,
 		},
@@ -100,15 +103,17 @@ func TestListAllClusterComponents(t *testing.T) {
 				namespace: "my-ns",
 			},
 			want: []api.ComponentAbstract{{
-				Name:      "dep1",
-				ManagedBy: "Unknown",
-				RunningIn: nil,
-				Type:      "Unknown",
+				Name:             "dep1",
+				ManagedBy:        "Unknown",
+				ManagedByVersion: "",
+				RunningIn:        nil,
+				Type:             "Unknown",
 			}, {
-				Name:      "svc1",
-				ManagedBy: "odo",
-				RunningIn: nil,
-				Type:      "nodejs",
+				Name:             "svc1",
+				ManagedBy:        "odo",
+				ManagedByVersion: "v3.0.0-beta3",
+				RunningIn:        nil,
+				Type:             "nodejs",
 			}},
 			wantErr: false,
 		},
@@ -127,10 +132,11 @@ func TestListAllClusterComponents(t *testing.T) {
 				namespace: "my-ns",
 			},
 			want: []api.ComponentAbstract{{
-				Name:      "comp1",
-				ManagedBy: "odo",
-				RunningIn: api.RunningModeList{api.RunningModeDev, api.RunningModeDeploy},
-				Type:      "nodejs",
+				Name:             "comp1",
+				ManagedBy:        "odo",
+				ManagedByVersion: "v3.0.0-beta3",
+				RunningIn:        api.RunningModeList{api.RunningModeDev, api.RunningModeDeploy},
+				Type:             "nodejs",
 			}},
 			wantErr: false,
 		},
@@ -185,7 +191,7 @@ func TestGetComponentTypeFromDevfileMetadata(t *testing.T) {
 }
 
 // getUnstructured returns an unstructured.Unstructured object
-func getUnstructured(name, kind, apiVersion, managed, componentType, namespace string) (u unstructured.Unstructured) {
+func getUnstructured(name, kind, apiVersion, managed, managedByVersion, componentType, namespace string) (u unstructured.Unstructured) {
 	u.SetName(name)
 	u.SetKind(kind)
 	u.SetAPIVersion(apiVersion)
@@ -193,6 +199,7 @@ func getUnstructured(name, kind, apiVersion, managed, componentType, namespace s
 	u.SetLabels(labels.Builder().
 		WithComponentName(name).
 		WithManager(managed).
+		WithManagedByVersion(managedByVersion).
 		Labels())
 	u.SetAnnotations(labels.Builder().
 		WithProjectType(componentType).

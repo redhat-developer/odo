@@ -47,6 +47,10 @@ func GetManagedBy(labels map[string]string) string {
 	return labels[kubernetesManagedByLabel]
 }
 
+func GetManagedByVersion(labels map[string]string) string {
+	return labels[kubernetesManagedByVersionLabel]
+}
+
 func IsManagedByOdo(labels map[string]string) bool {
 	return labels[kubernetesManagedByLabel] == odoManager
 }

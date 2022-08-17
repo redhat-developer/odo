@@ -77,3 +77,8 @@ func (o builder) WithComponent(name string) builder {
 	o.m[componentLabel] = name
 	return o
 }
+
+func (o builder) WithManagedByVersion(version string) builder {
+	o.m[kubernetesManagedByVersionLabel] = version
+	return o
+}

@@ -2,10 +2,11 @@ package api
 
 // ComponentAbstract represents a component as part of a list of components
 type ComponentAbstract struct {
-	Name      string          `json:"name"`
-	ManagedBy string          `json:"managedBy"`
-	RunningIn RunningModeList `json:"runningIn"`
-	Type      string          `json:"projectType"`
+	Name             string          `json:"name"`
+	ManagedBy        string          `json:"managedBy"`
+	ManagedByVersion string          `json:"managedByVersion"`
+	RunningIn        RunningModeList `json:"runningIn"`
+	Type             string          `json:"projectType"`
 }
 
 const (
