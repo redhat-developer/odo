@@ -344,7 +344,7 @@ func TestNew(t *testing.T) {
 			os.RemoveAll(prefixDir)
 			// the second one to cleanup after execution
 			defer os.RemoveAll(prefixDir)
-			os.Setenv("KUBECONFIG", filepath.Join(prefixDir, ".kube", "config"))
+			t.Setenv("KUBECONFIG", filepath.Join(prefixDir, ".kube", "config"))
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 

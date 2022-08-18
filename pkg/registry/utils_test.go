@@ -2,7 +2,6 @@ package registry
 
 import (
 	"io/ioutil"
-	"os"
 	"reflect"
 	"testing"
 
@@ -20,7 +19,7 @@ func TestIsSecure(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name              string

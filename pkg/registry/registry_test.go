@@ -36,8 +36,7 @@ OdoSettings:
 		t.Error(err)
 	}
 
-	os.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
-	defer os.Unsetenv(preference.GlobalConfigEnvName)
+	t.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name         string

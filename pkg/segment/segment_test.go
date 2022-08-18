@@ -231,7 +231,7 @@ func TestIsTelemetryEnabled(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		os.Setenv(DisableTelemetryEnv, tt.envVar)
+		t.Setenv(DisableTelemetryEnv, tt.envVar)
 		ctrl := gomock.NewController(t)
 		cfg := preference.NewMockClient(ctrl)
 		cfg.EXPECT().GetConsentTelemetry().Return(tt.preferenceValue).AnyTimes()
