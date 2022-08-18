@@ -2,7 +2,6 @@ package dev
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -122,7 +121,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return err
 	}
 	if isEmptyDir {
-		return errors.New("this command cannot run in an empty directory, run the command in a directory containing source code or initialize using 'odo init'")
+		return genericclioptions.NewNoDevfileError(o.contextDir)
 	}
 	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
 	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,

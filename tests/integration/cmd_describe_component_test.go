@@ -40,7 +40,7 @@ var _ = Describe("odo describe component command tests", func() {
 			stdout, stderr := res.Out(), res.Err()
 			Expect(helper.IsJSON(stderr)).To(BeTrue())
 			Expect(stdout).To(BeEmpty())
-			helper.JsonPathContentContain(stderr, "message", "no devfile found")
+			helper.JsonPathContentContain(stderr, "message", "The current directory does not represent an odo component")
 		})
 
 		By("running odo describe component -o json with an unknown name", func() {
@@ -62,7 +62,7 @@ var _ = Describe("odo describe component command tests", func() {
 			res := helper.Cmd("odo", "describe", "component").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
 			Expect(stdout).To(BeEmpty())
-			Expect(stderr).To(ContainSubstring("no devfile found"))
+			Expect(stderr).To(ContainSubstring("The current directory does not represent an odo component"))
 		})
 
 		By("running odo describe component with an unknown name", func() {

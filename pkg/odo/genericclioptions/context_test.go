@@ -241,7 +241,7 @@ func TestNew(t *testing.T) {
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
 				},
 			},
-			expectedErr: "no devfile found",
+			expectedErr: "The current directory does not represent an odo component",
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",

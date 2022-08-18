@@ -38,7 +38,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 		It("should error", func() {
 			output := helper.Cmd("odo", "deploy").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("this command cannot run in an empty directory"))
+			Expect(output).To(ContainSubstring("The current directory does not represent an odo component"))
 
 		})
 	})

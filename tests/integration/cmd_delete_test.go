@@ -41,7 +41,7 @@ var _ = Describe("odo delete command tests", func() {
 			})
 			It("should fail", func() {
 				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				helper.MatchAllInOutput(errOut, []string{"no devfile found"})
+				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component"})
 			})
 		})
 		When("the directory is not empty", func() {
@@ -50,7 +50,7 @@ var _ = Describe("odo delete command tests", func() {
 			})
 			It("should fail", func() {
 				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				helper.MatchAllInOutput(errOut, []string{"no devfile found"})
+				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component"})
 			})
 		})
 	})
