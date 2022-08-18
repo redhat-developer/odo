@@ -75,9 +75,14 @@ func DetectName(path string) (string, error) {
 	}
 
 	// Check if the path exists using os.Stat
-	_, err := os.Stat(path)
+	dir, err := os.Stat(path)
 	if err != nil {
 		return "", err
+	}
+
+	// Check to see if the path is a directory, and fail if it is not
+	if !dir.IsDir() {
+		return "", fmt.Errorf("alizer DetectName %q path is not a directory", path)
 	}
 
 	// Step 1.
@@ -99,9 +104,9 @@ func DetectName(path string) (string, error) {
 	// Step 2. If unable to detect the name, we will use the directory name.
 	// Alizer will not correctly default to the directory name when unable to detect it via pom.xml, package.json, etc.
 	// So we must do it ourselves
+	// The directory name SHOULD be the path (we use a previous check to see if it's "itsdir"
 	if detectedName == "" {
-		// Using filepath.Dir may be redundant, but it's to also check in case we passed in a filename (which shouldn't be passed in anyways)
-		detectedName = filepath.Base(filepath.Dir(path))
+		detectedName = filepath.Base(path)
 	}
 
 	// Step 3.  Sanitize the name
