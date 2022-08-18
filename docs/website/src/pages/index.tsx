@@ -56,7 +56,7 @@ export default function Home(): JSX.Element {
           <div className="container text--center margin-top--md">
             <div className="row">
               <div className="col col--5 col--offset-1">
-                    <video className={styles.loopVideo} autoPlay loop muted><source src="/video/container_ship.webm" type="video/webm"/></video>
+                  <video className={styles.loopVideo} autoPlay loop muted><source src={useBaseUrl('/video/container_ship.webm')} type="video/webm"/></video>
                 <h2 className={clsx(styles.featureHeading)}>
                   Deploy on <b className={styles.kubernetesFont}>Kubernetes</b> and <b className={styles.openshiftFont}>OpenShift</b>
                 </h2>
@@ -65,7 +65,7 @@ export default function Home(): JSX.Element {
                 </p>
               </div>
               <div className="col col--5">
-                    <video className={styles.loopVideo} autoPlay loop muted><source src="/video/coding.webm" type="video/webm"/></video>
+                  <video className={styles.loopVideo} autoPlay loop muted><source src={useBaseUrl("/video/coding.webm")} type="video/webm"/></video>
                 <h2 className={clsx(styles.featureHeading)}>
                   Push code fast and often
                 </h2>
