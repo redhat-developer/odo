@@ -12,18 +12,14 @@ import (
 )
 
 // resolveProjectAndNamespace resolve project in Context and namespace in Kubernetes and OpenShift clients
-func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline, configProvider localConfigProvider.LocalConfigProvider) error {
+func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline) error {
 	var namespace string
 	projectFlag := cmdline.FlagValueIfSet(util.ProjectFlagName)
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := o.KClient.GetNamespaceNormal(projectFlag)
-
-		// do not error out when the user is running `odo project`
 		if err != nil {
-			if cmdline.GetParentName() != "project" {
-				return err
-			}
+			return err
 		}
 		namespace = projectFlag
 	} else {
@@ -87,7 +83,7 @@ func resolveComponent(cmdline cmdline.Cmdline, localConfiguration localConfigPro
 	return localConfiguration.GetName()
 }
 
-func resolveProject(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
+func resolveProject(cmdline cmdline.Cmdline) string {
 	return cmdline.FlagValueIfSet(util.ProjectFlagName)
 }
 
