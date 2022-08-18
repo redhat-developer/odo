@@ -145,7 +145,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		} else {
 			return &Context{
 				internalCxt: ctx,
-			}, NewNoDevfileError(parameters.componentContext)
+			}, NewNoDevfileError(".")
 		}
 	}
 
