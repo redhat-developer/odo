@@ -1,0 +1,29 @@
+name: Test a PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/website/**'
+
+jobs:
+  test-deploy:
+    name: Test deployment
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./docs/website
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: yarn
+          cache-dependency-path: ./docs/website/yarn.lock
+
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build website
+        run: yarn build
