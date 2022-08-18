@@ -208,6 +208,43 @@ var _ = Describe("odo dev command tests", func() {
 			})
 		})
 
+		When("an env.yaml file contains a non-current Project", func() {
+			BeforeEach(func() {
+				odoDir := filepath.Join(commonVar.Context, ".odo", "env")
+				helper.MakeDir(odoDir)
+				err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), `
+ComponentSettings:
+  Project: another-project
+`)
+				Expect(err).ShouldNot(HaveOccurred())
+
+			})
+
+			When("odo dev is executed", func() {
+
+				var devSession helper.DevSession
+
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(nil)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+				})
+
+				It("should have modified env.yaml indicating current namespace and use current namespace", func() {
+					helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+
+					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
+					out := commonVar.CliRunner.Run("get", "deployments", deploymentName, "-n", commonVar.Project).Out.Contents()
+					Expect(out).To(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
 		When("odo dev is executed", func() {
 
 			var devSession helper.DevSession

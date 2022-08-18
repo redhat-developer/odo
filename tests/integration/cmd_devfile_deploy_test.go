@@ -117,6 +117,56 @@ var _ = Describe("odo devfile deploy command tests", func() {
 					})
 				})
 			})
+
+			When("an env.yaml file contains a non-current Project", func() {
+				BeforeEach(func() {
+					odoDir := filepath.Join(commonVar.Context, ".odo", "env")
+					helper.MakeDir(odoDir)
+					err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), `
+ComponentSettings:
+  Project: another-project
+`)
+					Expect(err).ShouldNot(HaveOccurred())
+
+				})
+
+				When("running odo deploy", func() {
+					var stdout string
+					BeforeEach(func() {
+						stdout = helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass().Out()
+					})
+					It("should succeed", func() {
+						By("building and pushing image to registry", func() {
+							Expect(stdout).To(ContainSubstring("build -t quay.io/unknown-account/myimage -f " +
+								filepath.Join(commonVar.Context, "Dockerfile ") + commonVar.Context))
+							Expect(stdout).To(ContainSubstring("push quay.io/unknown-account/myimage"))
+						})
+						By("deploying a deployment with the built image in current namespace", func() {
+							out := commonVar.CliRunner.Run("get", "deployment", deploymentName, "-n",
+								commonVar.Project, "-o", `jsonpath="{.spec.template.spec.containers[0].image}"`).Wait().Out.Contents()
+							Expect(out).To(ContainSubstring("quay.io/unknown-account/myimage"))
+						})
+					})
+
+					When("the env.yaml file still contains a non-current Project", func() {
+						BeforeEach(func() {
+							odoDir := filepath.Join(commonVar.Context, ".odo", "env")
+							helper.MakeDir(odoDir)
+							err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), `
+ComponentSettings:
+  Project: another-project
+`)
+							Expect(err).ShouldNot(HaveOccurred())
+
+						})
+
+						It("should delete the component in the current namespace", func() {
+							out := helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
+							Expect(out).To(ContainSubstring("Deployment: my-component"))
+						})
+					})
+				})
+			})
 		})
 	}
 
