@@ -27,3 +27,9 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Build website
         run: yarn build
+
+      - name: Deploy
+        uses: shlinkio/deploy-preview-action@v1.0.1
+        with:
+          branch: gh-pages # The branch from where the GitHub Pages are served (defaults to preview-env)
+          folder: ./docs/website/build # The folder where the artifacts to publish are (defaults to the project root)
