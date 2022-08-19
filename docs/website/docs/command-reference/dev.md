@@ -417,13 +417,9 @@ This state file contains the forwarded ports:
 
 ## Env File
 
-When `odo dev` is executed, a `.odo/env/env.yaml` file is created if it does not exist. It stores the namespace/project that will be used by the component, and its default value is set to currently active namespace/project.
+When `odo dev` is executed, a `.odo/env/env.yaml` file is created if it does not exist. It stores the namespace/project that will be used by the component during the dev session. The value is removed from the file at the end of the session.
 
 ```yaml
 ComponentSettings:
   Project: myproject
 ```
-
-:::note
-Creating, deleting or setting a namespace/project will not modify this value. To use a different namespace/project, user will have to manually change `.ComponentSettings.Project` value, or delete the `.odo` directory.
-:::
