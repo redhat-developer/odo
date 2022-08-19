@@ -31,6 +31,7 @@ func Cmd(program string, args ...string) *CmdWrapper {
 	prefix := fmt.Sprintf("[%s] ", filepath.Base(program))
 	prefixWriter := gexec.NewPrefixedWriter(prefix, GinkgoWriter)
 	command := exec.Command(program, args...)
+	setSysProcAttr(command)
 	return &CmdWrapper{
 		Cmd:     command,
 		program: program,
