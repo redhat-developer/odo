@@ -33,3 +33,11 @@
 html[data-theme='dark'] .docusaurus-highlight-code-line {
   background-color: rgba(0, 0, 0, 0.3);
 }
+
+.bannerProjectTagline_src-pages-index-module {
+  font-weight: 400;
+}
+
+.button {
+  font-weight:500;
+}
