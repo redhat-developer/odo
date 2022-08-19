@@ -19,7 +19,7 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name    string
@@ -77,7 +77,7 @@ func TestGetPushTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 
 	nonzeroValue := 5 * time.Second
 
@@ -123,7 +123,7 @@ func TestGetTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	zeroValue := 0 * time.Second
 	nonzeroValue := 5 * time.Second
 	tests := []struct {
@@ -179,7 +179,7 @@ func TestSetConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 	minValue := minimumDurationValue
@@ -407,7 +407,7 @@ func TestConsentTelemetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 
@@ -463,7 +463,7 @@ func TestGetupdateNotification(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 
@@ -692,7 +692,7 @@ func TestGetConsentTelemetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	t.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 

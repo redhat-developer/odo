@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/devfile/registry-support/registry-library/library"
@@ -18,11 +17,7 @@ func TestGetRegistryOptions(t *testing.T) {
 	}
 	defer tempConfigFile.Close()
 
-	err = os.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
-
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		testName string

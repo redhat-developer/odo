@@ -17,7 +17,7 @@ func TestSetEnvInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempEnvFile.Close()
-	os.Setenv(envInfoEnvName, tempEnvFile.Name())
+	t.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testDebugPort := 5005
 	invalidParam := "invalidParameter"
 
@@ -85,7 +85,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempEnvFile.Close()
-	os.Setenv(envInfoEnvName, tempEnvFile.Name())
+	t.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testDebugPort := 15005
 	invalidParam := "invalidParameter"
 
