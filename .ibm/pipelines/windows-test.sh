@@ -13,7 +13,8 @@ export REPO=${REPO:-"https://github.com/redhat-developer/odo"}
 sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no ./.ibm/pipelines/windows-test-script.ps1 Administrator@$WINDOWS_IP:/tmp/windows-test-script.ps1
 
 #execute test from the test script
-sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP -o StrictHostKeyChecking=no powershell /tmp/windows-test-script.ps1 "${GIT_PR_NUMBER}" "${BUILD_NUMBER}" "${API_KEY_QE}" "${IBM_OPENSHIFT_ENDPOINT}" "${LOGFILE}" "${REPO}" "${WINDOWS_IP}" "${CLUSTER_ID}"
+export TEST_EXEC_NODES=${TEST_EXEC_NODES:-"16"}
+sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP -o StrictHostKeyChecking=no powershell /tmp/windows-test-script.ps1 "${GIT_PR_NUMBER}" "${BUILD_NUMBER}" "${API_KEY_QE}" "${IBM_OPENSHIFT_ENDPOINT}" "${LOGFILE}" "${REPO}" "${WINDOWS_IP}" "${CLUSTER_ID}" "${TEST_EXEC_NODES}"
 RESULT=$?
 echo "RESULT: $RESULT"
 
