@@ -41,11 +41,11 @@ var _ = Describe("odo list with devfile", func() {
 				commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "deployment-app-label.yaml"))
 			})
 			It("should list the component with odo list", func() {
-				output := helper.Cmd("odo", "list").ShouldPass().Out()
+				output := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{deploymentName, "Unknown", "None", managedBy})
 			})
 			It("should list the component in JSON", func() {
-				output := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
+				output := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
 				helper.JsonPathContentIs(output, "components.0.name", deploymentName)
 				Expect(gjson.Get(output, "components.0.runningIn").String()).To(BeEmpty())
 				helper.JsonPathContentIs(output, "components.0.projectType", "Unknown")
@@ -64,11 +64,11 @@ var _ = Describe("odo list with devfile", func() {
 				commonVar.CliRunner.Run("delete", "-f", helper.GetExamplePath("manifests", "deployment-without-managed-by-label.yaml"))
 			})
 			It("should list the component with odo list", func() {
-				output := helper.Cmd("odo", "list").ShouldPass().Out()
+				output := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 				helper.MatchAllInOutput(output, []string{deploymentName, "Unknown", "None", "Unknown"})
 			})
 			It("should list the component in JSON", func() {
-				output := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
+				output := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
 				helper.JsonPathContentContain(output, "components.0.name", deploymentName)
 				Expect(gjson.Get(output, "components.0.runningIn").String()).To(BeEmpty())
 				helper.JsonPathContentContain(output, "components.0.projectType", "Unknown")
@@ -84,7 +84,7 @@ var _ = Describe("odo list with devfile", func() {
 				commonVar.CliRunner.Run("delete", "deployment", deploymentName)
 			})
 			It("should not be listed in the odo list output", func() {
-				output := helper.Cmd("odo", "list").ShouldRun().Out()
+				output := helper.Cmd("odo", "list", "component").ShouldRun().Out()
 				Expect(output).ToNot(ContainSubstring(deploymentName))
 
 			})
@@ -109,7 +109,7 @@ var _ = Describe("odo list with devfile", func() {
 
 		var checkList = func(componentType string) {
 			By("checking the normal output", func() {
-				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
+				stdOut := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring(componentType))
 			})
 		}
@@ -123,11 +123,11 @@ var _ = Describe("odo list with devfile", func() {
 			})
 			It("should show managedBy Version", func() {
 				By("checking the normal output", func() {
-					stdout := helper.Cmd("odo", "list").ShouldPass().Out()
+					stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 					Expect(stdout).To(ContainSubstring(version))
 				})
 				By("checking the JSON output", func() {
-					stdout := helper.Cmd("odo", "list", "-o", "json").ShouldPass().Out()
+					stdout := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass().Out()
 					helper.JsonPathContentContain(stdout, "components.0.managedByVersion", version)
 				})
 			})
@@ -139,7 +139,7 @@ var _ = Describe("odo list with devfile", func() {
 			})
 
 			By("should display the component as 'Dev' in odo list -o json", func() {
-				res := helper.Cmd("odo", "list", "-o", "json").ShouldPass()
+				res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
@@ -159,7 +159,7 @@ var _ = Describe("odo list with devfile", func() {
 			})
 
 			By("should display the component as 'Dev, Deploy' in odo list -o json", func() {
-				res := helper.Cmd("odo", "list", "-o", "json").ShouldPass()
+				res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
@@ -183,12 +183,12 @@ var _ = Describe("odo list with devfile", func() {
 		// checkList checks the list output (both normal and json) to see if it contains the expected componentType
 		var checkList = func(componentType string) {
 			By("checking the normal output", func() {
-				stdOut := helper.Cmd("odo", "list").ShouldPass().Out()
+				stdOut := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 				Expect(stdOut).To(ContainSubstring(componentType))
 			})
 
 			By("checking the JSON output", func() {
-				res := helper.Cmd("odo", "list", "-o", "json").ShouldPass()
+				res := helper.Cmd("odo", "list", "component", "-o", "json").ShouldPass()
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())

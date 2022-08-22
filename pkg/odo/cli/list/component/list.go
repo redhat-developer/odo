@@ -1,4 +1,4 @@
-package list
+package component
 
 import (
 	"context"
@@ -13,9 +13,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
-	"github.com/redhat-developer/odo/pkg/odo/cli/list/binding"
-	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/list/component"
-	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/util"
 
@@ -27,14 +24,13 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 	"github.com/redhat-developer/odo/pkg/odo/util/completion"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended list name
-const RecommendedCommandName = "list"
+const RecommendedCommandName = "component"
 
 var listExample = ktemplates.Examples(`  # List all components in the application
 %[1]s
@@ -182,7 +178,7 @@ func (lo *ListOptions) run(cts context.Context) (api.ResourcesList, error) {
 }
 
 // NewCmdList implements the list odo command
-func NewCmdList(name, fullName string) *cobra.Command {
+func NewCmdComponentList(name, fullName string) *cobra.Command {
 	o := NewListOptions()
 
 	var listCmd = &cobra.Command{
@@ -198,12 +194,6 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	}
 	clientset.Add(listCmd, clientset.KUBERNETES)
 
-	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
-	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
-	componentCmd := clicomponent.NewCmdComponentList(clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName))
-	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd)
-
-	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
 
 	completion.RegisterCommandFlagHandler(listCmd, "path", completion.FileCompletionHandler)

@@ -92,7 +92,7 @@ var _ = Describe("E2E Test", func() {
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
 
 			// "running odo list"
-			stdout := helper.Cmd("odo", "list").ShouldPass().Out()
+			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev"})
 
 			// "exit dev mode and run odo deploy"
@@ -115,7 +115,7 @@ var _ = Describe("E2E Test", func() {
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
 
 			// should deploy new changes
-			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
+			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
 
 			// start dev mode again
@@ -130,7 +130,7 @@ var _ = Describe("E2E Test", func() {
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
 
 			// should list both dev,deploy
-			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
+			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev", "Deploy"})
 
 			// "exit dev mode and run odo deploy"
@@ -213,7 +213,7 @@ var _ = Describe("E2E Test", func() {
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v2 Starter Application!")
 
 			// "running odo list"
-			stdout := helper.Cmd("odo", "list").ShouldPass().Out()
+			stdout := helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev"})
 
 			// "exit dev mode and run odo deploy"
@@ -235,7 +235,7 @@ var _ = Describe("E2E Test", func() {
 			Expect(stdout).To(ContainSubstring("Your Devfile has been successfully deployed"))
 
 			// should deploy new changes
-			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
+			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Deploy"})
 
 			// start dev mode again
@@ -249,7 +249,7 @@ var _ = Describe("E2E Test", func() {
 			checkIfDevEnvIsUp(ports["3000"], "Hello from Node.js app v3 Starter Application!")
 
 			// should list both dev,deploy
-			stdout = helper.Cmd("odo", "list").ShouldPass().Out()
+			stdout = helper.Cmd("odo", "list", "component").ShouldPass().Out()
 			helper.MatchAllInOutput(stdout, []string{componentName, "nodejs", "Dev", "Deploy"})
 
 			// "exit dev mode and run odo deploy"
