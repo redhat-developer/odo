@@ -2,13 +2,16 @@ package backend
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strconv"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	"k8s.io/klog"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -104,7 +107,34 @@ func (o *InteractiveBackend) SelectStarterProject(devfile parser.DevfileObj, fla
 }
 
 func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
-	return o.askerClient.AskName(fmt.Sprintf("my-%s-app", devfile.GetMetadataName()))
+
+	// We will retrieve the name using alizer and then suggest it as the default name.
+	// 1. Check the pom.xml / package.json / etc. for the project name
+	// 2. If not, use the directory name instead
+
+	// Get the absolute path to the directory from the Devfile context
+	path := devfile.Ctx.GetAbsPath()
+	if path == "" {
+		return "", fmt.Errorf("unable to get the absolute path to the directory: %q", path)
+	}
+
+	// Pass in the BASE directory (not the file name of devfile.yaml)
+	// Convert path to base dir not file name
+	baseDir := filepath.Dir(path)
+
+	// Detect the name
+	name, err := alizer.DetectName(baseDir)
+	if err != nil {
+		return "", fmt.Errorf("detecting name using alizer: %w", err)
+	}
+
+	klog.V(4).Infof("Detected name via alizer: %q from path: %q", name, baseDir)
+
+	if name == "" {
+		return "", fmt.Errorf("unable to detect the name")
+	}
+
+	return o.askerClient.AskName(name)
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
