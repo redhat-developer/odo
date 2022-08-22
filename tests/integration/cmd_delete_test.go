@@ -41,7 +41,7 @@ var _ = Describe("odo delete command tests", func() {
 			})
 			It("should fail", func() {
 				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component", "Use \"odo init\" to initialize an odo component in the folder."})
+				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component"})
 			})
 		})
 		When("the directory is not empty", func() {
@@ -50,7 +50,7 @@ var _ = Describe("odo delete command tests", func() {
 			})
 			It("should fail", func() {
 				errOut := helper.Cmd("odo", "delete", "component", "-f").ShouldFail().Err()
-				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component", "Use \"odo dev\" to initialize an odo component for this folder and deploy it on cluster."})
+				helper.MatchAllInOutput(errOut, []string{"The current directory does not represent an odo component"})
 			})
 		})
 	})
@@ -93,16 +93,6 @@ var _ = Describe("odo delete command tests", func() {
 			When("the components are not deployed", func() {
 				var stdOut string
 				BeforeEach(func() {
-					// Bootstrap the component with a .odo/env/env.yaml file
-					odoDir := filepath.Join(commonVar.Context, ".odo", "env")
-					helper.MakeDir(odoDir)
-					err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), fmt.Sprintf(`
-ComponentSettings:
-  Name: %s
-  Project: %s
-  AppName: app
-`, cmpName, commonVar.Project))
-					Expect(err).To(BeNil())
 					stdOut = helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
 				})
 				It("should output that there are no resources to be deleted", func() {
@@ -251,50 +241,13 @@ ComponentSettings:
 						By("deleting the service", func() {
 							Eventually(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents(), 60, 3).ShouldNot(ContainSubstring(serviceName))
 						})
-						By("ensuring that devfile.yaml and .odo still exists", func() {
+						By("ensuring that devfile.yaml still exists", func() {
 							files := helper.ListFilesInDir(commonVar.Context)
-							Expect(files).To(ContainElement(".odo"))
 							Expect(files).To(ContainElement("devfile.yaml"))
 						})
 					})
 				})
 
-			})
-			When("component is deployed to the cluster in the namespace set in env.yaml which is not the same as the current active namespace", func() {
-				var projectName string
-				BeforeEach(func() {
-					// deploy the component to the cluster
-					session := helper.CmdRunner("odo", "dev", "--random-ports")
-					defer session.Kill()
-					helper.WaitForOutputToContain("Press Ctrl+c to exit", 180, 10, session)
-					Expect(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())).To(ContainSubstring(cmpName))
-
-					helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
-					Expect(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents())).To(ContainSubstring(deploymentName))
-					Expect(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents())).To(ContainSubstring(serviceName))
-
-					// create and set a new namespace
-					projectName = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
-				})
-				AfterEach(func() {
-					commonVar.CliRunner.DeleteNamespaceProject(projectName, false)
-				})
-				When("the component is deleted", func() {
-					BeforeEach(func() {
-						helper.Cmd("odo", "delete", "component", "-f").ShouldPass().Out()
-					})
-					It("should have deleted the component", func() {
-						By("deleting the component", func() {
-							Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(cmpName))
-						})
-						By("deleting the deployment", func() {
-							Eventually(string(commonVar.CliRunner.Run(getDeployArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(deploymentName))
-						})
-						By("deleting the service", func() {
-							Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
-						})
-					})
-				})
 			})
 		})
 	}

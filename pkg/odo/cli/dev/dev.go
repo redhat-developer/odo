@@ -2,7 +2,6 @@ package dev
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -122,7 +121,7 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 		return err
 	}
 	if isEmptyDir {
-		return errors.New("this command cannot run in an empty directory, run the command in a directory containing source code or initialize using 'odo init'")
+		return genericclioptions.NewNoDevfileError(o.contextDir)
 	}
 	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
 	err = o.clientset.InitClient.InitDevfile(initFlags, o.contextDir,
@@ -304,7 +303,7 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 			Devfile:       devObj,
 			FS:            o.clientset.FS,
 		},
-		parameters.EnvSpecificInfo.GetNamespace(),
+		o.clientset.KubernetesClient.GetCurrentNamespace(),
 	), nil
 }
 
@@ -315,11 +314,31 @@ func (o *DevOptions) HandleSignal() error {
 	select {}
 }
 
-func (o *DevOptions) Cleanup(err error) {
+func (o *DevOptions) Cleanup(commandError error) {
+	err := unsetProjectInEnvfile()
 	if err != nil {
+		klog.V(4).Infof("Error unsetting project into env.yaml file")
+	}
+
+	if commandError != nil {
 		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	}
+}
+
+func unsetProjectInEnvfile() error {
+	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
+	if err != nil {
+		return err
+	}
+
+	if envfileinfo.Exists() {
+		err = envfileinfo.SetConfiguration("project", "")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewCmdDev implements the odo dev command

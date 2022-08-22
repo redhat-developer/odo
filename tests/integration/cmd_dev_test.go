@@ -51,7 +51,7 @@ var _ = Describe("odo dev command tests", func() {
 
 		It("should error", func() {
 			output := helper.Cmd("odo", "dev", "--random-ports").ShouldFail().Err()
-			Expect(output).To(ContainSubstring("this command cannot run in an empty directory"))
+			Expect(output).To(ContainSubstring("The current directory does not represent an odo component"))
 
 		})
 	})
@@ -208,6 +208,43 @@ var _ = Describe("odo dev command tests", func() {
 			})
 		})
 
+		When("an env.yaml file contains a non-current Project", func() {
+			BeforeEach(func() {
+				odoDir := filepath.Join(commonVar.Context, ".odo", "env")
+				helper.MakeDir(odoDir)
+				err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), `
+ComponentSettings:
+  Project: another-project
+`)
+				Expect(err).ShouldNot(HaveOccurred())
+
+			})
+
+			When("odo dev is executed", func() {
+
+				var devSession helper.DevSession
+
+				BeforeEach(func() {
+					var err error
+					devSession, _, _, _, err = helper.StartDevMode(nil)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+				})
+
+				It("should have modified env.yaml indicating current namespace and use current namespace", func() {
+					helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+
+					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
+					out := commonVar.CliRunner.Run("get", "deployments", deploymentName, "-n", commonVar.Project).Out.Contents()
+					Expect(out).To(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
 		When("odo dev is executed", func() {
 
 			var devSession helper.DevSession
@@ -226,29 +263,6 @@ var _ = Describe("odo dev command tests", func() {
 				devSession.WaitEnd()
 			})
 
-			When("deleting previous deployment and switching kubeconfig to another namespace", func() {
-				var otherNS string
-				BeforeEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-					otherNS = commonVar.CliRunner.CreateAndSetRandNamespaceProject()
-				})
-
-				AfterEach(func() {
-					commonVar.CliRunner.DeleteNamespaceProject(otherNS, false)
-				})
-
-				It("should run odo dev on initial namespace", func() {
-					err := helper.RunDevMode(nil, nil, func(session *gexec.Session, outContents, errContents []byte, ports map[string]string) {
-						output := commonVar.CliRunner.Run("get", "deployment").Err.Contents()
-						Expect(string(output)).To(ContainSubstring("No resources found in " + otherNS + " namespace."))
-
-						output = commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Out.Contents()
-						Expect(string(output)).To(ContainSubstring(cmpName))
-					})
-					Expect(err).ToNot(HaveOccurred())
-				})
-			})
 			When("odo dev is stopped", func() {
 				BeforeEach(func() {
 					devSession.Stop()
@@ -259,6 +273,11 @@ var _ = Describe("odo dev command tests", func() {
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
+				})
+
+				It("should unset project from env.yaml file", func() {
+					Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
+					helper.FileShouldNotContainSubstring(".odo/env/env.yaml", "Project")
 				})
 			})
 		})

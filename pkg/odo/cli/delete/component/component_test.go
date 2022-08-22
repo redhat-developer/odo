@@ -245,6 +245,7 @@ func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectN
 // prepareKubeClient prepares the mock kclient.ClientInterface3 and returns it
 func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.ClientInterface {
 	kubeClient := kclient.NewMockClientInterface(ctrl)
+	kubeClient.EXPECT().GetCurrentNamespace().Return(projectName)
 	kubeClient.EXPECT().GetNamespaceNormal(projectName).Return(
 		&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{

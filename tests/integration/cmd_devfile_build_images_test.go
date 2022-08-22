@@ -181,16 +181,6 @@ var _ = Describe("odo devfile build-images command tests", func() {
 				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-outerloop.yaml"),
 					path.Join(commonVar.Context, "devfile.yaml"))
-				// Bootstrap the component with a .odo/env/env.yaml file
-				odoDir := filepath.Join(commonVar.Context, ".odo", "env")
-				helper.MakeDir(odoDir)
-				err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), fmt.Sprintf(`
-ComponentSettings:
-  Name: nodejs-prj1-api-abhz
-  Project: %s
-  AppName: app
-`, commonVar.Project))
-				Expect(err).To(BeNil())
 			})
 
 			When("remote server returns an error", func() {

@@ -73,16 +73,3 @@ The Devfile can define variables to make the Devfile parameterizable. The Devfil
 can override the values for variables from the command line when running `odo deploy`, using the `--var` and `--var-file` options.
 
 See [Substituting variables in odo dev](dev.md#substituting-variables) for more information.
-
-## Env File
-
-When `odo deploy` is executed, a `.odo/env/env.yaml` file is created if it does not exist. It stores the namespace/project that will be used by the component, and its default value is set to currently active namespace/project.
-
-```yaml
-ComponentSettings:
-  Project: myproject
-```
-
-:::note
-Creating, deleting or setting a namespace/project will not modify this value. To use a different namespace/project, user will have to manually change `.ComponentSettings.Project` value, or delete the `.odo` directory.
-:::

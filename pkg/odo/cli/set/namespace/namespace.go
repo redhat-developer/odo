@@ -7,14 +7,12 @@ import (
 
 	dfutil "github.com/devfile/library/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
 	scontext "github.com/redhat-developer/odo/pkg/segment/context"
 
-	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
@@ -24,13 +22,11 @@ const RecommendedCommandName = "namespace"
 
 var (
 	setExample = ktemplates.Examples(`
-	# Set the specified namespace as the current active namespace in the config
+	# Set the specified namespace as the current active namespace in your local kubeconfig configuration
 	%[1]s my-namespace
 	`)
 
 	setLongDesc = ktemplates.LongDesc(`Set the current active namespace.
-	
-	If executed inside a component directory, this command will not update the namespace of the existing component.
 	`)
 
 	setShortDesc = `Set the current active namespace`
@@ -89,17 +85,7 @@ func (so *SetOptions) Validate() error {
 
 // Run runs the 'set namespace' command
 func (so *SetOptions) Run(ctx context.Context) error {
-	devfilePresent, err := location.DirectoryContainsDevfile(so.clientset.FS, so.contextDir)
-	if err != nil {
-		// Purposely ignoring the error, as it is not mandatory for this command
-		klog.V(2).Infof("Unexpected error while checking if running inside a component directory: %v", err)
-	}
-	if devfilePresent {
-		log.Warningf("This is being executed inside a component directory. This will not update the %s of the existing component",
-			so.commandName)
-	}
-
-	err = so.clientset.ProjectClient.SetCurrent(so.namespaceName)
+	err := so.clientset.ProjectClient.SetCurrent(so.namespaceName)
 	if err != nil {
 		return err
 	}

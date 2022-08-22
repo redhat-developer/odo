@@ -181,7 +181,7 @@ func TestNew(t *testing.T) {
 			expectedErr: "",
 			expected: &Context{
 				internalCxt: internalCxt{
-					project:     "a-project",
+					project:     "",
 					application: "an-app-name",
 					component:   "a-name",
 					// empty when no devfile
@@ -241,7 +241,7 @@ func TestNew(t *testing.T) {
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
 				},
 			},
-			expectedErr: "no devfile found",
+			expectedErr: "The current directory does not represent an odo component",
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
@@ -310,30 +310,6 @@ func TestNew(t *testing.T) {
 					devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
 				},
 			},
-		},
-		{
-			name: "no env file; non-empty directory",
-			input: input{
-				needDevfile: false,
-				isOffline:   true,
-				workingDir:  filepath.Join(prefixDir, "myapp"),
-				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", "main.go"), []byte{}, 0644)
-				},
-			},
-			expectedErr: "Use \"odo dev\" to initialize an odo component for this folder and deploy it on cluster",
-		},
-		{
-			name: "no env file; empty directory",
-			input: input{
-				needDevfile: false,
-				isOffline:   true,
-				workingDir:  filepath.Join(prefixDir, "myapp"),
-				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp"), 0755)
-				},
-			},
-			expectedErr: "Use \"odo init\" to initialize an odo component in the folder.",
 		},
 	}
 

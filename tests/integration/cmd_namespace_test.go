@@ -155,20 +155,17 @@ ComponentSettings:
 				})
 
 				It(fmt.Sprintf("should set the %s", commandName), func() {
-					var stdout, stderr string
+					var stdout string
 					By("setting the current active "+commandName, func() {
 						Expect(commonVar.CliRunner.GetActiveNamespace()).ToNot(Equal(activeNs))
 						cmd := helper.Cmd("odo", "set", commandName, activeNs).ShouldPass()
 						Expect(commonVar.CliRunner.GetActiveNamespace()).To(Equal(activeNs))
-						stdout, stderr = cmd.OutAndErr()
+						stdout, _ = cmd.OutAndErr()
 					})
 
 					By("displaying warning message", func() {
 						Expect(stdout).To(
 							ContainSubstring(fmt.Sprintf("Current active %s set to %q", commandName, activeNs)))
-						Expect(stderr).To(
-							ContainSubstring(fmt.Sprintf("This is being executed inside a component directory. "+
-								"This will not update the %s of the existing component", commandName)))
 					})
 
 					By("not changing the namespace of the existing component", func() {

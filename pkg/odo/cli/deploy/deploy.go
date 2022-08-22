@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -22,7 +20,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/version"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog"
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -75,7 +72,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		return err
 	}
 	if isEmptyDir {
-		return errors.New("this command cannot run in an empty directory, run the command in a directory containing source code or initialize using 'odo init'")
+		return genericclioptions.NewNoDevfileError(o.contextDir)
 	}
 
 	initFlags := o.clientset.InitClient.GetFlags(cmdline.GetFlags())
@@ -105,35 +102,7 @@ func (o *DeployOptions) Complete(cmdline cmdline.Cmdline, args []string) (err er
 		return err
 	}
 
-	// ENV.YAML
-	//
-	// Set the appropriate variables in the env.yaml file
-	//
-	// TODO: Eventually refactor with code in dev/dev.go
-
-	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
-	if err != nil {
-		return fmt.Errorf("unable to retrieve configuration information: %w", err)
-	}
-
-	// If the env.yaml does not exist, we will save the project name
-	if !envfileinfo.Exists() {
-		err = envfileinfo.SetComponentSettings(envinfo.ComponentSettings{Project: o.GetProject()})
-		if err != nil {
-			return fmt.Errorf("failed to write new env.yaml file: %w", err)
-		}
-	} else if envfileinfo.Exists() && envfileinfo.GetComponentSettings().Project != o.GetProject() {
-		// If the env.yaml exists and the project is set incorrectly, we'll override it.
-		klog.V(4).Info("Overriding project name in env.yaml as it's set incorrectly, new project name: ", o.GetProject())
-		err = envfileinfo.SetConfiguration("project", o.GetProject())
-		if err != nil {
-			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
-		}
-	}
-
-	// END ENV.YAML
-
-	// this ensures that odo deploy uses the namespace set in env.yaml
+	// this ensures that odo deploy uses the current namespace
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 	return
 }

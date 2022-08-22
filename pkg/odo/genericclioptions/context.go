@@ -101,7 +101,7 @@ func New(parameters CreateParameters) (*Context, error) {
 	}
 	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-	ctx.project = resolveProject(parameters.cmdline, ctx.EnvSpecificInfo)
+	ctx.project = resolveProject(parameters.cmdline)
 
 	ctx.application = resolveApp(parameters.cmdline, ctx.EnvSpecificInfo, parameters.appIfNeeded)
 
@@ -116,7 +116,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		if err != nil {
 			return nil, err
 		}
-		if e := ctx.resolveProjectAndNamespace(parameters.cmdline, ctx.EnvSpecificInfo); e != nil {
+		if e := ctx.resolveProjectAndNamespace(parameters.cmdline); e != nil {
 			return nil, e
 		}
 
@@ -145,7 +145,7 @@ func New(parameters CreateParameters) (*Context, error) {
 		} else {
 			return &Context{
 				internalCxt: ctx,
-			}, NoDevfileError{}
+			}, NewNoDevfileError(".")
 		}
 	}
 
