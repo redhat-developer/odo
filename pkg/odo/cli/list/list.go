@@ -4,26 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
+	"github.com/redhat-developer/odo/pkg/component"
+	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/binding"
 	clicomponent "github.com/redhat-developer/odo/pkg/odo/cli/list/component"
 	"github.com/redhat-developer/odo/pkg/odo/cli/list/namespace"
-	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
 
-	"github.com/redhat-developer/odo/pkg/component"
-
-	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -49,10 +43,8 @@ type ListOptions struct {
 	clientset *clientset.Clientset
 
 	// Local variables
-	project         string
+	contextDir      string
 	namespaceFilter string
-	devfilePath     string
-	localComponent  api.ComponentAbstract
 
 	// Flags
 	namespaceFlag string
@@ -72,6 +64,10 @@ func (o *ListOptions) SetClientset(clientset *clientset.Clientset) {
 
 // Complete ...
 func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err error) {
+	lo.contextDir, err = os.Getwd()
+	if err != nil {
+		return err
+	}
 
 	// Check to see if KUBECONFIG exists, and if not, error the user that we would not be able to get cluster information
 	// Do this before anything else, or else we will just error out with the:
@@ -82,39 +78,10 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	}
 
 	// Create the local context and initial Kubernetes client configuration
-	lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
+	lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+	// The command must work without Devfile
+	if err != nil && !genericclioptions.IsNoDevfileError(err) {
 		return err
-	}
-
-	// Check for the Devfile and then retrieve all information regarding the local Devfile
-	lo.devfilePath = location.DevfileLocation("")
-	if util.CheckPathExists(lo.devfilePath) {
-
-		// Set the project / namespace based on the devfile context
-		lo.project = lo.Context.GetProject()
-
-		// Parse the devfile
-		devObj, parseErr := devfile.ParseAndValidateFromFile(lo.devfilePath)
-		if parseErr != nil {
-			return parseErr
-		}
-
-		// Create a local component from the parse devfile
-		localComponent := api.ComponentAbstract{
-			Name:      devObj.Data.GetMetadata().Name,
-			ManagedBy: "",
-			RunningIn: []api.RunningMode{},
-			Type:      component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()),
-		}
-
-		lo.localComponent = localComponent
-
-	}
-
-	// If the context is "" (devfile.yaml not found..), we get the active one from KUBECONFIG.
-	if lo.project == "" {
-		lo.project = lo.clientset.KubernetesClient.GetCurrentNamespace()
 	}
 
 	// If the namespace flag has been passed, we will search there.
@@ -122,10 +89,10 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	if lo.namespaceFlag != "" {
 		lo.namespaceFilter = lo.namespaceFlag
 	} else {
-		lo.namespaceFilter = lo.project
+		lo.namespaceFilter = lo.GetProject()
 	}
 
-	return
+	return nil
 }
 
 // Validate ...
@@ -135,49 +102,44 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run(ctx context.Context) error {
-	list, err := lo.run(ctx)
+	listSpinner := log.Spinnerf("Listing resources from the namespace %q", lo.namespaceFilter)
+	defer listSpinner.End(false)
+
+	list, err := lo.run()
 	if err != nil {
 		return err
 	}
-	humanReadableOutput(list)
+
+	listSpinner.End(true)
+
+	fmt.Printf("\nComponents:\n")
+	clicomponent.HumanReadableOutput(list)
+	fmt.Printf("\nBindings:\n")
+	binding.HumanReadableOutput(lo.namespaceFilter, list)
 	return nil
 }
 
 // Run contains the logic for the odo command
 func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	list, err := lo.run(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
+	return lo.run()
 }
 
-func (lo *ListOptions) run(cts context.Context) (api.ResourcesList, error) {
-	listSpinner := log.Spinnerf("Listing components from namespace '%s'", lo.namespaceFilter)
-	defer listSpinner.End(false)
-
-	// Step 1.
-	// Retrieve all related components from the Kubernetes cluster, from the given namespace
-	devfileComponents, err := component.ListAllClusterComponents(lo.clientset.KubernetesClient, lo.namespaceFilter)
+func (lo *ListOptions) run() (list api.ResourcesList, err error) {
+	devfileComponents, componentInDevfile, err := component.ListAllComponents(lo.clientset.KubernetesClient, lo.namespaceFilter, lo.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return api.ResourcesList{}, err
 	}
-	listSpinner.End(true)
 
-	// Step 2.
-	// If we have a local component, let's add it to the list of Devfiles
-	// This checks lo.localComponent.Name. If it's empty, we didn't parse one in the Complete() function, so there is no local devfile.
-	// We will only append the local component to the devfile if it doesn't exist in the list.
-	componentInDevfile := ""
-	if lo.localComponent.Name != "" {
-		if !component.Contains(lo.localComponent, devfileComponents) {
-			devfileComponents = append(devfileComponents, lo.localComponent)
-		}
-		componentInDevfile = lo.localComponent.Name
+	bindings, inDevfile, err := lo.clientset.BindingClient.ListAllBindings(lo.EnvSpecificInfo.GetDevfileObj(), lo.contextDir)
+	if err != nil {
+		return api.ResourcesList{}, err
 	}
+
 	return api.ResourcesList{
 		ComponentInDevfile: componentInDevfile,
 		Components:         devfileComponents,
+		BindingsInDevfile:  inDevfile,
+		Bindings:           bindings,
 	}, nil
 }
 
@@ -196,7 +158,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	clientset.Add(listCmd, clientset.KUBERNETES)
+	clientset.Add(listCmd, clientset.KUBERNETES, clientset.BINDING)
 
 	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
 	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
@@ -210,64 +172,4 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	machineoutput.UsedByCommand(listCmd)
 
 	return listCmd
-}
-
-func humanReadableOutput(list api.ResourcesList) {
-	components := list.Components
-	if len(components) == 0 {
-		log.Error("There are no components deployed.")
-		return
-	}
-
-	t := ui.NewTable()
-
-	// Create the header and then sort accordingly
-	t.AppendHeader(table.Row{"NAME", "PROJECT TYPE", "RUNNING IN", "MANAGED"})
-	t.SortBy([]table.SortBy{
-		{Name: "MANAGED", Mode: table.Asc},
-		{Name: "NAME", Mode: table.Dsc},
-	})
-
-	// Go through each component and add it to the table
-	for _, comp := range components {
-
-		// Mark the name as yellow in the index to it's easier to see.
-		name := text.Colors{text.FgHiYellow}.Sprint(comp.Name)
-
-		// Get the managed by label
-		managedBy := comp.ManagedBy
-		if managedBy == "" {
-			managedBy = api.TypeUnknown
-		}
-
-		// Get the mode (dev or deploy)
-		mode := comp.RunningIn.String()
-
-		// Get the type of the component
-		componentType := comp.Type
-		if componentType == "" {
-			componentType = api.TypeUnknown
-		}
-
-		// If we find our local unpushed component, let's change the output appropriately.
-		if list.ComponentInDevfile == comp.Name {
-			name = fmt.Sprintf("* %s", name)
-
-			if comp.ManagedBy == "" {
-				managedBy = "odo"
-			}
-		}
-
-		// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
-		if managedBy == "odo" {
-			managedBy = text.Colors{text.FgBlue}.Sprintf("odo (%s)", comp.ManagedByVersion)
-		} else if managedBy != "" && comp.ManagedByVersion != "" {
-			// this is done to maintain the color of the output
-			managedBy += fmt.Sprintf("(%s)", comp.ManagedByVersion)
-		}
-
-		t.AppendRow(table.Row{name, componentType, mode, managedBy})
-	}
-	t.Render()
-
 }

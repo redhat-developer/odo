@@ -106,7 +106,7 @@ func (lo *ListOptions) Run(ctx context.Context) error {
 
 	listSpinner.End(true)
 
-	humanReadableOutput(list)
+	HumanReadableOutput(list)
 	return nil
 }
 
@@ -151,7 +151,7 @@ func NewCmdComponentList(name, fullName string) *cobra.Command {
 	return listCmd
 }
 
-func humanReadableOutput(list api.ResourcesList) {
+func HumanReadableOutput(list api.ResourcesList) {
 	components := list.Components
 	if len(components) == 0 {
 		log.Error("There are no components deployed.")
