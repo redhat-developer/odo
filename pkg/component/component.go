@@ -195,6 +195,32 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 	return components, nil
 }
 
+func ListAllComponents(client kclient.ClientInterface, namespace string, devObj parser.DevfileObj) ([]api.ComponentAbstract, string, error) {
+	devfileComponents, err := ListAllClusterComponents(client, namespace)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var localComponent api.ComponentAbstract
+	if devObj.Data != nil {
+		localComponent = api.ComponentAbstract{
+			Name:      devObj.Data.GetMetadata().Name,
+			ManagedBy: "",
+			RunningIn: []api.RunningMode{},
+			Type:      GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()),
+		}
+	}
+
+	componentInDevfile := ""
+	if localComponent.Name != "" {
+		if !Contains(localComponent, devfileComponents) {
+			devfileComponents = append(devfileComponents, localComponent)
+		}
+		componentInDevfile = localComponent.Name
+	}
+	return devfileComponents, componentInDevfile, nil
+}
+
 func getResourcesForComponent(client kclient.ClientInterface, name string, namespace string) ([]unstructured.Unstructured, error) {
 	selector := labels.GetSelector(name, "app", labels.ComponentAnyMode, false)
 	resourceList, err := client.GetAllResourcesFromSelector(selector, namespace)

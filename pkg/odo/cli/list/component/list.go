@@ -10,11 +10,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/devfile"
-	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
-	"github.com/redhat-developer/odo/pkg/util"
 
 	dfutil "github.com/devfile/library/pkg/util"
 
@@ -45,10 +42,7 @@ type ListOptions struct {
 	clientset *clientset.Clientset
 
 	// Local variables
-	project         string
 	namespaceFilter string
-	devfilePath     string
-	localComponent  api.ComponentAbstract
 
 	// Flags
 	namespaceFlag string
@@ -78,39 +72,10 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	}
 
 	// Create the local context and initial Kubernetes client configuration
-	lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline))
-	if err != nil {
+	lo.Context, err = genericclioptions.New(genericclioptions.NewCreateParameters(cmdline).NeedDevfile(""))
+	// The command must work without Devfile
+	if err != nil && !genericclioptions.IsNoDevfileError(err) {
 		return err
-	}
-
-	// Check for the Devfile and then retrieve all information regarding the local Devfile
-	lo.devfilePath = location.DevfileLocation("")
-	if util.CheckPathExists(lo.devfilePath) {
-
-		// Set the project / namespace based on the devfile context
-		lo.project = lo.Context.GetProject()
-
-		// Parse the devfile
-		devObj, parseErr := devfile.ParseAndValidateFromFile(lo.devfilePath)
-		if parseErr != nil {
-			return parseErr
-		}
-
-		// Create a local component from the parse devfile
-		localComponent := api.ComponentAbstract{
-			Name:      devObj.Data.GetMetadata().Name,
-			ManagedBy: "",
-			RunningIn: []api.RunningMode{},
-			Type:      component.GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()),
-		}
-
-		lo.localComponent = localComponent
-
-	}
-
-	// If the context is "" (devfile.yaml not found..), we get the active one from KUBECONFIG.
-	if lo.project == "" {
-		lo.project = lo.clientset.KubernetesClient.GetCurrentNamespace()
 	}
 
 	// If the namespace flag has been passed, we will search there.
@@ -118,10 +83,10 @@ func (lo *ListOptions) Complete(cmdline cmdline.Cmdline, args []string) (err err
 	if lo.namespaceFlag != "" {
 		lo.namespaceFilter = lo.namespaceFlag
 	} else {
-		lo.namespaceFilter = lo.project
+		lo.namespaceFilter = lo.GetProject()
 	}
 
-	return
+	return nil
 }
 
 // Validate ...
@@ -131,45 +96,29 @@ func (lo *ListOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (lo *ListOptions) Run(ctx context.Context) error {
+	listSpinner := log.Spinnerf("Listing components from namespace '%s'", lo.namespaceFilter)
+	defer listSpinner.End(false)
+
 	list, err := lo.run(ctx)
 	if err != nil {
 		return err
 	}
+
+	listSpinner.End(true)
+
 	humanReadableOutput(list)
 	return nil
 }
 
 // Run contains the logic for the odo command
 func (lo *ListOptions) RunForJsonOutput(ctx context.Context) (out interface{}, err error) {
-	list, err := lo.run(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return list, nil
+	return lo.run(ctx)
 }
 
-func (lo *ListOptions) run(cts context.Context) (api.ResourcesList, error) {
-	listSpinner := log.Spinnerf("Listing components from namespace '%s'", lo.namespaceFilter)
-	defer listSpinner.End(false)
-
-	// Step 1.
-	// Retrieve all related components from the Kubernetes cluster, from the given namespace
-	devfileComponents, err := component.ListAllClusterComponents(lo.clientset.KubernetesClient, lo.namespaceFilter)
+func (lo *ListOptions) run(ctx context.Context) (api.ResourcesList, error) {
+	devfileComponents, componentInDevfile, err := component.ListAllComponents(lo.clientset.KubernetesClient, lo.namespaceFilter, lo.EnvSpecificInfo.GetDevfileObj())
 	if err != nil {
 		return api.ResourcesList{}, err
-	}
-	listSpinner.End(true)
-
-	// Step 2.
-	// If we have a local component, let's add it to the list of Devfiles
-	// This checks lo.localComponent.Name. If it's empty, we didn't parse one in the Complete() function, so there is no local devfile.
-	// We will only append the local component to the devfile if it doesn't exist in the list.
-	componentInDevfile := ""
-	if lo.localComponent.Name != "" {
-		if !component.Contains(lo.localComponent, devfileComponents) {
-			devfileComponents = append(devfileComponents, lo.localComponent)
-		}
-		componentInDevfile = lo.localComponent.Name
 	}
 	return api.ResourcesList{
 		ComponentInDevfile: componentInDevfile,
