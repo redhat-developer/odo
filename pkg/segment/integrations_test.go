@@ -20,18 +20,31 @@ func TestGetRegistryOptions(t *testing.T) {
 	t.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
-		testName string
-		consent  string
-		cfg      preference.Client
+		testName      string
+		consent       string
+		telemetryFile bool
+		cfg           preference.Client
 	}{
 		{
-			testName: "Registry options with telemetry consent",
-			consent:  "true",
+			testName:      "Registry options with telemetry consent and telemetry file",
+			consent:       "true",
+			telemetryFile: true,
+		},
+		{
+			testName:      "Registry options with telemetry consent and no telemetry file",
+			consent:       "true",
+			telemetryFile: false,
 		},
 
 		{
-			testName: "Registry options without telemetry consent",
-			consent:  "false",
+			testName:      "Registry options without telemetry consent and telemetry file",
+			consent:       "false",
+			telemetryFile: true,
+		},
+		{
+			testName:      "Registry options without telemetry consent and no telemetry file",
+			consent:       "false",
+			telemetryFile: false,
 		},
 	}
 
@@ -46,8 +59,12 @@ func TestGetRegistryOptions(t *testing.T) {
 				t.Error(err)
 			}
 
+			if tt.telemetryFile {
+				t.Setenv(DebugTelemetryFileEnv, "/a/telemetry/file")
+			}
+
 			ro := GetRegistryOptions()
-			err = verifyRegistryOptions(cfg.GetConsentTelemetry(), ro)
+			err = verifyRegistryOptions(cfg.GetConsentTelemetry(), tt.telemetryFile, ro)
 			if err != nil {
 				t.Error(err)
 			}
@@ -55,16 +72,16 @@ func TestGetRegistryOptions(t *testing.T) {
 	}
 }
 
-func verifyRegistryOptions(isSet bool, ro library.RegistryOptions) error {
+func verifyRegistryOptions(isSet bool, telemetryFile bool, ro library.RegistryOptions) error {
 	if ro.SkipTLSVerify {
 		return errors.New("SkipTLSVerify should be set to false by default")
 	}
 
-	return verifyTelemetryData(isSet, ro.Telemetry)
+	return verifyTelemetryData(isSet, telemetryFile, ro.Telemetry)
 }
 
-func verifyTelemetryData(isSet bool, data library.TelemetryData) error {
-	if !isSet {
+func verifyTelemetryData(isSet bool, telemetryFile bool, data library.TelemetryData) error {
+	if !isSet || telemetryFile {
 		if data.Locale == "" && data.User == "" {
 			return nil
 		}
