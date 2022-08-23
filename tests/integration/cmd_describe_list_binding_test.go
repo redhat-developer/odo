@@ -596,6 +596,37 @@ var _ = Describe("odo describe/list binding command tests", func() {
 								}
 							})
 						})
+
+						When("changing the current namespace", func() {
+							BeforeEach(func() {
+								commonVar.CliRunner.SetProject("default")
+							})
+
+							AfterEach(func() {
+								commonVar.CliRunner.SetProject(commonVar.Project)
+							})
+
+							It("should list the binding with --namespace flag", func() {
+								By("JSON output from another directory", func() {
+									err := os.Chdir("/")
+									Expect(err).ToNot(HaveOccurred())
+									res := helper.Cmd("odo", "list", "binding", "-o", "json", "--namespace", commonVar.Project).ShouldPass()
+									stdout, stderr := res.Out(), res.Err()
+									if ctx.assertListJsonOutput != nil {
+										ctx.assertListJsonOutput(false, stdout, stderr)
+									}
+								})
+								By("human readable output from another directory with name flag", func() {
+									err := os.Chdir("/")
+									Expect(err).ToNot(HaveOccurred())
+									res := helper.Cmd("odo", "list", "binding", "--namespace", commonVar.Project).ShouldPass()
+									stdout, stderr := res.Out(), res.Err()
+									if ctx.assertListHumanReadableOutput != nil {
+										ctx.assertListHumanReadableOutput(false, stdout, stderr)
+									}
+								})
+							})
+						})
 					})
 				})
 			})

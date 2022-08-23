@@ -42,6 +42,12 @@ type BindingListOptions struct {
 
 	// working directory
 	contextDir string
+
+	// Local variables
+	namespaceFilter string
+
+	// Flags
+	namespaceFlag string
 }
 
 var _ genericclioptions.Runnable = (*BindingListOptions)(nil)
@@ -69,8 +75,13 @@ func (o *BindingListOptions) Complete(cmdline cmdline.Cmdline, args []string) (e
 		return err
 	}
 
-	// this ensures that the current namespace is used
-	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
+	if o.namespaceFlag != "" {
+		o.namespaceFilter = o.namespaceFlag
+	} else {
+		o.namespaceFilter = o.GetProject()
+	}
+
+	o.clientset.KubernetesClient.SetNamespace(o.namespaceFilter)
 	return nil
 }
 
@@ -125,6 +136,7 @@ func NewCmdBindingList(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(bindingListCmd, clientset.KUBERNETES, clientset.BINDING)
+	bindingListCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for bindings")
 	machineoutput.UsedByCommand(bindingListCmd)
 	return bindingListCmd
 }
