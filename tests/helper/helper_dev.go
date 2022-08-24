@@ -166,6 +166,11 @@ func (o DevSession) WaitSync() ([]byte, []byte, map[string]string, error) {
 	return o.GetInfo()
 }
 
+func (o DevSession) WaitRestartPortforward() ([]byte, []byte, map[string]string, error) {
+	WaitForOutputToContain("Forwarding from", 30, 5, o.session)
+	return o.GetInfo()
+}
+
 // GetInfo returns the contents of the standard and error outputs
 // and the list of forwarded ports
 // since the end of the dev mode or the last time WaitSync/GetInfo has been called
