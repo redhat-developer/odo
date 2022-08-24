@@ -22,7 +22,6 @@ type LocalContainer struct {
 // LocalConfigProvider is an interface which all local config providers need to implement
 // currently implemented by EnvInfo
 type LocalConfigProvider interface {
-	GetName() string
 	GetDebugPort() int
 	GetContainers() ([]LocalContainer, error)
 

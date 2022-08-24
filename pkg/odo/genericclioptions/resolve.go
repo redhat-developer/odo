@@ -5,7 +5,6 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
@@ -62,31 +61,6 @@ func resolveApp(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.
 	return defaultAppName
 }
 
-// resolveComponent resolves component
-// If `--component` flag is used, return its value
-// Or Return the value in envfile
-func resolveComponent(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider) string {
-	cmpFlag := cmdline.FlagValueIfSet(util.ComponentFlagName)
-	if len(cmpFlag) > 0 {
-		return cmpFlag
-	}
-
-	return localConfiguration.GetName()
-}
-
 func resolveProject(cmdline cmdline.Cmdline) string {
 	return cmdline.FlagValueIfSet(util.ProjectFlagName)
-}
-
-// checkComponentExistsOrFail checks if the specified component exists with the given context and returns error if not.
-// KClient, component and application should have been set before to call this method
-func (o *internalCxt) checkComponentExistsOrFail() error {
-	exists, err := component.Exists(o.KClient, o.component, o.application)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("component %v does not exist in application %s", o.component, o.application)
-	}
-	return nil
 }

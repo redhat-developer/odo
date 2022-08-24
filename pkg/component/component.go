@@ -70,22 +70,6 @@ func GatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
 	return filepath.Base(filepath.Dir(sourcePath)), nil
 }
 
-// Exists checks whether a component with the given name exists in the current application or not
-// componentName is the component name to perform check for
-// The first returned parameter is a bool indicating if a component with the given name already exists or not
-// The second returned parameter is the error that might occurs while execution
-func Exists(client kclient.ClientInterface, componentName, applicationName string) (bool, error) {
-	deploymentName, err := dfutil.NamespaceOpenShiftObject(componentName, applicationName)
-	if err != nil {
-		return false, fmt.Errorf("unable to create namespaced name: %w", err)
-	}
-	deployment, _ := client.GetDeploymentByName(deploymentName)
-	if deployment != nil {
-		return true, nil
-	}
-	return false, nil
-}
-
 // GetOnePod gets a pod using the component and app name
 func GetOnePod(client kclient.ClientInterface, componentName string, appName string) (*corev1.Pod, error) {
 	return client.GetRunningPodFromSelector(odolabels.GetSelector(componentName, appName, odolabels.ComponentDevMode, false))

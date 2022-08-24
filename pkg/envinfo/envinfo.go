@@ -255,11 +255,6 @@ func (esi *EnvSpecificInfo) writeToFile() error {
 	return util.WriteToYAMLFile(&proxyei, esi.Filename)
 }
 
-// GetName returns the component name
-func (ei *EnvInfo) GetName() string {
-	return ei.componentSettings.Name
-}
-
 // GetDebugPort returns the DebugPort, returns default if nil
 func (ei *EnvInfo) GetDebugPort() int {
 	if ei.componentSettings.DebugPort == nil {

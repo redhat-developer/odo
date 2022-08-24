@@ -13,7 +13,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -99,9 +98,6 @@ func TestNew(t *testing.T) {
 		workingDir         string
 		populateWorkingDir func(fs filesystem.Filesystem)
 
-		// current namespace
-		currentNamespace string
-
 		// flags
 		projectFlag   string
 		componentFlag string
@@ -146,7 +142,6 @@ func TestNew(t *testing.T) {
 				internalCxt: internalCxt{
 					project:     "myproject",
 					application: "app",
-					component:   "mycomponent",
 					// empty when no devfile
 					componentContext: "",
 					outputFlag:       "",
@@ -179,7 +174,6 @@ func TestNew(t *testing.T) {
 				internalCxt: internalCxt{
 					project:     "",
 					application: "app",
-					component:   "a-name",
 					// empty when no devfile
 					componentContext: "",
 					outputFlag:       "",
@@ -213,7 +207,6 @@ func TestNew(t *testing.T) {
 				internalCxt: internalCxt{
 					project:          "",
 					application:      "app",
-					component:        "a-name",
 					componentContext: "",
 					outputFlag:       "",
 					devfilePath:      "",
@@ -240,7 +233,6 @@ func TestNew(t *testing.T) {
 				internalCxt: internalCxt{
 					project:          "myproject",
 					application:      "app",
-					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
 					devfilePath:      "",
@@ -268,7 +260,6 @@ func TestNew(t *testing.T) {
 				internalCxt: internalCxt{
 					project:          "myproject",
 					application:      "app",
-					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
 					devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
@@ -296,7 +287,6 @@ func TestNew(t *testing.T) {
 				internalCxt: internalCxt{
 					project:          "myproject",
 					application:      "app",
-					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
 					devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
@@ -346,18 +336,6 @@ func TestNew(t *testing.T) {
 			}
 			kclient.EXPECT().GetNamespaceNormal(gomock.Any()).Return(ns, nil).AnyTimes()
 
-			if tt.expected != nil {
-				depName := tt.expected.component + "-" + tt.expected.application
-				dep := &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: depName,
-					},
-				}
-				kclient.EXPECT().GetDeploymentByName(gomock.Any()).Return(dep, nil).AnyTimes()
-				kclient.EXPECT().GetCurrentNamespace().Return(tt.input.currentNamespace).AnyTimes()
-				cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
-			}
-
 			// Call the tested function
 			params := NewCreateParameters(cmdline)
 			if tt.input.needDevfile {
@@ -396,9 +374,6 @@ func TestNew(t *testing.T) {
 				}
 				if result.application != tt.expected.application {
 					t.Errorf("Expected application %s, got %s", tt.expected.application, result.application)
-				}
-				if result.component != tt.expected.component {
-					t.Errorf("Expected component %s, got %s", tt.expected.component, result.component)
 				}
 				if result.componentContext != tt.expected.componentContext {
 					t.Errorf("Expected component context %s, got %s", tt.expected.componentContext, result.componentContext)
