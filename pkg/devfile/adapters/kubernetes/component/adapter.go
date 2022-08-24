@@ -265,7 +265,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	cmdHandler := adapterHandler{
 		Adapter:    a,
 		parameters: parameters,
-		podName: pod.GetName(),
+		podName:    pod.GetName(),
 	}
 
 	if commandType == devfilev1.ExecCommandType {
