@@ -205,11 +205,6 @@ func (esi *EnvSpecificInfo) IsSet(parameter string) bool {
 	return util.IsSet(esi.componentSettings, parameter)
 }
 
-// Exists returns whether the envinfo file exists or not
-func (esi *EnvSpecificInfo) Exists() bool {
-	return esi.envinfoFileExists
-}
-
 var (
 	// Mandatory parameters in the environment file (env.yaml)
 	manParams = []string{

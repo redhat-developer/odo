@@ -25,6 +25,4 @@ type LocalConfigProvider interface {
 	GetDebugPort() int
 
 	ListStorage() ([]LocalStorage, error)
-
-	Exists() bool
 }

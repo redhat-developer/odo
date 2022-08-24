@@ -235,8 +235,8 @@ ComponentSettings:
 					devSession.WaitEnd()
 				})
 
-				It("should have modified env.yaml indicating current namespace and use current namespace", func() {
-					helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
+				It("should not have modified env.yaml, and use current namespace", func() {
+					helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: another-project")
 
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
 					out := commonVar.CliRunner.Run("get", "deployments", deploymentName, "-n", commonVar.Project).Out.Contents()
@@ -253,9 +253,6 @@ ComponentSettings:
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
-				// An ENV file should have been created indicating current namespace
-				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
-				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 			})
 
 			AfterEach(func() {
@@ -274,11 +271,6 @@ ComponentSettings:
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
 				})
-
-				It("should unset project from env.yaml file", func() {
-					Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
-					helper.FileShouldNotContainSubstring(".odo/env/env.yaml", "Project")
-				})
 			})
 		})
 
@@ -290,10 +282,6 @@ ComponentSettings:
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode(nil)
 				Expect(err).ToNot(HaveOccurred())
-				// An ENV file should have been created indicating current namespace
-				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
-				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
-				helper.FileShouldNotContainSubstring(".odo/env/env.yaml", "Name: "+cmpName)
 			})
 
 			AfterEach(func() {
@@ -386,9 +374,6 @@ ComponentSettings:
 				var err error
 				devSession, _, _, _, err = helper.StartDevMode(nil, "--no-watch")
 				Expect(err).ToNot(HaveOccurred())
-				// An ENV file should have been created indicating current namespace
-				Expect(helper.VerifyFileExists(".odo/env/env.yaml")).To(BeTrue())
-				helper.FileShouldContainSubstring(".odo/env/env.yaml", "Project: "+commonVar.Project)
 			})
 
 			AfterEach(func() {

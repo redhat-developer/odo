@@ -20,7 +20,6 @@ import (
 
 const DotOdoDirectory = ".odo"
 const fileIndexName = "odo-file-index.json"
-const fileDevState = "devstate.json"
 
 // FileIndex holds the file index used for storing local file state change
 type FileIndex struct {
@@ -98,21 +97,12 @@ func GetIndexFileRelativeToContext() string {
 }
 
 // AddOdoFileIndex adds odo-file-index.json to .gitignore
-func AddOdoFileIndex(gitIgnoreFile string) error {
-	return addOdoFileIndex(gitIgnoreFile, filesystem.DefaultFs{})
+func AddOdoDirectory(gitIgnoreFile string) error {
+	return addOdoDirectory(gitIgnoreFile, filesystem.DefaultFs{})
 }
 
-func addOdoFileIndex(gitIgnoreFile string, fs filesystem.Filesystem) error {
-	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(DotOdoDirectory, fileIndexName), fs)
-}
-
-// AddOdoDevState adds devstate.json to .gitignore
-func AddOdoDevState(gitIgnoreFile string) error {
-	return addOdoDevState(gitIgnoreFile, filesystem.DefaultFs{})
-}
-
-func addOdoDevState(gitIgnoreFile string, fs filesystem.Filesystem) error {
-	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(DotOdoDirectory, fileDevState), fs)
+func addOdoDirectory(gitIgnoreFile string, fs filesystem.Filesystem) error {
+	return addFileToIgnoreFile(gitIgnoreFile, DotOdoDirectory, fs)
 }
 
 // TouchGitIgnoreFile checks .gitignore file exists or not, if not then create it
