@@ -257,6 +257,33 @@ ComponentSettings:
 		}
 	})
 
+	When("deploying a ServiceBinding k8s resource", func() {
+		const serviceBindingName = "my-nodejs-app-cluster-sample" // hard-coded from devfile-deploy-with-SB.yaml
+		BeforeEach(func() {
+			commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
+			commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
+			Eventually(func() string {
+				out, _ := commonVar.CliRunner.GetBindableKinds()
+				return out
+			}, 120, 3).Should(ContainSubstring("Cluster"))
+			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
+		})
+		When("odo deploy is run", func() {
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "nodejs"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy-with-SB.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.Cmd("odo", "deploy").AddEnv("PODMAN_CMD=echo").ShouldPass()
+			})
+			It("should successfully deploy the ServiceBinding resource", func() {
+				out, err := commonVar.CliRunner.GetServiceBinding(serviceBindingName, commonVar.Project)
+				Expect(out).ToNot(BeEmpty())
+				Expect(err).To(BeEmpty())
+			})
+		})
+
+	})
+
 	When("using a devfile.yaml containing an Image component with no build context", func() {
 
 		BeforeEach(func() {

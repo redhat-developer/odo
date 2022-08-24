@@ -117,11 +117,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	// Set the mode to Dev since we are using "odo dev" here
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
 
-	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
-	if err != nil {
-		return err
-	}
-
 	var updated bool
 	deployment, updated, err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
@@ -130,6 +125,12 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}, parameters.DebugPort, deployment)
 	if err != nil {
 		return fmt.Errorf("unable to create or update component: %w", err)
+	}
+
+	// Create all the K8s components defined in the devfile
+	k8sComponents, err := a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode)
+	if err != nil {
+		return err
 	}
 
 	ownerReference := generator.GetOwnerReference(deployment)
@@ -144,12 +145,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	})
 	if err != nil {
 		return err
-	}
-
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushLinks(a.kubeClient, a.Devfile, k8sComponents, labels, deployment, a.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create service bindings associated with the component: %w", err)
 	}
 
 	if updated {

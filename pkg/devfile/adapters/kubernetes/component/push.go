@@ -39,6 +39,7 @@ func (a *Adapter) getComponentDeployment() (*appsv1.Deployment, bool, error) {
 // adding the specified labels to them
 func (a *Adapter) pushDevfileKubernetesComponents(
 	labels map[string]string,
+	mode string,
 ) ([]v1alpha2.Component, error) {
 	// fetch the "kubernetes inlined components" to create them on cluster
 	// from odo standpoint, these components contain yaml manifest of ServiceBinding
@@ -58,7 +59,7 @@ func (a *Adapter) pushDevfileKubernetesComponents(
 	odolabels.SetProjectType(annotations, component.GetComponentTypeFromDevfileMetadata(a.AdapterContext.Devfile.Data.GetMetadata()))
 
 	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context)
+	err = service.PushKubernetesResources(a.kubeClient, a.Devfile, k8sComponents, labels, annotations, a.Context, mode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Kubernetes resources associated with the component: %w", err)
 	}

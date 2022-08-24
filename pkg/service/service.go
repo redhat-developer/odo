@@ -186,7 +186,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 }
 
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context string) error {
+func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context, mode string) error {
 	// check csv support before proceeding
 	csvSupported, err := client.IsCSVSupported()
 	if err != nil {
@@ -214,7 +214,7 @@ func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.D
 		if er != nil {
 			return er
 		}
-		_, er = PushKubernetesResource(client, u, labels, annotations)
+		er = PushKubernetesResource(client, u, labels, annotations, mode)
 		if er != nil {
 			return er
 		}
@@ -241,15 +241,17 @@ func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.D
 
 // PushKubernetesResource pushes a Kubernetes resource (u) to the cluster using client
 // adding labels to the resource
-func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string, annotations map[string]string) (bool, error) {
-	if isLinkResource(u.GetKind()) {
-		// it's a service binding related resource
-		return false, nil
+func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string, annotations map[string]string, mode string) error {
+	sboSupported, err := client.IsServiceBindingSupported()
+	if err != nil {
+		return err
 	}
 
-	isOp, err := isOperatorBackedService(client, u)
-	if err != nil {
-		return false, err
+	// If the component is of Kind: ServiceBinding, trying to run in Dev mode and SBO is not installed, run it without operator.
+	if isLinkResource(u.GetKind()) && mode == odolabels.ComponentDevMode && !sboSupported {
+		// it's a service binding related resource
+		err = pushLinksWithoutOperator(client, u, labels)
+		return err
 	}
 
 	// Add all passed in labels to the k8s resource regardless if it's an operator or not
@@ -259,28 +261,7 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 	u.SetAnnotations(mergeMaps(u.GetAnnotations(), annotations))
 
 	_, err = updateOperatorService(client, u)
-	return isOp, err
-}
-
-func isOperatorBackedService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
-	restMapping, err := client.GetRestMappingFromUnstructured(u)
-	if err != nil {
-		return false, err
-	}
-	// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
-	// if yes, it is an Operator backed service.
-	// if no, it is likely a Kubernetes built-in resource.
-	operatorGVRList, err := client.GetOperatorGVRList()
-	if err != nil {
-		return false, err
-	}
-
-	for _, i := range operatorGVRList {
-		if i.Resource == restMapping.Resource {
-			return true, nil
-		}
-	}
-	return false, nil
+	return err
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
