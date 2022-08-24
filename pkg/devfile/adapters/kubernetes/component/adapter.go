@@ -265,7 +265,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	cmdHandler := adapterHandler{
 		Adapter:    a,
 		parameters: parameters,
-		//		componentExists:,
 		podName: pod.GetName(),
 	}
 
