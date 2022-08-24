@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"github.com/devfile/library/pkg/devfile/parser/data/v2/common"
 	dfutil "github.com/devfile/library/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
@@ -261,26 +260,6 @@ func (ei *EnvInfo) GetDebugPort() int {
 		return DefaultDebugPort
 	}
 	return *ei.componentSettings.DebugPort
-}
-
-// GetContainers returns the Container components from the devfile
-// returns empty list if nil
-func (ei *EnvInfo) GetContainers() ([]localConfigProvider.LocalContainer, error) {
-	var localContainers []localConfigProvider.LocalContainer
-
-	devfileComponents, err := ei.devfileObj.Data.GetComponents(common.DevfileOptions{})
-	if err != nil {
-		return localContainers, err
-	}
-	for _, component := range devfileComponents {
-		if component.Container == nil {
-			continue
-		}
-		localContainers = append(localContainers, localConfigProvider.LocalContainer{
-			Name: component.Name,
-		})
-	}
-	return localContainers, nil
 }
 
 // IsUserCreatedDevfile returns the UserCreatedDevfile

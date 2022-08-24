@@ -23,7 +23,6 @@ type LocalContainer struct {
 // currently implemented by EnvInfo
 type LocalConfigProvider interface {
 	GetDebugPort() int
-	GetContainers() ([]LocalContainer, error)
 
 	ListStorage() ([]LocalStorage, error)
 
