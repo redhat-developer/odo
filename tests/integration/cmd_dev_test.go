@@ -2270,4 +2270,39 @@ CMD ["npm", "start"]
 			})
 		})
 	})
+
+	When("a hotReload capable project is used with odo dev", func() {
+		var devSession helper.DevSession
+		var stdout []byte
+		var executeRunCommand = "Executing the application (command: dev-run)"
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "java-quarkus"), commonVar.Context)
+			var err error
+			devSession, stdout, _, _, err = helper.StartDevMode(nil)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			// We stop the process so the process does not remain after the end of the tests
+			devSession.Kill()
+			devSession.WaitEnd()
+		})
+
+		It("should execute the run command", func() {
+			Expect(stdout).To(ContainSubstring(executeRunCommand))
+		})
+
+		When("a source file is modified", func() {
+			BeforeEach(func() {
+				helper.ReplaceString(filepath.Join(commonVar.Context, "src", "main", "java", "org", "acme", "GreetingResource.java"), "Hello RESTEasy", "Hi RESTEasy")
+				var err error
+				stdout, _, _, err = devSession.WaitSync()
+				Expect(err).Should(Succeed(), stdout)
+			})
+
+			It("should not re-execute the run command", func() {
+				Expect(stdout).ToNot(ContainSubstring(executeRunCommand))
+			})
+		})
+	})
 })

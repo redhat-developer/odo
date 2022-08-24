@@ -105,7 +105,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		return err
 	}
 
-	deployment, componentExists, err := a.getComponentDeployment()
+	deployment, deploymentExists, err := a.getComponentDeployment()
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	}
 
 	var updated bool
-	deployment, updated, err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
+	deployment, updated, err = a.createOrUpdateComponent(deploymentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
@@ -221,7 +221,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	syncParams := adapters.SyncParameters{
 		PushParams:      parameters,
 		CompInfo:        compInfo,
-		ComponentExists: componentExists,
+		ComponentExists: deploymentExists,
 		PodChanged:      podChanged,
 		Files:           getSyncFilesFromAttributes(pushDevfileCommands),
 	}
@@ -263,10 +263,9 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	var running bool
 	var isComposite bool
 	cmdHandler := adapterHandler{
-		Adapter:         a,
-		parameters:      parameters,
-		componentExists: componentExists,
-		podName:         pod.GetName(),
+		Adapter:    a,
+		parameters: parameters,
+		podName:    pod.GetName(),
 	}
 
 	if commandType == devfilev1.ExecCommandType {
@@ -283,6 +282,8 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 			commandType, cmd.Id)
 	}
 
+	cmdHandler.componentExists = running || isComposite
+
 	klog.V(4).Infof("running=%v, execRequired=%v",
 		running, execRequired)
 
@@ -294,7 +295,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 				"Building your application in container on cluster", parameters.Show)
 			return libdevfile.Build(a.Devfile, parameters.DevfileBuildCmd, execHandler)
 		}
-		if componentExists {
+		if running {
 			if cmd.Exec == nil || !util.SafeGetBool(cmd.Exec.HotReloadCapable) {
 				if err = doExecuteBuildCommand(); err != nil {
 					return err
