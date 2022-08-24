@@ -23,7 +23,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -126,23 +125,15 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
+	ownerReference := generator.GetOwnerReference(deployment)
 
 	// Create all the K8s components defined in the devfile
-	k8sComponents, err := a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode)
+	_, err = a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode, ownerReference)
 	if err != nil {
 		return err
 	}
 
-	ownerReference := generator.GetOwnerReference(deployment)
 	err = a.updatePVCsOwnerReferences(ownerReference)
-	if err != nil {
-		return err
-	}
-
-	// Update all services with owner references
-	err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-		return service.UpdateServicesWithOwnerReferences(a.kubeClient, a.Devfile, k8sComponents, ownerRef, a.Context)
-	})
 	if err != nil {
 		return err
 	}
