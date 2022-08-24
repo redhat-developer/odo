@@ -163,7 +163,7 @@ func ApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kubernetes
 
 	// Deploy the actual Kubernetes component and error out if there's an issue.
 	log.Sectionf("Deploying Kubernetes Component: %s", u.GetName())
-	_, err = service.PushKubernetesResource(kubeClient, u, labels, annotations)
+	err = service.PushKubernetesResource(kubeClient, u, labels, annotations, mode)
 	if err != nil {
 		return fmt.Errorf("failed to create service(s) associated with the component: %w", err)
 	}

@@ -23,7 +23,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/portForward"
 	"github.com/redhat-developer/odo/pkg/preference"
-	"github.com/redhat-developer/odo/pkg/service"
 	storagepkg "github.com/redhat-developer/odo/pkg/storage"
 	"github.com/redhat-developer/odo/pkg/sync"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -117,11 +116,6 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	// Set the mode to Dev since we are using "odo dev" here
 	labels := odolabels.GetLabels(a.ComponentName, a.AppName, odolabels.ComponentDevMode, false)
 
-	k8sComponents, err := a.pushDevfileKubernetesComponents(labels)
-	if err != nil {
-		return err
-	}
-
 	var updated bool
 	deployment, updated, err = a.createOrUpdateComponent(deploymentExists, parameters.EnvSpecificInfo, libdevfile.DevfileCommands{
 		BuildCmd: parameters.DevfileBuildCmd,
@@ -131,25 +125,17 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 	if err != nil {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
-
 	ownerReference := generator.GetOwnerReference(deployment)
+
+	// Create all the K8s components defined in the devfile
+	_, err = a.pushDevfileKubernetesComponents(labels, odolabels.ComponentDevMode, ownerReference)
+	if err != nil {
+		return err
+	}
+
 	err = a.updatePVCsOwnerReferences(ownerReference)
 	if err != nil {
 		return err
-	}
-
-	// Update all services with owner references
-	err = a.kubeClient.TryWithBlockOwnerDeletion(ownerReference, func(ownerRef metav1.OwnerReference) error {
-		return service.UpdateServicesWithOwnerReferences(a.kubeClient, a.Devfile, k8sComponents, ownerRef, a.Context)
-	})
-	if err != nil {
-		return err
-	}
-
-	// create the Kubernetes objects from the manifest and delete the ones not in the devfile
-	err = service.PushLinks(a.kubeClient, a.Devfile, k8sComponents, labels, deployment, a.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create service bindings associated with the component: %w", err)
 	}
 
 	if updated {

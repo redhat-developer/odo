@@ -186,7 +186,7 @@ func listDevfileLinks(devfileObj parser.DevfileObj, context string, fs devfilefs
 }
 
 // PushKubernetesResources updates service(s) from Kubernetes Inlined component in a devfile by creating new ones or removing old ones
-func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context string) error {
+func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, labels map[string]string, annotations map[string]string, context, mode string, reference metav1.OwnerReference) error {
 	// check csv support before proceeding
 	csvSupported, err := client.IsCSVSupported()
 	if err != nil {
@@ -214,7 +214,19 @@ func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.D
 		if er != nil {
 			return er
 		}
-		_, er = PushKubernetesResource(client, u, labels, annotations)
+		var found bool
+		currentOwnerReferences := u.GetOwnerReferences()
+		for _, ref := range currentOwnerReferences {
+			if ref.UID == reference.UID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			currentOwnerReferences = append(currentOwnerReferences, reference)
+			u.SetOwnerReferences(currentOwnerReferences)
+		}
+		er = PushKubernetesResource(client, u, labels, annotations, mode)
 		if er != nil {
 			return er
 		}
@@ -241,15 +253,17 @@ func PushKubernetesResources(client kclient.ClientInterface, devfileObj parser.D
 
 // PushKubernetesResource pushes a Kubernetes resource (u) to the cluster using client
 // adding labels to the resource
-func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string, annotations map[string]string) (bool, error) {
-	if isLinkResource(u.GetKind()) {
-		// it's a service binding related resource
-		return false, nil
+func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstructured, labels map[string]string, annotations map[string]string, mode string) error {
+	sboSupported, err := client.IsServiceBindingSupported()
+	if err != nil {
+		return err
 	}
 
-	isOp, err := isOperatorBackedService(client, u)
-	if err != nil {
-		return false, err
+	// If the component is of Kind: ServiceBinding, trying to run in Dev mode and SBO is not installed, run it without operator.
+	if isLinkResource(u.GetKind()) && mode == odolabels.ComponentDevMode && !sboSupported {
+		// it's a service binding related resource
+		err = pushLinksWithoutOperator(client, u, labels)
+		return err
 	}
 
 	// Add all passed in labels to the k8s resource regardless if it's an operator or not
@@ -259,28 +273,7 @@ func PushKubernetesResource(client kclient.ClientInterface, u unstructured.Unstr
 	u.SetAnnotations(mergeMaps(u.GetAnnotations(), annotations))
 
 	_, err = updateOperatorService(client, u)
-	return isOp, err
-}
-
-func isOperatorBackedService(client kclient.ClientInterface, u unstructured.Unstructured) (bool, error) {
-	restMapping, err := client.GetRestMappingFromUnstructured(u)
-	if err != nil {
-		return false, err
-	}
-	// check if the GVR of the CRD belongs to any of the CRs provided by any of the Operators
-	// if yes, it is an Operator backed service.
-	// if no, it is likely a Kubernetes built-in resource.
-	operatorGVRList, err := client.GetOperatorGVRList()
-	if err != nil {
-		return false, err
-	}
-
-	for _, i := range operatorGVRList {
-		if i.Resource == restMapping.Resource {
-			return true, nil
-		}
-	}
-	return false, nil
+	return err
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
@@ -324,51 +317,6 @@ func ListDeployedServices(client kclient.ClientInterface, labels map[string]stri
 	}
 
 	return deployed, nil
-}
-
-// UpdateServicesWithOwnerReferences adds an owner reference to an inlined Kubernetes resource (except service binding objects)
-// if not already present in the list of owner references
-func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, devfileObj parser.DevfileObj, k8sComponents []devfile.Component, ownerReference metav1.OwnerReference, context string) error {
-	for _, c := range k8sComponents {
-		// get the string representation of the YAML definition of a CRD
-		u, err := libdevfile.GetK8sComponentAsUnstructured(devfileObj, c.Name, context, devfilefs.DefaultFs{})
-		if err != nil {
-			return err
-		}
-
-		if isLinkResource(u.GetKind()) {
-			// ignore service binding resources
-			continue
-		}
-
-		restMapping, err := client.GetRestMappingFromUnstructured(u)
-		if err != nil {
-			return err
-		}
-
-		d, err := client.GetDynamicResource(restMapping.Resource, u.GetName())
-		if err != nil {
-			return err
-		}
-
-		found := false
-		for _, ownerRef := range d.GetOwnerReferences() {
-			if ownerRef.UID == ownerReference.UID {
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
-
-		err = client.UpdateDynamicResource(restMapping.Resource, u.GetName(), d)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func isLinkResource(kind string) bool {
