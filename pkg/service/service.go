@@ -344,7 +344,7 @@ func UpdateServicesWithOwnerReferences(client kclient.ClientInterface, devfileOb
 		}
 		d.SetOwnerReferences(append(d.GetOwnerReferences(), ownerReference))
 
-		err = client.UpdateDynamicResource(restMapping.Resource, u.GetName(), d)
+		_, err = client.PatchDynamicResource(u)
 		if err != nil {
 			return err
 		}
