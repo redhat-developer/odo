@@ -2271,7 +2271,7 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("a hotRelad capable project is used with odo dev", func() {
+	When("a hotReload capable project is used with odo dev", func() {
 		var devSession helper.DevSession
 		var stdout []byte
 		var executeRunCommand = "Executing the application (command: dev-run)"
