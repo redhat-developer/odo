@@ -104,7 +104,6 @@ func TestNew(t *testing.T) {
 
 		// flags
 		projectFlag   string
-		appFlag       string
 		componentFlag string
 		outputFlag    string
 		allFlagSet    bool
@@ -127,7 +126,6 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -140,7 +138,6 @@ func TestNew(t *testing.T) {
 					_ = env.SetComponentSettings(envinfo.ComponentSettings{
 						Name:    "a-name",
 						Project: "a-project",
-						AppName: "an-app-name",
 					})
 				},
 			},
@@ -148,7 +145,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:     "myproject",
-					application: "myapp",
+					application: "app",
 					component:   "mycomponent",
 					// empty when no devfile
 					componentContext: "",
@@ -174,7 +171,6 @@ func TestNew(t *testing.T) {
 					_ = env.SetComponentSettings(envinfo.ComponentSettings{
 						Name:    "a-name",
 						Project: "a-project",
-						AppName: "an-app-name",
 					})
 				},
 			},
@@ -182,7 +178,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:     "",
-					application: "an-app-name",
+					application: "app",
 					component:   "a-name",
 					// empty when no devfile
 					componentContext: "",
@@ -208,8 +204,7 @@ func TestNew(t *testing.T) {
 						return
 					}
 					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name:    "a-name",
-						AppName: "an-app-name",
+						Name: "a-name",
 					})
 				},
 			},
@@ -217,7 +212,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "",
-					application:      "an-app-name",
+					application:      "app",
 					component:        "a-name",
 					componentContext: "",
 					outputFlag:       "",
@@ -232,7 +227,6 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -245,7 +239,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
-					application:      "myapp",
+					application:      "app",
 					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
@@ -260,7 +254,6 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -274,7 +267,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
-					application:      "myapp",
+					application:      "app",
 					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
@@ -289,7 +282,6 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
@@ -303,7 +295,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
-					application:      "myapp",
+					application:      "app",
 					component:        "mycomponent",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
@@ -329,7 +321,6 @@ func TestNew(t *testing.T) {
 			cmdline.EXPECT().GetWorkingDirectory().Return(tt.input.workingDir, nil).AnyTimes()
 			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("project").Return(tt.input.projectFlag).AnyTimes()
-			cmdline.EXPECT().FlagValueIfSet("app").Return(tt.input.appFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return(tt.input.componentFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("o").Return(tt.input.outputFlag).AnyTimes()
 			cmdline.EXPECT().IsFlagSet("all").Return(tt.input.allFlagSet).AnyTimes()

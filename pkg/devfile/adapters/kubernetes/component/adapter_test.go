@@ -126,8 +126,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 				})
 			}
 			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
-				Name:    testComponentName,
-				AppName: testAppName,
+				Name: testComponentName,
 			})
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)

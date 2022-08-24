@@ -59,16 +59,7 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline) error 
 // Or If app is set in envfile, return its value
 // Or if createAppIfNeeded, returns the default app name
 func resolveApp(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
-	appFlag := cmdline.FlagValueIfSet(util.ApplicationFlagName)
-	if len(appFlag) > 0 {
-		return appFlag
-	}
-
-	app := localConfiguration.GetApplication()
-	if app == "" && createAppIfNeeded {
-		app = defaultAppName
-	}
-	return app
+	return defaultAppName
 }
 
 // resolveComponent resolves component

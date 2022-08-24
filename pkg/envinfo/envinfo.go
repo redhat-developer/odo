@@ -307,11 +307,6 @@ func (esi *EnvSpecificInfo) SetRunMode(runMode RUNMode) error {
 	return esi.writeToFile()
 }
 
-// GetApplication returns the application name
-func (ei *EnvInfo) GetApplication() string {
-	return ei.componentSettings.AppName
-}
-
 // SetDevfileObj sets the devfileObj for the envinfo
 func (ei *EnvInfo) SetDevfileObj(devfileObj parser.DevfileObj) {
 	ei.devfileObj = devfileObj

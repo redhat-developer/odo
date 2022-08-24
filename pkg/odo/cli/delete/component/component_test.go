@@ -199,7 +199,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			os.RemoveAll(prefixDir)
 			// the second one to cleanup after execution
 			defer os.RemoveAll(prefixDir)
-			info := populateWorkingDir(filesystem.DefaultFs{}, workingDir, compName, projectName, appName)
+			info := populateWorkingDir(filesystem.DefaultFs{}, workingDir, compName, projectName)
 			ctrl := gomock.NewController(t)
 			kubeClient := prepareKubeClient(ctrl, projectName)
 			deleteClient := tt.deleteClient(ctrl)
@@ -220,7 +220,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 }
 
 // populateWorkingDir populates the working directory with .odo and devfile.yaml, and returns envinfo
-func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName, appName string) *envinfo.EnvSpecificInfo {
+func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName string) *envinfo.EnvSpecificInfo {
 	_ = fs.MkdirAll(filepath.Join(workingDir, ".odo", "env"), 0755)
 	_ = fs.WriteFile(filepath.Join(workingDir, ".odo", "env", "env.yaml"), []byte{}, 0644)
 	env, err := envinfo.NewEnvSpecificInfo(workingDir)
@@ -230,7 +230,6 @@ func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectN
 	_ = env.SetComponentSettings(envinfo.ComponentSettings{
 		Name:    compName,
 		Project: projectName,
-		AppName: appName,
 	})
 	devfileObj := testingutil.GetTestDevfileObjFromFile("devfile-deploy.yaml")
 	devfileYAML, err := yaml.Marshal(devfileObj.Data)
