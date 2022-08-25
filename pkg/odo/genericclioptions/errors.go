@@ -28,7 +28,7 @@ Visit https://odo.dev for more information.`
 	if isEmpty, _ := location.DirIsEmpty(filesystem.DefaultFs{}, o.context); isEmpty {
 		message = fmt.Sprintf(message, `
   * Use "odo init" to initialize an odo component in the folder.
-  * Use "odo dev" to deploy it on cluster.`)
+  * Use "odo dev" to run your application on cluster.`)
 	} else {
 		message = fmt.Sprintf(message, `
   * Use "odo dev" to initialize an odo component for this folder and deploy it on cluster.`)
