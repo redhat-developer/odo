@@ -227,10 +227,6 @@ func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectN
 	if err != nil {
 		return env
 	}
-	_ = env.SetComponentSettings(envinfo.ComponentSettings{
-		Name:    compName,
-		Project: projectName,
-	})
 	devfileObj := testingutil.GetTestDevfileObjFromFile("devfile-deploy.yaml")
 	devfileYAML, err := yaml.Marshal(devfileObj.Data)
 	if err != nil {
@@ -259,7 +255,6 @@ func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.Clie
 func prepareContext(ctrl *gomock.Controller, kubeClient kclient.ClientInterface, info *envinfo.EnvSpecificInfo, workingDir string) *genericclioptions.Context {
 	cmdline := cmdline.NewMockCmdline(ctrl)
 	cmdline.EXPECT().GetWorkingDirectory().Return(workingDir, nil).AnyTimes()
-	cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 	cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
 	cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
 	cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()

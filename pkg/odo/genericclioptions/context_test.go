@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
@@ -126,15 +125,6 @@ func TestNew(t *testing.T) {
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-					if err != nil {
-						return
-					}
-					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name:    "a-name",
-						Project: "a-project",
-					})
 				},
 			},
 			expectedErr: "",
@@ -158,15 +148,6 @@ func TestNew(t *testing.T) {
 				outputFlag:  "",
 				allFlagSet:  false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-					if err != nil {
-						return
-					}
-					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name:    "a-name",
-						Project: "a-project",
-					})
 				},
 			},
 			expectedErr: "",
@@ -192,14 +173,6 @@ func TestNew(t *testing.T) {
 				parentCommandName: "url",
 				commandName:       "create",
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-					if err != nil {
-						return
-					}
-					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name: "a-name",
-					})
 				},
 			},
 			expectedErr: "",
@@ -309,7 +282,6 @@ func TestNew(t *testing.T) {
 			// Fake Cobra
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			cmdline.EXPECT().GetWorkingDirectory().Return(tt.input.workingDir, nil).AnyTimes()
-			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("project").Return(tt.input.projectFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return(tt.input.componentFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("o").Return(tt.input.outputFlag).AnyTimes()

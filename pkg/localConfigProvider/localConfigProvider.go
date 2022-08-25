@@ -14,11 +14,6 @@ type LocalStorage struct {
 	Container string `yaml:"-" json:"-"`
 }
 
-// LocalContainer holds the container related information
-type LocalContainer struct {
-	Name string `yaml:"Name" json:"Name"`
-}
-
 // LocalConfigProvider is an interface which all local config providers need to implement
 // currently implemented by EnvInfo
 type LocalConfigProvider interface {

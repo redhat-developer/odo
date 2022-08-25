@@ -125,9 +125,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					return true, &deployment, nil
 				})
 			}
-			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
-				Name: testComponentName,
-			})
+			tt.envInfo.EnvInfo = envinfo.EnvInfo{}
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
