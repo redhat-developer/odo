@@ -121,7 +121,7 @@ func (a Adapter) Push(parameters adapters.PushParameters, componentStatus *watch
 		BuildCmd: parameters.DevfileBuildCmd,
 		RunCmd:   parameters.DevfileRunCmd,
 		DebugCmd: parameters.DevfileDebugCmd,
-	}, parameters.DebugPort, deployment)
+	}, deployment)
 	if err != nil {
 		return fmt.Errorf("unable to create or update component: %w", err)
 	}
@@ -319,7 +319,6 @@ func (a *Adapter) createOrUpdateComponent(
 	componentExists bool,
 	ei envinfo.EnvSpecificInfo,
 	commands libdevfile.DevfileCommands,
-	devfileDebugPort int,
 	deployment *appsv1.Deployment,
 ) (*appsv1.Deployment, bool, error) {
 
@@ -363,11 +362,6 @@ func (a *Adapter) createOrUpdateComponent(
 	// Add the project volume before generating init containers
 	utils.AddOdoProjectVolume(&containers)
 	utils.AddOdoMandatoryVolume(&containers)
-
-	containers, err = utils.UpdateContainerEnvVars(a.Devfile, containers, commands.DebugCmd, devfileDebugPort)
-	if err != nil {
-		return nil, false, err
-	}
 
 	containers, err = utils.UpdateContainersEntrypointsIfNeeded(a.Devfile, containers, commands.BuildCmd, commands.RunCmd, commands.DebugCmd)
 	if err != nil {

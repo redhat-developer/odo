@@ -249,14 +249,6 @@ func (esi *EnvSpecificInfo) writeToFile() error {
 	return util.WriteToYAMLFile(&proxyei, esi.Filename)
 }
 
-// GetDebugPort returns the DebugPort, returns default if nil
-func (ei *EnvInfo) GetDebugPort() int {
-	if ei.componentSettings.DebugPort == nil {
-		return DefaultDebugPort
-	}
-	return *ei.componentSettings.DebugPort
-}
-
 // IsUserCreatedDevfile returns the UserCreatedDevfile
 func (ei *EnvInfo) IsUserCreatedDevfile() bool {
 	return ei.componentSettings.UserCreatedDevfile

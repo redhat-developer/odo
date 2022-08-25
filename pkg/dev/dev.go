@@ -76,7 +76,6 @@ func (o *DevClient) Start(
 
 	pushParameters := adapters.PushParameters{
 		EnvSpecificInfo: *envSpecificInfo,
-		DebugPort:       envSpecificInfo.GetDebugPort(),
 		Path:            path,
 		IgnoredFiles:    ignorePaths,
 		Debug:           debug,
@@ -130,7 +129,6 @@ func (o *DevClient) Watch(
 		Debug:               debug,
 		DevfileBuildCmd:     buildCommand,
 		DevfileRunCmd:       runCommand,
-		DebugPort:           envSpecificInfo.GetDebugPort(),
 		Variables:           variables,
 		RandomPorts:         randomPorts,
 		WatchFiles:          watchFiles,

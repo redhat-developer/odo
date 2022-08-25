@@ -20,7 +20,6 @@ type PushParameters struct {
 	DevfileScanIndexForWatch bool                    // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See 'pkg/sync/adapter.go' for details
 	EnvSpecificInfo          envinfo.EnvSpecificInfo // EnvSpecificInfo contains information of env.yaml file
 	Debug                    bool                    // Runs the component in debug mode
-	DebugPort                int                     // Port used for remote debugging
 	RandomPorts              bool                    // True to forward containers ports on local random ports
 	ErrOut                   io.Writer               // Writer to output forwarded port information
 }

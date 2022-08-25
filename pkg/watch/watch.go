@@ -541,7 +541,6 @@ func processEvents(
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
 		Debug:                    parameters.Debug,
-		DebugPort:                parameters.DebugPort,
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,
 	}

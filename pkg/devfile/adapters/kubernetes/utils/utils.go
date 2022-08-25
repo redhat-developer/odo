@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"strconv"
-
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	devfileParser "github.com/devfile/library/pkg/devfile/parser"
 
@@ -16,9 +14,6 @@ import (
 const (
 	// _envProjectsRoot is the env defined for project mount in a component container when component's mountSources=true
 	_envProjectsRoot = "PROJECTS_ROOT"
-
-	// _envDebugPort is the env defined in the runtime component container which holds the debug port for remote debugging
-	_envDebugPort = "DEBUG_PORT"
 )
 
 // GetOdoContainerVolumes returns the mandatory Kube volumes for an Odo component
@@ -49,19 +44,6 @@ func GetOdoContainerVolumes(sourcePVCName string) []corev1.Volume {
 			},
 		},
 	}
-}
-
-// isEnvPresent checks if the env variable is present in an array of env variables
-func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
-	isPresent := false
-
-	for _, envVar := range EnvVars {
-		if envVar.Name == envVarName {
-			isPresent = true
-		}
-	}
-
-	return isPresent
 }
 
 // AddOdoProjectVolume adds the odo project volume to the containers
@@ -151,47 +133,6 @@ func UpdateContainersEntrypointsIfNeeded(
 
 	return containers, nil
 
-}
-
-// UpdateContainerEnvVars updates the container environment variables
-func UpdateContainerEnvVars(
-	devfileObj devfileParser.DevfileObj,
-	containers []corev1.Container,
-	devfileDebugCmd string,
-	devfileDebugPort int,
-) ([]corev1.Container, error) {
-
-	debugCommand, hasDebugCmd, err := libdevfile.GetCommand(devfileObj, devfileDebugCmd, v1alpha2.DebugCommandGroupKind)
-	if err != nil {
-		return nil, err
-	}
-	if !hasDebugCmd {
-		return containers, nil
-	}
-
-	debugContainers, err := libdevfile.GetContainerComponentsForCommand(devfileObj, debugCommand)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range containers {
-		container := &containers[i]
-
-		// Check if the container belongs to a debug command component
-		for _, c := range debugContainers {
-			if container.Name == c && !isEnvPresent(container.Env, _envDebugPort) {
-				klog.V(2).Infof("Updating container %v env with debug command's debugPort", container.Name)
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  _envDebugPort,
-						Value: strconv.Itoa(devfileDebugPort),
-					})
-				break
-			}
-		}
-	}
-
-	return containers, nil
 }
 
 // overrideContainerCommandAndArgsIfNeeded overrides the container's entrypoint
