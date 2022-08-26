@@ -2462,4 +2462,44 @@ CMD ["npm", "start"]
 			})
 		})
 	})
+
+	Describe("Devfile with no metadata.name", func() {
+
+		BeforeEach(func() {
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-metadata-name.yaml"),
+				filepath.Join(commonVar.Context, "devfile.yaml"))
+		})
+
+		When("running odo dev against a component with no source code", func() {
+			var devSession helper.DevSession
+			BeforeEach(func() {
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				devSession.Stop()
+			})
+
+			It("should use the directory as component name", func() {
+				// when no further source code is available, directory name is returned by alizer.DetectName as component name;
+				// and since it is all-numeric in our tests, an "x" prefix is added by util.GetDNS1123Name (called by alizer.DetectName)
+				cmpName := "x" + filepath.Base(commonVar.Context)
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project),
+					"runtime",
+					commonVar.Project,
+					[]string{
+						remotecmd.ShellExecutable, "-c",
+						fmt.Sprintf("cat %s/.odo_cmd_devrun.pid", strings.TrimSuffix(storage.SharedDataMountPath, "/")),
+					},
+					func(stdout string, err error) bool {
+						Expect(err).ShouldNot(HaveOccurred())
+						Expect(stdout).NotTo(BeEmpty())
+						return err == nil
+					})
+			})
+		})
+	})
 })
