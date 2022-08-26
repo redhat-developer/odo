@@ -11,16 +11,17 @@ import (
 	"github.com/devfile/api/v2/pkg/devfile"
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/devfile/library/pkg/devfile/parser/data"
-	dfutil "github.com/devfile/library/pkg/util"
+	"k8s.io/klog"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
 	odolabels "github.com/redhat-developer/odo/pkg/labels"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/klog"
 )
 
 const (
@@ -42,32 +43,36 @@ func GetComponentTypeFromDevfileMetadata(metadata devfile.DevfileMetadata) strin
 	return componentType
 }
 
-// GatherName parses the Devfile and retrieves an appropriate name in two ways.
-// 1. If metadata.name exists, we use it
-// 2. If metadata.name does NOT exist, we use the folder name where the devfile.yaml is located
-func GatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
-
-	metadata := devObj.Data.GetMetadata()
-
-	klog.V(4).Infof("metadata.Name: %s", metadata.Name)
-
-	// 1. Use metadata.name if it exists
-	if metadata.Name != "" {
-
-		// Remove any suffix's that end with `-`. This is because many Devfile's use the original v1 Devfile pattern of
-		// having names such as "foo-bar-" in order to prepend container names such as "foo-bar-container1"
-		return strings.TrimSuffix(metadata.Name, "-"), nil
+// GatherName computes and returns what should be used as name for the Devfile object specified.
+//
+// If a non-blank name is available in the Devfile metadata (which is optional), it is sanitized and returned.
+//
+// Otherwise, it uses Alizer to detect the name, from the project build tools (pom.xml, package.json, ...),
+// or from the component directory name.
+func GatherName(contextDir string, devfileObj *parser.DevfileObj) (string, error) {
+	var name string
+	if devfileObj != nil {
+		name = devfileObj.GetMetadataName()
+		if name == "" || strings.TrimSpace(name) == "" {
+			// Use Alizer if Devfile has no (optional) metadata.name field.
+			// We need to pass in the Devfile base directory (not the path to the devfile.yaml).
+			// Name returned by alizer.DetectName is expected to be already sanitized.
+			return alizer.DetectName(filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+		}
+	} else {
+		// Fallback to the context dir name
+		baseDir, err := filepath.Abs(contextDir)
+		if err != nil {
+			return "", err
+		}
+		name = filepath.Base(baseDir)
 	}
 
-	// 2. Use the folder name as a last resort if nothing else exists
-	sourcePath, err := dfutil.GetAbsPath(devfilePath)
-	if err != nil {
-		return "", fmt.Errorf("unable to get source path: %w", err)
-	}
-	klog.V(4).Infof("Source path: %s", sourcePath)
-	klog.V(4).Infof("devfile dir: %s", filepath.Dir(sourcePath))
+	//sanitize the name
+	s := util.GetDNS1123Name(name)
+	klog.V(3).Infof("name of component is %q, and sanitized name is %q", name, s)
 
-	return filepath.Base(filepath.Dir(sourcePath)), nil
+	return s, nil
 }
 
 // GetOnePod gets a pod using the component and app name
