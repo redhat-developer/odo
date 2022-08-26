@@ -609,227 +609,200 @@ ComponentSettings:
 		})
 	})
 
-	When("Devfile 2.1.0 is used", func() {
-		// from devfile
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
-
-		When("doing odo dev", func() {
-			var session helper.DevSession
+	for _, devfileHandlerCtx := range []struct {
+		name           string
+		cmpName        string
+		devfileHandler func(path string)
+	}{
+		{
+			name: "with metadata.name",
+			// cmpName from Devfile
+			cmpName: "nodejs",
+		},
+		{
+			name: "without metadata.name",
+			// cmpName is returned by alizer.DetectName
+			cmpName: "nodejs-starter",
+			devfileHandler: func(path string) {
+				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+			},
+		},
+	} {
+		devfileHandlerCtx := devfileHandlerCtx
+		When("Devfile 2.1.0 is used - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
 			BeforeEach(func() {
-				var err error
-				session, _, _, _, err = helper.StartDevMode(nil)
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-variables.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
 			})
 
-			It("should check if the env variable has a correct value", func() {
-				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-				// check if the env variable has a correct value. This value was substituted from in devfile from variable
-				Expect(envVars["FOO"]).To(Equal("bar"))
+			When("doing odo dev", func() {
+				var session helper.DevSession
+				BeforeEach(func() {
+					var err error
+					session, _, _, _, err = helper.StartDevMode(nil)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should check if the env variable has a correct value", func() {
+					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+					// check if the env variable has a correct value. This value was substituted from in devfile from variable
+					Expect(envVars["FOO"]).To(Equal("bar"))
+				})
+			})
+
+			When("doing odo dev with --var flag", func() {
+				var session helper.DevSession
+				BeforeEach(func() {
+					var err error
+					session, _, _, _, err = helper.StartDevMode(nil, "--var", "VALUE_TEST=baz")
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should check if the env variable has a correct value", func() {
+					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+					// check if the env variable has a correct value. This value was substituted from in devfile from variable
+					Expect(envVars["FOO"]).To(Equal("baz"))
+				})
+			})
+
+			When("doing odo dev with --var-file flag", func() {
+				var session helper.DevSession
+				varfilename := "vars.txt"
+				BeforeEach(func() {
+					var err error
+					err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
+					Expect(err).ToNot(HaveOccurred())
+					session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+					helper.DeleteFile(varfilename)
+				})
+
+				It("should check if the env variable has a correct value", func() {
+					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+					// check if the env variable has a correct value. This value was substituted from in devfile from variable
+					Expect(envVars["FOO"]).To(Equal("baz"))
+				})
+			})
+
+			When("doing odo dev with --var-file flag and setting value in env", func() {
+				var session helper.DevSession
+				varfilename := "vars.txt"
+				BeforeEach(func() {
+					var err error
+					_ = os.Setenv("VALUE_TEST", "baz")
+					err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
+					Expect(err).ToNot(HaveOccurred())
+					session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
+					Expect(err).ToNot(HaveOccurred())
+				})
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+					helper.DeleteFile(varfilename)
+					_ = os.Unsetenv("VALUE_TEST")
+				})
+
+				It("should check if the env variable has a correct value", func() {
+					envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
+					// check if the env variable has a correct value. This value was substituted from in devfile from variable
+					Expect(envVars["FOO"]).To(Equal("baz"))
+				})
 			})
 		})
 
-		When("doing odo dev with --var flag", func() {
-			var session helper.DevSession
+		When("running odo dev and single env var is set - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
 			BeforeEach(func() {
-				var err error
-				session, _, _, _, err = helper.StartDevMode(nil, "--var", "VALUE_TEST=baz")
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-single-env.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
 			})
 
-			It("should check if the env variable has a correct value", func() {
-				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-				// check if the env variable has a correct value. This value was substituted from in devfile from variable
-				Expect(envVars["FOO"]).To(Equal("baz"))
+			It("should be able to exec command", func() {
+				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+					helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
+				})
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
-		When("doing odo dev with --var-file flag", func() {
-			var session helper.DevSession
-			varfilename := "vars.txt"
+		When("running odo dev and multiple env variables are set - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
 			BeforeEach(func() {
-				var err error
-				err = helper.CreateFileWithContent(varfilename, "VALUE_TEST=baz")
-				Expect(err).ToNot(HaveOccurred())
-				session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-				helper.DeleteFile(varfilename)
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-multiple-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
 			})
 
-			It("should check if the env variable has a correct value", func() {
-				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-				// check if the env variable has a correct value. This value was substituted from in devfile from variable
-				Expect(envVars["FOO"]).To(Equal("baz"))
+			It("should be able to exec command", func() {
+				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+					helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
+				})
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
-		When("doing odo dev with --var-file flag and setting value in env", func() {
-			var session helper.DevSession
-			varfilename := "vars.txt"
+		When("doing odo dev and there is a env variable with spaces - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
 			BeforeEach(func() {
-				var err error
-				_ = os.Setenv("VALUE_TEST", "baz")
-				err = helper.CreateFileWithContent(varfilename, "VALUE_TEST")
-				Expect(err).ToNot(HaveOccurred())
-				session, _, _, _, err = helper.StartDevMode(nil, "--var-file", "vars.txt")
-				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
-				helper.DeleteFile(varfilename)
-				_ = os.Unsetenv("VALUE_TEST")
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-env-with-space.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
 			})
 
-			It("should check if the env variable has a correct value", func() {
-				envVars := commonVar.CliRunner.GetEnvsDevFileDeployment(devfileCmpName, "app", commonVar.Project)
-				// check if the env variable has a correct value. This value was substituted from in devfile from variable
-				Expect(envVars["FOO"]).To(Equal("baz"))
-			})
-		})
-	})
-
-	When("running odo dev and single env var is set", func() {
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-single-env.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
-
-		It("should be able to exec command", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-				helper.MatchAllInOutput(output, []string{"test_env_variable", "test_build_env_variable"})
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	When("running odo dev and multiple env variables are set", func() {
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-multiple-envs.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
-
-		It("should be able to exec command", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-				helper.MatchAllInOutput(output, []string{"test_build_env_variable1", "test_build_env_variable2", "test_env_variable1", "test_env_variable2"})
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	When("doing odo dev and there is a env variable with spaces", func() {
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-command-env-with-space.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
-
-		It("should be able to exec command", func() {
-			err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-				helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
-			})
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	When("creating local files and dir and running odo dev", func() {
-		var newDirPath, newFilePath, stdOut, podName string
-		var session helper.DevSession
-		// from devfile
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			newFilePath = filepath.Join(commonVar.Context, "foobar.txt")
-			newDirPath = filepath.Join(commonVar.Context, "testdir")
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			// Create a new file that we plan on deleting later...
-			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
-				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
-			}
-			// Create a new directory
-			helper.MakeDir(newDirPath)
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should correctly propagate changes to the container", func() {
-
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-
-			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
-		})
-
-		When("deleting local files and dir and waiting for sync", func() {
-			BeforeEach(func() {
-				// Now we delete the file and dir and push
-				helper.DeleteDir(newFilePath)
-				helper.DeleteDir(newDirPath)
-				_, _, _, err := session.WaitSync()
+			It("should be able to exec command", func() {
+				err := helper.RunDevMode(nil, nil, func(session *gexec.Session, out, err []byte, ports map[string]string) {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+					helper.MatchAllInOutput(output, []string{"build env variable with space", "env with space"})
+				})
 				Expect(err).ToNot(HaveOccurred())
 			})
-			It("should not list deleted dir and file in container", func() {
-				podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				// Then check to see if it's truly been deleted
-				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-				helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
-			})
-		})
-	})
-
-	When("Starting a PostgreSQL service", func() {
-		BeforeEach(func() {
-			if helper.IsKubernetesCluster() {
-				Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
-			}
-			// Ensure that the operators are installed
-			commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
-			commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
-			Eventually(func() string {
-				out, _ := commonVar.CliRunner.GetBindableKinds()
-				return out
-			}, 120, 3).Should(ContainSubstring("Cluster"))
-			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
-			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 		})
 
-		When("creating local files and dir and running odo dev", func() {
+		When("creating local files and dir and running odo dev - "+devfileHandlerCtx.name, func() {
 			var newDirPath, newFilePath, stdOut, podName string
 			var session helper.DevSession
-			// from devfile
-			devfileCmpName := "my-nodejs-app"
+			var devfileCmpName string
 			BeforeEach(func() {
 				newFilePath = filepath.Join(commonVar.Context, "foobar.txt")
 				newDirPath = filepath.Join(commonVar.Context, "testdir")
-				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
 				// Create a new file that we plan on deleting later...
 				if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
 					fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
@@ -871,332 +844,438 @@ ComponentSettings:
 				})
 			})
 		})
-	})
 
-	When("adding local files to gitignore and running odo dev", func() {
-		var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, stdOut, podName string
-		var session helper.DevSession
-		// from devfile
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			gitignorePath = filepath.Join(commonVar.Context, ".gitignore")
-			newFilePath1 = filepath.Join(commonVar.Context, "foobar.txt")
-			newDirPath = filepath.Join(commonVar.Context, "testdir")
-			newFilePath2 = filepath.Join(newDirPath, "foobar.txt")
-			newFilePath3 = filepath.Join(newDirPath, "baz.txt")
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			if err := helper.CreateFileWithContent(newFilePath1, "hello world"); err != nil {
-				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
-			}
-			// Create a new directory
-			helper.MakeDir(newDirPath)
-			if err := helper.CreateFileWithContent(newFilePath2, "hello world"); err != nil {
-				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
-			}
-			if err := helper.CreateFileWithContent(newFilePath3, "hello world"); err != nil {
-				fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
-			}
-			if err := helper.CreateFileWithContent(gitignorePath, "foobar.txt"); err != nil {
-				fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
-			}
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		checkSyncedFiles := func(podName string) {
-			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-			helper.MatchAllInOutput(stdOut, []string{"testdir"})
-			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
-			stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/testdir")
-			helper.MatchAllInOutput(stdOut, []string{"baz.txt"})
-			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
-		}
-
-		It("should not sync ignored files to the container", func() {
-			podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			checkSyncedFiles(podName)
-		})
-
-		When("modifying /testdir/baz.txt file", func() {
+		When("Starting a PostgreSQL service", func() {
 			BeforeEach(func() {
-				helper.ReplaceString(newFilePath3, "hello world", "hello world!!!")
+				if helper.IsKubernetesCluster() {
+					Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
+				}
+				// Ensure that the operators are installed
+				commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
+				commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
+				Eventually(func() string {
+					out, _ := commonVar.CliRunner.GetBindableKinds()
+					return out
+				}, 120, 3).Should(ContainSubstring("Cluster"))
+				addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
+				Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 			})
 
-			It("should synchronize it only", func() {
-				_, _, _, _ = session.WaitSync()
+			When("creating local files and dir and running odo dev - "+devfileHandlerCtx.name, func() {
+				var newDirPath, newFilePath, stdOut, podName string
+				var session helper.DevSession
+				var devfileCmpName string
+				BeforeEach(func() {
+					newFilePath = filepath.Join(commonVar.Context, "foobar.txt")
+					newDirPath = filepath.Join(commonVar.Context, "testdir")
+					helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+					helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-service-binding-files.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+					devfileCmpName = devfileHandlerCtx.cmpName
+					if devfileHandlerCtx.devfileHandler != nil {
+						devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+					}
+					// Create a new file that we plan on deleting later...
+					if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
+						fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+					}
+					// Create a new directory
+					helper.MakeDir(newDirPath)
+					var err error
+					session, _, _, _, err = helper.StartDevMode(nil)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					session.Stop()
+					session.WaitEnd()
+				})
+
+				It("should correctly propagate changes to the container", func() {
+
+					// Check to see if it's been pushed (foobar.txt abd directory testdir)
+					podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+
+					stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+					helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
+				})
+
+				When("deleting local files and dir and waiting for sync", func() {
+					BeforeEach(func() {
+						// Now we delete the file and dir and push
+						helper.DeleteDir(newFilePath)
+						helper.DeleteDir(newDirPath)
+						_, _, _, err := session.WaitSync()
+						Expect(err).ToNot(HaveOccurred())
+					})
+					It("should not list deleted dir and file in container", func() {
+						podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+						// Then check to see if it's truly been deleted
+						stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+						helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
+					})
+				})
+			})
+		})
+
+		When("adding local files to gitignore and running odo dev", func() {
+			var gitignorePath, newDirPath, newFilePath1, newFilePath2, newFilePath3, stdOut, podName string
+			var session helper.DevSession
+			var devfileCmpName string
+			BeforeEach(func() {
+				gitignorePath = filepath.Join(commonVar.Context, ".gitignore")
+				newFilePath1 = filepath.Join(commonVar.Context, "foobar.txt")
+				newDirPath = filepath.Join(commonVar.Context, "testdir")
+				newFilePath2 = filepath.Join(newDirPath, "foobar.txt")
+				newFilePath3 = filepath.Join(newDirPath, "baz.txt")
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				if err := helper.CreateFileWithContent(newFilePath1, "hello world"); err != nil {
+					fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+				}
+				// Create a new directory
+				helper.MakeDir(newDirPath)
+				if err := helper.CreateFileWithContent(newFilePath2, "hello world"); err != nil {
+					fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+				}
+				if err := helper.CreateFileWithContent(newFilePath3, "hello world"); err != nil {
+					fmt.Printf("the foobar.txt file was not created, reason %v", err.Error())
+				}
+				if err := helper.CreateFileWithContent(gitignorePath, "foobar.txt"); err != nil {
+					fmt.Printf("the .gitignore file was not created, reason %v", err.Error())
+				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			checkSyncedFiles := func(podName string) {
+				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+				helper.MatchAllInOutput(stdOut, []string{"testdir"})
+				helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
+				stdOut = commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/testdir")
+				helper.MatchAllInOutput(stdOut, []string{"baz.txt"})
+				helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt"})
+			}
+
+			It("should not sync ignored files to the container", func() {
 				podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
 				checkSyncedFiles(podName)
 			})
+
+			When("modifying /testdir/baz.txt file", func() {
+				BeforeEach(func() {
+					helper.ReplaceString(newFilePath3, "hello world", "hello world!!!")
+				})
+
+				It("should synchronize it only", func() {
+					_, _, _, _ = session.WaitSync()
+					podName = commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					checkSyncedFiles(podName)
+				})
+			})
+
+			When("modifying /foobar.txt file", func() {
+				BeforeEach(func() {
+					helper.ReplaceString(newFilePath1, "hello world", "hello world!!!")
+				})
+
+				It("should not synchronize it", func() {
+					session.CheckNotSynced(10 * time.Second)
+				})
+			})
+
+			When("modifying /testdir/foobar.txt file", func() {
+				BeforeEach(func() {
+					helper.ReplaceString(newFilePath2, "hello world", "hello world!!!")
+				})
+
+				It("should not synchronize it", func() {
+					session.CheckNotSynced(10 * time.Second)
+				})
+			})
 		})
 
-		When("modifying /foobar.txt file", func() {
+		When("devfile has sourcemappings and running odo dev - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
 			BeforeEach(func() {
-				helper.ReplaceString(newFilePath1, "hello world", "hello world!!!")
-			})
-
-			It("should not synchronize it", func() {
-				session.CheckNotSynced(10 * time.Second)
-			})
-		})
-
-		When("modifying /testdir/foobar.txt file", func() {
-			BeforeEach(func() {
-				helper.ReplaceString(newFilePath2, "hello world", "hello world!!!")
-			})
-
-			It("should not synchronize it", func() {
-				session.CheckNotSynced(10 * time.Second)
-			})
-		})
-	})
-
-	When("devfile has sourcemappings and running odo dev", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should sync files to the correct location", func() {
-			// Verify source code was synced to /test instead of /projects
-			var statErr error
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", "/test/server.js"},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-		})
-	})
-
-	When("project and clonePath is present in devfile and running odo dev", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			// devfile with clonePath set in project field
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should sync to the correct dir in container", func() {
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			// source code is synced to $PROJECTS_ROOT/clonePath
-			// $PROJECTS_ROOT is /projects by default, if sourceMapping is set it is same as sourceMapping
-			// for devfile-with-projects.yaml, sourceMapping is apps and clonePath is webapp
-			// so source code would be synced to /apps/webapp
-			output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/webapp")
-			helper.MatchAllInOutput(output, []string{"package.json"})
-
-			// Verify the sync env variables are correct
-			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/webapp", "/apps", commonVar.CliRunner)
-		})
-	})
-
-	When("devfile project field is present and running odo dev", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-
-			// reset clonePath and change the workdir accordingly, it should sync to project name
-			helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should sync to the correct dir in container", func() {
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/nodeshift")
-			helper.MatchAllInOutput(output, []string{"package.json"})
-
-			// Verify the sync env variables are correct
-			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/nodeshift", "/apps", commonVar.CliRunner)
-		})
-	})
-
-	When("multiple project are present", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should sync to the correct dir in container", func() {
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
-			// multiple projects, so source code would sync to the first project /projects/webapp
-			output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/webapp")
-			helper.MatchAllInOutput(output, []string{"package.json"})
-
-			// Verify the sync env variables are correct
-			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects/webapp", "/projects", commonVar.CliRunner)
-		})
-	})
-
-	When("no project is present", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should sync to the correct dir in container", func() {
-
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
-			helper.MatchAllInOutput(output, []string{"package.json"})
-
-			// Verify the sync env variables are correct
-			helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects", "/projects", commonVar.CliRunner)
-		})
-	})
-
-	When("running odo dev with devfile contain volume", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should create pvc and reuse if it shares the same devfile volume name", func() {
-			var statErr error
-			var cmdOutput string
-			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime2",
-				commonVar.Project,
-				[]string{"cat", "/myvol/myfile.log"},
-				func(cmdOp string, err error) bool {
-					cmdOutput = cmdOp
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-			Expect(cmdOutput).To(ContainSubstring("hello"))
-
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime2",
-				commonVar.Project,
-				[]string{"stat", "/data2"},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-		})
-
-		It("check the volume name and mount paths for the containers", func() {
-			deploymentName, err := util.NamespaceKubernetesObject(devfileCmpName, "app")
-			Expect(err).To(BeNil())
-
-			volumesMatched := false
-
-			// check the volume name and mount paths for the containers
-			volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(deploymentName, "runtime", commonVar.Project)
-			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
-			for _, volNamesAndPath := range volNamesAndPathsArr {
-				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
-
-				if strings.Contains(volNamesAndPathArr[0], "myvol") && volNamesAndPathArr[1] == "/data" {
-					volumesMatched = true
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
-			}
-			Expect(volumesMatched).To(Equal(true))
-		})
-	})
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
 
-	When("running odo dev with devfile containing volume-component", func() {
-		devfileCmpName := "test-devfile"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should sync files to the correct location", func() {
+				// Verify source code was synced to /test instead of /projects
+				var statErr error
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", "/test/server.js"},
+					func(cmdOp string, err error) bool {
+						statErr = err
+						return err == nil
+					},
+				)
+				Expect(statErr).ToNot(HaveOccurred())
+			})
 		})
 
-		It("should successfully use the volume components in container components", func() {
+		When("project and clonePath is present in devfile and running odo dev - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				// devfile with clonePath set in project field
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
 
-			// Verify the pvc size for firstvol
-			storageSize := commonVar.CliRunner.GetPVCSize(devfileCmpName, "firstvol", commonVar.Project)
-			// should be the default size
-			Expect(storageSize).To(ContainSubstring("1Gi"))
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
 
-			// Verify the pvc size for secondvol
-			storageSize = commonVar.CliRunner.GetPVCSize(devfileCmpName, "secondvol", commonVar.Project)
-			// should be the specified size in the devfile volume component
-			Expect(storageSize).To(ContainSubstring("200Mi"))
+			It("should sync to the correct dir in container", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				// source code is synced to $PROJECTS_ROOT/clonePath
+				// $PROJECTS_ROOT is /projects by default, if sourceMapping is set it is same as sourceMapping
+				// for devfile-with-projects.yaml, sourceMapping is apps and clonePath is webapp
+				// so source code would be synced to /apps/webapp
+				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/webapp")
+				helper.MatchAllInOutput(output, []string{"package.json"})
+
+				// Verify the sync env variables are correct
+				helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/webapp", "/apps", commonVar.CliRunner)
+			})
 		})
-	})
+
+		When("devfile project field is present and running odo dev - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+
+				// reset clonePath and change the workdir accordingly, it should sync to project name
+				helper.ReplaceString(filepath.Join(commonVar.Context, "devfile.yaml"), "clonePath: webapp/", "# clonePath: webapp/")
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should sync to the correct dir in container", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/apps/nodeshift")
+				helper.MatchAllInOutput(output, []string{"package.json"})
+
+				// Verify the sync env variables are correct
+				helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/apps/nodeshift", "/apps", commonVar.CliRunner)
+			})
+		})
+
+		When("multiple projects are present - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-projects.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should sync to the correct dir in container", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				// for devfile-with-multiple-projects.yaml source mapping is not set so $PROJECTS_ROOT is /projects
+				// multiple projects, so source code would sync to the first project /projects/webapp
+				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects/webapp")
+				helper.MatchAllInOutput(output, []string{"package.json"})
+
+				// Verify the sync env variables are correct
+				helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects/webapp", "/projects", commonVar.CliRunner)
+			})
+		})
+
+		When("no project is present - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should sync to the correct dir in container", func() {
+
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				output := commonVar.CliRunner.ExecListDir(podName, commonVar.Project, "/projects")
+				helper.MatchAllInOutput(output, []string{"package.json"})
+
+				// Verify the sync env variables are correct
+				helper.VerifyContainerSyncEnv(podName, "runtime", commonVar.Project, "/projects", "/projects", commonVar.CliRunner)
+			})
+		})
+
+		When("running odo dev with devfile contain volume - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should create pvc and reuse if it shares the same devfile volume name", func() {
+				var statErr error
+				var cmdOutput string
+				// Check to see if it's been pushed (foobar.txt abd directory testdir)
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime2",
+					commonVar.Project,
+					[]string{"cat", "/myvol/myfile.log"},
+					func(cmdOp string, err error) bool {
+						cmdOutput = cmdOp
+						statErr = err
+						return err == nil
+					},
+				)
+				Expect(statErr).ToNot(HaveOccurred())
+				Expect(cmdOutput).To(ContainSubstring("hello"))
+
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime2",
+					commonVar.Project,
+					[]string{"stat", "/data2"},
+					func(cmdOp string, err error) bool {
+						statErr = err
+						return err == nil
+					},
+				)
+				Expect(statErr).ToNot(HaveOccurred())
+			})
+
+			It("check the volume name and mount paths for the containers", func() {
+				deploymentName, err := util.NamespaceKubernetesObject(devfileCmpName, "app")
+				Expect(err).To(BeNil())
+
+				volumesMatched := false
+
+				// check the volume name and mount paths for the containers
+				volNamesAndPaths := commonVar.CliRunner.GetVolumeMountNamesandPathsFromContainer(deploymentName, "runtime", commonVar.Project)
+				volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
+				for _, volNamesAndPath := range volNamesAndPathsArr {
+					volNamesAndPathArr := strings.Split(volNamesAndPath, ":")
+
+					if strings.Contains(volNamesAndPathArr[0], "myvol") && volNamesAndPathArr[1] == "/data" {
+						volumesMatched = true
+					}
+				}
+				Expect(volumesMatched).To(Equal(true))
+			})
+		})
+
+		When("running odo dev with devfile containing volume-component - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should successfully use the volume components in container components", func() {
+
+				// Verify the pvc size for firstvol
+				storageSize := commonVar.CliRunner.GetPVCSize(devfileCmpName, "firstvol", commonVar.Project)
+				// should be the default size
+				Expect(storageSize).To(ContainSubstring("1Gi"))
+
+				// Verify the pvc size for secondvol
+				storageSize = commonVar.CliRunner.GetPVCSize(devfileCmpName, "secondvol", commonVar.Project)
+				// should be the specified size in the devfile volume component
+				Expect(storageSize).To(ContainSubstring("200Mi"))
+			})
+		})
+	}
 
 	Describe("devfile contains composite apply command", func() {
 		const (
@@ -1347,226 +1426,270 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("running odo dev and devfile with composite command", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should execute all commands in composite command", func() {
-			// Verify the command executed successfully
-			var statErr error
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", "/projects/testfolder"},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-		})
-	})
-
-	When("running odo dev and composite command is marked as parallel:true", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should execute all commands in composite command", func() {
-			// Verify the command executed successfully
-			var statErr error
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", "/projects/testfolder"},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-		})
-	})
-
-	When("running odo dev and composite command are nested", func() {
-		devfileCmpName := "nodejs"
-		var session helper.DevSession
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			var err error
-			session, _, _, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should execute all commands in composite commmand", func() {
-			// Verify the command executed successfully
-			var statErr error
-			podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", "/projects/testfolder"},
-				func(cmdOp string, err error) bool {
-					statErr = err
-					return err == nil
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-		})
-	})
-
-	When("running odo dev and composite command is used as a run command", func() {
-		var session helper.DevSession
-		var stdout []byte
-		var stderr []byte
-		const devfileCmpName = "nodejs"
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			var err error
-			session, stdout, stderr, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should run successfully", func() {
-			By("verifying from the output that all commands have been executed", func() {
-				helper.MatchAllInOutput(string(stdout), []string{
-					"Building your application in container on cluster",
-					"Executing the application (command: mkdir)",
-					"Executing the application (command: echo)",
-					"Executing the application (command: install)",
-					"Executing the application (command: start)",
-				})
-			})
-
-			By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-				helper.MatchAllInOutput(string(stderr), []string{
-					"Devfile command \"echo\" exited with an error status",
-					"intentional-error-message",
-				})
-			})
-
-			By("building the application only once", func() {
-				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
-				// The bracket allows to match the last occurrence with the command execution timing information.
-				Expect(strings.Count(string(stdout), "Building your application in container on cluster (command: install) [")).
-					To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
-			})
-
-			By("verifying that the command did run successfully", func() {
-				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-					podName,
-					"runtime",
-					commonVar.Project,
-					[]string{"stat", "/projects/testfolder"},
-					func(cmdOp string, err error) bool {
-						return err == nil
-					},
-				)
-				Expect(res).To(BeTrue())
-			})
-		})
-	})
-
-	When("running build and run commands as composite in different containers and a shared volume", func() {
-		var session helper.DevSession
-		var stdout []byte
-		var stderr []byte
-		const devfileCmpName = "nodejs"
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			var err error
-			session, stdout, stderr, _, err = helper.StartDevMode(nil)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			session.Stop()
-			session.WaitEnd()
-		})
-
-		It("should run successfully", func() {
-			By("verifying from the output that all commands have been executed", func() {
-				helper.MatchAllInOutput(string(stdout), []string{
-					"Building your application in container on cluster (command: mkdir)",
-					"Building your application in container on cluster (command: sleep-cmd-build)",
-					"Building your application in container on cluster (command: build-cmd)",
-					"Executing the application (command: sleep-cmd-run)",
-					"Executing the application (command: echo-with-error)",
-					"Executing the application (command: check-build-result)",
-					"Executing the application (command: start)",
-				})
-			})
-
-			By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
-				helper.MatchAllInOutput(string(stderr), []string{
-					"Devfile command \"echo-with-error\" exited with an error status",
-					"intentional-error-message",
-				})
-			})
-
-			By("building the application only once per exec command in the build command", func() {
-				// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
-				// The bracket allows to match the last occurrence with the command execution timing information.
-				out := string(stdout)
-				for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
-					Expect(strings.Count(out, fmt.Sprintf("Building your application in container on cluster (command: %s) [", cmd))).
-						To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+	for _, devfileHandlerCtx := range []struct {
+		name           string
+		cmpName        string
+		devfileHandler func(path string)
+	}{
+		{
+			name: "with metadata.name",
+			// cmpName from Devfile
+			cmpName: "nodejs",
+		},
+		{
+			name: "without metadata.name",
+			// cmpName is returned by alizer.DetectName
+			cmpName: "nodejs-starter",
+			devfileHandler: func(path string) {
+				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+			},
+		},
+	} {
+		devfileHandlerCtx := devfileHandlerCtx
+		When("running odo dev and devfile with composite command - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
 				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
 			})
 
-			By("verifying that the command did run successfully", func() {
+			It("should execute all commands in composite command", func() {
+				// Verify the command executed successfully
+				var statErr error
 				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
-				res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
 					podName,
 					"runtime",
 					commonVar.Project,
 					[]string{"stat", "/projects/testfolder"},
 					func(cmdOp string, err error) bool {
+						statErr = err
 						return err == nil
 					},
 				)
-				Expect(res).To(BeTrue())
+				Expect(statErr).ToNot(HaveOccurred())
 			})
 		})
-	})
+
+		When("running odo dev and composite command is marked as parallel:true - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should execute all commands in composite command", func() {
+				// Verify the command executed successfully
+				var statErr error
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", "/projects/testfolder"},
+					func(cmdOp string, err error) bool {
+						statErr = err
+						return err == nil
+					},
+				)
+				Expect(statErr).ToNot(HaveOccurred())
+			})
+		})
+
+		When("running odo dev and composite command are nested - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			var session helper.DevSession
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should execute all commands in composite commmand", func() {
+				// Verify the command executed successfully
+				var statErr error
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					podName,
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", "/projects/testfolder"},
+					func(cmdOp string, err error) bool {
+						statErr = err
+						return err == nil
+					},
+				)
+				Expect(statErr).ToNot(HaveOccurred())
+			})
+		})
+
+		When("running odo dev and composite command is used as a run command - "+devfileHandlerCtx.name, func() {
+			var session helper.DevSession
+			var stdout []byte
+			var stderr []byte
+			var devfileCmpName string
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRunAndDebug.yaml"), filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, stdout, stderr, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should run successfully", func() {
+				By("verifying from the output that all commands have been executed", func() {
+					helper.MatchAllInOutput(string(stdout), []string{
+						"Building your application in container on cluster",
+						"Executing the application (command: mkdir)",
+						"Executing the application (command: echo)",
+						"Executing the application (command: install)",
+						"Executing the application (command: start)",
+					})
+				})
+
+				By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+					helper.MatchAllInOutput(string(stderr), []string{
+						"Devfile command \"echo\" exited with an error status",
+						"intentional-error-message",
+					})
+				})
+
+				By("building the application only once", func() {
+					// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+					// The bracket allows to match the last occurrence with the command execution timing information.
+					Expect(strings.Count(string(stdout), "Building your application in container on cluster (command: install) [")).
+						To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+				})
+
+				By("verifying that the command did run successfully", func() {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+						podName,
+						"runtime",
+						commonVar.Project,
+						[]string{"stat", "/projects/testfolder"},
+						func(cmdOp string, err error) bool {
+							return err == nil
+						},
+					)
+					Expect(res).To(BeTrue())
+				})
+			})
+		})
+
+		When("running build and run commands as composite in different containers and a shared volume - "+devfileHandlerCtx.name, func() {
+			var session helper.DevSession
+			var stdout []byte
+			var stderr []byte
+			var devfileCmpName string
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfileCompositeBuildRunDebugInMultiContainersAndSharedVolume.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+				var err error
+				session, stdout, stderr, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				session.Stop()
+				session.WaitEnd()
+			})
+
+			It("should run successfully", func() {
+				By("verifying from the output that all commands have been executed", func() {
+					helper.MatchAllInOutput(string(stdout), []string{
+						"Building your application in container on cluster (command: mkdir)",
+						"Building your application in container on cluster (command: sleep-cmd-build)",
+						"Building your application in container on cluster (command: build-cmd)",
+						"Executing the application (command: sleep-cmd-run)",
+						"Executing the application (command: echo-with-error)",
+						"Executing the application (command: check-build-result)",
+						"Executing the application (command: start)",
+					})
+				})
+
+				By("verifying that any command that did not succeed in the middle has logged such information correctly", func() {
+					helper.MatchAllInOutput(string(stderr), []string{
+						"Devfile command \"echo-with-error\" exited with an error status",
+						"intentional-error-message",
+					})
+				})
+
+				By("building the application only once per exec command in the build command", func() {
+					// Because of the Spinner, the "Building your application in container on cluster" is printed twice in the captured stdout.
+					// The bracket allows to match the last occurrence with the command execution timing information.
+					out := string(stdout)
+					for _, cmd := range []string{"mkdir", "sleep-cmd-build", "build-cmd"} {
+						Expect(strings.Count(out, fmt.Sprintf("Building your application in container on cluster (command: %s) [", cmd))).
+							To(BeNumerically("==", 1), "\nOUTPUT: "+string(stdout)+"\n")
+					}
+				})
+
+				By("verifying that the command did run successfully", func() {
+					podName := commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project)
+					res := commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+						podName,
+						"runtime",
+						commonVar.Project,
+						[]string{"stat", "/projects/testfolder"},
+						func(cmdOp string, err error) bool {
+							return err == nil
+						},
+					)
+					Expect(res).To(BeTrue())
+				})
+			})
+		})
+	}
 
 	When("running odo dev and prestart events are defined", func() {
 		BeforeEach(func() {
@@ -1686,190 +1809,214 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("running odo dev with alternative commands", func() {
+	for _, devfileHandlerCtx := range []struct {
+		name           string
+		cmpName        string
+		devfileHandler func(path string)
+	}{
+		{
+			name: "with metadata.name",
+			//cmpName from Devfile
+			cmpName: "nodejs",
+		},
+		{
+			name: "without metadata.name",
+			//cmpName is returned by alizer.DetectName
+			cmpName: "nodejs-starter",
+			devfileHandler: func(path string) {
+				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+			},
+		},
+	} {
+		devfileHandlerCtx := devfileHandlerCtx
+		When("running odo dev with alternative commands - "+devfileHandlerCtx.name, func() {
 
-		type testCase struct {
-			buildCmd          string
-			runCmd            string
-			devAdditionalOpts []string
-			checkFunc         func(stdout, stderr string)
-		}
-		testForCmd := func(tt testCase) {
-			err := helper.RunDevMode(tt.devAdditionalOpts, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
-				stdout := string(outContents)
-				stderr := string(errContents)
+			type testCase struct {
+				buildCmd          string
+				runCmd            string
+				devAdditionalOpts []string
+				checkFunc         func(stdout, stderr string)
+			}
+			testForCmd := func(tt testCase) {
+				err := helper.RunDevMode(tt.devAdditionalOpts, nil, func(session *gexec.Session, outContents []byte, errContents []byte, ports map[string]string) {
+					stdout := string(outContents)
+					stderr := string(errContents)
 
-				By("checking the output of the command", func() {
-					helper.MatchAllInOutput(stdout, []string{
-						fmt.Sprintf("Building your application in container on cluster (command: %s)", tt.buildCmd),
-						fmt.Sprintf("Executing the application (command: %s)", tt.runCmd),
+					By("checking the output of the command", func() {
+						helper.MatchAllInOutput(stdout, []string{
+							fmt.Sprintf("Building your application in container on cluster (command: %s)", tt.buildCmd),
+							fmt.Sprintf("Executing the application (command: %s)", tt.runCmd),
+						})
 					})
-				})
 
-				if tt.checkFunc != nil {
-					tt.checkFunc(stdout, stderr)
+					if tt.checkFunc != nil {
+						tt.checkFunc(stdout, stderr)
+					}
+
+					By("verifying the exposed application endpoint", func() {
+						url := fmt.Sprintf("http://%s", ports["3000"])
+						resp, err := http.Get(url)
+						Expect(err).ToNot(HaveOccurred())
+						defer resp.Body.Close()
+
+						body, _ := io.ReadAll(resp.Body)
+						helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+					})
+
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			remoteFileChecker := func(path string) bool {
+				return commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					commonVar.CliRunner.GetRunningPodNameByComponent(devfileHandlerCtx.cmpName, commonVar.Project),
+					"runtime",
+					commonVar.Project,
+					[]string{"stat", path},
+					func(cmdOp string, err error) bool {
+						return err == nil
+					},
+				)
+			}
+
+			BeforeEach(func() {
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "devfile-with-alternative-commands.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"))
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+			})
+
+			When("running odo dev with a build command", func() {
+				buildCmdTestFunc := func(buildCmd string, checkFunc func(stdout, stderr string)) {
+					testForCmd(
+						testCase{
+							buildCmd:          buildCmd,
+							runCmd:            "devrun",
+							devAdditionalOpts: []string{"--build-command", buildCmd},
+							checkFunc:         checkFunc,
+						},
+					)
 				}
 
-				By("verifying the exposed application endpoint", func() {
-					url := fmt.Sprintf("http://%s", ports["3000"])
-					resp, err := http.Get(url)
-					Expect(err).ToNot(HaveOccurred())
-					defer resp.Body.Close()
-
-					body, _ := io.ReadAll(resp.Body)
-					helper.MatchAllInOutput(string(body), []string{"Hello from Node.js Starter Application!"})
+				It("should error out if called with an invalid command", func() {
+					output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "build-command-does-not-exist").ShouldFail().Err()
+					Expect(output).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
 				})
 
-			})
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		remoteFileChecker := func(path string) bool {
-			return commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				commonVar.CliRunner.GetRunningPodNameByComponent("nodejs", commonVar.Project),
-				"runtime",
-				commonVar.Project,
-				[]string{"stat", path},
-				func(cmdOp string, err error) bool {
-					return err == nil
-				},
-			)
-		}
-
-		BeforeEach(func() {
-			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs", "devfile-with-alternative-commands.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"))
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-		})
-
-		When("running odo dev with a build command", func() {
-			buildCmdTestFunc := func(buildCmd string, checkFunc func(stdout, stderr string)) {
-				testForCmd(
-					testCase{
-						buildCmd:          buildCmd,
-						runCmd:            "devrun",
-						devAdditionalOpts: []string{"--build-command", buildCmd},
-						checkFunc:         checkFunc,
-					},
-				)
-			}
-
-			It("should error out if called with an invalid command", func() {
-				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "build-command-does-not-exist").ShouldFail().Err()
-				Expect(output).To(ContainSubstring("no build command with name \"build-command-does-not-exist\" found in Devfile"))
-			})
-
-			It("should error out if called with a command of another kind", func() {
-				// devrun is a valid run command, not a build command
-				output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "devrun").ShouldFail().Err()
-				Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
-			})
-
-			It("should execute the custom non-default build command successfully", func() {
-				buildCmdTestFunc("my-custom-build", func(stdout, stderr string) {
-					By("checking that it did not execute the default build command", func() {
-						helper.DontMatchAllInOutput(stdout, []string{
-							"Building your application in container on cluster (command: devbuild)",
-						})
-					})
-
-					By("verifying that the custom command ran successfully", func() {
-						Expect(remoteFileChecker("/projects/file-from-my-custom-build")).To(BeTrue())
-					})
+				It("should error out if called with a command of another kind", func() {
+					// devrun is a valid run command, not a build command
+					output := helper.Cmd("odo", "dev", "--random-ports", "--build-command", "devrun").ShouldFail().Err()
+					Expect(output).To(ContainSubstring("no build command with name \"devrun\" found in Devfile"))
 				})
-			})
 
-			It("should execute the default build command successfully if specified explicitly", func() {
-				// devbuild is the default build command
-				buildCmdTestFunc("devbuild", func(stdout, stderr string) {
-					By("checking that it did not execute the custom build command", func() {
-						helper.DontMatchAllInOutput(stdout, []string{
-							"Building your application in container on cluster (command: my-custom-build)",
-						})
-					})
-				})
-			})
-		})
-
-		When("running odo dev with a run command", func() {
-			runCmdTestFunc := func(runCmd string, checkFunc func(stdout, stderr string)) {
-				testForCmd(
-					testCase{
-						buildCmd:          "devbuild",
-						runCmd:            runCmd,
-						devAdditionalOpts: []string{"--run-command", runCmd},
-						checkFunc:         checkFunc,
-					},
-				)
-			}
-
-			It("should error out if called with an invalid command", func() {
-				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "run-command-does-not-exist").ShouldFail().Err()
-				Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
-			})
-
-			It("should error out if called with a command of another kind", func() {
-				// devbuild is a valid build command, not a run command
-				output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
-				Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
-			})
-
-			It("should execute the custom non-default run command successfully", func() {
-				runCmdTestFunc("my-custom-run", func(stdout, stderr string) {
-					By("checking that it did not execute the default run command", func() {
-						helper.DontMatchAllInOutput(stdout, []string{
-							"Executing the application (command: devrun)",
-						})
-					})
-
-					By("verifying that the custom command ran successfully", func() {
-						Expect(remoteFileChecker("/projects/file-from-my-custom-run")).To(BeTrue())
-					})
-				})
-			})
-
-			It("should execute the default run command successfully if specified explicitly", func() {
-				// devrun is the default run command
-				runCmdTestFunc("devrun", func(stdout, stderr string) {
-					By("checking that it did not execute the custom run command", func() {
-						helper.DontMatchAllInOutput(stdout, []string{
-							"Executing the application (command: my-custom-run)",
-						})
-					})
-				})
-			})
-		})
-
-		It("should execute the custom non-default build and run commands successfully", func() {
-			buildCmd := "my-custom-build"
-			runCmd := "my-custom-run"
-
-			testForCmd(
-				testCase{
-					buildCmd:          buildCmd,
-					runCmd:            runCmd,
-					devAdditionalOpts: []string{"--build-command", buildCmd, "--run-command", runCmd},
-					checkFunc: func(stdout, stderr string) {
-						By("checking that it did not execute the default build and run commands", func() {
+				It("should execute the custom non-default build command successfully", func() {
+					buildCmdTestFunc("my-custom-build", func(stdout, stderr string) {
+						By("checking that it did not execute the default build command", func() {
 							helper.DontMatchAllInOutput(stdout, []string{
 								"Building your application in container on cluster (command: devbuild)",
+							})
+						})
+
+						By("verifying that the custom command ran successfully", func() {
+							Expect(remoteFileChecker("/projects/file-from-my-custom-build")).To(BeTrue())
+						})
+					})
+				})
+
+				It("should execute the default build command successfully if specified explicitly", func() {
+					// devbuild is the default build command
+					buildCmdTestFunc("devbuild", func(stdout, stderr string) {
+						By("checking that it did not execute the custom build command", func() {
+							helper.DontMatchAllInOutput(stdout, []string{
+								"Building your application in container on cluster (command: my-custom-build)",
+							})
+						})
+					})
+				})
+			})
+
+			When("running odo dev with a run command", func() {
+				runCmdTestFunc := func(runCmd string, checkFunc func(stdout, stderr string)) {
+					testForCmd(
+						testCase{
+							buildCmd:          "devbuild",
+							runCmd:            runCmd,
+							devAdditionalOpts: []string{"--run-command", runCmd},
+							checkFunc:         checkFunc,
+						},
+					)
+				}
+
+				It("should error out if called with an invalid command", func() {
+					output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "run-command-does-not-exist").ShouldFail().Err()
+					Expect(output).To(ContainSubstring("no run command with name \"run-command-does-not-exist\" found in Devfile"))
+				})
+
+				It("should error out if called with a command of another kind", func() {
+					// devbuild is a valid build command, not a run command
+					output := helper.Cmd("odo", "dev", "--random-ports", "--run-command", "devbuild").ShouldFail().Err()
+					Expect(output).To(ContainSubstring("no run command with name \"devbuild\" found in Devfile"))
+				})
+
+				It("should execute the custom non-default run command successfully", func() {
+					runCmdTestFunc("my-custom-run", func(stdout, stderr string) {
+						By("checking that it did not execute the default run command", func() {
+							helper.DontMatchAllInOutput(stdout, []string{
 								"Executing the application (command: devrun)",
 							})
 						})
 
-						By("verifying that the custom build command ran successfully", func() {
-							Expect(remoteFileChecker("/projects/file-from-my-custom-build")).To(BeTrue())
-						})
-
-						By("verifying that the custom run command ran successfully", func() {
+						By("verifying that the custom command ran successfully", func() {
 							Expect(remoteFileChecker("/projects/file-from-my-custom-run")).To(BeTrue())
 						})
+					})
+				})
+
+				It("should execute the default run command successfully if specified explicitly", func() {
+					// devrun is the default run command
+					runCmdTestFunc("devrun", func(stdout, stderr string) {
+						By("checking that it did not execute the custom run command", func() {
+							helper.DontMatchAllInOutput(stdout, []string{
+								"Executing the application (command: my-custom-run)",
+							})
+						})
+					})
+				})
+			})
+
+			It("should execute the custom non-default build and run commands successfully", func() {
+				buildCmd := "my-custom-build"
+				runCmd := "my-custom-run"
+
+				testForCmd(
+					testCase{
+						buildCmd:          buildCmd,
+						runCmd:            runCmd,
+						devAdditionalOpts: []string{"--build-command", buildCmd, "--run-command", runCmd},
+						checkFunc: func(stdout, stderr string) {
+							By("checking that it did not execute the default build and run commands", func() {
+								helper.DontMatchAllInOutput(stdout, []string{
+									"Building your application in container on cluster (command: devbuild)",
+									"Executing the application (command: devrun)",
+								})
+							})
+
+							By("verifying that the custom build command ran successfully", func() {
+								Expect(remoteFileChecker("/projects/file-from-my-custom-build")).To(BeTrue())
+							})
+
+							By("verifying that the custom run command ran successfully", func() {
+								Expect(remoteFileChecker("/projects/file-from-my-custom-run")).To(BeTrue())
+							})
+						},
 					},
-				},
-			)
+				)
+			})
 		})
-	})
+	}
 
 	// Tests https://github.com/redhat-developer/odo/issues/3838
 	When("java-springboot application is created and running odo dev", func() {
@@ -2137,40 +2284,65 @@ CMD ["npm", "start"]
 		})
 	})
 
-	When("a container component defines a Command or Args", func() {
-		devfileCmpName := "nodejs"
-		BeforeEach(func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
-			helper.CopyExampleDevFile(
-				filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
-				filepath.Join(commonVar.Context, "devfile.yaml"))
-		})
+	for _, devfileHandlerCtx := range []struct {
+		name           string
+		cmpName        string
+		devfileHandler func(path string)
+	}{
+		{
+			name: "with metadata.name",
+			// cmpName from Devfile
+			cmpName: "nodejs",
+		},
+		{
+			name: "without metadata.name",
+			// cmpName is returned by alizer.DetectName
+			cmpName: "nodejs-starter",
+			devfileHandler: func(path string) {
+				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
+			},
+		},
+	} {
+		devfileHandlerCtx := devfileHandlerCtx
+		When("a container component defines a Command or Args - "+devfileHandlerCtx.name, func() {
+			var devfileCmpName string
+			BeforeEach(func() {
+				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+				helper.CopyExampleDevFile(
+					filepath.Join("source", "devfiles", "nodejs", "issue-5620-devfile-with-container-command-args.yaml"),
+					filepath.Join(commonVar.Context, "devfile.yaml"))
+				devfileCmpName = devfileHandlerCtx.cmpName
+				if devfileHandlerCtx.devfileHandler != nil {
+					devfileHandlerCtx.devfileHandler(filepath.Join(commonVar.Context, "devfile.yaml"))
+				}
+			})
 
-		It("should run odo dev successfully (#5620)", func() {
-			devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(nil)
-			Expect(err).ShouldNot(HaveOccurred())
-			defer devSession.Stop()
-			const errorMessage = "Failed to create the component:"
-			helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
-			helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
+			It("should run odo dev successfully (#5620)", func() {
+				devSession, stdoutBytes, stderrBytes, _, err := helper.StartDevMode(nil)
+				Expect(err).ShouldNot(HaveOccurred())
+				defer devSession.Stop()
+				const errorMessage = "Failed to create the component:"
+				helper.DontMatchAllInOutput(string(stdoutBytes), []string{errorMessage})
+				helper.DontMatchAllInOutput(string(stderrBytes), []string{errorMessage})
 
-			// the command has been started directly in the background. Check the PID stored in a specific file.
-			commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
-				commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
-				"runtime",
-				commonVar.Project,
-				[]string{
-					remotecmd.ShellExecutable, "-c",
-					fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
-						strings.TrimSuffix(storage.SharedDataMountPath, "/")),
-				},
-				func(stdout string, err error) bool {
-					Expect(err).ShouldNot(HaveOccurred())
-					Expect(stdout).To(Equal("0"))
-					return err == nil
-				})
+				// the command has been started directly in the background. Check the PID stored in a specific file.
+				commonVar.CliRunner.CheckCmdOpInRemoteDevfilePod(
+					commonVar.CliRunner.GetRunningPodNameByComponent(devfileCmpName, commonVar.Project),
+					"runtime",
+					commonVar.Project,
+					[]string{
+						remotecmd.ShellExecutable, "-c",
+						fmt.Sprintf("kill -0 $(cat %s/.odo_cmd_run.pid) 2>/dev/null ; echo -n $?",
+							strings.TrimSuffix(storage.SharedDataMountPath, "/")),
+					},
+					func(stdout string, err error) bool {
+						Expect(err).ShouldNot(HaveOccurred())
+						Expect(stdout).To(Equal("0"))
+						return err == nil
+					})
+			})
 		})
-	})
+	}
 
 	When("a component with multiple endpoints is run", func() {
 		stateFile := ".odo/devstate.json"

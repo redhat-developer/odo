@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 starterProjects:
   - name: nodejs-starter
     git:
