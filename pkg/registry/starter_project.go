@@ -1,4 +1,4 @@
-package component
+package registry
 
 import (
 	"errors"

@@ -14,7 +14,6 @@ import (
 	"github.com/devfile/registry-support/registry-library/library"
 
 	"github.com/redhat-developer/odo/pkg/api"
-	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/log"
@@ -51,7 +50,7 @@ func (o RegistryClient) DownloadFileInMemory(params dfutil.HTTPRequestParams) ([
 // DownloadStarterProject downloads a starter project referenced in devfile
 // This will first remove the content of the contextDir
 func (o RegistryClient) DownloadStarterProject(starterProject *devfilev1.StarterProject, decryptedToken string, contextDir string, verbose bool) error {
-	return component.DownloadStarterProject(starterProject, decryptedToken, contextDir, verbose)
+	return DownloadStarterProject(starterProject, decryptedToken, contextDir, verbose)
 }
 
 // GetDevfileRegistries gets devfile registries from preference file,
