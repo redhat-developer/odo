@@ -36,15 +36,15 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Deploy mocks base method.
-func (m *MockClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path, appName string) error {
+func (m *MockClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path, appName, componentName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Deploy", fs, devfileObj, path, appName)
+	ret := m.ctrl.Call(m, "Deploy", fs, devfileObj, path, appName, componentName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Deploy indicates an expected call of Deploy.
-func (mr *MockClientMockRecorder) Deploy(fs, devfileObj, path, appName interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) Deploy(fs, devfileObj, path, appName, componentName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deploy", reflect.TypeOf((*MockClient)(nil).Deploy), fs, devfileObj, path, appName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deploy", reflect.TypeOf((*MockClient)(nil).Deploy), fs, devfileObj, path, appName, componentName)
 }

@@ -100,6 +100,7 @@ func (o *BindingClient) AskNamingStrategy(flags map[string]string) (string, erro
 }
 
 func (o *BindingClient) AddBindingToDevfile(
+	componentName string,
 	bindingName string,
 	bindAsFiles bool,
 	serviceNs string,
@@ -112,7 +113,7 @@ func (o *BindingClient) AddBindingToDevfile(
 		return obj, err
 	}
 
-	deploymentName := fmt.Sprintf("%s-app", obj.GetMetadataName())
+	deploymentName := fmt.Sprintf("%s-app", componentName)
 	deploymentGVK, err := o.kubernetesClient.GetDeploymentAPIVersion()
 	if err != nil {
 		return obj, err

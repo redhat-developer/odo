@@ -42,7 +42,7 @@ func (a *adapterHandler) ApplyImage(img devfilev1.Component) error {
 }
 
 func (a *adapterHandler) ApplyKubernetes(kubernetes devfilev1.Component) error {
-	return ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.Devfile, kubernetes, a.kubeClient, a.parameters.Path)
+	return ApplyKubernetes(odolabels.ComponentDevMode, a.AppName, a.ComponentName, a.Devfile, kubernetes, a.kubeClient, a.parameters.Path)
 }
 
 func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
@@ -137,7 +137,7 @@ func (a *adapterHandler) Execute(devfileCmd devfilev1.Command) error {
 // kubernetes: the kubernetes devfile component to be deployed
 // kubeClient: Kubernetes client to be used to deploy the resource
 // path: path to the context directory
-func ApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kubernetes devfilev1.Component, kubeClient kclient.ClientInterface, path string) error {
+func ApplyKubernetes(mode, appName string, componentName string, devfile parser.DevfileObj, kubernetes devfilev1.Component, kubeClient kclient.ClientInterface, path string) error {
 	// Validate if the GVRs represented by Kubernetes inlined components are supported by the underlying cluster
 	_, err := ValidateResourceExist(kubeClient, devfile, kubernetes, path)
 	if err != nil {
@@ -146,7 +146,7 @@ func ApplyKubernetes(mode, appName string, devfile parser.DevfileObj, kubernetes
 
 	// Get the most common labels that's applicable to all resources being deployed.
 	// Set the mode. Regardless of what Kubernetes resource we are deploying.
-	labels := odolabels.GetLabels(devfile.Data.GetMetadata().Name, appName, mode, false)
+	labels := odolabels.GetLabels(componentName, appName, mode, false)
 
 	klog.V(4).Infof("Injecting labels: %+v into k8s artifact", labels)
 

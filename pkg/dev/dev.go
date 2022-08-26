@@ -15,7 +15,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
-	"github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
+	k8sComponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/watch"
 )
 
@@ -47,6 +47,7 @@ func NewDevClient(
 
 func (o *DevClient) Start(
 	devfileObj parser.DevfileObj,
+	componentName string,
 	namespace string,
 	ignorePaths []string,
 	path string,
@@ -58,10 +59,11 @@ func (o *DevClient) Start(
 	fs filesystem.Filesystem,
 ) (watch.ComponentStatus, error) {
 	klog.V(4).Infoln("Creating new adapter")
-	adapter := component.NewKubernetesAdapter(
+
+	adapter := k8sComponent.NewKubernetesAdapter(
 		o.kubernetesClient, o.prefClient, o.portForwardClient, o.bindingClient,
-		component.AdapterContext{
-			ComponentName: devfileObj.GetMetadataName(),
+		k8sComponent.AdapterContext{
+			ComponentName: componentName,
 			Context:       path,
 			AppName:       "app",
 			Devfile:       devfileObj,
@@ -98,6 +100,7 @@ func (o *DevClient) Start(
 func (o *DevClient) Watch(
 	devfilePath string,
 	devfileObj parser.DevfileObj,
+	componentName string,
 	path string,
 	ignorePaths []string,
 	out io.Writer,
@@ -120,7 +123,7 @@ func (o *DevClient) Watch(
 	watchParameters := watch.WatchParameters{
 		DevfilePath:         devfilePath,
 		Path:                path,
-		ComponentName:       devfileObj.GetMetadataName(),
+		ComponentName:       componentName,
 		ApplicationName:     "app",
 		DevfileWatchHandler: h.RegenerateAdapterAndPush,
 		EnvSpecificInfo:     envSpecificInfo,

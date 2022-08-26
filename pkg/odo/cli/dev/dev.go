@@ -168,8 +168,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	var (
 		devFileObj  = o.Context.EnvSpecificInfo.GetDevfileObj()
 		path        = filepath.Dir(o.Context.EnvSpecificInfo.GetDevfilePath())
-		devfileName = devFileObj.GetMetadataName()
 		namespace   = o.GetProject()
+		devfileName = o.GetComponentName()
 	)
 
 	// Output what the command is doing / information
@@ -198,7 +198,19 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	o.ignorePaths = ignores
 
 	log.Section("Deploying to the cluster in developer mode")
-	componentStatus, err := o.clientset.DevClient.Start(devFileObj, namespace, o.ignorePaths, path, o.debugFlag, o.buildCommandFlag, o.runCommandFlag, o.randomPortsFlag, o.errOut, o.clientset.FS)
+	componentStatus, err := o.clientset.DevClient.Start(
+		devFileObj,
+		devfileName,
+		namespace,
+		o.ignorePaths,
+		path,
+		o.debugFlag,
+		o.buildCommandFlag,
+		o.runCommandFlag,
+		o.randomPortsFlag,
+		o.errOut,
+		o.clientset.FS,
+	)
 	if err != nil {
 		return err
 	}
@@ -206,7 +218,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	scontext.SetComponentType(ctx, component.GetComponentTypeFromDevfileMetadata(devFileObj.Data.GetMetadata()))
 	scontext.SetLanguage(ctx, devFileObj.Data.GetMetadata().Language)
 	scontext.SetProjectType(ctx, devFileObj.Data.GetMetadata().ProjectType)
-	scontext.SetDevfileName(ctx, devFileObj.GetMetadataName())
+	scontext.SetDevfileName(ctx, devfileName)
 
 	d := Handler{
 		clientset:   *o.clientset,
@@ -216,6 +228,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 	err = o.clientset.DevClient.Watch(
 		o.GetDevfilePath(),
 		devFileObj,
+		devfileName,
 		path,
 		o.ignorePaths,
 		o.out,
@@ -282,7 +295,8 @@ func (o *DevOptions) HandleSignal() error {
 func (o *DevOptions) Cleanup(commandError error) {
 	if commandError != nil {
 		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
-		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
+		componentName := o.GetComponentName()
+		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, componentName, log.GetStdout())
 	}
 }
 

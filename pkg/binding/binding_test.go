@@ -395,7 +395,15 @@ func TestBindingClient_AddBindingToDevfile(t *testing.T) {
 			o := &BindingClient{
 				kubernetesClient: tt.fields.kubernetesClient(ctrl),
 			}
-			got, err := o.AddBindingToDevfile(tt.args.bindingName, tt.args.bindAsFiles, tt.args.namespace, tt.args.namingStrategy, tt.args.unstructuredService, tt.args.obj)
+			got, err := o.AddBindingToDevfile(
+				tt.args.obj.GetMetadataName(),
+				tt.args.bindingName,
+				tt.args.bindAsFiles,
+				tt.args.namespace,
+				tt.args.namingStrategy,
+				tt.args.unstructuredService,
+				tt.args.obj,
+			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("AddBindingToDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -3,6 +3,7 @@ package genericclioptions
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -111,7 +112,7 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       input
-		expected    *Context
+		expected    func() *Context
 		expectedErr string
 	}{
 		{
@@ -128,15 +129,18 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: &Context{
-				internalCxt: internalCxt{
-					project:     "myproject",
-					application: "app",
-					// empty when no devfile
-					componentContext: "",
-					outputFlag:       "",
-					devfilePath:      "",
-				},
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:       "myproject",
+						application:   "app",
+						componentName: getTestBaseName(),
+						// empty when no devfile
+						componentContext: "",
+						outputFlag:       "",
+						devfilePath:      "",
+					},
+				}
 			},
 		},
 		{
@@ -151,15 +155,18 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: &Context{
-				internalCxt: internalCxt{
-					project:     "",
-					application: "app",
-					// empty when no devfile
-					componentContext: "",
-					outputFlag:       "",
-					devfilePath:      "",
-				},
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:       "",
+						application:   "app",
+						componentName: getTestBaseName(),
+						// empty when no devfile
+						componentContext: "",
+						outputFlag:       "",
+						devfilePath:      "",
+					},
+				}
 			},
 		},
 		{
@@ -176,14 +183,17 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: &Context{
-				internalCxt: internalCxt{
-					project:          "",
-					application:      "app",
-					componentContext: "",
-					outputFlag:       "",
-					devfilePath:      "",
-				},
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:          "",
+						application:      "app",
+						componentName:    getTestBaseName(),
+						componentContext: "",
+						outputFlag:       "",
+						devfilePath:      "",
+					},
+				}
 			},
 		},
 		{
@@ -200,14 +210,17 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "The current directory does not represent an odo component",
-			expected: &Context{
-				internalCxt: internalCxt{
-					project:          "myproject",
-					application:      "app",
-					componentContext: filepath.Join(prefixDir, "myapp"),
-					outputFlag:       "",
-					devfilePath:      "",
-				},
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:          "myproject",
+						application:      "app",
+						componentName:    "",
+						componentContext: filepath.Join(prefixDir, "myapp"),
+						outputFlag:       "",
+						devfilePath:      "",
+					},
+				}
 			},
 		},
 		{
@@ -226,14 +239,17 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: &Context{
-				internalCxt: internalCxt{
-					project:          "myproject",
-					application:      "app",
-					componentContext: filepath.Join(prefixDir, "myapp"),
-					outputFlag:       "",
-					devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
-				},
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:          "myproject",
+						application:      "app",
+						componentName:    "nodejs-prj1-api-abhz",
+						componentContext: filepath.Join(prefixDir, "myapp"),
+						outputFlag:       "",
+						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
+					},
+				}
 			},
 		},
 		{
@@ -252,14 +268,75 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "",
-			expected: &Context{
-				internalCxt: internalCxt{
-					project:          "myproject",
-					application:      "app",
-					componentContext: filepath.Join(prefixDir, "myapp"),
-					outputFlag:       "",
-					devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:          "myproject",
+						application:      "app",
+						componentName:    "nodejs-prj1-api-abhz",
+						componentContext: filepath.Join(prefixDir, "myapp"),
+						outputFlag:       "",
+						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
+					},
+				}
+			},
+		},
+		{
+			name: "component flag not set, needDevfile, .devfile.yaml is present",
+			input: input{
+				needDevfile: true,
+				isOffline:   true,
+				workingDir:  filepath.Join(prefixDir, "myapp"),
+				projectFlag: "myproject",
+				outputFlag:  "",
+				allFlagSet:  false,
+				populateWorkingDir: func(fs filesystem.Filesystem) {
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
+					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
+					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".devfile.yaml"), []byte(devfileYAML), 0644)
 				},
+			},
+			expectedErr: "",
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:          "myproject",
+						application:      "app",
+						componentName:    "nodejs-prj1-api-abhz",
+						componentContext: filepath.Join(prefixDir, "myapp"),
+						outputFlag:       "",
+						devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
+					},
+				}
+			},
+		},
+		{
+			name: "component flag not set, needDevfile, devfile.yaml is present",
+			input: input{
+				needDevfile: true,
+				isOffline:   true,
+				workingDir:  filepath.Join(prefixDir, "myapp"),
+				projectFlag: "myproject",
+				outputFlag:  "",
+				allFlagSet:  false,
+				populateWorkingDir: func(fs filesystem.Filesystem) {
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
+					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
+					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", "devfile.yaml"), []byte(devfileYAML), 0644)
+				},
+			},
+			expectedErr: "",
+			expected: func() *Context {
+				return &Context{
+					internalCxt: internalCxt{
+						project:          "myproject",
+						application:      "app",
+						componentName:    "nodejs-prj1-api-abhz",
+						componentContext: filepath.Join(prefixDir, "myapp"),
+						outputFlag:       "",
+						devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
+					},
+				}
 			},
 		},
 	}
@@ -328,31 +405,40 @@ func TestNew(t *testing.T) {
 				return
 			}
 
-			if tt.expected != nil && result == nil {
+			expected := tt.expected()
+			if expected != nil && result == nil {
 				t.Errorf("Expected non nil value, got nil result")
 			}
 
-			if tt.expected == nil && result != nil {
+			if expected == nil && result != nil {
 				t.Errorf("Expected nil value, got non nil result")
 			}
 
-			if tt.expected != nil && result != nil {
-				if result.project != tt.expected.project {
-					t.Errorf("Expected project %s, got %s", tt.expected.project, result.project)
+			if expected != nil && result != nil {
+				if result.project != expected.project {
+					t.Errorf("Expected project %s, got %s", expected.project, result.project)
 				}
-				if result.application != tt.expected.application {
-					t.Errorf("Expected application %s, got %s", tt.expected.application, result.application)
+				if result.application != expected.application {
+					t.Errorf("Expected application %s, got %s", expected.application, result.application)
 				}
-				if result.componentContext != tt.expected.componentContext {
-					t.Errorf("Expected component context %s, got %s", tt.expected.componentContext, result.componentContext)
+				if result.componentName != expected.componentName {
+					t.Errorf("Expected componentName %s, got %s", expected.componentName, result.componentName)
 				}
-				if result.outputFlag != tt.expected.outputFlag {
-					t.Errorf("Expected output flag %s, got %s", tt.expected.outputFlag, result.outputFlag)
+				if result.componentContext != expected.componentContext {
+					t.Errorf("Expected component context %s, got %s", expected.componentContext, result.componentContext)
 				}
-				if result.devfilePath != tt.expected.devfilePath {
-					t.Errorf("Expected devfilePath %s, got %s", tt.expected.devfilePath, result.devfilePath)
+				if result.outputFlag != expected.outputFlag {
+					t.Errorf("Expected output flag %s, got %s", expected.outputFlag, result.outputFlag)
+				}
+				if result.devfilePath != expected.devfilePath {
+					t.Errorf("Expected devfilePath %s, got %s", expected.devfilePath, result.devfilePath)
 				}
 			}
 		})
 	}
+}
+
+func getTestBaseName() string {
+	_, b, _, _ := runtime.Caller(0)
+	return filepath.Base(filepath.Dir(b))
 }

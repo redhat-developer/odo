@@ -90,12 +90,10 @@ func references(list []unstructured.Unstructured, ownerRef metav1.OwnerReference
 }
 
 // ListResourcesToDeleteFromDevfile parses all the devfile components and returns a list of resources that are present on the cluster and can be deleted
-func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, mode string) (isInnerLoopDeployed bool, resources []unstructured.Unstructured, err error) {
+func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName string, componentName string, mode string) (isInnerLoopDeployed bool, resources []unstructured.Unstructured, err error) {
 	var deployment *v1.Deployment
 	if mode == odolabels.ComponentDevMode || mode == odolabels.ComponentAnyMode {
 		// Inner Loop
-		// Fetch the deployment of the devfile component
-		componentName := devfileObj.GetMetadataName()
 		var deploymentName string
 		deploymentName, err = util.NamespaceKubernetesObject(componentName, appName)
 		if err != nil {
@@ -151,11 +149,11 @@ func (do DeleteComponentClient) ListResourcesToDeleteFromDevfile(devfileObj pars
 }
 
 // ExecutePreStopEvents executes preStop events if any, as a precondition to deleting a devfile component deployment
-func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName string) error {
+func (do *DeleteComponentClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName string, componentName string) error {
 	if !libdevfile.HasPreStopEvents(devfileObj) {
 		return nil
 	}
-	componentName := devfileObj.GetMetadataName()
+
 	klog.V(4).Infof("Gathering information for component: %q", componentName)
 
 	klog.V(3).Infof("Checking component status for %q", componentName)

@@ -545,7 +545,7 @@ func TestDeleteComponentClient_ListResourcesToDeleteFromDevfile(t *testing.T) {
 			do := DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.mode)
+			gotIsInnerLoopDeployed, gotResources, err := do.ListResourcesToDeleteFromDevfile(tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName(), tt.args.mode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListResourcesToDeleteFromDevfile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -702,7 +702,7 @@ func TestDeleteComponentClient_ExecutePreStopEvents(t *testing.T) {
 			do := &DeleteComponentClient{
 				kubeClient: tt.fields.kubeClient(ctrl),
 			}
-			if err := do.ExecutePreStopEvents(tt.args.devfileObj, tt.args.appName); (err != nil) != tt.wantErr {
+			if err := do.ExecutePreStopEvents(tt.args.devfileObj, tt.args.appName, tt.args.devfileObj.GetMetadataName()); (err != nil) != tt.wantErr {
 				t.Errorf("DeleteComponent() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

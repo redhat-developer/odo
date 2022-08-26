@@ -50,17 +50,17 @@ func (mr *MockClientMockRecorder) DeleteResources(resources, wait interface{}) *
 }
 
 // ExecutePreStopEvents mocks base method.
-func (m *MockClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName string) error {
+func (m *MockClient) ExecutePreStopEvents(devfileObj parser.DevfileObj, appName, componentName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecutePreStopEvents", devfileObj, appName)
+	ret := m.ctrl.Call(m, "ExecutePreStopEvents", devfileObj, appName, componentName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ExecutePreStopEvents indicates an expected call of ExecutePreStopEvents.
-func (mr *MockClientMockRecorder) ExecutePreStopEvents(devfileObj, appName interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ExecutePreStopEvents(devfileObj, appName, componentName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecutePreStopEvents", reflect.TypeOf((*MockClient)(nil).ExecutePreStopEvents), devfileObj, appName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecutePreStopEvents", reflect.TypeOf((*MockClient)(nil).ExecutePreStopEvents), devfileObj, appName, componentName)
 }
 
 // ListClusterResourcesToDelete mocks base method.
@@ -79,9 +79,9 @@ func (mr *MockClientMockRecorder) ListClusterResourcesToDelete(componentName, na
 }
 
 // ListResourcesToDeleteFromDevfile mocks base method.
-func (m *MockClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName, mode string) (bool, []unstructured.Unstructured, error) {
+func (m *MockClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileObj, appName, componentName, mode string) (bool, []unstructured.Unstructured, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListResourcesToDeleteFromDevfile", devfileObj, appName, mode)
+	ret := m.ctrl.Call(m, "ListResourcesToDeleteFromDevfile", devfileObj, appName, componentName, mode)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].([]unstructured.Unstructured)
 	ret2, _ := ret[2].(error)
@@ -89,7 +89,7 @@ func (m *MockClient) ListResourcesToDeleteFromDevfile(devfileObj parser.DevfileO
 }
 
 // ListResourcesToDeleteFromDevfile indicates an expected call of ListResourcesToDeleteFromDevfile.
-func (mr *MockClientMockRecorder) ListResourcesToDeleteFromDevfile(devfileObj, appName, mode interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListResourcesToDeleteFromDevfile(devfileObj, appName, componentName, mode interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourcesToDeleteFromDevfile", reflect.TypeOf((*MockClient)(nil).ListResourcesToDeleteFromDevfile), devfileObj, appName, mode)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListResourcesToDeleteFromDevfile", reflect.TypeOf((*MockClient)(nil).ListResourcesToDeleteFromDevfile), devfileObj, appName, componentName, mode)
 }

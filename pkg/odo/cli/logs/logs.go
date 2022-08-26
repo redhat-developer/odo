@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
-	odolabels "github.com/redhat-developer/odo/pkg/labels"
 	"io"
 	"os"
 	"strconv"
@@ -14,16 +12,21 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/fatih/color"
+
+	odolabels "github.com/redhat-developer/odo/pkg/labels"
+
 	"github.com/redhat-developer/odo/pkg/log"
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	odoutil "github.com/redhat-developer/odo/pkg/odo/util"
 
+	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
-	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const RecommendedCommandName = "logs"
@@ -88,7 +91,7 @@ func (o *LogsOptions) Complete(cmdline cmdline.Cmdline, _ []string) error {
 		return fmt.Errorf("unable to create context: %v", err)
 	}
 
-	o.componentName = o.Context.EnvSpecificInfo.GetDevfileObj().GetMetadataName()
+	o.componentName = o.Context.GetComponentName()
 
 	o.clientset.KubernetesClient.SetNamespace(o.Context.GetProject())
 

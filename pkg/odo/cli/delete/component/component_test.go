@@ -130,9 +130,9 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component with access to devfile",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(true, resources, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
-				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any()).Return(nil)
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 				deleteClient.EXPECT().DeleteResources(resources, false).Return([]unstructured.Unstructured{})
 				return deleteClient
 			},
@@ -145,9 +145,9 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component should not fail even if ExecutePreStopEvents fails",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(true, resources, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
 				deleteClient.EXPECT().ListClusterResourcesToDelete(compName, projectName).Return(resources, nil)
-				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName).Return(errors.New("some error"))
+				deleteClient.EXPECT().ExecutePreStopEvents(gomock.Any(), appName, gomock.Any()).Return(errors.New("some error"))
 				deleteClient.EXPECT().DeleteResources(resources, false).Return(nil)
 				return deleteClient
 			},
@@ -160,7 +160,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component should fail if ListResourcesToDeleteFromDevfile fails",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(false, nil, errors.New("some error"))
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(false, nil, errors.New("some error"))
 				return deleteClient
 			},
 			fields: fields{
@@ -172,7 +172,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "deleting a component should be aborted if forceFlag is not passed",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(true, resources, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(true, resources, nil)
 				return deleteClient
 			},
 			fields: fields{
@@ -184,7 +184,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			name: "nothing to delete",
 			deleteClient: func(ctrl *gomock.Controller) _delete.Client {
 				deleteClient := _delete.NewMockClient(ctrl)
-				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, labels.ComponentAnyMode).Return(false, nil, nil)
+				deleteClient.EXPECT().ListResourcesToDeleteFromDevfile(gomock.Any(), appName, gomock.Any(), labels.ComponentAnyMode).Return(false, nil, nil)
 				return deleteClient
 			},
 			fields: fields{

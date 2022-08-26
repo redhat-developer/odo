@@ -200,20 +200,19 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 	return components, nil
 }
 
-func ListAllComponents(client kclient.ClientInterface, namespace string, devObj parser.DevfileObj) ([]api.ComponentAbstract, string, error) {
+func ListAllComponents(client kclient.ClientInterface, namespace string, devObj parser.DevfileObj, componentName string) ([]api.ComponentAbstract, string, error) {
 	devfileComponents, err := ListAllClusterComponents(client, namespace)
 	if err != nil {
 		return nil, "", err
 	}
 
-	var localComponent api.ComponentAbstract
+	localComponent := api.ComponentAbstract{
+		Name:      componentName,
+		ManagedBy: "",
+		RunningIn: []api.RunningMode{},
+	}
 	if devObj.Data != nil {
-		localComponent = api.ComponentAbstract{
-			Name:      devObj.Data.GetMetadata().Name,
-			ManagedBy: "",
-			RunningIn: []api.RunningMode{},
-			Type:      GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata()),
-		}
+		localComponent.Type = GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
 	}
 
 	componentInDevfile := ""
