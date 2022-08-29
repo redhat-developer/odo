@@ -1,6 +1,24 @@
 #!/bin/bash
 set -x
 
+install_sourceCatalog(){
+ $1 create -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: operatorhubio-catalog
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: quay.io/operatorhubio/catalog:latest
+  displayName: Community Operators
+  publisher: OperatorHub.io
+  updateStrategy:
+    registryPoll:
+      interval: 60m
+EOF
+}
+
 install_postgres_operator(){
   $1 create -f - <<EOF
   apiVersion: operators.coreos.com/v1alpha1
@@ -73,8 +91,11 @@ elif [ "$KUBERNETES" == "true" ]; then
   # install "service-binding-operator" using "kubectl" in "operators" namespace; use "operatorhubio-catalog" catalog source from "olm" namespace
   install_service_binding_operator kubectl operators service-binding-operator operatorhubio-catalog olm
 else
+  #install operatorhub.io sourceCatalog 
+  install_sourceCatalog oc
+
   # install "cloud-native-postgresql" using "oc" in "openshift-operators" namespace; use "certified-operators" catalog source from "openshift-marketplace" namespace
-  install_postgres_operator oc openshift-operators certified-operators openshift-marketplace
+  install_postgres_operator oc openshift-operators operatorhubio-catalog openshift-marketplace
 
   # install "rh-service-binding-operator" using "oc" in "openshift-operators" namespace; use "redhat-operators" catalog source from "openshift-marketplace" namespace
   install_service_binding_operator oc openshift-operators rh-service-binding-operator redhat-operators openshift-marketplace

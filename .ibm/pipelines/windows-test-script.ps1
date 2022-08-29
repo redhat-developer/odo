@@ -51,8 +51,8 @@ function Run-Test {
 
     $GOCACHE="$(Get-Location)\.gocache" 
     mkdir $GOCACHE
-    [Environment]::SetEnvironmentVariable("GOCACHE", "$GOCACHE")
-
+    [Environment]::SetEnvironmentVariable("GOCACHE", "$GOCACHE")   
+    [Environment]::SetEnvironmentVariable("TEST_EXEC_NODES", "$TEST_EXEC_NODES") 
     [Environment]::SetEnvironmentVariable("SKIP_USER_LOGIN_TESTS","true")
 
     Shout "Login IBMcloud"
@@ -91,6 +91,7 @@ $IBM_OPENSHIFT_ENDPOINT=$args[3]
 $LOGFILE=$args[4]
 $REPO=$args[5]
 $CLUSTER_ID=$args[6]
+$TEST_EXEC_NODES=$args[7]
 Shout "Args Recived"
 
 # Pre test cleanup
