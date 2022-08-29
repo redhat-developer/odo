@@ -17,7 +17,7 @@ components:
         - name: "5858-tcp"
           targetPort: 5858
       env:
-      - name: DEBUG_PORT
+      - name: DEBUG_PORT_PROJECT
         value: "5858"
       mountSources: true
 commands:

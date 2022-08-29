@@ -53,6 +53,13 @@ var _ = Describe("odo dev debug command tests", func() {
 				// We are just using this to validate if nodejs agent is listening on the other side
 				helper.HttpWaitForWithStatus("http://"+ports["5858"], "WebSockets request was expected", 12, 5, 400)
 			})
+
+			// #6056
+			It("should not add a DEBUG_PORT variable to the container", func() {
+				podName := commonVar.CliRunner.GetRunningPodNameByComponent(cmpName, commonVar.Project)
+				stdout := commonVar.CliRunner.Exec(podName, commonVar.Project, "--", "sh", "-c", "echo -n ${DEBUG_PORT}")
+				Expect(stdout).To(BeEmpty())
+			})
 		})
 	})
 
