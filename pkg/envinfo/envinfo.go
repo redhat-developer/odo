@@ -27,12 +27,12 @@ func (esi EnvSpecificInfo) GetDevfilePath() string {
 	return esi.devfilePath
 }
 
-// NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
+// NewEnvSpecificInfo retrieves the information about devfile path
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 	return newEnvSpecificInfo(envDir, filesystem.Get())
 }
 
-// newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
+// newEnvSpecificInfo retrieves the information about devfile path
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
 	// Get the path of the environment file
 	devfilePath := location.DevfileLocation(envDir)

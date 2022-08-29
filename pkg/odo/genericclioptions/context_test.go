@@ -197,8 +197,6 @@ func TestNew(t *testing.T) {
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
 				},
 			},
 			expectedErr: "The current directory does not represent an odo component",
@@ -223,8 +221,7 @@ func TestNew(t *testing.T) {
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp"), 0755)
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".devfile.yaml"), []byte(devfileYAML), 0644)
 				},
 			},
@@ -250,8 +247,7 @@ func TestNew(t *testing.T) {
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp"), 0755)
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", "devfile.yaml"), []byte(devfileYAML), 0644)
 				},
 			},

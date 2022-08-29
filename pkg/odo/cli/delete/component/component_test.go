@@ -221,8 +221,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 
 // populateWorkingDir populates the working directory with .odo and devfile.yaml, and returns envinfo
 func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName string) *envinfo.EnvSpecificInfo {
-	_ = fs.MkdirAll(filepath.Join(workingDir, ".odo", "env"), 0755)
-	_ = fs.WriteFile(filepath.Join(workingDir, ".odo", "env", "env.yaml"), []byte{}, 0644)
+	_ = fs.MkdirAll(filepath.Join(workingDir), 0755)
 	env, err := envinfo.NewEnvSpecificInfo(workingDir)
 	if err != nil {
 		return env

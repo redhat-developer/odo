@@ -147,9 +147,7 @@ var _ = Describe("odo create/delete/list/set namespace/project tests", func() {
 					helper.MakeDir(odoDir)
 					err := helper.CreateFileWithContent(filepath.Join(odoDir, "env.yaml"), fmt.Sprintf(`
 ComponentSettings:
-  Name: my-component
   Project: %s
-  AppName: app
 `, commonVar.Project))
 					Expect(err).ShouldNot(HaveOccurred())
 				})

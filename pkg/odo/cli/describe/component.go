@@ -71,7 +71,7 @@ func (o *ComponentOptions) Complete(cmdline cmdline.Cmdline, args []string) (err
 		if err != nil {
 			return err
 		}
-		// this ensures that the namespace set in env.yaml is used
+		// this ensures that the current namespace is used
 		o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 		return nil
 	}
