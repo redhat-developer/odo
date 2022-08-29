@@ -5,7 +5,6 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/redhat-developer/odo/pkg/localConfigProvider"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/util"
 )
@@ -51,16 +50,4 @@ func (o *internalCxt) resolveProjectAndNamespace(cmdline cmdline.Cmdline) error 
 	o.KClient.SetNamespace(namespace)
 	o.project = namespace
 	return nil
-}
-
-// resolveApp resolves the app
-// If `--app` flag is used, return its value
-// Or If app is set in envfile, return its value
-// Or if createAppIfNeeded, returns the default app name
-func resolveApp(cmdline cmdline.Cmdline, localConfiguration localConfigProvider.LocalConfigProvider, createAppIfNeeded bool) string {
-	return defaultAppName
-}
-
-func resolveProject(cmdline cmdline.Cmdline) string {
-	return cmdline.FlagValueIfSet(util.ProjectFlagName)
 }

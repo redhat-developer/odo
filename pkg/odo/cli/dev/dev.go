@@ -183,7 +183,7 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	// add odo-file-index.json path to .gitignore
+	// add .odo dir to .gitignore
 	err = util.AddOdoDirectory(gitIgnoreFile)
 	if err != nil {
 		return err

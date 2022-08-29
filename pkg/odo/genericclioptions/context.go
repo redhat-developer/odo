@@ -98,9 +98,9 @@ func New(parameters CreateParameters) (*Context, error) {
 	}
 	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-	ctx.project = resolveProject(parameters.cmdline)
+	ctx.project = parameters.cmdline.FlagValueIfSet(util.ProjectFlagName)
 
-	ctx.application = resolveApp(parameters.cmdline, ctx.EnvSpecificInfo, parameters.appIfNeeded)
+	ctx.application = defaultAppName
 
 	ctx.componentContext = parameters.componentContext
 

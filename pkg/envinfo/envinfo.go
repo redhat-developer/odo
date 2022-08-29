@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/localConfigProvider"
-	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 )
 
 // EnvInfo holds all the env specific information relevant to a specific Component.
@@ -29,11 +28,6 @@ func (esi EnvSpecificInfo) GetDevfilePath() string {
 
 // NewEnvSpecificInfo retrieves the information about devfile path
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
-	return newEnvSpecificInfo(envDir, filesystem.Get())
-}
-
-// newEnvSpecificInfo retrieves the information about devfile path
-func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
 	// Get the path of the environment file
 	devfilePath := location.DevfileLocation(envDir)
 
