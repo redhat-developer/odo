@@ -74,7 +74,7 @@ func TestCheckGitIgnoreFile(t *testing.T) {
 
 }
 
-func TestAddOdoFileIndex(t *testing.T) {
+func TestAddOdoDirectory(t *testing.T) {
 
 	// create a fake fs in memory
 	fs := filesystem.NewFakeFs()
@@ -94,7 +94,7 @@ func TestAddOdoFileIndex(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			testName:        "Test when odo-file-index.json added to .gitignore",
+			testName:        "Test when .odo added to .gitignore",
 			create:          false,
 			gitIgnoreCreate: mockDirectoryInfo,
 			directory:       gitignorePath,
@@ -111,7 +111,7 @@ func TestAddOdoFileIndex(t *testing.T) {
 
 		t.Run(tt.testName, func(t *testing.T) {
 
-			err := addOdoFileIndex(tt.directory, fs)
+			err := addOdoDirectory(tt.directory, fs)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("addOdoFileIndex unexpected error %v, wantErr %v", err, tt.wantErr)

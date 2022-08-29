@@ -35,21 +35,6 @@ func (m *MockCmdline) EXPECT() *MockCmdlineMockRecorder {
 	return m.recorder
 }
 
-// CheckIfConfigurationNeeded mocks base method.
-func (m *MockCmdline) CheckIfConfigurationNeeded() (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIfConfigurationNeeded")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckIfConfigurationNeeded indicates an expected call of CheckIfConfigurationNeeded.
-func (mr *MockCmdlineMockRecorder) CheckIfConfigurationNeeded() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfConfigurationNeeded", reflect.TypeOf((*MockCmdline)(nil).CheckIfConfigurationNeeded))
-}
-
 // Context mocks base method.
 func (m *MockCmdline) Context() context.Context {
 	m.ctrl.T.Helper()

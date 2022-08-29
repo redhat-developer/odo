@@ -29,7 +29,7 @@ var _ = Describe("odo delete command tests", func() {
 		helper.CommonAfterEach(commonVar)
 	})
 
-	When("running odo delete from a directory that does not contain a .odo/env/env.yaml file", func() {
+	When("running odo delete from a non-component directory", func() {
 		var files []string
 		BeforeEach(func() {
 			files = helper.ListFilesInDir(commonVar.Context)

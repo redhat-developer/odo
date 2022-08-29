@@ -18,8 +18,6 @@ func getStorageLabels(storageName, componentName, applicationName string) map[st
 }
 
 func TestPush(t *testing.T) {
-	componentName := "nodejs"
-
 	localStorage0 := localConfigProvider.LocalStorage{
 		Name:      "storage-0",
 		Size:      "1Gi",
@@ -242,8 +240,6 @@ func TestPush(t *testing.T) {
 
 			fakeStorageClient := NewMockClient(ctrl)
 			fakeLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-
-			fakeLocalConfig.EXPECT().GetName().Return(componentName).AnyTimes()
 
 			fakeStorageClient.EXPECT().List().Return(tt.returnedFromCluster, nil).AnyTimes()
 			fakeLocalConfig.EXPECT().ListStorage().Return(tt.returnedFromLocal, nil).AnyTimes()

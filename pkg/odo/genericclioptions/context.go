@@ -1,7 +1,6 @@
 package genericclioptions
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/redhat-developer/odo/pkg/devfile"
@@ -39,8 +38,6 @@ type internalCxt struct {
 	project string
 	// application used for the command, either passed with the `--app` flag, or the current one by default
 	application string
-	// component used for the command, either passed with the `--component` flag, or the current one by default
-	component string
 	// componentContext is the value passed with the `--context` flag
 	componentContext string
 	// outputFlag is the value passed with the `-o` flag
@@ -101,11 +98,9 @@ func New(parameters CreateParameters) (*Context, error) {
 	}
 	ctx.LocalConfigProvider = ctx.EnvSpecificInfo
 
-	ctx.project = resolveProject(parameters.cmdline)
+	ctx.project = parameters.cmdline.FlagValueIfSet(util.ProjectFlagName)
 
-	ctx.application = resolveApp(parameters.cmdline, ctx.EnvSpecificInfo, parameters.appIfNeeded)
-
-	ctx.component = resolveComponent(parameters.cmdline, ctx.EnvSpecificInfo)
+	ctx.application = defaultAppName
 
 	ctx.componentContext = parameters.componentContext
 
@@ -120,11 +115,6 @@ func New(parameters CreateParameters) (*Context, error) {
 			return nil, e
 		}
 
-		if parameters.cmdline.FlagValueIfSet(util.ComponentFlagName) != "" {
-			if err = ctx.checkComponentExistsOrFail(); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	if parameters.devfile {
@@ -163,33 +153,6 @@ func NewContextCompletion(command *cobra.Command) *Context {
 		util.LogErrorAndExit(err, "")
 	}
 	return ctx
-}
-
-// Component retrieves the optionally specified component or the current one if it is set. If no component is set, returns
-// an error
-func (o *Context) Component(optionalComponent ...string) (string, error) {
-	return o.ComponentAllowingEmpty(false, optionalComponent...)
-}
-
-// ComponentAllowingEmpty retrieves the optionally specified component or the current one if it is set, allowing empty
-// components (instead of exiting with an error) if so specified
-func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...string) (string, error) {
-	switch len(optionalComponent) {
-	case 0:
-		// if we're not specifying a component to resolve, get the current one (resolved in NewContext as cmp)
-		// so nothing to do here unless the calling context doesn't allow no component to be set in which case we return an error
-		if !allowEmpty && len(o.component) == 0 {
-			return "", errors.New("no component is set")
-		}
-	case 1:
-		cmp := optionalComponent[0]
-		o.component = cmp
-	default:
-		// safeguard: fail if more than one optional string is passed because it would be a programming error
-		return "", fmt.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)
-	}
-
-	return o.component, nil
 }
 
 func (o *Context) GetProject() string {

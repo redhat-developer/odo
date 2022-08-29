@@ -125,15 +125,12 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 					return true, &deployment, nil
 				})
 			}
-			tt.envInfo.EnvInfo = *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{
-				Name:    testComponentName,
-				AppName: testAppName,
-			})
+			tt.envInfo.EnvInfo = envinfo.EnvInfo{}
 			ctrl := gomock.NewController(t)
 			fakePrefClient := preference.NewMockClient(ctrl)
 			fakePrefClient.EXPECT().GetEphemeralSourceVolume()
 			componentAdapter := NewKubernetesAdapter(fkclient, fakePrefClient, nil, nil, adapterCtx, "")
-			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, 0, nil)
+			_, _, err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo, libdevfile.DevfileCommands{}, nil)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

@@ -330,8 +330,6 @@ func Test_kubernetesClient_List(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockLocalConfig := localConfigProvider.NewMockLocalConfigProvider(ctrl)
-			mockLocalConfig.EXPECT().GetName().Return(tt.fields.generic.componentName).AnyTimes()
-			mockLocalConfig.EXPECT().GetApplication().Return(tt.fields.generic.appName).AnyTimes()
 
 			tt.fields.generic.localConfigProvider = mockLocalConfig
 

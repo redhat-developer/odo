@@ -51,7 +51,7 @@ func (o *RemoveBindingOptions) Complete(cmdline cmdline.Cmdline, args []string) 
 		return err
 	}
 
-	// this ensures that the namespace as set in env.yaml is used
+	// this ensures that the current namespace is used
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
 	o.flags = o.clientset.BindingClient.GetFlags(cmdline.GetFlags())

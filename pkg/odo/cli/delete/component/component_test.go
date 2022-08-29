@@ -199,7 +199,7 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 			os.RemoveAll(prefixDir)
 			// the second one to cleanup after execution
 			defer os.RemoveAll(prefixDir)
-			info := populateWorkingDir(filesystem.DefaultFs{}, workingDir, compName, projectName, appName)
+			info := populateWorkingDir(filesystem.DefaultFs{}, workingDir, compName, projectName)
 			ctrl := gomock.NewController(t)
 			kubeClient := prepareKubeClient(ctrl, projectName)
 			deleteClient := tt.deleteClient(ctrl)
@@ -220,18 +220,12 @@ func TestComponentOptions_deleteDevfileComponent(t *testing.T) {
 }
 
 // populateWorkingDir populates the working directory with .odo and devfile.yaml, and returns envinfo
-func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName, appName string) *envinfo.EnvSpecificInfo {
-	_ = fs.MkdirAll(filepath.Join(workingDir, ".odo", "env"), 0755)
-	_ = fs.WriteFile(filepath.Join(workingDir, ".odo", "env", "env.yaml"), []byte{}, 0644)
+func populateWorkingDir(fs filesystem.Filesystem, workingDir, compName, projectName string) *envinfo.EnvSpecificInfo {
+	_ = fs.MkdirAll(filepath.Join(workingDir), 0755)
 	env, err := envinfo.NewEnvSpecificInfo(workingDir)
 	if err != nil {
 		return env
 	}
-	_ = env.SetComponentSettings(envinfo.ComponentSettings{
-		Name:    compName,
-		Project: projectName,
-		AppName: appName,
-	})
 	devfileObj := testingutil.GetTestDevfileObjFromFile("devfile-deploy.yaml")
 	devfileYAML, err := yaml.Marshal(devfileObj.Data)
 	if err != nil {
@@ -260,7 +254,6 @@ func prepareKubeClient(ctrl *gomock.Controller, projectName string) kclient.Clie
 func prepareContext(ctrl *gomock.Controller, kubeClient kclient.ClientInterface, info *envinfo.EnvSpecificInfo, workingDir string) *genericclioptions.Context {
 	cmdline := cmdline.NewMockCmdline(ctrl)
 	cmdline.EXPECT().GetWorkingDirectory().Return(workingDir, nil).AnyTimes()
-	cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 	cmdline.EXPECT().FlagValueIfSet("project").Return("").AnyTimes()
 	cmdline.EXPECT().FlagValueIfSet("app").Return("").AnyTimes()
 	cmdline.EXPECT().FlagValueIfSet("component").Return("").AnyTimes()

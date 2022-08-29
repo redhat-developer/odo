@@ -104,7 +104,7 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 			if err != nil {
 				return nil, err
 			}
-			log.Successf("Deleted storage %v from %v", storage.Name, configProvider.GetName())
+			log.Successf("Deleted storage %v from component", storage.Name)
 			continue
 		} else if storage.Name == val.Name {
 			if val.Spec.Size != storage.Spec.Size {
@@ -122,7 +122,7 @@ func Push(client Client, configProvider localConfigProvider.LocalConfigProvider)
 		if e := client.Create(storage); e != nil {
 			return nil, e
 		}
-		log.Successf("Added storage %v to %v", storage.Name, configProvider.GetName())
+		log.Successf("Added storage %v to component", storage.Name)
 	}
 
 	return ephemeralConfigNames, nil

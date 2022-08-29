@@ -75,7 +75,7 @@ type WatchParameters struct {
 	DevfileWatchHandler func(adapters.PushParameters, WatchParameters, *ComponentStatus) error
 	// Parameter whether or not to show build logs
 	Show bool
-	// EnvSpecificInfo contains information of env.yaml file
+	// EnvSpecificInfo contains information about devfile
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileBuildCmd string
@@ -541,7 +541,6 @@ func processEvents(
 		DevfileScanIndexForWatch: !hasFirstSuccessfulPushOccurred,
 		EnvSpecificInfo:          *parameters.EnvSpecificInfo,
 		Debug:                    parameters.Debug,
-		DebugPort:                parameters.DebugPort,
 		RandomPorts:              parameters.RandomPorts,
 		ErrOut:                   parameters.ErrOut,
 	}

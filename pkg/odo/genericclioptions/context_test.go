@@ -8,12 +8,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/testingutil/filesystem"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -99,12 +97,8 @@ func TestNew(t *testing.T) {
 		workingDir         string
 		populateWorkingDir func(fs filesystem.Filesystem)
 
-		// current namespace
-		currentNamespace string
-
 		// flags
 		projectFlag   string
-		appFlag       string
 		componentFlag string
 		outputFlag    string
 		allFlagSet    bool
@@ -127,29 +121,17 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-					if err != nil {
-						return
-					}
-					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name:    "a-name",
-						Project: "a-project",
-						AppName: "an-app-name",
-					})
 				},
 			},
 			expectedErr: "",
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:     "myproject",
-					application: "myapp",
-					component:   "mycomponent",
+					application: "app",
 					// empty when no devfile
 					componentContext: "",
 					outputFlag:       "",
@@ -166,24 +148,13 @@ func TestNew(t *testing.T) {
 				outputFlag:  "",
 				allFlagSet:  false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-					if err != nil {
-						return
-					}
-					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name:    "a-name",
-						Project: "a-project",
-						AppName: "an-app-name",
-					})
 				},
 			},
 			expectedErr: "",
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:     "",
-					application: "an-app-name",
-					component:   "a-name",
+					application: "app",
 					// empty when no devfile
 					componentContext: "",
 					outputFlag:       "",
@@ -202,23 +173,13 @@ func TestNew(t *testing.T) {
 				parentCommandName: "url",
 				commandName:       "create",
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					env, err := envinfo.NewEnvSpecificInfo(filepath.Join(prefixDir, "myapp"))
-					if err != nil {
-						return
-					}
-					_ = env.SetComponentSettings(envinfo.ComponentSettings{
-						Name:    "a-name",
-						AppName: "an-app-name",
-					})
 				},
 			},
 			expectedErr: "",
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "",
-					application:      "an-app-name",
-					component:        "a-name",
+					application:      "app",
 					componentContext: "",
 					outputFlag:       "",
 					devfilePath:      "",
@@ -232,21 +193,17 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
 				},
 			},
 			expectedErr: "The current directory does not represent an odo component",
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
-					application:      "myapp",
-					component:        "mycomponent",
+					application:      "app",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
 					devfilePath:      "",
@@ -260,13 +217,11 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp"), 0755)
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".devfile.yaml"), []byte(devfileYAML), 0644)
 				},
 			},
@@ -274,8 +229,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
-					application:      "myapp",
-					component:        "mycomponent",
+					application:      "app",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
 					devfilePath:      filepath.Join(prefixDir, "myapp", ".devfile.yaml"),
@@ -289,13 +243,11 @@ func TestNew(t *testing.T) {
 				isOffline:     true,
 				workingDir:    filepath.Join(prefixDir, "myapp"),
 				projectFlag:   "myproject",
-				appFlag:       "myapp",
 				componentFlag: "mycomponent",
 				outputFlag:    "",
 				allFlagSet:    false,
 				populateWorkingDir: func(fs filesystem.Filesystem) {
-					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp", ".odo", "env"), 0755)
-					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", ".odo", "env", "env.yaml"), []byte{}, 0644)
+					_ = fs.MkdirAll(filepath.Join(prefixDir, "myapp"), 0755)
 					_ = fs.WriteFile(filepath.Join(prefixDir, "myapp", "devfile.yaml"), []byte(devfileYAML), 0644)
 				},
 			},
@@ -303,8 +255,7 @@ func TestNew(t *testing.T) {
 			expected: &Context{
 				internalCxt: internalCxt{
 					project:          "myproject",
-					application:      "myapp",
-					component:        "mycomponent",
+					application:      "app",
 					componentContext: filepath.Join(prefixDir, "myapp"),
 					outputFlag:       "",
 					devfilePath:      filepath.Join(prefixDir, "myapp", "devfile.yaml"),
@@ -327,9 +278,7 @@ func TestNew(t *testing.T) {
 			// Fake Cobra
 			cmdline := cmdline.NewMockCmdline(ctrl)
 			cmdline.EXPECT().GetWorkingDirectory().Return(tt.input.workingDir, nil).AnyTimes()
-			cmdline.EXPECT().CheckIfConfigurationNeeded().Return(true, nil).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("project").Return(tt.input.projectFlag).AnyTimes()
-			cmdline.EXPECT().FlagValueIfSet("app").Return(tt.input.appFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("component").Return(tt.input.componentFlag).AnyTimes()
 			cmdline.EXPECT().FlagValueIfSet("o").Return(tt.input.outputFlag).AnyTimes()
 			cmdline.EXPECT().IsFlagSet("all").Return(tt.input.allFlagSet).AnyTimes()
@@ -354,18 +303,6 @@ func TestNew(t *testing.T) {
 				},
 			}
 			kclient.EXPECT().GetNamespaceNormal(gomock.Any()).Return(ns, nil).AnyTimes()
-
-			if tt.expected != nil {
-				depName := tt.expected.component + "-" + tt.expected.application
-				dep := &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: depName,
-					},
-				}
-				kclient.EXPECT().GetDeploymentByName(gomock.Any()).Return(dep, nil).AnyTimes()
-				kclient.EXPECT().GetCurrentNamespace().Return(tt.input.currentNamespace).AnyTimes()
-				cmdline.EXPECT().GetKubeClient().Return(kclient, nil).AnyTimes()
-			}
 
 			// Call the tested function
 			params := NewCreateParameters(cmdline)
@@ -405,9 +342,6 @@ func TestNew(t *testing.T) {
 				}
 				if result.application != tt.expected.application {
 					t.Errorf("Expected application %s, got %s", tt.expected.application, result.application)
-				}
-				if result.component != tt.expected.component {
-					t.Errorf("Expected component %s, got %s", tt.expected.component, result.component)
 				}
 				if result.componentContext != tt.expected.componentContext {
 					t.Errorf("Expected component context %s, got %s", tt.expected.componentContext, result.componentContext)

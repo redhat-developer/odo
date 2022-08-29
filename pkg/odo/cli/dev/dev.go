@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/devfile/library/pkg/devfile/parser"
-	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/redhat-developer/odo/pkg/component"
@@ -19,7 +18,6 @@ import (
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
 	kcomponent "github.com/redhat-developer/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
-	"github.com/redhat-developer/odo/pkg/envinfo"
 	"github.com/redhat-developer/odo/pkg/libdevfile"
 	"github.com/redhat-developer/odo/pkg/log"
 	clierrors "github.com/redhat-developer/odo/pkg/odo/cli/errors"
@@ -151,33 +149,6 @@ func (o *DevOptions) Complete(cmdline cmdline.Cmdline, args []string) error {
 
 	o.initialDevfileObj = o.Context.EnvSpecificInfo.GetDevfileObj()
 
-	// ENV.YAML
-	//
-	// Set the appropriate variables in the env.yaml file
-	//
-	// TODO: Eventually refactor with code in deploy/deploy.go
-	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
-	if err != nil {
-		return fmt.Errorf("unable to retrieve configuration information: %v", err)
-	}
-
-	// If the env.yaml does not exist, we will save the project name
-	if !envfileinfo.Exists() {
-		err = envfileinfo.SetComponentSettings(envinfo.ComponentSettings{Project: o.GetProject()})
-		if err != nil {
-			return fmt.Errorf("failed to write new env.yaml file: %w", err)
-		}
-	} else if envfileinfo.Exists() && envfileinfo.GetComponentSettings().Project != o.GetProject() {
-		// If the env.yaml exists and the project is set incorrectly, we'll override it.
-		klog.V(4).Info("Overriding project name in env.yaml as it's set incorrectly, new project name: ", o.GetProject())
-		err = envfileinfo.SetConfiguration("project", o.GetProject())
-		if err != nil {
-			return fmt.Errorf("failed to update project in env.yaml file: %w", err)
-		}
-	}
-
-	// END ENV.YAML
-
 	o.clientset.KubernetesClient.SetNamespace(o.GetProject())
 
 	return nil
@@ -212,14 +183,8 @@ func (o *DevOptions) Run(ctx context.Context) (err error) {
 		return err
 	}
 
-	// add odo-file-index.json path to .gitignore
-	err = util.AddOdoFileIndex(gitIgnoreFile)
-	if err != nil {
-		return err
-	}
-
-	// add devstate.json path to .gitignore
-	err = util.AddOdoDevState(gitIgnoreFile)
+	// add .odo dir to .gitignore
+	err = util.AddOdoDirectory(gitIgnoreFile)
 	if err != nil {
 		return err
 	}
@@ -315,30 +280,10 @@ func (o *DevOptions) HandleSignal() error {
 }
 
 func (o *DevOptions) Cleanup(commandError error) {
-	err := unsetProjectInEnvfile()
-	if err != nil {
-		klog.V(4).Infof("Error unsetting project into env.yaml file")
-	}
-
 	if commandError != nil {
 		devFileObj := o.Context.EnvSpecificInfo.GetDevfileObj()
 		_ = o.clientset.WatchClient.CleanupDevResources(devFileObj, log.GetStdout())
 	}
-}
-
-func unsetProjectInEnvfile() error {
-	envfileinfo, err := envinfo.NewEnvSpecificInfo("")
-	if err != nil {
-		return err
-	}
-
-	if envfileinfo.Exists() {
-		err = envfileinfo.SetConfiguration("project", "")
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // NewCmdDev implements the odo dev command
