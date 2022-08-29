@@ -16,6 +16,11 @@ The name of the service binding is prefixed with `*` when the service binding is
 
 To get more information about a specific service binding, you can run the command `odo describe binding --name <name>` (see [`odo describe binding` command reference](./describe-binding.md)).
 
+## Available flags
+
+* `--namespace` - Namespace to list the bindings from (optional). By default, the current namespace defined in kubeconfig is used
+* `-o json` - Outputs the list in JSON format. See [JSON output](json-output.md) for more information
+
 ## Running the Command
 
 To list all the service bindings, you can run `odo list binding`:

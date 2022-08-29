@@ -83,48 +83,61 @@ var _ = Describe("odo describe/list binding command tests", func() {
 				})
 			})
 
-			It("should list the binding without running odo dev", func() {
-				By("JSON output", func() {
-					res := helper.Cmd("odo", "list", "binding", "-o", "json").ShouldPass()
-					stdout, stderr := res.Out(), res.Err()
-					Expect(stderr).To(BeEmpty())
-					Expect(helper.IsJSON(stdout)).To(BeTrue())
-					helper.JsonPathContentIs(stdout, "bindings.0.name", "my-nodejs-app-cluster-sample")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.application.kind", "Deployment")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.application.name", "my-nodejs-app-app")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.application.apiVersion", "apps/v1")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.kind", "Cluster")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.name", "cluster-sample")
-					if ns != "" {
-						helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.namespace", ns)
-					} else {
-						helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.services.0.namespace")
-					}
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.detectBindingResources", "true")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
-					helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
-					helper.JsonPathContentIs(stdout, "bindings.0.status", "")
-					helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
-					helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample")
+			for _, command := range [][]string{
+				{"list", "binding"},
+				{"list"},
+			} {
+				command := command
+				It("should list the binding without running odo dev", func() {
+					By("JSON output", func() {
+						res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
+						stdout, stderr := res.Out(), res.Err()
+						Expect(stderr).To(BeEmpty())
+						Expect(helper.IsJSON(stdout)).To(BeTrue())
+						helper.JsonPathContentIs(stdout, "bindings.0.name", "my-nodejs-app-cluster-sample")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.application.kind", "Deployment")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.application.name", "my-nodejs-app-app")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.application.apiVersion", "apps/v1")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.apiVersion", "postgresql.k8s.enterprisedb.io/v1")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.kind", "Cluster")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.name", "cluster-sample")
+						if ns != "" {
+							helper.JsonPathContentIs(stdout, "bindings.0.spec.services.0.namespace", ns)
+						} else {
+							helper.JsonPathDoesNotExist(stdout, "bindings.0.spec.services.0.namespace")
+						}
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.detectBindingResources", "true")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.bindAsFiles", "true")
+						helper.JsonPathContentIs(stdout, "bindings.0.spec.namingStrategy", "lowercase")
+						helper.JsonPathContentIs(stdout, "bindings.0.status", "")
+						helper.JsonPathContentIs(stdout, "bindingsInDevfile.#", "1")
+						helper.JsonPathContentIs(stdout, "bindingsInDevfile.0", "my-nodejs-app-cluster-sample")
+					})
+					By("human readable output", func() {
+						res := helper.Cmd("odo", command...).ShouldPass()
+						stdout, _ := res.Out(), res.Err()
+						lines := strings.Split(stdout, "\n")
+
+						if len(command) == 1 {
+							Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing resources from the namespace %q", commonVar.Project)))
+							lines = lines[6:]
+						} else {
+							Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
+						}
+						Expect(lines[3]).To(ContainSubstring("* "))
+						Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
+						Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
+						if ns != "" {
+							Expect(lines[3]).To(ContainSubstring(fmt.Sprintf("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: %s)", ns)))
+						} else {
+							Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
+							Expect(lines[3]).ToNot(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: "))
+						}
+						Expect(lines[3]).To(ContainSubstring("None"))
+					})
 				})
-				By("human readable output", func() {
-					res := helper.Cmd("odo", "list", "binding").ShouldPass()
-					stdout, _ := res.Out(), res.Err()
-					lines := strings.Split(stdout, "\n")
-					Expect(lines[0]).To(ContainSubstring(fmt.Sprintf("Listing ServiceBindings from the namespace %q", commonVar.Project)))
-					Expect(lines[3]).To(ContainSubstring("* "))
-					Expect(lines[3]).To(ContainSubstring("my-nodejs-app-cluster-sample"))
-					Expect(lines[3]).To(ContainSubstring("my-nodejs-app-app (Deployment)"))
-					if ns != "" {
-						Expect(lines[3]).To(ContainSubstring(fmt.Sprintf("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: %s)", ns)))
-					} else {
-						Expect(lines[3]).To(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)"))
-						Expect(lines[3]).ToNot(ContainSubstring("cluster-sample (Cluster.postgresql.k8s.enterprisedb.io) (namespace: "))
-					}
-					Expect(lines[3]).To(ContainSubstring("None"))
-				})
-			})
+			}
+
 		})
 
 		for _, ctx := range []struct {
@@ -561,41 +574,77 @@ var _ = Describe("odo describe/list binding command tests", func() {
 
 						})
 
-						It("should list the binding", func() {
-							By("JSON output", func() {
-								res := helper.Cmd("odo", "list", "binding", "-o", "json").ShouldPass()
-								stdout, stderr := res.Out(), res.Err()
-								if ctx.assertListJsonOutput != nil {
-									ctx.assertListJsonOutput(true, stdout, stderr)
-								}
-							})
-							By("human readable output", func() {
-								res := helper.Cmd("odo", "list", "binding").ShouldPass()
-								stdout, stderr := res.Out(), res.Err()
-								if ctx.assertListHumanReadableOutput != nil {
-									ctx.assertListHumanReadableOutput(true, stdout, stderr)
-								}
+						for _, command := range [][]string{
+							{"list"},
+							{"list", "binding"},
+						} {
+							It("should list the binding", func() {
+								By("JSON output", func() {
+									res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
+									stdout, stderr := res.Out(), res.Err()
+									if ctx.assertListJsonOutput != nil {
+										ctx.assertListJsonOutput(true, stdout, stderr)
+									}
+								})
+								By("human readable output", func() {
+									res := helper.Cmd("odo", command...).ShouldPass()
+									stdout, stderr := res.Out(), res.Err()
+									if ctx.assertListHumanReadableOutput != nil {
+										ctx.assertListHumanReadableOutput(true, stdout, stderr)
+									}
+								})
+
+								By("JSON output from another directory", func() {
+									err := os.Chdir("/")
+									Expect(err).ToNot(HaveOccurred())
+									res := helper.Cmd("odo", append(command, "-o", "json")...).ShouldPass()
+									stdout, stderr := res.Out(), res.Err()
+									if ctx.assertListJsonOutput != nil {
+										ctx.assertListJsonOutput(false, stdout, stderr)
+									}
+								})
+								By("human readable output from another directory with name flag", func() {
+									err := os.Chdir("/")
+									Expect(err).ToNot(HaveOccurred())
+									res := helper.Cmd("odo", command...).ShouldPass()
+									stdout, stderr := res.Out(), res.Err()
+									if ctx.assertListHumanReadableOutput != nil {
+										ctx.assertListHumanReadableOutput(false, stdout, stderr)
+									}
+								})
 							})
 
-							By("JSON output from another directory", func() {
-								err := os.Chdir("/")
-								Expect(err).ToNot(HaveOccurred())
-								res := helper.Cmd("odo", "list", "binding", "-o", "json").ShouldPass()
-								stdout, stderr := res.Out(), res.Err()
-								if ctx.assertListJsonOutput != nil {
-									ctx.assertListJsonOutput(false, stdout, stderr)
-								}
+							When("changing the current namespace", func() {
+								BeforeEach(func() {
+									commonVar.CliRunner.SetProject("default")
+								})
+
+								AfterEach(func() {
+									commonVar.CliRunner.SetProject(commonVar.Project)
+								})
+
+								It("should list the binding with --namespace flag", func() {
+									By("JSON output from another directory", func() {
+										err := os.Chdir("/")
+										Expect(err).ToNot(HaveOccurred())
+										res := helper.Cmd("odo", append(command, "-o", "json", "--namespace", commonVar.Project)...).ShouldPass()
+										stdout, stderr := res.Out(), res.Err()
+										if ctx.assertListJsonOutput != nil {
+											ctx.assertListJsonOutput(false, stdout, stderr)
+										}
+									})
+									By("human readable output from another directory with name flag", func() {
+										err := os.Chdir("/")
+										Expect(err).ToNot(HaveOccurred())
+										res := helper.Cmd("odo", append(command, "--namespace", commonVar.Project)...).ShouldPass()
+										stdout, stderr := res.Out(), res.Err()
+										if ctx.assertListHumanReadableOutput != nil {
+											ctx.assertListHumanReadableOutput(false, stdout, stderr)
+										}
+									})
+								})
 							})
-							By("human readable output from another directory with name flag", func() {
-								err := os.Chdir("/")
-								Expect(err).ToNot(HaveOccurred())
-								res := helper.Cmd("odo", "list", "binding").ShouldPass()
-								stdout, stderr := res.Out(), res.Err()
-								if ctx.assertListHumanReadableOutput != nil {
-									ctx.assertListHumanReadableOutput(false, stdout, stderr)
-								}
-							})
-						})
+						}
 					})
 				})
 			})
