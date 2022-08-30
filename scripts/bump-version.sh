@@ -22,16 +22,16 @@ check_version(){
 }
 
 
-echo "* Bumping version in pkg/odo/cli/version/version.go"
-sed -i "s/\(VERSION = \)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"v${NEW_VERSION}\"/g" pkg/version/version.go
+echo "* Bumping version in pkg/version/version.go"
+sed -i "s/\(VERSION = \)\".*\"/\1\"v${NEW_VERSION}\"/g" pkg/version/version.go
 check_version pkg/version/version.go
 
 echo "* Bumping version in scripts/rpm-prepare.sh"
-sed -i "s/\(ODO_VERSION:=\)[0-9]*\.[0-9]*\.[0-9]*/\1${NEW_VERSION}/g" scripts/rpm-prepare.sh
+sed -i "s/\(ODO_VERSION:=\).*}/\1${NEW_VERSION}}/g" scripts/rpm-prepare.sh
 check_version scripts/rpm-prepare.sh
 
 echo "* Bumping version in Dockerfile.rhel"
-sed -i "s/\(version=\)[0-9]*\.[0-9]*\.[0-9]*/\1${NEW_VERSION}/g" Dockerfile.rhel
+sed -i "s/\(version=\).*/\1${NEW_VERSION}/g" Dockerfile.rhel
 check_version Dockerfile.rhel
 
 echo "****************************************************************************************"
