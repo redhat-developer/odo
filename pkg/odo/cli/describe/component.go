@@ -139,7 +139,10 @@ func (o *ComponentOptions) describeDevfileComponent() (result api.Component, dev
 	if err != nil {
 		return api.Component{}, nil, err
 	}
-	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, devfileObj.GetMetadataName())
+
+	componentName := o.GetComponentName()
+
+	runningIn, err := component.GetRunningModes(o.clientset.KubernetesClient, componentName)
 	if err != nil {
 		if !errors.As(err, &component.NoComponentFoundError{}) {
 			return api.Component{}, nil, err

@@ -3,6 +3,9 @@ package genericclioptions
 import (
 	"fmt"
 
+	"github.com/devfile/library/pkg/devfile/parser"
+
+	"github.com/redhat-developer/odo/pkg/component"
 	"github.com/redhat-developer/odo/pkg/devfile"
 	"github.com/redhat-developer/odo/pkg/devfile/location"
 	"github.com/redhat-developer/odo/pkg/devfile/validate"
@@ -40,6 +43,8 @@ type internalCxt struct {
 	application string
 	// componentContext is the value passed with the `--context` flag
 	componentContext string
+	// componentName is the name of the component (computed either from the Devfile metadata, or detected by Alizer, or built from the current directory)
+	componentName string
 	// outputFlag is the value passed with the `-o` flag
 	outputFlag string
 	// The path of the detected devfile
@@ -123,7 +128,8 @@ func New(parameters CreateParameters) (*Context, error) {
 		if isDevfile {
 			ctx.devfilePath = devfilePath
 			// Parse devfile and validate
-			devObj, err := devfile.ParseAndValidateFromFileWithVariables(ctx.devfilePath, parameters.variables)
+			var devObj parser.DevfileObj
+			devObj, err = devfile.ParseAndValidateFromFileWithVariables(ctx.devfilePath, parameters.variables)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse the devfile %s: %w", ctx.devfilePath, err)
 			}
@@ -132,10 +138,20 @@ func New(parameters CreateParameters) (*Context, error) {
 				return nil, err
 			}
 			ctx.EnvSpecificInfo.SetDevfileObj(devObj)
+
+			ctx.componentName, err = component.GatherName(parameters.componentContext, &devObj)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			return &Context{
 				internalCxt: ctx,
 			}, NewNoDevfileError(".")
+		}
+	} else {
+		ctx.componentName, err = component.GatherName(".", nil)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -161,6 +177,10 @@ func (o *Context) GetProject() string {
 
 func (o *Context) GetApplication() string {
 	return o.application
+}
+
+func (o *Context) GetComponentName() string {
+	return o.componentName
 }
 
 func (o *Context) GetOutputFlag() string {

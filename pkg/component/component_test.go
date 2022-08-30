@@ -2,17 +2,28 @@ package component
 
 import (
 	"errors"
+	"os"
+	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	devfilepkg "github.com/devfile/api/v2/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile"
+	"github.com/devfile/library/pkg/devfile/parser"
+	devfileCtx "github.com/devfile/library/pkg/devfile/parser/context"
+	"github.com/devfile/library/pkg/devfile/parser/data"
+	"github.com/devfile/library/pkg/testingutil/filesystem"
+	dfutil "github.com/devfile/library/pkg/util"
 	"github.com/golang/mock/gomock"
 	"github.com/kylelemons/godebug/pretty"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/redhat-developer/odo/pkg/kclient"
 	"github.com/redhat-developer/odo/pkg/labels"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"github.com/redhat-developer/odo/pkg/testingutil"
+	"github.com/redhat-developer/odo/pkg/util"
 
 	"github.com/redhat-developer/odo/pkg/api"
 )
@@ -341,6 +352,133 @@ func TestGetRunningModes(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetRunningModes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGatherName(t *testing.T) {
+	type devfileProvider func() (*parser.DevfileObj, string, error)
+	fakeDevfileWithNameProvider := func(name string) devfileProvider {
+		return func() (*parser.DevfileObj, string, error) {
+			dData, err := data.NewDevfileData(string(data.APISchemaVersion220))
+			if err != nil {
+				return nil, "", err
+			}
+			dData.SetMetadata(devfilepkg.DevfileMetadata{Name: name})
+			return &parser.DevfileObj{
+				Ctx:  devfileCtx.FakeContext(filesystem.NewFakeFs(), parser.OutputDevfileYamlPath),
+				Data: dData,
+			}, "", nil
+		}
+	}
+
+	fs := filesystem.DefaultFs{}
+	//realDevfileWithNameProvider creates a real temporary directory and writes a devfile with the given name to it.
+	//It is the responsibility of the caller to remove the directory.
+	realDevfileWithNameProvider := func(name string) devfileProvider {
+		return func() (*parser.DevfileObj, string, error) {
+			dir, err := fs.TempDir("", "Component_GatherName_")
+			if err != nil {
+				return nil, dir, err
+			}
+
+			originalDevfile := testingutil.GetTestDevfileObjFromFile("devfile.yaml")
+			originalDevfilePath := originalDevfile.Ctx.GetAbsPath()
+
+			stat, err := os.Stat(originalDevfilePath)
+			if err != nil {
+				return nil, dir, err
+			}
+			dPath := path.Join(dir, "devfile.yaml")
+			err = dfutil.CopyFile(originalDevfilePath, dPath, stat)
+			if err != nil {
+				return nil, dir, err
+			}
+
+			var d parser.DevfileObj
+			d, _, err = devfile.ParseDevfileAndValidate(parser.ParserArgs{Path: dPath})
+			if err != nil {
+				return nil, dir, err
+			}
+
+			err = d.SetMetadataName(name)
+
+			return &d, dir, err
+		}
+	}
+
+	wantDevfileDirectoryName := func(contextDir string, d *parser.DevfileObj) string {
+		return util.GetDNS1123Name(filepath.Base(filepath.Dir(d.Ctx.GetAbsPath())))
+	}
+
+	for _, tt := range []struct {
+		name                string
+		devfileProviderFunc devfileProvider
+		wantErr             bool
+		want                func(contextDir string, d *parser.DevfileObj) string
+	}{
+		{
+			name:                "compliant name",
+			devfileProviderFunc: fakeDevfileWithNameProvider("my-component-name"),
+			want:                func(contextDir string, d *parser.DevfileObj) string { return "my-component-name" },
+		},
+		{
+			name:                "un-sanitized name",
+			devfileProviderFunc: fakeDevfileWithNameProvider("name with spaces"),
+			want:                func(contextDir string, d *parser.DevfileObj) string { return "name-with-spaces" },
+		},
+		{
+			name:                "all numeric name",
+			devfileProviderFunc: fakeDevfileWithNameProvider("123456789"),
+			// "x" prefix added by util.GetDNS1123Name
+			want: func(contextDir string, d *parser.DevfileObj) string { return "x123456789" },
+		},
+		{
+			name:                "no name",
+			devfileProviderFunc: realDevfileWithNameProvider(""),
+			want:                wantDevfileDirectoryName,
+		},
+		{
+			name:                "blank name",
+			devfileProviderFunc: realDevfileWithNameProvider("   "),
+			want:                wantDevfileDirectoryName,
+		},
+		{
+			name: "passing no devfile should use the context directory name",
+			devfileProviderFunc: func() (*parser.DevfileObj, string, error) {
+				dir, err := fs.TempDir("", "Component_GatherName_")
+				if err != nil {
+					return nil, dir, err
+				}
+				return nil, dir, nil
+			},
+			want: func(contextDir string, _ *parser.DevfileObj) string {
+				return util.GetDNS1123Name(filepath.Base(contextDir))
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			d, dir, dErr := tt.devfileProviderFunc()
+			if dir != "" {
+				defer func(fs filesystem.Filesystem, path string) {
+					if err := fs.RemoveAll(path); err != nil {
+						t.Logf("error while attempting to remove temporary directory %q: %v", path, err)
+					}
+				}(fs, dir)
+			}
+			if dErr != nil {
+				t.Errorf("error when building test Devfile object: %v", dErr)
+				return
+			}
+
+			got, err := GatherName(dir, d)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+			}
+			want := tt.want(dir, d)
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("GatherName() = %q, want = %q", got, want)
 			}
 		})
 	}

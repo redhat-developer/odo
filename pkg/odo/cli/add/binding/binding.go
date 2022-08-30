@@ -123,7 +123,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 		}
 		componentName = workloadName
 	} else {
-		componentName = o.EnvSpecificInfo.GetDevfileObj().GetMetadataName()
+		componentName = o.GetComponentName()
 	}
 
 	bindingName, err := o.clientset.BindingClient.AskBindingName(serviceName, componentName, o.flags)
@@ -144,7 +144,7 @@ func (o *AddBindingOptions) Run(_ context.Context) error {
 	if withDevfile {
 		var devfileobj parser.DevfileObj
 		devfileobj, err = o.clientset.BindingClient.AddBindingToDevfile(
-			bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
+			componentName, bindingName, bindAsFiles, ns, namingStrategy, serviceMap[service], o.EnvSpecificInfo.GetDevfileObj())
 		if err != nil {
 			return err
 		}

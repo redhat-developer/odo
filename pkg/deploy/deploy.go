@@ -26,28 +26,30 @@ func NewDeployClient(kubeClient kclient.ClientInterface) *DeployClient {
 	}
 }
 
-func (o *DeployClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string) error {
-	deployHandler := newDeployHandler(fs, devfileObj, path, o.kubeClient, appName)
+func (o *DeployClient) Deploy(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, appName string, componentName string) error {
+	deployHandler := newDeployHandler(fs, devfileObj, path, o.kubeClient, appName, componentName)
 	return libdevfile.Deploy(devfileObj, deployHandler)
 }
 
 type deployHandler struct {
-	fs         filesystem.Filesystem
-	devfileObj parser.DevfileObj
-	path       string
-	kubeClient kclient.ClientInterface
-	appName    string
+	fs            filesystem.Filesystem
+	devfileObj    parser.DevfileObj
+	path          string
+	kubeClient    kclient.ClientInterface
+	appName       string
+	componentName string
 }
 
 var _ libdevfile.Handler = (*deployHandler)(nil)
 
-func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string) *deployHandler {
+func newDeployHandler(fs filesystem.Filesystem, devfileObj parser.DevfileObj, path string, kubeClient kclient.ClientInterface, appName string, componentName string) *deployHandler {
 	return &deployHandler{
-		fs:         fs,
-		devfileObj: devfileObj,
-		path:       path,
-		kubeClient: kubeClient,
-		appName:    appName,
+		fs:            fs,
+		devfileObj:    devfileObj,
+		path:          path,
+		kubeClient:    kubeClient,
+		appName:       appName,
+		componentName: componentName,
 	}
 }
 
@@ -58,7 +60,7 @@ func (o *deployHandler) ApplyImage(img v1alpha2.Component) error {
 
 // ApplyKubernetes applies inline Kubernetes YAML from the devfile.yaml file
 func (o *deployHandler) ApplyKubernetes(kubernetes v1alpha2.Component) error {
-	return component.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.devfileObj, kubernetes, o.kubeClient, o.path)
+	return component.ApplyKubernetes(odolabels.ComponentDeployMode, o.appName, o.componentName, o.devfileObj, kubernetes, o.kubeClient, o.path)
 }
 
 // Execute will deploy the listed information in the `exec` section of devfile.yaml

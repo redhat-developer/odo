@@ -570,16 +570,16 @@ func processEvents(
 	return nil, nil
 }
 
-func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, out io.Writer) error {
+func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, componentName string, out io.Writer) error {
 	fmt.Fprintln(out, "Cleaning resources, please wait")
-	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", labels.ComponentDevMode)
+	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", componentName, labels.ComponentDevMode)
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
 		return err
 	}
 	// if innerloop deployment resource is present, then execute preStop events
 	if isInnerLoopDeployed {
-		err = o.deleteClient.ExecutePreStopEvents(devfileObj, "app")
+		err = o.deleteClient.ExecutePreStopEvents(devfileObj, "app", componentName)
 		if err != nil {
 			fmt.Fprint(out, "Failed to execute preStop events")
 		}

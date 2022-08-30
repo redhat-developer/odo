@@ -122,12 +122,14 @@ func (o *ComponentOptions) deleteNamedComponent() error {
 // deleteDevfileComponent deletes all the components defined by the devfile in the current directory
 func (o *ComponentOptions) deleteDevfileComponent() error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
-	componentName := devfileObj.GetMetadataName()
+
+	componentName := o.GetComponentName()
+
 	namespace := o.GetProject()
 	appName := "app"
 
 	log.Info("Searching resources to delete, please wait...")
-	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName, labels.ComponentAnyMode)
+	isInnerLoopDeployed, devfileResources, err := o.clientset.DeleteClient.ListResourcesToDeleteFromDevfile(devfileObj, appName, componentName, labels.ComponentAnyMode)
 	if err != nil {
 		return err
 	}
@@ -146,7 +148,7 @@ func (o *ComponentOptions) deleteDevfileComponent() error {
 
 		// if innerloop deployment resource is present, then execute preStop events
 		if isInnerLoopDeployed {
-			err = o.clientset.DeleteClient.ExecutePreStopEvents(devfileObj, appName)
+			err = o.clientset.DeleteClient.ExecutePreStopEvents(devfileObj, appName, componentName)
 			if err != nil {
 				log.Errorf("Failed to execute preStop events")
 			}

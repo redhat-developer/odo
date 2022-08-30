@@ -39,6 +39,7 @@ type Client interface {
 	AskNamingStrategy(flags map[string]string) (string, error)
 	// AddBindingToDevfile adds the ServiceBinding manifest to the devfile
 	AddBindingToDevfile(
+		componentName string,
 		bindingName string,
 		bindAsFiles bool,
 		serviceNs string,

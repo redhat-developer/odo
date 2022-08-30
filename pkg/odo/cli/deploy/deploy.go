@@ -115,7 +115,9 @@ func (o *DeployOptions) Validate() error {
 // Run contains the logic for the odo command
 func (o *DeployOptions) Run(ctx context.Context) error {
 	devfileObj := o.EnvSpecificInfo.GetDevfileObj()
-	devfileName := devfileObj.GetMetadataName()
+
+	devfileName := o.GetComponentName()
+
 	path := filepath.Dir(o.EnvSpecificInfo.GetDevfilePath())
 	appName := o.GetApplication()
 	namespace := o.GetProject()
@@ -129,7 +131,7 @@ func (o *DeployOptions) Run(ctx context.Context) error {
 		"odo version: "+version.VERSION)
 
 	// Run actual deploy command to be used
-	err := o.clientset.DeployClient.Deploy(o.clientset.FS, devfileObj, path, appName)
+	err := o.clientset.DeployClient.Deploy(o.clientset.FS, devfileObj, path, appName, devfileName)
 
 	if err == nil {
 		log.Info("\nYour Devfile has been successfully deployed")

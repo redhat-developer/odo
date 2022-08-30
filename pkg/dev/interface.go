@@ -19,6 +19,7 @@ type Client interface {
 	// Returns the status of the started component
 	Start(
 		devfileObj parser.DevfileObj,
+		componentName string,
 		namespace string,
 		ignorePaths []string,
 		path string,
@@ -40,6 +41,7 @@ type Client interface {
 	Watch(
 		devfilePath string,
 		devfileObj parser.DevfileObj,
+		componentName string,
 		path string,
 		ignorePaths []string,
 		out io.Writer,

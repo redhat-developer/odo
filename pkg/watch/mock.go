@@ -37,17 +37,17 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // CleanupDevResources mocks base method.
-func (m *MockClient) CleanupDevResources(devfileObj parser.DevfileObj, out io.Writer) error {
+func (m *MockClient) CleanupDevResources(devfileObj parser.DevfileObj, componentName string, out io.Writer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CleanupDevResources", devfileObj, out)
+	ret := m.ctrl.Call(m, "CleanupDevResources", devfileObj, componentName, out)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CleanupDevResources indicates an expected call of CleanupDevResources.
-func (mr *MockClientMockRecorder) CleanupDevResources(devfileObj, out interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) CleanupDevResources(devfileObj, componentName, out interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupDevResources", reflect.TypeOf((*MockClient)(nil).CleanupDevResources), devfileObj, out)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupDevResources", reflect.TypeOf((*MockClient)(nil).CleanupDevResources), devfileObj, componentName, out)
 }
 
 // WatchAndPush mocks base method.
