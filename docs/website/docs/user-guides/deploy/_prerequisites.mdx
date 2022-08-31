@@ -1,0 +1,24 @@
+**Prerequisites:**
+
+Before we begin, you must login to a container registry that we will be pushing our application to.
+
+Login to your container registry with either `podman` or `docker`:
+
+```console
+podman login
+```
+Or
+```console
+docker login
+```
+
+In order for `odo deploy` to push your image, your container registry needs to be accessible.
+
+
+**NOTE for MacOS:** If you are running Apple Silicon (M1/M2), you must set your Docker build platform to the cluster you are deploying to.
+
+For example, if you are deploying to `linux/amd64`:
+
+```console
+export DOCKER_DEFAULT_PLATFORM=linux/amd64  
+```

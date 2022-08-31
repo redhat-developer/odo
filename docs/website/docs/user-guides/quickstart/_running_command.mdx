@@ -1,0 +1,41 @@
+import CodeBlock from '@theme/CodeBlock';
+import Version from '../../_version.mdx';
+
+<CreatingApp name="nodejs" port="3000" language="javascript" framework="Node.JS"/>
+
+Now that we've generated our code as well as our Devfile, let's start on development.
+
+`odo` uses [inner loop development](/docs/introduction#what-is-inner-loop-and-outer-loop) and allows you to code, 
+build, run and test the application in a continuous workflow.
+
+Once you run `odo dev`, you can freely edit code in your favourite IDE and watch as `odo` rebuilds and redeploys it.
+
+<p>Let's run `odo dev` to start development on your <span>{props.framework}</span> application:</p>
+
+```console
+odo dev
+```
+
+<div>
+<CodeBlock language="console">
+{`\
+$ odo dev
+  __
+ /  \\__     Developing using the my-`}{props.name}{`-app Devfile
+ \\__/  \\    Namespace: default`}<Version/>{`
+↪ Deploying to the cluster in developer mode
+ ✓  Waiting for Kubernetes resources [3s]
+ ✓  Syncing files into the container [330ms]
+ ✓  Building your application in container on cluster [4s]
+ ✓  Executing the application [1s]
+\n
+Your application is now running on the cluster
+ - Forwarding from 127.0.0.1:40001 -> `}{props.port}{`
+\n
+Watching for changes in the current directory /Users/user/`}{props.name}{`
+Press Ctrl+c to exit \`odo dev\` and delete resources from the cluster
+`}
+</CodeBlock>
+</div>
+
+You can now access the application at [127.0.0.1:40001](http://127.0.0.1:40001) in your local browser and start your development loop. `odo` will watch for changes and push the code for real-time updates.
