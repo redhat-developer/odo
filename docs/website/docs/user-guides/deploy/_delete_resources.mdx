@@ -1,0 +1,20 @@
+After testing your application, you may optionally undeploy using the `odo delete component` command:
+
+```console
+odo delete component
+```
+```console
+$ odo delete component
+Searching resources to delete, please wait...
+This will delete "myapp" from the namespace "default".
+ •  The component contains the following resources that will get deleted:
+        - Deployment: myapp
+        - Service: myapp
+        - Ingress: myapp
+? Are you sure you want to delete "myapp" and all its resources? Yes
+The component "myapp" is successfully deleted from namespace "default"
+ •  There are still resources left in the cluster that might be belonging to the deleted component.
+        - Endpoints: svc
+        - Service: svc
+If you want to delete those, execute `odo delete component --name myapp --namespace default`
+```
