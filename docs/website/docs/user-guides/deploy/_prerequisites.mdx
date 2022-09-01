@@ -1,24 +1,92 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 **Prerequisites:**
 
-Before we begin, you must login to a container registry that we will be pushing our application to.
+In order to use `odo deploy` you must be able to build an image as well as push to a registry.
 
-Login to your container registry with either `podman` or `docker`:
+#### Step 1. Login to your container registry
+
+Login to a container registry that you will be pushing your application to:
+
+<Tabs
+defaultValue="podman"
+values={[
+{label: 'Podman', value: 'podman'},
+{label: 'Docker', value: 'docker'},
+]}>
+
+<TabItem value="podman">
 
 ```console
 podman login
 ```
-Or
+
+```console
+$ podman login quay.io
+Username:
+Password:
+Login Succeeded!
+```
+
+</TabItem>
+
+<TabItem value="docker">
+
 ```console
 docker login
 ```
 
-In order for `odo deploy` to push your image, your container registry needs to be accessible.
+```console
+$ podman login docker.io
+Username:
+Password:
+Login Succeeded!
+```
 
+</TabItem>
 
-**NOTE for MacOS:** If you are running Apple Silicon (M1/M2), you must set your Docker build platform to the cluster you are deploying to.
+</Tabs>
 
-For example, if you are deploying to `linux/amd64`:
+#### Step 2. Set the appropriate container build platform
+
+Your container image build must match the same architecture as the cluster you are deploying to.
+
+For example: you will have to cross-build a AMD64 image on a Mac M1 (ARM64) in order to deploy to a AMD64 cluster.
+
+Choose your deployment architecture:
+
+<Tabs
+defaultValue="linuxamd64"
+values={[
+{label: 'Linux (AMD64)', value: 'linuxamd64'},
+{label: 'Linux (ARM)', value: 'linuxarm64'},
+{label: 'Windows (AMD64)', value: 'windowsamd64'},
+]}>
+
+<TabItem value="linuxamd64">
 
 ```console
 export DOCKER_DEFAULT_PLATFORM=linux/amd64  
 ```
+
+</TabItem>
+
+<TabItem value="linuxarm64">
+
+```console
+export DOCKER_DEFAULT_PLATFORM=linux/arm64  
+```
+
+</TabItem>
+
+<TabItem value="windowsamd64">
+
+```console
+export DOCKER_DEFAULT_PLATFORM=windows/amd64  
+```
+
+</TabItem>
+
+</Tabs>
+
