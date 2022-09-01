@@ -238,6 +238,14 @@ func Printf(format string, a ...interface{}) {
 	}
 }
 
+// Print will output in an appropriate "information" manner; for e.g.
+// • <message>
+func Print(a ...interface{}) {
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s%s%s%s", prefixSpacing, getSpacingString(), suffixSpacing, fmt.Sprintln(a...))
+	}
+}
+
 // Success will output in an appropriate "success" manner
 //  ✓  <message>
 func Success(a ...interface{}) {
@@ -423,7 +431,7 @@ func Bold(s string) {
 // BoldColor will print out a bolded string with a color (that's passed in)
 func SboldColor(c color.Attribute, s string) string {
 	chosenColor := color.New(c).SprintFunc()
-	return chosenColor(fmt.Sprintln(Sbold(s)))
+	return chosenColor(fmt.Sprint(Sbold(s)))
 }
 
 // Describef will print out the first variable as BOLD and then the second not..

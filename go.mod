@@ -24,6 +24,7 @@ require (
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.9
+	github.com/mattn/go-tty v0.0.4
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.6

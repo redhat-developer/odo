@@ -286,6 +286,8 @@ func (o *Handler) regenerateComponentAdapterFromWatchParams(parameters watch.Wat
 }
 
 func (o *DevOptions) HandleSignal() error {
+	log.Section("Cleanup dev mode")
+	log.Print("Stopping the dev environment ...")
 	o.cancel()
 	// At this point, `ctx.Done()` will be raised, and the cleanup will be done
 	// wait for the cleanup to finish and let the main thread finish instead of signal handler go routine from runnable

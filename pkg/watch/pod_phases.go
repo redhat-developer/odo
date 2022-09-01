@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -42,7 +43,7 @@ func (o *PodPhases) Delete(out io.Writer, pod *corev1.Pod) {
 func (o PodPhases) Display(out io.Writer) {
 
 	if len(o) == 0 {
-		log.Fwarning(out, "No pod exists")
+		log.Fwarning(out, "No pod exists [Background task]")
 		return
 	}
 
@@ -54,10 +55,10 @@ func (o PodPhases) Display(out io.Writer) {
 	if len(keys) == 1 {
 		phase := o[keys[0]]
 		if phase == corev1.PodRunning {
-			log.Fsuccess(out, "Pod is "+phase)
+			log.Fsuccess(out, fmt.Sprintf("Pod is %s [Background task]", phase))
 			return
 		}
-		log.Fwarning(out, "Pod is "+phase)
+		log.Fwarning(out, fmt.Sprintf("Pod is %s [Background task]", phase))
 		return
 	}
 
@@ -69,5 +70,5 @@ func (o PodPhases) Display(out io.Writer) {
 	for _, k := range keys {
 		values = append(values, string(o[k]))
 	}
-	log.Fwarning(out, "Pods are "+strings.Join(values, ", "))
+	log.Fwarning(out, fmt.Sprintf("Pods are %s [Background task]", strings.Join(values, ", ")))
 }

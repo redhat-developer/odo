@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/devfile/library/pkg/devfile/parser"
+	tty "github.com/mattn/go-tty"
 
 	_delete "github.com/redhat-developer/odo/pkg/component/delete"
 	"github.com/redhat-developer/odo/pkg/devfile/adapters"
@@ -38,7 +39,10 @@ import (
 const (
 	// PushErrorString is the string that is printed when an error occurs during watch's Push operation
 	PushErrorString = "Error occurred on Push"
-	CtrlCMessage    = "Press Ctrl+c to exit `odo dev` and delete resources from the cluster"
+	PromptMessages  = `
+ [Ctrl+c] - Exit and delete resources from the cluster
+ [p]      - Manually sync / push files to the cluster
+`
 )
 
 type WatchClient struct {
@@ -271,7 +275,9 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
 	}
 
-	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, parameters, out, evaluateFileChanges, processEvents, componentStatus)
+	keyboardInput := createKeyWatcher(ctx)
+
+	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, parameters, out, evaluateFileChanges, processEvents, componentStatus, keyboardInput)
 }
 
 func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher, error) {
@@ -294,7 +300,7 @@ func getFullSourcesWatcher(path string, fileIgnores []string) (*fsnotify.Watcher
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, componentStatus ComponentStatus) error {
+func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, componentStatus ComponentStatus, keyboardInput chan string) error {
 
 	expBackoff := NewExpBackoff()
 
@@ -318,19 +324,57 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 	retryTimer := time.NewTimer(time.Millisecond)
 	<-retryTimer.C
 
+	// List of pod phases that will run as background processes
 	podsPhases := NewPodPhases()
 
 	for {
+
 		select {
 		case event := <-sourcesWatcher.Events:
 			events = append(events, event)
 			// We are waiting for more events in this interval
 			sourcesTimer.Reset(100 * time.Millisecond)
+
+			// Trigger manual sync
+		case key := <-keyboardInput:
+			if key == "p" {
+				log.Section("Manually syncing files")
+				log.Print("Updating component ...")
+
+				// Before we push a sync, we *should* still check to see what files have changed
+				changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, sourcesWatcher)
+
+				// Sync files REGARDLESS if changedFiles / deletedPaths == 0
+				// Set the state to sync being outdated
+				componentStatus.State = StateSyncOutdated
+
+				// Push the files
+				log.Print("Pushing files ...")
+				retry, err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+				if err != nil {
+					return err
+				}
+
+				// Empty all events
+				if componentStatus.State == StateReady {
+					events = []fsnotify.Event{} // empty the events slice to capture new events
+				}
+
+				// Reset the retry timer
+				if retry != nil {
+					retryTimer.Reset(*retry)
+				} else {
+					retryTimer.Reset(time.Millisecond)
+					<-retryTimer.C
+				}
+			}
+
 		case <-sourcesTimer.C:
 			// timer has fired
 			if !componentCanSyncFile(componentStatus.State) {
 				continue
 			}
+
 			// first find the files that have changed (also includes the ones newly created) or deleted
 			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, sourcesWatcher)
 			// process the changes and sync files with remote pod
@@ -338,7 +382,8 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 				continue
 			}
 			componentStatus.State = StateSyncOutdated
-			fmt.Fprintf(out, "Pushing files...\n\n")
+			log.Section("Automatically syncing files")
+			log.Print("Pushing files ...")
 			retry, err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
@@ -385,7 +430,7 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 			devfileTimer.Reset(100 * time.Millisecond)
 
 		case <-devfileTimer.C:
-			fmt.Fprintf(out, "Updating Component...\n\n")
+			log.Print("Updating component ...")
 			retry, err := processEventsHandler(nil, nil, parameters, out, &componentStatus, expBackoff)
 			if err != nil {
 				return err
@@ -522,7 +567,7 @@ func processEvents(
 	backoff *ExpBackoff,
 ) (*time.Duration, error) {
 	for _, file := range removeDuplicates(append(changedFiles, deletedPaths...)) {
-		fmt.Fprintf(out, "\nFile %s changed\n", file)
+		log.Printf("File %s changed", file)
 	}
 
 	var hasFirstSuccessfulPushOccurred bool
@@ -554,7 +599,7 @@ func processEvents(
 		if parameters.WatchFiles {
 			// Log and output, but intentionally not exiting on error here.
 			// We don't want to break watch when push failed, it might be fixed with the next change.
-			fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
+			log.Printf("%s - %s", PushErrorString, err.Error())
 		} else {
 			return nil, err
 		}
@@ -571,7 +616,7 @@ func processEvents(
 }
 
 func (o *WatchClient) CleanupDevResources(devfileObj parser.DevfileObj, componentName string, out io.Writer) error {
-	fmt.Fprintln(out, "Cleaning resources, please wait")
+	log.Print("Cleaning resources, please wait")
 	isInnerLoopDeployed, resources, err := o.deleteClient.ListResourcesToDeleteFromDevfile(devfileObj, "app", componentName, labels.ComponentDevMode)
 	if err != nil {
 		fmt.Fprintf(out, "failed to delete inner loop resources: %v", err)
@@ -635,9 +680,55 @@ func removeDuplicates(input []string) []string {
 }
 
 func printInfoMessage(out io.Writer, path string) {
-	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
+	log.Sectionf("Dev mode")
+	fmt.Fprintf(out, " %s\n Watching for changes in the current directory %s\n\n %s%s", log.Sbold("Status:"), path, log.Sbold("Keyboard Commands:"), PromptMessages)
 }
 
 func isFatal(err error) bool {
 	return errors.As(err, &adapters.ErrPortForward{})
+}
+
+// createKeyWatcher will create a go routine that will run in the background in order to
+// watch user key inputs
+func createKeyWatcher(ctx context.Context) chan string {
+	keyInput := make(chan string)
+
+	// Create a go routine that will read a character from the tty in the background without interruption
+	go func() {
+
+		// Create this in the background / go routine so there is no blocking, as well
+		// as always open to be read from the user.
+		// In order to capture the keyboard events, we'll use the "tty" library.
+		// Open up a tty to read in character keys from the user, this will be done in the background
+		tty, err := tty.Open()
+		if err != nil {
+			klog.Error(err)
+		}
+		defer tty.Close()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case c := <-getRune(tty):
+				keyInput <- string(c)
+			}
+
+		}
+	}()
+
+	return keyInput
+}
+
+func getRune(tty *tty.TTY) (ch chan rune) {
+	ch = make(chan rune)
+	go func() {
+		char, err := tty.ReadRune()
+		if err != nil {
+			klog.Error(err)
+		}
+		ch <- char
+		close(ch)
+	}()
+	return ch
 }
