@@ -5,13 +5,11 @@ sidebar_position: 4
 
 `odo` can be used as either a [CLI tool](./installation#cli-binary-installation) or an [IDE plugin](./installation#ide-installation) on Mac, Windows or Linux.
 
-## CLI installation
-
 Each release is *signed*, *checksummed*, *verified*, and then pushed to our [binary mirror](https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/odo/). 
 
 For more information on the changes of each release, they can be viewed either on [GitHub](https://github.com/redhat-developer/odo/releases) or the [blog](/blog).
 
-### Linux
+## Linux
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -153,14 +151,33 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 
 ---
 
-### MacOS
+## MacOS
+
+### Homebrew
+
+**NOTE:** This will install from the *main* branch on GitHub
+
+Installing `odo` using [Homebrew](https://brew.sh/):
+
+1. Install odo:
+
+```shell
+brew install --HEAD odo-dev
+```
+
+2. Verify the version you installed is up-to-date:
+
+```shell
+odo version
+```
+
+### Binary
 
 <Tabs
 defaultValue="intel"
 values={[
 {label: 'Intel', value: 'intel'},
 {label: 'Apple Silicon', value: 'arm'},
-{label: 'Homebrew', value: 'homebrew'},
 ]}>
 
 <TabItem value="intel">
@@ -227,31 +244,11 @@ echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 ```
 </TabItem>
 
-<TabItem value="homebrew">
-
-**NOTE:** This will install from the *main* branch on GitHub
-
-Installing `odo` using [Homebrew](https://brew.sh/):
-
-1. Install odo:
-
-```shell
-brew install --HEAD odo-dev
-```
-
-2. Verify the version you installed is up-to-date:
-
-```shell
-odo version
-```
-
-</TabItem>
-
 </Tabs>
 
 ---
 
-### Windows
+## Windows
 
 1. Open a PowerShell terminal
 
@@ -270,8 +267,24 @@ type odo.exe.sha256
 
 4. Add the binary to your `PATH`
 
+## Visual Studio Code Plugin
 
-### Installing from source code
+Installs `odo` capabilities Visual Studio Code (VSCode).
+
+The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) uses both `odo` and `oc` binary to interact with Kubernetes or OpenShift cluster.
+
+1. Open VS Code.
+2. Launch VS Code Quick Open (Ctrl+P)
+3. Paste the following command:
+    ```shell
+     ext install redhat.vscode-openshift-connector
+    ```
+
+## Alternative installation methods
+
+
+
+### Source code
 1. Clone the repository and cd into it.
    ```shell
    git clone https://github.com/redhat-developer/odo.git
@@ -298,7 +311,7 @@ type odo.exe.sha256
    odo version
    ```
 
-### Installing `odo` using Maven plugin
+### Maven plugin
 It is possible to integrate the odo binary download in a Maven project using [odo Downloader Plugin](https://github.com/tnb-software/odo-downloader).
 The download can be executed using `download` goal which automatically retrieves the version for the current architecture:
 ```shell
@@ -306,14 +319,3 @@ mvn software.tnb:odo-downloader-maven-plugin:0.1.3:download \
   -Dodo.target.file=$HOME/bin/odo \
   -Dodo.version=v3.0.0~rc1
 ```
-
-## IDE Installation
-
-### Installing `odo` in Visual Studio Code (VSCode)
-The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) uses both `odo` and `oc` binary to interact with Kubernetes or OpenShift cluster.
-1. Open VS Code.
-2. Launch VS Code Quick Open (Ctrl+P)
-3. Paste the following command:
-    ```shell
-     ext install redhat.vscode-openshift-connector
-    ```
