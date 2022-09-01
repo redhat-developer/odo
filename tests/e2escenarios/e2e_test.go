@@ -284,7 +284,7 @@ var _ = Describe("E2E Test", func() {
 			addBindableKind := commonVar.CliRunner.Run("apply", "-f", helper.GetExamplePath("manifests", "bindablekind-instance.yaml"))
 			Expect(addBindableKind.ExitCode()).To(BeEquivalentTo(0))
 		})
-		It("should verify developer workflow of using binding in innerloop", func() {
+		It("should verify developer workflow of using binding as file in innerloop", func() {
 			deploymentName := "my-component"
 			serviceName := "my-cs"
 			bindingName := helper.RandString(6)
@@ -348,8 +348,7 @@ var _ = Describe("E2E Test", func() {
 
 			// check if secrets are mounted in
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-			time.Sleep(70 * time.Second)
-			stdout = commonVar.CliRunner.Exec(podName, commonVar.Project, "bash -c 'ls ${SERVICE_BINDING_ROOT}/"+bindingName+"/password'")
+			stdout = commonVar.CliRunner.Exec(podName, commonVar.Project, "bash", "-c", "ls", "'${SERVICE_BINDING_ROOT}/"+bindingName+"/password'")
 			Expect(stdout).Should(Not(BeEmpty()))
 
 			// "changes are made made to the applications"
@@ -390,7 +389,7 @@ var _ = Describe("E2E Test", func() {
 			Eventually(string(commonVar.CliRunner.Run(getSVCArgs...).Out.Contents()), 60, 3).ShouldNot(ContainSubstring(serviceName))
 		})
 
-		It("should verify developer workflow of using binding in innerloop", func() {
+		It("should verify developer workflow of using binding as env in innerloop", func() {
 			deploymentName := "my-component"
 			serviceName := "my-cs"
 			bindingName := helper.RandString(6)
@@ -454,8 +453,7 @@ var _ = Describe("E2E Test", func() {
 
 			// check if secrets are mounted in
 			podName := commonVar.CliRunner.GetRunningPodNameByComponent(componentName, commonVar.Project)
-			time.Sleep(70 * time.Second)
-			stdout = commonVar.CliRunner.Exec(podName, commonVar.Project, "bash -c echo $CLUSTER_PASSWORD")
+			stdout = commonVar.CliRunner.Exec(podName, commonVar.Project, "bash", "-c", "echo", "$CLUSTER_PASSWORD")
 			Expect(stdout).Should(Not(BeEmpty()))
 
 			// "changes are made made to the applications"
