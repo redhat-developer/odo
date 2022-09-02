@@ -458,6 +458,27 @@ func (a *Adapter) createOrUpdateComponent(
 	if err != nil {
 		return nil, false, err
 	}
+
+	// Set service account if component has attribute `serviceAccountName`
+	var serviceAccountName string
+	components, _ := a.Devfile.Data.GetComponents(parsercommon.DevfileOptions{})
+	for _, component := range components {
+		for _, container := range containers {
+			if component.Name == container.Name {
+				var err *error
+				if component.Attributes.Exists("serviceAccountName") {
+					serviceAccountName = component.Attributes.GetString("serviceAccountName", err)
+					if err != nil {
+						return nil, false, *err
+					}
+				} else {
+					serviceAccountName = "default"
+				}
+			}
+		}
+	}
+	deployment.Spec.Template.Spec.ServiceAccountName = serviceAccountName
+
 	klog.V(2).Infof("Creating deployment %v", deployment.Spec.Template.GetName())
 	klog.V(2).Infof("The component name is %v", componentName)
 	if componentExists {
