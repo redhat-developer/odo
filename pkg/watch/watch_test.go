@@ -131,8 +131,11 @@ func Test_eventWatcher(t *testing.T) {
 				State: StateReady,
 			}
 
+			keyWatcher := make(chan byte)
+			keyWatcherCancel := func() {}
+
 			o := WatchClient{}
-			err := o.eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, fakeWatcher{}, fakeWatcher{}, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, componentStatus)
+			err := o.eventWatcher(ctx, watcher, fakeWatcher{}, fileWatcher, fakeWatcher{}, fakeWatcher{}, keyWatcher, keyWatcherCancel, tt.args.parameters, out, evaluateChangesHandler, processEventsHandler, componentStatus)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eventWatcher() error = %v, wantErr %v", err, tt.wantErr)
 				return
