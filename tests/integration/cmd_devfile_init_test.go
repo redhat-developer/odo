@@ -35,6 +35,10 @@ var _ = Describe("odo devfile init command tests", func() {
 			helper.Cmd("odo", "init", "--name", "aname").ShouldFail()
 		})
 
+		By("using an invalid component name", func() {
+			helper.Cmd("odo", "init", "--devfile", "go", "--name", "123").ShouldFail()
+		})
+
 		By("running odo init with json and no other flags", func() {
 			res := helper.Cmd("odo", "init", "-o", "json").ShouldFail()
 			stdout, stderr := res.Out(), res.Err()
