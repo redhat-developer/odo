@@ -42,6 +42,16 @@ type WatchClient struct {
 	kubeClient   kclient.ClientInterface
 	deleteClient _delete.Client
 	stateClient  state.Client
+
+	sourcesWatcher    *fsnotify.Watcher
+	deploymentWatcher watch.Interface
+	devfileWatcher    *fsnotify.Watcher
+	podWatcher        watch.Interface
+	warningsWatcher   watch.Interface
+	keyWatcher        chan byte
+
+	// true to force sync, used when manual sync
+	forceSync bool
 }
 
 var _ Client = (*WatchClient)(nil)
@@ -108,28 +118,27 @@ type processEventsFunc func(changedFiles, deletedPaths []string, parameters Watc
 func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ctx context.Context, componentStatus ComponentStatus) error {
 	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
-	var sourcesWatcher *fsnotify.Watcher
 	var err error
 	if parameters.WatchFiles {
-		sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
+		o.sourcesWatcher, err = getFullSourcesWatcher(parameters.Path, parameters.FileIgnores)
 		if err != nil {
 			return err
 		}
 	} else {
-		sourcesWatcher, err = fsnotify.NewWatcher()
+		o.sourcesWatcher, err = fsnotify.NewWatcher()
 		if err != nil {
 			return err
 		}
 	}
-	defer sourcesWatcher.Close()
+	defer o.sourcesWatcher.Close()
 
 	selector := labels.GetSelector(parameters.ComponentName, parameters.ApplicationName, labels.ComponentDevMode, true)
-	deploymentWatcher, err := o.kubeClient.DeploymentWatcher(ctx, selector)
+	o.deploymentWatcher, err = o.kubeClient.DeploymentWatcher(ctx, selector)
 	if err != nil {
 		return fmt.Errorf("error watching deployment: %v", err)
 	}
 
-	devfileWatcher, err := fsnotify.NewWatcher()
+	o.devfileWatcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
@@ -141,19 +150,20 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		}
 		devfileFiles = append(devfileFiles, parameters.DevfilePath)
 		for _, f := range devfileFiles {
-			err = devfileWatcher.Add(f)
+			err = o.devfileWatcher.Add(f)
 			if err != nil {
 				klog.V(4).Infof("error adding watcher for path %s: %v", f, err)
 			}
 		}
 	}
 
-	podWatcher, err := o.kubeClient.PodWatcher(ctx, selector)
+	o.podWatcher, err = o.kubeClient.PodWatcher(ctx, selector)
 	if err != nil {
 		return err
 	}
 
-	warningsWatcher, isForbidden, err := o.kubeClient.PodWarningEventWatcher(ctx)
+	var isForbidden bool
+	o.warningsWatcher, isForbidden, err = o.kubeClient.PodWarningEventWatcher(ctx)
 	if err != nil {
 		return err
 	}
@@ -161,15 +171,21 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
 	}
 
-	keyWatcherCtx, keyWatcherCancel := context.WithCancel(ctx)
-	keyWatcher := getKeyWatcher(keyWatcherCtx)
-	return o.eventWatcher(ctx, sourcesWatcher, deploymentWatcher, devfileWatcher, podWatcher, warningsWatcher, keyWatcher, keyWatcherCancel, parameters, out, evaluateFileChanges, processEvents, componentStatus)
+	o.keyWatcher = getKeyWatcher(ctx)
+	return o.eventWatcher(ctx, parameters, out, evaluateFileChanges, processEvents, componentStatus)
 }
 
 // eventWatcher loops till the context's Done channel indicates it to stop looping, at which point it performs cleanup.
 // While looping, it listens for filesystem events and processes these events using the WatchParameters to push to the remote pod.
 // It outputs any logs to the out io Writer
-func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify.Watcher, deploymentWatcher watch.Interface, devfileWatcher *fsnotify.Watcher, podWatcher watch.Interface, eventsWatcher watch.Interface, keyWatcher chan byte, keyWatcherCancel func(), parameters WatchParameters, out io.Writer, evaluateChangesHandler evaluateChangesFunc, processEventsHandler processEventsFunc, componentStatus ComponentStatus) error {
+func (o *WatchClient) eventWatcher(
+	ctx context.Context,
+	parameters WatchParameters,
+	out io.Writer,
+	evaluateChangesHandler evaluateChangesFunc,
+	processEventsHandler processEventsFunc,
+	componentStatus ComponentStatus,
+) error {
 
 	expBackoff := NewExpBackoff()
 
@@ -197,24 +213,31 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 
 	for {
 		select {
-		case event := <-sourcesWatcher.Events:
+		case event := <-o.sourcesWatcher.Events:
 			events = append(events, event)
 			// We are waiting for more events in this interval
 			sourcesTimer.Reset(100 * time.Millisecond)
+
 		case <-sourcesTimer.C:
 			// timer has fired
 			if !componentCanSyncFile(componentStatus.State) {
 				continue
 			}
-			// first find the files that have changed (also includes the ones newly created) or deleted
-			changedFiles, deletedPaths := evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, sourcesWatcher)
-			// process the changes and sync files with remote pod
-			if len(changedFiles) == 0 && len(deletedPaths) == 0 {
-				continue
+
+			var changedFiles, deletedPaths []string
+			if !o.forceSync {
+				// first find the files that have changed (also includes the ones newly created) or deleted
+				changedFiles, deletedPaths = evaluateChangesHandler(events, parameters.Path, parameters.FileIgnores, o.sourcesWatcher)
+				// process the changes and sync files with remote pod
+				if len(changedFiles) == 0 && len(deletedPaths) == 0 {
+					continue
+				}
 			}
+
 			componentStatus.State = StateSyncOutdated
 			fmt.Fprintf(out, "Pushing files...\n\n")
 			retry, err := processEventsHandler(changedFiles, deletedPaths, parameters, out, &componentStatus, expBackoff)
+			o.forceSync = false
 			if err != nil {
 				return err
 			}
@@ -230,15 +253,16 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 				<-retryTimer.C
 			}
 
-		case watchErr := <-sourcesWatcher.Errors:
+		case watchErr := <-o.sourcesWatcher.Errors:
 			return watchErr
 
-		case key := <-keyWatcher:
+		case key := <-o.keyWatcher:
 			if key == 'p' {
-				klog.V(0).Info("TODO: sync files\n")
+				o.forceSync = true
+				sourcesTimer.Reset(100 * time.Millisecond)
 			}
 
-		case ev := <-deploymentWatcher.ResultChan():
+		case ev := <-o.deploymentWatcher.ResultChan():
 			switch obj := ev.Object.(type) {
 			case *appsv1.Deployment:
 				klog.V(4).Infof("deployment watcher Event: Type: %s, name: %s, rv: %s, pods: %d\n",
@@ -261,7 +285,7 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 				<-retryTimer.C
 			}
 
-		case <-devfileWatcher.Events:
+		case <-o.devfileWatcher.Events:
 			devfileTimer.Reset(100 * time.Millisecond)
 
 		case <-devfileTimer.C:
@@ -289,7 +313,7 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 				<-retryTimer.C
 			}
 
-		case ev := <-podWatcher.ResultChan():
+		case ev := <-o.podWatcher.ResultChan():
 			switch ev.Type {
 			case watch.Deleted:
 				pod, ok := ev.Object.(*corev1.Pod)
@@ -305,7 +329,7 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 				podsPhases.Add(out, pod.GetCreationTimestamp(), pod)
 			}
 
-		case ev := <-eventsWatcher.ResultChan():
+		case ev := <-o.warningsWatcher.ResultChan():
 			switch kevent := ev.Object.(type) {
 			case *corev1.Event:
 				podName := kevent.InvolvedObject.Name
@@ -319,11 +343,10 @@ func (o *WatchClient) eventWatcher(ctx context.Context, sourcesWatcher *fsnotify
 				}
 			}
 
-		case watchErr := <-devfileWatcher.Errors:
+		case watchErr := <-o.devfileWatcher.Errors:
 			return watchErr
 
 		case <-ctx.Done():
-			keyWatcherCancel()
 			return errors.New("Dev mode interrupted by user")
 		}
 	}

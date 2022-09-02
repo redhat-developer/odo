@@ -14,6 +14,10 @@ func getKeyWatcher(ctx context.Context) chan byte {
 
 	go func() {
 		stdinfd := int(os.Stdin.Fd())
+		if !term.IsTerminal(stdinfd) {
+			return
+		}
+
 		oldState, err := term.GetState(stdinfd)
 		if err != nil {
 			fmt.Println(fmt.Errorf("getstate: %w", err))
@@ -25,7 +29,7 @@ func getKeyWatcher(ctx context.Context) chan byte {
 			return
 		}
 		defer func() {
-			term.Restore(int(os.Stdin.Fd()), oldState)
+			_ = term.Restore(stdinfd, oldState)
 		}()
 
 		for {
@@ -36,7 +40,6 @@ func getKeyWatcher(ctx context.Context) chan byte {
 				keyInput <- b
 			}
 		}
-
 	}()
 
 	return keyInput
