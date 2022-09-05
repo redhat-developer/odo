@@ -69,10 +69,10 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.SendLine(ctx, "go")
 
 			helper.ExpectString(ctx, "Select project type")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "myapp-<script>alert('Injected!');</script>")
@@ -301,10 +301,10 @@ var _ = Describe("odo init interactive command tests", func() {
 						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", projectType))
 
 					helper.ExpectString(ctx, "Is this correct")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "myapp-<script>alert('Injected!');</script>")
