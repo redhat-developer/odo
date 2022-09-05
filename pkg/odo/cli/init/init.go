@@ -150,7 +150,7 @@ func (o *InitOptions) RunForJsonOutput(ctx context.Context) (out interface{}, er
 		DevfilePath:       devfilePath,
 		DevfileData:       api.GetDevfileData(devfileObj),
 		DevForwardedPorts: []api.ForwardedPort{},
-		RunningIn:         []api.RunningMode{},
+		RunningIn:         api.RunningModeList{},
 		ManagedBy:         "odo",
 	}, nil
 }

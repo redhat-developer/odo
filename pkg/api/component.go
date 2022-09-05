@@ -1,11 +1,12 @@
 package api
 
 import (
+	"sort"
 	"strings"
 )
 
 type RunningMode string
-type RunningModeList []RunningMode
+type RunningModeList map[string]bool
 
 const (
 	RunningModeDev     RunningMode = "Dev"
@@ -14,25 +15,17 @@ const (
 )
 
 func (o RunningModeList) String() string {
-	if len(o) == 0 {
+	strs := make([]string, 0, len(o))
+	for s, v := range o {
+		if v {
+			strs = append(strs, string(strings.Title(s)))
+		}
+	}
+	if len(strs) == 0 {
 		return "None"
 	}
-	strs := make([]string, 0, len(o))
-	for _, s := range o {
-		strs = append(strs, string(s))
-	}
+	sort.Sort(sort.Reverse(sort.StringSlice(strs)))
 	return strings.Join(strs, ", ")
-}
-
-func (u RunningModeList) Len() int {
-	return len(u)
-}
-func (u RunningModeList) Swap(i, j int) {
-	u[i], u[j] = u[j], u[i]
-}
-func (u RunningModeList) Less(i, j int) bool {
-	// Set Dev before Deploy
-	return u[i] > u[j]
 }
 
 // Component describes the state of a devfile component

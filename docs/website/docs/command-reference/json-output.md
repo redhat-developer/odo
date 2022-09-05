@@ -86,7 +86,7 @@ $ odo init -o json \
 		}
 	},
 	"forwardedPorts": [],
-	"runningIn": [],
+	"runningIn": {},
 	"managedBy": "odo"
 }
 ```
@@ -157,7 +157,9 @@ odo describe component -o json
 			"containerPort": 3000
 		}
 	],
-	"runningIn": ["Dev"],
+	"runningIn": {
+		"dev": true
+	},
 	"managedBy": "odo"
 }
 ```
@@ -176,7 +178,9 @@ odo describe component --name aname -o json
 ```
 ```json
 {
-	"runningIn": ["Dev"],
+	"runningIn": {
+		"dev": true
+	},
 	"managedBy": "odo"
 }
 ```
@@ -201,15 +205,15 @@ odo list --namespace project1
 		{
 			"name": "component2",
 			"managedBy": "odo",
-			"runningIn": [
-				"Deploy"
-			],
+			"runningIn": {
+				"deploy": true
+			},
 			"projectType": "nodejs"
 		},
 		{
 			"name": "component1",
 			"managedBy": "",
-			"runningIn": [],
+			"runningIn": {},
 			"projectType": "nodejs"
 		}
 	]
@@ -385,9 +389,9 @@ odo list binding -o json
 					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.crt",
 					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.key"
 				],
-				"runningIn": [
-					"Dev"
-				]
+				"runningIn": {
+					"dev": true
+				}
 			}
 		}
 	]
@@ -437,9 +441,9 @@ odo list binding -o json
 					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.crt",
 					"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/tls.key"
 				],
-				"runningIn": [
-					"Dev"
-				]
+				"runningIn": {
+					"dev": true
+				}
 			}
 		}
 	]
