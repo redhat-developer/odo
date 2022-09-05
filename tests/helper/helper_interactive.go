@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/ActiveState/termtest"
 	"github.com/ActiveState/termtest/expect"
@@ -101,7 +102,7 @@ func SendLine(ctx InteractiveContext, line string) {
 }
 
 func ExpectString(ctx InteractiveContext, line string) {
-	res, err := ctx.cp.Expect(line)
+	res, err := ctx.cp.Expect(line, 120*time.Second)
 	fmt.Fprint(ctx.buffer, res)
 	Expect(err).ShouldNot(HaveOccurred(), expectDescriptionSupplier(ctx, line))
 }
