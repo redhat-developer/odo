@@ -3,6 +3,7 @@ module github.com/redhat-developer/odo
 go 1.17
 
 require (
+	github.com/ActiveState/termtest v0.7.1
 	github.com/AlecAivazis/survey/v2 v2.3.5
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/Xuanwo/go-locale v1.1.0
@@ -20,7 +21,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/jedib0t/go-pretty/v6 v6.3.5
-	github.com/kr/pty v1.1.5
+	github.com/kr/pty v1.1.8
 	github.com/kubernetes-sigs/service-catalog v0.3.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.9
@@ -66,6 +67,10 @@ require (
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
+	github.com/ActiveState/termtest/conpty v0.5.0 // indirect
+	github.com/ActiveState/termtest/expect v0.7.0 // indirect
+	github.com/ActiveState/termtest/xpty v0.6.0 // indirect
+	github.com/ActiveState/vt10x v1.3.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
