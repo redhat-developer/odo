@@ -185,7 +185,9 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		infoOutput = messages.SourceCodeDetected
 	}
 	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
-	log.Info("\nInteractive mode enabled, please answer the following questions:")
+	if len(o.flags) == 0 {
+		log.Infof("\n%s", messages.InteractiveModeEnabled)
+	}
 
 	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
 	if err != nil {
