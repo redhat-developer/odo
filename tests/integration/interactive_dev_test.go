@@ -1,10 +1,8 @@
-//go:build linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-
 package integration
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -54,10 +52,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
 
 					helper.ExpectString(ctx, "Is this correct")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
@@ -85,10 +83,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
 
 					helper.ExpectString(ctx, "Is this correct")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
@@ -101,6 +99,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 		})
 
 		It("should display welcoming messages first", func() {
+
+			if os.Getenv("SKIP_WELCOMING_MESSAGES") == "true" {
+				Skip("This is a Unix specific scenario, skipping")
+			}
 
 			language := "python"
 			output, _ := helper.RunInteractive([]string{"odo", "dev", "--random-ports"},
@@ -119,10 +121,10 @@ var _ = Describe("odo dev interactive command tests", func() {
 						fmt.Sprintf("The devfile %q from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
 
 					helper.ExpectString(ctx, "Is this correct")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")

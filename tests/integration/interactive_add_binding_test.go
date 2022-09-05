@@ -1,6 +1,3 @@
-//go:build linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-
 package integration
 
 import (
@@ -83,7 +80,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
 				helper.ExpectString(ctx, "Enter the Binding's name")
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "How do you want to bind the service?")
 				helper.SendLine(ctx, "Bind as Environment Variables")
@@ -111,7 +108,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
 				helper.ExpectString(ctx, "Enter the Binding's name")
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "How do you want to bind the service?")
 				helper.SendLine(ctx, "Bind as Files")
@@ -141,7 +138,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
 					helper.ExpectString(ctx, "Enter the Binding's name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "How do you want to bind the service?")
 					helper.SendLine(ctx, "Bind as Environment Variables")
@@ -190,7 +187,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
 					helper.ExpectString(ctx, "Enter the Binding's name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "How do you want to bind the service?")
 					helper.SendLine(ctx, "Bind as Files")
@@ -269,7 +266,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 					helper.SendLine(ctx, "cluster-sample (Cluster.postgresql.k8s.enterprisedb.io)")
 
 					helper.ExpectString(ctx, "Enter the Binding's name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "How do you want to bind the service?")
 					helper.SendLine(ctx, "Bind as Files")
@@ -343,7 +340,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 				helper.SendLine(ctx, "nginx")
 
 				helper.ExpectString(ctx, "Enter the Binding's name")
-				helper.SendLine(ctx, "\n")
+				helper.SendLine(ctx, "")
 
 				helper.ExpectString(ctx, "How do you want to bind the service?")
 				helper.SendLine(ctx, "Bind as Files")
@@ -411,7 +408,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 					helper.SendLine(ctx, "nginx")
 
 					helper.ExpectString(ctx, "Enter the Binding's name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "How do you want to bind the service?")
 					helper.SendLine(ctx, "Bind as Files")
@@ -513,7 +510,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 					helper.SendLine(ctx, "nginx")
 
 					helper.ExpectString(ctx, "Enter the Binding's name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "How do you want to bind the service?")
 					helper.SendLine(ctx, "Bind as Files")
@@ -626,7 +623,7 @@ var _ = Describe("odo add binding interactive command tests", func() {
 					helper.SendLine(ctx, "nginx")
 
 					helper.ExpectString(ctx, "Enter the Binding's name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "How do you want to bind the service?")
 					helper.SendLine(ctx, "Bind as Files")
