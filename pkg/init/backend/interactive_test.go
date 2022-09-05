@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/redhat-developer/odo/pkg/alizer"
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/init/asker"
 	"github.com/redhat-developer/odo/pkg/registry"
@@ -203,6 +204,7 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 	type fields struct {
 		asker          func(ctrl *gomock.Controller) asker.Asker
 		registryClient registry.Client
+		alizer         func(ctrl *gomock.Controller) alizer.Client
 	}
 	type args struct {
 		devfile func(fs filesystem.Filesystem) parser.DevfileObj
@@ -221,6 +223,11 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 				asker: func(ctrl *gomock.Controller) asker.Asker {
 					client := asker.NewMockAsker(ctrl)
 					client.EXPECT().AskName(gomock.Any()).Return("aname", nil)
+					return client
+				},
+				alizer: func(ctrl *gomock.Controller) alizer.Client {
+					client := alizer.NewMockClient(ctrl)
+					client.EXPECT().DetectName(gomock.Any()).Return("name1", nil)
 					return client
 				},
 			},
@@ -248,9 +255,14 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 			if tt.fields.asker != nil {
 				askerClient = tt.fields.asker(ctrl)
 			}
+			var alizerClient alizer.Client
+			if tt.fields.alizer != nil {
+				alizerClient = tt.fields.alizer(ctrl)
+			}
 			o := &InteractiveBackend{
 				askerClient:    askerClient,
 				registryClient: tt.fields.registryClient,
+				alizerClient:   alizerClient,
 			}
 			fs := filesystem.NewFakeFs()
 			newName, err := o.PersonalizeName(tt.args.devfile(fs), tt.args.flags)

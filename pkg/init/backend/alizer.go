@@ -58,7 +58,7 @@ func (o *AlizerBackend) PersonalizeName(devfile parser.DevfileObj, flags map[str
 	if path == "" {
 		return "", fmt.Errorf("cannot determine the absolute path of the directory")
 	}
-	return alizer.DetectName(path)
+	return o.alizerClient.DetectName(path)
 }
 
 func (o *AlizerBackend) PersonalizeDevfileConfig(devfile parser.DevfileObj) (parser.DevfileObj, error) {

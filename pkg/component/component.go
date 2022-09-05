@@ -57,7 +57,8 @@ func GatherName(contextDir string, devfileObj *parser.DevfileObj) (string, error
 			// Use Alizer if Devfile has no (optional) metadata.name field.
 			// We need to pass in the Devfile base directory (not the path to the devfile.yaml).
 			// Name returned by alizer.DetectName is expected to be already sanitized.
-			return alizer.DetectName(filepath.Dir(devfileObj.Ctx.GetAbsPath()))
+			alizerClient := alizer.Alizer{} // TODO(feloy) fix with DI
+			return alizerClient.DetectName(filepath.Dir(devfileObj.Ctx.GetAbsPath()))
 		}
 	} else {
 		// Fallback to the context dir name

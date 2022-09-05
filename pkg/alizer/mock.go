@@ -50,3 +50,18 @@ func (mr *MockClientMockRecorder) DetectFramework(path interface{}) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectFramework", reflect.TypeOf((*MockClient)(nil).DetectFramework), path)
 }
+
+// DetectName mocks base method.
+func (m *MockClient) DetectName(path string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DetectName", path)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DetectName indicates an expected call of DetectName.
+func (mr *MockClientMockRecorder) DetectName(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetectName", reflect.TypeOf((*MockClient)(nil).DetectName), path)
+}
