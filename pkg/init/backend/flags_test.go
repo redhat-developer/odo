@@ -422,6 +422,27 @@ func TestFlagsBackend_PersonalizeName(t *testing.T) {
 				return newName == args.flags["name"]
 			},
 		},
+		{
+			name: "invalid name flag",
+			args: args{
+				devfile: func(fs dffilesystem.Filesystem) parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+					obj := parser.DevfileObj{
+						Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
+						Data: devfileData,
+					}
+					return obj
+				},
+				flags: map[string]string{
+					"devfile": "adevfile",
+					"name":    "1234",
+				},
+			},
+			wantErr: true,
+			checkResult: func(newName string, args args) bool {
+				return newName == ""
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

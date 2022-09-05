@@ -240,7 +240,35 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 			checkResult: func(newName string, args args) bool {
 				return newName == "aname"
 			},
-		}}
+		},
+		{
+			name: "invalid name",
+			fields: fields{
+				asker: func(ctrl *gomock.Controller) asker.Asker {
+					client := asker.NewMockAsker(ctrl)
+					client.EXPECT().AskName(gomock.Any()).Return("ls;aname", nil)
+					client.EXPECT().AskName(gomock.Any()).Return("aname", nil)
+					return client
+				},
+			},
+			args: args{
+				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
+					devfileData, _ := data.NewDevfileData(string(data.APISchemaVersion200))
+
+					obj := parser.DevfileObj{
+						Ctx:  parsercontext.FakeContext(fs, "/tmp/devfile.yaml"),
+						Data: devfileData,
+					}
+					return obj
+				},
+				flags: map[string]string{},
+			},
+			wantErr: false,
+			checkResult: func(newName string, args args) bool {
+				return newName == "aname"
+			},
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)

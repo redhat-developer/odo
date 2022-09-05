@@ -234,15 +234,7 @@ func (o *InitClient) PersonalizeName(devfile parser.DevfileObj, flags map[string
 	} else {
 		backend = o.flagsBackend
 	}
-	name, err := backend.PersonalizeName(devfile, flags)
-	if err != nil {
-		return "", err
-	}
-	err = dfutil.ValidateK8sResourceName("name", name)
-	if err != nil {
-		return "", err
-	}
-	return name, nil
+	return backend.PersonalizeName(devfile, flags)
 }
 
 func (o InitClient) PersonalizeDevfileConfig(devfileobj parser.DevfileObj, flags map[string]string, fs filesystem.Filesystem, dir string) (parser.DevfileObj, error) {

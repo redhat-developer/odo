@@ -61,7 +61,7 @@ var _ = Describe("odo init interactive command tests", func() {
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
-	It("should fail when an invalid component name is passed", func() {
+	It("should ask to re-enter the component name when an invalid value is passed", func() {
 		command := []string{"odo", "init"}
 		_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
@@ -77,11 +77,15 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "myapp-<script>alert('Injected!');</script>")
 
-			helper.ExpectString(ctx, "failed to update the devfile's name")
+			helper.ExpectString(ctx, "name \"myapp-<script>alert('Injected!');</script>\" is not valid, name should conform the following requirements")
 
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "my-go-app")
+
+			helper.ExpectString(ctx, "Your new component 'my-go-app' is ready in the current directory")
 		})
-		Expect(err).ToNot(BeNil())
-		Expect(helper.ListFilesInDir(commonVar.Context)).ToNot(ContainElements("devfile.yaml"))
+		Expect(err).To(BeNil())
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
 	It("should download correct devfile", func() {
@@ -285,10 +289,10 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(lines[len(lines)-1]).To(Equal(fmt.Sprintf("Your new component '%s' is ready in the current directory", projectName)))
 
 			})
-
-			It("should fail if invalid component name is passed by the user", func() {
+			It("should ask to re-enter the component name if invalid value is passed by the user", func() {
 				language := "javascript"
 				projectType := "nodejs"
+				projectName := "node-echo"
 
 				_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
 					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
@@ -309,10 +313,15 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "myapp-<script>alert('Injected!');</script>")
 
-					helper.ExpectString(ctx, "failed to update the devfile's name")
+					helper.ExpectString(ctx, "name \"myapp-<script>alert('Injected!');</script>\" is not valid, name should conform the following requirements")
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, fmt.Sprintf("Your new component '%s' is ready in the current directory", projectName))
 				})
-				Expect(err).ToNot(BeNil())
-				Expect(helper.ListFilesInDir(commonVar.Context)).ToNot(ContainElements("devfile.yaml"))
+				Expect(err).To(BeNil())
+				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 		})
 	})
