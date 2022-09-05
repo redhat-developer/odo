@@ -14,7 +14,7 @@ The command can be executed in two flavors, either interactive or non-interactiv
 In interactive mode, you will be guided to choose:
 - a devfile from the list of devfiles present in the registry or registries referenced (using the `odo registry` command),
 - a starter project referenced by the selected devfile,
-- a name for the component present in the devfile; this name should follow the [the Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names).
+- a name for the component present in the devfile; this name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
 
 ## Non-interactive mode
 
