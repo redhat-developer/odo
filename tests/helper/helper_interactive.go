@@ -54,9 +54,7 @@ func RunInteractive(command []string, env []string, tester Tester) (string, erro
 		Args:          command[1:],
 		WorkDirectory: wd,
 		RetainWorkDir: true,
-		ExtraOpts: []expect.ConsoleOpt{
-			expect.WithTermCols(300),
-		},
+		ExtraOpts:     []expect.ConsoleOpt{},
 	}
 
 	if env != nil {
