@@ -21,6 +21,9 @@ function Do-Cleanup {
 }    
 
 function Run-Test {
+    Shout "kill previous odo sessions"
+    taskkill /IM "odo.exe" /F
+
     Shout "Cloning Repo"
     git clone $REPO $BUILD_NUMBER
     Push-Location $BUILD_NUMBER
