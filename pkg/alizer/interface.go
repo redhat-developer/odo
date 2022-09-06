@@ -7,4 +7,5 @@ import (
 
 type Client interface {
 	DetectFramework(path string) (recognizer.DevFileType, api.Registry, error)
+	DetectName(path string) (string, error)
 }

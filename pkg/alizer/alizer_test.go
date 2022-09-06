@@ -180,7 +180,11 @@ func TestDetectName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			name, err := DetectName(tt.args.path)
+			ctrl := gomock.NewController(t)
+			registryClient := registry.NewMockClient(ctrl)
+			alizerClient := NewAlizerClient(registryClient)
+
+			name, err := alizerClient.DetectName(tt.args.path)
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v, wantErr %v", err, tt.wantErr)

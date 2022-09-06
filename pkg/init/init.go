@@ -44,7 +44,7 @@ func NewInitClient(fsys filesystem.Filesystem, preferenceClient preference.Clien
 	askerClient := asker.NewSurveyAsker()
 	return &InitClient{
 		flagsBackend:       backend.NewFlagsBackend(preferenceClient),
-		interactiveBackend: backend.NewInteractiveBackend(askerClient, registryClient),
+		interactiveBackend: backend.NewInteractiveBackend(askerClient, registryClient, alizerClient),
 		alizerBackend:      backend.NewAlizerBackend(askerClient, alizerClient),
 		fsys:               fsys,
 		preferenceClient:   preferenceClient,

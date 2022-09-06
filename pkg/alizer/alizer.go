@@ -47,13 +47,6 @@ func (o *Alizer) DetectFramework(path string) (recognizer.DevFileType, api.Regis
 	return types[typ], components.Items[typ].Registry, nil
 }
 
-func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry api.Registry) *api.DevfileLocation {
-	return &api.DevfileLocation{
-		Devfile:         typ.Name,
-		DevfileRegistry: registry.Name,
-	}
-}
-
 // DetectName retrieves the name of the project (if available)
 // If source code is detected:
 // 1. Detect the name (pom.xml for java, package.json for nodejs, etc.)
@@ -69,7 +62,7 @@ func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry api.Re
 // components, err := recognizer.DetectComponents("./")
 
 // In order to detect the name, the name will first try to find out the name based on the program (pom.xml, etc.) but then if not, it will use the dir name.
-func DetectName(path string) (string, error) {
+func (o *Alizer) DetectName(path string) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("path is empty")
 	}
@@ -119,4 +112,11 @@ func DetectName(path string) (string, error) {
 	}
 
 	return name, nil
+}
+
+func GetDevfileLocationFromDetection(typ recognizer.DevFileType, registry api.Registry) *api.DevfileLocation {
+	return &api.DevfileLocation{
+		Devfile:         typ.Name,
+		DevfileRegistry: registry.Name,
+	}
 }

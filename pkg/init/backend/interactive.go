@@ -29,14 +29,16 @@ const (
 type InteractiveBackend struct {
 	askerClient    asker.Asker
 	registryClient registry.Client
+	alizerClient   alizer.Client
 }
 
 var _ InitBackend = (*InteractiveBackend)(nil)
 
-func NewInteractiveBackend(askerClient asker.Asker, registryClient registry.Client) *InteractiveBackend {
+func NewInteractiveBackend(askerClient asker.Asker, registryClient registry.Client, alizerClient alizer.Client) *InteractiveBackend {
 	return &InteractiveBackend{
 		askerClient:    askerClient,
 		registryClient: registryClient,
+		alizerClient:   alizerClient,
 	}
 }
 
@@ -123,7 +125,7 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 	baseDir := filepath.Dir(path)
 
 	// Detect the name
-	name, err := alizer.DetectName(baseDir)
+	name, err := o.alizerClient.DetectName(baseDir)
 	if err != nil {
 		return "", fmt.Errorf("detecting name using alizer: %w", err)
 	}
