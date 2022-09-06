@@ -257,6 +257,11 @@ func TestInteractiveBackend_PersonalizeName(t *testing.T) {
 					client.EXPECT().AskName(gomock.Any()).Return("aname", nil)
 					return client
 				},
+				alizer: func(ctrl *gomock.Controller) alizer.Client {
+					client := alizer.NewMockClient(ctrl)
+					client.EXPECT().DetectName(gomock.Any()).Return("name1", nil)
+					return client
+				},
 			},
 			args: args{
 				devfile: func(fs filesystem.Filesystem) parser.DevfileObj {
