@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/AlecAivazis/survey/v2"
+
 	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/registry"

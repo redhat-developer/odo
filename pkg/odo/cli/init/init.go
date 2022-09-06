@@ -248,7 +248,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	}
 	clientset.Add(initCmd, clientset.PREFERENCE, clientset.FILESYSTEM, clientset.REGISTRY, clientset.INIT)
 
-	initCmd.Flags().String(backend.FLAG_NAME, "", "name of the component to create")
+	initCmd.Flags().String(backend.FLAG_NAME, "", "name of the component to create; it must follow the RFC 1123 Label Names standard and not be all-numeric")
 	initCmd.Flags().String(backend.FLAG_DEVFILE, "", "name of the devfile in devfile registry")
 	initCmd.Flags().String(backend.FLAG_DEVFILE_REGISTRY, "", "name of the devfile registry (as configured in \"odo preference view\"). It can be used in combination with --devfile, but not with --devfile-path")
 	initCmd.Flags().String(backend.FLAG_STARTER, "", "name of the starter project")

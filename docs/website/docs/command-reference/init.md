@@ -14,7 +14,7 @@ The command can be executed in two flavors, either interactive or non-interactiv
 In interactive mode, you will be guided to choose:
 - a devfile from the list of devfiles present in the registry or registries referenced (using the `odo registry` command),
 - a starter project referenced by the selected devfile,
-- a name for the component present in the devfile.
+- a name for the component present in the devfile; this name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
 
 ## Non-interactive mode
 
@@ -27,7 +27,7 @@ If you prefer to download a devfile from an URL or from the local filesystem, yo
 
 The `--starter` flag indicates the name of the starter project (as referenced in the selected devfile), that you want to use to start your development. To see the available starter projects for devfile stacks in the official devfile registry use its [web interface](https://registry.devfile.io/viewer) to view its content.  
 
-The required `--name` flag indicates how the component initialized by this command should be named.
+The required `--name` flag indicates how the component initialized by this command should be named. The name must follow the [Kubernetes naming convention](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names) and not be all-numeric.
 
 ## Examples
 

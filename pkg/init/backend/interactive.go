@@ -9,6 +9,7 @@ import (
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
 	"github.com/devfile/library/pkg/devfile/parser"
 	parsercommon "github.com/devfile/library/pkg/devfile/parser/data/v2/common"
+	dfutil "github.com/devfile/library/pkg/util"
 	"k8s.io/klog"
 
 	"github.com/redhat-developer/odo/pkg/alizer"
@@ -136,7 +137,20 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 		return "", fmt.Errorf("unable to detect the name")
 	}
 
-	return o.askerClient.AskName(name)
+	var userReturnedName string
+	// keep asking the name until the user enters a valid name
+	for {
+		userReturnedName, err = o.askerClient.AskName(name)
+		if err != nil {
+			return "", err
+		}
+		validK8sNameErr := dfutil.ValidateK8sResourceName("name", userReturnedName)
+		if validK8sNameErr == nil {
+			break
+		}
+		log.Error(validK8sNameErr)
+	}
+	return userReturnedName, nil
 }
 
 func (o *InteractiveBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {

@@ -61,6 +61,33 @@ var _ = Describe("odo init interactive command tests", func() {
 		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 	})
 
+	It("should ask to re-enter the component name when an invalid value is passed", func() {
+		command := []string{"odo", "init"}
+		_, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+			helper.ExpectString(ctx, "Select language")
+			helper.SendLine(ctx, "go")
+
+			helper.ExpectString(ctx, "Select project type")
+			helper.SendLine(ctx, "")
+
+			helper.ExpectString(ctx, "Which starter project do you want to use")
+			helper.SendLine(ctx, "")
+
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "myapp-<script>alert('Injected!');</script>")
+
+			helper.ExpectString(ctx, "name \"myapp-<script>alert('Injected!');</script>\" is not valid, name should conform the following requirements")
+
+			helper.ExpectString(ctx, "Enter component name")
+			helper.SendLine(ctx, "my-go-app")
+
+			helper.ExpectString(ctx, "Your new component 'my-go-app' is ready in the current directory")
+		})
+		Expect(err).To(BeNil())
+		Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
+	})
+
 	It("should download correct devfile", func() {
 
 		command := []string{"odo", "init"}
@@ -261,6 +288,40 @@ var _ = Describe("odo init interactive command tests", func() {
 				Expect(len(lines)).To(BeNumerically(">", 2))
 				Expect(lines[len(lines)-1]).To(Equal(fmt.Sprintf("Your new component '%s' is ready in the current directory", projectName)))
 
+			})
+			It("should ask to re-enter the component name if invalid value is passed by the user", func() {
+				language := "javascript"
+				projectType := "nodejs"
+				projectName := "node-echo"
+
+				_, err := helper.RunInteractive([]string{"odo", "init"}, nil, func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Based on the files in the current directory odo detected")
+
+					helper.ExpectString(ctx, fmt.Sprintf("Language: %s", language))
+
+					helper.ExpectString(ctx, fmt.Sprintf("Project type: %s", projectType))
+
+					helper.ExpectString(ctx,
+						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", projectType))
+
+					helper.ExpectString(ctx, "Is this correct")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Select container for which you want to change configuration")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, "myapp-<script>alert('Injected!');</script>")
+
+					helper.ExpectString(ctx, "name \"myapp-<script>alert('Injected!');</script>\" is not valid, name should conform the following requirements")
+
+					helper.ExpectString(ctx, "Enter component name")
+					helper.SendLine(ctx, "")
+
+					helper.ExpectString(ctx, fmt.Sprintf("Your new component '%s' is ready in the current directory", projectName))
+				})
+				Expect(err).To(BeNil())
+				Expect(helper.ListFilesInDir(commonVar.Context)).To(ContainElements("devfile.yaml"))
 			})
 		})
 	})

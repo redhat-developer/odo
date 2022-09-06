@@ -111,8 +111,12 @@ func (o *FlagsBackend) SelectStarterProject(devfile parser.DevfileObj, flags map
 	return nil, fmt.Errorf("starter project %q not found in devfile", starter)
 }
 
-func (o *FlagsBackend) PersonalizeName(devfile parser.DevfileObj, flags map[string]string) (string, error) {
+func (o *FlagsBackend) PersonalizeName(_ parser.DevfileObj, flags map[string]string) (string, error) {
+	if validK8sNameErr := dfutil.ValidateK8sResourceName("name", flags[FLAG_NAME]); validK8sNameErr != nil {
+		return "", validK8sNameErr
+	}
 	return flags[FLAG_NAME], nil
+
 }
 
 func (o FlagsBackend) PersonalizeDevfileConfig(devfileobj parser.DevfileObj) (parser.DevfileObj, error) {
