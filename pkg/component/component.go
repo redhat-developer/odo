@@ -170,7 +170,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 				componentFound = true
 				if mode != "" {
 					if components[v].RunningIn == nil {
-						components[v].RunningIn = api.NewRunningModeList()
+						components[v].RunningIn = api.NewRunningModes()
 					}
 					components[v].RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 				}
@@ -185,7 +185,7 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		if !componentFound {
 			if mode != "" {
 				if component.RunningIn == nil {
-					component.RunningIn = api.NewRunningModeList()
+					component.RunningIn = api.NewRunningModes()
 				}
 				component.RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 			}
@@ -205,7 +205,7 @@ func ListAllComponents(client kclient.ClientInterface, namespace string, devObj 
 	localComponent := api.ComponentAbstract{
 		Name:      componentName,
 		ManagedBy: "",
-		RunningIn: api.NewRunningModeList(),
+		RunningIn: api.NewRunningModes(),
 	}
 	if devObj.Data != nil {
 		localComponent.Type = GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
@@ -240,17 +240,17 @@ func getResourcesForComponent(client kclient.ClientInterface, name string, names
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(client kclient.ClientInterface, name string) (api.RunningModeList, error) {
+func GetRunningModes(client kclient.ClientInterface, name string) (api.RunningModes, error) {
 	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
 	if err != nil {
-		return api.RunningModeList{}, nil
+		return api.RunningModes{}, nil
 	}
 
 	if len(list) == 0 {
 		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
 	}
 
-	mapResult := api.NewRunningModeList()
+	mapResult := api.NewRunningModes()
 	for _, resource := range list {
 		resourceLabels := resource.GetLabels()
 		mode := labels.GetMode(resourceLabels)

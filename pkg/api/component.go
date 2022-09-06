@@ -6,27 +6,26 @@ import (
 )
 
 type RunningMode string
-type RunningModeList map[RunningMode]bool
+type RunningModes map[RunningMode]bool
 
 const (
 	RunningModeDev    RunningMode = "dev"
 	RunningModeDeploy RunningMode = "deploy"
 )
 
-func NewRunningModeList() RunningModeList {
-	return RunningModeList{
+func NewRunningModes() RunningModes {
+	return RunningModes{
 		RunningModeDev:    false,
 		RunningModeDeploy: false,
 	}
 }
 
 // AddRunningMode sets a running mode as true
-// If mode is not "dev" or "deploy", an error is returned
-func (o RunningModeList) AddRunningMode(mode RunningMode) {
+func (o RunningModes) AddRunningMode(mode RunningMode) {
 	o[mode] = true
 }
 
-func (o RunningModeList) String() string {
+func (o RunningModes) String() string {
 	strs := make([]string, 0, len(o))
 	for s, v := range o {
 		if v {
@@ -45,7 +44,7 @@ type Component struct {
 	DevfilePath       string          `json:"devfilePath,omitempty"`
 	DevfileData       *DevfileData    `json:"devfileData,omitempty"`
 	DevForwardedPorts []ForwardedPort `json:"devForwardedPorts,omitempty"`
-	RunningIn         RunningModeList `json:"runningIn"`
+	RunningIn         RunningModes    `json:"runningIn"`
 	ManagedBy         string          `json:"managedBy"`
 }
 

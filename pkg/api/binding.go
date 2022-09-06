@@ -20,7 +20,7 @@ type ServiceBindingSpec struct {
 }
 
 type ServiceBindingStatus struct {
-	BindingFiles   []string        `json:"bindingFiles,omitempty"`
-	BindingEnvVars []string        `json:"bindingEnvVars,omitempty"`
-	RunningIn      RunningModeList `json:"runningIn,omitempty"`
+	BindingFiles   []string     `json:"bindingFiles,omitempty"`
+	BindingEnvVars []string     `json:"bindingEnvVars,omitempty"`
+	RunningIn      RunningModes `json:"runningIn,omitempty"`
 }

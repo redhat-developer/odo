@@ -5,12 +5,12 @@ import "testing"
 func TestRunningModeList_String(t *testing.T) {
 	tests := []struct {
 		name string
-		o    RunningModeList
+		o    RunningModes
 		want string
 	}{
 		{
 			name: "only dev",
-			o: RunningModeList{
+			o: RunningModes{
 				"dev":    true,
 				"deploy": false,
 			},
@@ -18,7 +18,7 @@ func TestRunningModeList_String(t *testing.T) {
 		},
 		{
 			name: "only deploy",
-			o: RunningModeList{
+			o: RunningModes{
 				"dev":    false,
 				"deploy": true,
 			},
@@ -26,7 +26,7 @@ func TestRunningModeList_String(t *testing.T) {
 		},
 		{
 			name: "both",
-			o: RunningModeList{
+			o: RunningModes{
 				"dev":    true,
 				"deploy": true,
 			},
@@ -34,7 +34,7 @@ func TestRunningModeList_String(t *testing.T) {
 		},
 		{
 			name: "none",
-			o: RunningModeList{
+			o: RunningModes{
 				"dev":    false,
 				"deploy": false,
 			},
