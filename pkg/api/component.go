@@ -6,19 +6,31 @@ import (
 )
 
 type RunningMode string
-type RunningModeList map[string]bool
+type RunningModeList map[RunningMode]bool
 
 const (
-	RunningModeDev     RunningMode = "Dev"
-	RunningModeDeploy  RunningMode = "Deploy"
-	RunningModeUnknown RunningMode = "Unknown"
+	RunningModeDev    RunningMode = "dev"
+	RunningModeDeploy RunningMode = "deploy"
 )
+
+func NewRunningModeList() RunningModeList {
+	return RunningModeList{
+		RunningModeDev:    false,
+		RunningModeDeploy: false,
+	}
+}
+
+// AddRunningMode sets a running mode as true
+// If mode is not "dev" or "deploy", an error is returned
+func (o RunningModeList) AddRunningMode(mode RunningMode) {
+	o[mode] = true
+}
 
 func (o RunningModeList) String() string {
 	strs := make([]string, 0, len(o))
 	for s, v := range o {
 		if v {
-			strs = append(strs, string(strings.Title(s)))
+			strs = append(strs, strings.Title(string(s)))
 		}
 	}
 	if len(strs) == 0 {

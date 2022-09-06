@@ -170,9 +170,9 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 				componentFound = true
 				if mode != "" {
 					if components[v].RunningIn == nil {
-						components[v].RunningIn = api.RunningModeList{}
+						components[v].RunningIn = api.NewRunningModeList()
 					}
-					components[v].RunningIn[strings.ToLower(mode)] = true
+					components[v].RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 				}
 				if otherCompo.Type == api.TypeUnknown && component.Type != api.TypeUnknown {
 					components[v].Type = component.Type
@@ -185,9 +185,9 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		if !componentFound {
 			if mode != "" {
 				if component.RunningIn == nil {
-					component.RunningIn = api.RunningModeList{}
+					component.RunningIn = api.NewRunningModeList()
 				}
-				component.RunningIn[strings.ToLower(mode)] = true
+				component.RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 			}
 			components = append(components, component)
 		}
@@ -205,7 +205,7 @@ func ListAllComponents(client kclient.ClientInterface, namespace string, devObj 
 	localComponent := api.ComponentAbstract{
 		Name:      componentName,
 		ManagedBy: "",
-		RunningIn: api.RunningModeList{},
+		RunningIn: api.NewRunningModeList(),
 	}
 	if devObj.Data != nil {
 		localComponent.Type = GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
@@ -250,12 +250,12 @@ func GetRunningModes(client kclient.ClientInterface, name string) (api.RunningMo
 		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
 	}
 
-	mapResult := api.RunningModeList{}
+	mapResult := api.NewRunningModeList()
 	for _, resource := range list {
 		resourceLabels := resource.GetLabels()
 		mode := labels.GetMode(resourceLabels)
 		if mode != "" {
-			mapResult[strings.ToLower(mode)] = true
+			mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 		}
 	}
 	return mapResult, nil

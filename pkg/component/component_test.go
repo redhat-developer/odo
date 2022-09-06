@@ -290,7 +290,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: api.RunningModeList{},
+			want: api.RunningModeList{"dev": false, "deploy": false},
 		},
 		{
 			name: "Only Dev resources",
@@ -303,7 +303,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: api.RunningModeList{"dev": true},
+			want: api.RunningModeList{"dev": true, "deploy": false},
 		},
 		{
 			name: "Only Deploy resources",
@@ -316,7 +316,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: api.RunningModeList{"deploy": true},
+			want: api.RunningModeList{"dev": false, "deploy": true},
 		},
 		{
 			name: "Dev and Deploy resources",

@@ -104,6 +104,7 @@ func setRunningMode(binding api.ServiceBinding, mode string) api.ServiceBinding 
 	if binding.Status == nil {
 		binding.Status = &api.ServiceBindingStatus{}
 	}
-	binding.Status.RunningIn = api.RunningModeList{strings.ToLower(mode): true}
+	binding.Status.RunningIn = api.NewRunningModeList()
+	binding.Status.RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 	return binding
 }
