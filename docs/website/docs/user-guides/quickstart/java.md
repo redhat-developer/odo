@@ -27,7 +27,7 @@ import ConnectingToCluster from './_connecting_to_cluster.mdx';
 
 <ConnectingToCluster/>
 
-## Step 2. Creating your application (`odo init`)
+## Step 2. Initializing your application (`odo init`)
 
 import CreatingApp from './_creating_app.mdx';
 
