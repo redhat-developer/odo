@@ -219,7 +219,7 @@ var _ = Describe("odo describe component command tests", func() {
 					}
 					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 					helper.JsonPathContentIs(stdout, "runningIn.dev", "true")
-					helper.JsonPathContentIs(stdout, "runningIn.deploy", "")
+					helper.JsonPathContentIs(stdout, "runningIn.deploy", "false")
 					helper.JsonPathContentIs(stdout, "devForwardedPorts", "")
 				})
 
