@@ -192,18 +192,13 @@ func HumanReadableOutput(list api.ResourcesList) {
 		// If we find our local unpushed component, let's change the output appropriately.
 		if list.ComponentInDevfile == comp.Name {
 			name = fmt.Sprintf("* %s", name)
-
-			if comp.ManagedBy == "" {
-				managedBy = "odo"
-			}
 		}
-
+		if comp.ManagedByVersion != "" {
+			managedBy += fmt.Sprintf(" (%s)", comp.ManagedByVersion)
+		}
 		// If we are managing that component, output it as blue (our logo colour) to indicate it's used by odo
-		if managedBy == "odo" {
-			managedBy = text.Colors{text.FgBlue}.Sprintf("odo (%s)", comp.ManagedByVersion)
-		} else if managedBy != "" && comp.ManagedByVersion != "" {
-			// this is done to maintain the color of the output
-			managedBy += fmt.Sprintf("(%s)", comp.ManagedByVersion)
+		if comp.ManagedBy == "odo" {
+			managedBy = text.Colors{text.FgBlue}.Sprintf(managedBy)
 		}
 
 		t.AppendRow(table.Row{name, componentType, mode, managedBy})
