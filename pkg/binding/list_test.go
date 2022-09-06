@@ -162,7 +162,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					},
 					Status: &api.ServiceBindingStatus{
 						BindingFiles: []string{"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/akey"},
-						RunningIn:    api.RunningModeList{api.RunningModeDev},
+						RunningIn:    api.RunningModes{"dev": true, "deploy": false},
 					},
 				},
 			},
@@ -207,7 +207,7 @@ func TestBindingClient_ListAllBindings(t *testing.T) {
 					},
 					Status: &api.ServiceBindingStatus{
 						BindingFiles: []string{"${SERVICE_BINDING_ROOT}/my-nodejs-app-cluster-sample/akey"},
-						RunningIn:    api.RunningModeList{api.RunningModeDev},
+						RunningIn:    api.RunningModes{"dev": true, "deploy": false},
 					},
 				},
 			},

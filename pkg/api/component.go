@@ -1,38 +1,42 @@
 package api
 
 import (
+	"sort"
 	"strings"
 )
 
 type RunningMode string
-type RunningModeList []RunningMode
+type RunningModes map[RunningMode]bool
 
 const (
-	RunningModeDev     RunningMode = "Dev"
-	RunningModeDeploy  RunningMode = "Deploy"
-	RunningModeUnknown RunningMode = "Unknown"
+	RunningModeDev    RunningMode = "dev"
+	RunningModeDeploy RunningMode = "deploy"
 )
 
-func (o RunningModeList) String() string {
-	if len(o) == 0 {
-		return "None"
+func NewRunningModes() RunningModes {
+	return RunningModes{
+		RunningModeDev:    false,
+		RunningModeDeploy: false,
 	}
-	strs := make([]string, 0, len(o))
-	for _, s := range o {
-		strs = append(strs, string(s))
-	}
-	return strings.Join(strs, ", ")
 }
 
-func (u RunningModeList) Len() int {
-	return len(u)
+// AddRunningMode sets a running mode as true
+func (o RunningModes) AddRunningMode(mode RunningMode) {
+	o[mode] = true
 }
-func (u RunningModeList) Swap(i, j int) {
-	u[i], u[j] = u[j], u[i]
-}
-func (u RunningModeList) Less(i, j int) bool {
-	// Set Dev before Deploy
-	return u[i] > u[j]
+
+func (o RunningModes) String() string {
+	strs := make([]string, 0, len(o))
+	for s, v := range o {
+		if v {
+			strs = append(strs, strings.Title(string(s)))
+		}
+	}
+	if len(strs) == 0 {
+		return "None"
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(strs)))
+	return strings.Join(strs, ", ")
 }
 
 // Component describes the state of a devfile component
@@ -40,7 +44,7 @@ type Component struct {
 	DevfilePath       string          `json:"devfilePath,omitempty"`
 	DevfileData       *DevfileData    `json:"devfileData,omitempty"`
 	DevForwardedPorts []ForwardedPort `json:"devForwardedPorts,omitempty"`
-	RunningIn         RunningModeList `json:"runningIn"`
+	RunningIn         RunningModes    `json:"runningIn"`
 	ManagedBy         string          `json:"managedBy"`
 }
 

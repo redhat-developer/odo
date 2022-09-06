@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/devfile/api/v2/pkg/apis/workspaces/v1alpha2"
@@ -170,17 +169,10 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 			if component.Name == otherCompo.Name {
 				componentFound = true
 				if mode != "" {
-					modeFound := false
-					for _, m := range components[v].RunningIn {
-						if m == api.RunningMode(mode) {
-							modeFound = true
-							break
-						}
+					if components[v].RunningIn == nil {
+						components[v].RunningIn = api.NewRunningModes()
 					}
-					if !modeFound {
-						components[v].RunningIn = append(components[v].RunningIn, api.RunningMode(mode))
-						sort.Sort(components[v].RunningIn)
-					}
+					components[v].RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 				}
 				if otherCompo.Type == api.TypeUnknown && component.Type != api.TypeUnknown {
 					components[v].Type = component.Type
@@ -192,7 +184,10 @@ func ListAllClusterComponents(client kclient.ClientInterface, namespace string) 
 		}
 		if !componentFound {
 			if mode != "" {
-				component.RunningIn = []api.RunningMode{api.RunningMode(mode)}
+				if component.RunningIn == nil {
+					component.RunningIn = api.NewRunningModes()
+				}
+				component.RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 			}
 			components = append(components, component)
 		}
@@ -210,7 +205,7 @@ func ListAllComponents(client kclient.ClientInterface, namespace string, devObj 
 	localComponent := api.ComponentAbstract{
 		Name:      componentName,
 		ManagedBy: "",
-		RunningIn: []api.RunningMode{},
+		RunningIn: api.NewRunningModes(),
 	}
 	if devObj.Data != nil {
 		localComponent.Type = GetComponentTypeFromDevfileMetadata(devObj.Data.GetMetadata())
@@ -245,30 +240,25 @@ func getResourcesForComponent(client kclient.ClientInterface, name string, names
 
 // GetRunningModes returns the list of modes on which a "name" component is deployed, by looking into namespace
 // the resources deployed with matching labels, based on the "odo.dev/mode" label
-func GetRunningModes(client kclient.ClientInterface, name string) ([]api.RunningMode, error) {
+func GetRunningModes(client kclient.ClientInterface, name string) (api.RunningModes, error) {
 	list, err := getResourcesForComponent(client, name, client.GetCurrentNamespace())
 	if err != nil {
-		return []api.RunningMode{api.RunningModeUnknown}, nil
+		return api.RunningModes{}, nil
 	}
 
 	if len(list) == 0 {
 		return nil, NewNoComponentFoundError(name, client.GetCurrentNamespace())
 	}
 
-	mapResult := map[string]bool{}
+	mapResult := api.NewRunningModes()
 	for _, resource := range list {
 		resourceLabels := resource.GetLabels()
 		mode := labels.GetMode(resourceLabels)
 		if mode != "" {
-			mapResult[mode] = true
+			mapResult.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 		}
 	}
-	keys := make(api.RunningModeList, 0, len(mapResult))
-	for k := range mapResult {
-		keys = append(keys, api.RunningMode(k))
-	}
-	sort.Sort(keys)
-	return keys, nil
+	return mapResult, nil
 }
 
 // Contains checks to see if the component exists in an array or not

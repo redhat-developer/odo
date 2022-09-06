@@ -143,8 +143,8 @@ var _ = Describe("odo list with devfile", func() {
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.#", "1")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.0", "Dev")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "")
 			})
 
 			// Fake the odo deploy image build / push passing in "echo" to PODMAN
@@ -163,9 +163,8 @@ var _ = Describe("odo list with devfile", func() {
 				stdout, stderr := res.Out(), res.Err()
 				Expect(stderr).To(BeEmpty())
 				Expect(helper.IsJSON(stdout)).To(BeTrue())
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.#", "2")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.0", "Dev")
-				helper.JsonPathContentContain(stdout, "components.0.runningIn.1", "Deploy")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.dev", "true")
+				helper.JsonPathContentContain(stdout, "components.0.runningIn.deploy", "true")
 			})
 
 		})

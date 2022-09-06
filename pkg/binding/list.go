@@ -2,6 +2,7 @@ package binding
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/devfile/library/pkg/devfile/parser"
 	"github.com/redhat-developer/odo/pkg/api"
@@ -100,10 +101,10 @@ func (o *BindingClient) process(bindingList BindingSet, sb metav1.Object) (Bindi
 // setRunningMode sets the running mode in the status of the servicebinding,
 // initializing the status structure if necessary
 func setRunningMode(binding api.ServiceBinding, mode string) api.ServiceBinding {
-	runningMode := api.RunningMode(mode)
 	if binding.Status == nil {
 		binding.Status = &api.ServiceBindingStatus{}
 	}
-	binding.Status.RunningIn = []api.RunningMode{runningMode}
+	binding.Status.RunningIn = api.NewRunningModes()
+	binding.Status.RunningIn.AddRunningMode(api.RunningMode(strings.ToLower(mode)))
 	return binding
 }

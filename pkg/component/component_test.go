@@ -146,8 +146,11 @@ func TestListAllClusterComponents(t *testing.T) {
 				Name:             "comp1",
 				ManagedBy:        "odo",
 				ManagedByVersion: "v3.0.0-beta3",
-				RunningIn:        api.RunningModeList{api.RunningModeDev, api.RunningModeDeploy},
-				Type:             "nodejs",
+				RunningIn: api.RunningModes{
+					"dev":    true,
+					"deploy": true,
+				},
+				Type: "nodejs",
 			}},
 			wantErr: false,
 		},
@@ -245,7 +248,7 @@ func TestGetRunningModes(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []api.RunningMode
+		want    api.RunningModes
 		wantErr bool
 	}{
 		{
@@ -287,7 +290,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: []api.RunningMode{},
+			want: api.RunningModes{"dev": false, "deploy": false},
 		},
 		{
 			name: "Only Dev resources",
@@ -300,7 +303,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: []api.RunningMode{api.RunningModeDev},
+			want: api.RunningModes{"dev": true, "deploy": false},
 		},
 		{
 			name: "Only Deploy resources",
@@ -313,7 +316,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: []api.RunningMode{api.RunningModeDeploy},
+			want: api.RunningModes{"dev": false, "deploy": true},
 		},
 		{
 			name: "Dev and Deploy resources",
@@ -326,7 +329,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: []api.RunningMode{api.RunningModeDev, api.RunningModeDeploy},
+			want: api.RunningModes{"dev": true, "deploy": true},
 		},
 		{
 			name: "Unknown",
@@ -339,7 +342,7 @@ func TestGetRunningModes(t *testing.T) {
 				},
 				name: "aname",
 			},
-			want: []api.RunningMode{api.RunningModeUnknown},
+			want: api.RunningModes{},
 		},
 	}
 	for _, tt := range tests {
