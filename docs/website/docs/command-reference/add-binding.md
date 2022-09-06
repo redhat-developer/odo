@@ -21,9 +21,14 @@ To know about the Operators supported by the Service Binding Operator, read its 
 ## Running the Command
 
 ### Pre-requisites
-* A cluster with the Service Binding Operator installed (see installation instructions for [Kubernetes](../overview/cluster-setup/kubernetes.md#installing-the-service-binding-operator) and [OpenShift](../overview/cluster-setup/openshift.md#installing-the-service-binding-operator) cluster)
+* A cluster with the Service Binding Operator installed
 * Operator-backed services or resources you want to bind your application to
 * Optional, a directory containing a Devfile; if you don't have one, see [odo init](init.md) on obtaining a devfile.
+
+#### Installing the Service Binding Operator
+Service Binding Operator is required to bind an application with microservices.
+
+Visit the [official documentation](https://redhat-developer.github.io/service-binding-operator/userguide/getting-started/installing-service-binding.html#installing-the-service-binding-operator-from-the-openshift-container-platform-web-ui) of Service Binding Operator to see how you can install it on your OpenShift cluster.
 
 ### Interactive Mode
 In the interactive mode, you will be guided to choose:
