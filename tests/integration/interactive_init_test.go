@@ -1,6 +1,3 @@
-//go:build linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-
 package integration
 
 import (
@@ -10,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	odolog "github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	odolog "github.com/redhat-developer/odo/pkg/log"
 	"github.com/redhat-developer/odo/pkg/version"
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -48,10 +45,10 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.SendLine(ctx, "go")
 
 			helper.ExpectString(ctx, "Select project type")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "my-go-app")
@@ -73,10 +70,10 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.SendLine(ctx, "go")
 
 			helper.ExpectString(ctx, "Select project type")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "my-go-app")
@@ -150,6 +147,11 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 
 			It("should display appropriate welcoming messages", func() {
+
+				if os.Getenv("SKIP_WELCOMING_MESSAGES") == "true" {
+					Skip("This is a Unix specific scenario, skipping")
+				}
+
 				language := "java"
 
 				// The first output is welcoming message / paragraph / banner output
@@ -160,10 +162,10 @@ var _ = Describe("odo init interactive command tests", func() {
 					helper.SendLine(ctx, language)
 
 					helper.ExpectString(ctx, "Select project type")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Which starter project do you want to use")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 				})
 
 				assertBehavior(language, output, err, welcomingMsgs, nil)
@@ -181,6 +183,11 @@ var _ = Describe("odo init interactive command tests", func() {
 			})
 
 			It("should display appropriate welcoming messages", func() {
+
+				if os.Getenv("SKIP_WELCOMING_MESSAGES") == "true" {
+					Skip("This is a Unix specific scenario, skipping")
+				}
+
 				language := "python"
 				welcomingMsgs := strings.Split(odolog.Stitle(messages.InitializingNewComponent, messages.SourceCodeDetected, "odo version: "+version.VERSION), "\n")
 
@@ -195,10 +202,10 @@ var _ = Describe("odo init interactive command tests", func() {
 						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", language))
 
 					helper.ExpectString(ctx, "Is this correct")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 				})
 
 				assertBehavior(language, output, err, welcomingMsgs, func() {
@@ -237,13 +244,13 @@ var _ = Describe("odo init interactive command tests", func() {
 						fmt.Sprintf("The devfile \"%s\" from the registry \"DefaultDevfileRegistry\" will be downloaded.", projectType))
 
 					helper.ExpectString(ctx, "Is this correct")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Select container for which you want to change configuration")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, "Enter component name")
-					helper.SendLine(ctx, "\n")
+					helper.SendLine(ctx, "")
 
 					helper.ExpectString(ctx, fmt.Sprintf("Your new component '%s' is ready in the current directory", projectName))
 				})
@@ -266,10 +273,10 @@ var _ = Describe("odo init interactive command tests", func() {
 			helper.SendLine(ctx, "dotnet")
 
 			helper.ExpectString(ctx, "Select project type")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Which starter project do you want to use")
-			helper.SendLine(ctx, "\n")
+			helper.SendLine(ctx, "")
 
 			helper.ExpectString(ctx, "Enter component name")
 			helper.SendLine(ctx, "my-dotnet-app")

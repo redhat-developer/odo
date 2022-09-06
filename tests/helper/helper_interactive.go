@@ -1,6 +1,3 @@
-//go:build linux || darwin || dragonfly || solaris || openbsd || netbsd || freebsd
-// +build linux darwin dragonfly solaris openbsd netbsd freebsd
-
 package helper
 
 import (
@@ -8,12 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"time"
 
-	"github.com/Netflix/go-expect"
-	"github.com/hinshun/vt10x"
-	"github.com/kr/pty"
+	"github.com/ActiveState/termtest"
+	"github.com/ActiveState/termtest/expect"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -24,15 +19,15 @@ type InteractiveContext struct {
 	//Command represents the original command ran
 	Command []string
 
-	// console is the internal interface used by the interactive command
-	console *expect.Console
+	// cp is the internal interface used by the interactive command
+	cp *termtest.ConsoleProcess
 
 	// buffer is the internal bytes buffer containing the console output.
 	// Its content will get updated as long as there are interactions with the console, like sending lines or
 	// expecting lines.
 	buffer *bytes.Buffer
 
-	// A function yto call to stop the process
+	// A function to call to stop the process
 	StopCommand func()
 }
 
@@ -50,49 +45,41 @@ func RunInteractive(command []string, env []string, tester Tester) (string, erro
 
 	fmt.Fprintln(GinkgoWriter, "running command", command, "with env", env)
 
-	ptm, pts, err := pty.Open()
+	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	term := vt10x.New(vt10x.WithWriter(pts))
-
-	// Set to 1 MINUTE timeout, since the command may take a while to start
-	c, err := expect.NewConsole(expect.WithStdin(ptm), expect.WithStdout(term), expect.WithCloser(pts, ptm), expect.WithDefaultTimeout(3*time.Minute))
-	if err != nil {
-		log.Fatal(err)
+	opts := termtest.Options{
+		CmdName:       command[0],
+		Args:          command[1:],
+		WorkDirectory: wd,
+		RetainWorkDir: true,
+		ExtraOpts:     []expect.ConsoleOpt{},
 	}
-	defer c.Close()
 
-	// execute the command
-	cmd := exec.Command(command[0], command[1:]...)
-	// setup stdin, stdout and stderr
-	cmd.Stdin = c.Tty()
-	cmd.Stdout = c.Tty()
-	cmd.Stderr = c.Tty()
 	if env != nil {
-		cmd.Env = append(os.Environ(), env...)
+		opts.Environment = append(os.Environ(), env...)
 	}
-	err = cmd.Start()
+
+	cp, err := termtest.New(opts)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer cp.Close()
 
 	buf := new(bytes.Buffer)
 	ctx := InteractiveContext{
 		Command: command,
-		console: c,
 		buffer:  buf,
 		StopCommand: func() {
-			_ = cmd.Process.Kill()
+			_ = cp.Signal(os.Kill)
 		},
+		cp: cp,
 	}
 	tester(ctx)
 
-	err = cmd.Wait()
-
-	// Close the slave end of the pty, and read the remaining bytes from the master end.
-	c.Tty().Close()
+	_, err = cp.ExpectExitCode(0)
 
 	return buf.String(), err
 }
@@ -111,12 +98,11 @@ func expectDescriptionSupplier(ctx InteractiveContext, line string) func() strin
 }
 
 func SendLine(ctx InteractiveContext, line string) {
-	_, err := ctx.console.SendLine(line)
-	Expect(err).ShouldNot(HaveOccurred(), expectDescriptionSupplier(ctx, line))
+	ctx.cp.Send(line)
 }
 
 func ExpectString(ctx InteractiveContext, line string) {
-	res, err := ctx.console.ExpectString(line)
+	res, err := ctx.cp.Expect(line, 120*time.Second)
 	fmt.Fprint(ctx.buffer, res)
 	Expect(err).ShouldNot(HaveOccurred(), expectDescriptionSupplier(ctx, line))
 }

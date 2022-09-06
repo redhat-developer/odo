@@ -1,6 +1,24 @@
 # cloud.google.com/go v0.81.0
 ## explicit; go 1.11
 cloud.google.com/go/compute/metadata
+# github.com/ActiveState/termtest v0.7.1
+## explicit; go 1.14
+github.com/ActiveState/termtest
+github.com/ActiveState/termtest/internal/osutils
+github.com/ActiveState/termtest/internal/osutils/stacktrace
+# github.com/ActiveState/termtest/conpty v0.5.0
+## explicit; go 1.12
+github.com/ActiveState/termtest/conpty
+# github.com/ActiveState/termtest/expect v0.7.0
+## explicit; go 1.12
+github.com/ActiveState/termtest/expect
+github.com/ActiveState/termtest/expect/internal/osutils
+# github.com/ActiveState/termtest/xpty v0.6.0
+## explicit; go 1.14
+github.com/ActiveState/termtest/xpty
+# github.com/ActiveState/vt10x v1.3.1
+## explicit; go 1.13
+github.com/ActiveState/vt10x
 # github.com/AlecAivazis/survey/v2 v2.3.5
 ## explicit; go 1.13
 github.com/AlecAivazis/survey/v2
@@ -403,7 +421,7 @@ github.com/klauspost/compress/huff0
 github.com/klauspost/compress/snappy
 github.com/klauspost/compress/zstd
 github.com/klauspost/compress/zstd/internal/xxhash
-# github.com/kr/pty v1.1.5
+# github.com/kr/pty v1.1.8
 ## explicit; go 1.12
 github.com/kr/pty
 # github.com/kubernetes-sigs/service-catalog v0.3.1

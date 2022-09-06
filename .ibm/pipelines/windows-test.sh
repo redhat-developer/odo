@@ -14,7 +14,7 @@ sshpass -p $WINDOWS_PASSWORD scp -o StrictHostKeyChecking=no ./.ibm/pipelines/wi
 
 #execute test from the test script
 export TEST_EXEC_NODES=${TEST_EXEC_NODES:-"16"}
-sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP -o StrictHostKeyChecking=no powershell /tmp/windows-test-script.ps1 "${GIT_PR_NUMBER}" "${BUILD_NUMBER}" "${API_KEY_QE}" "${IBM_OPENSHIFT_ENDPOINT}" "${LOGFILE}" "${REPO}" "${WINDOWS_IP}" "${CLUSTER_ID}" "${TEST_EXEC_NODES}"
+sshpass -p $WINDOWS_PASSWORD ssh Administrator@$WINDOWS_IP -o StrictHostKeyChecking=no powershell /tmp/windows-test-script.ps1 "${GIT_PR_NUMBER}" "${BUILD_NUMBER}" "${API_KEY_QE}" "${IBM_OPENSHIFT_ENDPOINT}" "${LOGFILE}" "${REPO}" "${CLUSTER_ID}" "${TEST_EXEC_NODES}"
 RESULT=$?
 echo "RESULT: $RESULT"
 
