@@ -847,9 +847,6 @@ ComponentSettings:
 
 		When("Starting a PostgreSQL service", func() {
 			BeforeEach(func() {
-				if helper.IsKubernetesCluster() {
-					Skip("Operators have not been setup on Kubernetes cluster yet. Remove this once the issue has been fixed.")
-				}
 				// Ensure that the operators are installed
 				commonVar.CliRunner.EnsureOperatorIsInstalled("service-binding-operator")
 				commonVar.CliRunner.EnsureOperatorIsInstalled("cloud-native-postgresql")
@@ -1816,12 +1813,12 @@ CMD ["npm", "start"]
 	}{
 		{
 			name: "with metadata.name",
-			//cmpName from Devfile
+			// cmpName from Devfile
 			cmpName: "nodejs",
 		},
 		{
 			name: "without metadata.name",
-			//cmpName is returned by alizer.DetectName
+			// cmpName is returned by alizer.DetectName
 			cmpName: "nodejs-starter",
 			devfileHandler: func(path string) {
 				helper.UpdateDevfileContent(path, []helper.DevfileUpdater{helper.DevfileMetadataNameRemover})
