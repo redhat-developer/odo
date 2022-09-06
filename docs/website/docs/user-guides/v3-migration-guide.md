@@ -20,12 +20,42 @@ of the component from the cluster.
 If you have created an odo component using odo v2, this section will help you move it to use odo v3.
 1. `cd` into the component directory, and delete the component from the Kubernetes cluster:
     ```shell
-    $ odo delete -f
+    odo delete
    ```
 2. Download and install odo v3 by following the steps mentioned [here](../overview/installation.md).
 3. Use [`odo dev`](../command-reference/dev.md) to start developing your application using odo v3.
+4. You can also use `odo list` to see a list of components that are running on the cluster and which version of odo 
+   was used to create them.
 
 If you face any problem, [open an issue on odo's repository](https://github.com/redhat-developer/odo/issues/new?assignees=&labels=&template=Bug.md).
+
+### What happened to Ingress/Route?
+If you have used odo v2, you must have used Ingress (on Kubernetes) or Route (on OpenShift) to access the 
+application that was pushed to the cluster using `odo push`. odo v3 no longer creates an Ingress or a Route. Instead,
+it uses port-forwarding.
+
+With v3, when you do `odo dev`, odo forwards a port on the development system to the port on the Kubernetes/OpenShift 
+cluster mapping to your running application. It also prints the information when the application has started on the 
+cluster. You would see a message like below:
+```shell
+$ odo dev
+...
+...
+-  Forwarding from 127.0.0.1:40001 -> 8080
+```
+This indicates that the port 40001 on the development system has been forwarded to port 8080 of the application 
+represented by the current odo component.
+
+:::info NOTE
+odo no longer supports creation of Ingress/Route out of the box. Hence, `odo url` set of commands do not exist in v3.
+:::
+
+### Changes to the way component debugging works
+In odo v2, `odo push --debug` was used to run a component in debug mode. To setup port forwarding to the component's
+debug port, you had to run `odo debug port-forward`.
+
+In odo v3, you need to specify the debug port in the `devfile.yaml` as an endpoint, and run `odo dev --debug` to 
+start the component in debug mode.
 
 ### Commands added, modified or removed in v3
 
