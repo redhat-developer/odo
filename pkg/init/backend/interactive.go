@@ -134,19 +134,19 @@ func (o *InteractiveBackend) PersonalizeName(devfile parser.DevfileObj, flags ma
 	if name == "" {
 		return "", fmt.Errorf("unable to detect the name")
 	}
+
 	var userReturnedName string
-	userReturnedName, err = o.askerClient.AskName(name)
-	if err != nil {
-		return "", err
-	}
 	// keep asking the name until the user enters a valid name
-	for validK8sNameErr := dfutil.ValidateK8sResourceName("name", userReturnedName); validK8sNameErr != nil; {
-		log.Error(validK8sNameErr)
+	for {
 		userReturnedName, err = o.askerClient.AskName(name)
 		if err != nil {
 			return "", err
 		}
-		validK8sNameErr = dfutil.ValidateK8sResourceName("name", userReturnedName)
+		validK8sNameErr := dfutil.ValidateK8sResourceName("name", userReturnedName)
+		if validK8sNameErr == nil {
+			break
+		}
+		log.Error(validK8sNameErr)
 	}
 	return userReturnedName, nil
 }
