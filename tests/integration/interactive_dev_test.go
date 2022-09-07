@@ -60,7 +60,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
 
-					helper.ExpectString(ctx, "Press Ctrl+c to exit")
+					helper.ExpectString(ctx, "[Ctrl+c] - Exit")
 					ctx.StopCommand()
 				})
 
@@ -91,7 +91,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
 
-					helper.ExpectString(ctx, "Press Ctrl+c to exit")
+					helper.ExpectString(ctx, "[Ctrl+c] - Exit")
 					ctx.StopCommand()
 				})
 
@@ -129,7 +129,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 					helper.ExpectString(ctx, "Enter component name")
 					helper.SendLine(ctx, "my-app")
 
-					helper.ExpectString(ctx, "Press Ctrl+c to exit")
+					helper.ExpectString(ctx, "[Ctrl+c] - Exit")
 					ctx.StopCommand()
 				})
 
@@ -155,7 +155,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "--no-watch"},
 				nil,
 				func(ctx helper.InteractiveContext) {
-					helper.ExpectString(ctx, "Press Ctrl+c")
+					helper.ExpectString(ctx, "[p] - Manually sync")
 
 					helper.PressKey(ctx, 'p')
 

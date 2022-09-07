@@ -35,7 +35,10 @@ import (
 const (
 	// PushErrorString is the string that is printed when an error occurs during watch's Push operation
 	PushErrorString = "Error occurred on Push"
-	CtrlCMessage    = "Press Ctrl+c to exit `odo dev` and delete resources from the cluster"
+	PromptMessage   = `
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually sync / push files to the cluster
+`
 )
 
 type WatchClient struct {
@@ -539,7 +542,7 @@ func removeDuplicates(input []string) []string {
 }
 
 func printInfoMessage(out io.Writer, path string) {
-	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+CtrlCMessage+"\n", path)
+	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+PromptMessage+"\n", path)
 }
 
 func isFatal(err error) bool {

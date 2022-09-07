@@ -133,7 +133,7 @@ func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte,
 	cmd.Cmd.Stderr = c.Tty()
 
 	session := cmd.AddEnv(envvars...).Runner().session
-	WaitForOutputToContain("Press Ctrl+c to exit `odo dev` and delete resources from the cluster", 360, 10, session)
+	WaitForOutputToContain("[Ctrl+c] - Exit", 360, 10, session)
 	result := DevSession{
 		session: session,
 		console: c,
