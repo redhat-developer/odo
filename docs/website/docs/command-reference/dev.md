@@ -35,7 +35,9 @@ Your application is now running on the cluster
  - Forwarding from 127.0.0.1:40001 -> 3000
 
 Watching for changes in the current directory /Users/user/nodejs
-Press Ctrl+c to exit `odo dev` and delete resources from the cluster
+
+[Ctrl+c] - Exit and delete resources from the cluster
+     [p] - Manually sync / push files to the cluster
 ```
 
 In the above example, three things have happened:
@@ -45,6 +47,13 @@ In the above example, three things have happened:
 
 You can press Ctrl-c at any time to terminate the development session. The command can take a few moment to terminate, as it
 will first delete all resources deployed into the cluster for this session before terminating.
+
+### Manual synchronization
+
+By default, the changes made by the user to the Devfile and source files are synchronized immediately.
+
+The flag `--no-watch` can be used to change this behaviour: when the user changes the devfile or any source file, the changes
+won't be synchronized immediately, but the next time the user presses the `p` key.
 
 ### Running an alternative command
 
