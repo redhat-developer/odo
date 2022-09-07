@@ -101,7 +101,7 @@ Unsetting a preference key sets it to an empty value in the preference file. odo
 | Timeout            | Timeout for Kubernetes server connection check                                 | 1 second    |
 | PushTimeout        | Timeout for waiting for a component to start                                   | 240 seconds |
 | RegistryCacheTime  | For how long (in minutes) odo will cache information from the Devfile registry | 4 Minutes   |
-| Ephemeral          | Control whether odo should create a emptyDir volume to store source code       | True        |
+| Ephemeral          | Control whether odo should create a emptyDir volume to store source code       | False       |
 | ConsentTelemetry   | Control whether odo can collect telemetry for the user's odo usage             | False       |
 
 
