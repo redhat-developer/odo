@@ -140,4 +140,28 @@ var _ = Describe("odo dev interactive command tests", func() {
 				"odo will try to autodetect the language and project type in order to select the best suited Devfile for your project."))
 		})
 	})
+
+	When("a component is bootstrapped", func() {
+
+		var cmpName string
+
+		BeforeEach(func() {
+			cmpName = helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile.yaml")).ShouldPass()
+		})
+
+		It("should sync files when p is pressed", func() {
+			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "--no-watch"},
+				nil,
+				func(ctx helper.InteractiveContext) {
+					helper.ExpectString(ctx, "Press Ctrl+c")
+
+					helper.PressKey(ctx, 'p')
+
+					helper.ExpectString(ctx, "Pushing files")
+					ctx.StopCommand()
+				})
+		})
+	})
 })
