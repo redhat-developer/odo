@@ -18,7 +18,6 @@ A full list of example applications can be viewed with the `odo registry` comman
 ## Prerequisites
 
 * Have the odo binary [installed](../overview/installation.md).
-* A [Kubernetes](../overview/cluster-setup/kubernetes) or [OpenShift cluster](../overview/cluster-setup/openshift) 
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
