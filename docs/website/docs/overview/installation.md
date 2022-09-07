@@ -267,22 +267,7 @@ type odo.exe.sha256
 
 4. Add the binary to your `PATH`
 
-## Visual Studio Code Plugin
-
-Installs `odo` capabilities Visual Studio Code (VSCode).
-
-The [OpenShift VSCode extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-openshift-connector) uses both `odo` and `oc` binary to interact with Kubernetes or OpenShift cluster.
-
-1. Open VS Code.
-2. Launch VS Code Quick Open (Ctrl+P)
-3. Paste the following command:
-    ```shell
-     ext install redhat.vscode-openshift-connector
-    ```
-
 ## Alternative installation methods
-
-
 
 ### Source code
 1. Clone the repository and cd into it.
