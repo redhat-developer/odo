@@ -58,6 +58,7 @@ function Run-Test {
     [Environment]::SetEnvironmentVariable("TEST_EXEC_NODES", "$TEST_EXEC_NODES") 
     [Environment]::SetEnvironmentVariable("SKIP_USER_LOGIN_TESTS","true")
     [Environment]::SetEnvironmentVariable("SKIP_WELCOMING_MESSAGES","true")
+    [Environment]::SetEnvironmentVariable("SKIP_KEY_PRESS","true")
 
     Shout "Login IBMcloud"
     ibmcloud login --apikey ${API_KEY}

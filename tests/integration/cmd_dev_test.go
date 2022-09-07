@@ -398,6 +398,10 @@ ComponentSettings:
 				When("p is pressed", func() {
 
 					BeforeEach(func() {
+						if os.Getenv("SKIP_KEY_PRESS") == "true" {
+							Skip("This is a unix-terminal specific scenario, skipping")
+						}
+
 						devSession.PressKey('p')
 					})
 
@@ -499,6 +503,10 @@ ComponentSettings:
 							dst := "memoryLimit: 1023Mi"
 							helper.ReplaceString("devfile.yaml", src, dst)
 							if manual {
+								if os.Getenv("SKIP_KEY_PRESS") == "true" {
+									Skip("This is a unix-terminal specific scenario, skipping")
+								}
+
 								devSession.PressKey('p')
 							}
 							var err error
@@ -575,6 +583,10 @@ ComponentSettings:
 						helper.ReplaceString("server.js", "Hello from Node.js", "H3110 from Node.js")
 
 						if manual {
+							if os.Getenv("SKIP_KEY_PRESS") == "true" {
+								Skip("This is a unix-terminal specific scenario, skipping")
+							}
+
 							devSession.PressKey('p')
 						}
 
@@ -610,6 +622,10 @@ ComponentSettings:
 							helper.ReplaceString("devfile.yaml", "exposure: none", "exposure: public")
 
 							if manual {
+								if os.Getenv("SKIP_KEY_PRESS") == "true" {
+									Skip("This is a unix-terminal specific scenario, skipping")
+								}
+
 								devSession.PressKey('p')
 							}
 
