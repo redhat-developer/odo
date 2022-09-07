@@ -238,6 +238,13 @@ func Printf(format string, a ...interface{}) {
 	}
 }
 
+// Println will output a new line when applicable
+func Println() {
+	if !IsJSON() {
+		fmt.Fprintln(GetStdout())
+	}
+}
+
 // Success will output in an appropriate "success" manner
 //  ✓  <message>
 func Success(a ...interface{}) {

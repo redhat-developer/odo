@@ -41,6 +41,10 @@ var _ = Describe("odo init interactive command tests", func() {
 		command := []string{"odo", "init", "-v", "4"}
 		output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
 
+			By("showing the interactive mode notice message", func() {
+				helper.ExpectString(ctx, messages.InteractiveModeEnabled)
+			})
+
 			helper.ExpectString(ctx, "Select language")
 			helper.SendLine(ctx, "go")
 
@@ -92,6 +96,10 @@ var _ = Describe("odo init interactive command tests", func() {
 
 		command := []string{"odo", "init"}
 		output, err := helper.RunInteractive(command, nil, func(ctx helper.InteractiveContext) {
+
+			By("showing the interactive mode notice message", func() {
+				helper.ExpectString(ctx, messages.InteractiveModeEnabled)
+			})
 
 			helper.ExpectString(ctx, "Select language")
 			helper.SendLine(ctx, "go")

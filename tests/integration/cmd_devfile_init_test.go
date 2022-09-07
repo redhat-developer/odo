@@ -2,16 +2,16 @@ package integration
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
+	"github.com/redhat-developer/odo/pkg/odo/cli/messages"
 	segment "github.com/redhat-developer/odo/pkg/segment/context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
-
-	"io/ioutil"
-	"os"
-	"path/filepath"
 
 	"github.com/redhat-developer/odo/tests/helper"
 )
@@ -106,11 +106,15 @@ var _ = Describe("odo devfile init command tests", func() {
 	Context("running odo init with valid flags", func() {
 		When("using --devfile flag", func() {
 			compName := "aname"
+			var output string
 			BeforeEach(func() {
-				helper.Cmd("odo", "init", "--name", compName, "--devfile", "go").ShouldPass().Out()
+				output = helper.Cmd("odo", "init", "--name", compName, "--devfile", "go").ShouldPass().Out()
 			})
 
 			It("should download a devfile.yaml file and correctly set the component name in it", func() {
+				By("not showing the interactive mode notice message", func() {
+					Expect(output).ShouldNot(ContainSubstring(messages.InteractiveModeEnabled))
+				})
 				files := helper.ListFilesInDir(commonVar.Context)
 				Expect(files).To(Equal([]string{"devfile.yaml"}))
 				metadata := helper.GetMetadataFromDevfile(filepath.Join(commonVar.Context, "devfile.yaml"))
@@ -250,33 +254,49 @@ var _ = Describe("odo devfile init command tests", func() {
 	})
 	Context("checking odo init final output message", func() {
 		var newContext, devfilePath string
+
 		BeforeEach(func() {
 			newContext = helper.CreateNewContext()
 			devfilePath = filepath.Join(newContext, "devfile.yaml")
 		})
+
 		AfterEach(func() {
 			helper.DeleteDir(newContext)
 		})
+
 		When("the devfile used by `odo init` does not contain a deploy command", func() {
 			var out string
+
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), devfilePath)
 				out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
 			})
+
 			It("should only show information about `odo dev`, and not `odo deploy`", func() {
 				Expect(out).To(ContainSubstring("odo dev"))
 				Expect(out).ToNot(ContainSubstring("odo deploy"))
 			})
+
+			It("should not show the interactive mode notice message", func() {
+				Expect(out).ShouldNot(ContainSubstring(messages.InteractiveModeEnabled))
+			})
 		})
+
 		When("the devfile used by `odo init` contains a deploy command", func() {
 			var out string
+
 			BeforeEach(func() {
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-deploy.yaml"), devfilePath)
 				out = helper.Cmd("odo", "init", "--name", "aname", "--devfile-path", devfilePath).ShouldPass().Out()
 			})
+
 			It("should show information about both `odo dev`, and `odo deploy`", func() {
 				Expect(out).To(ContainSubstring("odo dev"))
 				Expect(out).To(ContainSubstring("odo deploy"))
+			})
+
+			It("should not show the interactive mode notice message", func() {
+				Expect(out).ShouldNot(ContainSubstring(messages.InteractiveModeEnabled))
 			})
 		})
 	})
