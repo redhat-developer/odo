@@ -185,8 +185,9 @@ func (o *InitOptions) run(ctx context.Context) (devfileObj parser.DevfileObj, pa
 		infoOutput = messages.SourceCodeDetected
 	}
 	log.Title(messages.InitializingNewComponent, infoOutput, "odo version: "+version.VERSION)
+	log.Println()
 	if len(o.flags) == 0 {
-		log.Infof("\n%s", messages.InteractiveModeEnabled)
+		log.Info(messages.InteractiveModeEnabled)
 	}
 
 	devfileObj, devfilePath, err := o.clientset.InitClient.SelectAndPersonalizeDevfile(o.flags, o.contextDir)
