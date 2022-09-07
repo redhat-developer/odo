@@ -1,9 +1,11 @@
 package helper
 
 import (
+	"os"
 	"regexp"
 	"time"
 
+	"github.com/ActiveState/termtest/expect"
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -109,6 +111,7 @@ import (
 type DevSession struct {
 	session *gexec.Session
 	stopped bool
+	console *expect.Console
 }
 
 // StartDevMode starts a dev session with `odo dev`
@@ -116,16 +119,28 @@ type DevSession struct {
 // and the redirections endpoints to access ports opened by component
 // when the dev mode is completely started
 func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte, map[string]string, error) {
+
+	c, err := expect.NewConsole(expect.WithStdout(os.Stdout))
+	if err != nil {
+		return DevSession{}, nil, nil, nil, err
+	}
+
 	args := []string{"dev", "--random-ports"}
 	args = append(args, opts...)
-	session := Cmd("odo", args...).AddEnv(envvars...).Runner().session
+	cmd := Cmd("odo", args...)
+	cmd.Cmd.Stdin = c.Tty()
+	cmd.Cmd.Stdout = c.Tty()
+	cmd.Cmd.Stderr = c.Tty()
+
+	session := cmd.AddEnv(envvars...).Runner().session
 	WaitForOutputToContain("Press Ctrl+c to exit `odo dev` and delete resources from the cluster", 360, 10, session)
 	result := DevSession{
 		session: session,
+		console: c,
 	}
 	outContents := session.Out.Contents()
 	errContents := session.Err.Contents()
-	err := session.Out.Clear()
+	err = session.Out.Clear()
 	if err != nil {
 		return DevSession{}, nil, nil, nil, err
 	}
@@ -139,17 +154,31 @@ func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte,
 
 // Kill a Dev session abruptly, without handling any cleanup
 func (o DevSession) Kill() {
+	if o.console != nil {
+		o.console.Close()
+	}
 	o.session.Kill()
 }
 
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
 func (o *DevSession) Stop() {
+	if o.console != nil {
+		o.console.Close()
+	}
 	if o.stopped {
 		return
 	}
 	err := terminateProc(o.session)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	o.stopped = true
+}
+
+func (o *DevSession) PressKey(p byte) {
+	if o.console == nil {
+		return
+	}
+	_, err := o.console.Write([]byte{p})
+	Expect(err).ToNot(HaveOccurred())
 }
 
 func (o DevSession) WaitEnd() {
@@ -240,7 +269,8 @@ func DevModeShouldFail(envvars []string, substring string, opts ...string) (DevS
 }
 
 // getPorts returns a map of ports redirected depending on the information in s
-//  `- Forwarding from 127.0.0.1:40001 -> 3000` will return { "3000": "127.0.0.1:40001" }
+//
+//	`- Forwarding from 127.0.0.1:40001 -> 3000` will return { "3000": "127.0.0.1:40001" }
 func getPorts(s string) map[string]string {
 	result := map[string]string{}
 	re := regexp.MustCompile("(127.0.0.1:[0-9]+) -> ([0-9]+)")
