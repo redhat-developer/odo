@@ -155,7 +155,8 @@ func StartDevMode(envvars []string, opts ...string) (DevSession, []byte, []byte,
 // Kill a Dev session abruptly, without handling any cleanup
 func (o DevSession) Kill() {
 	if o.console != nil {
-		o.console.Close()
+		err := o.console.Close()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	}
 	o.session.Kill()
 }
@@ -163,7 +164,8 @@ func (o DevSession) Kill() {
 // Stop a Dev session cleanly (equivalent as hitting Ctrl-c)
 func (o *DevSession) Stop() {
 	if o.console != nil {
-		o.console.Close()
+		err := o.console.Close()
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 	}
 	if o.stopped {
 		return

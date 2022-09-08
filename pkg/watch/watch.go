@@ -51,7 +51,7 @@ type WatchClient struct {
 	devfileWatcher    *fsnotify.Watcher
 	podWatcher        watch.Interface
 	warningsWatcher   watch.Interface
-	keyWatcher        chan byte
+	keyWatcher        <-chan byte
 
 	// true to force sync, used when manual sync
 	forceSync bool
@@ -174,7 +174,7 @@ func (o *WatchClient) WatchAndPush(out io.Writer, parameters WatchParameters, ct
 		log.Fwarning(out, "Unable to watch Events resource, warning Events won't be displayed")
 	}
 
-	o.keyWatcher = getKeyWatcher(ctx)
+	o.keyWatcher = getKeyWatcher(ctx, out)
 	return o.eventWatcher(ctx, parameters, out, evaluateFileChanges, processEvents, componentStatus)
 }
 
@@ -542,7 +542,8 @@ func removeDuplicates(input []string) []string {
 }
 
 func printInfoMessage(out io.Writer, path string) {
-	log.Finfof(out, "\nWatching for changes in the current directory %s\n"+PromptMessage+"\n", path)
+	log.Sectionf("Dev mode")
+	fmt.Fprintf(out, " %s\n Watching for changes in the current directory %s\n\n %s%s", log.Sbold("Status:"), path, log.Sbold("Keyboard Commands:"), PromptMessage)
 }
 
 func isFatal(err error) bool {
