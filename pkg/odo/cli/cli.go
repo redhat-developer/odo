@@ -282,6 +282,11 @@ func ShowHelp(cmd *cobra.Command, args []string) error {
 	}
 
 	//revive:disable:error-strings This is a top-level error message displayed as is to the end user
+	if log.IsJSON() {
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+		return errors.New("Invalid command - see available commands/subcommands by running `odo`")
+	}
 	return errors.New("Invalid command - see available commands/subcommands above")
 	//revive:enable:error-strings
 }
