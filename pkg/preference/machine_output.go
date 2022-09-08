@@ -2,34 +2,22 @@ package preference
 
 import (
 	"reflect"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-const (
-	prefAPIVersion = "odo.dev/v1alpha1"
-	prefKind       = "PreferenceList"
 )
 
 type PreferenceList struct {
-	metav1.TypeMeta `json:",inline"`
-	Items           []PreferenceItem `json:"items,omitempty"`
+	Items []PreferenceItem `json:"items,omitempty"`
 }
 
 type PreferenceItem struct {
-	Name        string
-	Value       interface{} // The value set by the user, this will be nil if the user hasn't set it
-	Default     interface{} // default value of the preference if the user hasn't set the value
-	Type        string      // the type of the preference, possible values int, string, bool
-	Description string      // The description of the preference
+	Name        string      `json:"name"`
+	Value       interface{} `json:"value"`       // The value set by the user, this will be nil if the user hasn't set it
+	Default     interface{} `json:"default"`     // default value of the preference if the user hasn't set the value
+	Type        string      `json:"type"`        // the type of the preference, possible values int, string, bool
+	Description string      `json:"description"` // The description of the preference
 }
 
 func (o *preferenceInfo) NewPreferenceList() PreferenceList {
 	return PreferenceList{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: prefAPIVersion,
-			Kind:       prefKind,
-		},
 		Items: toPreferenceItems(*o),
 	}
 }

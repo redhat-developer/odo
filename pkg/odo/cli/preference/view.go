@@ -9,7 +9,9 @@ import (
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
+	"github.com/redhat-developer/odo/pkg/api"
 	"github.com/redhat-developer/odo/pkg/log"
+	"github.com/redhat-developer/odo/pkg/machineoutput"
 	"github.com/redhat-developer/odo/pkg/odo/cli/ui"
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions"
@@ -56,6 +58,15 @@ func (o *ViewOptions) Run(ctx context.Context) (err error) {
 	registryList := o.clientset.PreferenceClient.RegistryList()
 	HumanReadableOutput(preferenceList, registryList)
 	return
+}
+
+func (o *ViewOptions) RunForJsonOutput(ctx context.Context) (result interface{}, err error) {
+	preferenceList := o.clientset.PreferenceClient.NewPreferenceList()
+	registryList := o.clientset.PreferenceClient.RegistryList()
+	return api.PreferenceView{
+		Preferences: preferenceList.Items,
+		Registries:  *registryList,
+	}, nil
 }
 
 func HumanReadableOutput(preferenceList preference.PreferenceList, registryList *[]preference.Registry) {
@@ -126,5 +137,6 @@ func NewCmdView(name, fullName string) *cobra.Command {
 		},
 	}
 	clientset.Add(preferenceViewCmd, clientset.PREFERENCE)
+	machineoutput.UsedByCommand(preferenceViewCmd)
 	return preferenceViewCmd
 }
