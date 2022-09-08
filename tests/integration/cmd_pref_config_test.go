@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -64,6 +65,18 @@ var _ = Describe("odo preference and config command tests", func() {
 				value := helper.GetPreferenceValue(key)
 				Expect(value).To(BeEmpty())
 			}
+		})
+		It("should get the default global config keys in JSON output", func() {
+			res := helper.Cmd("odo", "preference", "view", "-o", "json").ShouldPass()
+			stdout, stderr := res.Out(), res.Err()
+			Expect(stderr).To(BeEmpty())
+			Expect(helper.IsJSON(stdout)).To(BeTrue())
+			preferences := []string{"UpdateNotification", "Timeout", "PushTimeout", "RegistryCacheTime", "ConsentTelemetry", "Ephemeral"}
+			for i, pref := range preferences {
+				helper.JsonPathContentIs(stdout, fmt.Sprintf("preferences.%d.name", i), pref)
+			}
+			helper.JsonPathContentIs(stdout, "registries.#", "1")
+			helper.JsonPathContentIs(stdout, "registries.0.name", "DefaultDevfileRegistry")
 		})
 	})
 
