@@ -1,0 +1,177 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeBlock from '@theme/CodeBlock';
+
+Let's modify the `devfile.yaml` and add the respective deployment code.
+
+:::caution
+When copy/pasting to `devfile.yaml`, make sure the lines you inserted are correctly indented.
+:::
+
+`odo deploy` uses Devfile schema **2.2.0**. Change the schema to reflect the change:
+
+```yaml
+# Deploy "kind" ID's use schema 2.2.0+
+schemaVersion: 2.2.0
+```
+
+Add the `variables` and change them appropriately:
+
+<div>
+<CodeBlock language="yaml">
+{`
+# Add the following variables code anywhere in devfile.yaml
+# This MUST be a container registry you are able to access
+variables:
+  CONTAINER_IMAGE: quay.io/MYUSERNAME/`}{props.name}{`-odo-example
+  RESOURCE_NAME: my-`}{props.name}{`-app
+  CONTAINER_PORT: "`}{props.port}{`"
+  DOMAIN_NAME: `}{props.name}{`.example.com
+`}
+</CodeBlock>
+</div>
+
+Add the commands used to deploy:
+
+```yaml
+# This is the main "composite" command that will run all below commands
+commands:
+- id: deploy
+  composite:
+    commands:
+    - build-image
+    - k8s-deployment
+    - k8s-service
+    - k8s-url
+    group:
+      isDefault: true
+      kind: deploy
+
+# Below are the commands and their respective components that they are "linked" to deploy
+- id: build-image
+  apply:
+    component: outerloop-build
+- id: k8s-deployment
+  apply:
+    component: outerloop-deployment
+- id: k8s-service
+  apply:
+    component: outerloop-service
+- id: k8s-url
+  apply:
+    component: outerloop-url
+```
+
+Add the Docker image location as well as Kubernetes Deployment and Service resources to `components`:
+```yaml
+components:
+
+# This will build the container image before deployment
+- name: outerloop-build
+  image:
+    dockerfile:
+      buildContext: ${PROJECT_SOURCE}
+      rootRequired: false
+      uri: ./Dockerfile
+    imageName: "{{CONTAINER_IMAGE}}"
+
+# This will create a Deployment in order to run your container image across
+# the cluster.
+- name: outerloop-deployment
+  kubernetes:
+    inlined: |
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: {{RESOURCE_NAME}}
+        template:
+          metadata:
+            labels:
+              app: {{RESOURCE_NAME}}
+          spec:
+            containers:
+              - name: {{RESOURCE_NAME}}
+                image: {{CONTAINER_IMAGE}}
+                ports:
+                  - name: http
+                    containerPort: {{CONTAINER_PORT}}
+                    protocol: TCP
+                resources:
+                  limits:
+                    memory: "1024Mi"
+                    cpu: "500m"
+
+# This will create a Service so your Deployment is accessible.
+# Depending on your cluster, you may modify this code so it's a
+# NodePort, ClusterIP or a LoadBalancer service.
+- name: outerloop-service
+  kubernetes:
+    inlined: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        ports:
+        - name: "{{CONTAINER_PORT}}"
+          port: {{CONTAINER_PORT}}
+          protocol: TCP
+          targetPort: {{CONTAINER_PORT}}
+        selector:
+          app: {{RESOURCE_NAME}}
+        type: ClusterIP
+```
+
+To be able to access our application we need to add one more `component` to the Devfile.
+For OpenShift cluster we add Route. For Kubernetes cluster we add Ingress.
+
+<Tabs groupId="quickstart">
+  <TabItem value="kubernetes" label="Kubernetes">
+
+```yaml
+- name: outerloop-url
+  kubernetes:
+    inlined: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        rules:
+          - host: "{{DOMAIN_NAME}}"
+            http:
+              paths:
+                - path: "/"
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: {{RESOURCE_NAME}} 
+                      port:
+                        number: {{CONTAINER_PORT}}
+```
+  </TabItem>
+  <TabItem value="openshift" label="OpenShift">
+
+```yaml
+- name: outerloop-url
+  kubernetes:
+    inlined: |
+      apiVersion: route.openshift.io/v1
+      kind: Route
+      metadata:
+        name: {{RESOURCE_NAME}}
+      spec:
+        path: /
+        to:
+          kind: Service
+          name: {{RESOURCE_NAME}}
+        port:
+          targetPort: {{CONTAINER_PORT}}
+```
+</TabItem>
+</Tabs>

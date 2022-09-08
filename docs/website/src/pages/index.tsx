@@ -31,7 +31,7 @@ export default function Home(): JSX.Element {
               <Link className="button button--primary" to="/docs/introduction">
     Read the docs
               </Link>
-              <Link className="button button--info" to="/docs/user-guides/quickstart">
+              <Link className="button button--info" to="/docs/user-guides/quickstart/">
    Quickstart Guide 
               </Link>
               <span className={styles.indexCtasGitHubButtonWrapper}>
@@ -49,7 +49,7 @@ export default function Home(): JSX.Element {
         </div>
         <div className={clsx(styles.title, styles.titleDark)}>
           <div className={styles.titleInner}>
-            Version 3 of odo is arriving 🚀<br></br> <Link to="/docs/overview/installation">Install</Link> and <Link to="/docs/user-guides/quickstart">try out</Link> our new features ⭐️
+            Version 3 of odo is arriving 🚀<br></br> <Link to="/docs/overview/installation">Install</Link> and <Link to="/docs/user-guides/quickstart/">try out</Link> our new features ⭐️
           </div>
         </div>
         <div className={styles.overview}>
