@@ -37,7 +37,7 @@ const (
 	PushErrorString = "Error occurred on Push"
 	PromptMessage   = `
 [Ctrl+c] - Exit and delete resources from the cluster
-     [p] - Manually sync / push files to the cluster
+     [p] - Manually apply local changes to the application on the cluster
 `
 )
 

@@ -155,7 +155,7 @@ var _ = Describe("odo dev interactive command tests", func() {
 			_, _ = helper.RunInteractive([]string{"odo", "dev", "--random-ports", "--no-watch"},
 				nil,
 				func(ctx helper.InteractiveContext) {
-					helper.ExpectString(ctx, "[p] - Manually sync")
+					helper.ExpectString(ctx, "[p] - Manually apply")
 
 					helper.PressKey(ctx, 'p')
 
