@@ -9,6 +9,8 @@ import (
 	"golang.org/x/term"
 )
 
+// getKeyWatcher returns a channel which will emit
+// characters when keys are pressed on the keyboard
 func getKeyWatcher(ctx context.Context, out io.Writer) <-chan byte {
 
 	keyInput := make(chan byte)
@@ -19,6 +21,10 @@ func getKeyWatcher(ctx context.Context, out io.Writer) <-chan byte {
 			return
 		}
 
+		// First set the terminal in character mode
+		// to be able to read characters as soon as
+		// they are emitted, instead of waiting
+		// for newline characters
 		oldState, err := term.GetState(stdinfd)
 		if err != nil {
 			fmt.Fprintln(out, fmt.Errorf("getstate: %w", err))
@@ -33,6 +39,8 @@ func getKeyWatcher(ctx context.Context, out io.Writer) <-chan byte {
 			_ = term.Restore(stdinfd, oldState)
 		}()
 
+		// Wait for the context to be cancelled
+		// or a character to be emitted
 		for {
 			select {
 			case <-ctx.Done():
@@ -46,6 +54,8 @@ func getKeyWatcher(ctx context.Context, out io.Writer) <-chan byte {
 	return keyInput
 }
 
+// getKey returns a channel which will emit a character
+// when a key is pressed on the keyboard
 func getKey(out io.Writer) <-chan byte {
 
 	ch := make(chan byte)
