@@ -254,6 +254,13 @@ status:
 						stdout := commonVar.CliRunner.Run("get", "servicebinding", bindingName).Out.Contents()
 						Expect(stdout).To(ContainSubstring("ApplicationsBound"))
 					})
+				})
+
+				When("odo dev is run", func() {
+					BeforeEach(func() {
+						devSession, _, _, _, err = helper.StartDevMode(nil)
+						Expect(err).ToNot(HaveOccurred())
+					})
 
 					When("odo dev command is stopped", func() {
 						BeforeEach(func() {

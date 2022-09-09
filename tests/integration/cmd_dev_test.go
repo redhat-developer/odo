@@ -255,11 +255,6 @@ ComponentSettings:
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			AfterEach(func() {
-				devSession.Kill()
-				devSession.WaitEnd()
-			})
-
 			When("odo dev is stopped", func() {
 				BeforeEach(func() {
 					devSession.Stop()
@@ -270,6 +265,62 @@ ComponentSettings:
 					deploymentName := fmt.Sprintf("%s-%s", cmpName, "app")
 					errout := commonVar.CliRunner.Run("get", "deployment", "-n", commonVar.Project).Err.Contents()
 					Expect(string(errout)).ToNot(ContainSubstring(deploymentName))
+				})
+			})
+		})
+
+		When("odo dev is executed and Ephemeral is set to false", func() {
+
+			var devSession helper.DevSession
+			BeforeEach(func() {
+				helper.Cmd("odo", "preference", "set", "-f", "Ephemeral", "false").ShouldPass()
+				var err error
+				devSession, _, _, _, err = helper.StartDevMode(nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			When("killing odo dev and running odo delete component --wait", func() {
+				BeforeEach(func() {
+					devSession.Kill()
+					devSession.WaitEnd()
+					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
+				})
+
+				It("should have deleted all resources before returning", func() {
+					By("deleting the service", func() {
+						services := commonVar.CliRunner.GetServices(commonVar.Project)
+						Expect(services).To(BeEmpty())
+					})
+					By("deleting the PVC", func() {
+						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+						Expect(pvcs).To(BeEmpty())
+					})
+					By("deleting the pod", func() {
+						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+						Expect(pods).To(BeEmpty())
+					})
+				})
+			})
+
+			When("stopping odo dev normally", func() {
+				BeforeEach(func() {
+					devSession.Stop()
+					devSession.WaitEnd()
+				})
+
+				It("should have deleted all resources before returning", func() {
+					By("deleting the service", func() {
+						services := commonVar.CliRunner.GetServices(commonVar.Project)
+						Expect(services).To(BeEmpty())
+					})
+					By("deleting the PVC", func() {
+						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
+						Expect(pvcs).To(BeEmpty())
+					})
+					By("deleting the pod", func() {
+						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
+						Expect(pods).To(BeEmpty())
+					})
 				})
 			})
 		})
@@ -317,51 +368,6 @@ ComponentSettings:
 				By("creating a pvc with ownerreference", func() {
 					output := commonVar.CliRunner.Run("get", "pvc", "--namespace", commonVar.Project, "-o", `jsonpath='{range .items[*].metadata.ownerReferences[*]}{@..kind}{"/"}{@..name}{"\n"}{end}'`).Out.Contents()
 					Expect(string(output)).To(ContainSubstring(fmt.Sprintf("Deployment/%s-app", cmpName)))
-				})
-			})
-
-			When("killing odo dev and running odo delete component --wait", func() {
-				BeforeEach(func() {
-					devSession.Kill()
-					devSession.WaitEnd()
-					helper.Cmd("odo", "delete", "component", "--wait", "-f").ShouldPass()
-				})
-
-				It("should have deleted all resources before returning", func() {
-					By("deleting the service", func() {
-						services := commonVar.CliRunner.GetServices(commonVar.Project)
-						Expect(services).To(BeEmpty())
-					})
-					By("deleting the PVC", func() {
-						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-						Expect(pvcs).To(BeEmpty())
-					})
-					By("deleting the pod", func() {
-						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-						Expect(pods).To(BeEmpty())
-					})
-				})
-			})
-
-			When("stopping odo dev normally", func() {
-				BeforeEach(func() {
-					devSession.Stop()
-					devSession.WaitEnd()
-				})
-
-				It("should have deleted all resources before returning", func() {
-					By("deleting the service", func() {
-						services := commonVar.CliRunner.GetServices(commonVar.Project)
-						Expect(services).To(BeEmpty())
-					})
-					By("deleting the PVC", func() {
-						pvcs := commonVar.CliRunner.GetAllPVCNames(commonVar.Project)
-						Expect(pvcs).To(BeEmpty())
-					})
-					By("deleting the pod", func() {
-						pods := commonVar.CliRunner.GetAllPodNames(commonVar.Project)
-						Expect(pods).To(BeEmpty())
-					})
 				})
 			})
 		})
@@ -1349,10 +1355,6 @@ ComponentSettings:
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), commonVar.Context)
 				session, sessionOut, sessionErr, ports, err = helper.StartDevMode([]string{"PODMAN_CMD=echo"})
 				Expect(err).ToNot(HaveOccurred())
-			})
-			AfterEach(func() {
-				session.Stop()
-				session.WaitEnd()
 			})
 			It("should execute the composite apply commands successfully", func() {
 				checkDeploymentExists := func() {
@@ -2412,6 +2414,34 @@ CMD ["npm", "start"]
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		When("odo dev is stopped", func() {
+			BeforeEach(func() {
+				devSession.Stop()
+				devSession.WaitEnd()
+			})
+
+			It("should remove forwarded ports from state file", func() {
+				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
+				contentJSON, err := ioutil.ReadFile(stateFile)
+				Expect(err).ToNot(HaveOccurred())
+				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
+			})
+		})
+	})
+
+	When("a component with multiple endpoints is run", func() {
+		stateFile := ".odo/devstate.json"
+		var devSession helper.DevSession
+		BeforeEach(func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project-with-multiple-endpoints"), commonVar.Context)
+			helper.Cmd("odo", "set", "project", commonVar.Project).ShouldPass()
+			helper.Cmd("odo", "init", "--name", cmpName, "--devfile-path", helper.GetExamplePath("source", "devfiles", "nodejs", "devfile-with-multiple-endpoints.yaml")).ShouldPass()
+			Expect(helper.VerifyFileExists(".odo/devstate.json")).To(BeFalse())
+			var err error
+			devSession, _, _, _, err = helper.StartDevMode(nil)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		AfterEach(func() {
 			// We stop the process so the process does not remain after the end of the tests
 			devSession.Kill()
@@ -2430,20 +2460,6 @@ CMD ["npm", "start"]
 			helper.JsonPathContentIs(string(contentJSON), "forwardedPorts.1.containerPort", "4567")
 			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.0.localPort")
 			helper.JsonPathContentIsValidUserPort(string(contentJSON), "forwardedPorts.1.localPort")
-		})
-
-		When("odo dev is stopped", func() {
-			BeforeEach(func() {
-				devSession.Stop()
-				devSession.WaitEnd()
-			})
-
-			It("should remove forwarded ports from state file", func() {
-				Expect(helper.VerifyFileExists(stateFile)).To(BeTrue())
-				contentJSON, err := ioutil.ReadFile(stateFile)
-				Expect(err).ToNot(HaveOccurred())
-				helper.JsonPathContentIs(string(contentJSON), "forwardedPorts", "")
-			})
 		})
 	})
 
