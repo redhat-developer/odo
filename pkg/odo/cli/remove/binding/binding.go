@@ -86,7 +86,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "Remove Binding",
 		Long:    "Remove a binding between a service and the component from the devfile",
-		Args:    cobra.NoArgs,
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(removeBindingExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)

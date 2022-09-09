@@ -204,7 +204,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "Add Binding",
 		Long:    "Add a binding between a service and the component in the devfile",
-		Args:    cobra.NoArgs,
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(addBindingExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)

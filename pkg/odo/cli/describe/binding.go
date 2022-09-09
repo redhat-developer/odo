@@ -119,7 +119,7 @@ func NewCmdBinding(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "Describe bindings",
 		Long:    "Describe bindings",
-		Args:    cobra.NoArgs,
+		Args:    genericclioptions.NoArgsAndSilenceJSON,
 		Example: fmt.Sprintf(describeBindingExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
