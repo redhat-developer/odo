@@ -592,3 +592,67 @@ odo describe binding --name my-first-binding -o json
 	}
 }
 ```
+
+## odo preference view -o json
+
+The `odo preference view` command lists all user preferences and all user Devfile registries.
+
+
+```shell
+odo preference view -o json
+```
+```json
+{
+	"preferences": [
+		{
+			"name": "UpdateNotification",
+			"value": null,
+			"default": true,
+			"type": "bool",
+			"description": "Flag to control if an update notification is shown or not (Default: true)"
+		},
+		{
+			"name": "Timeout",
+			"value": null,
+			"default": 1000000000,
+			"type": "int64",
+			"description": "Timeout (in Duration) for cluster server connection check (Default: 1s)"
+		},
+		{
+			"name": "PushTimeout",
+			"value": null,
+			"default": 240000000000,
+			"type": "int64",
+			"description": "PushTimeout (in Duration) for waiting for a Pod to come up (Default: 4m0s)"
+		},
+		{
+			"name": "RegistryCacheTime",
+			"value": null,
+			"default": 900000000000,
+			"type": "int64",
+			"description": "For how long (in Duration) odo will cache information from the Devfile registry (Default: 15m0s)"
+		},
+		{
+			"name": "ConsentTelemetry",
+			"value": false,
+			"default": false,
+			"type": "bool",
+			"description": "If true, odo will collect telemetry for the user's odo usage (Default: false)\n\t\t    For more information: https://developers.redhat.com/article/tool-data-collection"
+		},
+		{
+			"name": "Ephemeral",
+			"value": null,
+			"default": false,
+			"type": "bool",
+			"description": "If true, odo will create an emptyDir volume to store source code (Default: false)"
+		}
+	],
+	"registries": [
+		{
+			"name": "DefaultDevfileRegistry",
+			"url": "https://registry.devfile.io",
+			"secure": false
+		}
+	]
+}
+```

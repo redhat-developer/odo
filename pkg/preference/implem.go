@@ -47,9 +47,9 @@ type odoSettings struct {
 
 // Registry includes the registry metadata
 type Registry struct {
-	Name   string `yaml:"Name,omitempty"`
-	URL    string `yaml:"URL,omitempty"`
-	Secure bool
+	Name   string `yaml:"Name,omitempty" json:"name"`
+	URL    string `yaml:"URL,omitempty" json:"url"`
+	Secure bool   `json:"secure"`
 }
 
 // Preference stores all the preferences related to odo

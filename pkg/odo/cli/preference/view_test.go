@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/redhat-developer/odo/pkg/odo/cmdline"
 	"github.com/redhat-developer/odo/pkg/odo/genericclioptions/clientset"
@@ -40,7 +39,6 @@ func TestView(t *testing.T) {
 	var boolNilValue *bool = nil
 
 	preferenceList := preference.PreferenceList{
-		TypeMeta: metav1.TypeMeta{},
 		Items: []preference.PreferenceItem{
 			{
 				Name:    preference.UpdateNotificationSetting,
