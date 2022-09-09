@@ -26,6 +26,7 @@ type CliRunner interface {
 
 	// HasNamespaceProject returns whether the specified namespace or project exists in the cluster
 	HasNamespaceProject(name string) bool
+	ListNamespaceProject(name string)
 
 	GetActiveNamespace() string
 	GetEnvsDevFileDeployment(componentName, appName, projectName string) map[string]string
