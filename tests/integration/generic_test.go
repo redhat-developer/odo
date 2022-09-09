@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhat-developer/odo/tests/helper"
 )
 
@@ -116,13 +117,11 @@ var _ = Describe("odo generic", func() {
 			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`)
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
 			Expect(odoVersionStringMatch).Should(BeTrue())
-			if !helper.IsKubernetesCluster() {
-				rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
-				kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
-				Expect(kubernetesVersionStringMatch).Should(BeTrue())
-				serverURL := oc.GetCurrentServerURL()
-				Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
-			}
+			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
+			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
+			Expect(kubernetesVersionStringMatch).Should(BeTrue())
+			serverURL := oc.GetCurrentServerURL()
+			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 		})
 	})
 

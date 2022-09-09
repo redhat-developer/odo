@@ -9,8 +9,9 @@ import (
 	"time"
 
 	dfutil "github.com/devfile/library/pkg/util"
-
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/klog"
 )
@@ -60,7 +61,7 @@ func (c *Client) GetServerVersion(timeout time.Duration) (*ServerInfo, error) {
 
 	// fail fast if user is not connected (same logic as `oc whoami`)
 	_, err = c.userClient.Users().Get(context.TODO(), "~", metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !kerrors.IsNotFound(err) {
 		return nil, err
 	}
 
