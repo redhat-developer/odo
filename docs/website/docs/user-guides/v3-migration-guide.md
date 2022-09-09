@@ -3,6 +3,19 @@ title: Migrate from v2 to v3
 sidebar_position: 2
 ---
 
+### Migrate existing odo component from v2 to v3
+If you have created an odo component using odo v2, this section will help you move it to use odo v3.
+1. `cd` into the component directory, and delete the component from the Kubernetes cluster:
+    ```shell
+    odo delete
+   ```
+2. Download and install odo v3 by following the steps mentioned [here](../overview/installation.md).
+3. Use [`odo dev`](../command-reference/dev.md) to start developing your application using odo v3.
+4. You can also use `odo list` to see a list of components that are running on the cluster and which version of odo
+   was used to create them.
+
+If you face any problem, [open an issue on odo's repository](https://github.com/redhat-developer/odo/issues/new?assignees=&labels=&template=Bug.md).
+
 ### Where are `odo push` and `odo watch` commands?
 `odo push` and `odo watch` have been replaced in v3 by a single command - `odo dev`. It does the job of two commands 
 in a single command, and also allows the user to not watch if `--no-watch` flag is passed. 
@@ -15,19 +28,6 @@ to automatically sync the code. In v3, `odo dev` performs both actions with a si
 long-running process that's going to block the terminal. Hitting `Ctrl+c` will stop the process and cleanup the 
 component from the cluster. In v2, you had to use `odo delete`/`odo component delete` to delete inner loop resources 
 of the component from the cluster.
-
-### Migrate existing odo component from v2 to v3
-If you have created an odo component using odo v2, this section will help you move it to use odo v3.
-1. `cd` into the component directory, and delete the component from the Kubernetes cluster:
-    ```shell
-    odo delete
-   ```
-2. Download and install odo v3 by following the steps mentioned [here](../overview/installation.md).
-3. Use [`odo dev`](../command-reference/dev.md) to start developing your application using odo v3.
-4. You can also use `odo list` to see a list of components that are running on the cluster and which version of odo 
-   was used to create them.
-
-If you face any problem, [open an issue on odo's repository](https://github.com/redhat-developer/odo/issues/new?assignees=&labels=&template=Bug.md).
 
 ### What happened to Ingress/Route?
 If you have used odo v2, you must have used Ingress (on Kubernetes) or Route (on OpenShift) to access the 
@@ -55,7 +55,20 @@ In odo v2, `odo push --debug` was used to run a component in debug mode. To setu
 debug port, you had to run `odo debug port-forward`.
 
 In odo v3, you need to specify the debug port in the `devfile.yaml` as an endpoint, and run `odo dev --debug` to 
-start the component in debug mode.
+start the component in debug mode. For example, a `container` component in the devfile should look like below, where 
+port 3000 is the application port and 5858 is the debug port:
+
+```yaml
+- name: runtime
+  container:
+    image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+    memoryLimit: 1024Mi
+    endpoints:
+    - name: "3000-tcp"
+      targetPort: 3000
+    - name: "5858-tcp"
+      targetPort: 5858
+```
 
 ### Commands added, modified or removed in v3
 
@@ -79,7 +92,7 @@ modification, the modified command is mentioned in the `v3` column. Please refer
 | config unset | ❌ |
 | config view | ❌ | 
 | debug info | ❌ (not needed as debug mode is start with odo dev --debug command that blocks terminal, the application can be running in inner-loop mode only if odo dev is running in terminal) |
-| debug port-forward  | ❌(port forwarding is automatic when users execute odo dev --debug) |
+| debug port-forward  | ❌ (port forwarding is automatic when users execute `odo dev --debug` as long as [the endpoint is defined in the devfile](#changes-to-the-way-component-debugging-works)) |
 | env set  | ❌ |
 |env uset | ❌ |
 | env view | ❌ |
