@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/redhat-developer/odo/pkg/odo/cli/list/services"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -164,7 +165,8 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	namespaceCmd := namespace.NewCmdNamespaceList(namespace.RecommendedCommandName, odoutil.GetFullName(fullName, namespace.RecommendedCommandName))
 	bindingCmd := binding.NewCmdBindingList(binding.RecommendedCommandName, odoutil.GetFullName(fullName, binding.RecommendedCommandName))
 	componentCmd := clicomponent.NewCmdComponentList(clicomponent.RecommendedCommandName, odoutil.GetFullName(fullName, clicomponent.RecommendedCommandName))
-	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd)
+	servicesCmd := services.NewCmdServicesList(services.RecommendedCommandName, odoutil.GetFullName(fullName, services.RecommendedCommandName))
+	listCmd.AddCommand(namespaceCmd, bindingCmd, componentCmd, servicesCmd)
 
 	listCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	listCmd.Flags().StringVar(&o.namespaceFlag, "namespace", "", "Namespace for odo to scan for components")
